@@ -5,9 +5,9 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 import org.slf4j.Logger;
@@ -40,44 +40,50 @@ public class BackendOperation {
     public static final<V> V execute(Callable<V> exe, Duration totalWaitTime) throws TitanException {
         try {
             return executeDirect(exe,totalWaitTime);
-        } catch (StorageException e) {
-            throw new TitanException("Could not execute operation due to backend",e);
+        } catch (BackendException e) {
+            throw new TitanException("Could not execute operation due to backend exception",e);
         }
     }
 
 
-    public static final<V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws StorageException {
+    public static final<V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
         Preconditions.checkArgument(!totalWaitTime.isZeroLength(),"Need to specify a positive waitTime: %s",totalWaitTime);
         long maxTime = System.currentTimeMillis()+totalWaitTime.getLength(TimeUnit.MILLISECONDS);
         Duration waitTime = pertubateTime(BASE_REATTEMPT_TIME);
-        StorageException lastException = null;
+        BackendException lastException;
         while (true) {
             try {
                 return exe.call();
-            } catch (StorageException e) {
-                if (e instanceof TemporaryStorageException) {
-                    lastException = e;
+            } catch (final Throwable e) {
+                //Find inner-most StorageException
+                Throwable ex = e;
+                BackendException storeEx = null;
+                do {
+                    if (ex instanceof BackendException) storeEx = (BackendException)ex;
+                } while ((ex=ex.getCause())!=null);
+                if (storeEx!=null && storeEx instanceof TemporaryBackendException) {
+                    lastException = storeEx;
+                } else if (e instanceof BackendException) {
+                    throw (BackendException)e;
                 } else {
-                    throw e;
+                    throw new PermanentBackendException("Permanent exception while executing backend operation "+exe.toString(),e);
                 }
-            } catch (Throwable e) {
-                throw new PermanentStorageException("Unexpected exception while executing backend operation "+exe.toString(),e);
             }
             //Wait and retry
-            Preconditions.checkNotNull(lastException);
+            assert lastException!=null;
             if (System.currentTimeMillis()+waitTime.getLength(TimeUnit.MILLISECONDS)<maxTime) {
                 log.info("Temporary exception during backend operation ["+exe.toString()+"]. Attempting backoff retry.",lastException);
                 try {
                     Thread.sleep(waitTime.getLength(TimeUnit.MILLISECONDS));
                 } catch (InterruptedException r) {
-                    throw new PermanentStorageException("Interrupted while waiting to retry failed backend operation", r);
+                    throw new PermanentBackendException("Interrupted while waiting to retry failed backend operation", r);
                 }
             } else {
                 break;
             }
             waitTime = pertubateTime(waitTime.multiply(2.0));
         }
-        throw new TemporaryStorageException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
+        throw new TemporaryBackendException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }
 
 //    private static final double WAITTIME_PERTURBATION_PERCENTAGE = 0.5;
@@ -119,13 +125,13 @@ public class BackendOperation {
 //        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
 //    }
 
-    public static<R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times) throws StorageException {
+    public static<R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times) throws BackendException {
         StoreTransaction txh = null;
         try {
             txh = provider.openTx();
             if (!txh.getConfiguration().hasCommitTime()) txh.getConfiguration().setCommitTime(times.getTime());
             return exe.call(txh);
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             if (txh!=null) txh.rollback();
             txh=null;
             throw e;
@@ -150,15 +156,15 @@ public class BackendOperation {
 
     public static interface Transactional<R> {
 
-        public R call(StoreTransaction txh) throws StorageException;
+        public R call(StoreTransaction txh) throws BackendException;
 
     }
 
     public static interface TransactionalProvider {
 
-        public StoreTransaction openTx() throws StorageException;
+        public StoreTransaction openTx() throws BackendException;
 
-        public void close() throws StorageException;
+        public void close() throws BackendException;
 
     }
 

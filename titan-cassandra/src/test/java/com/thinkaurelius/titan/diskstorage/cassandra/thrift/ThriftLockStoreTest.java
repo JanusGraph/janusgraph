@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import org.junit.BeforeClass;
-import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 public class ThriftLockStoreTest extends LockKeyColumnValueStoreTest {
@@ -17,7 +15,7 @@ public class ThriftLockStoreTest extends LockKeyColumnValueStoreTest {
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager(int idx) throws BackendException {
         return new CassandraThriftStoreManager(CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
     }
 }

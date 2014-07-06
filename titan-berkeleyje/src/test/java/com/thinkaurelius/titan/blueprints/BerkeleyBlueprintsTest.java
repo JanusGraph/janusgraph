@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.blueprints;
 import com.thinkaurelius.titan.BerkeleyStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
 import com.tinkerpop.blueprints.Graph;
 
@@ -45,7 +45,7 @@ public class BerkeleyBlueprintsTest extends TitanBlueprintsTest {
                     s.close();
                     File dirFile = new File(dir);
                     Assert.assertFalse(dirFile.exists() && dirFile.listFiles().length > 0);
-                } catch (StorageException e) {
+                } catch (BackendException e) {
                     throw new RuntimeException(e);
                 }
             } else if (openGraphs.get(dir).isOpen()) {
@@ -67,7 +67,7 @@ public class BerkeleyBlueprintsTest extends TitanBlueprintsTest {
     }
 
     @Override
-    public void cleanUp() throws StorageException {
+    public void cleanUp() throws BackendException {
         synchronized (openGraphs) {
             for (Map.Entry<String, TitanGraph> entry : openGraphs.entrySet()) {
                 String dir = entry.getKey();

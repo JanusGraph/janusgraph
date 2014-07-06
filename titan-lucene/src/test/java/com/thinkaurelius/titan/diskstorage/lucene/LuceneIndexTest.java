@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.lucene;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
@@ -33,7 +33,7 @@ public class LuceneIndexTest extends IndexProviderTest {
     public TestName methodName = new TestName();
 
     @Override
-    public IndexProvider openIndex() throws StorageException {
+    public IndexProvider openIndex() throws BackendException {
         return new LuceneIndex(getLocalLuceneTestConfig());
     }
 

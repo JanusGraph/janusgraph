@@ -7,8 +7,6 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -39,22 +37,22 @@ public class KVUtil {
         }
     };
 
-    public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws StorageException {
+    public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws BackendException {
         return convert(store.getSlice(keyStart, keyEnd, KeySelector.SelectAll, txh));
     }
 
-    public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
+    public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws BackendException {
         return convert(store.getSlice(keyStart, keyEnd, new LimitedSelector(limit), txh));
     }
 
-    public static EntryList convert(RecordIterator<KeyValueEntry> iter) throws StorageException {
+    public static EntryList convert(RecordIterator<KeyValueEntry> iter) throws BackendException {
         try {
             return StaticArrayEntryList.ofStaticBuffer(iter, KVEntryGetter.INSTANCE);
         } finally {
             try {
                 iter.close();
             } catch (IOException e) {
-                throw new TemporaryStorageException(e);
+                throw new TemporaryBackendException(e);
             }
         }
     }

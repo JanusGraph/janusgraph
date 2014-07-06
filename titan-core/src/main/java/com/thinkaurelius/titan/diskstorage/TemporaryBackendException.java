@@ -11,14 +11,14 @@ package com.thinkaurelius.titan.diskstorage;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TemporaryStorageException extends StorageException {
+public class TemporaryBackendException extends BackendException {
 
     private static final long serialVersionUID = 9286719478969781L;
 
     /**
      * @param msg Exception message
      */
-    public TemporaryStorageException(String msg) {
+    public TemporaryBackendException(String msg) {
         super(msg);
     }
 
@@ -26,7 +26,7 @@ public class TemporaryStorageException extends StorageException {
      * @param msg   Exception message
      * @param cause Cause of the exception
      */
-    public TemporaryStorageException(String msg, Throwable cause) {
+    public TemporaryBackendException(String msg, Throwable cause) {
         super(msg, cause);
     }
 
@@ -35,7 +35,7 @@ public class TemporaryStorageException extends StorageException {
      *
      * @param cause Cause of the exception
      */
-    public TemporaryStorageException(Throwable cause) {
+    public TemporaryBackendException(Throwable cause) {
         this("Temporary failure in storage backend", cause);
     }
 

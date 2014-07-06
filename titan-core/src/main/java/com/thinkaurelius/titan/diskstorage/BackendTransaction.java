@@ -9,6 +9,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.ExternalCachePersistor;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ public class BackendTransaction implements LoggableTransaction {
 
     private final KCVSCache edgeStore;
     private final KCVSCache indexStore;
+    private final KCVSCache txLogStore;
 
     private final Duration maxReadTime;
 
@@ -66,13 +68,14 @@ public class BackendTransaction implements LoggableTransaction {
 
     public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
                               StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
-                              Duration maxReadTime,
+                              KCVSCache txLogStore, Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;
         this.storeFeatures = features;
         this.edgeStore = edgeStore;
         this.indexStore = indexStore;
+        this.txLogStore = txLogStore;
         this.maxReadTime = maxReadTime;
         this.indexTx = indexTx;
         this.threadPool = threadPool;
@@ -86,6 +89,10 @@ public class BackendTransaction implements LoggableTransaction {
         return storeTx;
     }
 
+    public ExternalCachePersistor getTxLogPersistor() {
+        return new ExternalCachePersistor(txLogStore,storeTx);
+    }
+
     public BaseTransactionConfig getBaseTransactionConfig() {
         return txConfig;
     }
@@ -97,7 +104,7 @@ public class BackendTransaction implements LoggableTransaction {
         return itx;
     }
 
-    public void commitStorage() throws StorageException {
+    public void commitStorage() throws BackendException {
         storeTx.commit();
     }
 
@@ -114,7 +121,7 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
     @Override
-    public void commit() throws StorageException {
+    public void commit() throws BackendException {
         storeTx.commit();
         for (IndexTransaction itx : indexTx.values()) itx.commit();
     }
@@ -122,10 +129,10 @@ public class BackendTransaction implements LoggableTransaction {
     /**
      * Rolls back all transactions and makes sure that this does not get cut short
      * by exceptions. If exceptions occur, the storage exception takes priority on re-throw.
-     * @throws StorageException
+     * @throws BackendException
      */
     @Override
-    public void rollback() throws StorageException {
+    public void rollback() throws BackendException {
         Throwable excep = null;
         for (IndexTransaction itx : indexTx.values()) {
             try {
@@ -136,8 +143,8 @@ public class BackendTransaction implements LoggableTransaction {
         }
         storeTx.rollback();
         if (excep!=null) { //throw any encountered index transaction rollback exceptions
-            if (excep instanceof StorageException) throw (StorageException)excep;
-            else throw new PermanentStorageException("Unexpected exception",excep);
+            if (excep instanceof BackendException) throw (BackendException)excep;
+            else throw new PermanentBackendException("Unexpected exception",excep);
         }
     }
 
@@ -164,7 +171,7 @@ public class BackendTransaction implements LoggableTransaction {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
         edgeStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
@@ -176,7 +183,7 @@ public class BackendTransaction implements LoggableTransaction {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
         indexStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
@@ -194,12 +201,12 @@ public class BackendTransaction implements LoggableTransaction {
      * @param key           Key on which to lock
      * @param column        Column the column on which to lock
      */
-    public void acquireEdgeLock(StaticBuffer key, StaticBuffer column) throws StorageException {
+    public void acquireEdgeLock(StaticBuffer key, StaticBuffer column) throws BackendException {
         acquiredLock = true;
         edgeStore.acquireLock(key, column, null, storeTx);
     }
 
-    public void acquireEdgeLock(StaticBuffer key, Entry entry) throws StorageException {
+    public void acquireEdgeLock(StaticBuffer key, Entry entry) throws BackendException {
         acquiredLock = true;
         edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
     }
@@ -219,12 +226,12 @@ public class BackendTransaction implements LoggableTransaction {
      * @param column        Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireIndexLock(StaticBuffer key, StaticBuffer column) throws StorageException {
+    public void acquireIndexLock(StaticBuffer key, StaticBuffer column) throws BackendException {
         acquiredLock = true;
         indexStore.acquireLock(key, column, null, storeTx);
     }
 
-    public void acquireIndexLock(StaticBuffer key, Entry entry) throws StorageException {
+    public void acquireIndexLock(StaticBuffer key, Entry entry) throws BackendException {
         acquiredLock = true;
         indexStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
     }

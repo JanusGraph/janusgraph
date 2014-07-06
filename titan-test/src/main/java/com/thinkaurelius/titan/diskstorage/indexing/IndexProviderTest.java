@@ -8,10 +8,10 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -80,7 +80,7 @@ public abstract class IndexProviderTest {
         return new StandardKeyInformation(clazz,paras);
     }
 
-    public abstract IndexProvider openIndex() throws StorageException;
+    public abstract IndexProvider openIndex() throws BackendException;
 
     public abstract boolean supportsLuceneStyleQueries();
 
@@ -90,7 +90,7 @@ public abstract class IndexProviderTest {
         open();
     }
 
-    public void open() throws StorageException {
+    public void open() throws BackendException {
         index = openIndex();
         BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
         tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
@@ -101,12 +101,12 @@ public abstract class IndexProviderTest {
         close();
     }
 
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         if (tx != null) tx.commit();
         index.close();
     }
 
-    public void clopen() throws StorageException {
+    public void clopen() throws BackendException {
         close();
         open();
     }
@@ -445,10 +445,10 @@ public abstract class IndexProviderTest {
      * Test overwriting a single existing field on an existing document
      * (isNew=false).
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Test
-    public void testUpdateAddition() throws StorageException {
+    public void testUpdateAddition() throws BackendException {
         final String store = "vertex";
         final String docid = "docid";
         final String nameValue = "jm keynes";
@@ -481,10 +481,10 @@ public abstract class IndexProviderTest {
     /**
      * Test deleting a single field from a single document (deleteAll=false).
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Test
-    public void testUpdateDeletion() throws StorageException {
+    public void testUpdateDeletion() throws BackendException {
         final String store = "vertex";
         final String docid = "docid";
         final String nameValue = "jm keynes";
@@ -510,7 +510,7 @@ public abstract class IndexProviderTest {
         assertEquals(0, result.size());
     }
 
-    private void initialize(String store) throws StorageException {
+    private void initialize(String store) throws BackendException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
             if (index.supports(info.getValue())) index.register(store,info.getKey(),info.getValue(),tx);
         }

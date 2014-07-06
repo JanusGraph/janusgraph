@@ -34,6 +34,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
@@ -43,6 +44,7 @@ import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
 
+import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
 import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
@@ -2691,7 +2693,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 option(LOG_READ_INTERVAL,TRIGGER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
                 option(LOG_SEND_DELAY,TRIGGER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+                option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
+                option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
         );
         final String instanceid = graph.getConfiguration().getUniqueGraphId();
 
@@ -2723,11 +2726,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx2.commit();
         close();
 
-        Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
-        Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
-        final AtomicInteger txMsgCounter = new AtomicInteger(0);
+        final ReadMarker startMarker = ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS);
+
+        Log txlog = openTxLog();
+        Log triggerLog = openTriggerLog(triggerName);
+        final EnumMap<LogTxStatus,AtomicInteger> txMsgCounter = new EnumMap<LogTxStatus,AtomicInteger>(LogTxStatus.class);
+        for (LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status,new AtomicInteger(0));
         final AtomicInteger triggerMeta = new AtomicInteger(0);
-        txlog.registerReader(new MessageReader() {
+        txlog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
@@ -2743,20 +2749,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 if (!txEntry.hasContent()) {
                     assertTrue(txEntry.getStatus().isSuccess());
                 } else {
-                    assertTrue(txEntry.getStatus().isPreCommit());
+                    assertTrue(txEntry.getStatus()==LogTxStatus.PRECOMMIT);
                     Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
                     if (logid!=null) {
                         assertTrue(logid instanceof String);
                         assertEquals(triggerName,logid);
                         triggerMeta.incrementAndGet();
                     }
-                    //TODO: Verify content parses correctly
                 }
-                txMsgCounter.incrementAndGet();
+                txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
             }
         });
         final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
-        triggerLog.registerReader(new MessageReader() {
+        triggerLog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
@@ -2764,33 +2769,27 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 assertNotNull(message.getSenderId());
                 StaticBuffer content = message.getContent();
                 assertTrue(content!=null && content.length()>0);
-                ReadBuffer read = content.asReadBuffer();
-                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
+                TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
+
+                long txTime = txentry.getHeader().getTimestamp(TimeUnit.MILLISECONDS);
                 assertTrue(txTime<=msgTime);
                 assertTrue(txTime>=startTime);
-                long txid = read.getLong();
+                long txid = txentry.getHeader().getId();
                 assertTrue(txid>0);
-                for (String type : new String[]{"add","del"}) {
-                    long num = VariableLong.readPositive(read);
-                    assertTrue(num>=0 && num<Integer.MAX_VALUE);
-                    if (type.equals("add")) {
-                        assertTrue(num==3);
-                    } else {
-                        assertEquals(0,num);
-                    }
-                    for (int i=0; i<num;i++) {
-                        Long vertexid = VariableLong.readPositive(read);
-                        assertTrue(vertexid>0);
-                        Entry entry = BufferUtil.readEntry(read,serializer);
-                        assertNotNull(entry);
-                        assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
-                    }
+                int count=0;
+                for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
+                    count++;
+                    assertEquals(Change.ADDED,modification.state);
                 }
+                assertEquals(3,count);
                 triggerMsgCounter.incrementAndGet();
             }
         });
         Thread.sleep(4000);
-        assertEquals(3*2 + (features.hasTxIsolation()?0:2), txMsgCounter.get());
+        assertEquals(3,txMsgCounter.get(LogTxStatus.PRECOMMIT).get());
+        assertEquals(2,txMsgCounter.get(LogTxStatus.PRIMARY_SUCCESS).get());
+        assertEquals(1,txMsgCounter.get(LogTxStatus.COMPLETE_SUCCESS).get());
+        assertEquals(2,txMsgCounter.get(LogTxStatus.SECONDARY_SUCCESS).get());
         assertEquals(2,triggerMsgCounter.get());
         assertEquals(2,triggerMeta.get());
 
@@ -2799,7 +2798,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Use trigger framework
          */
         final AtomicInteger triggerCount = new AtomicInteger(0);
-        LogProcessorFramework triggers = TitanFactory.openTriggers(graph);
+        LogProcessorFramework triggers = TitanFactory.openTriggers(TitanFactory.open(config));
         triggers.addLogProcessor(triggerName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
         .addProcessor(new ChangeProcessor() {
             @Override
@@ -2846,14 +2845,24 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 triggerCount.incrementAndGet();
             }
         }).build();
+
+        /*
+        Transaction Recovery
+         */
+        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(TitanFactory.open(config),startTime,TimeUnit.MILLISECONDS);
+
+        //wait
         Thread.sleep(22000L);
 
 
         triggers.removeLogProcessor(triggerName);
-        tx.rollback();
-        mgmt.rollback();
         triggers.shutdown();
-        assertEquals(2,triggerCount.get());
+        recovery.shutdown();
+        assertEquals(2, triggerCount.get());
+        long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
+        System.out.println(Arrays.toString(recoveryStats));
+        assertEquals(3,recoveryStats[0]);
+        assertEquals(0,recoveryStats[1]);
     }
 
 

@@ -1,15 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import org.apache.cassandra.auth.IAuthenticator;
-import org.apache.cassandra.db.marshal.TimeUUIDType;
-import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.thrift.*;
-import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -17,7 +9,6 @@ import org.apache.thrift.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 

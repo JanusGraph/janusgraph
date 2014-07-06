@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.blueprints;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.tinkerpop.blueprints.BaseTest;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphTestSuite;
@@ -25,7 +25,7 @@ public abstract class InMemoryBlueprintsTest extends TitanBlueprintsTest {
     ///=========================== DEFAULT ===========
 
     @Override
-    public void cleanUp() throws StorageException {
+    public void cleanUp() throws BackendException {
 
     }
 

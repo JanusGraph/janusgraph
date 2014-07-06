@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
 
 /**
  * This exception signifies a (potentially) temporary exception while attempting
@@ -13,7 +13,7 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TemporaryLockingException extends TemporaryStorageException {
+public class TemporaryLockingException extends TemporaryBackendException {
 
     private static final long serialVersionUID = 482890657293484420L;
 

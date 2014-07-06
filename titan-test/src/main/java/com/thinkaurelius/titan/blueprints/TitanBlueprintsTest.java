@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
@@ -102,7 +102,7 @@ public abstract class TitanBlueprintsTest extends GraphTest {
      */
     public abstract boolean supportsMultipleGraphs();
 
-    public abstract void cleanUp() throws StorageException;
+    public abstract void cleanUp() throws BackendException;
 
     public abstract void beforeSuite();
 

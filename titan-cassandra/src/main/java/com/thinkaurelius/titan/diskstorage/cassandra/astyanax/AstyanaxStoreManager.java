@@ -16,14 +16,11 @@ import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -225,7 +222,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private final Map<String, AstyanaxKeyColumnValueStore> openStores;
 
-    public AstyanaxStoreManager(Configuration config) throws StorageException {
+    public AstyanaxStoreManager(Configuration config) throws BackendException {
         super(config);
 
 
@@ -264,14 +261,14 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     @SuppressWarnings("unchecked")
-    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws BackendException {
         Cluster cl = clusterContext.getClient();
         try {
             return FBUtilities.newPartitioner(cl.describePartitioner());
         } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } catch (ConfigurationException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
@@ -289,7 +286,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public synchronized AstyanaxKeyColumnValueStore openDatabase(String name) throws StorageException {
+    public synchronized AstyanaxKeyColumnValueStore openDatabase(String name) throws BackendException {
         if (openStores.containsKey(name)) return openStores.get(name);
         else {
             ensureColumnFamilyExists(name);
@@ -300,7 +297,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> batch, StoreTransaction txh) throws BackendException {
         MutationBatch m = keyspaceContext.getClient().prepareMutationBatch()
                 .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate());
@@ -342,19 +339,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         try {
             m.execute();
         } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
 
         sleepAfterWrite(txh, commitTime);
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         try {
             Cluster cluster = clusterContext.getClient();
 
@@ -370,15 +367,15 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 ks.truncateColumnFamily(new ColumnFamily<Object, Object>(cf.getName(), null, null));
             }
         } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
-    private void ensureColumnFamilyExists(String name) throws StorageException {
+    private void ensureColumnFamilyExists(String name) throws BackendException {
         ensureColumnFamilyExists(name, "org.apache.cassandra.db.marshal.BytesType");
     }
 
-    private void ensureColumnFamilyExists(String name, String comparator) throws StorageException {
+    private void ensureColumnFamilyExists(String name, String comparator) throws BackendException {
         Cluster cl = clusterContext.getClient();
         try {
             KeyspaceDefinition ksDef = cl.describeKeyspace(keySpaceName);
@@ -405,7 +402,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 cl.addColumnFamily(cfDef.setCompressionOptions(compressionOptions.build()));
             }
         } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
     }
 
@@ -492,7 +489,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         return ctxBuilder;
     }
 
-    private void ensureKeyspaceExists(Cluster cl) throws StorageException {
+    private void ensureKeyspaceExists(Cluster cl) throws BackendException {
         KeyspaceDefinition ksDef;
 
         try {
@@ -517,11 +514,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             log.debug("Created keyspace {}", keySpaceName);
         } catch (ConnectionException e) {
             log.debug("Failed to create keyspace {}, keySpaceName");
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
     }
 
-    private static RetryBackoffStrategy getRetryBackoffStrategy(String desc) throws PermanentStorageException {
+    private static RetryBackoffStrategy getRetryBackoffStrategy(String desc) throws PermanentBackendException {
         if (null == desc)
             return null;
 
@@ -539,11 +536,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             log.debug("Instantiated RetryBackoffStrategy object {} from config string \"{}\"", rbs, desc);
             return rbs;
         } catch (Exception e) {
-            throw new PermanentStorageException("Failed to instantiate Astyanax RetryBackoffStrategy implementation", e);
+            throw new PermanentBackendException("Failed to instantiate Astyanax RetryBackoffStrategy implementation", e);
         }
     }
 
-    private static RetryPolicy getRetryPolicy(String serializedRetryPolicy) throws StorageException {
+    private static RetryPolicy getRetryPolicy(String serializedRetryPolicy) throws BackendException {
         String[] tokens = serializedRetryPolicy.split(",");
         String policyClassName = tokens[0];
         int argCount = tokens.length - 1;
@@ -557,7 +554,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             log.debug("Instantiated RetryPolicy object {} from config string \"{}\"", rp, serializedRetryPolicy);
             return rp;
         } catch (Exception e) {
-            throw new PermanentStorageException("Failed to instantiate Astyanax Retry Policy class", e);
+            throw new PermanentBackendException("Failed to instantiate Astyanax Retry Policy class", e);
         }
     }
 
@@ -594,25 +591,25 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+    public Map<String, String> getCompressionOptions(String cf) throws BackendException {
         try {
             Keyspace k = keyspaceContext.getClient();
 
             KeyspaceDefinition kdef = k.describeKeyspace();
 
             if (null == kdef) {
-                throw new PermanentStorageException("Keyspace " + k.getKeyspaceName() + " is undefined");
+                throw new PermanentBackendException("Keyspace " + k.getKeyspaceName() + " is undefined");
             }
 
             ColumnFamilyDefinition cfdef = kdef.getColumnFamily(cf);
 
             if (null == cfdef) {
-                throw new PermanentStorageException("Column family " + cf + " is undefined");
+                throw new PermanentBackendException("Column family " + cf + " is undefined");
             }
 
             return cfdef.getCompressionOptions();
         } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 }

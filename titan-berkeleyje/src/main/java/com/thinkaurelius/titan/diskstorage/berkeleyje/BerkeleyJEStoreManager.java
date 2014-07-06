@@ -3,10 +3,9 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -55,7 +54,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     protected Environment environment;
     protected final StoreFeatures features;
 
-    public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
+    public BerkeleyJEStoreManager(Configuration configuration) throws BackendException {
         super(configuration);
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
 
@@ -83,7 +82,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 //        features.supportsMultiQuery = false;
     }
 
-    private void initialize(int cachePercent) throws StorageException {
+    private void initialize(int cachePercent) throws BackendException {
         try {
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
@@ -100,7 +99,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
 
         } catch (DatabaseException e) {
-            throw new PermanentStorageException("Error during BerkeleyJE initialization: ", e);
+            throw new PermanentBackendException("Error during BerkeleyJE initialization: ", e);
         }
 
     }
@@ -111,12 +110,12 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public BerkeleyJETx beginTransaction(final BaseTransactionConfig txCfg) throws StorageException {
+    public BerkeleyJETx beginTransaction(final BaseTransactionConfig txCfg) throws BackendException {
         try {
             Transaction tx = null;
 
@@ -136,12 +135,12 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             return btx;
         } catch (DatabaseException e) {
-            throw new PermanentStorageException("Could not start BerkeleyJE transaction", e);
+            throw new PermanentBackendException("Could not start BerkeleyJE transaction", e);
         }
     }
 
     @Override
-    public BerkeleyJEKeyValueStore openDatabase(String name) throws StorageException {
+    public BerkeleyJEKeyValueStore openDatabase(String name) throws BackendException {
         Preconditions.checkNotNull(name);
         if (stores.containsKey(name)) {
             BerkeleyJEKeyValueStore store = stores.get(name);
@@ -167,12 +166,12 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             stores.put(name, store);
             return store;
         } catch (DatabaseException e) {
-            throw new PermanentStorageException("Could not open BerkeleyJE data store", e);
+            throw new PermanentBackendException("Could not open BerkeleyJE data store", e);
         }
     }
 
     @Override
-    public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException {
         for (Map.Entry<String,KVMutation> muts : mutations.entrySet()) {
             BerkeleyJEKeyValueStore store = openDatabase(muts.getKey());
             KVMutation mut = muts.getValue();
@@ -209,7 +208,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         if (environment != null) {
             if (!stores.isEmpty())
                 throw new IllegalStateException("Cannot shutdown manager since some databases are still open");
@@ -223,14 +222,14 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             try {
                 environment.close();
             } catch (DatabaseException e) {
-                throw new PermanentStorageException("Could not close BerkeleyJE database", e);
+                throw new PermanentBackendException("Could not close BerkeleyJE database", e);
             }
         }
 
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         if (!stores.isEmpty())
             throw new IllegalStateException("Cannot delete store, since database is open: " + stores.keySet().toString());
 

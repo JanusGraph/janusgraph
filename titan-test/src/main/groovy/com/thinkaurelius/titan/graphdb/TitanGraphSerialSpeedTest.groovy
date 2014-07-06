@@ -26,7 +26,7 @@ import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider
 import com.tinkerpop.blueprints.Vertex
 import com.tinkerpop.frames.FramedGraph
 import com.tinkerpop.gremlin.Tokens.T
-import com.thinkaurelius.titan.diskstorage.StorageException
+import com.thinkaurelius.titan.diskstorage.BackendException
 
 
 /**
@@ -44,7 +44,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get()
 
-    TitanGraphSerialSpeedTest(WriteConfiguration conf) throws StorageException {
+    TitanGraphSerialSpeedTest(WriteConfiguration conf) throws BackendException {
         super(conf)
     }
 

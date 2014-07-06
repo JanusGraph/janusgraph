@@ -4,33 +4,15 @@ package com.thinkaurelius.titan.graphdb.database.log;
 * @author Matthias Broecheler (me@matthiasb.com)
 */
 public enum LogTxStatus {
-    PREFLUSH_SYSTEM, SUCCESS_SYSTEM, FAILURE_SYSTEM,
-    PRECOMMIT, SUCCESS, FAILURE;
 
-    public boolean isPreCommit() {
-        switch(this) {
-            case PRECOMMIT:
-            case PREFLUSH_SYSTEM:
-                return true;
-            default: return false;
-        }
+    PRECOMMIT, PRIMARY_SUCCESS, COMPLETE_SUCCESS, SECONDARY_SUCCESS, SECONDARY_FAILURE, USER_LOG;
+
+    public boolean isPrimarySuccess() {
+        return this==PRIMARY_SUCCESS || this==COMPLETE_SUCCESS;
     }
 
     public boolean isSuccess() {
-        switch(this) {
-            case SUCCESS:
-            case SUCCESS_SYSTEM:
-                return true;
-            default: return false;
-        }
+        return this==PRIMARY_SUCCESS || this==COMPLETE_SUCCESS || this==SECONDARY_SUCCESS;
     }
 
-    public boolean isFailure() {
-        switch(this) {
-            case FAILURE:
-            case FAILURE_SYSTEM:
-                return true;
-            default: return false;
-        }
-    }
 }

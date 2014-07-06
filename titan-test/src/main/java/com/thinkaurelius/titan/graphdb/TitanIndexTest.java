@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
@@ -768,7 +768,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
      * other, then commit in the same order. Neither commit throws an exception.
      */
     @Test
-    public void testDeleteVertexThenDeleteProperty() throws StorageException {
+    public void testDeleteVertexThenDeleteProperty() throws BackendException {
         testNestedWrites("x", null);
     }
 
@@ -778,7 +778,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
      * order. Neither commit throws an exception.
      */
     @Test
-    public void testDeleteVertexThenAddProperty() throws StorageException {
+    public void testDeleteVertexThenAddProperty() throws BackendException {
         testNestedWrites(null, "y");
     }
 
@@ -788,11 +788,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
      * then commit in the same order. Neither commit throws an exception.
      */
     @Test
-    public void testDeleteVertexThenModifyProperty() throws StorageException {
+    public void testDeleteVertexThenModifyProperty() throws BackendException {
         testNestedWrites("x", "y");
     }
 
-    private void testNestedWrites(String initialValue, String updatedValue) throws StorageException {
+    private void testNestedWrites(String initialValue, String updatedValue) throws BackendException {
         // This method touches a single vertex with multiple transactions,
         // leading to deadlock under BDB and cascading test failures. Check for
         // the hasTxIsolation() store feature, which is currently true for BDB

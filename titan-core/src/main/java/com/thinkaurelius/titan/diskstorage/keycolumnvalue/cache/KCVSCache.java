@@ -2,10 +2,9 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.util.stats.MetricManager;
@@ -46,11 +45,11 @@ public abstract class KCVSCache implements KeyColumnValueStore {
     protected abstract void invalidate(StaticBuffer key, List<CachableStaticBuffer> entries);
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException("Only supports mutateEntries()");
     }
 
-    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws StorageException {
+    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws BackendException {
         assert txh instanceof CacheTransaction;
         ((CacheTransaction) txh).mutate(this, key, additions, deletions);
     }
@@ -63,17 +62,17 @@ public abstract class KCVSCache implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         store.acquireLock(key, column, expectedValue, getTx(txh));
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws BackendException {
         return store.getKeys(keyQuery, getTx(txh));
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws BackendException {
         return store.getKeys(columnQuery, getTx(txh));
     }
 
@@ -83,7 +82,7 @@ public abstract class KCVSCache implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         store.close();
     }
 

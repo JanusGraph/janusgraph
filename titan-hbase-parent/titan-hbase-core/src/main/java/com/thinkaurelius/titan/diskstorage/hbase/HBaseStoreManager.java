@@ -204,7 +204,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
 
-    public HBaseStoreManager(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) throws StorageException {
+    public HBaseStoreManager(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) throws BackendException {
         super(config, PORT_DEFAULT);
 
         checkConfigDeprecation(config);
@@ -258,9 +258,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         try {
             this.cnx = HConnectionManager.createConnection(hconf);
         } catch (ZooKeeperConnectionException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } catch (@SuppressWarnings("hiding") IOException e) { // not thrown in 0.94, but thrown in 0.96+
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
 
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
@@ -272,7 +272,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         try {
             local = getLocalKeyPartition();
             return null != local && !local.isEmpty() ? Deployment.LOCAL : Deployment.REMOTE;
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             // propagating StorageException might be a better approach
             throw new RuntimeException(e);
         }
@@ -310,7 +310,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
@@ -343,16 +343,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 IOUtils.closeQuietly(table);
             }
         } catch (IOException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } catch (InterruptedException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
 
         sleepAfterWrite(txh, commitTime);
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(final String longName) throws StorageException {
+    public KeyColumnValueStore openDatabase(final String longName) throws BackendException {
 
         HBaseKeyColumnValueStore store = openStores.get(longName);
 
@@ -377,7 +377,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws BackendException {
         return new HBaseTransaction(config);
     }
 
@@ -391,7 +391,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * ATTENTION: Invoking this method will delete the table if it exists and therefore causes data loss.
      */
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         HBaseAdmin adm = getAdminInterface();
 
         try { // first of all, check if table exists, if not - we are done
@@ -400,7 +400,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 return;
             }
         } catch (IOException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
 
         /*
@@ -458,14 +458,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 IOUtils.closeQuietly(scanner);
             }
         } catch (IOException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } finally {
             IOUtils.closeQuietly(table);
         }
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
 
         List<KeyRange> result = new LinkedList<KeyRange>();
 
@@ -645,7 +645,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return padded;
     }
 
-    private String shortenCfName(String longName) throws PermanentStorageException {
+    private String shortenCfName(String longName) throws PermanentBackendException {
         final String s;
         if (SHORT_CF_NAME_MAP.containsKey(longName)) {
             s = SHORT_CF_NAME_MAP.get(longName);
@@ -655,7 +655,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             if (SHORT_CF_NAME_MAP.containsValue(longName)) {
                 String fmt = "Must use CF long-form name \"%s\" instead of the short-form name \"%s\" when configured with %s=true";
                 String msg = String.format(fmt, SHORT_CF_NAME_MAP.inverse().get(longName), longName, SHORT_CF_NAMES.getName());
-                throw new PermanentStorageException(msg);
+                throw new PermanentBackendException(msg);
             }
             s = longName;
             logger.debug("Kept default CF name \"{}\" because it has no associated short form", s);
@@ -663,7 +663,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return s;
     }
 
-    private HTableDescriptor ensureTableExists(String tableName, String initialCFName) throws StorageException {
+    private HTableDescriptor ensureTableExists(String tableName, String initialCFName) throws BackendException {
         HBaseAdmin adm = getAdminInterface();
 
         HTableDescriptor desc;
@@ -680,7 +680,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 desc = createTable(tableName, initialCFName, adm);
             }
         } catch (IOException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
 
         return desc;
@@ -744,7 +744,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return StaticArrayBuffer.of(regionWidth).getBytes(0, 4);
     }
 
-    private void ensureColumnFamilyExists(String tableName, String columnFamily) throws StorageException {
+    private void ensureColumnFamilyExists(String tableName, String columnFamily) throws BackendException {
         HBaseAdmin adm = getAdminInterface();
         HTableDescriptor desc = ensureTableExists(tableName, columnFamily);
 
@@ -761,7 +761,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             } catch (TableNotEnabledException e) {
                 logger.debug("Table {} already disabled", tableName);
             } catch (IOException e) {
-                throw new TemporaryStorageException(e);
+                throw new TemporaryBackendException(e);
             }
 
             try {
@@ -775,17 +775,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
                     Thread.sleep(1000L);
                 } catch (InterruptedException ie) {
-                    throw new TemporaryStorageException(ie);
+                    throw new TemporaryBackendException(ie);
                 }
 
                 adm.enableTable(tableName);
             } catch (TableNotFoundException ee) {
                 logger.error("TableNotFoundException", ee);
-                throw new PermanentStorageException(ee);
+                throw new PermanentBackendException(ee);
             } catch (org.apache.hadoop.hbase.TableExistsException ee) {
                 logger.debug("Swallowing exception {}", ee);
             } catch (IOException ee) {
-                throw new TemporaryStorageException(ee);
+                throw new TemporaryBackendException(ee);
             }
         }
     }
@@ -847,11 +847,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * @param putTimestamp The timestamp to use for Put commands.
      * @param delTimestamp The timestamp to use for Delete commands.
      * @return Commands sorted by key converted from Titan internal representation.
-     * @throws PermanentStorageException
+     * @throws com.thinkaurelius.titan.diskstorage.PermanentBackendException
      */
     private Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
                                                                    final long putTimestamp,
-                                                                   final long delTimestamp) throws PermanentStorageException {
+                                                                   final long delTimestamp) throws PermanentBackendException {
         Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<StaticBuffer, Pair<Put, Delete>>();
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
@@ -901,7 +901,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return commandsPerKey;
     }
 
-    private String getCfNameForStoreName(String storeName) throws PermanentStorageException {
+    private String getCfNameForStoreName(String storeName) throws PermanentBackendException {
         return shortCfNames ? shortenCfName(storeName) : storeName;
     }
 

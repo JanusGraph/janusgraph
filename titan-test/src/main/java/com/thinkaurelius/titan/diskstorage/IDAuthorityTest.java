@@ -116,9 +116,9 @@ public abstract class IDAuthorityTest {
         open();
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
-    public void open() throws StorageException {
+    public void open() throws BackendException {
         manager = new KeyColumnValueStoreManager[CONCURRENCY];
         idAuthorities = new IDAuthority[CONCURRENCY];
 
@@ -149,7 +149,7 @@ public abstract class IDAuthorityTest {
         close();
     }
 
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         for (int i = 0; i < CONCURRENCY; i++) {
             idAuthorities[i].close();
             manager[i].close();
@@ -230,7 +230,7 @@ public abstract class IDAuthorityTest {
     }
 
     @Test
-    public void testSimpleIDAcquisition() throws StorageException {
+    public void testSimpleIDAcquisition() throws BackendException {
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         idAuthorities[0].setIDBlockSizer(blockSizer);
         int numTrials = 100;
@@ -248,7 +248,7 @@ public abstract class IDAuthorityTest {
     }
 
     @Test
-    public void testIDExhaustion() throws StorageException {
+    public void testIDExhaustion() throws BackendException {
         final int chunks = 30;
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
@@ -284,7 +284,7 @@ public abstract class IDAuthorityTest {
     }
 
     @Test
-    public void testLocalPartitionAcquisition() throws StorageException {
+    public void testLocalPartitionAcquisition() throws BackendException {
         for (int c = 0; c < CONCURRENCY; c++) {
             if (manager[c].getFeatures().hasLocalKeyPartition()) {
                 try {
@@ -303,7 +303,7 @@ public abstract class IDAuthorityTest {
     }
 
     @Test
-    public void testManyThreadsOneIDAuthority() throws StorageException, InterruptedException, ExecutionException {
+    public void testManyThreadsOneIDAuthority() throws BackendException, InterruptedException, ExecutionException {
 
         ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
 
@@ -324,13 +324,13 @@ public abstract class IDAuthorityTest {
                 public Void call() {
                     try {
                         getBlock();
-                    } catch (StorageException e) {
+                    } catch (BackendException e) {
                         throw new RuntimeException(e);
                     }
                     return null;
                 }
 
-                private void getBlock() throws StorageException {
+                private void getBlock() throws BackendException {
                     for (int i = 0; i < blocksPerThread; i++) {
                         IDBlock block = targetAuthority.getIDBlock(targetPartition,targetNamespace,
                                GET_ID_BLOCK_TIMEOUT);
@@ -467,7 +467,7 @@ public abstract class IDAuthorityTest {
             IDBlock block;
             try {
                 block = authority.getIDBlock(partitionIndex,partitionIndex,GET_ID_BLOCK_TIMEOUT);
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 log.error("Unexpected exception while getting ID block", e);
                 return null;
             }

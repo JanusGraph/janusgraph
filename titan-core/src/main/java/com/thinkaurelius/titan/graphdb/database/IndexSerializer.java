@@ -72,7 +72,7 @@ public class IndexSerializer {
         return mixedIndexes.containsKey(indexName);
     }
 
-    public static void register(final MixedIndexType index, final PropertyKey key, final BackendTransaction tx) throws StorageException {
+    public static void register(final MixedIndexType index, final PropertyKey key, final BackendTransaction tx) throws BackendException {
         tx.getIndexTransaction(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
 
     }

@@ -27,7 +27,7 @@ public abstract class DistributedStoreManagerTest<T extends DistributedStoreMana
     
     @Test
     @Category({ OrderedKeyStoreTests.class })
-    public void testGetLocalKeyPartition() throws StorageException {
+    public void testGetLocalKeyPartition() throws BackendException {
         List<KeyRange> local = manager.getLocalKeyPartition();
         assertNotNull(local);
         assertEquals(1, local.size());
