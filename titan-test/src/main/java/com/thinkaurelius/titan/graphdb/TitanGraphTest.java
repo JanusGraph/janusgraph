@@ -3636,7 +3636,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(222,e.getProperty(id));
     }
 
-    //................................................
+   /* ==================================================================================
+                            TIME TO LIVE
+     ==================================================================================*/
 
     @Test
     public void testEdgeTTLTiming() throws Exception {
@@ -3651,9 +3653,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
         mgmt.setTTL(label2, ttl2, TimeUnit.SECONDS);
         EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
-        assertEquals(ttl1, mgmt.getTTL(label1));
-        assertEquals(ttl2, mgmt.getTTL(label2));
-        assertEquals(0, mgmt.getTTL(label3));
+        assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        assertEquals(ttl2, mgmt.getTTL(label2).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(label3).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
@@ -3700,7 +3702,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
-        assertEquals(1, mgmt.getTTL(label1));
+        assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3741,8 +3743,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
         mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
         mgmt.setTTL(wavedAt, ttl, TimeUnit.SECONDS);
-        assertEquals(0, mgmt.getTTL(time));
-        assertEquals(ttl, mgmt.getTTL(wavedAt));
+        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
+        assertEquals(ttl, mgmt.getTTL(wavedAt).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3775,8 +3777,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName).buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label, 1, TimeUnit.SECONDS);
-        assertEquals(0, mgmt.getTTL(edgeName));
-        assertEquals(1, mgmt.getTTL(label));
+        assertEquals(0, mgmt.getTTL(edgeName).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3794,8 +3796,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         graph.rollback();
 
         // the edge is gone not only from its previous endpoints, but also from key indices
-        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
     }
 
     @Test
@@ -3812,9 +3814,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(place).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
-        assertEquals(42, mgmt.getTTL(name));
-        assertEquals(1, mgmt.getTTL(place));
-        assertEquals(2, mgmt.getTTL(label1));
+        assertEquals(42, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(place).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");
@@ -3826,8 +3828,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         v1 = graph.getVertex(id);
         assertNotNull(v1);
+        assertTrue(graph.query().has("name","some event").has("place","somewhere").vertices().iterator().hasNext());
         assertTrue(graph.getVertices("name", "some event").iterator().hasNext());
-        assertTrue(graph.getVertices("place", "somewhere").iterator().hasNext());
 
         Thread.sleep(1001);
         graph.rollback();
@@ -3835,17 +3837,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // short-lived property expires first
         v1 = graph.getVertex(id);
         assertNotNull(v1);
+        assertFalse(graph.query().has("name","some event").has("place","somewhere").vertices().iterator().hasNext());
         assertTrue(graph.getVertices("name", "some event").iterator().hasNext());
-        assertFalse(graph.getVertices("place", "somewhere").iterator().hasNext());
 
         Thread.sleep(1001);
         graph.rollback();
 
         // vertex expires before defined TTL of the long-lived property
+        assertFalse(graph.query().has("name","some event").has("place","somewhere").vertices().iterator().hasNext());
+        assertFalse(graph.getVertices("place", "somewhere").iterator().hasNext());
         v1 = graph.getVertex(id);
         assertNull(v1);
-        assertFalse(graph.getVertices("name", "some event").iterator().hasNext());
-        assertFalse(graph.getVertices("place", "somewhere").iterator().hasNext());
     }
 
     @Test
@@ -3860,9 +3862,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(time).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
-        assertEquals(0, mgmt.getTTL(name));
-        assertEquals(0, mgmt.getTTL(time));
-        assertEquals(1, mgmt.getTTL(label1));
+        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");
@@ -3901,10 +3903,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel indifferentTo = mgmt.makeEdgeLabel("indifferentTo").make();
         VertexLabel label1 = mgmt.makeVertexLabel("person").setStatic().make();
         mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
-        assertEquals(42, mgmt.getTTL(likes));
-        assertEquals(1, mgmt.getTTL(dislikes));
-        assertEquals(0, mgmt.getTTL(indifferentTo));
-        assertEquals(2, mgmt.getTTL(label1));
+        assertEquals(42, mgmt.getTTL(likes).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(dislikes).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(indifferentTo).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("person");
@@ -4029,8 +4031,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
         EdgeLabel hasLiked = mgmt.makeEdgeLabel("hasLiked").make();
         mgmt.setTTL(likes, ttl, TimeUnit.SECONDS);
-        assertEquals(ttl, mgmt.getTTL(likes));
-        assertEquals(0, mgmt.getTTL(hasLiked));
+        assertEquals(ttl, mgmt.getTTL(likes).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(hasLiked).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -4073,7 +4075,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int ttl1 = 1;
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
-        assertEquals(ttl1, mgmt.getTTL(label1));
+        assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");

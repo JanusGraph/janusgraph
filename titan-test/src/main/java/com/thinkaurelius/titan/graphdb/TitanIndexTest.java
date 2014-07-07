@@ -777,13 +777,13 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.setTTL(event, 2, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Vertex.class).
-                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Vertex.class).indexOnly(event).
-                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
 
-        assertEquals(0, mgmt.getTTL(name));
-        assertEquals(0, mgmt.getTTL(time));
-        assertEquals(2, mgmt.getTTL(event));
+        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");
@@ -836,12 +836,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.setTTL(label, 2, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Edge.class).
-                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Edge.class).indexOnly(label).
-                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
 
-        assertEquals(0, mgmt.getTTL(name));
-        assertEquals(2, mgmt.getTTL(label));
+        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
