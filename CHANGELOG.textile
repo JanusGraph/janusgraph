@@ -33,6 +33,7 @@ h3. Version 0.5.0 (March X, 2014)
 * Introduced a compressed String attribute called StringX which has a much smaller storage footprint than String.
 * Introduced native serialization for primitive arrays
 * Removed FullDouble and FullFloat: Double and Float are now serialized as full precision floating points. Introduced Decimal and Precision with a fixed number of decimals and order preserving binary representation
+* Added TTL (time-to-live) support at the diskstorage and graph layers with the Cassandra backend
 * Migrated Faunus to a new package in Titan named Titan/Hadoop
   * Isolated HadoopElement serialization into HadoopSerializer
   * All HadoopVertex and HadoopEdge construction leverages Hadoop Configuration for deserialization rules

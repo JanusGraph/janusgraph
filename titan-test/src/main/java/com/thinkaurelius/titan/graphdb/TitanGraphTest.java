@@ -3986,7 +3986,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSettingTTLOnUnsupportedType() throws Exception {
         if (!features.hasCellTTL()) {
-            return;
+            throw new IllegalArgumentException();
         }
 
         TitanSchemaType type = ImplicitKey.ID;
@@ -3996,7 +3996,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test(expected = IllegalArgumentException.class)
     public void testGetTTLFromUnsupportedType() throws Exception {
         if (!features.hasCellTTL()) {
-            return;
+            throw new IllegalArgumentException();
         }
 
         TitanSchemaType type = ImplicitKey.ID;
@@ -4006,7 +4006,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSettingTTLOnNonStaticVertexLabel() throws Exception {
         if (!features.hasCellTTL()) {
-            return;
+            throw new IllegalArgumentException();
         }
 
         VertexLabel label1 = mgmt.makeVertexLabel("event").make();
@@ -4038,7 +4038,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Edge e1 = graph.addEdge(null, v1, v2, "likes");
         Edge e2 = graph.addEdge(null, v1, v2, "hasLiked");
         graph.commit();
-        System.out.println("committed");
 
         // read from the edge created in this transaction
         d = e1.getProperty("$ttl");
