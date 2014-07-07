@@ -10,10 +10,6 @@
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>src/assembly/static</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-        <fileSet>
             <directory>src/assembly/resources/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <filtered>true</filtered>

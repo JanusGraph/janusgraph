@@ -4,9 +4,6 @@
         <fileSet>
             <directory>src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
-            <includes>
-                <include>titan-*</include>
-            </includes>
         </fileSet>
     </fileSets>
 </component>
