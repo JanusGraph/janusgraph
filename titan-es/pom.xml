@@ -12,14 +12,6 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <!--
-          ES depends on Lucene.  This ES dependency can affect the
-          version used by the titan-lucene module.  When updating
-          the ES version, also consider the version of Lucene upon
-          which it depends and modify ../titan-lucene/pom.xml
-          as necessary to keep the versions matched.
-        -->
-        <elasticsearch.version>1.2.1</elasticsearch.version>
     </properties>
     <dependencies>
         <dependency>

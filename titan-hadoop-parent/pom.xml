@@ -90,6 +90,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Elasticsearch MR -->
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch-hadoop-mr</artifactId>
+            <version>${elasticsearch.mr.version}</version>
+        </dependency>
+
         <!-- RDF PARSING -->
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
