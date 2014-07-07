@@ -12,10 +12,7 @@ import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.tinkerpop.blueprints.Direction;
@@ -94,24 +91,18 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                     return (O) new StandardTimestamp(time, unit);
                 }
             } else {
-                System.out.println("not an InternalRelation: " + e + " (" + e.getClass() + ")");
                 return null;
             }
         } else if (this == TTL) {
-            TitanSchemaType type;
+            int ttl;
             if (e instanceof InternalRelation) {
-                type = ((InternalRelation) e).getType();
+                ttl = ((InternalRelationType)((InternalRelation) e).getType()).getTTL();
             } else if (e instanceof InternalVertex) {
-                VertexLabel label = ((InternalVertex) e).getVertexLabel();
-                if (label == BaseVertexLabel.DEFAULT_VERTEXLABEL) {
-                    return (O) new StandardDuration(0, TimeUnit.SECONDS);
-                }
-                type = label;
+                ttl = ((InternalVertexLabel)((InternalVertex) e).getVertexLabel()).getTTL();
             } else {
-                return null;
+                ttl = 0;
             }
-
-            int ttl = TypeUtil.getTTL((TitanSchemaVertex) type);
+            if (ttl<=0) return null;
             return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
         } else throw new AssertionError("Implicit key property is undefined: " + this.getName());
     }

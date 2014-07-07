@@ -3647,9 +3647,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         int ttl1 = 1;
         int ttl2 = 2;
-        mgmt.setTTL(label1, ttl1);
+        mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
         EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
-        mgmt.setTTL(label2, ttl2);
+        mgmt.setTTL(label2, ttl2, TimeUnit.SECONDS);
         EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
         assertEquals(ttl1, mgmt.getTTL(label1));
         assertEquals(ttl2, mgmt.getTTL(label2));
@@ -3699,7 +3699,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(label1, 1);
+        mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
         assertEquals(1, mgmt.getTTL(label1));
         mgmt.commit();
 
@@ -3740,7 +3740,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
         mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
-        mgmt.setTTL(wavedAt, ttl);
+        mgmt.setTTL(wavedAt, ttl, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(time));
         assertEquals(ttl, mgmt.getTTL(wavedAt));
         mgmt.commit();
@@ -3774,7 +3774,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
         mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName).buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(label, 1);
+        mgmt.setTTL(label, 1, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(edgeName));
         assertEquals(1, mgmt.getTTL(label));
         mgmt.commit();
@@ -3806,12 +3806,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey place = mgmt.makePropertyKey("place").dataType(String.class).make();
-        mgmt.setTTL(name, 42);
-        mgmt.setTTL(place, 1);
+        mgmt.setTTL(name, 42, TimeUnit.SECONDS);
+        mgmt.setTTL(place, 1, TimeUnit.SECONDS);
         TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(place).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(label1, 2);
+        mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
         assertEquals(42, mgmt.getTTL(name));
         assertEquals(1, mgmt.getTTL(place));
         assertEquals(2, mgmt.getTTL(label1));
@@ -3859,7 +3859,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(time).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(label1, 1);
+        mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(name));
         assertEquals(0, mgmt.getTTL(time));
         assertEquals(1, mgmt.getTTL(label1));
@@ -3895,12 +3895,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(likes, 42); // long edge TTL will be overridden by short vertex TTL
+        mgmt.setTTL(likes, 42, TimeUnit.SECONDS); // long edge TTL will be overridden by short vertex TTL
         EdgeLabel dislikes = mgmt.makeEdgeLabel("dislikes").make();
-        mgmt.setTTL(dislikes, 1);
+        mgmt.setTTL(dislikes, 1, TimeUnit.SECONDS);
         EdgeLabel indifferentTo = mgmt.makeEdgeLabel("indifferentTo").make();
         VertexLabel label1 = mgmt.makeVertexLabel("person").setStatic().make();
-        mgmt.setTTL(label1, 2);
+        mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
         assertEquals(42, mgmt.getTTL(likes));
         assertEquals(1, mgmt.getTTL(dislikes));
         assertEquals(0, mgmt.getTTL(indifferentTo));
@@ -3990,7 +3990,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         TitanSchemaType type = ImplicitKey.ID;
-        mgmt.setTTL(type, 0);
+        mgmt.setTTL(type, 0, TimeUnit.SECONDS);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -4010,7 +4010,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         VertexLabel label1 = mgmt.makeVertexLabel("event").make();
-        mgmt.setTTL(label1, 42);
+        mgmt.setTTL(label1, 42, TimeUnit.SECONDS);
     }
 
     @Test
@@ -4028,7 +4028,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int ttl = 24*60*60;
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
         EdgeLabel hasLiked = mgmt.makeEdgeLabel("hasLiked").make();
-        mgmt.setTTL(likes, ttl);
+        mgmt.setTTL(likes, ttl, TimeUnit.SECONDS);
         assertEquals(ttl, mgmt.getTTL(likes));
         assertEquals(0, mgmt.getTTL(hasLiked));
         mgmt.commit();
@@ -4073,7 +4073,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         int ttl1 = 1;
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(label1, ttl1);
+        mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
         assertEquals(ttl1, mgmt.getTTL(label1));
         mgmt.commit();
 

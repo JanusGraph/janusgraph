@@ -77,6 +77,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         return dir==Direction.OUT;
     }
 
+    @Override
     public Cardinality getCardinality() {
         return cardinality;
     }

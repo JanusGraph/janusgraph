@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.schema.ModifierType;
@@ -40,6 +41,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.TransactionalConfigurat
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.Log;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -81,6 +83,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
@@ -764,7 +767,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     /* --------------
-    Schema Consistency
+    Type Modifiers
      --------------- */
 
     /**
@@ -800,15 +803,17 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public int getTTL(final TitanSchemaType type) {
+    public Duration getTTL(final TitanSchemaType type) {
         Preconditions.checkArgument(type != null);
+        int ttl;
         if (type instanceof VertexLabelVertex) {
-            return ((VertexLabelVertex) type).getTTL();
+            ttl = ((VertexLabelVertex) type).getTTL();
         } else if (type instanceof RelationTypeVertex) {
-            return ((RelationTypeVertex) type).getTTL();
+            ttl = ((RelationTypeVertex) type).getTTL();
         } else {
             throw new IllegalArgumentException("given type does not support TTL: " + type.getClass());
         }
+        return new StandardDuration(ttl, TimeUnit.SECONDS);
     }
 
     /**
@@ -818,14 +823,16 @@ public class ManagementSystem implements TitanManagement {
      */
     @Override
     public void setTTL(final TitanSchemaType type,
-                       final int ttl) {
+                       final int ttl, TimeUnit unit) {
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static before setting TTL");
         } else {
             Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
         }
-        Preconditions.checkArgument(ttl > 0, "ttl must be greater than 0 (default = 0 = unlimited)");
-        setTypeModifier(type, ModifierType.TTL, ttl);
+        long ttlSeconds = TimeUnit.SECONDS.convert(ttl,unit);
+        Preconditions.checkArgument(ttlSeconds > 0, "ttl must be greater than 0 (default = 0 = unlimited)");
+        Preconditions.checkArgument(ttlSeconds<=Integer.MAX_VALUE, "tll value is too large [%s - %s] - value overflow",ttl,unit);
+        setTypeModifier(type, ModifierType.TTL, (int)ttlSeconds);
     }
 
     private void setTypeModifier(final TitanSchemaElement element,
@@ -836,7 +843,7 @@ public class ManagementSystem implements TitanManagement {
 
         TypeDefinitionCategory cat = modifierType.getCategory();
         if (cat.hasDataType()) {
-            Preconditions.checkArgument(cat.getDataType().isAssignableFrom(value.getClass()), "modifier value is not of expected type " + cat.getDataType());
+            Preconditions.checkArgument(cat.getDataType().equals(value.getClass()), "modifier value is not of expected type " + cat.getDataType());
         }
 
         TitanSchemaVertex typeVertex;
@@ -877,8 +884,8 @@ public class ManagementSystem implements TitanManagement {
                 if (existingValue.equals(value)) {
                     return;
                 } else {
-                    v.remove();
                     e.remove();
+                    v.remove();
                 }
             }
         }

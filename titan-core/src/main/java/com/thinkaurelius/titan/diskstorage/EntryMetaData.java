@@ -47,7 +47,6 @@ public enum EntryMetaData {
             case VISIBILITY:
                 return true;
             case TTL:
-                return false;
             case TIMESTAMP:
                 return false;
             default: throw new AssertionError("Unexpected meta data: " + this);

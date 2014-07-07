@@ -25,6 +25,8 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static org.junit.Assert.*;
 
@@ -772,7 +774,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey text = makeKey("text", String.class);
 
         VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(event, 2);
+        mgmt.setTTL(event, 2, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Vertex.class).
                 indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
@@ -831,7 +833,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey time = makeKey("time", Long.class);
 
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(label, 2);
+        mgmt.setTTL(label, 2, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Edge.class).
                 indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
