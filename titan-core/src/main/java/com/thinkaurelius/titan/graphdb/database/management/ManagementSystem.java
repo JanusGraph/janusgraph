@@ -545,8 +545,7 @@ public class ManagementSystem implements TitanManagement {
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
                 break;
             case REINDEX:
-                //TODO: implement using Titan-Hadoop
-                break;
+                throw new UnsupportedOperationException(updateAction + " requires a manual step: run a MapReduce reindex on index name \"" + index.getName() + "\"");
             case ENABLE_INDEX:
                 setStatus(schemaVertex,SchemaStatus.ENABLED,keySubset);
                 updatedTypes.add(schemaVertex);
