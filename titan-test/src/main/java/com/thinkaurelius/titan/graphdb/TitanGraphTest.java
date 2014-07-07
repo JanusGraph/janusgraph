@@ -2871,7 +2871,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         recovery.shutdown();
         assertEquals(2, triggerCount.get());
         long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
-        System.out.println(Arrays.toString(recoveryStats));
         assertEquals(3,recoveryStats[0]);
         assertEquals(0,recoveryStats[1]);
     }

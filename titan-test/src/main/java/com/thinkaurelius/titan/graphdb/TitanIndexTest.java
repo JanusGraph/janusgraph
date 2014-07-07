@@ -800,26 +800,30 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         Object v1Id = v1.getId();
         Object v2Id = v2.getId();
 
+
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+        evaluateQuery(graph.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
         v1 = graph.getVertex(v1Id);
         v2 = graph.getVertex(v1Id);
         assertNotNull(v1);
         assertNotNull(v2);
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.VERTEX,
-                1,new boolean[]{true});
-        evaluateQuery(graph.query().has("name",Text.CONTAINS,"event").orderBy(time,Order.DESC),ElementCategory.VERTEX,
-                2,new boolean[]{true}, time, Order.DESC);
+
 
         Thread.sleep(2001);
         graph.rollback();
+
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+        evaluateQuery(graph.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
+
 
         v1 = graph.getVertex(v1Id);
         v2 = graph.getVertex(v2Id);
         assertNull(v1);
         assertNull(v2);
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.VERTEX,
-                0,new boolean[]{true});
-        evaluateQuery(graph.query().has("name",Text.CONTAINS,"event").orderBy(time,Order.DESC),ElementCategory.VERTEX,
-                0,new boolean[]{true}, time, Order.DESC);
     }
 
     @Test
@@ -861,6 +865,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         graph.commit();
 
+
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","likes"),
+                ElementCategory.EDGE,1,new boolean[]{true,true},"index2");
+        evaluateQuery(graph.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
+                ElementCategory.EDGE,1,new boolean[]{true,true}, time, Order.DESC,"index1");
         v1 = graph.getVertex(v1);
         v2 = graph.getVertex(v2);
         v3 = graph.getVertex(v2);
@@ -873,14 +882,17 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertNotNull(e2);
         assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertTrue(v2.getEdges(Direction.OUT).iterator().hasNext());
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.EDGE,
-                1,new boolean[]{true});
-        evaluateQuery(graph.query().has("name",Text.CONTAINS,"likes").orderBy(time,Order.DESC),ElementCategory.EDGE,
-                2,new boolean[]{true}, time, Order.DESC);
+
 
         Thread.sleep(2001);
 
         graph.rollback();
+
+        // ...indexes have expired
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","likes"),
+                ElementCategory.EDGE,0,new boolean[]{true,true},"index2");
+        evaluateQuery(graph.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
+                ElementCategory.EDGE,0,new boolean[]{true,true}, time, Order.DESC,"index1");
 
         v1 = graph.getVertex(v1);
         v2 = graph.getVertex(v2);
@@ -895,11 +907,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertNull(e2);
         assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(v2.getEdges(Direction.OUT).iterator().hasNext());
-        // ...and also from the indices
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.EDGE,
-                0,new boolean[]{true});
-        evaluateQuery(graph.query().has("name",Text.CONTAINS,"likes").orderBy(time,Order.DESC),ElementCategory.EDGE,
-                0,new boolean[]{true}, time, Order.DESC);
+
     }
 
    /* ==================================================================================

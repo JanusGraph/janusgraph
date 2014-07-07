@@ -34,7 +34,7 @@ public class VertexLabelVertex extends TitanSchemaVertex implements InternalVert
     private Integer ttl = null;
 
     @Override
-    public Integer getTTL() {
+    public int getTTL() {
         if (null == ttl) {
             ttl = TypeUtil.getTTL(this);
         }
