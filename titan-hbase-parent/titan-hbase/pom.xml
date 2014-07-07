@@ -41,23 +41,93 @@
         </dependency>
     </dependencies>
 
+
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-hbase-core</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-hbase-core</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>javadoc</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-hbase-094</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-hbase-096</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-hbase-098</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>build-hbase-source-and-javdoc-jars</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/assembly/sources-jar.xml</descriptor>
+                                        <descriptor>${project.basedir}/src/assembly/javadoc-jar.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>build-hbase-jar</id>
-                        <phase>prepare-package</phase>
+                        <id>build-hbase-code-jar</id>
+                        <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>titan-hbase-${project.version}</finalName>
                             <attach>true</attach>
+                            <appendAssemblyId>false</appendAssemblyId>
                             <descriptors>
-                                <descriptor>${project.basedir}/hbasejar.xml</descriptor>
+                                <descriptor>${project.basedir}/src/assembly/code-jar.xml</descriptor>
                             </descriptors>
                         </configuration>
                     </execution>
@@ -72,32 +142,18 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-combined-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.basedir}/target/combined-sources</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.parent.basedir}/titan-hbase-core/src/main/java</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>${project.parent.basedir}/titan-hbase-094/src/main/java</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>${project.parent.basedir}/titan-hbase-096/src/main/java</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>${project.parent.basedir}/titan-hbase-098/src/main/java</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
+                        <id>filter-hbase-conf</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>clean-hbase-files</id>
+                        <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -106,41 +162,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>combined-source-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classesDirectory>${project.basedir}/target/combined-sources</classesDirectory>
-                            <classifier>sources</classifier>
-                            <includes>
-                                <include>**/*.java</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>default-jar</id>
                         <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>
 
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>combined-source-javadoc</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <sourcepath>${project.basedir}/target/combined-sources</sourcepath>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>
