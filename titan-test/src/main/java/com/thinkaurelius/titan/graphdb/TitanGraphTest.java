@@ -4038,7 +4038,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Edge e1 = graph.addEdge(null, v1, v2, "likes");
         Edge e2 = graph.addEdge(null, v1, v2, "hasLiked");
         graph.commit();
-        System.out.println("committed");
 
         // read from the edge created in this transaction
         d = e1.getProperty("$ttl");
