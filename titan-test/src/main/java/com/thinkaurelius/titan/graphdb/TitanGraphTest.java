@@ -3988,7 +3988,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSettingTTLOnUnsupportedType() throws Exception {
         if (!features.hasCellTTL()) {
-            return;
+            throw new IllegalArgumentException();
         }
 
         TitanSchemaType type = ImplicitKey.ID;
@@ -3998,7 +3998,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test(expected = IllegalArgumentException.class)
     public void testGetTTLFromUnsupportedType() throws Exception {
         if (!features.hasCellTTL()) {
-            return;
+            throw new IllegalArgumentException();
         }
 
         TitanSchemaType type = ImplicitKey.ID;
@@ -4008,7 +4008,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSettingTTLOnNonStaticVertexLabel() throws Exception {
         if (!features.hasCellTTL()) {
-            return;
+            throw new IllegalArgumentException();
         }
 
         VertexLabel label1 = mgmt.makeVertexLabel("event").make();
