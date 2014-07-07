@@ -2725,6 +2725,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
         tx2.commit();
         close();
+        final long endTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
 
         final ReadMarker startMarker = ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS);
 
@@ -2805,13 +2806,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
                 assertEquals(instanceid,txId.getInstanceId());
                 assertTrue(txId.getTransactionId()>0 && txId.getTransactionId()<100); //Just some reasonable upper bound
-                final long timeDifferenceSeconds = Math.abs(txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS)
-                        -middleTime.getTimestamp(TimeUnit.SECONDS));
-                assertTrue(String.format("tx timestamp %s differs from middle timestamp %s by absolute value %d s > maximum %d s",
-                        txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS),
-                        middleTime.getTimestamp(TimeUnit.SECONDS),
-                        timeDifferenceSeconds, 1),
-                        timeDifferenceSeconds<=1); //Times should be within a second
+                final long txTime = txId.getTransactionTime().sinceEpoch(TimeUnit.MILLISECONDS);
+                assertTrue(String.format("tx timestamp %s not between start %s and end time %s",
+                        txTime,startTime,endTime),
+                        txTime>=startTime && txTime<=endTime); //Times should be within a second
 
                 assertTrue(tx.containsRelationType("knows"));
                 assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
