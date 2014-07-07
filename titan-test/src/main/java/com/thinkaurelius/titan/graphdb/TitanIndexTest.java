@@ -9,6 +9,8 @@ import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
@@ -45,6 +47,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public final boolean supportsNumeric;
     public final boolean supportsText;
 
+    public IndexFeatures indexFeatures;
+
     private static final Logger log =
             LoggerFactory.getLogger(TitanIndexTest.class);
 
@@ -55,6 +59,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     public abstract boolean supportsLuceneStyleQueries();
+
+    @Override
+    public void open(WriteConfiguration config) {
+        super.open(config);
+        indexFeatures = graph.getBackend().getIndexFeatures().get(INDEX);
+    }
 
     @Rule
     public TestName methodName = new TestName();
@@ -765,7 +775,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     @Test
     public void testVertexTTLWithMixedIndices() throws Exception {
-        if (!features.hasCellTTL()) {
+        if (!features.hasCellTTL() || !indexFeatures.supportsDocumentTTL()) {
             return;
         }
 
@@ -784,7 +794,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
         assertEquals(2, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
-        mgmt.commit();
+        finishSchema();
 
         Vertex v1 = tx.addVertex("event");
         v1.setProperty("name", "first event");
@@ -796,39 +806,50 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         v2.setProperty("text", "this text won't match");
         long time2 = time1 + 1;
         v2.setProperty("time", time2);
-        tx.commit();
+
+        time = tx.getPropertyKey("time");
+        evaluateQuery(tx.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+
+
+        clopen();
+
         Object v1Id = v1.getId();
         Object v2Id = v2.getId();
 
-
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","event"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
-        evaluateQuery(graph.query().has("name","first event").orderBy(time,Order.DESC),
+        time = tx.getPropertyKey("time");
+        evaluateQuery(tx.query().has("name","first event").orderBy(time,Order.DESC),
                 ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
-        v1 = graph.getVertex(v1Id);
-        v2 = graph.getVertex(v1Id);
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+
+        v1 = tx.getVertex(v1Id);
+        v2 = tx.getVertex(v1Id);
         assertNotNull(v1);
         assertNotNull(v2);
 
 
         Thread.sleep(2001);
-        graph.rollback();
+        clopen();
+        time = tx.getPropertyKey("time");
 
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","event"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
-        evaluateQuery(graph.query().has("name","first event").orderBy(time,Order.DESC),
-                ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,0,new boolean[]{true,true},"index2");
+        evaluateQuery(tx.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,0,new boolean[]{true,true}, time, Order.DESC,"index1");
 
 
-        v1 = graph.getVertex(v1Id);
-        v2 = graph.getVertex(v2Id);
+        v1 = tx.getVertex(v1Id);
+        v2 = tx.getVertex(v2Id);
         assertNull(v1);
         assertNull(v2);
     }
 
     @Test
     public void testEdgeTTLWithMixedIndices() throws Exception {
-        if (!features.hasCellTTL()) {
+        if (!features.hasCellTTL() || !indexFeatures.supportsDocumentTTL()) {
             return;
         }
 
@@ -846,16 +867,16 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(2, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
-        mgmt.commit();
+        finishSchema();
 
-        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
+        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
 
-        Edge e1 = graph.addEdge(null, v1, v2, "likes");
+        Edge e1 = tx.addEdge(v1, v2, "likes");
         e1.setProperty("name", "v1 likes v2");
         e1.setProperty("text", "this will help to identify the edge");
         long time1 = System.currentTimeMillis();
         e1.setProperty("time", time1);
-        Edge e2 = graph.addEdge(null, v2, v3, "likes");
+        Edge e2 = tx.addEdge(v2, v3, "likes");
         e2.setProperty("name", "v2 likes v3");
         e2.setProperty("text", "this won't match anything");
         long time2 = time1 + 1;
@@ -863,18 +884,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         Object e1Id = e1.getId();
         Object e2Id = e2.getId();
 
-        graph.commit();
+        clopen();
 
-
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","likes"),
+        time = tx.getPropertyKey("time");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","likes"),
                 ElementCategory.EDGE,1,new boolean[]{true,true},"index2");
-        evaluateQuery(graph.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
+        evaluateQuery(tx.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
                 ElementCategory.EDGE,1,new boolean[]{true,true}, time, Order.DESC,"index1");
-        v1 = graph.getVertex(v1);
-        v2 = graph.getVertex(v2);
-        v3 = graph.getVertex(v2);
-        e1 = graph.getEdge(e1Id);
-        e2 = graph.getEdge(e1Id);
+        v1 = tx.getVertex(v1.getID());
+        v2 = tx.getVertex(v2.getID());
+        v3 = tx.getVertex(v3.getID());
+        e1 = tx.getEdge(e1Id);
+        e2 = tx.getEdge(e1Id);
         assertNotNull(v1);
         assertNotNull(v2);
         assertNotNull(v3);
@@ -885,20 +906,20 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
 
         Thread.sleep(2001);
+        clopen();
 
-        graph.rollback();
-
+        time = tx.getPropertyKey("time");
         // ...indexes have expired
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help").has("label","likes"),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","likes"),
                 ElementCategory.EDGE,0,new boolean[]{true,true},"index2");
-        evaluateQuery(graph.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
+        evaluateQuery(tx.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
                 ElementCategory.EDGE,0,new boolean[]{true,true}, time, Order.DESC,"index1");
 
-        v1 = graph.getVertex(v1);
-        v2 = graph.getVertex(v2);
-        v3 = graph.getVertex(v2);
-        e1 = graph.getEdge(e1Id);
-        e2 = graph.getEdge(e1Id);
+        v1 = tx.getVertex(v1.getID());
+        v2 = tx.getVertex(v2.getID());
+        v3 = tx.getVertex(v3.getID());
+        e1 = tx.getEdge(e1Id);
+        e2 = tx.getEdge(e1Id);
         assertNotNull(v1);
         assertNotNull(v2);
         assertNotNull(v3);

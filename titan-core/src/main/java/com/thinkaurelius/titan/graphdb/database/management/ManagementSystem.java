@@ -832,6 +832,7 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public void setTTL(final TitanSchemaType type,
                        final int ttl, TimeUnit unit) {
+        if (!graph.getBackend().getStoreFeatures().hasCellTTL()) throw new UnsupportedOperationException("The storage engine does not support TTL");
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static to allow setting TTL");
         } else {

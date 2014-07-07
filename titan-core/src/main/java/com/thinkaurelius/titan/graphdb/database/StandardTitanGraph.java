@@ -361,17 +361,25 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
      * @return
      */
     public static int getTTL(InternalRelation rel) {
+        assert rel.isNew();
         InternalRelationType baseType = (InternalRelationType) rel.getType();
         assert baseType.getBaseType()==null;
         int ttl = 0;
         Integer ettl = baseType.getTTL();
         if (ettl>0) ttl = ettl;
         for (int i=0;i<rel.getArity();i++) {
-            InternalVertex v = rel.getVertex(i);
-            Integer vttl = ((InternalVertexLabel)v.getVertexLabel()).getTTL();
+            int vttl = getTTL(rel.getVertex(i));
             if (vttl>0 && (vttl<ttl || ttl<=0)) ttl = vttl;
         }
         return ttl;
+    }
+
+    public static int getTTL(InternalVertex v) {
+        assert v.hasId();
+        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.getID())) {
+            assert v.isNew() : "Should not be able to add relations to existing static vertices: " + v;
+            return ((InternalVertexLabel)v.getVertexLabel()).getTTL();
+        } else return 0;
     }
 
     private static class ModificationSummary {
@@ -460,8 +468,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
 
-                int ttl = getTTL(edge);
-
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;
                     for (int pos = 0; pos < edge.getArity(); pos++) {
@@ -473,6 +479,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                                 deletions.add(entry);
                             } else {
                                 Preconditions.checkArgument(edge.isNew());
+                                int ttl = getTTL(edge);
                                 if (ttl > 0) {
                                     entry.setMetaData(EntryMetaData.TTL, ttl);
                                 }

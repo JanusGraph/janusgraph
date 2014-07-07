@@ -25,4 +25,10 @@ public interface IndexInformation {
      */
     public boolean supports(KeyInformation information);
 
+    /**
+     * The features of this index
+     * @return
+     */
+    public IndexFeatures getFeatures();
+
 }

@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
@@ -38,6 +39,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -439,6 +441,19 @@ public class Backend implements LockerProvider {
      */
     public StoreFeatures getStoreFeatures() {
         return storeFeatures;
+    }
+
+    /**
+     * Returns the {@link IndexFeatures} of all configured index backends
+     */
+    public Map<String,IndexFeatures> getIndexFeatures() {
+        return Maps.transformValues(indexes,new Function<IndexProvider, IndexFeatures>() {
+            @Nullable
+            @Override
+            public IndexFeatures apply(@Nullable IndexProvider indexProvider) {
+                return indexProvider.getFeatures();
+            }
+        });
     }
 
     /**

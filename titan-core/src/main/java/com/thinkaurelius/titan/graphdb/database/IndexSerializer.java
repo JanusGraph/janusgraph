@@ -269,10 +269,10 @@ public class IndexSerializer {
     }
 
     private static int getIndexTTL(InternalVertex vertex, PropertyKey... keys) {
-        Integer ttl = ((InternalVertexLabel)vertex.getVertexLabel()).getTTL();
+        int ttl = StandardTitanGraph.getTTL(vertex);
         for (int i=0;i<keys.length;i++) {
             PropertyKey key = keys[i];
-            Integer kttl = ((InternalRelationType)key).getTTL();
+            int kttl = ((InternalRelationType)key).getTTL();
             if (kttl>0 && (kttl<ttl || ttl<=0)) ttl=kttl;
         }
         return ttl;
