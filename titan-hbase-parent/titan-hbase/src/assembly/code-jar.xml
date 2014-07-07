@@ -11,9 +11,9 @@
 	<useProjectArtifact>false</useProjectArtifact>
 	<unpack>true</unpack>
 	<unpackOptions>
-	  <includes>
-	    <include>**/*.class</include>
-	  </includes>
+	  <excludes>
+	    <exclude>META-INF/**</exclude>
+	  </excludes>
 	</unpackOptions>
 	<includes>
 	  <include>com.thinkaurelius.titan:titan-hbase-*</include>
