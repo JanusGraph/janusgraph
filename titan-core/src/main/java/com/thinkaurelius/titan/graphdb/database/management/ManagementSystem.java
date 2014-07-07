@@ -799,6 +799,14 @@ public class ManagementSystem implements TitanManagement {
      */
     @Override
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency) {
+        if (element instanceof RelationType) {
+            RelationTypeVertex rv = (RelationTypeVertex) element;
+            Preconditions.checkArgument(consistency != ConsistencyModifier.FORK || !rv.getMultiplicity().isConstrained(),
+                    "Cannot apply FORK consistency mode to constraint relation type: %s",rv.getName());
+        } else if (element instanceof TitanGraphIndex) {
+            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
+            if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on mixed index: " + element);
+        } else throw new IllegalArgumentException("Cannot change consistency of schema element: " + element);
         setTypeModifier(element, ModifierType.CONSISTENCY, consistency);
     }
 
@@ -825,10 +833,11 @@ public class ManagementSystem implements TitanManagement {
     public void setTTL(final TitanSchemaType type,
                        final int ttl, TimeUnit unit) {
         if (type instanceof VertexLabelVertex) {
-            Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static before setting TTL");
+            Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static to allow setting TTL");
         } else {
             Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
         }
+        Preconditions.checkArgument(type instanceof TitanSchemaVertex);
         long ttlSeconds = TimeUnit.SECONDS.convert(ttl,unit);
         Preconditions.checkArgument(ttlSeconds > 0, "ttl must be greater than 0 (default = 0 = unlimited)");
         Preconditions.checkArgument(ttlSeconds<=Integer.MAX_VALUE, "tll value is too large [%s - %s] - value overflow",ttl,unit);
@@ -848,31 +857,14 @@ public class ManagementSystem implements TitanManagement {
 
         TitanSchemaVertex typeVertex;
 
-        switch (modifierType) {
-            case CONSISTENCY:
-                if (element instanceof RelationType) {
-                    typeVertex = (RelationTypeVertex) element;
-                    Preconditions.checkArgument(value != ConsistencyModifier.FORK || !((RelationTypeVertex) typeVertex).getMultiplicity().isConstrained(),
-                            "Cannot apply FORK consistency mode to constraint relation type: %s",typeVertex.getName());
-                } else if (element instanceof TitanGraphIndex) {
-                    IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
-                    if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
-                    assert index instanceof IndexTypeWrapper;
-                    SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
-                    assert base instanceof TitanSchemaVertex;
-                    typeVertex = (TitanSchemaVertex)base;
-                } else throw new IllegalArgumentException("Cannot change consistency of schema element: "+element);
-                break;
-            case TTL:
-                if (element instanceof TitanSchemaVertex) {
-                    typeVertex = ((TitanSchemaVertex) element);
-                } else {
-                    throw new IllegalArgumentException("can't set TTL of schema element: " + element);
-                }
-                break;
-            default:
-                throw new IllegalStateException("unexpected modifier type: " + modifierType);
-        }
+        if (element instanceof TitanSchemaVertex) {
+            typeVertex = (TitanSchemaVertex)element;
+        } else if (element instanceof TitanGraphIndex) {
+            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
+            assert index instanceof IndexTypeWrapper;
+            SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
+            typeVertex = (TitanSchemaVertex)base;
+        } else throw new IllegalArgumentException("Invalid schema element: " + element);
 
         // remove any pre-existing value for the modifier, or return if an identical value has already been set
         for (TitanEdge e : typeVertex.getEdges(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT)) {
@@ -882,7 +874,7 @@ public class ManagementSystem implements TitanManagement {
             Object existingValue = def.getValue(modifierType.getCategory());
             if (null != existingValue) {
                 if (existingValue.equals(value)) {
-                    return;
+                    return; //Already has the right value, don't need to do anything
                 } else {
                     e.remove();
                     v.remove();
@@ -893,7 +885,6 @@ public class ManagementSystem implements TitanManagement {
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(cat, value);
         TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.TYPE_MODIFIER, null, def);
-
         addSchemaEdge(typeVertex, cVertex, TypeDefinitionCategory.TYPE_MODIFIER, null);
         updatedTypes.add(typeVertex);
     }
