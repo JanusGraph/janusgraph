@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.elasticsearch.common.Preconditions;
 import org.elasticsearch.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, N
 
     private TitanGraph titanGraph;
     private String indexName;
+    private String indexType;
     private boolean atLeastOneValidKey;
     private int keysChecked;
 
@@ -59,7 +61,10 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, N
         Configuration hadoopConf = COMPAT.getContextConfiguration(context);
         BasicConfiguration titanConf = ConfigurationUtil.extractOutputConfiguration(hadoopConf);
         indexName = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_NAME);
-        log.info("Read index name {}", indexName);
+        indexType = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_TYPE);
+        Preconditions.checkNotNull(indexName);
+        //Preconditions.checkNotNull(indexType); // is this true?
+        log.info("Read index information: name={} type={}", indexName, indexType);
         titanGraph = TitanFactory.open(titanConf);
         log.info("Opened graph {}", titanGraph);
         validateIndexStatus();
@@ -106,6 +111,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, N
     private void validateIndexStatus() {
         TitanManagement m = titanGraph.getManagementSystem();
         TitanGraphIndex idx = m.getGraphIndex(indexName);
+        m.containsRelationType(indexType);
         if (null != idx) {
             log.info("Found index {}", indexName);
             for (PropertyKey key : idx.getFieldKeys()) {

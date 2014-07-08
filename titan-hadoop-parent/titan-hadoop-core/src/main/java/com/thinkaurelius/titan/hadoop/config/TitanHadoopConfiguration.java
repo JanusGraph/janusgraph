@@ -86,11 +86,16 @@ public class TitanHadoopConfiguration {
             ConfigOption.Type.LOCAL, String.class);
 
     public static final ConfigNamespace INDEX_NS =
-            new ConfigNamespace(TRUNK_NS, "index", "Titan-Hadoop index repair configuration");
+            new ConfigNamespace(TRUNK_NS, "reindex", "Titan-Hadoop index repair configuration");
 
     public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(
             INDEX_NS, "name",
             "The name of a Titan index to build or repair.  The index must already be enabled or installed.",
+            ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigOption<String> INDEX_TYPE = new ConfigOption<String>(
+            INDEX_NS, "type",
+            "The relationtype of a Titan index to build or repair.  The index must already be enabled or installed.",
             ConfigOption.Type.LOCAL, String.class);
 
 }
