@@ -39,7 +39,11 @@ public class TTLKVCSManager extends KCVSManagerProxy {
     }
 
     public static boolean supportsStoreTTL(KeyColumnValueStoreManager manager) {
-        return manager.getFeatures().hasCellTTL() || manager.getFeatures().hasStoreTTL();
+        return supportsStoreTTL(manager.getFeatures());
+    }
+
+    public static boolean supportsStoreTTL(StoreFeatures features) {
+        return features.hasCellTTL() || features.hasStoreTTL();
     }
 
     public synchronized void setTTL(String storeName, int ttl) {

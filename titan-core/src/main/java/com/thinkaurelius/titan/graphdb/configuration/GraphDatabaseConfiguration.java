@@ -5,6 +5,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVS;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
@@ -816,7 +818,7 @@ public class GraphDatabaseConfiguration {
     public static final String TRANSACTION_LOG = "tx";
     public static final String TRIGGER_LOG = "trigger";
 
-    public static final StandardDuration TRANSACTION_LOG_DEFAULT_TTL = new StandardDuration(2,TimeUnit.DAYS);
+    public static final StandardDuration TRANSACTION_LOG_DEFAULT_TTL = new StandardDuration(7,TimeUnit.DAYS);
 
     public static final ConfigOption<String> LOG_BACKEND = new ConfigOption<String>(LOG_NS,"backend",
             "Define the log backed to use",
@@ -1248,6 +1250,7 @@ public class GraphDatabaseConfiguration {
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
+        final StoreFeatures storeFeatures = storeManager.getFeatures();
         KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager,localbc);
         ReadConfiguration globalConfig=null;
 
@@ -1277,8 +1280,7 @@ public class GraphDatabaseConfiguration {
 
                 // If partitioning is unspecified, specify it now
                 if (!localbc.has(CLUSTER_PARTITION)) {
-                    StoreFeatures f = storeManager.getFeatures();
-                    boolean part = f.isDistributed() && f.isKeyOrdered();
+                    boolean part = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
                     globalWrite.set(CLUSTER_PARTITION, part);
                     log.info("Enabled partitioning", part);
                 } else {
@@ -1311,7 +1313,7 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
         overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE,TRANSACTION_LOG);
-        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG)) {
+        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKVCSManager.supportsStoreTTL(storeFeatures)) {
             overwrite.set(LOG_STORE_TTL,TRANSACTION_LOG_DEFAULT_TTL,TRANSACTION_LOG);
         }
         //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true
