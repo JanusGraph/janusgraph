@@ -72,6 +72,7 @@ import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.util.encoding.ConversionHelper;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
@@ -839,10 +840,7 @@ public class ManagementSystem implements TitanManagement {
             Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
         }
         Preconditions.checkArgument(type instanceof TitanSchemaVertex);
-        long ttlSeconds = TimeUnit.SECONDS.convert(ttl,unit);
-        Preconditions.checkArgument(ttlSeconds > 0, "ttl must be greater than 0 (default = 0 = unlimited)");
-        Preconditions.checkArgument(ttlSeconds<=Integer.MAX_VALUE, "tll value is too large [%s - %s] - value overflow",ttl,unit);
-        setTypeModifier(type, ModifierType.TTL, (int)ttlSeconds);
+        setTypeModifier(type, ModifierType.TTL, ConversionHelper.getTTLSeconds(ttl,unit));
     }
 
     private void setTypeModifier(final TitanSchemaElement element,

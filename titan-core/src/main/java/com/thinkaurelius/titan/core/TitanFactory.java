@@ -139,12 +139,13 @@ public class TitanFactory {
     }
 
     /**
-     * Returns a {@link com.thinkaurelius.titan.core.log.LogProcessorFramework} for processing triggers against the provided graph instance.
+     * Returns a {@link com.thinkaurelius.titan.core.log.LogProcessorFramework} for processing transaction log entries
+     * against the provided graph instance.
      *
      * @param graph
      * @return
      */
-    public static LogProcessorFramework openTriggers(TitanGraph graph) {
+    public static LogProcessorFramework openTransactionLog(TitanGraph graph) {
         return new StandardLogProcessorFramework((StandardTitanGraph)graph);
     }
 

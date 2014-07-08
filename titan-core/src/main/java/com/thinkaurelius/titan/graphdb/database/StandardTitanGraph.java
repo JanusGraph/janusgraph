@@ -52,7 +52,6 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
-import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 
@@ -642,7 +641,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
                         if (logTxIdentifier!=null) {
                             try {
-                                final Log triggerLog = backend.getTriggerLog(logTxIdentifier);
+                                final Log triggerLog = backend.getUserLog(logTxIdentifier);
                                 Future<Message> env = triggerLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {
                                     try {

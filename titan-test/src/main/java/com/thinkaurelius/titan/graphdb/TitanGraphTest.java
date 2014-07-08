@@ -25,21 +25,16 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
@@ -62,7 +57,6 @@ import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
-import com.thinkaurelius.titan.graphdb.types.system.EmptyRelationType;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -2812,7 +2806,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Use trigger framework
          */
         final AtomicInteger triggerCount = new AtomicInteger(0);
-        LogProcessorFramework triggers = TitanFactory.openTriggers(TitanFactory.open(config));
+        LogProcessorFramework triggers = TitanFactory.openTransactionLog(TitanFactory.open(config));
         triggers.addLogProcessor(triggerName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
         .addProcessor(new ChangeProcessor() {
             @Override

@@ -24,7 +24,6 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
-import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -81,7 +80,7 @@ public class Backend implements LockerProvider {
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
     public static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
-    public static final String TRIGGER_LOG_PREFIX = "ulog_";
+    public static final String USER_LOG_PREFIX = "ulog_";
 
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
@@ -108,7 +107,7 @@ public class Backend implements LockerProvider {
 
     private final KCVSLogManager mgmtLogManager;
     private final KCVSLogManager txLogManager;
-    private final LogManager triggerLogManager;
+    private final LogManager userLogManager;
 
 
     private final Map<String, IndexProvider> indexes;
@@ -135,7 +134,7 @@ public class Backend implements LockerProvider {
 
         mgmtLogManager = getKCVSLogManager(MANAGEMENT_LOG);
         txLogManager = getKCVSLogManager(TRANSACTION_LOG);
-        triggerLogManager = getLogManager(TRIGGER_LOG);
+        userLogManager = getLogManager(TRIGGER_LOG);
 
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
@@ -315,13 +314,13 @@ public class Backend implements LockerProvider {
 
     }
 
-    public Log getTriggerLog(String identifier) throws BackendException {
-        return triggerLogManager.openLog(getTriggerLogName(identifier));
+    public Log getUserLog(String identifier) throws BackendException {
+        return userLogManager.openLog(getUserLogName(identifier));
     }
 
-    public static final String getTriggerLogName(String identifier) {
+    public static final String getUserLogName(String identifier) {
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
-        return TRIGGER_LOG_PREFIX +identifier;
+        return USER_LOG_PREFIX +identifier;
     }
 
     public KCVSConfiguration getGlobalSystemConfig() {
@@ -483,7 +482,7 @@ public class Backend implements LockerProvider {
     public void close() throws BackendException {
         mgmtLogManager.close();
         txLogManager.close();
-        triggerLogManager.close();
+        userLogManager.close();
 
         edgeStore.close();
         indexStore.close();
@@ -507,7 +506,7 @@ public class Backend implements LockerProvider {
     public void clearStorage() throws BackendException {
         mgmtLogManager.close();
         txLogManager.close();
-        triggerLogManager.close();
+        userLogManager.close();
 
         edgeStore.close();
         indexStore.close();

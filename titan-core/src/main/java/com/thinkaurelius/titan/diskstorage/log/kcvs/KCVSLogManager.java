@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
@@ -14,6 +15,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+import com.thinkaurelius.titan.util.encoding.ConversionHelper;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,9 +105,17 @@ public class KCVSLogManager implements LogManager {
      * @param config
      * @param readPartitionIds
      */
-    public KCVSLogManager(final KeyColumnValueStoreManager storeManager, final Configuration config,
+    public KCVSLogManager(KeyColumnValueStoreManager storeManager, final Configuration config,
                           final int[] readPartitionIds) {
         Preconditions.checkArgument(storeManager!=null && config!=null);
+        if (config.has(LOG_STORE_TTL)) {
+            if (TTLKVCSManager.supportsStoreTTL(storeManager)) {
+                storeManager = new TTLKVCSManager(storeManager, ConversionHelper.getTTLSeconds(config.get(LOG_STORE_TTL)));
+            } else {
+                log.warn("Log is configured with TTL but underlying storage backend does not support TTL, hence this" +
+                        "configuration option is ignored and entries must be manually removed from the backend.");
+            }
+        }
         this.storeManager = storeManager;
         this.configuration = config;
         openLogs = new HashMap<String, KCVSLog>();
