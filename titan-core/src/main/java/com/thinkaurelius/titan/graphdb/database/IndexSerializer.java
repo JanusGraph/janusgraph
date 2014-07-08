@@ -223,8 +223,9 @@ public class IndexSerializer {
     }
 
     private static boolean indexAppliesTo(IndexType index, TitanElement element) {
-        return index.getElement().isInstance(element) && (
-                        !index.hasSchemaTypeConstraint() ||
+        return index.getElement().isInstance(element) &&
+                (!(index instanceof CompositeIndexType) || ((CompositeIndexType)index).getStatus()!=SchemaStatus.DISABLED) &&
+                (!index.hasSchemaTypeConstraint() ||
                         index.getElement().matchesConstraint(index.getSchemaTypeConstraint(),element));
     }
 
@@ -239,7 +240,6 @@ public class IndexSerializer {
                 if (!indexAppliesTo(index,relation)) continue;
                 if (index instanceof CompositeIndexType) {
                     CompositeIndexType iIndex= (CompositeIndexType) index;
-                    if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
                     RecordEntry[] record = indexMatch(relation, iIndex);
                     if (record==null) continue;
                     updates.add(new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,relation), relation));
@@ -265,11 +265,10 @@ public class IndexSerializer {
             for (IndexType index : ((InternalRelationType)p.getPropertyKey()).getKeyIndexes()) {
                 if (!indexAppliesTo(index,vertex)) continue;
                 if (index.isCompositeIndex()) { //Gather composite indexes
-                    CompositeIndexType iIndex = (CompositeIndexType)index;
-                    if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
-                    IndexRecords updateRecords = indexMatches(vertex,iIndex,updateType==IndexUpdate.Type.DELETE,p.getPropertyKey(),new RecordEntry(p.getID(),p.getValue()));
+                    CompositeIndexType cIndex = (CompositeIndexType)index;
+                    IndexRecords updateRecords = indexMatches(vertex,cIndex,updateType==IndexUpdate.Type.DELETE,p.getPropertyKey(),new RecordEntry(p.getID(),p.getValue()));
                     for (RecordEntry[] record : updateRecords) {
-                        updates.add(new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,vertex), vertex));
+                        updates.add(new IndexUpdate<StaticBuffer,Entry>(cIndex,updateType,getIndexKey(cIndex,record),getIndexEntry(cIndex,record,vertex), vertex));
                     }
                 } else { //Update mixed indexes
                     if (((MixedIndexType)index).getField(p.getPropertyKey()).getStatus()== SchemaStatus.DISABLED) continue;
@@ -285,14 +284,50 @@ public class IndexSerializer {
         return new IndexUpdate<String,IndexEntry>(index,updateType,element2String(element),new IndexEntry(key2Field(index.getField(key)), value), element);
     }
 
-    public static RecordEntry[] indexMatch(TitanRelation element, CompositeIndexType index) {
+    public void reindexElement(TitanElement element, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
+        if (!indexAppliesTo(index,element)) return;
+        List<IndexEntry> entries = Lists.newArrayList();
+        for (ParameterIndexField field: index.getFieldKeys()) {
+            PropertyKey key = field.getFieldKey();
+            if (field.getStatus()==SchemaStatus.DISABLED) continue;
+            Object value = element.getProperty(key);
+            if (value!=null) {
+                entries.add(new IndexEntry(key2Field(field), value));
+            }
+        }
+        Map<String,List<IndexEntry>> documents = documentsPerStore.get(index.getStoreName());
+        if (documents==null) {
+            documents = Maps.newHashMap();
+            documentsPerStore.put(index.getStoreName(),documents);
+        }
+        documents.put(element2String(element),entries);
+    }
+
+    public Set<IndexUpdate<StaticBuffer,Entry>> reindexElement(TitanElement element, CompositeIndexType index) {
+        Set<IndexUpdate<StaticBuffer,Entry>> indexEntries = Sets.newHashSet();
+        if (!indexAppliesTo(index,element)) return indexEntries;
+        Iterable<RecordEntry[]> records;
+        if (element instanceof TitanVertex) records = indexMatches((TitanVertex)element,index);
+        else {
+            assert element instanceof TitanRelation;
+            records = Collections.EMPTY_LIST;
+            RecordEntry[] record = indexMatch((TitanRelation)element,index);
+            if (record!=null) records = ImmutableList.of(record);
+        }
+        for (RecordEntry[] record : records) {
+            indexEntries.add(new IndexUpdate<StaticBuffer,Entry>(index, IndexUpdate.Type.ADD,getIndexKey(index,record),getIndexEntry(index,record,element), element));
+        }
+        return indexEntries;
+    }
+
+    public static RecordEntry[] indexMatch(TitanRelation relation, CompositeIndexType index) {
         IndexField[] fields = index.getFieldKeys();
         RecordEntry[] match = new RecordEntry[fields.length];
         for (int i = 0; i <fields.length; i++) {
             IndexField f = fields[i];
-            Object value = element.getProperty(f.getFieldKey());
+            Object value = relation.getProperty(f.getFieldKey());
             if (value==null) return null; //No match
-            match[i] = new RecordEntry(element.getID(),value);
+            match[i] = new RecordEntry(relation.getID(),value);
         }
         return match;
     }
@@ -332,6 +367,10 @@ public class IndexSerializer {
             this.relationId = relationId;
             this.value = value;
         }
+    }
+
+    public static IndexRecords indexMatches(TitanVertex vertex, CompositeIndexType index) {
+        return indexMatches(vertex,index,null,null);
     }
 
     public static IndexRecords indexMatches(TitanVertex vertex, CompositeIndexType index,

@@ -295,6 +295,10 @@ public class Backend implements LockerProvider {
         copy.putAll(indexes);
         return copy.build();
     }
+//
+//    public IndexProvider getIndexProvider(String name) {
+//        return indexes.get(name);
+//    }
 
     public KCVSLog getSystemTxLog() {
         try {

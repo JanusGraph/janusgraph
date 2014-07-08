@@ -176,7 +176,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
             "The version of Titan with which this database was created.  Don't manually set this property.",
-            ConfigOption.Type.FIXED, String.class);
+            ConfigOption.Type.FIXED, String.class).hide();
 
     // ################ INSTANCE REGISTRATION #######################
     // ##############################################################
@@ -185,7 +185,7 @@ public class GraphDatabaseConfiguration {
             "This is used internally to keep track of open instances.",true);
 
     public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
-            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class);
+            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class).hide();
 
     // ################ CACHE #######################
     // ################################################
