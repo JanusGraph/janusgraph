@@ -3641,7 +3641,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         int ttl1 = 1;
-        int ttl2 = 2;
+        int ttl2 = 4;
         mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
         EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
         mgmt.setTTL(label2, ttl2, TimeUnit.SECONDS);
