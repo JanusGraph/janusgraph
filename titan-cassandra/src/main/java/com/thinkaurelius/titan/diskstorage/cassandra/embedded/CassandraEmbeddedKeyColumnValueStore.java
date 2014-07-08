@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStore;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
@@ -40,25 +41,22 @@ import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
-public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore {
+public class CassandraEmbeddedKeyColumnValueStore extends AbstractCassandraStore {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraEmbeddedKeyColumnValueStore.class);
 
-    private final String keyspace;
-    private final String columnFamily;
-    private final CassandraEmbeddedStoreManager storeManager;
     private final TimestampProvider times;
     private final CassandraEmbeddedGetter entryGetter;
 
     public CassandraEmbeddedKeyColumnValueStore(
             String keyspace,
             String columnFamily,
-            CassandraEmbeddedStoreManager storeManager) throws RuntimeException {
-        this.keyspace = keyspace;
-        this.columnFamily = columnFamily;
-        this.storeManager = storeManager;
+            CassandraEmbeddedStoreManager storeManager,
+            int ttlInSeconds) throws RuntimeException {
+        super(keyspace, columnFamily, storeManager, ttlInSeconds);
+
         this.times = this.storeManager.getTimestampProvider();
-        entryGetter = new CassandraEmbeddedGetter(storeManager.getMetaDataSchema(columnFamily),times);
+        this.entryGetter = new CassandraEmbeddedGetter(storeManager.getMetaDataSchema(columnFamily),times);
     }
 
     @Override
@@ -125,10 +123,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         List<Row> rows;
 
         try {
-            CFMetaData cfm = Schema.instance.getCFMetaData(keyspace, columnFamily);
+            CFMetaData cfm = Schema.instance.getCFMetaData(keyspace, columnFamilyName);
             IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, cfm, null);
 
-            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, nowMillis, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
+            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamilyName, nowMillis, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
 
             rows = StorageProxy.getRangeSlice(cmd, ConsistencyLevel.QUORUM);
         } catch (Exception e) {
@@ -136,11 +134,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
 
         return rows;
-    }
-
-    @Override
-    public String getName() {
-        return columnFamily;
     }
 
     @Override
@@ -156,7 +149,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
          */
         final long nowMillis = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
         SliceQueryFilter sqf = new SliceQueryFilter(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, query.getLimit() + (query.hasLimit()?1:0));
-        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamily, nowMillis, sqf);
+        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamilyName, nowMillis, sqf);
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
 
@@ -177,7 +170,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         ColumnFamily cf = r.cf;
 
         if (null == cf) {
-            log.debug("null ColumnFamily (\"{}\")", columnFamily);
+            log.debug("null ColumnFamily (\"{}\")", columnFamilyName);
             return EntryList.EMPTY_LIST;
         }
 
@@ -222,7 +215,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     public void mutateMany(Map<StaticBuffer, KCVMutation> mutations,
                            StoreTransaction txh) throws BackendException {
-        storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
+        storeManager.mutateMany(ImmutableMap.of(columnFamilyName, mutations), txh);
     }
 
     private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {

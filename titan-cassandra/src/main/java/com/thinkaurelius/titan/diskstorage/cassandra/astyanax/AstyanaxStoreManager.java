@@ -298,13 +298,18 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public synchronized AstyanaxKeyColumnValueStore openDatabase(String name) throws BackendException {
-        if (openStores.containsKey(name)) return openStores.get(name);
-        else {
-            ensureColumnFamilyExists(name);
-            AstyanaxKeyColumnValueStore store = new AstyanaxKeyColumnValueStore(name, keyspaceContext.getClient(), this, retryPolicy);
-            openStores.put(name, store);
-            return store;
-        }
+        return openDatabase(name, -1);
+    }
+
+    @Override
+    public synchronized AstyanaxKeyColumnValueStore openDatabase(String name, int ttlInSeconds) throws BackendException {
+        if (openStores.containsKey(name))
+            return openStores.get(name);
+
+        ensureColumnFamilyExists(name);
+        AstyanaxKeyColumnValueStore store = new AstyanaxKeyColumnValueStore(name, keyspaceContext.getClient(), this, retryPolicy, ttlInSeconds);
+        openStores.put(name, store);
+        return store;
     }
 
     @Override
@@ -319,7 +324,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             String storeName = batchentry.getKey();
             Preconditions.checkArgument(openStores.containsKey(storeName), "Store cannot be found: " + storeName);
 
-            ColumnFamily<ByteBuffer, ByteBuffer> columnFamily = openStores.get(storeName).getColumnFamily();
+            AstyanaxKeyColumnValueStore store = openStores.get(storeName);
+            ColumnFamily<ByteBuffer, ByteBuffer> columnFamily = store.getColumnFamily();
 
             Map<StaticBuffer, KCVMutation> mutations = batchentry.getValue();
             for (Map.Entry<StaticBuffer, KCVMutation> ent : mutations.entrySet()) {
@@ -344,7 +350,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                     for (Entry e : titanMutation.getAdditions()) {
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
 
-                        if (null != ttl && ttl > 0) {
+                        if (ttl == null || ttl <= 0)
+                            ttl = store.getTTL();
+
+                        if (ttl > 0) {
                             upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), ttl);
                         } else {
                             upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));

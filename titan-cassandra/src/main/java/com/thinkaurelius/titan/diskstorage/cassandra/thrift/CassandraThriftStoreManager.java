@@ -139,13 +139,15 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation
         int size = 0;
-        for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
-        Map<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>> batch =
-                new HashMap<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>>(size);
+        for (Map<StaticBuffer, KCVMutation> mutation : mutations.values())
+            size += mutation.size();
 
+        Map<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>> batch = new HashMap<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>>(size);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> keyMutation : mutations.entrySet()) {
             String columnFamily = keyMutation.getKey();
+            int globalTTL = openStores.get(columnFamily).getTTL();
+
             for (Map.Entry<StaticBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
                 ByteBuffer keyBB = mutEntry.getKey().asByteBuffer();
 
@@ -182,9 +184,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         column.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
 
                         Integer ttl = (Integer) ent.getMetaData().get(EntryMetaData.TTL);
-                        if (null != ttl && ttl > 0) {
+                        if (ttl == null || ttl <= 0)
+                            ttl = globalTTL;
+
+                        if (ttl > 0)
                             column.setTtl(ttl);
-                        }
 
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
@@ -215,14 +219,19 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         sleepAfterWrite(txh, commitTime);
     }
 
-    @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
+    @Override
     public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name) throws BackendException {
+        return openDatabase(name, -1);
+    }
+
+    @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
+    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name, int ttlInSeconds) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 
         ensureColumnFamilyExists(keySpaceName, name);
 
-        CassandraThriftKeyColumnValueStore store = new CassandraThriftKeyColumnValueStore(keySpaceName, name, this, pool);
+        CassandraThriftKeyColumnValueStore store = new CassandraThriftKeyColumnValueStore(keySpaceName, name, this, pool, ttlInSeconds);
         openStores.put(name, store);
         return store;
     }

@@ -972,7 +972,43 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         Assert.assertEquals(ttls.length - 2, result.size());
     }
 
+    @Test
+    public void testStoreTTL() throws Exception {
+        if (!manager.getFeatures().hasStoreTTL())
+            return;
+
+        // 5 seconds TTL on every column
+        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) manager).openDatabase("testStore_with_TTL", 3);
+
+        populateDBWith100Keys(storeWithTTL);
+
+        tx.commit();
+        tx = startTx();
+
+        final StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(2);
+
+        StaticBuffer start = KeyColumnValueStoreUtil.stringToByteBuffer("a");
+        StaticBuffer end = KeyColumnValueStoreUtil.stringToByteBuffer("d");
+
+        EntryList results = storeWithTTL.getSlice(new KeySliceQuery(key, new SliceQuery(start, end)), tx);
+        Assert.assertEquals(3, results.size());
+
+        Thread.sleep(4000); // let's sleep for 4 seconds
+
+        tx.commit();
+        tx = startTx();
+
+        results = storeWithTTL.getSlice(new KeySliceQuery(key, new SliceQuery(start, end)), tx);
+        Assert.assertEquals(0, results.size()); // should be empty if TTL was applied properly
+
+        storeWithTTL.close();
+    }
+
     protected void populateDBWith100Keys() throws Exception {
+        populateDBWith100Keys(store);
+    }
+
+    protected void populateDBWith100Keys(KeyColumnValueStore store) throws Exception {
         Random random = new Random();
 
         for (int i = 1; i <= 100; i++) {

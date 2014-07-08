@@ -12,6 +12,7 @@ import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStore;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
@@ -25,28 +26,28 @@ import java.util.*;
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
-public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
+public class AstyanaxKeyColumnValueStore extends AbstractCassandraStore {
 
     private final Keyspace keyspace;
-    private final String columnFamilyName;
     private final ColumnFamily<ByteBuffer, ByteBuffer> columnFamily;
     private final RetryPolicy retryPolicy;
-    private final AstyanaxStoreManager storeManager;
+
     private final AstyanaxGetter entryGetter;
 
     AstyanaxKeyColumnValueStore(String columnFamilyName,
                                 Keyspace keyspace,
                                 AstyanaxStoreManager storeManager,
-                                RetryPolicy retryPolicy) {
+                                RetryPolicy retryPolicy,
+                                int ttlInSeconds) {
+        super(keyspace.getKeyspaceName(), columnFamilyName, storeManager, ttlInSeconds);
+
         this.keyspace = keyspace;
-        this.columnFamilyName = columnFamilyName;
         this.retryPolicy = retryPolicy;
-        this.storeManager = storeManager;
 
         entryGetter = new AstyanaxGetter(storeManager.getMetaDataSchema(columnFamilyName));
 
         columnFamily = new ColumnFamily<ByteBuffer, ByteBuffer>(
-                this.columnFamilyName,
+                columnFamilyName,
                 ByteBufferSerializer.get(),
                 ByteBufferSerializer.get());
 
@@ -250,11 +251,6 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         Iterator<Row<ByteBuffer, ByteBuffer>> i =
                 Iterators.filter(r.iterator(), new KeySkipPredicate(query.getKeyEnd().asByteBuffer()));
         return new RowIterator(i, query);
-    }
-
-    @Override
-    public String getName() {
-        return columnFamilyName;
     }
 
     private static class KeyIterationPredicate implements Predicate<Row<ByteBuffer, ByteBuffer>> {
