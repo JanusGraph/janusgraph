@@ -45,6 +45,8 @@ import java.util.Map;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler {
+// TODO tolerate null temporary SequenceFile path when only running a single job, like Hadoop2Compiler already does
+
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
@@ -243,8 +245,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
-        final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
-        hdfs.mkdirs(this.graph.getOutputLocation());
+        final String outputJobPrefix = this.graph.getTemporarySeqFileLocation().toString() + "/" + Tokens.JOB;
+        hdfs.mkdirs(this.graph.getTemporarySeqFileLocation());
 
         //////// CHAINING JOBS TOGETHER
 
@@ -291,8 +293,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
         }
 
         final FileSystem hdfs = FileSystem.get(this.getConf());
-        if (this.graph.getOutputLocationOverwrite() && hdfs.exists(this.graph.getOutputLocation())) {
-            hdfs.delete(this.graph.getOutputLocation(), true);
+        if (this.graph.getTemporarySeqFileOverwrite() && hdfs.exists(this.graph.getTemporarySeqFileLocation())) {
+            hdfs.delete(this.graph.getTemporarySeqFileLocation(), true);
         }
 
         if (showHeader) {
@@ -316,7 +318,7 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-        final String jobPath = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
+        final String jobPath = this.graph.getTemporarySeqFileLocation().toString() + "/" + Tokens.JOB;
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             try {
