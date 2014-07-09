@@ -177,6 +177,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     .put(INDEXSTORE_NAME + LOCK_STORE_SUFFIX, "w")
                     .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "t")
                     .put(SYSTEM_PROPERTIES_STORE_NAME, "c")
+                    .put(SYSTEM_PROPERTIES_STORE_NAME + LOCK_STORE_SUFFIX, "d")
+                    .put(SYSTEM_MGMT_LOG_NAME, "m")
+                    .put(SYSTEM_TX_LOG_NAME, "l")
                     .build();
 
     private static final StaticBuffer FOUR_ZERO_BYTES = BufferUtil.zeroBuffer(4);
