@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.hadoop.HadoopEdge;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.HadoopProperty;
@@ -12,6 +13,7 @@ import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
@@ -87,10 +89,16 @@ public class TitanGraphOutputMapReduce {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean("mapred.map.tasks.speculative.execution", false);
         configuration.setBoolean("mapred.reduce.tasks.speculative.execution", false);
-        configuration.set("titan.hadoop.input.storage.backend", "embeddedcassandra");
-        configuration.set("titan.hadoop.output.storage.backend", "embeddedcassandra");
-        configuration.set("titan.hadoop.output.storage.conf-file", TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
-        configuration.set("titan.hadoop.output.cache.db-cache", "false");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS)  + ".storage.backend", "embeddedcassandra");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".storage.backend", "embeddedcassandra");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".storage.conf-file", TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".storage.buffer-size", String.valueOf(Integer.MAX_VALUE));
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".ids.authority.wait-time", "600");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".ids.renew-percentage", "0.5");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".storage.lock-wait-time",  "300");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".storage.lock-retries",  "10");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".storage.connection-pool-size",  "1");
+        configuration.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".cache.db-cache", "false");
         return configuration;
     }
 

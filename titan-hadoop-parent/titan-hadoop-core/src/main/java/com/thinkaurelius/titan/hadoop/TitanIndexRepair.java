@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.formats.titan.TitanGraphOutputMapReduce;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraInputFormat;
 
 public class TitanIndexRepair {
@@ -34,7 +35,7 @@ public class TitanIndexRepair {
     }
 
     public static void cassandraRepair(String titanPropertiesPath, String indexName, String indexType, String partitioner) throws Exception {
-        Configuration hadoopConfig = new Configuration();
+        Configuration hadoopConfig = TitanGraphOutputMapReduce.createConfiguration();
 
         hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_FORMAT), TitanCassandraInputFormat.class.getCanonicalName());
         ConfigHelper.setInputPartitioner(hadoopConfig, partitioner);
