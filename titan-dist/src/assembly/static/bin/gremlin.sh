@@ -33,9 +33,9 @@ else
 fi
 
 # Set default message threshold for Log4j Gremlin's console appender
-if [ -z "${GREMLIN_LOG_LEVEL:-}" -o "${GREMLIN_HADOOP_LOG_LEVEL:-}" ]; then
+if [ -z "${GREMLIN_LOG_LEVEL:-}" -o "${GREMLIN_MR_LOG_LEVEL:-}" ]; then
     GREMLIN_LOG_LEVEL=WARN
-    GREMLIN_HADOOP_LOG_LEVEL=INFO
+    GREMLIN_MR_LOG_LEVEL=INFO
 fi
 
 # Script debugging is disabled by default, but can be enabled with -l
@@ -64,7 +64,7 @@ while getopts "eilv" opt; do
        shift $(( $OPTIND - 1 ))
        break;;
     l) eval GREMLIN_LOG_LEVEL=\$$OPTIND
-       GREMLIN_HADOOP_LOG_LEVEL="$GREMLIN_LOG_LEVEL"
+       GREMLIN_MR_LOG_LEVEL="$GREMLIN_LOG_LEVEL"
        OPTIND="$(( $OPTIND + 1 ))"
        if [ "$GREMLIN_LOG_LEVEL" = "TRACE" -o \
             "$GREMLIN_LOG_LEVEL" = "DEBUG" ]; then
@@ -78,7 +78,7 @@ done
 if [ -z "${JAVA_OPTIONS:-}" ]; then
     JAVA_OPTIONS="-Dlog4j.configuration=log4j-gremlin.properties"
     JAVA_OPTIONS="$JAVA_OPTIONS -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL"
-    JAVA_OPTIONS="$JAVA_OPTIONS -Dgremlin.hadoop.log4j.level=$GREMLIN_HADOOP_LOG_LEVEL"
+    JAVA_OPTIONS="$JAVA_OPTIONS -Dgremlin.mr.log4j.level=$GREMLIN_MR_LOG_LEVEL"
 fi
 
 if [ -n "$SCRIPT_DEBUG" ]; then
