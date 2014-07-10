@@ -10,7 +10,10 @@ import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
@@ -23,7 +26,7 @@ import org.apache.cassandra.dht.Token;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @PreInitializeConfigOptions
-public abstract class AbstractCassandraStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager, CustomizeStoreKCVSManager {
+public abstract class AbstractCassandraStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
 
     public enum Partitioner {
 
@@ -231,7 +234,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
 
             fb.batchMutation(true).distributed(true);
-            fb.timestamps(true).cellTTL(true).storeTTL(true);
+            fb.timestamps(true).cellTTL(true);
             fb.keyConsistent(global, local);
 
             boolean keyOrdered;

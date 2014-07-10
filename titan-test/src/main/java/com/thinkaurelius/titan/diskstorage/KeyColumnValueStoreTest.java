@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import org.junit.*;
@@ -974,11 +975,18 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Test
     public void testStoreTTL() throws Exception {
-        if (!manager.getFeatures().hasStoreTTL())
+        KeyColumnValueStoreManager storeManager = manager;
+        if (storeManager.getFeatures().hasCellTTL()) {
+            storeManager = new TTLKVCSManager(storeManager,101);
+        } else if (!storeManager.getFeatures().hasStoreTTL()) {
             return;
+        }
+
+        assertTrue(storeManager.getFeatures().hasStoreTTL());
+        assertTrue(storeManager instanceof CustomizeStoreKCVSManager);
 
         // 5 seconds TTL on every column
-        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) manager).openDatabase("testStore_with_TTL", 3);
+        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) storeManager).openDatabase("testStore_with_TTL", 3);
 
         populateDBWith100Keys(storeWithTTL);
 

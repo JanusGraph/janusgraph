@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStore;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
@@ -36,7 +35,7 @@ import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction
  * @author Dan LaRocque <dalaro@hopcount.org>
  * @see CassandraThriftStoreManager
  */
-public class CassandraThriftKeyColumnValueStore extends AbstractCassandraStore {
+public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger logger =
             LoggerFactory.getLogger(CassandraThriftKeyColumnValueStore.class);
@@ -44,16 +43,17 @@ public class CassandraThriftKeyColumnValueStore extends AbstractCassandraStore {
     private static final Pattern BROKEN_BYTE_TOKEN_PATTERN = Pattern.compile("^Token\\(bytes\\[(.+)\\]\\)$");
 
     // Cassandra access
+    private final CassandraThriftStoreManager storeManager;
+    private final String keyspace;
+    private final String columnFamily;
     private final CTConnectionPool pool;
     private final ThriftGetter entryGetter;
 
-    public CassandraThriftKeyColumnValueStore(String keyspace,
-                                              String columnFamily,
-                                              CassandraThriftStoreManager storeManager,
-                                              CTConnectionPool pool,
-                                              int ttlInSeconds) {
-        super(keyspace, columnFamily, storeManager, ttlInSeconds);
-
+    public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
+                                              CTConnectionPool pool) {
+        this.storeManager = storeManager;
+        this.keyspace = keyspace;
+        this.columnFamily = columnFamily;
         this.pool = pool;
         this.entryGetter = new ThriftGetter(storeManager.getMetaDataSchema(columnFamily));
     }
@@ -94,7 +94,7 @@ public class CassandraThriftKeyColumnValueStore extends AbstractCassandraStore {
     public Map<StaticBuffer, EntryList> getNamesSlice(List<StaticBuffer> keys,
                                                       SliceQuery query,
                                                       StoreTransaction txh) throws BackendException {
-        ColumnParent parent = new ColumnParent(columnFamilyName);
+        ColumnParent parent = new ColumnParent(columnFamily);
         /*
          * Cassandra cannot handle columnStart = columnEnd.
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
@@ -230,13 +230,18 @@ public class CassandraThriftKeyColumnValueStore extends AbstractCassandraStore {
     }
 
     @Override
+    public String getName() {
+        return columnFamily;
+    }
+
+    @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new KCVMutation(additions, deletions));
         mutateMany(mutations, txh);
     }
 
     public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws BackendException {
-        storeManager.mutateMany(ImmutableMap.of(columnFamilyName, mutations), txh);
+        storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
 
     static BackendException convertException(Throwable e) {
@@ -256,7 +261,7 @@ public class CassandraThriftKeyColumnValueStore extends AbstractCassandraStore {
     @Override
     public String toString() {
         return "CassandraThriftKeyColumnValueStore[ks="
-                + keyspace + ", cf=" + columnFamilyName + "]";
+                + keyspace + ", cf=" + columnFamily + "]";
     }
 
 
@@ -322,7 +327,7 @@ public class CassandraThriftKeyColumnValueStore extends AbstractCassandraStore {
             connection = pool.borrowObject(keyspace);
 
             List<KeySlice> slices =
-                    connection.getClient().get_range_slices(new ColumnParent(columnFamilyName),
+                    connection.getClient().get_range_slices(new ColumnParent(columnFamily),
                             new SlicePredicate()
                                     .setSlice_range(sliceRange),
                             keyRange,

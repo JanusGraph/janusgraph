@@ -119,11 +119,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     @Override
     public synchronized KeyColumnValueStore openDatabase(String name) throws BackendException {
-        return openDatabase(name, -1);
-    }
-
-    @Override
-    public synchronized KeyColumnValueStore openDatabase(String name, int ttlInSeconds) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 
@@ -131,7 +126,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureKeyspaceExists(keySpaceName);
         ensureColumnFamilyExists(keySpaceName, name);
 
-        CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName, name, this, ttlInSeconds);
+        CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName, name, this);
         openStores.put(name, store);
         return store;
     }
@@ -171,8 +166,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
             String columnFamily = mutEntry.getKey();
-            int globalTTL = openStores.get(columnFamily).getTTL();
-
             for (Map.Entry<StaticBuffer, KCVMutation> titanMutation : mutEntry.getValue().entrySet()) {
                 StaticBuffer key = titanMutation.getKey();
                 KCVMutation mut = titanMutation.getValue();
@@ -187,10 +180,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                     for (Entry e : mut.getAdditions()) {
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
 
-                        if (ttl == null || ttl <= 0)
-                            ttl = globalTTL;
-
-                        if (ttl > 0) {
+                        if (null != ttl && ttl > 0) {
                             rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times.getUnit()), ttl);
                         } else {
                             rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times.getUnit()));
