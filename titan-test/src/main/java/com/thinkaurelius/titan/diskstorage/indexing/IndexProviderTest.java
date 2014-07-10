@@ -443,6 +443,9 @@ public abstract class IndexProviderTest {
 
     @Test
     public void testTTL() throws Exception {
+        if (!index.getFeatures().supportsDocumentTTL())
+            return;
+
         final String store = "expirable";
 
         initialize(store);
