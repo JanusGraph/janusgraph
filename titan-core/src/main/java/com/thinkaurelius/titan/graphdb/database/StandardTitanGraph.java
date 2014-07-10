@@ -509,7 +509,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();
                 if (update.isAddition())
-                    itx.add(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
+                    itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());
                 else
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
             }

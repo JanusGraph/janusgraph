@@ -830,8 +830,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertNotNull(v1);
         assertNotNull(v2);
 
+        Thread.sleep(6000); // default ttl recycle interval is 5s
 
-        Thread.sleep(2001);
         clopen();
         time = tx.getPropertyKey("time");
 
@@ -905,7 +905,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertTrue(v2.getEdges(Direction.OUT).iterator().hasNext());
 
 
-        Thread.sleep(2001);
+        Thread.sleep(6000);
         clopen();
 
         time = tx.getPropertyKey("time");

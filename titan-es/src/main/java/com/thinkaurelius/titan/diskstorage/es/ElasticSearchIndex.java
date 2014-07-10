@@ -149,6 +149,8 @@ public class ElasticSearchIndex implements IndexProvider {
                     b.put("path." + sub, subdir);
                 }
                 b.put("script.disable_dynamic", false);
+                b.put("indices.ttl.interval", "5s");
+
                 builder.settings(b.build());
 
                 String clustername = config.get(CLUSTER_NAME);
@@ -215,7 +217,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
-        XContentBuilder mapping = null;
+        XContentBuilder mapping;
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
@@ -225,6 +227,9 @@ public class ElasticSearchIndex implements IndexProvider {
             mapping = XContentFactory.jsonBuilder().
                     startObject().
                     startObject(store).
+                    field("_ttl", new HashMap<String, Object>() {{
+                        put("enabled", true);
+                    }}).
                     startObject("properties").
                     startObject(key);
 
