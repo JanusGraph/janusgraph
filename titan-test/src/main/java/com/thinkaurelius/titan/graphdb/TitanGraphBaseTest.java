@@ -16,7 +16,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
-import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -187,7 +186,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public Log openTriggerLog(String identifier) {
-        return openLog(TRIGGER_LOG, Backend.TRIGGER_LOG_PREFIX +identifier);
+        return openLog(TRIGGER_LOG, Backend.USER_LOG_PREFIX +identifier);
     }
 
     public Log openTxLog() {

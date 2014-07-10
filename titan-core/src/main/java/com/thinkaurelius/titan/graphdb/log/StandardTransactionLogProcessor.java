@@ -103,7 +103,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     }
 
     public synchronized void shutdown() throws TitanException {
-        cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()),CLEAN_SLEEP_TIME.getNativeUnit());
+        cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()), CLEAN_SLEEP_TIME.getNativeUnit());
         graph.shutdown();
     }
 
@@ -140,7 +140,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             BackendOperation.execute(new Callable<Boolean>(){
                 @Override
                 public Boolean call() throws Exception {
-                    final Log triggerLog = graph.getBackend().getTriggerLog(logTxIdentifier);
+                    final Log triggerLog = graph.getBackend().getUserLog(logTxIdentifier);
                     Future<Message> env = triggerLog.add(userLogContent);
                     if (env.isDone()) {
                         env.get();

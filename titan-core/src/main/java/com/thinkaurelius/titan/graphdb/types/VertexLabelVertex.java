@@ -30,4 +30,15 @@ public class VertexLabelVertex extends TitanSchemaVertex implements InternalVert
     public boolean hasDefaultConfiguration() {
         return !isPartitioned() && !isStatic();
     }
+
+    private Integer ttl = null;
+
+    @Override
+    public int getTTL() {
+        if (null == ttl) {
+            ttl = TypeUtil.getTTL(this);
+        }
+        return ttl;
+    }
+
 }

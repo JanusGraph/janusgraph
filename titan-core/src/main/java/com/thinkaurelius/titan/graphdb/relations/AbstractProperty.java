@@ -19,8 +19,8 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
 
     public AbstractProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
         super(id, type);
-        Preconditions.checkNotNull(vertex);
-        Preconditions.checkNotNull(value);
+        Preconditions.checkNotNull(vertex, "null vertex");
+        Preconditions.checkNotNull(value, "null value for property key %s",type);
         this.vertex=vertex;
         this.value=value;
     }

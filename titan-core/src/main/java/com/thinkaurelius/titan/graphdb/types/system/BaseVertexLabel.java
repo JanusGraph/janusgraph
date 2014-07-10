@@ -36,9 +36,12 @@ public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel 
     }
 
     @Override
+    public int getTTL() {
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return getName();
     }
-
-
 }

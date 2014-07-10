@@ -60,6 +60,16 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
         return consistency;
     }
 
+    private Integer ttl = null;
+
+    @Override
+    public Integer getTTL() {
+        if (null == ttl) {
+            ttl = TypeUtil.getTTL(this);
+        }
+        return ttl;
+    }
+
     public InternalRelationType getBaseType() {
         Entry entry = Iterables.getOnlyElement(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.IN),null);
         if (entry==null) return null;
@@ -99,5 +109,4 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
         super.resetCache();
         indexes=null;
     }
-
 }

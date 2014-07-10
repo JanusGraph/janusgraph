@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
@@ -39,6 +40,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -349,6 +351,36 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 && index.getCardinality()!= Cardinality.LIST;
     }
 
+    /**
+     * The TTL of a relation (edge or property) is the minimum of:
+     * 1) The TTL configured of the relation type (if exists)
+     * 2) The TTL configured for the label any of the relation end point vertices (if exists)
+     *
+     * @param rel relation to determine the TTL for
+     * @return
+     */
+    public static int getTTL(InternalRelation rel) {
+        assert rel.isNew();
+        InternalRelationType baseType = (InternalRelationType) rel.getType();
+        assert baseType.getBaseType()==null;
+        int ttl = 0;
+        Integer ettl = baseType.getTTL();
+        if (ettl>0) ttl = ettl;
+        for (int i=0;i<rel.getArity();i++) {
+            int vttl = getTTL(rel.getVertex(i));
+            if (vttl>0 && (vttl<ttl || ttl<=0)) ttl = vttl;
+        }
+        return ttl;
+    }
+
+    public static int getTTL(InternalVertex v) {
+        assert v.hasId();
+        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.getID())) {
+            assert v.isNew() : "Should not be able to add relations to existing static vertices: " + v;
+            return ((InternalVertexLabel)v.getVertexLabel()).getTTL();
+        } else return 0;
+    }
+
     private static class ModificationSummary {
 
         final boolean hasModifications;
@@ -434,17 +466,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             for (InternalRelation edge : edges) {
                 InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
+
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
                         if (edge.getVertex(pos).getID()==vertexid) {
-                            Entry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
+                            StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
                             } else {
                                 Preconditions.checkArgument(edge.isNew());
+                                int ttl = getTTL(edge);
+                                if (ttl > 0) {
+                                    entry.setMetaData(EntryMetaData.TTL, ttl);
+                                }
                                 additions.add(entry);
                             }
                         }
@@ -472,7 +509,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();
                 if (update.isAddition())
-                    itx.add(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
+                    itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());
                 else
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
             }
@@ -604,7 +641,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
                         if (logTxIdentifier!=null) {
                             try {
-                                final Log triggerLog = backend.getTriggerLog(logTxIdentifier);
+                                final Log triggerLog = backend.getUserLog(logTxIdentifier);
                                 Future<Message> env = triggerLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {
                                     try {

@@ -1,11 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-
-import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * An entry is the primitive persistence unit used in the graph database storage backend.
@@ -43,5 +38,4 @@ public interface Entry extends StaticBuffer, MetaAnnotated {
      * @param cache
      */
     public void setCache(RelationCache cache);
-
 }

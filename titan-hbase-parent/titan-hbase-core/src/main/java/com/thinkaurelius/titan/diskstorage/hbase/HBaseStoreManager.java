@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -45,7 +46,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 @PreInitializeConfigOptions
-public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
+public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager, CustomizeStoreKCVSManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseStoreManager.class);
 
@@ -299,7 +300,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
                 .orderedScan(true).unorderedScan(true).batchMutation(true)
-                .multiQuery(true).distributed(true).keyOrdered(true)
+                .multiQuery(true).distributed(true).keyOrdered(true).storeTTL(true)
 //                .timestamps(true)
                 .keyConsistent(c);
 
@@ -355,22 +356,25 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(final String longName) throws BackendException {
+    public KeyColumnValueStore openDatabase(String longName) throws BackendException {
+        return openDatabase(longName, -1);
+    }
+
+    @Override
+    public KeyColumnValueStore openDatabase(final String longName, int ttlInSeconds) throws BackendException {
 
         HBaseKeyColumnValueStore store = openStores.get(longName);
 
         if (store == null) {
-
             final String cfName = shortCfNames ? shortenCfName(longName) : longName;
 
             HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, cnx, tableName, cfName, longName);
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
-            if (store == null ) {
-                if (!skipSchemaCheck) {
-                    ensureColumnFamilyExists(tableName, cfName);
-                }
+            if (store == null) {
+                if (!skipSchemaCheck)
+                    ensureColumnFamilyExists(tableName, cfName, ttlInSeconds);
 
                 store = newStore;
             }
@@ -474,7 +478,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         HTable table = null;
         try {
-            ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME));
+            ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
 
             table = new HTable(hconf, tableName);
 
@@ -666,7 +670,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return s;
     }
 
-    private HTableDescriptor ensureTableExists(String tableName, String initialCFName) throws BackendException {
+    private HTableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
         HBaseAdmin adm = getAdminInterface();
 
         HTableDescriptor desc;
@@ -680,7 +684,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             if (adm.tableExists(tableName)) {
                 desc = adm.getTableDescriptor(tableName.getBytes());
             } else {
-                desc = createTable(tableName, initialCFName, adm);
+                desc = createTable(tableName, initialCFName, ttlInSeconds, adm);
             }
         } catch (IOException e) {
             throw new TemporaryBackendException(e);
@@ -689,11 +693,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return desc;
     }
 
-    private HTableDescriptor createTable(String tableName, String cfName, HBaseAdmin adm) throws IOException {
+    private HTableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, HBaseAdmin adm) throws IOException {
         HTableDescriptor desc = compat.newTableDescriptor(tableName);
 
         HColumnDescriptor cdesc = new HColumnDescriptor(cfName);
-        setCFOptions(cdesc);
+        setCFOptions(cdesc, ttlInSeconds);
         desc.addFamily(cdesc);
 
         int count; // total regions to create
@@ -747,9 +751,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return StaticArrayBuffer.of(regionWidth).getBytes(0, 4);
     }
 
-    private void ensureColumnFamilyExists(String tableName, String columnFamily) throws BackendException {
+    private void ensureColumnFamilyExists(String tableName, String columnFamily, int ttlInSeconds) throws BackendException {
         HBaseAdmin adm = getAdminInterface();
-        HTableDescriptor desc = ensureTableExists(tableName, columnFamily);
+        HTableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
 
         Preconditions.checkNotNull(desc);
 
@@ -770,7 +774,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             try {
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
 
-                setCFOptions(cdesc);
+                setCFOptions(cdesc, ttlInSeconds);
 
                 adm.addColumn(tableName, cdesc);
 
@@ -830,9 +834,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return prov.getTime().getNativeTimestamp();
     }
 
-    private void setCFOptions(HColumnDescriptor cdesc) {
+    private void setCFOptions(HColumnDescriptor cdesc, int ttlInSeconds) {
         if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
             compat.setCompression(cdesc, compression);
+
+        if (ttlInSeconds > 0)
+            cdesc.setTimeToLive(ttlInSeconds);
     }
 
     private HBaseAdmin getAdminInterface() {

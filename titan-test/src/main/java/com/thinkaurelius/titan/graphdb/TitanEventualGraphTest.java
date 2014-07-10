@@ -103,7 +103,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 assertEquals(100,t.sinceEpoch(unit));
                 assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
             }
-            if (features.hasTTL()) {
+            if (features.hasCellTTL()) {
                 Duration d = prop.getProperty("$ttl");
                 assertEquals(0l,d.getLength(unit));
                 assertTrue(d.isZeroLength());

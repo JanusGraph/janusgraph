@@ -18,7 +18,8 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean transactional;
     private final boolean keyConsistent;
     private final boolean timestamps;
-    private final boolean ttl;
+    private final boolean cellLevelTTL;
+    private final boolean storeLevelTTL;
     private final boolean visibility;
     private final Configuration keyConsistentTxConfig;
     private final Configuration localKeyConsistentTxConfig;
@@ -79,8 +80,13 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public boolean hasTTL() {
-        return ttl;
+    public boolean hasCellTTL() {
+        return cellLevelTTL;
+    }
+
+    @Override
+    public boolean hasStoreTTL() {
+        return storeLevelTTL;
     }
 
     @Override
@@ -117,10 +123,11 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean keyOrdered;
         private boolean distributed;
         private boolean transactional;
-        private boolean keyConsistent;
         private boolean timestamps;
-        private boolean ttl;
+        private boolean cellLevelTTL;
+        private boolean storeLevelTTL;
         private boolean visibility;
+        private boolean keyConsistent;
         private Configuration keyConsistentTxConfig;
         private Configuration localKeyConsistentTxConfig;
 
@@ -144,7 +151,8 @@ public class StandardStoreFeatures implements StoreFeatures {
             distributed(template.isDistributed());
             transactional(template.hasTxIsolation());
             timestamps(template.hasTimestamps());
-            ttl(template.hasTTL());
+            cellTTL(template.hasCellTTL());
+            storeTTL(template.hasStoreTTL());
             visibility(template.hasVisibility());
             if (template.isKeyConsistent()) {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());
@@ -201,10 +209,16 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
-        public Builder ttl(boolean b) {
-            ttl = b;
+        public Builder cellTTL(boolean b) {
+            cellLevelTTL = b;
             return this;
         }
+
+        public Builder storeTTL(boolean b) {
+            storeLevelTTL = b;
+            return this;
+        }
+
 
         public Builder visibility(boolean b) {
             visibility = b;
@@ -233,7 +247,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             return new StandardStoreFeatures(unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
-                    timestamps, ttl, visibility,
+                    timestamps, cellLevelTTL, storeLevelTTL, visibility,
                     keyConsistentTxConfig, localKeyConsistentTxConfig);
         }
     }
@@ -242,7 +256,8 @@ public class StandardStoreFeatures implements StoreFeatures {
             boolean multiQuery, boolean locking, boolean batchMutation,
             boolean localKeyPartition, boolean keyOrdered, boolean distributed,
             boolean transactional, boolean keyConsistent,
-            boolean timestamps, boolean ttl, boolean visibility,
+            boolean timestamps, boolean cellLevelTTL, boolean storeLevelTTL,
+            boolean visibility,
             Configuration keyConsistentTxConfig,
             Configuration localKeyConsistentTxConfig) {
         this.unorderedScan = unorderedScan;
@@ -256,7 +271,8 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.transactional = transactional;
         this.keyConsistent = keyConsistent;
         this.timestamps = timestamps;
-        this.ttl = ttl;
+        this.cellLevelTTL = cellLevelTTL;
+        this.storeLevelTTL = storeLevelTTL;
         this.visibility = visibility;
         this.keyConsistentTxConfig = keyConsistentTxConfig;
         this.localKeyConsistentTxConfig = localKeyConsistentTxConfig;

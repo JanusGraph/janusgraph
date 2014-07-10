@@ -29,13 +29,4 @@ public class NoKCVSCache extends KCVSCache {
     protected void invalidate(StaticBuffer key, List<CachableStaticBuffer> entries) {
     }
 
-    @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
-        return store.getSlice(query,getTx(txh));
-    }
-
-    @Override
-    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
-        return store.getSlice(keys,query,getTx(txh));
-    }
 }

@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Vertex;
 
 import javax.annotation.Nullable;
 
@@ -48,6 +49,10 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         return TitanSchemaCategory.getName(name);
     }
 
+    @Override
+    protected Vertex getVertexLabelInternal() {
+        return null;
+    }
 
     private TypeDefinitionMap definition = null;
 

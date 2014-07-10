@@ -22,6 +22,7 @@ public enum EntryMetaData {
         switch(this) {
             case VISIBILITY: return String.class;
             case TTL:
+                return Integer.class;
             case TIMESTAMP: return Long.class;
             default: throw new AssertionError("Unexpected meta data: " + this);
         }
@@ -34,6 +35,7 @@ public enum EntryMetaData {
                 if (!(data instanceof String)) return false;
                 return StringEncoding.isAsciiString((String)data);
             case TTL:
+                return data instanceof Integer && ((Integer) data) >= 0L;
             case TIMESTAMP:
                 return data instanceof Long;
             default: throw new AssertionError("Unexpected meta data: " + this);

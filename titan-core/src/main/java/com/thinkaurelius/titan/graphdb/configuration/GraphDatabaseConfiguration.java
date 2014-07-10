@@ -5,6 +5,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVS;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
@@ -300,7 +302,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace STORAGE_SSL_NS = new ConfigNamespace(STORAGE_NS, "ssl", "Configuration options for SSL");
     public static final ConfigNamespace STORAGE_SSL_TRUSTSTORE = new ConfigNamespace(STORAGE_SSL_NS, "truststore", "Configuration options for SSL Truststore.");
 
-
     /**
      * Storage directory for those storage backends that require local storage
      */
@@ -587,6 +588,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
 
 
+
     // ################ STORAGE - META #######################
 
     public static final ConfigNamespace STORE_META_NS = new ConfigNamespace(STORAGE_NS,"meta","Meta data to include in storage backend retrievals",true);
@@ -816,6 +818,8 @@ public class GraphDatabaseConfiguration {
     public static final String TRANSACTION_LOG = "tx";
     public static final String TRIGGER_LOG = "trigger";
 
+    public static final StandardDuration TRANSACTION_LOG_DEFAULT_TTL = new StandardDuration(7,TimeUnit.DAYS);
+
     public static final ConfigOption<String> LOG_BACKEND = new ConfigOption<String>(LOG_NS,"backend",
             "Define the log backed to use",
             ConfigOption.Type.GLOBAL_OFFLINE, "default");
@@ -843,6 +847,18 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> LOG_READ_THREADS = new ConfigOption<Integer>(LOG_NS,"read-threads",
             "Number of threads to be used in reading and processing log messages",
             ConfigOption.Type.MASKABLE, 1, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Duration> LOG_STORE_TTL = new ConfigOption<Duration>(LOG_NS,"ttl",
+            "Sets a TTL on all log entries, meaning" +
+                    "that all entries added to this log expire after the configured amount of time. Requires" +
+                    "that the log implementation supports TTL.",
+            ConfigOption.Type.GLOBAL, Duration.class, new Predicate<Duration>() {
+        @Override
+        public boolean apply(@Nullable Duration duration) {
+            if (duration==null || duration.isZeroLength()) return false;
+            return true;
+        }
+    });
 
     // ############## Attributes ######################
     // ################################################
@@ -1234,6 +1250,7 @@ public class GraphDatabaseConfiguration {
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
+        final StoreFeatures storeFeatures = storeManager.getFeatures();
         KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager,localbc);
         ReadConfiguration globalConfig=null;
 
@@ -1263,8 +1280,7 @@ public class GraphDatabaseConfiguration {
 
                 // If partitioning is unspecified, specify it now
                 if (!localbc.has(CLUSTER_PARTITION)) {
-                    StoreFeatures f = storeManager.getFeatures();
-                    boolean part = f.isDistributed() && f.isKeyOrdered();
+                    boolean part = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
                     globalWrite.set(CLUSTER_PARTITION, part);
                     log.info("Enabled partitioning", part);
                 } else {
@@ -1291,12 +1307,15 @@ public class GraphDatabaseConfiguration {
         overwrite.set(UNIQUE_INSTANCE_ID, this.uniqueGraphId);
 
         //Default log configuration for system and tx log
-        //TRANSACTION LOG: send_delay=0 for tx log and backend=default
+        //TRANSACTION LOG: send_delay=0, ttl=2days and backend=default
         Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,TRANSACTION_LOG).equals(LOG_BACKEND.getDefaultValue()),
                 "Must use default log backend for transaction log");
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
         overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE,TRANSACTION_LOG);
+        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKVCSManager.supportsStoreTTL(storeFeatures)) {
+            overwrite.set(LOG_STORE_TTL,TRANSACTION_LOG_DEFAULT_TTL,TRANSACTION_LOG);
+        }
         //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true
         Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,MANAGEMENT_LOG).equals(LOG_BACKEND.getDefaultValue()),
                 "Must use default log backend for system log");

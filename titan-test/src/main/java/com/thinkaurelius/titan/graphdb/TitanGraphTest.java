@@ -4,7 +4,11 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.core.attribute.Precision;
+import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
@@ -13,6 +17,7 @@ import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.log.*;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -20,19 +25,16 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
@@ -73,7 +75,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Joshua Shinavier (http://fortytwo.net)
+ */
 public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
@@ -2799,7 +2806,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Use trigger framework
          */
         final AtomicInteger triggerCount = new AtomicInteger(0);
-        LogProcessorFramework triggers = TitanFactory.openTriggers(TitanFactory.open(config));
+        LogProcessorFramework triggers = TitanFactory.openTransactionLog(TitanFactory.open(config));
         triggers.addLogProcessor(triggerName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
         .addProcessor(new ChangeProcessor() {
             @Override
@@ -2858,7 +2865,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         recovery.shutdown();
         assertEquals(2, triggerCount.get());
         long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
-        System.out.println(Arrays.toString(recoveryStats));
         assertEquals(3,recoveryStats[0]);
         assertEquals(0,recoveryStats[1]);
     }
@@ -3623,5 +3629,467 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(222,e.getProperty(id));
     }
 
+   /* ==================================================================================
+                            TIME TO LIVE
+     ==================================================================================*/
 
+    @Test
+    public void testEdgeTTLTiming() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
+        int ttl1 = 1;
+        int ttl2 = 4;
+        mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
+        EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
+        mgmt.setTTL(label2, ttl2, TimeUnit.SECONDS);
+        EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
+        assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        assertEquals(ttl2, mgmt.getTTL(label2).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(label3).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
+
+        graph.addEdge(null, v1, v2, "likes");
+        graph.addEdge(null, v2, v1, "dislikes");
+        graph.addEdge(null, v3, v1, "indifferentTo");
+
+        // initial, pre-commit state of the edges.  They are not yet subject to TTL
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+
+        long commitTime = System.currentTimeMillis();
+        graph.commit();
+
+        // edges are now subject to TTL, although we must commit() or rollback() to see it
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(commitTime + (ttl1 * 1000L + 200) - System.currentTimeMillis());
+        graph.rollback();
+
+        // e1 has dropped out
+        assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(commitTime + (ttl2 * 1000L + 500) - System.currentTimeMillis());
+        graph.rollback();
+
+        // both e1 and e2 have dropped out.  e3 has no TTL, and so remains
+        assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertFalse(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+    }
+
+    @Test
+    public void testEdgeTTLWithTransactions() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
+        assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        graph.addEdge(null, v1, v2, "likes");
+
+        // pre-commit state of the edge.  It is not yet subject to TTL
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        // the edge should have expired by now, but only if it had been committed
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        graph.commit();
+
+        // still here, because we have just committed the edge.  Its countdown starts at the commit
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        // the edge has expired in Cassandra, but still appears alive in this transaction
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        // syncing with the data store, we see that the edge has expired
+        graph.rollback();
+        assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
+    }
+
+    @Test
+    public void testEdgeTTLWithVertexCentricIndex() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        int ttl = 1; // artificially low TTL for test
+        final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
+        mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
+        mgmt.setTTL(wavedAt, ttl, TimeUnit.SECONDS);
+        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
+        assertEquals(ttl, mgmt.getTTL(wavedAt).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+        Edge e1 = graph.addEdge(null, v1, v2, "wavedAt");
+        e1.setProperty("time", 42);
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
+
+        graph.commit();
+        long commitTime = System.currentTimeMillis();
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
+
+        Thread.sleep(commitTime + (ttl * 1000L + 100) - System.currentTimeMillis());
+        graph.rollback();
+
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
+    }
+
+    @Test
+    public void testEdgeTTLWithCompositeIndex() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
+        mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName).buildCompositeIndex();
+        EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTTL(label, 1, TimeUnit.SECONDS);
+        assertEquals(0, mgmt.getTTL(edgeName).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        Edge e = graph.addEdge(null, v1, v2, "likes");
+        e.setProperty("edge-name", "v1-likes-v2");
+
+        graph.commit();
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        graph.rollback();
+
+        // the edge is gone not only from its previous endpoints, but also from key indices
+        assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+    }
+
+    @Test
+    public void testPropertyTTLTiming() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey place = mgmt.makePropertyKey("place").dataType(String.class).make();
+        mgmt.setTTL(name, 42, TimeUnit.SECONDS);
+        mgmt.setTTL(place, 1, TimeUnit.SECONDS);
+        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
+        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(place).buildCompositeIndex();
+        VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
+        mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
+        assertEquals(42, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(place).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex("event");
+        v1.setProperty("name", "some event");
+        v1.setProperty("place", "somewhere");
+
+        tx.commit();
+        Object id = v1.getId();
+
+        v1 = graph.getVertex(id);
+        assertNotNull(v1);
+        assertTrue(graph.query().has("name","some event").has("place","somewhere").vertices().iterator().hasNext());
+        assertTrue(graph.getVertices("name", "some event").iterator().hasNext());
+
+        Thread.sleep(1001);
+        graph.rollback();
+
+        // short-lived property expires first
+        v1 = graph.getVertex(id);
+        assertNotNull(v1);
+        assertFalse(graph.query().has("name","some event").has("place","somewhere").vertices().iterator().hasNext());
+        assertTrue(graph.getVertices("name", "some event").iterator().hasNext());
+
+        Thread.sleep(1001);
+        graph.rollback();
+
+        // vertex expires before defined TTL of the long-lived property
+        assertFalse(graph.query().has("name","some event").has("place","somewhere").vertices().iterator().hasNext());
+        assertFalse(graph.getVertices("place", "somewhere").iterator().hasNext());
+        v1 = graph.getVertex(id);
+        assertNull(v1);
+    }
+
+    @Test
+    public void testVertexTTLWithCompositeIndex() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Long.class).make();
+        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
+        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(time).buildCompositeIndex();
+        VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
+        mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
+        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex("event");
+        v1.setProperty("name", "some event");
+        v1.setProperty("time", System.currentTimeMillis());
+        tx.commit();
+        Object id = v1.getId();
+
+        v1 = graph.getVertex(id);
+        assertNotNull(v1);
+        assertTrue(graph.getVertices("name", "some event").iterator().hasNext());
+
+        Thread.sleep(1001);
+        graph.rollback();
+
+        v1 = graph.getVertex(id);
+        assertNull(v1);
+        assertFalse(graph.getVertices("name", "some event").iterator().hasNext());
+    }
+
+    @Test
+    public void testEdgeTTLLimitedByVertexTTL() throws Exception {
+
+        if (!features.hasCellTTL()) {
+            return;
+        }
+        Boolean dbCache = config.get("cache.db-cache", Boolean.class);
+        if (null == dbCache) {
+            dbCache = false;
+        }
+
+        EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTTL(likes, 42, TimeUnit.SECONDS); // long edge TTL will be overridden by short vertex TTL
+        EdgeLabel dislikes = mgmt.makeEdgeLabel("dislikes").make();
+        mgmt.setTTL(dislikes, 1, TimeUnit.SECONDS);
+        EdgeLabel indifferentTo = mgmt.makeEdgeLabel("indifferentTo").make();
+        VertexLabel label1 = mgmt.makeVertexLabel("person").setStatic().make();
+        mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
+        assertEquals(42, mgmt.getTTL(likes).getLength(TimeUnit.SECONDS));
+        assertEquals(1, mgmt.getTTL(dislikes).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(indifferentTo).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex("person");
+        Vertex v2 = tx.addVertex();
+        Edge v1LikesV2 = tx.addEdge(null, v1, v2, "likes");
+        Edge v1DislikesV2 = tx.addEdge(null, v1, v2, "dislikes");
+        Edge v1IndifferentToV2 = tx.addEdge(null, v1, v2, "indifferentTo");
+        tx.commit();
+        long commitTime = System.currentTimeMillis();
+
+        Object v1Id = v1.getId();
+        Object v2id = v2.getId();
+        Object v1LikesV2Id = v1LikesV2.getId();
+        Object v1DislikesV2Id = v1DislikesV2.getId();
+        Object v1IndifferentToV2Id = v1IndifferentToV2.getId();
+
+        v1 = graph.getVertex(v1Id);
+        v2 = graph.getVertex(v2id);
+        v1LikesV2 = graph.getEdge(v1LikesV2Id);
+        v1DislikesV2 = graph.getEdge(v1DislikesV2Id);
+        v1IndifferentToV2 = graph.getEdge(v1IndifferentToV2Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        assertNotNull(v1LikesV2);
+        assertNotNull(v1DislikesV2);
+        assertNotNull(v1IndifferentToV2);
+        assertTrue(v2.getEdges(Direction.IN, "likes").iterator().hasNext());
+        assertTrue(v2.getEdges(Direction.IN, "dislikes").iterator().hasNext());
+        assertTrue(v2.getEdges(Direction.IN, "indifferentTo").iterator().hasNext());
+
+        Thread.sleep(commitTime + 1001L - System.currentTimeMillis());
+        graph.rollback();
+
+        v1 = graph.getVertex(v1Id);
+        v2 = graph.getVertex(v2id);
+        v1LikesV2 = graph.getEdge(v1LikesV2Id);
+        v1DislikesV2 = graph.getEdge(v1DislikesV2Id);
+        v1IndifferentToV2 = graph.getEdge(v1IndifferentToV2Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        assertNotNull(v1LikesV2);
+        // this edge has expired
+        assertNull(v1DislikesV2);
+        assertNotNull(v1IndifferentToV2);
+        assertTrue(v2.getEdges(Direction.IN, "likes").iterator().hasNext());
+        // expired
+        assertFalse(v2.getEdges(Direction.IN, "dislikes").iterator().hasNext());
+        assertTrue(v2.getEdges(Direction.IN, "indifferentTo").iterator().hasNext());
+
+        Thread.sleep(commitTime + 2001L - System.currentTimeMillis());
+        graph.rollback();
+
+        v1 = graph.getVertex(v1Id);
+        v2 = graph.getVertex(v2id);
+        v1LikesV2 = graph.getEdge(v1LikesV2Id);
+        v1DislikesV2 = graph.getEdge(v1DislikesV2Id);
+        v1IndifferentToV2 = graph.getEdge(v1IndifferentToV2Id);
+        // the vertex itself has expired
+        assertNull(v1);
+        assertNotNull(v2);
+        // all incident edges have necessarily expired
+        assertNull(v1LikesV2);
+        assertNull(v1DislikesV2);
+        assertNull(v1IndifferentToV2);
+
+        if (dbCache) {
+            /* TODO: uncomment
+            assertTrue(v2.getEdges(Direction.IN, "likes").iterator().hasNext());
+            assertTrue(v2.getEdges(Direction.IN, "dislikes").iterator().hasNext());
+            assertTrue(v2.getEdges(Direction.IN, "indifferentTo").iterator().hasNext());
+            */
+        } else {
+            assertFalse(v2.getEdges(Direction.IN, "likes").iterator().hasNext());
+            assertFalse(v2.getEdges(Direction.IN, "dislikes").iterator().hasNext());
+            assertFalse(v2.getEdges(Direction.IN, "indifferentTo").iterator().hasNext());
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSettingTTLOnUnsupportedType() throws Exception {
+        if (!features.hasCellTTL()) {
+            throw new IllegalArgumentException();
+        }
+
+        TitanSchemaType type = ImplicitKey.ID;
+        mgmt.setTTL(type, 0, TimeUnit.SECONDS);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetTTLFromUnsupportedType() throws Exception {
+        if (!features.hasCellTTL()) {
+            throw new IllegalArgumentException();
+        }
+
+        TitanSchemaType type = ImplicitKey.ID;
+        mgmt.getTTL(type);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSettingTTLOnNonStaticVertexLabel() throws Exception {
+        if (!features.hasCellTTL()) {
+            throw new IllegalArgumentException();
+        }
+
+        VertexLabel label1 = mgmt.makeVertexLabel("event").make();
+        mgmt.setTTL(label1, 42, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testEdgeTTLImplicitKey() throws Exception {
+        Duration d;
+
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        clopen(option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
+
+        assertEquals("$ttl", ImplicitKey.TTL.getName());
+
+        int ttl = 24*60*60;
+        EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
+        EdgeLabel hasLiked = mgmt.makeEdgeLabel("hasLiked").make();
+        mgmt.setTTL(likes, ttl, TimeUnit.SECONDS);
+        assertEquals(ttl, mgmt.getTTL(likes).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(hasLiked).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        Edge e1 = graph.addEdge(null, v1, v2, "likes");
+        Edge e2 = graph.addEdge(null, v1, v2, "hasLiked");
+        graph.commit();
+
+        // read from the edge created in this transaction
+        d = e1.getProperty("$ttl");
+        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+
+        // get the edge via a vertex
+        e1 = v1.getEdges(Direction.OUT, "likes").iterator().next();
+        d = e1.getProperty("$ttl");
+        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+
+        // returned value of $ttl is the total time to live since commit, not remaining time
+        Thread.sleep(1001);
+        graph.rollback();
+        e1 = v1.getEdges(Direction.OUT, "likes").iterator().next();
+        d = e1.getProperty("$ttl");
+        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+
+        // no ttl on edges of this label
+        d = e2.getProperty("$ttl");
+        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testVertexTTLImplicitKey() throws Exception {
+        Duration d;
+
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        clopen(option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
+
+        int ttl1 = 1;
+        VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
+        mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
+        assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex("event");
+        Vertex v2 = tx.addVertex();
+        tx.commit();
+
+        /* TODO: this fails
+        d = v1.getProperty("$ttl");
+        assertEquals(1, d.getLength(TimeUnit.SECONDS));
+        d = v2.getProperty("$ttl");
+        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+        */
+
+        Object v1id = v1.getId();
+        Object v2id = v2.getId();
+        v1 = graph.getVertex(v1id);
+        v2 = graph.getVertex(v2id);
+
+        d = v1.getProperty("$ttl");
+        assertEquals(1, d.getLength(TimeUnit.SECONDS));
+        d = v2.getProperty("$ttl");
+        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+    }
 }

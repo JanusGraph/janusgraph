@@ -40,7 +40,7 @@ import java.util.Map;
  * This relies on a {@code Locker} instance supplied during construction for
  * locking.
  */
-public class ExpectedValueCheckingStore implements KeyColumnValueStore {
+public class ExpectedValueCheckingStore extends KCVSProxy {
 
     /**
      * Configuration setting key for the local lock mediator prefix
@@ -51,44 +51,24 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 
-    /**
-     * Titan data store.
-     */
-    final KeyColumnValueStore dataStore;
-
     final Locker locker;
 
-    public ExpectedValueCheckingStore(KeyColumnValueStore dataStore, Locker locker) {
-        Preconditions.checkNotNull(dataStore);
-        this.dataStore = dataStore;
+    public ExpectedValueCheckingStore(KeyColumnValueStore store, Locker locker) {
+        super(store);
         this.locker = locker;
     }
 
-    public KeyColumnValueStore getDataStore() {
-        return dataStore;
-    }
-
-    static StoreTransaction getDataTx(StoreTransaction t) {
+    protected StoreTransaction unwrapTx(StoreTransaction t) {
         Preconditions.checkNotNull(t);
         Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
         return ((ExpectedValueCheckingTransaction) t).getDataTransaction();
     }
 
-    static StoreTransaction getLockTx(StoreTransaction t) {
-        Preconditions.checkNotNull(t);
-        Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
-        return ((ExpectedValueCheckingTransaction) t).getLockTransaction();
-    }
-
-    @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
-        return dataStore.getSlice(query, getDataTx(txh));
-    }
-
-    @Override
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
-        return dataStore.getSlice(keys, query, getDataTx(txh));
-    }
+//    static StoreTransaction getLockTx(StoreTransaction t) {
+//        Preconditions.checkNotNull(t);
+//        Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
+//        return ((ExpectedValueCheckingTransaction) t).getLockTransaction();
+//    }
 
     /**
      * {@inheritDoc}
@@ -101,7 +81,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
         etx.prepareForMutations();
-        dataStore.mutate(key, additions, deletions, getDataTx(txh));
+        store.mutate(key, additions, deletions, unwrapTx(txh));
     }
 
     Locker getLocker() {
@@ -133,28 +113,8 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
             locker.writeLock(lockID, tx.getLockTransaction());
             tx.storeExpectedValue(this, lockID, expectedValue);
         } else {
-            dataStore.acquireLock(key, column, expectedValue, getDataTx(txh));
+            store.acquireLock(key, column, expectedValue, unwrapTx(txh));
         }
-    }
-
-    @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
-        return dataStore.getKeys(query, getDataTx(txh));
-    }
-
-    @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
-        return dataStore.getKeys(query, getDataTx(txh));
-    }
-
-    @Override
-    public String getName() {
-        return dataStore.getName();
-    }
-
-    @Override
-    public void close() throws BackendException {
-        dataStore.close();
     }
 
     void deleteLocks(ExpectedValueCheckingTransaction tx) throws BackendException {

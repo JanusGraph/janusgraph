@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
@@ -440,6 +441,59 @@ public abstract class IndexProviderTest {
         assertTrue(results.contains("doc1"));
     }
 
+    @Test
+    public void testTTL() throws Exception {
+        if (!index.getFeatures().supportsDocumentTTL())
+            return;
+
+        final String store = "expirable";
+
+        initialize(store);
+
+        // add couple of documents with weight > 4.0d
+        add(store, "doc1", new HashMap<String, Object>() {{
+            put(NAME, "first");
+            put(TIME, 1L);
+            put(WEIGHT, 10.2d);
+        }}, true, 2);
+
+        add(store, "doc2", new HashMap<String, Object>() {{
+            put(NAME, "second");
+            put(TIME, 2L);
+            put(WEIGHT, 4.7d);
+        }}, true);
+
+        add(store, "doc3", new HashMap<String, Object>() {{
+            put(NAME, "third");
+            put(TIME, 3L);
+            put(WEIGHT, 5.2d);
+        }}, true, 2);
+
+        add(store, "doc4", new HashMap<String, Object>() {{
+            put(NAME, "fourth");
+            put(TIME, 3L);
+            put(WEIGHT, 7.7d);
+        }}, true, 7); // bigger ttl then one recycle interval, should still show up in the results
+
+        clopen();
+
+        // initial query
+        Set<String> results = Sets.newHashSet(tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(4, results.size());
+
+        Thread.sleep(6000); // sleep for elastic search ttl recycle
+
+        results = Sets.newHashSet(tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(2, results.size());
+        assertTrue(results.contains("doc2"));
+        assertTrue(results.contains("doc4"));
+
+        Thread.sleep(5000); // sleep for elastic search ttl recycle
+        results = Sets.newHashSet(tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc2"));
+    }
+
    /* ==================================================================================
                             CONCURRENT UPDATE CASES
      ==================================================================================*/
@@ -668,10 +722,19 @@ public abstract class IndexProviderTest {
     }
 
     private void add(String store, String docid, Map<String, Object> doc, boolean isNew) {
+        add(store, docid, doc, isNew, 0);
+    }
+
+    private void add(String store, String docid, Map<String, Object> doc, boolean isNew, int ttlInSeconds) {
         for (Map.Entry<String, Object> kv : doc.entrySet()) {
-            if (index.supports(allKeys.get(kv.getKey()))) {
-                tx.add(store, docid, kv.getKey(), kv.getValue(), isNew);
-            }
+            if (!index.supports(allKeys.get(kv.getKey())))
+                continue;
+
+            IndexEntry idx = new IndexEntry(kv.getKey(), kv.getValue());
+            if (ttlInSeconds > 0)
+                idx.setMetaData(EntryMetaData.TTL, ttlInSeconds);
+
+            tx.add(store, docid, idx, isNew);
         }
     }
 

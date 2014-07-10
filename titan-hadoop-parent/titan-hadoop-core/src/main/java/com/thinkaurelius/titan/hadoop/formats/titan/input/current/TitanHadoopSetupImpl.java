@@ -55,8 +55,8 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
                 Preconditions.checkNotNull(name);
                 TypeDefinitionMap dm = s.getDefinition();
                 Preconditions.checkNotNull(dm);
-                s.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.OUT);
-                s.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.IN);
+                s.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT);
+                s.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.IN);
             }
         }
         return tx;

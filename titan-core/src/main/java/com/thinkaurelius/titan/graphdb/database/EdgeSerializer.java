@@ -5,13 +5,18 @@ import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -31,14 +36,15 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.*;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.DirectionID;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.EdgeTypeParse;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getBounds;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -106,6 +112,7 @@ public class EdgeSerializer implements RelationReader {
                 relationId = VariableLong.readPositive(in);
             } else {
                 in.movePositionTo(data.getValuePosition());
+
                 relationId = VariableLong.readPositiveBackward(in);
                 otherVertexId = VariableLong.readPositiveBackward(in);
                 endKeyPos = in.getPosition();
@@ -232,7 +239,7 @@ public class EdgeSerializer implements RelationReader {
         return writeRelation(relation, (InternalRelationType) relation.getType(), position, tx);
     }
 
-    public Entry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
+    public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
         assert type==relation.getType() || type.getBaseType().equals(relation.getType());
         Direction dir = EdgeDirection.fromPosition(position);
         Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
@@ -251,7 +258,6 @@ public class EdgeSerializer implements RelationReader {
             writeInlineTypes(sortKey, relation, out, tx, InlineType.KEY);
         }
         int keyEndPos = out.getPosition();
-
 
         long relationId = relation.getID();
         //How multiplicity is handled for edges and properties is slightly different
@@ -474,7 +480,8 @@ public class EdgeSerializer implements RelationReader {
                             if (!interval.endInclusive()) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
                             break;
 
-                        default: throw new AssertionError(type.getSortOrder().toString());
+                        default:
+                            throw new AssertionError(type.getSortOrder().toString());
                     }
 
                     assert sliceStart.compareTo(sliceEnd)<=0;
@@ -493,7 +500,8 @@ public class EdgeSerializer implements RelationReader {
                         sliceStart = colStart.getStaticBufferFlipBytes(keyStartPos,keyEndPos);
                         break;
 
-                    default: throw new AssertionError(type.getSortOrder().toString());
+                    default:
+                        throw new AssertionError(type.getSortOrder().toString());
                 }
                 sliceEnd = BufferUtil.nextBiggerBuffer(sliceStart);
             }

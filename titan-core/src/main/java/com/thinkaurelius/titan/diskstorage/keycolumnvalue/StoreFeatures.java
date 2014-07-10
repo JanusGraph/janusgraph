@@ -99,8 +99,15 @@ public interface StoreFeatures {
      *
      * @return true if the storage backend supports TTL, else false
      */
-    public boolean hasTTL();
+    public boolean hasCellTTL();
 
+    /**
+     * Returns true if this storage backend supports time-to-live (TTL) settings on a per-store basis. That means, that
+     * entries added to such a store will require after a configured amount of time.
+     *
+     * @return
+     */
+    public boolean hasStoreTTL();
 
     /**
      * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication

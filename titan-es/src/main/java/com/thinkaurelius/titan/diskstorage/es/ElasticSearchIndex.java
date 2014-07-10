@@ -57,6 +57,7 @@ import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -68,6 +69,8 @@ public class ElasticSearchIndex implements IndexProvider {
     private Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
     private static final String[] DATA_SUBDIRS = {"data", "work", "logs"};
+
+    private static final String TTL_FIELD = "_ttl";
 
     public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS,"max-result-set-size",
             "Maxium number of results to return if no limit is specified",
@@ -85,6 +88,7 @@ public class ElasticSearchIndex implements IndexProvider {
             "Whether to enable cluster sniffing",
             ConfigOption.Type.MASKABLE, true);
 
+    private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
 //
 //    public static final String MAX_RESULT_SET_SIZE_KEY = "max-result-set-size";
 //    public static final int MAX_RESULT_SET_SIZE_DEFAULT = 100000;
@@ -145,6 +149,8 @@ public class ElasticSearchIndex implements IndexProvider {
                     b.put("path." + sub, subdir);
                 }
                 b.put("script.disable_dynamic", false);
+                b.put("indices.ttl.interval", "5s");
+
                 builder.settings(b.build());
 
                 String clustername = config.get(CLUSTER_NAME);
@@ -211,7 +217,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
-        XContentBuilder mapping = null;
+        XContentBuilder mapping;
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
@@ -221,6 +227,9 @@ public class ElasticSearchIndex implements IndexProvider {
             mapping = XContentFactory.jsonBuilder().
                     startObject().
                     startObject(store).
+                    field("_ttl", new HashMap<String, Object>() {{
+                        put("enabled", true);
+                    }}).
                     startObject("properties").
                     startObject(key);
 
@@ -269,7 +278,8 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public XContentBuilder getContent(final List<IndexEntry> additions) throws BackendException {
+    public XContentBuilder getContent(final List<IndexEntry> additions, int ttl) throws BackendException {
+        Preconditions.checkArgument(ttl>=0);
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
 
@@ -317,6 +327,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 } else throw new IllegalArgumentException("Unsupported type: " + add.value);
 
             }
+            if (ttl>0) builder.field(TTL_FIELD, TimeUnit.MILLISECONDS.convert(ttl,TimeUnit.SECONDS));
+
             builder.endObject();
             return builder;
         } catch (IOException e) {
@@ -356,12 +368,14 @@ public class ElasticSearchIndex implements IndexProvider {
                         bulkrequests++;
                     }
                     if (mutation.hasAdditions()) {
+                        int ttl = determineTTL(mutation.getAdditions());
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
-                            brb.add(new IndexRequest(indexName, storename, docid).source(getContent(mutation.getAdditions())));
+                            brb.add(new IndexRequest(indexName, storename, docid).source(getContent(mutation.getAdditions(),ttl)));
                         } else {
+                            Preconditions.checkArgument(ttl==0,"Elasticsearch only supports TTL on new documents [%s]",docid);
                             boolean needUpsert = !mutation.hasDeletions();
-                            XContentBuilder builder = getContent(mutation.getAdditions());
+                            XContentBuilder builder = getContent(mutation.getAdditions(),ttl);
                             UpdateRequestBuilder update = client.prepareUpdate(indexName, storename, docid).setDoc(builder);
                             if (needUpsert) update.setUpsert(builder);
                             log.trace("Updating document {} with upsert {}", docid, needUpsert);
@@ -378,6 +392,25 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (Exception e) {
             throw convert(e);
         }
+    }
+
+    //Compute TTL and ensure that all index entries have the same TTL (if any)
+    private static int determineTTL(List<IndexEntry> additions) {
+        Preconditions.checkArgument(!additions.isEmpty());
+        int ttl=-1;
+        for (IndexEntry add : additions) {
+            int ittl = 0;
+            if (add.hasMetaData()) {
+                Preconditions.checkArgument(add.getMetaData().size()==1 && add.getMetaData().containsKey(EntryMetaData.TTL),
+                        "Elasticsearch only support TTL meta data. Found: %s",add.getMetaData());
+                ittl = (Integer)add.getMetaData().get(EntryMetaData.TTL);
+            }
+            if (ttl<0) ttl=ittl;
+            Preconditions.checkArgument(ttl==ittl,"Elasticsearch only supports uniform TTL values across all " +
+                    "index fields, but got additions: %s",additions);
+        }
+        assert ttl>=0;
+        return ttl;
     }
 
     public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
@@ -399,9 +432,10 @@ public class ElasticSearchIndex implements IndexProvider {
                         bulk.add(new DeleteRequest(indexName, store, docID));
                         requests++;
                     } else {
+                        // Add
                         if (log.isTraceEnabled())
                             log.trace("Adding entire document {}", docID);
-                        bulk.add(new IndexRequest(indexName, store, docID).source(getContent(content)));
+                        bulk.add(new IndexRequest(indexName, store, docID).source(getContent(content,determineTTL(content))));
                         requests++;
                     }
                 }
@@ -586,6 +620,11 @@ public class ElasticSearchIndex implements IndexProvider {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING || mapping==Mapping.TEXT) return true;
         }
         return false;
+    }
+
+    @Override
+    public IndexFeatures getFeatures() {
+        return ES_FEATURES;
     }
 
     @Override
