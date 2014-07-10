@@ -1287,6 +1287,23 @@ public class GraphDatabaseConfiguration {
                     log.info("Disabled partitioning");
                 }
 
+                /* If the configuration does not explicitly set a timestamp provider and
+                 * the storage backend both supports timestamps and has a preference for
+                 * a specific timestamp provider, then apply the backend's preference.
+                 */
+                if (!localbc.has(TIMESTAMP_PROVIDER)) {
+                    StoreFeatures f = storeManager.getFeatures();
+                    Timestamps backendPreference = null;
+                    if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
+                        globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
+                        log.info("Set timestamps to {} according to storage backend preference", globalWrite.get(TIMESTAMP_PROVIDER));
+                    }
+                    globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
+                    log.info("Set default timestamp provider {}", globalWrite.get(TIMESTAMP_PROVIDER));
+                } else {
+                    log.info("Using configured timestamp provider {}", localbc.get(TIMESTAMP_PROVIDER));
+                }
+
                 globalWrite.freezeConfiguration();
             } else {
                 String version = globalWrite.get(INITIAL_TITAN_VERSION);

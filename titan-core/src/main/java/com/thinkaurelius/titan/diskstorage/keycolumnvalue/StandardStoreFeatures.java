@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 
 /**
  * Immutable, {@link Builder}-customizable implementation of StoreFeatures.
@@ -18,6 +19,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean transactional;
     private final boolean keyConsistent;
     private final boolean timestamps;
+    private final Timestamps preferredTimestamps;
     private final boolean cellLevelTTL;
     private final boolean storeLevelTTL;
     private final boolean visibility;
@@ -80,6 +82,11 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
+    public Timestamps getPreferredTimestamps() {
+        return preferredTimestamps;
+    }
+
+    @Override
     public boolean hasCellTTL() {
         return cellLevelTTL;
     }
@@ -124,6 +131,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean distributed;
         private boolean transactional;
         private boolean timestamps;
+        private Timestamps preferredTimestamps;
         private boolean cellLevelTTL;
         private boolean storeLevelTTL;
         private boolean visibility;
@@ -151,6 +159,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             distributed(template.isDistributed());
             transactional(template.hasTxIsolation());
             timestamps(template.hasTimestamps());
+            preferredTimestamps(template.getPreferredTimestamps());
             cellTTL(template.hasCellTTL());
             storeTTL(template.hasStoreTTL());
             visibility(template.hasVisibility());
@@ -209,6 +218,11 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
+        public Builder preferredTimestamps(Timestamps t) {
+            preferredTimestamps = t;
+            return this;
+        }
+
         public Builder cellTTL(boolean b) {
             cellLevelTTL = b;
             return this;
@@ -247,8 +261,9 @@ public class StandardStoreFeatures implements StoreFeatures {
             return new StandardStoreFeatures(unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
-                    timestamps, cellLevelTTL, storeLevelTTL, visibility,
-                    keyConsistentTxConfig, localKeyConsistentTxConfig);
+                    timestamps, preferredTimestamps, cellLevelTTL,
+                    storeLevelTTL, visibility, keyConsistentTxConfig,
+                    localKeyConsistentTxConfig);
         }
     }
 
@@ -256,7 +271,8 @@ public class StandardStoreFeatures implements StoreFeatures {
             boolean multiQuery, boolean locking, boolean batchMutation,
             boolean localKeyPartition, boolean keyOrdered, boolean distributed,
             boolean transactional, boolean keyConsistent,
-            boolean timestamps, boolean cellLevelTTL, boolean storeLevelTTL,
+            boolean timestamps, Timestamps preferredTimestamps,
+            boolean cellLevelTTL, boolean storeLevelTTL,
             boolean visibility,
             Configuration keyConsistentTxConfig,
             Configuration localKeyConsistentTxConfig) {
@@ -271,6 +287,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.transactional = transactional;
         this.keyConsistent = keyConsistent;
         this.timestamps = timestamps;
+        this.preferredTimestamps = preferredTimestamps;
         this.cellLevelTTL = cellLevelTTL;
         this.storeLevelTTL = storeLevelTTL;
         this.visibility = visibility;
