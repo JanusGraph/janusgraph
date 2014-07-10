@@ -42,7 +42,7 @@ public class RelationQueryCache {
     public SliceQuery getQuery(final InternalRelationType type, Direction dir) {
         CacheEntry ce;
         try {
-            ce = cache.get(type.getID(),new Callable<CacheEntry>() {
+            ce = cache.get(type.getLongId(),new Callable<CacheEntry>() {
                 @Override
                 public CacheEntry call() throws Exception {
                     return new CacheEntry(edgeSerializer,type);

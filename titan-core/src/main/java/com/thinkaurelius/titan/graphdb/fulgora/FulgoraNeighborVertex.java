@@ -42,7 +42,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     @Override
     public<A> A getProperty(String key) {
         if (key.equals(executor.stateKey)) {
-            return (A)executor.getVertexState(getID());
+            return (A)executor.getVertexState(getLongId());
         }
         SystemRelationType t = SystemTypeManager.getSystemType(key);
         if (t!=null && t instanceof ImplicitKey) return ((ImplicitKey)t).computeProperty(this);
@@ -82,11 +82,11 @@ public class FulgoraNeighborVertex implements InternalVertex {
 
     @Override
     public Object getId() {
-        return getID();
+        return getLongId();
     }
 
     @Override
-    public long getID() {
+    public long getLongId() {
         return id;
     }
 
@@ -137,7 +137,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public void setID(long id) {
+    public void setId(long id) {
         throw getAccessException();
     }
 
@@ -278,6 +278,6 @@ public class FulgoraNeighborVertex implements InternalVertex {
 
     @Override
     public int compareTo(TitanElement titanElement) {
-        return Longs.compare(getID(), titanElement.getID());
+        return Longs.compare(getLongId(), titanElement.getLongId());
     }
 }

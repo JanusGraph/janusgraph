@@ -32,7 +32,7 @@ public class GraphSONRecordReaderTest extends BaseTest {
             counter++;
             assertEquals(reader.getCurrentKey(), NullWritable.get());
             HadoopVertex vertex = reader.getCurrentValue();
-            graph.put(vertex.getIdAsLong(), vertex);
+            graph.put(vertex.getLongId(), vertex);
         }
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(counter, 12);

@@ -22,7 +22,7 @@ public class WeightedWritable<T extends WritableComparable> extends GenericWrita
 
     private static Class[] CLASSES = {
             HadoopVertex.class,
-            HadoopEdge.class,
+            StandardFaunusEdge.class,
             Text.class
     };
 

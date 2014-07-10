@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -80,7 +80,7 @@ public class ValueGroupCountMapReduce {
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         this.map.incr(ElementPicker.getProperty(edge, this.property), edge.pathCount());
                         HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.PROPERTIES_COUNTED, 1L);

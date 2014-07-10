@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -65,7 +62,7 @@ public class LinkMapReduce {
         private Direction direction;
         private String label;
         private int step;
-        private final Holder<HadoopPathElement> holder = new Holder<HadoopPathElement>();
+        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
         private boolean mergeDuplicates;
         private String mergeWeightKey;
@@ -84,22 +81,22 @@ public class LinkMapReduce {
 
         @Override
         public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            final long valueId = value.getIdAsLong();
+            final long valueId = value.getLongId();
 
             if (value.hasPaths()) {
                 long edgesCreated = 0;
                 if (this.mergeDuplicates) {
                     final CounterMap<Long> map = new CounterMap<Long>();
-                    for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
+                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
                         map.incr(path.get(this.step).getId(), 1);
                     }
                     for (java.util.Map.Entry<Long, Long> entry : map.entrySet()) {
                         final long linkElementId = entry.getKey();
-                        final HadoopEdge edge;
+                        final StandardFaunusEdge edge;
                         if (this.direction.equals(IN))
-                            edge = new HadoopEdge(context.getConfiguration(), linkElementId, valueId, this.label);
+                            edge = new StandardFaunusEdge(context.getConfiguration(), linkElementId, valueId, this.label);
                         else
-                            edge = new HadoopEdge(context.getConfiguration(), valueId, linkElementId, this.label);
+                            edge = new StandardFaunusEdge(context.getConfiguration(), valueId, linkElementId, this.label);
 
                         if (!this.mergeWeightKey.equals(NO_WEIGHT_KEY))
                             edge.setProperty(this.mergeWeightKey, entry.getValue());
@@ -110,13 +107,13 @@ public class LinkMapReduce {
                         context.write(this.longWritable, this.holder.set('e', edge));
                     }
                 } else {
-                    for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
+                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
                         final long linkElementId = path.get(this.step).getId();
-                        final HadoopEdge edge;
+                        final StandardFaunusEdge edge;
                         if (this.direction.equals(IN))
-                            edge = new HadoopEdge(context.getConfiguration(), linkElementId, valueId, this.label);
+                            edge = new StandardFaunusEdge(context.getConfiguration(), linkElementId, valueId, this.label);
                         else
-                            edge = new HadoopEdge(context.getConfiguration(), valueId, linkElementId, this.label);
+                            edge = new StandardFaunusEdge(context.getConfiguration(), valueId, linkElementId, this.label);
 
                         value.addEdge(this.direction, edge);
                         edgesCreated++;
@@ -177,7 +174,7 @@ public class LinkMapReduce {
                     vertex.addAll((HadoopVertex) holder.get());
                     outTag = 'v';
                 } else if (tag == 'e') {
-                    vertex.addEdge(this.direction, (HadoopEdge) holder.get());
+                    vertex.addEdge(this.direction, (StandardFaunusEdge) holder.get());
                     edgesCreated++;
                 } else {
                     vertex.addEdges(Direction.BOTH, (HadoopVertex) holder.get());
@@ -216,7 +213,7 @@ public class LinkMapReduce {
                 if (tag == 'v') {
                     vertex.addAll((HadoopVertex) holder.get());
                 } else if (tag == 'e') {
-                    vertex.addEdge(this.direction, (HadoopEdge) holder.get());
+                    vertex.addEdge(this.direction, (StandardFaunusEdge) holder.get());
                     edgesCreated++;
                 } else {
                     vertex.addEdges(Direction.BOTH, (HadoopVertex) holder.get());

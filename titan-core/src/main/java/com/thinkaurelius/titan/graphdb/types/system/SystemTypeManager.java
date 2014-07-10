@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
 
 import java.util.Map;
 
@@ -24,7 +22,7 @@ public abstract class SystemTypeManager {
                     ImplicitKey.ID, ImplicitKey.TITANID, ImplicitKey.LABEL, ImplicitKey.ADJACENT_ID,
                     ImplicitKey.TIMESTAMP, ImplicitKey.TTL, ImplicitKey.VISIBILITY
                 }) {
-                idBuilder.put(et.getID(), et);
+                idBuilder.put(et.getLongId(), et);
                 nameBuilder.put(et.getName(),et);
             }
 

@@ -158,7 +158,7 @@ public abstract class BaseTest extends TestCase {
 
         final Map<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         for (final HadoopVertex vertex : vertices) {
-            map.put(vertex.getIdAsLong(), vertex);
+            map.put(vertex.getLongId(), vertex);
         }
         return map;
     }
@@ -170,7 +170,7 @@ public abstract class BaseTest extends TestCase {
                     vertex.startPath();
                 } else if (klass.equals(Edge.class)) {
                     for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                        ((HadoopEdge) edge).startPath();
+                        ((StandardFaunusEdge) edge).startPath();
                     }
                 } else {
                     throw new IllegalArgumentException("It can only be either edge or vertex, not both");
@@ -200,7 +200,7 @@ public abstract class BaseTest extends TestCase {
 
         final Map<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         for (final Object pair : driver.run()) {
-            map.put(((Pair<NullWritable, HadoopVertex>) pair).getSecond().getIdAsLong(), ((Pair<NullWritable, HadoopVertex>) pair).getSecond());
+            map.put(((Pair<NullWritable, HadoopVertex>) pair).getSecond().getLongId(), ((Pair<NullWritable, HadoopVertex>) pair).getSecond());
         }
         return map;
     }
@@ -219,7 +219,7 @@ public abstract class BaseTest extends TestCase {
         final Map<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         for (final Object object : driver.run()) {
             Pair<NullWritable, HadoopVertex> pair = (Pair<NullWritable, HadoopVertex>) object;
-            map.put(pair.getSecond().getIdAsLong(), pair.getSecond());
+            map.put(pair.getSecond().getLongId(), pair.getSecond());
         }
         return map;
     }
@@ -292,7 +292,7 @@ public abstract class BaseTest extends TestCase {
                 assertEquals(vertex.pathCount(), 0);
             } else {
                 for (Edge e : vertex.getEdges(Direction.BOTH)) {
-                    HadoopEdge edge = (HadoopEdge) e;
+                    StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     assertFalse(edge.hasPaths());
                     assertEquals(edge.pathCount(), 0);
                 }

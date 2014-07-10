@@ -71,11 +71,11 @@ public class CommitVerticesMapReduce {
                 keep = this.drop && !hasPaths;
 
             if (keep) {
-                this.longWritable.set(value.getIdAsLong());
+                this.longWritable.set(value.getLongId());
                 context.write(this.longWritable, this.holder.set('v', value));
                 verticesKept++;
             } else {
-                final long vertexId = value.getIdAsLong();
+                final long vertexId = value.getLongId();
                 this.holder.set('k', new HadoopVertex(context.getConfiguration(), vertexId));
 
                 Iterator<Edge> itty = value.getEdges(OUT).iterator();
@@ -97,7 +97,7 @@ public class CommitVerticesMapReduce {
                         context.write(this.longWritable, this.holder);
                     }
                 }
-                this.longWritable.set(value.getIdAsLong());
+                this.longWritable.set(value.getLongId());
                 context.write(this.longWritable, this.holder.set('d', value));
                 verticesDropped++;
             }
@@ -122,7 +122,7 @@ public class CommitVerticesMapReduce {
             for (final Holder holder : values) {
                 char tag = holder.getTag();
                 if (tag == 'k') {
-                    ids.add(holder.get().getIdAsLong());
+                    ids.add(holder.get().getLongId());
                     // todo: once vertex is found, do individual removes to save memory
                 } else {
                     vertex = (HadoopVertex) holder.get();
@@ -159,13 +159,13 @@ public class CommitVerticesMapReduce {
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'k') {
-                    ids.add(holder.get().getIdAsLong());
+                    ids.add(holder.get().getLongId());
                     // todo: once vertex is found, do individual removes to save memory
                 } else if (tag == 'v') {
                     vertex = (HadoopVertex) holder.get();
                 } else {
                     vertex = (HadoopVertex) holder.get();
-                    vertex.setState(ElementState.DELETED);
+                    vertex.setLifeCycle(ElementState.DELETED);
                     Iterator<Edge> itty = vertex.getEdges(Direction.BOTH).iterator();
                     while (itty.hasNext()) {
                         itty.next();
@@ -179,7 +179,7 @@ public class CommitVerticesMapReduce {
 
                 if (this.trackState)
                     context.write(NullWritable.get(), vertex);
-                else if (!vertex.isDeleted())
+                else if (!vertex.isRemoved())
                     context.write(NullWritable.get(), vertex);
 
                 HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_KEPT, ((List) vertex.getEdges(OUT)).size());

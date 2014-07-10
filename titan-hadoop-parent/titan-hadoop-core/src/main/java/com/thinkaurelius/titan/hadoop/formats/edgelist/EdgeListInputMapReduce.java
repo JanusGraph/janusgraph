@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.FaunusElement;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
@@ -38,7 +37,7 @@ public class EdgeListInputMapReduce {
         return new EmptyConfiguration();
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusElement, LongWritable, HadoopVertex> {
 
         private final HashMap<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         private static final int MAX_MAP_SIZE = 5000;
@@ -46,16 +45,16 @@ public class EdgeListInputMapReduce {
         private int counter = 0;
 
         @Override
-        public void map(final NullWritable key, final HadoopElement value, final Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            if (value instanceof HadoopEdge) {
-                final long outId = ((HadoopEdge) value).getVertexId(OUT);
-                final long inId = ((HadoopEdge) value).getVertexId(IN);
+        public void map(final NullWritable key, final FaunusElement value, final Mapper<NullWritable, FaunusElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+            if (value instanceof StandardFaunusEdge) {
+                final long outId = ((StandardFaunusEdge) value).getVertexId(OUT);
+                final long inId = ((StandardFaunusEdge) value).getVertexId(IN);
                 HadoopVertex vertex = this.map.get(outId);
                 if (null == vertex) {
                     vertex = new HadoopVertex(context.getConfiguration(), outId);
                     this.map.put(outId, vertex);
                 }
-                vertex.addEdge(OUT, WritableUtils.clone((HadoopEdge) value, context.getConfiguration()));
+                vertex.addEdge(OUT, WritableUtils.clone((StandardFaunusEdge) value, context.getConfiguration()));
                 this.counter++;
 
                 vertex = this.map.get(inId);
@@ -63,12 +62,12 @@ public class EdgeListInputMapReduce {
                     vertex = new HadoopVertex(context.getConfiguration(), inId);
                     this.map.put(inId, vertex);
                 }
-                vertex.addEdge(IN, WritableUtils.clone((HadoopEdge) value, context.getConfiguration()));
+                vertex.addEdge(IN, WritableUtils.clone((StandardFaunusEdge) value, context.getConfiguration()));
                 HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_PROCESSED, 1L);
                 //context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
                 this.counter++;
             } else {
-                final long id = value.getIdAsLong();
+                final long id = value.getLongId();
                 HadoopVertex vertex = this.map.get(id);
                 if (null == vertex) {
                     vertex = new HadoopVertex(context.getConfiguration(), id);
@@ -83,13 +82,13 @@ public class EdgeListInputMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             this.flush(context);
         }
 
-        private void flush(final Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        private void flush(final Mapper<NullWritable, FaunusElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             for (final HadoopVertex vertex : this.map.values()) {
-                this.longWritable.set(vertex.getIdAsLong());
+                this.longWritable.set(vertex.getLongId());
                 context.write(this.longWritable, vertex);
                 HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_EMITTED, 1L);
                 //context.getCounter(Counters.VERTICES_EMITTED).increment(1l);

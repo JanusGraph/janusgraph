@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -37,7 +37,7 @@ public class EdgesMapTest extends BaseTest {
         for (HadoopVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
             }
         }
 
@@ -62,9 +62,9 @@ public class EdgesMapTest extends BaseTest {
         for (HadoopVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getId());
             }
         }
 

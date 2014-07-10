@@ -17,7 +17,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement.MicroElement;
+import com.thinkaurelius.titan.hadoop.FaunusPathElement.MicroElement;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -79,33 +79,33 @@ public class HadoopSerializer {
         vertex.outEdges = readEdges(in, Direction.IN, vertex.id, schema);
     }
 
-    public void writeEdge(final HadoopEdge edge, final DataOutput out) throws IOException {
+    public void writeEdge(final StandardFaunusEdge edge, final DataOutput out) throws IOException {
         writePathElement(edge, out);
         WritableUtils.writeVLong(out, edge.inVertex);
         WritableUtils.writeVLong(out, edge.outVertex);
         writeHadoopType(edge.getType(), out);
     }
 
-    public void readEdge(final HadoopEdge edge, final DataInput in) throws IOException {
+    public void readEdge(final StandardFaunusEdge edge, final DataInput in) throws IOException {
         readPathElement(edge, in);
         edge.inVertex = WritableUtils.readVLong(in);
         edge.outVertex = WritableUtils.readVLong(in);
         edge.setLabel(readHadoopType(in));
     }
 
-    private void readPathElement(final HadoopPathElement element, final DataInput in) throws IOException {
+    private void readPathElement(final FaunusPathElement element, final DataInput in) throws IOException {
         readPathElement(element, null, in);
     }
 
-    private void writePathElement(final HadoopPathElement element, final DataOutput out) throws IOException {
+    private void writePathElement(final FaunusPathElement element, final DataOutput out) throws IOException {
         writePathElement(element, null, out);
     }
 
-    private void readPathElement(final HadoopPathElement element, Schema schema, final DataInput in) throws IOException {
+    private void readPathElement(final FaunusPathElement element, Schema schema, final DataInput in) throws IOException {
         readElement(element, schema, in);
         if (trackPaths) {
             element.paths = readElementPaths(in);
-            element.microVersion = (element instanceof HadoopVertex) ? new HadoopVertex.MicroVertex(element.id) : new HadoopEdge.MicroEdge(element.id);
+            element.microVersion = (element instanceof HadoopVertex) ? new HadoopVertex.MicroVertex(element.id) : new StandardFaunusEdge.MicroEdge(element.id);
             element.trackPaths = true;
         } else {
             element.pathCounter = WritableUtils.readVLong(in);
@@ -113,7 +113,7 @@ public class HadoopSerializer {
         }
     }
 
-    private void writePathElement(final HadoopPathElement element, final Schema schema, final DataOutput out) throws IOException {
+    private void writePathElement(final FaunusPathElement element, final Schema schema, final DataOutput out) throws IOException {
         writeElement(element, schema, out);
         if (trackPaths)
             writeElementPaths(element.paths, out);
@@ -121,35 +121,35 @@ public class HadoopSerializer {
             WritableUtils.writeVLong(out, element.pathCounter);
     }
 
-    private void readElement(final HadoopElement element, Schema schema, final DataInput in) throws IOException {
+    private void readElement(final FaunusElement element, Schema schema, final DataInput in) throws IOException {
         element.id = WritableUtils.readVLong(in);
-        if (trackState) element.setState(ElementState.valueOf(in.readByte()));
-        element.properties = readProperties(schema, in);
+        if (trackState) element.setLifeCycle(ElementState.valueOf(in.readByte()));
+        element.adjacency = readProperties(schema, in);
     }
 
-    private void writeElement(final HadoopElement element, final Schema schema, final DataOutput out) throws IOException {
-        Preconditions.checkArgument(trackState || !element.isDeleted());
+    private void writeElement(final FaunusElement element, final Schema schema, final DataOutput out) throws IOException {
+        Preconditions.checkArgument(trackState || !element.isRemoved());
         WritableUtils.writeVLong(out, element.id);
-        if (trackState) out.writeByte(element.getState().getByteValue());
-        writeProperties(element.properties, schema, out);
+        if (trackState) out.writeByte(element.getLifeCycle().getByteValue());
+        writeProperties(element.adjacency, schema, out);
     }
 
-    private <T extends HadoopElement> Iterable<T> filterDeleted(Iterable<T> elements) {
+    private <T extends FaunusElement> Iterable<T> filterDeleted(Iterable<T> elements) {
         if (trackState) return elements;
         else return Iterables.filter(elements, new Predicate<T>() {
             @Override
             public boolean apply(@Nullable T element) {
-                return !element.isDeleted();
+                return !element.isRemoved();
             }
         });
     }
 
-    private void writeProperties(final Multimap<HadoopType, HadoopProperty> properties, final Schema schema, final DataOutput out) throws IOException {
-        Iterable<HadoopProperty> subset = filterDeleted(properties.values());
+    private void writeProperties(final Multimap<HadoopType, FaunusProperty> properties, final Schema schema, final DataOutput out) throws IOException {
+        Iterable<FaunusProperty> subset = filterDeleted(properties.values());
         int count = IterablesUtil.size(subset);
         WritableUtils.writeVInt(out, count);
         if (count > 0) {
-            for (final HadoopProperty property : subset) {
+            for (final FaunusProperty property : subset) {
                 //Type
                 if (schema == null) writeHadoopType(property.getType(), out);
                 else WritableUtils.writeVLong(out, schema.getTypeId(property.getType()));
@@ -166,12 +166,12 @@ public class HadoopSerializer {
         }
     }
 
-    private Multimap<HadoopType, HadoopProperty> readProperties(final Schema schema, final DataInput in) throws IOException {
+    private Multimap<HadoopType, FaunusProperty> readProperties(final Schema schema, final DataInput in) throws IOException {
         final int count = WritableUtils.readVInt(in);
         if (count == 0)
-            return HadoopElement.NO_PROPERTIES;
+            return FaunusElement.EMPTY_ADJACENCY;
         else {
-            final Multimap<HadoopType, HadoopProperty> properties = HashMultimap.create();
+            final Multimap<HadoopType, FaunusProperty> properties = HashMultimap.create();
             for (int i = 0; i < count; i++) {
                 HadoopType type;
                 if (schema == null) type = readHadoopType(in);
@@ -183,7 +183,7 @@ public class HadoopSerializer {
                 final ReadBuffer buffer = new ReadArrayBuffer(bytes);
                 Object value = serializer.readClassAndObject(buffer);
 
-                HadoopProperty property = new HadoopProperty(type, value);
+                FaunusProperty property = new FaunusProperty(type, value);
                 readElement(property, schema, in);
                 properties.put(type, property);
             }
@@ -191,14 +191,14 @@ public class HadoopSerializer {
         }
     }
 
-    private ListMultimap<HadoopType, HadoopEdge> readEdges(final DataInput in, final Direction idToRead, final long otherId, final Schema schema) throws IOException {
-        final ListMultimap<HadoopType, HadoopEdge> edges = ArrayListMultimap.create();
+    private ListMultimap<HadoopType, StandardFaunusEdge> readEdges(final DataInput in, final Direction idToRead, final long otherId, final Schema schema) throws IOException {
+        final ListMultimap<HadoopType, StandardFaunusEdge> edges = ArrayListMultimap.create();
         int edgeTypes = WritableUtils.readVInt(in);
         for (int i = 0; i < edgeTypes; i++) {
             HadoopType type = schema.getType(WritableUtils.readVLong(in));
             final int size = WritableUtils.readVInt(in);
             for (int j = 0; j < size; j++) {
-                final HadoopEdge edge = new HadoopEdge(this.configuration);
+                final StandardFaunusEdge edge = new StandardFaunusEdge(this.configuration);
                 readPathElement(edge, schema, in);
                 edge.setLabel(type);
                 long vertexId = WritableUtils.readVLong(in);
@@ -220,7 +220,7 @@ public class HadoopSerializer {
         return edges;
     }
 
-    private void writeEdges(final ListMultimap<HadoopType, HadoopEdge> edges, final DataOutput out, final Direction idToWrite, final Schema schema) throws IOException {
+    private void writeEdges(final ListMultimap<HadoopType, StandardFaunusEdge> edges, final DataOutput out, final Direction idToWrite, final Schema schema) throws IOException {
         Map<HadoopType, Integer> counts = Maps.newHashMap();
         int typeCount = 0;
         for (HadoopType type : edges.keySet()) {
@@ -232,10 +232,10 @@ public class HadoopSerializer {
         WritableUtils.writeVInt(out, typeCount);
         for (HadoopType type : edges.keySet()) {
             if (counts.get(type) == 0) continue;
-            Iterable<HadoopEdge> subset = filterDeleted(edges.get(type));
+            Iterable<StandardFaunusEdge> subset = filterDeleted(edges.get(type));
             WritableUtils.writeVLong(out, schema.getTypeId(type));
             WritableUtils.writeVInt(out, counts.get(type));
-            for (final HadoopEdge edge : subset) {
+            for (final StandardFaunusEdge edge : subset) {
                 writePathElement(edge, schema, out);
                 WritableUtils.writeVLong(out, edge.getVertexId(idToWrite));
             }
@@ -274,7 +274,7 @@ public class HadoopSerializer {
                     if (type == 'v')
                         path.add(new HadoopVertex.MicroVertex(WritableUtils.readVLong(in)));
                     else
-                        path.add(new HadoopEdge.MicroEdge(WritableUtils.readVLong(in)));
+                        path.add(new StandardFaunusEdge.MicroEdge(WritableUtils.readVLong(in)));
                 }
                 paths.add(path);
             }
@@ -354,12 +354,12 @@ public class HadoopSerializer {
     }
 
     static {
-        WritableComparator.define(HadoopPathElement.class, new Comparator());
+        WritableComparator.define(FaunusPathElement.class, new Comparator());
     }
 
     public static class Comparator extends WritableComparator {
         public Comparator() {
-            super(HadoopPathElement.class);
+            super(FaunusPathElement.class);
         }
 
         @Override
@@ -373,8 +373,8 @@ public class HadoopSerializer {
 
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
-            if (a instanceof HadoopElement && b instanceof HadoopElement)
-                return ((Long) (((HadoopElement) a).getIdAsLong())).compareTo(((HadoopElement) b).getIdAsLong());
+            if (a instanceof FaunusElement && b instanceof FaunusElement)
+                return ((Long) (((FaunusElement) a).getLongId())).compareTo(((FaunusElement) b).getLongId());
             else
                 return super.compare(a, b);
         }
@@ -399,7 +399,7 @@ public class HadoopSerializer {
     public void writeVertex(final Vertex vertex, final ElementIdHandler elementIdHandler, final DataOutput out) throws IOException {
         Schema schema = new Schema();
         //Convert properties and update schema
-        Multimap<HadoopType, HadoopProperty> properties = getProperties(vertex);
+        Multimap<HadoopType, FaunusProperty> properties = getProperties(vertex);
         for (HadoopType type : properties.keySet()) schema.add(type);
         for (Edge edge : vertex.getEdges(Direction.BOTH)) {
             schema.add(edge.getLabel());
@@ -418,11 +418,11 @@ public class HadoopSerializer {
 
     }
 
-    private Multimap<HadoopType, HadoopProperty> getProperties(Element element) {
-        Multimap<HadoopType, HadoopProperty> properties = HashMultimap.create();
+    private Multimap<HadoopType, FaunusProperty> getProperties(Element element) {
+        Multimap<HadoopType, FaunusProperty> properties = HashMultimap.create();
         for (String key : element.getPropertyKeys()) {
             HadoopType type = types.get(key);
-            properties.put(type, new HadoopProperty(type, element.getProperty(key)));
+            properties.put(type, new FaunusProperty(type, element.getProperty(key)));
         }
         return properties;
     }

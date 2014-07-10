@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -38,7 +38,7 @@ public class VerticesMapTest extends BaseTest {
         for (HadoopVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 0);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
             }
 
             try {
@@ -71,7 +71,7 @@ public class VerticesMapTest extends BaseTest {
             assertEquals(vertex.getPaths().get(0).size(), 1);
             assertEquals(vertex.getPaths().get(0).get(0).getId(), vertex.getId());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 0);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
             }
         }
 

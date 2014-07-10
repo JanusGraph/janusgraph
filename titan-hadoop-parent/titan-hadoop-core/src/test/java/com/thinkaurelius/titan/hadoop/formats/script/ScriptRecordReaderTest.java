@@ -28,7 +28,7 @@ public class ScriptRecordReaderTest extends BaseTest {
         while (reader.nextKeyValue()) {
             assertEquals(reader.getCurrentKey(), NullWritable.get());
             HadoopVertex vertex = reader.getCurrentValue();
-            long id = vertex.getIdAsLong();
+            long id = vertex.getLongId();
             assertEquals(id, counter++);
             assertEquals(vertex.getPropertyKeys().size(), 0);
             assertEquals(count(vertex.getEdges(Direction.IN)), 0);

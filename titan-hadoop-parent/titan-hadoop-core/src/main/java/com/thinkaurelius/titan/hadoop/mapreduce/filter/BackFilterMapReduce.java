@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -40,7 +37,7 @@ public class BackFilterMapReduce {
 
         private int step;
         private boolean isVertex;
-        private final Holder<HadoopPathElement> holder = new Holder<HadoopPathElement>();
+        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
 
 
@@ -54,8 +51,8 @@ public class BackFilterMapReduce {
         public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
-                        if (path.get(this.step) instanceof HadoopEdge.MicroEdge)
+                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
+                        if (path.get(this.step) instanceof StandardFaunusEdge.MicroEdge)
                             throw new IOException("Back does not support backing up to previous edges");
 
                         final long backElementId = path.get(this.step).getId();
@@ -68,10 +65,10 @@ public class BackFilterMapReduce {
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        for (final List<HadoopPathElement.MicroElement> path : edge.getPaths()) {
-                            if (path.get(this.step) instanceof HadoopEdge.MicroEdge)
+                        for (final List<FaunusPathElement.MicroElement> path : edge.getPaths()) {
+                            if (path.get(this.step) instanceof StandardFaunusEdge.MicroEdge)
                                 throw new IOException("Back does not support backing up to previous edges");
 
                             final long backElementId = path.get(this.step).getId();
@@ -85,13 +82,13 @@ public class BackFilterMapReduce {
                 }
 
                 for (final Edge e : value.getEdges(Direction.IN)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths())
                         edge.clearPaths();
                 }
             }
 
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(value.getLongId());
             context.write(this.longWritable, this.holder.set('v', value));
         }
     }

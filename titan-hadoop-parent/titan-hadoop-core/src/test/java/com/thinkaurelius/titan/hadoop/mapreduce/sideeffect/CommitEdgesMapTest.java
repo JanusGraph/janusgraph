@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -89,7 +89,7 @@ public class CommitEdgesMapTest extends BaseTest {
         Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
         for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
-                ((HadoopEdge) edge).startPath();
+                ((StandardFaunusEdge) edge).startPath();
             }
         }
         graph = runWithGraph(graph, mapReduceDriver);
@@ -128,7 +128,7 @@ public class CommitEdgesMapTest extends BaseTest {
         Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
         for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
-                ((HadoopEdge) edge).startPath();
+                ((StandardFaunusEdge) edge).startPath();
             }
         }
         graph = runWithGraph(graph, mapReduceDriver);

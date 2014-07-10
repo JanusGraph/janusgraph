@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.FaunusElement;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 
@@ -31,7 +31,7 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement> {
+public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement> {
 
     private final Logger logger = Logger.getLogger(RDFBlueprintsHandler.class);
     private final boolean useFragments;
@@ -41,7 +41,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
     private static final String BASE_URI = "http://thinkaurelius.com#";
 
     private RDFParser parser;
-    private final Queue<HadoopElement> queue = new LinkedList<HadoopElement>();
+    private final Queue<FaunusElement> queue = new LinkedList<FaunusElement>();
     public static final Map<String, RDFFormat> formats = new HashMap<String, RDFFormat>();
 
     private static Map<String, Character> dataTypeToClass = new HashMap<String, Character>();
@@ -201,7 +201,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
                 object.setProperty(RDFInputFormat.NAME, createFragment(s.getObject()));
             this.queue.add(object);
 
-            final HadoopEdge predicate = new HadoopEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
+            final StandardFaunusEdge predicate = new StandardFaunusEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
             predicate.setProperty(RDFInputFormat.URI, s.getPredicate().stringValue());
             if (null != s.getContext())
                 predicate.setProperty(RDFInputFormat.CONTEXT, s.getContext().stringValue());
@@ -226,7 +226,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
         }
     }
 
-    public HadoopElement next() {
+    public FaunusElement next() {
         if (this.queue.isEmpty())
             return null;
         else

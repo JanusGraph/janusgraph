@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.FaunusPathElement;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -55,9 +54,9 @@ public class CyclicPathFilterMap {
             long pathsFiltered = 0l;
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Iterator<List<HadoopPathElement.MicroElement>> itty = value.getPaths().iterator();
+                    final Iterator<List<FaunusPathElement.MicroElement>> itty = value.getPaths().iterator();
                     while (itty.hasNext()) {
-                        final List<HadoopPathElement.MicroElement> path = itty.next();
+                        final List<FaunusPathElement.MicroElement> path = itty.next();
                         this.set.clear();
                         this.set.addAll(path);
                         if (path.size() != this.set.size()) {
@@ -68,11 +67,11 @@ public class CyclicPathFilterMap {
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Iterator<List<HadoopPathElement.MicroElement>> itty = edge.getPaths().iterator();
+                        final Iterator<List<FaunusPathElement.MicroElement>> itty = edge.getPaths().iterator();
                         while (itty.hasNext()) {
-                            final List<HadoopPathElement.MicroElement> path = itty.next();
+                            final List<FaunusPathElement.MicroElement> path = itty.next();
                             this.set.clear();
                             this.set.addAll(path);
                             if (path.size() != this.set.size()) {

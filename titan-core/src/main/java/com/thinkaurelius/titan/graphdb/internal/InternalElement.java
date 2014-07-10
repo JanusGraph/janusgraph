@@ -23,7 +23,7 @@ public interface InternalElement extends TitanElement {
      */
     public StandardTitanTx tx();
 
-    public void setID(long id);
+    public void setId(long id);
 
     /**
      * @see ElementLifeCycle

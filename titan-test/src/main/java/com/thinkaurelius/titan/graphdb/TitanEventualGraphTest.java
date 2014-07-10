@@ -89,8 +89,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx1.commit();
 
         // Fetch vertex ids
-        long id1 = v1.getID();
-        long id2 = v2.getID();
+        long id1 = v1.getLongId();
+        long id2 = v2.getLongId();
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
@@ -254,7 +254,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         rs[5]=sign(v.addEdge("emf",u),txid);
 
         newTx();
-        long vid = v.getID(), uid = u.getID();
+        long vid = v.getLongId(), uid = u.getLongId();
 
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
@@ -274,28 +274,28 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("Bob",p.getValue());
         assertEquals(wintx,p.getProperty("sig"));
         p = Iterables.getOnlyElement(v.getProperties("value"));
-        assertEquals(rs[2].getID(),p.getID());
+        assertEquals(rs[2].getLongId(),p.getLongId());
         assertEquals(wintx,p.getProperty("sig"));
         assertEquals(2,Iterables.size(v.getProperties("valuef")));
         for (TitanProperty pp : v.getProperties("valuef")) {
-            assertNotEquals(rs[3].getID(),pp.getID());
+            assertNotEquals(rs[3].getLongId(),pp.getLongId());
             assertEquals(2,pp.getValue());
         }
 
         TitanEdge e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"es"));
         assertEquals(wintx,e.getProperty("sig"));
-        assertNotEquals(rs[6].getID(),e.getID());
+        assertNotEquals(rs[6].getLongId(),e.getLongId());
         e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2o"));
         assertEquals(wintx,e.getProperty("sig"));
-        assertEquals(rs[7].getID(),e.getID());
+        assertEquals(rs[7].getLongId(),e.getLongId());
         e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2m"));
         assertEquals(wintx,e.getProperty("sig"));
-        assertNotEquals(rs[8].getID(),e.getID());
+        assertNotEquals(rs[8].getLongId(),e.getLongId());
         e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"em"));
         assertEquals(wintx,e.getProperty("sig"));
-        assertEquals(rs[4].getID(),e.getID());
+        assertEquals(rs[4].getLongId(),e.getLongId());
         for (Edge ee : v.getEdges(Direction.OUT,"emf")) {
-            assertNotEquals(rs[5].getID(),ee.getId());
+            assertNotEquals(rs[5].getLongId(),ee.getId());
             assertEquals(uid,ee.getVertex(Direction.IN).getId());
         }
     }

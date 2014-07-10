@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanGraphOutputMapReduce;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -65,7 +64,7 @@ public class SchemaInferencerMapReduce {
                 }
             }
 
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(value.getLongId());
             context.write(this.longWritable, value);
         }
 

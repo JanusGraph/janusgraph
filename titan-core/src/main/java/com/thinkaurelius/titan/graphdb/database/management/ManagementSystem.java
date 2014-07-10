@@ -572,13 +572,13 @@ public class ManagementSystem implements TitanManagement {
 
         private UpdateStatusTrigger(StandardTitanGraph graph, TitanSchemaVertex vertex, SchemaStatus newStatus, Iterable<PropertyKeyVertex> keys) {
             this.graph = graph;
-            this.schemaVertexId = vertex.getID();
+            this.schemaVertexId = vertex.getLongId();
             this.newStatus = newStatus;
             this.propertyKeys = Sets.newHashSet(Iterables.transform(keys,new Function<PropertyKey, Long>() {
                 @Nullable
                 @Override
                 public Long apply(@Nullable PropertyKey propertyKey) {
-                    return propertyKey.getID();
+                    return propertyKey.getLongId();
                 }
             }));
         }

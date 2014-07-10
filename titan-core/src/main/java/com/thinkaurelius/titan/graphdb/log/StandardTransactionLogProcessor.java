@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -44,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -169,7 +167,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                                 if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.apply(index.getBackingIndexName())) {
                                     assert rel.isProperty();
                                     indexRestores.put(index.getBackingIndexName(),
-                                            new IndexRestore(rel.getVertex(0).getID(),ElementCategory.VERTEX,getIndexId(index)));
+                                            new IndexRestore(rel.getVertex(0).getLongId(),ElementCategory.VERTEX,getIndexId(index)));
                                 }
                             }
                             //See if relation itself is affected

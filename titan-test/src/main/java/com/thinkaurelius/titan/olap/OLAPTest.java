@@ -370,7 +370,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                         return Integer.MAX_VALUE;
                     }
                 });
-                builder.setInitialState(ImmutableMap.of(vertex.getID(),0));
+                builder.setInitialState(ImmutableMap.of(vertex.getLongId(),0));
             } else {
                 builder.setInitialState(distances);
             }

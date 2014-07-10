@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -72,16 +71,16 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
             @Override
             public boolean isVertexExistsSystemType(long typeid) {
-                return typeid == BaseKey.VertexExists.getID();
+                return typeid == BaseKey.VertexExists.getLongId();
             }
 
             @Override
             public boolean isTypeSystemType(long typeid) {
-                return typeid == BaseKey.SchemaCategory.getID() ||
-                        typeid == BaseKey.SchemaDefinitionProperty.getID() ||
-                        typeid == BaseKey.SchemaDefinitionDesc.getID() ||
-                        typeid == BaseKey.SchemaName.getID() ||
-                        typeid == BaseLabel.SchemaDefinitionEdge.getID();
+                return typeid == BaseKey.SchemaCategory.getLongId() ||
+                        typeid == BaseKey.SchemaDefinitionProperty.getLongId() ||
+                        typeid == BaseKey.SchemaDefinitionDesc.getLongId() ||
+                        typeid == BaseKey.SchemaName.getLongId() ||
+                        typeid == BaseLabel.SchemaDefinitionEdge.getLongId();
             }
         };
     }

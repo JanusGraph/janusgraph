@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -46,7 +46,7 @@ public class IdentityMap {
             long edgePropertyCount = 0;
             for (final Edge edge : value.getEdges(Direction.IN)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((HadoopEdge) edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((StandardFaunusEdge) edge).getProperties().size();
             }
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGE_COUNT, edgeCount);
             //context.getCounter(Counters.IN_EDGE_COUNT).increment(edgeCount);
@@ -57,7 +57,7 @@ public class IdentityMap {
             edgePropertyCount = 0;
             for (final Edge edge : value.getEdges(Direction.OUT)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((HadoopEdge) edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((StandardFaunusEdge) edge).getProperties().size();
             }
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGE_COUNT, edgeCount);
             //context.getCounter(Counters.OUT_EDGE_COUNT).increment(edgeCount);

@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.CountMapReduce.Counters;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
@@ -58,11 +56,11 @@ public class EdgeCopyMapReduce {
                 final long id = (Long) edge.getVertex(this.direction.opposite()).getId();
                 this.longWritable.set(id);
                 final HadoopVertex shellVertex = new HadoopVertex(context.getConfiguration(), id);
-                shellVertex.addEdge(this.direction.opposite(), (HadoopEdge) edge);
+                shellVertex.addEdge(this.direction.opposite(), (StandardFaunusEdge) edge);
                 context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 edgesInverted++;
             }
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(value.getLongId());
             context.write(this.longWritable, this.vertexHolder.set('r', value));
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_COPIED, edgesInverted);
             //context.getCounter(Counters.EDGES_COPIED).increment(edgesInverted);

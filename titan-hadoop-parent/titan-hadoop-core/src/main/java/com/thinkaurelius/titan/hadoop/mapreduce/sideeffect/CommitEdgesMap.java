@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -52,13 +52,13 @@ public class CommitEdgesMap {
             long edgesDropped = 0;
             while (itty.hasNext()) {
                 if (this.drop) {
-                    if ((((HadoopEdge) itty.next()).hasPaths())) {
+                    if ((((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
                         edgesKept++;
                 } else {
-                    if (!(((HadoopEdge) itty.next()).hasPaths())) {
+                    if (!(((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
@@ -77,13 +77,13 @@ public class CommitEdgesMap {
             edgesDropped = 0;
             while (itty.hasNext()) {
                 if (this.drop) {
-                    if ((((HadoopEdge) itty.next()).hasPaths())) {
+                    if ((((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
                         edgesKept++;
                 } else {
-                    if (!(((HadoopEdge) itty.next()).hasPaths())) {
+                    if (!(((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else

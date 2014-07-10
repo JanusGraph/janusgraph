@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.RelationType;
@@ -46,7 +45,7 @@ public class CacheEdge extends AbstractEdge {
 
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
-            final long id = super.getID();
+            final long id = super.getLongId();
             Iterable<InternalRelation> previous = startVertex.getAddedRelations(new Predicate<InternalRelation>() {
                 @Override
                 public boolean apply(@Nullable InternalRelation internalRelation) {
@@ -70,15 +69,15 @@ public class CacheEdge extends AbstractEdge {
     }
 
     private synchronized InternalRelation update() {
-        StandardEdge copy = new StandardEdge(super.getID(), getEdgeLabel(), getVertex(0), getVertex(1), ElementLifeCycle.Loaded);
+        StandardEdge copy = new StandardEdge(super.getLongId(), getEdgeLabel(), getVertex(0), getVertex(1), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
         StandardEdge u = (StandardEdge) tx().addEdge(getVertex(0), getVertex(1), getLabel());
-        if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setID(super.getID());
-        u.setPreviousID(super.getID());
+        if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setId(super.getLongId());
+        u.setPreviousID(super.getLongId());
         copyProperties(u);
-        setID(u.getID());
+        setId(u.getLongId());
         return u;
     }
 
@@ -92,7 +91,7 @@ public class CacheEdge extends AbstractEdge {
 
     @Override
     public <O> O getPropertyDirect(RelationType type) {
-        return getPropertyMap().get(type.getID());
+        return getPropertyMap().get(type.getLongId());
     }
 
     @Override
@@ -120,13 +119,13 @@ public class CacheEdge extends AbstractEdge {
     @Override
     public byte getLifeCycle() {
         InternalVertex startVertex = getVertex(0);
-        return ((startVertex.hasRemovedRelations() || startVertex.isRemoved()) && tx().isRemovedRelation(super.getID()))
+        return ((startVertex.hasRemovedRelations() || startVertex.isRemoved()) && tx().isRemovedRelation(super.getLongId()))
                 ? ElementLifeCycle.Removed : ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.getID())) {
+        if (!tx().isRemovedRelation(super.getLongId())) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }

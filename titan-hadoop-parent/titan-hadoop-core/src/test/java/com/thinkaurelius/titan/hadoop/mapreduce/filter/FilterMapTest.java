@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
@@ -61,8 +61,8 @@ public class FilterMapTest extends BaseTest {
         for (HadoopVertex vertex : results.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((HadoopEdge) edge).hasPaths()) {
-                    counter = counter + ((HadoopEdge) edge).pathCount();
+                if (((StandardFaunusEdge) edge).hasPaths()) {
+                    counter = counter + ((StandardFaunusEdge) edge).pathCount();
                     assertEquals(edge.getProperty("weight"), 0.2d);
                 }
             }

@@ -101,7 +101,7 @@ public class ManagementLogger implements MessageReader {
         VariableLong.writePositive(out,updatedTypes.size());
         for (TitanSchemaVertex type : updatedTypes) {
             assert type.hasId();
-            VariableLong.writePositive(out,type.getID());
+            VariableLong.writePositive(out,type.getLongId());
         }
         sysLog.add(out.getStaticBuffer());
     }

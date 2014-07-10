@@ -6,6 +6,7 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -266,7 +267,7 @@ public class IndexSerializer {
                 if (!indexAppliesTo(index,vertex)) continue;
                 if (index.isCompositeIndex()) { //Gather composite indexes
                     CompositeIndexType cIndex = (CompositeIndexType)index;
-                    IndexRecords updateRecords = indexMatches(vertex,cIndex,updateType==IndexUpdate.Type.DELETE,p.getPropertyKey(),new RecordEntry(p.getID(),p.getValue()));
+                    IndexRecords updateRecords = indexMatches(vertex,cIndex,updateType==IndexUpdate.Type.DELETE,p.getPropertyKey(),new RecordEntry(p.getLongId(),p.getValue()));
                     for (RecordEntry[] record : updateRecords) {
                         updates.add(new IndexUpdate<StaticBuffer,Entry>(cIndex,updateType,getIndexKey(cIndex,record),getIndexEntry(cIndex,record,vertex), vertex));
                     }
@@ -327,7 +328,7 @@ public class IndexSerializer {
             IndexField f = fields[i];
             Object value = relation.getProperty(f.getFieldKey());
             if (value==null) return null; //No match
-            match[i] = new RecordEntry(relation.getID(),value);
+            match[i] = new RecordEntry(relation.getLongId(),value);
         }
         return match;
     }
@@ -378,7 +379,7 @@ public class IndexSerializer {
         IndexRecords matches = new IndexRecords();
         IndexField[] fields = index.getFieldKeys();
         if (indexAppliesTo(index,vertex)) {
-            indexMatches((InternalVertex)vertex,new RecordEntry[fields.length],matches,fields,0,false,
+            indexMatches(vertex,new RecordEntry[fields.length],matches,fields,0,false,
                                             replaceKey,new RecordEntry(0,replaceValue));
         }
         return matches;
@@ -388,11 +389,11 @@ public class IndexSerializer {
                                               boolean onlyLoaded, PropertyKey replaceKey, RecordEntry replaceValue) {
         IndexRecords matches = new IndexRecords();
         IndexField[] fields = index.getFieldKeys();
-        indexMatches((InternalVertex)vertex,new RecordEntry[fields.length],matches,fields,0,onlyLoaded,replaceKey,replaceValue);
+        indexMatches(vertex,new RecordEntry[fields.length],matches,fields,0,onlyLoaded,replaceKey,replaceValue);
         return matches;
     }
 
-    private static void indexMatches(InternalVertex vertex, RecordEntry[] current, IndexRecords matches,
+    private static void indexMatches(TitanVertex vertex, RecordEntry[] current, IndexRecords matches,
                                      IndexField[] fields, int pos,
                                      boolean onlyLoaded, PropertyKey replaceKey, RecordEntry replaceValue) {
         if (pos>= fields.length) {
@@ -407,11 +408,19 @@ public class IndexSerializer {
             values = ImmutableList.of(replaceValue);
         } else {
             values = new ArrayList<RecordEntry>();
-            VertexCentricQueryBuilder qb = vertex.tx().query(vertex).noPartitionRestriction().type(key);
-            if (onlyLoaded) qb.queryOnlyLoaded();
-            for (TitanProperty p : qb.properties()) {
+            Iterable<TitanProperty> props;
+            if (onlyLoaded ||
+                    (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.getLongId()))) {
+                VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query());
+                qb.noPartitionRestriction().type(key);
+                if (onlyLoaded) qb.queryOnlyLoaded();
+                props = qb.properties();
+            } else {
+                props = vertex.getProperties();
+            }
+            for (TitanProperty p : props) {
                 assert !onlyLoaded || p.isLoaded() || p.isRemoved();
-                values.add(new RecordEntry(p.getID(),p.getValue()));
+                values.add(new RecordEntry(p.getLongId(),p.getValue()));
             }
         }
         for (RecordEntry value : values) {
@@ -589,7 +598,7 @@ public class IndexSerializer {
     }
 
     private static final String element2String(TitanElement element) {
-        if (element instanceof TitanVertex) return longID2Name(element.getID());
+        if (element instanceof TitanVertex) return longID2Name(element.getLongId());
         else {
             RelationIdentifier rid = (RelationIdentifier) element.getId();
             return rid.toString();
@@ -607,7 +616,7 @@ public class IndexSerializer {
 
     private static final String key2Field(ParameterIndexField field) {
         assert field!=null;
-        return ParameterType.MAPPED_NAME.findParameter(field.getParameters(),longID2Name(field.getFieldKey().getID()));
+        return ParameterType.MAPPED_NAME.findParameter(field.getParameters(),longID2Name(field.getFieldKey().getLongId()));
     }
 
     private static final String longID2Name(long id) {
@@ -649,7 +658,7 @@ public class IndexSerializer {
         DataOutput out = serializer.getDataOutput(1+8+8*record.length+4*8);
         out.putByte(FIRST_INDEX_COLUMN_BYTE);
         if (index.getCardinality()!=Cardinality.SINGLE) {
-            VariableLong.writePositive(out,element.getID());
+            VariableLong.writePositive(out,element.getLongId());
             if (index.getCardinality()!=Cardinality.SET) {
                 for (RecordEntry re : record) {
                     VariableLong.writePositive(out,re.relationId);
@@ -658,7 +667,7 @@ public class IndexSerializer {
         }
         int valuePosition=out.getPosition();
         if (element instanceof TitanVertex) {
-            VariableLong.writePositive(out,element.getID());
+            VariableLong.writePositive(out,element.getLongId());
         } else {
             assert element instanceof TitanRelation;
             RelationIdentifier rid = (RelationIdentifier)element.getId();

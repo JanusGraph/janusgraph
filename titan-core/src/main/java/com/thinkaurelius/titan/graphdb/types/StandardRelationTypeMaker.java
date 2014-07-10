@@ -104,7 +104,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
                     "Label must be unidirectional: %s", et.getName());
             Preconditions.checkArgument(!et.isPropertyKey() || !((PropertyKey) et).getDataType().equals(Object.class),
                     "Signature and sort keys must have a proper declared datatype: %s", et.getName());
-            signature[i] = et.getID();
+            signature[i] = et.getLongId();
         }
         return signature;
     }

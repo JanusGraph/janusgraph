@@ -301,7 +301,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
                 TitanVertex source = Iterables.getOnlyElement(tx.getVertices(idProp, 0));
                 TitanVertex sink = Iterables.getOnlyElement(tx.getVertices(idProp, 1));
                 for (TitanEdge r : source.getTitanEdges(Direction.OUT, relType)) {
-                    if (r.getVertex(Direction.IN).getID() == sink.getID()) {
+                    if (r.getVertex(Direction.IN).getLongId() == sink.getLongId()) {
                         r.remove();
                         continue;
                     }
@@ -336,7 +336,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
             TitanVertex n = Iterables.getOnlyElement(tx.getVertices(id, nodeid));
 
             for (int i = 0; i < nodeTraversalCount; i++) {
-                assertEquals("On vertex: " + n.getID(), expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
+                assertEquals("On vertex: " + n.getLongId(), expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
                 for (TitanEdge r : n.getTitanEdges(Direction.OUT, relTypeToTraverse)) {
                     n = r.getVertex(Direction.IN);
                 }

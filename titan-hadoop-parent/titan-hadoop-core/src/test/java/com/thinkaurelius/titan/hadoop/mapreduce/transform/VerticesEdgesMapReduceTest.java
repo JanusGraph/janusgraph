@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -49,22 +46,22 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         for (HadoopVertex vertex : graph.values()) {
 
             for (Edge edge : vertex.getEdges(Direction.BOTH, "knows")) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 0);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
             }
             for (Edge edge : vertex.getEdges(Direction.OUT, "created")) {
                 //System.out.println(vertex + " " + edge);
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 2);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
             }
 
             for (Edge edge : vertex.getEdges(Direction.IN, "created")) {
                 //System.out.println(vertex + " " + edge);
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 2);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
             }
         }
 
@@ -92,10 +89,10 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 2);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
             }
         }
 
@@ -121,9 +118,9 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 try {
-                    ((HadoopEdge) edge).getPaths();
+                    ((StandardFaunusEdge) edge).getPaths();
                     assertTrue(false);
                 } catch (IllegalStateException e) {
                     assertTrue(true);
@@ -153,7 +150,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 2);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 2);
             }
         }
 

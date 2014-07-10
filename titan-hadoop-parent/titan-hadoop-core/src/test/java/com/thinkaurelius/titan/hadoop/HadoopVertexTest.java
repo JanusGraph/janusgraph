@@ -82,8 +82,8 @@ public class HadoopVertexTest extends BaseTest {
     public void testVertexSerialization() throws IOException {
 
         HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
-        vertex1.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), 2, "knows"));
-        vertex1.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), 3, "knows"));
+        vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 2, "knows"));
+        vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 3, "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -143,8 +143,8 @@ public class HadoopVertexTest extends BaseTest {
 
         HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
         vertex1.setConf(configuration);
-        vertex1.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), 2, "knows"));
-        vertex1.addEdge(IN, new HadoopEdge(EmptyConfiguration.immutable(), 3, vertex1.getIdAsLong(), "knows"));
+        vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 2, "knows"));
+        vertex1.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), 3, vertex1.getLongId(), "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -178,7 +178,7 @@ public class HadoopVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("size"), 10l);
         assertEquals(vertex2.pathCount(), 2);
         assertTrue(vertex2.hasPaths());
-        for (List<HadoopPathElement.MicroElement> path : vertex2.getPaths()) {
+        for (List<FaunusPathElement.MicroElement> path : vertex2.getPaths()) {
             assertEquals(path.get(0).getId(), 10l);
             assertTrue(path.get(1).getId() == 1l || path.get(1).getId() == 2l);
             assertEquals(path.size(), 2);
@@ -205,7 +205,7 @@ public class HadoopVertexTest extends BaseTest {
 
     public void testVertexSerializationNoProperties() throws IOException {
         HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
-        vertex1.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
+        vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), vertex1.getLongId(), "knows"));
 
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
@@ -242,8 +242,8 @@ public class HadoopVertexTest extends BaseTest {
     public void testRemovingEdges() {
         HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, OUT, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
@@ -252,10 +252,10 @@ public class HadoopVertexTest extends BaseTest {
 
         vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
-        vertex.addEdge(IN, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(IN, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
+        vertex.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
+        vertex.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(BOTH)).size(), 2);
@@ -264,9 +264,9 @@ public class HadoopVertexTest extends BaseTest {
 
         vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
-        vertex.addEdge(IN, new HadoopEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
+        vertex.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.KEEP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
@@ -344,7 +344,7 @@ public class HadoopVertexTest extends BaseTest {
 
     public void testPropertyHandling() throws Exception {
         HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
-        assertEquals(vertex.getIdAsLong(), 10l);
+        assertEquals(vertex.getLongId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 0);
         vertex.setProperty("name", "marko");
         assertEquals(vertex.getProperties("name").iterator().next(), "marko");
@@ -361,8 +361,8 @@ public class HadoopVertexTest extends BaseTest {
         } catch (IllegalStateException e) {
         }
         int counter = 0;
-        for (HadoopProperty property : vertex.getProperties()) {
-            assertEquals(property.getName(), "name");
+        for (FaunusProperty property : vertex.getProperties()) {
+            assertEquals(property.getTypeName(), "name");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
         }
@@ -376,7 +376,7 @@ public class HadoopVertexTest extends BaseTest {
 
         ///////// END SERIALIZE
 
-        assertEquals(vertex.getIdAsLong(), 10l);
+        assertEquals(vertex.getLongId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 1);
         names = new HashSet<String>();
         Iterables.addAll(names, (Iterable) vertex.getProperties("name"));
@@ -389,8 +389,8 @@ public class HadoopVertexTest extends BaseTest {
         } catch (IllegalStateException e) {
         }
         counter = 0;
-        for (HadoopProperty property : vertex.getProperties()) {
-            assertEquals(property.getName(), "name");
+        for (FaunusProperty property : vertex.getProperties()) {
+            assertEquals(property.getTypeName(), "name");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
         }

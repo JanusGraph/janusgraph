@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
@@ -81,8 +81,8 @@ public class HadoopGraphSONUtilityTest extends TestCase {
         HadoopVertex vadas = new HadoopVertex(EmptyConfiguration.immutable(), 3l);
         vadas.setProperty("name", "vadas");
 
-        marko.addEdge(OUT, new HadoopEdge(EmptyConfiguration.immutable(), marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
-        marko.addEdge(IN, new HadoopEdge(EmptyConfiguration.immutable(), vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
+        marko.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), marko.getLongId(), stephen.getLongId(), "knows")).setProperty("weight", 2);
+        marko.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), vadas.getLongId(), marko.getLongId(), "knows")).setProperty("weight", 1);
 
         JSONObject m = HadoopGraphSONUtility.toJSON(marko);
         JSONObject s = HadoopGraphSONUtility.toJSON(stephen);

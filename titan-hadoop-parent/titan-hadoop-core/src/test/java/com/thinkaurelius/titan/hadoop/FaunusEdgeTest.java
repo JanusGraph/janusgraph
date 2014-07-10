@@ -14,11 +14,11 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class HadoopEdgeTest extends TestCase {
+public class FaunusEdgeTest extends TestCase {
 
     public void testSimpleSerialization() throws IOException {
 
-        HadoopEdge edge1 = new HadoopEdge(EmptyConfiguration.immutable(), 1, 2, "knows");
+        StandardFaunusEdge edge1 = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows");
         assertEquals(edge1.getLabel(), "knows");
         assertEquals(edge1.getVertex(Direction.OUT).getId(), 1l);
         assertEquals(edge1.getVertex(Direction.IN).getId(), 2l);
@@ -31,7 +31,7 @@ public class HadoopEdgeTest extends TestCase {
         // 1 + 1 + 1 + 1 + 10 byte label = 13
 
 
-        HadoopEdge edge2 = new HadoopEdge(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        StandardFaunusEdge edge2 = new StandardFaunusEdge(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(edge1, edge2);
         assertEquals(edge2.getId(), -1l);
         assertEquals(edge2.getLabel(), "knows");
@@ -42,7 +42,7 @@ public class HadoopEdgeTest extends TestCase {
 
     public void testSerializationWithProperties() throws IOException {
 
-        HadoopEdge edge1 = new HadoopEdge(EmptyConfiguration.immutable(), 1, 2, "knows");
+        StandardFaunusEdge edge1 = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows");
         edge1.setProperty("weight", 0.5f);
         edge1.setProperty("type", "coworker");
         edge1.setProperty("alive", true);
@@ -57,7 +57,7 @@ public class HadoopEdgeTest extends TestCase {
         DataOutputStream out = new DataOutputStream(bytes);
         edge1.write(out);
 
-        HadoopEdge edge2 = new HadoopEdge(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        StandardFaunusEdge edge2 = new StandardFaunusEdge(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(edge1, edge2);
         assertEquals(edge2.getId(), -1l);

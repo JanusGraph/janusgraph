@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -92,7 +92,7 @@ public class GroupCountMapReduce {
         public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object object = (null == this.keyClosure) ? new HadoopVertex.MicroVertex(value.getIdAsLong()) : this.keyClosure.call(value);
+                    final Object object = (null == this.keyClosure) ? new HadoopVertex.MicroVertex(value.getLongId()) : this.keyClosure.call(value);
                     final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
                     HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
@@ -101,9 +101,9 @@ public class GroupCountMapReduce {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Object object = (null == this.keyClosure) ? new HadoopEdge.MicroEdge(edge.getIdAsLong()) : this.keyClosure.call(edge);
+                        final Object object = (null == this.keyClosure) ? new StandardFaunusEdge.MicroEdge(edge.getLongId()) : this.keyClosure.call(edge);
                         final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(edge);
                         this.map.incr(object, number.longValue() * edge.pathCount());
                         edgesProcessed++;

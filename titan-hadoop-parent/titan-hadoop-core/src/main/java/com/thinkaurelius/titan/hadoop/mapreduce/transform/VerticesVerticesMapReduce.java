@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
@@ -60,9 +60,9 @@ public class VerticesVerticesMapReduce {
                 long edgesTraversed = 0l;
                 if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
                     for (final Edge edge : value.getEdges(OUT, this.labels)) {
-                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), ((HadoopEdge) edge).getVertexId(IN));
+                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), ((StandardFaunusEdge) edge).getVertexId(IN));
                         vertex.getPaths(value, false);
-                        this.longWritable.set(vertex.getIdAsLong());
+                        this.longWritable.set(vertex.getLongId());
                         context.write(this.longWritable, this.holder.set('p', vertex));
                         edgesTraversed++;
                     }
@@ -70,9 +70,9 @@ public class VerticesVerticesMapReduce {
 
                 if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
                     for (final Edge edge : value.getEdges(IN, this.labels)) {
-                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), ((HadoopEdge) edge).getVertexId(OUT));
+                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), ((StandardFaunusEdge) edge).getVertexId(OUT));
                         vertex.getPaths(value, false);
-                        this.longWritable.set(vertex.getIdAsLong());
+                        this.longWritable.set(vertex.getLongId());
                         context.write(this.longWritable, this.holder.set('p', vertex));
                         edgesTraversed++;
                     }
@@ -82,7 +82,7 @@ public class VerticesVerticesMapReduce {
 //                context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
             }
 
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(value.getLongId());
             context.write(this.longWritable, this.holder.set('v', value));
         }
     }

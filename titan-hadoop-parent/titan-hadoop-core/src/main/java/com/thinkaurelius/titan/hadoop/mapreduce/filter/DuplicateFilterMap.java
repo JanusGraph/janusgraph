@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.FaunusPathElement;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -54,7 +54,7 @@ public class DuplicateFilterMap {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     if (this.trackPaths) {
-                        final List<HadoopPathElement.MicroElement> path = value.getPaths().get(0);
+                        final List<FaunusPathElement.MicroElement> path = value.getPaths().get(0);
                         value.clearPaths();
                         value.addPath(path, false);
                     } else {
@@ -67,10 +67,10 @@ public class DuplicateFilterMap {
             } else {
                 long counter = 0;
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         if (this.trackPaths) {
-                            final List<HadoopPathElement.MicroElement> path = edge.getPaths().get(0);
+                            final List<FaunusPathElement.MicroElement> path = edge.getPaths().get(0);
                             edge.clearPaths();
                             edge.addPath(path, false);
                         } else {

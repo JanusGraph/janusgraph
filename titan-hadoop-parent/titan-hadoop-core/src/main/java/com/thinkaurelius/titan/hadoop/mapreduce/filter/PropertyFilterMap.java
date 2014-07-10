@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -104,7 +104,7 @@ public class PropertyFilterMap {
             } else {
                 long edgesFiltered = 0;
                 for (Edge e : value.getEdges(Direction.BOTH)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths() && !this.elementChecker.isLegal(edge)) {
                         edge.clearPaths();
                         edgesFiltered++;

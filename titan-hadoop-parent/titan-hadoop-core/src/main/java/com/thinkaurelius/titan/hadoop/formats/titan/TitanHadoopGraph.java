@@ -9,8 +9,8 @@ import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.hadoop.ElementState;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopProperty;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.FaunusProperty;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
@@ -45,12 +45,12 @@ public class TitanHadoopGraph {
         final long vertexId = this.vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
         HadoopVertex vertex = new HadoopVertex(configuration, vertexId);
-        vertex.setState(ElementState.LOADED);
+        vertex.setLifeCycle(ElementState.LOADED);
         boolean isSystemType = false;
         boolean foundVertexState = false;
         for (final Entry data : entries) {
             try {
-                RelationReader relationReader = setup.getRelationReader(vertex.getIdAsLong());
+                RelationReader relationReader = setup.getRelationReader(vertex.getLongId());
                 final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
                 if (this.systemTypes.isTypeSystemType(relation.typeId)) {
                     isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
@@ -64,27 +64,27 @@ public class TitanHadoopGraph {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    final HadoopProperty p = new HadoopProperty(relation.relationId, type.getName(), value);
-                    p.setState(ElementState.LOADED);
+                    final FaunusProperty p = new FaunusProperty(relation.relationId, type.getName(), value);
+                    p.setLifeCycle(ElementState.LOADED);
                     vertex.addProperty(p);
                 } else {
                     assert type.isEdgeLabel();
-                    HadoopEdge edge;
+                    StandardFaunusEdge edge;
                     if (relation.direction.equals(Direction.IN))
-                        edge = new HadoopEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
+                        edge = new StandardFaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
                     else if (relation.direction.equals(Direction.OUT))
-                        edge = new HadoopEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
+                        edge = new StandardFaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
                     else
                         throw ExceptionFactory.bothIsNotSupported();
-                    edge.setState(ElementState.LOADED);
+                    edge.setLifeCycle(ElementState.LOADED);
                     if (relation.hasProperties()) {
                         // load edge properties
                         for (final LongObjectCursor<Object> next : relation) {
                             assert next.value != null;
                             edge.setProperty(typeManager.getExistingRelationType(next.key).getName(), next.value);
                         }
-                        for (final HadoopProperty p : edge.getProperties())
-                            p.setState(ElementState.LOADED);
+                        for (final FaunusProperty p : edge.getProperties())
+                            p.setLifeCycle(ElementState.LOADED);
                     }
                     vertex.addEdge(relation.direction, edge);
                 }

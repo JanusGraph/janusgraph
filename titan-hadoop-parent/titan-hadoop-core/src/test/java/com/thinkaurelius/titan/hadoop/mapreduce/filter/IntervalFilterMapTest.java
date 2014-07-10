@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
@@ -58,8 +58,8 @@ public class IntervalFilterMapTest extends BaseTest {
         long counter = 0;
         for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((HadoopEdge) edge).hasPaths()) {
-                    counter = ((HadoopEdge) edge).pathCount() + counter;
+                if (((StandardFaunusEdge) edge).hasPaths()) {
+                    counter = ((StandardFaunusEdge) edge).pathCount() + counter;
                     assertEquals(edge.getProperty("weight"), 0.4d);
                 }
             }

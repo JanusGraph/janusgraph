@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class HadoopElementTest extends TestCase {
+public class FaunusElementTest extends TestCase {
 
     public void testBasicSerialization() throws IOException {
         HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
@@ -114,7 +114,7 @@ public class HadoopElementTest extends TestCase {
             assertTrue(true);
         }
 
-        HadoopEdge b = new HadoopEdge(EmptyConfiguration.immutable(), 1l, 2l, 13l, "self");
+        StandardFaunusEdge b = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1l, 2l, 13l, "self");
         try {
             b.setProperty(Tokens.ID, 10);
             assertFalse(true);
@@ -140,7 +140,7 @@ public class HadoopElementTest extends TestCase {
         vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(3l)), false);
         vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(4l)), false);
         assertEquals(vertex1.pathCount(), 3);
-        Iterator<List<HadoopPathElement.MicroElement>> itty = vertex1.getPaths().iterator();
+        Iterator<List<FaunusPathElement.MicroElement>> itty = vertex1.getPaths().iterator();
         while (itty.hasNext()) {
             if (itty.next().get(1).getId() == 3l)
                 itty.remove();
@@ -149,8 +149,8 @@ public class HadoopElementTest extends TestCase {
     }
 
     public void testPathHash() {
-        List<HadoopPathElement.MicroElement> path1 = (List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l));
-        List<HadoopPathElement.MicroElement> path2 = (List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l));
+        List<FaunusPathElement.MicroElement> path1 = (List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l));
+        List<FaunusPathElement.MicroElement> path2 = (List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l));
 
         assertEquals(new HashSet(path1).size(), 2);
         assertEquals(new HashSet(path2).size(), 1);

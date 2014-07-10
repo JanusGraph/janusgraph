@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -49,7 +49,7 @@ public class EdgesVerticesMap {
             if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(IN)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         value.getPaths(edge, true);
                         edgesProcessed++;
@@ -60,7 +60,7 @@ public class EdgesVerticesMap {
 //                context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
             } else {
                 for (final Edge e : value.getEdges(IN)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         edge.clearPaths();
                     }
@@ -70,7 +70,7 @@ public class EdgesVerticesMap {
             if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         value.getPaths(edge, true);
                         edgesProcessed++;
@@ -81,7 +81,7 @@ public class EdgesVerticesMap {
 //                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
             } else {
                 for (final Edge e : value.getEdges(OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         edge.clearPaths();
                     }

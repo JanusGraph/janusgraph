@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
@@ -38,8 +38,8 @@ public class IdentityMapTest extends BaseTest {
             assertEquals(vertex.pathCount(), 0);
             assertFalse(vertex.hasPaths());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 0);
-                assertFalse(((HadoopEdge) edge).hasPaths());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
+                assertFalse(((StandardFaunusEdge) edge).hasPaths());
             }
         }
 
@@ -69,8 +69,8 @@ public class IdentityMapTest extends BaseTest {
             assertEquals(vertex.pathCount(), 1);
             assertTrue(vertex.hasPaths());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 0);
-                assertFalse(((HadoopEdge) edge).hasPaths());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
+                assertFalse(((StandardFaunusEdge) edge).hasPaths());
             }
         }
 

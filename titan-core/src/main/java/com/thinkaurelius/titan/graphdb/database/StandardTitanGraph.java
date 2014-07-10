@@ -261,7 +261,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         @Override
         public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
             TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.SchemaName, typeName),null);
-            return v!=null?v.getID():null;
+            return v!=null?v.getLongId():null;
         }
 
         @Override
@@ -377,11 +377,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalVertex vertex = del.getVertex(pos);
                 if (pos == 0 || !del.isLoop()) {
                     if (del.isProperty()) mutatedProperties.put(vertex,del);
-                    mutations.put(vertex.getID(), del);
+                    mutations.put(vertex.getLongId(), del);
                 }
                 if (acquireLock(del,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.getLongId()), entry);
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
@@ -395,11 +395,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalVertex vertex = add.getVertex(pos);
                 if (pos == 0 || !add.isLoop()) {
                     if (add.isProperty()) mutatedProperties.put(vertex,add);
-                    mutations.put(vertex.getID(), add);
+                    mutations.put(vertex.getLongId(), add);
                 }
                 if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(add, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry.getColumn());
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.getLongId()), entry.getColumn());
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
@@ -439,7 +439,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        if (edge.getVertex(pos).getID()==vertexid) {
+                        if (edge.getVertex(pos).getLongId()==vertexid) {
                             Entry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);

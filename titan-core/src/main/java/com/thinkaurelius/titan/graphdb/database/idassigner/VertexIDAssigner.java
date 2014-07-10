@@ -171,7 +171,7 @@ public class VertexIDAssigner {
                 if (attempt < relation.getLen()) { //On the first attempts, try to use partition of incident vertices
                     InternalVertex incident = relation.getVertex(attempt);
                     Preconditions.checkArgument(incident.hasId());
-                    if (!IDManager.VertexIDType.PartitionedVertex.is(incident.getID()) || relation.isProperty()) {
+                    if (!IDManager.VertexIDType.PartitionedVertex.is(incident.getLongId()) || relation.isProperty()) {
                         partitionID = getPartitionID(incident);
                     } else {
                         continue;
@@ -195,8 +195,8 @@ public class VertexIDAssigner {
                     //If one end vertex is partitioned and the other isn't, use the partition of the non-partitioned vertex
                     for (int pos = 0; pos < relation.getArity(); pos++) {
                         int otherpos = (pos+1)%2;
-                        if (idManager.isPartitionedVertex(relation.getVertex(pos).getID()) &&
-                                !idManager.isPartitionedVertex(relation.getVertex(otherpos).getID())) {
+                        if (idManager.isPartitionedVertex(relation.getVertex(pos).getLongId()) &&
+                                !idManager.isPartitionedVertex(relation.getVertex(otherpos).getLongId())) {
                             move2Partition = getPartitionID(relation.getVertex(otherpos));
                         }
                     }
@@ -204,20 +204,20 @@ public class VertexIDAssigner {
                 for (int pos = 0; pos < relation.getArity(); pos++) {
                     InternalVertex incident = relation.getVertex(pos);
                     long newPartition;
-                    if (idManager.isPartitionedVertex(incident.getID())) {
+                    if (idManager.isPartitionedVertex(incident.getLongId())) {
                         if (((InternalRelationType)relation.getType()).getMultiplicity().isUnique(EdgeDirection.fromPosition(pos))) {
                             //If the relation is unique in the direction, we assign it to the canonical vertex...
-                            newPartition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.getID()));
+                            newPartition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.getLongId()));
                         } else if (move2Partition>=0) {
                             //...else, we assign it to the partition of the non-partitioned vertex...
                             newPartition = move2Partition;
                         } else {
                             //...and if such does not exists (i.e. property or both end vertices are partitioned) we use the hash of the relation id
                             assert (relation.isProperty() && ((TitanProperty)relation).getPropertyKey().getCardinality()!=Cardinality.SINGLE) ||
-                                    (relation.isEdge() && idManager.isPartitionedVertex(relation.getVertex(0).getID()) && idManager.isPartitionedVertex(relation.getVertex(1).getID()));
-                            newPartition = idManager.getPartitionHashForId(relation.getID());
+                                    (relation.isEdge() && idManager.isPartitionedVertex(relation.getVertex(0).getLongId()) && idManager.isPartitionedVertex(relation.getVertex(1).getLongId()));
+                            newPartition = idManager.getPartitionHashForId(relation.getLongId());
                         }
-                        if (idManager.getPartitionId(incident.getID())!=newPartition) {
+                        if (idManager.getPartitionId(incident.getLongId())!=newPartition) {
                             ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getOtherPartitionVertex(incident, newPartition));
                         }
                     }
@@ -286,7 +286,7 @@ public class VertexIDAssigner {
     }
 
     private final long getPartitionID(final InternalVertex v) {
-        long vid = v.getID();
+        long vid = v.getLongId();
         if (IDManager.VertexIDType.Schema.is(vid)) return IDManager.SCHEMA_PARTITION;
         else return idManager.getPartitionId(vid);
     }
@@ -352,7 +352,7 @@ public class VertexIDAssigner {
         }
 
         Preconditions.checkArgument(elementId >= 0);
-        element.setID(elementId);
+        element.setId(elementId);
     }
 
     private static IDManager.VertexIDType getVertexIDType(VertexLabel vlabel) {

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -94,7 +94,7 @@ public class IntervalFilterMap {
             } else {
                 long counter = 0;
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths() && !(this.startChecker.isLegal(edge) && this.endChecker.isLegal(edge))) {
                         edge.clearPaths();
                         counter++;

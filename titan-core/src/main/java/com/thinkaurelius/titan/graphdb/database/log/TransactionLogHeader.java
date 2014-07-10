@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.log.Change;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -68,7 +66,7 @@ public class TransactionLogHeader {
     private static void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
-            VariableLong.writePositive(out,rel.getVertex(0).getID());
+            VariableLong.writePositive(out,rel.getVertex(0).getLongId());
             com.thinkaurelius.titan.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);
         }

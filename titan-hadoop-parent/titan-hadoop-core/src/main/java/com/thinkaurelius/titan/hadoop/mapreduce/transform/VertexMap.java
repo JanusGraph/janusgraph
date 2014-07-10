@@ -46,7 +46,7 @@ public class VertexMap {
 
         @Override
         public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            if (this.ids.contains(value.getIdAsLong())) {
+            if (this.ids.contains(value.getLongId())) {
                 value.startPath();
                 HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
 //                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);

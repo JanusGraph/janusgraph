@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -53,7 +53,7 @@ public class EdgesMap {
 
             long edgesProcessed = 0;
             for (final Edge edge : value.getEdges(Direction.IN)) {
-                ((HadoopEdge) edge).startPath();
+                ((StandardFaunusEdge) edge).startPath();
                 edgesProcessed++;
             }
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_PROCESSED, edgesProcessed);
@@ -61,7 +61,7 @@ public class EdgesMap {
 
             edgesProcessed = 0;
             for (final Edge edge : value.getEdges(Direction.OUT)) {
-                ((HadoopEdge) edge).startPath();
+                ((StandardFaunusEdge) edge).startPath();
                 edgesProcessed++;
             }
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);

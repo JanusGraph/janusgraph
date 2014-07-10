@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -117,8 +117,8 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
-        ((HadoopEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
-        ((HadoopEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
 
         assertEquals(graph.size(), 6);
 
@@ -126,9 +126,9 @@ public class DuplicateFilterMapTest extends BaseTest {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.IN)) {
                 if (edge.getVertex(Direction.IN).getId().equals(2l)) {
-                    assertEquals(((HadoopEdge) edge).pathCount(), 2);
+                    assertEquals(((StandardFaunusEdge) edge).pathCount(), 2);
                 } else {
-                    assertEquals(((HadoopEdge) edge).pathCount(), 0);
+                    assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
                 }
             }
         }
@@ -141,9 +141,9 @@ public class DuplicateFilterMapTest extends BaseTest {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.IN)) {
                 if (edge.getVertex(Direction.IN).getId().equals(2l)) {
-                    assertEquals(((HadoopEdge) edge).pathCount(), 1);
+                    assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 } else {
-                    assertEquals(((HadoopEdge) edge).pathCount(), 0);
+                    assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
                 }
             }
         }

@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -47,7 +44,7 @@ public class VerticesEdgesMapReduce {
         private String[] labels;
         private boolean trackPaths;
 
-        private final Holder<HadoopPathElement> holder = new Holder<HadoopPathElement>();
+        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
@@ -65,12 +62,12 @@ public class VerticesEdgesMapReduce {
 
                 if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
                     for (final Edge e : value.getEdges(IN, this.labels)) {
-                        final HadoopEdge edge = (HadoopEdge) e;
-                        final HadoopEdge shellEdge = new HadoopEdge(context.getConfiguration(), edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final StandardFaunusEdge edge = (StandardFaunusEdge) e;
+                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(context.getConfiguration(), edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
 
                         if (this.trackPaths) {
-                            final List<List<HadoopPathElement.MicroElement>> paths = clonePaths(value, new HadoopEdge.MicroEdge(edge.getIdAsLong()));
+                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
                         } else {
@@ -85,11 +82,11 @@ public class VerticesEdgesMapReduce {
 
                 if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
                     for (final Edge e : value.getEdges(OUT, this.labels)) {
-                        final HadoopEdge edge = (HadoopEdge) e;
-                        final HadoopEdge shellEdge = new HadoopEdge(context.getConfiguration(), edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final StandardFaunusEdge edge = (StandardFaunusEdge) e;
+                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(context.getConfiguration(), edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
                         if (this.trackPaths) {
-                            final List<List<HadoopPathElement.MicroElement>> paths = clonePaths(value, new HadoopEdge.MicroEdge(edge.getIdAsLong()));
+                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
                         } else {
@@ -108,15 +105,15 @@ public class VerticesEdgesMapReduce {
             }
 
 
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(value.getLongId());
             context.write(this.longWritable, this.holder.set('v', value));
         }
 
         // TODO: this is horribly inefficient due to an efficiency of object reuse in path calculations
-        private List<List<HadoopPathElement.MicroElement>> clonePaths(final HadoopVertex vertex, final HadoopEdge.MicroEdge edge) {
-            final List<List<HadoopPathElement.MicroElement>> paths = new ArrayList<List<HadoopPathElement.MicroElement>>();
-            for (List<HadoopPathElement.MicroElement> path : vertex.getPaths()) {
-                final List<HadoopPathElement.MicroElement> p = new ArrayList<HadoopPathElement.MicroElement>();
+        private List<List<FaunusPathElement.MicroElement>> clonePaths(final HadoopVertex vertex, final StandardFaunusEdge.MicroEdge edge) {
+            final List<List<FaunusPathElement.MicroElement>> paths = new ArrayList<List<FaunusPathElement.MicroElement>>();
+            for (List<FaunusPathElement.MicroElement> path : vertex.getPaths()) {
+                final List<FaunusPathElement.MicroElement> p = new ArrayList<FaunusPathElement.MicroElement>();
                 p.addAll(path);
                 p.add(edge);
                 paths.add(p);
@@ -143,20 +140,20 @@ public class VerticesEdgesMapReduce {
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
-            final List<HadoopEdge> edges = new ArrayList<HadoopEdge>();
+            final List<StandardFaunusEdge> edges = new ArrayList<StandardFaunusEdge>();
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
                     vertex.addAll((HadoopVertex) holder.get());
                 } else {
-                    edges.add((HadoopEdge) holder.get());
+                    edges.add((StandardFaunusEdge) holder.get());
                 }
             }
 
             for (final Edge e : vertex.getEdges(this.direction, this.labels)) {
-                for (final HadoopEdge edge : edges) {
+                for (final StandardFaunusEdge edge : edges) {
                     if (e.getId().equals(edge.getId())) {
-                        ((HadoopEdge) e).getPaths(edge, false);
+                        ((StandardFaunusEdge) e).getPaths(edge, false);
                         break;
                     }
                 }

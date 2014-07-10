@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
@@ -78,19 +78,19 @@ public class CyclicPathFilterMapTest extends BaseTest {
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
-        assertEquals(((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 0);
+        assertEquals(((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 0);
         assertEquals(graph.get(2l).pathCount(), 0);
         assertEquals(graph.get(3l).pathCount(), 0);
         assertEquals(graph.get(4l).pathCount(), 0);
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
 
         assertEquals(graph.get(1l).pathCount(), 0);
-        assertEquals(((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 3);
+        assertEquals(((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 3);
         assertEquals(graph.get(2l).pathCount(), 0);
         assertEquals(graph.get(3l).pathCount(), 0);
         assertEquals(graph.get(4l).pathCount(), 0);
@@ -100,7 +100,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         graph = runWithGraph(graph, mapReduceDriver);
 
         assertEquals(graph.get(1l).pathCount(), 0);
-        assertEquals(((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 1);
+        assertEquals(((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 1);
         assertEquals(graph.get(2l).pathCount(), 0);
         assertEquals(graph.get(3l).pathCount(), 0);
         assertEquals(graph.get(4l).pathCount(), 0);

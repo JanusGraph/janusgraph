@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -47,7 +47,7 @@ public class VerticesMap {
             long edgesProcessed = 0;
             if (this.processEdges) {
                 for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                    ((HadoopEdge) edge).clearPaths();
+                    ((StandardFaunusEdge) edge).clearPaths();
                     edgesProcessed++;
                 }
 

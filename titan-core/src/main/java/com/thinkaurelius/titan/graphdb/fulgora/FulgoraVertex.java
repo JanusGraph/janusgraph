@@ -40,7 +40,7 @@ public class FulgoraVertex<S> extends CacheVertex {
     @Override
     public<A> A getProperty(String key) {
         if (key.equals(executor.stateKey)) {
-            return (A)executor.getVertexState(getID());
+            return (A)executor.getVertexState(getLongId());
         } else if (processedProperties.containsKey(key)) {
             return (A)processedProperties.get(key);
         } else return null;

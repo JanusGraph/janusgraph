@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 
@@ -38,7 +38,7 @@ public class ElementPickerTest extends TestCase {
         vertex.setProperty(Tokens.LABEL, "aType");
         assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), "aType");
 
-        HadoopEdge edge = new HadoopEdge(EmptyConfiguration.immutable(), 1l, 10l, 10l, "knows");
+        StandardFaunusEdge edge = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1l, 10l, 10l, "knows");
         assertEquals(ElementPicker.getProperty(edge, Tokens.LABEL), "knows");
         try {
             edge.setProperty(Tokens.LABEL, "self");

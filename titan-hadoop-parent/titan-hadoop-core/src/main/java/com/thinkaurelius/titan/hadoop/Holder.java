@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Holder<T extends HadoopPathElement> extends GenericWritable implements WritableComparable<Holder<T>> {
+public class Holder<T extends FaunusPathElement> extends GenericWritable implements WritableComparable<Holder<T>> {
 
     protected char tag;
 
@@ -21,7 +21,7 @@ public class Holder<T extends HadoopPathElement> extends GenericWritable impleme
 
     private static Class[] CLASSES = {
             HadoopVertex.class,
-            HadoopEdge.class
+            StandardFaunusEdge.class
     };
 
     protected Class<T>[] getTypes() {
@@ -83,8 +83,8 @@ public class Holder<T extends HadoopPathElement> extends GenericWritable impleme
 
     @Override
     public int compareTo(final Holder<T> holder) {
-        final HadoopElement e1 = holder.get();
-        final HadoopElement e2 = this.get();
+        final FaunusElement e1 = holder.get();
+        final FaunusElement e2 = this.get();
         if (e1 instanceof HadoopVertex && e2 instanceof HadoopVertex)
             return e1.compareTo(e2);
         else
@@ -112,7 +112,7 @@ public class Holder<T extends HadoopPathElement> extends GenericWritable impleme
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof Holder && b instanceof Holder)
-                return ((Long) (((Holder) a).get().getIdAsLong())).compareTo(((Holder) b).get().getIdAsLong());
+                return ((Long) (((Holder) a).get().getLongId())).compareTo(((Holder) b).get().getLongId());
             else
                 return super.compare(a, b);
         }

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
@@ -55,7 +55,7 @@ public class PropertyMapMap {
         public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    this.longWritable.set(value.getIdAsLong());
+                    this.longWritable.set(value.getLongId());
                     this.text.set(ElementPicker.getPropertyAsString(value, Tokens._PROPERTIES));
                     for (int i = 0; i < value.pathCount(); i++) {
                         this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
@@ -65,9 +65,9 @@ public class PropertyMapMap {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        this.longWritable.set(edge.getIdAsLong());
+                        this.longWritable.set(edge.getLongId());
                         this.text.set(ElementPicker.getPropertyAsString(edge, Tokens._PROPERTIES));
                         for (int i = 0; i < edge.pathCount(); i++) {
                             this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
