@@ -12,7 +12,7 @@ public class FaunusGremlinScriptEngineFactory implements ScriptEngineFactory {
 
     private static final String ENGINE_NAME = "faunus-gremlin-groovy";
     private static final String LANGUAGE_NAME = "faunus-gremlin-groovy";
-    private static final String VERSION_NUMBER = "faunus-" + com.thinkaurelius.titan.hadoop.Tokens.VERSION + ":gremlin-" + com.tinkerpop.gremlin.Tokens.VERSION;
+    private static final String VERSION_NUMBER = "faunus-" + com.thinkaurelius.titan.graphdb.configuration.TitanConstants.VERSION + ":gremlin-" + com.tinkerpop.gremlin.Tokens.VERSION;
     private static final String PLAIN = "plain";
     private static final List<String> EXTENSIONS = Arrays.asList("groovy");
 
