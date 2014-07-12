@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
@@ -11,6 +13,7 @@ import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
 import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -39,6 +42,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -130,7 +134,7 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
             job.setNumReduceTasks(this.getConf().getInt("mapreduce.job.reduces", this.getConf().getInt("mapreduce.tasktracker.reduce.tasks.maximum", 1)));
 
-            ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+            ChainMapper.addMapper(job, mapper, NullWritable.class, HadoopVertex.class, mapOutputKey, mapOutputValue, configuration);
             ChainReducer.setReducer(job, reducer, mapOutputKey, mapOutputValue, reduceOutputKey, reduceOutputValue, configuration);
 
             if (null != comparator)
@@ -166,10 +170,10 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
 
             if (State.MAPPER == this.state || State.NONE == this.state) {
-                ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+                ChainMapper.addMapper(job, mapper, NullWritable.class, HadoopVertex.class, mapOutputKey, mapOutputValue, configuration);
                 this.state = State.MAPPER;
             } else {
-                ChainReducer.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+                ChainReducer.addMapper(job, mapper, NullWritable.class, HadoopVertex.class, mapOutputKey, mapOutputValue, configuration);
                 this.state = State.REDUCER;
             }
         } catch (IOException e) {
@@ -222,9 +226,18 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE))
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
-        final FileSystem hdfs = FileSystem.get(this.graph.getConf());
-        final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
-        hdfs.mkdirs(this.graph.getOutputLocation());
+        // Create temporary sequence file directory if we have multiple jobs chained together
+        final String jobTmp;
+        if (1 < jobs.size()) {
+            Path tmpPath = graph.getTemporarySeqFileLocation();
+            final FileSystem fs = FileSystem.get(graph.getConf());
+            fs.mkdirs(tmpPath);
+            logger.info("Created " + tmpPath + " on filesystem " + fs);
+            jobTmp = tmpPath.toString() + "/" + Tokens.JOB;
+            logger.info("Set jobTmp=" + jobTmp);
+        } else {
+            jobTmp = null;
+        }
 
         //////// CHAINING JOBS TOGETHER
 
@@ -235,7 +248,6 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
 
             //job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
             job.setJar(hadoopFileJar);
-            FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 
             // configure job inputs
             if (i == 0) {
@@ -245,8 +257,9 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
                     FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
                 }
             } else {
+                Preconditions.checkNotNull(jobTmp);
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPaths(job, new Path(outputJobPrefix + "-" + (i - 1)));
+                FileInputFormat.setInputPaths(job, new Path(jobTmp + "-" + (i - 1)));
                 FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
             }
 
@@ -254,11 +267,13 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             if (i == this.jobs.size() - 1) {
                 LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, HadoopVertex.class);
             } else {
+                Preconditions.checkNotNull(jobTmp);
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
+                SequenceFileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, HadoopVertex.class);
             }
         }
     }
@@ -274,8 +289,10 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
         }
 
         final FileSystem hdfs = FileSystem.get(this.getConf());
-        if (this.graph.getOutputLocationOverwrite() && hdfs.exists(this.graph.getOutputLocation())) {
-            hdfs.delete(this.graph.getOutputLocation(), true);
+        if (null != graph.getTemporarySeqFileLocation() &&
+            graph.getTemporarySeqFileOverwrite() &&
+            hdfs.exists(graph.getTemporarySeqFileLocation())) {
+            hdfs.delete(graph.getTemporarySeqFileLocation(), true);
         }
 
         if (showHeader) {
@@ -299,7 +316,14 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-        final String jobPath = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
+
+        final String jobTmp;
+        if (1 < jobs.size()) {
+            jobTmp = graph.getTemporarySeqFileLocation().toString() + "/" + Tokens.JOB;
+        } else {
+            jobTmp = null;
+        }
+
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             try {
@@ -307,10 +331,11 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             } catch (final Exception e) {
             }
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
-            logger.info("Job data location: " + jobPath + "-" + i);
+            //logger.info("Job data location: " + jobTmp + "-" + i);
             boolean success = job.waitForCompletion(true);
             if (i > 0) {
-                final Path path = new Path(jobPath + "-" + (i - 1));
+                Preconditions.checkNotNull(jobTmp);
+                final Path path = new Path(jobTmp + "-" + (i - 1));
                 // delete previous intermediate graph data
                 for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.GRAPH + "*"))) {
                     hdfs.delete(temp.getPath(), true);

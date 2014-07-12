@@ -43,8 +43,6 @@ public class TitanFactory {
     private static final Logger log =
             LoggerFactory.getLogger(TitanFactory.class);
 
-    private static boolean preloadedConfigOptions = false;
-
     /**
      * Opens a {@link TitanGraph} database.
      * <p/>

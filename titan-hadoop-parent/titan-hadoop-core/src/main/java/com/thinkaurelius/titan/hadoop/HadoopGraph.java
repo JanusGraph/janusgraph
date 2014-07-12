@@ -97,23 +97,23 @@ public class HadoopGraph extends HybridConfigured {
         this.setInputLocation(new Path(path));
     }
 
-    public Path getOutputLocation() {
-        if (!getTitanConf().has(TitanHadoopConfiguration.OUTPUT_LOCATION))
-            throw new IllegalStateException("Please set " + TitanHadoopConfiguration.OUTPUT_LOCATION + " configuration option.");
+    public Path getTemporarySeqFileLocation() {
+        if (!getTitanConf().has(TitanHadoopConfiguration.TMP_SEQUENCEFILE_LOCATION))
+            return null;
 
-        return new Path(getTitanConf().get(TitanHadoopConfiguration.OUTPUT_LOCATION));
+        return new Path(getTitanConf().get(TitanHadoopConfiguration.TMP_SEQUENCEFILE_LOCATION));
     }
 
-    public void setOutputLocation(final Path path) {
-        getConf().set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_LOCATION), path.toString());
+    public void setTemporarySeqFileLocation(final Path path) {
+        getConf().set(ConfigElement.getPath(TitanHadoopConfiguration.TMP_SEQUENCEFILE_LOCATION), path.toString());
     }
 
-    public void setOutputLocation(final String path) {
-        this.setOutputLocation(new Path(path));
+    public void setTemporarySeqFileLocation(final String path) {
+        this.setTemporarySeqFileLocation(new Path(path));
     }
 
-    public boolean getOutputLocationOverwrite() {
-        return getTitanConf().get(TitanHadoopConfiguration.OUTPUT_OVERWRITE);
+    public boolean getTemporarySeqFileOverwrite() {
+        return getTitanConf().get(TitanHadoopConfiguration.TMP_SEQUENCEFILE_OVERWRITE);
     }
 
     public boolean getTrackPaths() {
@@ -138,9 +138,9 @@ public class HadoopGraph extends HybridConfigured {
         HadoopGraph graph = new HadoopGraph(this.getConf());
         if (null != getGraphOutputFormat())
             graph.setGraphInputFormat(Inverter.invertOutputFormat(getGraphOutputFormat()));
-        if (null != getOutputLocation()) {
-            graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(getConf()), getOutputLocation().toString()));
-            graph.setOutputLocation(new Path(getOutputLocation().toString() + "_"));
+        if (null != getTemporarySeqFileLocation()) {
+            graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(getConf()), getTemporarySeqFileLocation().toString()));
+            graph.setTemporarySeqFileLocation(new Path(getTemporarySeqFileLocation().toString() + "_"));
         }
         return graph;
     }

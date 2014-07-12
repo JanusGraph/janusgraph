@@ -40,14 +40,20 @@ public class TitanHadoopConfiguration {
             "Package and classname of the output format class.  This must implment the Hadoop OutputFormat interface.",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<String> OUTPUT_LOCATION = new ConfigOption<String>(
-            OUTPUT_NS, "location",
-            "Path to the default output file",
+    public static final ConfigNamespace TMP_NS =
+            new ConfigNamespace(TRUNK_NS, "tmp", "Temporary file configuration");
+
+    public static final ConfigNamespace TMP_SEQ_NS =
+            new ConfigNamespace(TMP_NS, "seq", "Temporary SequenceFile configuration");
+
+    public static final ConfigOption<String> TMP_SEQUENCEFILE_LOCATION = new ConfigOption<String>(
+            TMP_SEQ_NS, "location",
+            "An HDFS path used to store temporary SequenceFiles in between executions of MR jobs chained together by Titan-Hadoop",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<Boolean> OUTPUT_OVERWRITE = new ConfigOption<Boolean>(
-            OUTPUT_NS, "overwrite",
-            "Whether to overwrite the default output file",
+    public static final ConfigOption<Boolean> TMP_SEQUENCEFILE_OVERWRITE = new ConfigOption<Boolean>(
+            TMP_SEQ_NS, "overwrite",
+            "Whether to temporary SequenceFiles",
             ConfigOption.Type.LOCAL, true);
 
     public static final ConfigNamespace OUTPUT_CONF_NS =
@@ -78,4 +84,18 @@ public class TitanHadoopConfiguration {
             SIDE_EFFECT_NS, "format",
             "Package and classname of the output format to use for computation side effects.  This must implement the Hadoop OutputFormat interface.",
             ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigNamespace INDEX_NS =
+            new ConfigNamespace(TRUNK_NS, "reindex", "Titan-Hadoop index repair configuration");
+
+    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(
+            INDEX_NS, "name",
+            "The name of a Titan index to build or repair.  The index must already be enabled or installed.",
+            ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigOption<String> INDEX_TYPE = new ConfigOption<String>(
+            INDEX_NS, "type",
+            "The relationtype of a Titan index to build or repair.  The index must already be enabled or installed.",
+            ConfigOption.Type.LOCAL, String.class);
+
 }
