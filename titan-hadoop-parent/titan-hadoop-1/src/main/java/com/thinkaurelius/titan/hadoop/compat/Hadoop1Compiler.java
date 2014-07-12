@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.Tokens;
@@ -68,7 +69,7 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
-    private static final String JOB_JAR = "titan-hadoop-1-" + Tokens.VERSION + "-job.jar";
+    private static final String JOB_JAR = "titan-hadoop-1-" + TitanConstants.VERSION + "-job.jar";
 
     public Hadoop1Compiler(final HadoopGraph graph) {
         this.graph = graph;

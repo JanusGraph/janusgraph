@@ -17,13 +17,6 @@ public class Tokens {
 
     private static final Logger log = LoggerFactory.getLogger(Tokens.class);
 
-    public static final String METADATA_RESOURCE = "com/thinkaurelius/titan/hadoop/meta.properties";
-    public static final String METADATA_KEY_VERSION = "version";
-    //public static final String METADATA_KEY_JOB_JAR = "jobjar";
-
-    public static final String VERSION;
-    //public static final String TITAN_HADOOP_JOB_JAR;
-
     public static final String TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_MAP_SPILL_OVER);
     public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
     public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
@@ -31,35 +24,6 @@ public class Tokens {
     public enum Action {DROP, KEEP}
 
     private static final String NAMESPACE = "titan.hadoop.mapreduce";
-
-    static {
-        InputStreamReader isr = null;
-        String tmpVersion = null;
-        //String tmpJobJar = null;
-        try {
-            isr = new InputStreamReader(Tokens.class.getClassLoader().getResourceAsStream(METADATA_RESOURCE));
-            Properties meta = new Properties();
-            meta.load(isr);
-
-            tmpVersion = meta.getProperty(METADATA_KEY_VERSION);
-            //tmpJobJar = meta.getProperty(METADATA_KEY_JOB_JAR);
-
-            log.debug("Loaded {}={} from classloader resource {}", METADATA_KEY_VERSION, tmpVersion, METADATA_RESOURCE);
-            //log.debug("Loaded {}={} from classloader resource {}", METADATA_KEY_JOB_JAR, tmpJobJar, METADATA_RESOURCE);
-        } catch (Throwable t) {
-            log.error("The Titan/Hadoop version file {} could not be found on the classpath", METADATA_RESOURCE, t);
-        } finally {
-            if (null != isr) {
-                try {
-                    isr.close();
-                } catch (IOException e) {
-                    log.warn("Unable to close resource {}", METADATA_RESOURCE, e);
-                }
-            }
-        }
-        VERSION = tmpVersion;
-        //TITAN_HADOOP_JOB_JAR = tmpJobJar;
-    }
 
     public static String makeNamespace(final Class klass) {
         return NAMESPACE + "." + klass.getSimpleName().toLowerCase();
