@@ -23,13 +23,13 @@ public class HadoopGraphSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
         FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1}");
-        assertEquals(vertex.getId(), 1l);
+        assertEquals(vertex.getLongId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
     }
 
     public void testParser2() throws IOException {
         FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1, \"name\":\"marko\",\"age\":32}");
-        assertEquals(vertex.getId(), 1l);
+        assertEquals(vertex.getLongId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
@@ -39,7 +39,7 @@ public class HadoopGraphSONUtilityTest extends TestCase {
 
     public void testParser3() throws IOException {
         FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
-        assertEquals(vertex.getId(), 1l);
+        assertEquals(vertex.getLongId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);
@@ -54,7 +54,7 @@ public class HadoopGraphSONUtilityTest extends TestCase {
 
     public void testParser4() throws IOException {
         FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
-        assertEquals(vertex.getId(), 4l);
+        assertEquals(vertex.getLongId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertTrue(vertex.getEdges(IN).iterator().hasNext());
         assertEquals(vertex.getPropertyKeys().size(), 2);

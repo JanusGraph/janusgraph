@@ -64,7 +64,7 @@ public class EdgesMapTest extends BaseTest {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 1);
-                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
         }
 

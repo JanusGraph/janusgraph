@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
@@ -63,6 +64,23 @@ public abstract class FaunusRelationType extends EmptyRelationType implements In
     @Override
     public boolean isHiddenType() {
         return isHidden;
+    }
+
+    @Override
+    public String toString() {
+        return definition.getName();
+    }
+
+    @Override
+    public int hashCode() {
+        return definition.getName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this==other) return true;
+        else if (other==null || !(other instanceof RelationType)) return false;
+        return definition.getName().equals(((RelationType)other).getName());
     }
 
 }

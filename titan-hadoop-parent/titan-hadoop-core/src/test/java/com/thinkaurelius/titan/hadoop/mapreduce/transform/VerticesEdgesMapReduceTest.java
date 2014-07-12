@@ -53,7 +53,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
                 assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
 
             for (Edge edge : vertex.getEdges(Direction.IN, "created")) {
@@ -61,7 +61,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
                 assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
         }
 
@@ -92,7 +92,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
                 assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
         }
 

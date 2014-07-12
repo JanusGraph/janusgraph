@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.graphdb.schema.*;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -31,6 +28,23 @@ import static com.tinkerpop.blueprints.Direction.*;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusVertexTest extends BaseTest {
+
+    private FaunusTypeManager typeManager;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        typeManager = FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable());
+        typeManager.setSchemaProvider(TestSchemaProvider.MULTIPLICITY);
+        typeManager.clear();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
+        typeManager.clear();
+    }
 
     public void testRawComparator() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
@@ -69,7 +83,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
-        assertEquals(vertex2.getId(), 10l);
+        assertEquals(vertex2.getLongId(), 10l);
         assertFalse(vertex1.hasPaths());
         assertFalse(vertex2.hasPaths());
         assertEquals(vertex1.pathCount(), 0);
@@ -84,8 +98,6 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testVertexSerialization() throws IOException {
-        FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable()).setSchemaProvider(TestSchemaProvider.INSTANCE);
-
         FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
         vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 2, "knows"));
         vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 3, "knows"));
@@ -119,7 +131,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
-        assertEquals(vertex2.getId(), 10l);
+        assertEquals(vertex2.getLongId(), 10l);
         assertEquals(vertex1.getPropertyKeys().size(), 7);
         assertEquals(vertex1.getProperty("name"), "marko");
         assertEquals(vertex1.getProperty("age"), 32);
@@ -174,7 +186,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
-        assertEquals(vertex2.getId(), 10l);
+        assertEquals(vertex2.getLongId(), 10l);
         assertEquals(vertex2.getPropertyKeys().size(), 5);
         assertEquals(vertex2.getProperty("name"), "marko");
         assertEquals(vertex2.getProperty("age"), 32);
@@ -224,7 +236,7 @@ public class FaunusVertexTest extends BaseTest {
         System.out.println("Vertex with 0 properties and 1 outgoing edge has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
-        assertEquals(vertex1.getId(), 1l);
+        assertEquals(vertex1.getLongId(), 1l);
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
         assertEquals(vertex1.getPropertyKeys().size(), 0);
@@ -234,7 +246,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertex1.getEdges(BOTH)).size(), 1);
 
         assertEquals(vertex2, vertex1);
-        assertEquals(vertex2.getId(), 1l);
+        assertEquals(vertex2.getLongId(), 1l);
         assertNull(vertex2.getProperty("age"));
         assertNull(vertex2.removeProperty("age"));
         assertEquals(vertex2.getPropertyKeys().size(), 0);
@@ -282,7 +294,7 @@ public class FaunusVertexTest extends BaseTest {
     public void testGetVerticesAndQuery() throws Exception {
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
         for (FaunusVertex vertex : graph.values()) {
-            if (vertex.getId().equals(1l)) {
+            if (vertex.getLongId()==1l) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
                 assertTrue(vertex.getVertices(OUT).iterator().hasNext());
                 assertTrue(vertex.getVertices(BOTH).iterator().hasNext());
@@ -348,8 +360,6 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testPropertyHandling() throws Exception {
-        FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable()).setSchemaProvider(TestSchemaProvider.INSTANCE);
-
         FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         assertEquals(vertex.getLongId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 0);
@@ -444,41 +454,6 @@ public class FaunusVertexTest extends BaseTest {
         vertex1.write(new DataOutputStream(bytes));
         FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(vertex2.getProperty("name"), value);
-    }
-
-    public static class TestSchemaProvider implements SchemaProvider {
-
-        public static final TestSchemaProvider INSTANCE = new TestSchemaProvider();
-
-        private TestSchemaProvider() {}
-
-        @Override
-        public EdgeLabelDefinition getEdgeLabel(String name) {
-            Multiplicity multi = Multiplicity.MULTI;
-            if (name.startsWith("m2o")) multi = Multiplicity.MANY2ONE;
-            else if (name.startsWith("o2m")) multi = Multiplicity.ONE2MANY;
-            else if (name.startsWith("o2o")) multi = Multiplicity.ONE2ONE;
-            else if (name.startsWith("simple")) multi = Multiplicity.SIMPLE;
-            return new EdgeLabelDefinition(name, FaunusElement.NO_ID, multi, false);
-        }
-
-        @Override
-        public PropertyKeyDefinition getPropertyKey(String name) {
-            Cardinality card = Cardinality.SINGLE;
-            if (name.endsWith("list")) card=Cardinality.LIST;
-            else if (name.endsWith("set")) card=Cardinality.SET;
-            return new PropertyKeyDefinition(name, FaunusElement.NO_ID, card, Object.class);
-        }
-
-        @Override
-        public VertexLabelDefinition getVertexLabel(String name) {
-            return new VertexLabelDefinition(name, FaunusElement.NO_ID,false,false);
-        }
-
-        @Override
-        public RelationTypeDefinition getRelationType(String name) {
-            return null;
-        }
     }
 
 }

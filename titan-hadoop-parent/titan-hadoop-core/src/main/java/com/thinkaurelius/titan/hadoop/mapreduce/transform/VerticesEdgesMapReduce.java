@@ -151,9 +151,10 @@ public class VerticesEdgesMapReduce {
             }
 
             for (final Edge e : vertex.getEdges(this.direction, this.labels)) {
+                StandardFaunusEdge fe = (StandardFaunusEdge)e;
                 for (final StandardFaunusEdge edge : edges) {
-                    if (e.getId().equals(edge.getId())) {
-                        ((StandardFaunusEdge) e).getPaths(edge, false);
+                    if (fe.getLongId()==edge.getLongId()) {
+                        fe.getPaths(edge, false);
                         break;
                     }
                 }

@@ -71,4 +71,14 @@ public class TitanGraphIndexWrapper implements TitanGraphIndex {
         if (index.isCompositeIndex()) return ((CompositeIndexType)index).getStatus();
         else return ((MixedIndexType)index).getField(key).getStatus();
     }
+
+    @Override
+    public boolean isCompositeIndex() {
+        return index.isCompositeIndex();
+    }
+
+    @Override
+    public boolean isMixedIndex() {
+        return index.isMixedIndex();
+    }
 }

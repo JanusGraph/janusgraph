@@ -28,13 +28,13 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
             }
     );
 
-    public static final FaunusPropertyKey<Long> ID = new FaunusPropertyKey<Long>(
+    public static final FaunusPropertyKey<Object> ID = new FaunusPropertyKey<Object>(
             new PropertyKeyDefinition(Tokens.ID, FaunusElement.NO_ID,Cardinality.SINGLE,Long.class),
-            new Function<FaunusElement, Long>() {
+            new Function<FaunusElement, Object>() {
                 @Nullable
                 @Override
-                public Long apply(@Nullable FaunusElement element) {
-                    return element.getLongId();
+                public Object apply(@Nullable FaunusElement element) {
+                    return element.getId();
                 }
             }
     );

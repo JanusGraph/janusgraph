@@ -35,7 +35,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
         } else {
             FaunusEdgeLabel label = (FaunusEdgeLabel)type;
             Preconditions.checkArgument(value instanceof FaunusVertex,"Vertex expected but got: %s",value);
-            setRelation(new SimpleFaunusEdge(label,(FaunusVertex)value));
+            setRelation(new SimpleFaunusEdge(label, (FaunusVertex) value));
         }
     }
 
@@ -99,18 +99,21 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
 
     @Override
     public Object getId() {
-        return getLongId();
-//        long[] ids = new long[isProperty()?3:4];
-//        ids[1]=type.getLongId();
-//        ids[2]=getLongId();
-//        if (isProperty()) {
-//            ids[0]=((StandardFaunusProperty)this).getVertex().getLongId();
-//        } else {
-//            StandardFaunusEdge edge = (StandardFaunusEdge)this;
-//            ids[0]=edge.getVertex(Direction.OUT).getLongId();
-//            ids[3]=edge.getVertex(Direction.IN).getLongId();
-//        }
-//        return RelationIdentifier.get(ids);
+        if (!hasId()) return null;
+        long[] ids = new long[isProperty()?3:4];
+        ids[0]=getLongId();
+        ids[2]=type.getLongId();
+        if (isProperty()) {
+            ids[1]=((StandardFaunusProperty)this).getVertex().getLongId();
+        } else {
+            StandardFaunusEdge edge = (StandardFaunusEdge)this;
+            ids[1]=edge.getVertex(Direction.OUT).getLongId();
+            ids[3]=edge.getVertex(Direction.IN).getLongId();
+        }
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i]<=0) return null;
+        }
+        return RelationIdentifier.get(ids);
     }
 
     /* ---------------------------------------------------------------

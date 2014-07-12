@@ -69,7 +69,7 @@ public class VerticesMapTest extends BaseTest {
         for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             assertEquals(vertex.getPaths().get(0).size(), 1);
-            assertEquals(vertex.getPaths().get(0).get(0).getId(), vertex.getId());
+            assertEquals(vertex.getPaths().get(0).get(0).getId(), vertex.getLongId());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
             }

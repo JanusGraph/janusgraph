@@ -150,6 +150,10 @@ public class ManagementSystem implements TitanManagement {
         isOpen = false;
     }
 
+    public StandardTitanTx getWrappedTx() {
+        return transaction;
+    }
+
     private TitanEdge addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
         TitanEdge edge = transaction.addEdge(out,in, BaseLabel.SchemaDefinitionEdge);
@@ -694,7 +698,7 @@ public class ManagementSystem implements TitanManagement {
         updatedTypes.add(schemaVertex);
     }
 
-    private TitanSchemaVertex getSchemaVertex(TitanSchemaElement element) {
+    public TitanSchemaVertex getSchemaVertex(TitanSchemaElement element) {
         if (element instanceof RelationType) {
             Preconditions.checkArgument(element instanceof RelationTypeVertex,"Invalid schema element provided: %s",element);
             return (RelationTypeVertex)element;

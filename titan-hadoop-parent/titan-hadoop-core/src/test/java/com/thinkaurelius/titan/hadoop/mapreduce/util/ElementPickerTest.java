@@ -11,6 +11,23 @@ import java.util.Collection;
  */
 public class ElementPickerTest extends TestCase {
 
+    private FaunusTypeManager typeManager;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        typeManager = FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable());
+        typeManager.setSchemaProvider(TestSchemaProvider.MULTIPLICITY);
+        typeManager.clear();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
+        typeManager.clear();
+    }
+
     public void testPathCount() {
         FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens._COUNT), 0l);
@@ -52,7 +69,6 @@ public class ElementPickerTest extends TestCase {
     }
 
     public void testMultiProperties() {
-        FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable()).setSchemaProvider(FaunusVertexTest.TestSchemaProvider.INSTANCE);
         FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         vertex.addProperty("namelist","marko1");
         vertex.addProperty("namelist","marko2");

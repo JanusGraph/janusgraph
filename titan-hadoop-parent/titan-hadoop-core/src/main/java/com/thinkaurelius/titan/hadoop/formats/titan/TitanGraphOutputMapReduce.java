@@ -155,7 +155,7 @@ public class TitanGraphOutputMapReduce {
 
         public TitanVertex getCreateOrDeleteVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
             if (this.trackState && faunusVertex.isRemoved()) {
-                final Vertex titanVertex = graph.getVertex(faunusVertex.getId());
+                final Vertex titanVertex = graph.getVertex(faunusVertex.getLongId());
                 if (null == titanVertex)
                     HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.NULL_VERTICES_IGNORED, 1L);
                 else {

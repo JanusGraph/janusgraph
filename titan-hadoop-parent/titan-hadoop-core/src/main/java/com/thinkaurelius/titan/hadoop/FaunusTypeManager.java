@@ -31,6 +31,11 @@ public class FaunusTypeManager implements TypeSource {
         this.schemaProvider=provider;
     }
 
+    public void clear() {
+        vertexLabels.clear();
+        relationTypes.clear();
+    }
+
     public FaunusTypeManager(SchemaProvider provider) {
         if (provider!=DefaultSchemaProvider.INSTANCE) {
             provider = DefaultSchemaProvider.asBackupProvider(provider);

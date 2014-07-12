@@ -24,7 +24,7 @@ public class ElementPicker {
             for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
-            properties.put(Tokens._ID, element.getId());
+            properties.put(Tokens._ID, element.getLongId());
             if (element instanceof StandardFaunusEdge)
                 properties.put(Tokens._LABEL, ((StandardFaunusEdge) element).getLabel());
 
@@ -56,7 +56,7 @@ public class ElementPicker {
             for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
-            properties.put(Tokens._ID, element.getId());
+            properties.put(Tokens._ID, element.getLongId());
             return properties;
         } else {
             if (element instanceof FaunusVertex) {
