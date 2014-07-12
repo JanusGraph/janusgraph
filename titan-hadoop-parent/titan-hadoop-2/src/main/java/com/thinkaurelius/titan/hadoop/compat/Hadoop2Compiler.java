@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.hadoop.compat;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
@@ -136,7 +136,7 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
             job.setNumReduceTasks(this.getConf().getInt("mapreduce.job.reduces", this.getConf().getInt("mapreduce.tasktracker.reduce.tasks.maximum", 1)));
 
-            ChainMapper.addMapper(job, mapper, NullWritable.class, HadoopVertex.class, mapOutputKey, mapOutputValue, configuration);
+            ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
             ChainReducer.setReducer(job, reducer, mapOutputKey, mapOutputValue, reduceOutputKey, reduceOutputValue, configuration);
 
             if (null != comparator)
@@ -172,10 +172,10 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
 
             if (State.MAPPER == this.state || State.NONE == this.state) {
-                ChainMapper.addMapper(job, mapper, NullWritable.class, HadoopVertex.class, mapOutputKey, mapOutputValue, configuration);
+                ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
                 this.state = State.MAPPER;
             } else {
-                ChainReducer.addMapper(job, mapper, NullWritable.class, HadoopVertex.class, mapOutputKey, mapOutputValue, configuration);
+                ChainReducer.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
                 this.state = State.REDUCER;
             }
         } catch (IOException e) {
@@ -269,13 +269,13 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             if (i == this.jobs.size() - 1) {
                 LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, HadoopVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
             } else {
                 Preconditions.checkNotNull(jobTmp);
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
                 SequenceFileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, HadoopVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
             }
         }
     }
