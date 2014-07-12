@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
@@ -24,19 +24,19 @@ import java.util.Map;
 public class DuplicateFilterMapTest extends BaseTest {
 
 
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new DuplicateFilterMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testDedupVertices() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
         graph.get(1l).incrPath(3);
         graph.get(2l).incrPath(1);
@@ -74,14 +74,14 @@ public class DuplicateFilterMapTest extends BaseTest {
         config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(3l)), false);
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(4l)), false);
-        graph.get(2l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
-        graph.get(3l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(3l), new HadoopVertex.MicroVertex(4l)), false);
-        graph.get(3l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(3l), new HadoopVertex.MicroVertex(5l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(4l)), false);
+        graph.get(2l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new FaunusVertex.MicroVertex(1l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(3l), new FaunusVertex.MicroVertex(4l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(3l), new FaunusVertex.MicroVertex(5l)), false);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 3);
@@ -115,14 +115,14 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
 
-        ((StandardFaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
-        ((StandardFaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new FaunusVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(2l).getEdges(Direction.IN).iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new FaunusVertex.MicroVertex(1l)), false);
 
         assertEquals(graph.size(), 6);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.IN)) {
                 if (edge.getVertex(Direction.IN).getId().equals(2l)) {
@@ -137,7 +137,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
         assertEquals(graph.size(), 6);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.IN)) {
                 if (edge.getVertex(Direction.IN).getId().equals(2l)) {

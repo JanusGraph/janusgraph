@@ -38,7 +38,7 @@ public class VerticesEdgesMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private Direction direction;
         private String[] labels;
@@ -55,7 +55,7 @@ public class VerticesEdgesMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
 
             if (value.hasPaths()) {
                 long edgesTraversed = 0l;
@@ -110,7 +110,7 @@ public class VerticesEdgesMapReduce {
         }
 
         // TODO: this is horribly inefficient due to an efficiency of object reuse in path calculations
-        private List<List<FaunusPathElement.MicroElement>> clonePaths(final HadoopVertex vertex, final StandardFaunusEdge.MicroEdge edge) {
+        private List<List<FaunusPathElement.MicroElement>> clonePaths(final FaunusVertex vertex, final StandardFaunusEdge.MicroEdge edge) {
             final List<List<FaunusPathElement.MicroElement>> paths = new ArrayList<List<FaunusPathElement.MicroElement>>();
             for (List<FaunusPathElement.MicroElement> path : vertex.getPaths()) {
                 final List<FaunusPathElement.MicroElement> p = new ArrayList<FaunusPathElement.MicroElement>();
@@ -123,7 +123,7 @@ public class VerticesEdgesMapReduce {
 
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, HadoopVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         private Direction direction;
         private String[] labels;
@@ -138,13 +138,13 @@ public class VerticesEdgesMapReduce {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             final List<StandardFaunusEdge> edges = new ArrayList<StandardFaunusEdge>();
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((HadoopVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else {
                     edges.add((StandardFaunusEdge) holder.get());
                 }

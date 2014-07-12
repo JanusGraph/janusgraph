@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
@@ -35,7 +35,7 @@ public class CountMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable> {
 
         private boolean isVertex;
         private final LongWritable longWritable = new LongWritable();
@@ -48,7 +48,7 @@ public class CountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 final long pathCount = value.pathCount();
                 this.longWritable.set(pathCount);
@@ -75,7 +75,7 @@ public class CountMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -39,7 +39,7 @@ public class PathMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, Text> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, Text> {
 
         private boolean isVertex;
         private final Text textWritable = new Text();
@@ -55,7 +55,7 @@ public class PathMap {
 
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex && value.hasPaths()) {
                 for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
                     this.textWritable.set(path.toString());
@@ -83,7 +83,7 @@ public class PathMap {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

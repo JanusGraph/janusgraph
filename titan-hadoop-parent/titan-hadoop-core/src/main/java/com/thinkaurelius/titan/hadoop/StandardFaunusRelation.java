@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
@@ -20,14 +21,23 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     }
 
     @Override
-    public void setProperty(EdgeLabel label, TitanVertex vertex) {
-        ...
+    void updateSchema(final FaunusSerializer.Schema schema) {
+        super.updateSchema(schema);
+        schema.add(type);
     }
+
 
     @Override
-    public TitanVertex getProperty(EdgeLabel label) {
-
+    public void setProperty(FaunusRelationType type, Object value) {
+        if (type.isPropertyKey()) {
+            setRelation(new SimpleFaunusProperty((FaunusPropertyKey)type,value));
+        } else {
+            FaunusEdgeLabel label = (FaunusEdgeLabel)type;
+            Preconditions.checkArgument(value instanceof FaunusVertex,"Vertex expected but got: %s",value);
+            setRelation(new SimpleFaunusEdge(label,(FaunusVertex)value));
+        }
     }
+
 
     public String getTypeName() {
         return type.getName();
@@ -88,7 +98,17 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
 
     @Override
     public RelationIdentifier getId() {
-        return RelationIdentifier.get(this);
+        long[] ids = new long[isProperty()?3:4];
+        ids[1]=type.getLongId();
+        ids[2]=getLongId();
+        if (isProperty()) {
+            ids[0]=((StandardFaunusProperty)this).getVertex().getLongId();
+        } else {
+            StandardFaunusEdge edge = (StandardFaunusEdge)this;
+            ids[0]=edge.getVertex(Direction.OUT).getLongId();
+            ids[3]=edge.getVertex(Direction.IN).getLongId();
+        }
+        return RelationIdentifier.get(ids);
     }
 
     /* ---------------------------------------------------------------

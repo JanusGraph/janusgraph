@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.hadoop.mapreduce.util;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
+import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.FaunusProperty;
 
@@ -22,7 +23,7 @@ public class ElementPicker {
             return element.getId().toString();
         else if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
-            for (final FaunusProperty property : element.getProperties()) {
+            for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getId());
@@ -33,9 +34,9 @@ public class ElementPicker {
         } else if (key.equals(Tokens.LABEL) && element instanceof StandardFaunusEdge) {
             return ((StandardFaunusEdge) element).getLabel();
         } else {
-            if (element instanceof HadoopVertex) {
+            if (element instanceof FaunusVertex) {
                 List values = new ArrayList();
-                Iterables.addAll(values, ((HadoopVertex) element).getProperties(key));
+                Iterables.addAll(values, ((FaunusVertex) element).getProperties(key));
                 if (values.size() == 0)
                     return Tokens.NULL;
                 else if (values.size() == 1)
@@ -58,7 +59,7 @@ public class ElementPicker {
             return element.getId();
         else if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
-            for (final FaunusProperty property : element.getProperties()) {
+            for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getId());
@@ -66,9 +67,9 @@ public class ElementPicker {
         } else if (key.equals(Tokens.LABEL) && element instanceof StandardFaunusEdge) {
             return ((StandardFaunusEdge) element).getLabel();
         } else {
-            if (element instanceof HadoopVertex) {
+            if (element instanceof FaunusVertex) {
                 List values = new ArrayList();
-                Iterables.addAll(values, ((HadoopVertex) element).getProperties(key));
+                Iterables.addAll(values, ((FaunusVertex) element).getProperties(key));
                 if (values.size() == 0)
                     return null;
                 else if (values.size() == 1)

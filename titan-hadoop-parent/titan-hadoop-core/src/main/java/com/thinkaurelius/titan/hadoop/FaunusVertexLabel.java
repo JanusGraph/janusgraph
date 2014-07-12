@@ -19,6 +19,10 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
         this.definition=definition;
     }
 
+    public boolean isDefault() {
+        return getName().equals(BaseVertexLabel.DEFAULT_VERTEXLABEL.getName());
+    }
+
     @Override
     public boolean isPartitioned() {
         return definition.isPartitioned();

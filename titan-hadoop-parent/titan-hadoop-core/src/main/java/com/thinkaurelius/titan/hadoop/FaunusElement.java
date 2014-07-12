@@ -3,16 +3,9 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanElement;
+import com.google.common.collect.*;
+import com.google.common.primitives.Longs;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -28,7 +21,7 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement implements InternalElement, Comparable<FaunusElement> {
+public abstract class FaunusElement extends LifeCycleElement implements InternalElement, Comparable<FaunusElement> {
 
 
     protected static final Predicate<FaunusProperty> FILTER_DELETED_PROPERTIES = new Predicate<FaunusProperty>() {
@@ -45,17 +38,17 @@ public abstract class FaunusElement implements InternalElement, Comparable<Faunu
     };
 
     public static final long NO_ID = -1;
-    static final Multimap<FaunusRelationType, FaunusRelation> EMPTY_ADJACENCY = ImmutableListMultimap.of();
+    static final SetMultimap<FaunusRelationType, FaunusRelation> EMPTY_ADJACENCY = ImmutableSetMultimap.of();
 
     protected long id;
-    protected Multimap<FaunusRelationType, FaunusRelation> adjacency = EMPTY_ADJACENCY;
-    protected byte lifecycle = ElementLifeCycle.New;
+    protected SetMultimap<FaunusRelationType, FaunusRelation> outAdjacency = EMPTY_ADJACENCY;
+    protected SetMultimap<FaunusRelationType, FaunusRelation> inAdjacency = EMPTY_ADJACENCY;
 
     public FaunusElement(final long id) {
         this.id = id;
     }
 
-    protected abstract FaunusTypeManager getTypeManager();
+    public abstract FaunusTypeManager getTypeManager();
 
     @Override
     public InternalElement it() {
@@ -94,22 +87,9 @@ public abstract class FaunusElement implements InternalElement, Comparable<Faunu
         this.id = id;
     }
 
-    void updateSchema(HadoopSerializer.Schema schema) {
-        schema.addAll(adjacency.keySet());
-    }
-
-    public void updateLifeCycle(ElementLifeCycle.Event event) {
-        this.lifecycle = ElementLifeCycle.update(lifecycle,event);
-    }
-
-    public void setLifeCycle(byte lifecycle) {
-        Preconditions.checkArgument(ElementLifeCycle.isValid(lifecycle));
-        this.lifecycle = lifecycle;
-    }
-
-    @Override
-    public byte getLifeCycle() {
-        return lifecycle;
+    void updateSchema(FaunusSerializer.Schema schema) {
+        schema.addAll(inAdjacency.keySet());
+        schema.addAll(outAdjacency.keySet());
     }
 
     @Override
@@ -117,36 +97,20 @@ public abstract class FaunusElement implements InternalElement, Comparable<Faunu
         return false;
     }
 
-    @Override
-    public boolean isNew() {
-        return ElementLifeCycle.isNew(lifecycle);
-    }
-
-    @Override
-    public boolean isRemoved() {
-        return ElementLifeCycle.isRemoved(lifecycle);
-    }
-
-    @Override
-    public boolean isLoaded() {
-        return ElementLifeCycle.isLoaded(lifecycle);
-    }
-
     public boolean isModified() {
-        if (ElementLifeCycle.isModified(lifecycle)) return true;
-        for (FaunusRelation r : adjacency.values()) {
-            if (r.isModified()) return true;
+        if (super.isModified()) return true;
+        if (!(this instanceof FaunusVertex)) return false;
+        for (Direction dir : Direction.proper) {
+            for (FaunusRelation r : getAdjacency(dir).values()) {
+                if (r.isModified()) return true;
+            }
         }
         return false;
     }
 
     //##################################
-    // Property Handling
+    // General Relation Handling
     //##################################
-
-    protected void initializeAdjacency() {
-        if (this.adjacency == EMPTY_ADJACENCY) adjacency = HashMultimap.create();
-    }
 
     protected Multiplicity getAdjustedMultiplicity(FaunusRelationType type) {
         if (this instanceof FaunusRelation) {
@@ -154,124 +118,196 @@ public abstract class FaunusElement implements InternalElement, Comparable<Faunu
         } return type.getMultiplicity();
     }
 
+    SetMultimap<FaunusRelationType, FaunusRelation> getAdjacency(Direction dir) {
+        assert dir==Direction.IN || dir==Direction.OUT;
+        if (dir==Direction.IN) return inAdjacency;
+        else return outAdjacency;
+    }
+
+    private void initializeAdjacency(Direction dir) {
+        if ((dir==Direction.OUT || dir==Direction.BOTH) && this.outAdjacency == EMPTY_ADJACENCY)
+            outAdjacency = HashMultimap.create();
+        if ((dir==Direction.IN || dir==Direction.BOTH) && this.inAdjacency == EMPTY_ADJACENCY)
+            inAdjacency = HashMultimap.create();
+    }
+
     protected void setRelation(final FaunusRelation relation) {
         Preconditions.checkArgument(getAdjustedMultiplicity(relation.getType())==Multiplicity.MANY2ONE);
         //Mark all existing ones for the type as deleted
-        final Iterator<FaunusRelation> rels = adjacency.get(relation.getType()).iterator();
+        final Iterator<FaunusRelation> rels = outAdjacency.get(relation.getType()).iterator();
         while (rels.hasNext()) {
             FaunusRelation r = rels.next();
             if (r.isNew()) rels.remove();
             r.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+            updateLifeCycle(ElementLifeCycle.Event.REMOVED_RELATION);
         }
         addRelation(relation);
     }
 
     protected FaunusRelation addRelation(final FaunusRelation relation) {
         Preconditions.checkNotNull(relation);
-        initializeAdjacency();
-        if ((this instanceof HadoopVertex) && adjacency.containsEntry(relation.getType(), relation)) {
-            //First, check if this relation already exists; if so, consolidate
-            final FaunusRelation existing = Iterables.getOnlyElement(Iterables.filter(adjacency.get(relation.getType()),
-                    new Predicate<FaunusRelation>() {
-                @Override
-                public boolean apply(@Nullable FaunusRelation rel) {
-                    return relation.equals(rel);
+        FaunusRelation old = null;
+        for (Direction dir : Direction.proper) {
+            //Determine applicable directions
+            if (relation.isProperty() && dir==Direction.IN) {
+                continue;
+            } else if (relation.isEdge()) {
+                FaunusEdge edge = (FaunusEdge)relation;
+                if (edge.getEdgeLabel().isUnidirected()) {
+                    if (dir==Direction.IN) continue;
+                } else if (!edge.getVertex(dir).equals(this)) {
+                    continue;
                 }
-            }));
-            StandardFaunusRelation old = (StandardFaunusRelation)existing;
-            if (relation.isNew() && old.isRemoved()) {
-                old.setLifeCycle(ElementLifeCycle.Loaded);
-            } else if (relation.isLoaded() && old.isNew()) {
-                old.setLifeCycle(ElementLifeCycle.Loaded);
             }
-            return old;
-        } else {
-            //Verify multiplicity constraint
-            switch(relation.getType().getMultiplicity()) {
-                case MANY2ONE:
-                case ONE2ONE:
-                    for (FaunusRelation rel : adjacency.get(relation.getType())) {
-                        if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which" +
-                                "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
+
+            initializeAdjacency(dir);
+            SetMultimap<FaunusRelationType, FaunusRelation> adjacency = getAdjacency(dir);
+            if ((this instanceof FaunusVertex) && adjacency.containsEntry(relation.getType(), relation)) {
+                //First, check if this relation already exists; if so, consolidate
+                old = Iterables.getOnlyElement(Iterables.filter(adjacency.get(relation.getType()),
+                        new Predicate<FaunusRelation>() {
+                    @Override
+                    public boolean apply(@Nullable FaunusRelation rel) {
+                        return relation.equals(rel);
                     }
-                    break;
-                case SIMPLE:
-                    for (FaunusRelation rel : adjacency.get(relation.getType())) {
-                        if (rel.isRemoved()) continue;
-                        if (relation.isEdge()) {
-                            FaunusEdge e1 = (FaunusEdge)relation, e2 = (FaunusEdge)rel;
-                            if (e1.getVertex(Direction.OUT).equals(e2.getVertex(Direction.OUT)) &&
-                                    e1.getVertex(Direction.IN).equals(e2.getVertex(Direction.IN))) {
-                                throw new IllegalArgumentException("A relation already exists which" +
-                                        "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
+                }));
+                if (relation.isNew() && old.isRemoved()) {
+                    old.setLifeCycle(ElementLifeCycle.Loaded);
+                    updateLifeCycle(ElementLifeCycle.Event.ADDED_RELATION);
+                } else if (relation.isLoaded() && old.isNew()) {
+                    old.setLifeCycle(ElementLifeCycle.Loaded);
+                }
+            } else {
+                //Verify multiplicity constraint
+                switch(relation.getType().getMultiplicity()) {
+                    case MANY2ONE:
+                        if (dir==Direction.OUT)
+                            ensureUniqueness(relation.getType(),adjacency);
+                        break;
+                    case ONE2MANY:
+                        if (dir==Direction.IN)
+                            ensureUniqueness(relation.getType(),adjacency);
+                        break;
+                    case ONE2ONE:
+                        ensureUniqueness(relation.getType(),adjacency);
+                        break;
+                    case SIMPLE:
+                        for (FaunusRelation rel : adjacency.get(relation.getType())) {
+                            if (rel.isRemoved()) continue;
+                            if (relation.isEdge()) {
+                                FaunusEdge e1 = (FaunusEdge)relation, e2 = (FaunusEdge)rel;
+                                if (e1.getVertex(Direction.OUT).equals(e2.getVertex(Direction.OUT)) &&
+                                        e1.getVertex(Direction.IN).equals(e2.getVertex(Direction.IN))) {
+                                    throw new IllegalArgumentException("A relation already exists which" +
+                                            "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
+                                }
+                            } else {
+                                FaunusProperty p1 = (FaunusProperty)relation, p2 = (FaunusProperty)rel;
+                                if (p1.getValue().equals(p2.getValue())) {
+                                    throw new IllegalArgumentException("A relation already exists which" +
+                                            "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
+                                }
                             }
-                        } else {
-                            FaunusProperty p1 = (FaunusProperty)relation, p2 = (FaunusProperty)rel;
-                            if (p1.getValue().equals(p2.getValue())) {
-                                throw new IllegalArgumentException("A relation already exists which" +
-                                        "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
-                            }
+                            if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which" +
+                                    "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
                         }
-                        if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which" +
-                                "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
-                    }
-                    break;
-                case MULTI:
-                case ONE2MANY:
-                    //Nothing to check
-                    break;
-                default: throw new AssertionError();
+                        break;
+                    case MULTI: //Nothing to check
+                        break;
+                    default: throw new AssertionError();
+                }
+                adjacency.put(relation.getType(), relation);
+                updateLifeCycle(ElementLifeCycle.Event.ADDED_RELATION);
             }
-            adjacency.put(relation.getType(), relation);
-            return relation;
         }
+        if (old!=null) return old;
+        else return relation;
+    }
+
+    private static void ensureUniqueness(FaunusRelationType type, SetMultimap<FaunusRelationType, FaunusRelation> adjacency) {
+        for (FaunusRelation rel : adjacency.get(type)) {
+            if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which" +
+                    "violates the multiplicity constraint: " + type.getMultiplicity());
+        }
+    }
+
+    public abstract FaunusVertexQuery query();
+
+    //##################################
+    // Property Handling
+    //##################################
+
+
+    public void setProperty(EdgeLabel label, TitanVertex vertex) {
+        setProperty((FaunusRelationType)label,vertex);
+    }
+
+    @Override
+    public void setProperty(PropertyKey key, Object value) {
+        setProperty((FaunusRelationType)key,value);
     }
 
     @Override
     public void setProperty(final String key, final Object value) {
-        setProperty(getTypeManager().getPropertyKey(key),value);
+        FaunusRelationType rt = getTypeManager().getRelationType(key);
+        if (rt==null) rt = getTypeManager().getPropertyKey(key);
+        setProperty(rt,value);
     }
+
+    public abstract void setProperty(final FaunusRelationType type, final Object value);
 
     @Override
     public <T> T removeProperty(final String key) {
-        return removeProperty(getTypeManager().getPropertyKey(key));
+        FaunusRelationType rt = getTypeManager().getRelationType(key);
+        if (rt==null) return null;
+        return removeProperty(rt);
     }
 
     @Override
     public <O> O removeProperty(RelationType type) {
-        if (adjacency.isEmpty()) return null;
-        FaunusPropertyKey key = (FaunusPropertyKey)type;
-        final List<FaunusProperty> removed = Lists.newArrayList();
-        final Iterator<FaunusRelation> props = adjacency.get(key).iterator();
-        while (props.hasNext()) {
-            FaunusProperty p = (FaunusProperty)props.next();
-            if (!p.isRemoved()) removed.add(p);
-            if (p.isNew()) props.remove();
-            else p.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        if (type.isEdgeLabel() && !(this instanceof FaunusVertex)) throw new IllegalArgumentException("Provided argument" +
+                "identifies an edge label. Use edge methods to remove those: " + type);
+        if (outAdjacency.isEmpty()) return null;
+        FaunusRelationType rtype = (FaunusRelationType)type;
+        final List<Object> removed = Lists.newArrayList();
+        final Iterator<FaunusRelation> rels = outAdjacency.get(rtype).iterator();
+        while (rels.hasNext()) {
+            FaunusRelation r = rels.next();
+            if (!r.isRemoved()) {
+                if (r.isProperty()) removed.add(((FaunusProperty)r).getValue());
+                else removed.add(((FaunusEdge)r).getVertex(Direction.IN));
+            }
+            if (r.isNew()) rels.remove();
+            r.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+            updateLifeCycle(ElementLifeCycle.Event.REMOVED_RELATION);
         }
         if (removed.isEmpty()) return null;
-        else if (getAdjustedMultiplicity(key)==Multiplicity.MANY2ONE) return (O)removed.iterator().next().getValue();
+        else if (getAdjustedMultiplicity(rtype)==Multiplicity.MANY2ONE) return (O)removed.iterator().next();
         else return (O) removed;
+    }
+
+    public TitanVertex getProperty(EdgeLabel label) {
+        Preconditions.checkArgument(label!=null);
+        Preconditions.checkArgument(!(this instanceof FaunusVertex),"Use getEdges() to query for edges on a vertex");
+        return Iterables.getOnlyElement(query().type(label).titanEdges()).getVertex(Direction.IN);
     }
 
     @Override
     public <T> T getProperty(PropertyKey key) {
         FaunusPropertyKey type = (FaunusPropertyKey)key;
-        if (type.isImplicit()) return (T)type.computeImplicit(this);
-
-        Object result = null;
-        for (final FaunusRelation p : adjacency.get(type)) {
-            if (p.isRemoved()) continue;
-            if (result != null)
-                throw new IllegalStateException("Use getProperties(String) method for multi-valued properties");
-            result = ((FaunusProperty)p).getValue();
-        }
+        Iterable<TitanProperty> properties = query().type(type).properties();
+        if (type.getCardinality()==Cardinality.SINGLE) return Iterables.getOnlyElement(properties).getValue();
+        List result = Lists.newArrayList();
+        for (TitanProperty p : properties) result.add(p.getValue());
         return (T)result;
     }
 
     @Override
     public <T> T getProperty(final String key) {
-        return getProperty(getTypeManager().getPropertyKey(key));
+        FaunusRelationType rt = getTypeManager().getRelationType(key);
+        if (rt==null) return null;
+        if (rt.isPropertyKey()) return getProperty((FaunusPropertyKey)rt);
+        else return (T)getProperty((FaunusEdgeLabel)rt);
     }
 
     @Override
@@ -287,32 +323,20 @@ public abstract class FaunusElement implements InternalElement, Comparable<Faunu
 
     protected Iterable<RelationType> getPropertyKeysDirect() {
         final Set<RelationType> result = Sets.newHashSet();
-        for (final FaunusRelation r : adjacency.values()) {
-            if (r.isEdge() && (this instanceof HadoopVertex)) continue;
-            if (!r.isRemoved() && !r.getType().isHidden()) result.add(r.getType());
+        for (final TitanRelation r : query().relations()) {
+            if (r.isEdge() && (this instanceof FaunusVertex)) continue;
+            result.add(r.getType());
         }
         return result;
     }
 
-
-
-
-    public Collection<FaunusProperty> getProperties() {
-        final List<FaunusProperty> result = Lists.newArrayList(Iterables.filter(adjacency.values(), new Predicate<FaunusProperty>() {
-            @Override
-            public boolean apply(@Nullable FaunusProperty property) {
-                return !property.getType().isHidden() && !property.isRemoved();
-            }
-        }));
-        return result;
+    public void addAllProperties(final Iterable<FaunusRelation> properties) {
+        for (final FaunusRelation p : properties) addRelation(p);
     }
 
-    public void addAllProperties(final Iterable<FaunusProperty> properties) {
-        for (final FaunusProperty p : properties) addProperty(p);
-    }
-
-    public Collection<FaunusProperty> getPropertiesWithState() {
-        return this.adjacency.values();
+    public Collection<FaunusRelation> getPropertyCollection() {
+        return (Collection)Lists.newArrayList(
+                (this instanceof FaunusVertex)?query().properties():query().relations());
     }
 
     //##################################
@@ -336,6 +360,6 @@ public abstract class FaunusElement implements InternalElement, Comparable<Faunu
 
     @Override
     public int compareTo(FaunusElement o) {
-        return new Long(this.id).compareTo((Long) o.getId());
+        return Longs.compare(id, o.getLongId());
     }
 }

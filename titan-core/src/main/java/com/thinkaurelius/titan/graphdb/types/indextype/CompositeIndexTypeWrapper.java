@@ -32,7 +32,7 @@ public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements Compo
 
     @Override
     public long getID() {
-        return base.getID();
+        return base.getLongId();
     }
 
     @Override

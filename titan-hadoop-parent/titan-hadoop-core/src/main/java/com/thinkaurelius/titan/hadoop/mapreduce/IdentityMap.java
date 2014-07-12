@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -32,21 +32,21 @@ public class IdentityMap {
         return new EmptyConfiguration();
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
 
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_COUNT, 1L);
             //context.getCounter(Counters.VERTEX_COUNT).increment(1l);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_PROPERTY_COUNT, value.getProperties().size());
+            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_PROPERTY_COUNT, value.getPropertyCollection().size());
             //context.getCounter(Counters.VERTEX_PROPERTY_COUNT).increment(value.getProperties().size());
 
             long edgeCount = 0;
             long edgePropertyCount = 0;
             for (final Edge edge : value.getEdges(Direction.IN)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((StandardFaunusEdge) edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((StandardFaunusEdge) edge).getPropertyCollection().size();
             }
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGE_COUNT, edgeCount);
             //context.getCounter(Counters.IN_EDGE_COUNT).increment(edgeCount);
@@ -57,7 +57,7 @@ public class IdentityMap {
             edgePropertyCount = 0;
             for (final Edge edge : value.getEdges(Direction.OUT)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((StandardFaunusEdge) edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((StandardFaunusEdge) edge).getPropertyCollection().size();
             }
             HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGE_COUNT, edgeCount);
             //context.getCounter(Counters.OUT_EDGE_COUNT).increment(edgeCount);

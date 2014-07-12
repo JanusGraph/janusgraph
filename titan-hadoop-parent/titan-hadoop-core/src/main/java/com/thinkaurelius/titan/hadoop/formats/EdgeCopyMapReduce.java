@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -36,9 +37,9 @@ public class EdgeCopyMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
-        private final Holder<HadoopVertex> vertexHolder = new Holder<HadoopVertex>();
+        private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
         private Direction direction = Direction.OUT;
 
@@ -50,12 +51,12 @@ public class EdgeCopyMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long edgesInverted = 0;
             for (final Edge edge : value.getEdges(this.direction)) {
                 final long id = (Long) edge.getVertex(this.direction.opposite()).getId();
                 this.longWritable.set(id);
-                final HadoopVertex shellVertex = new HadoopVertex(context.getConfiguration(), id);
+                final FaunusVertex shellVertex = new FaunusVertex(context.getConfiguration(), id);
                 shellVertex.addEdge(this.direction.opposite(), (StandardFaunusEdge) edge);
                 context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 edgesInverted++;
@@ -68,7 +69,7 @@ public class EdgeCopyMapReduce {
 
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         private Direction direction = Direction.OUT;
 
@@ -80,12 +81,12 @@ public class EdgeCopyMapReduce {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder<HadoopVertex>> values, final Reducer<LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long edgesAggregated = 0;
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
-            for (final Holder<HadoopVertex> holder : values) {
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
+            for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
-                    edgesAggregated = edgesAggregated + ((List) holder.get().getEdges(direction.opposite())).size();
+                    edgesAggregated = edgesAggregated + Iterables.size(holder.get().getEdges(direction.opposite()));
                     vertex.addEdges(direction.opposite(), holder.get());
                 } else {
                     vertex.addAll(holder.get());

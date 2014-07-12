@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.titan;
 
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
@@ -17,7 +18,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanInputFormat extends InputFormat<NullWritable, HadoopVertex> implements Configurable {
+public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
 
 //    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN = "titan.hadoop.input";
 //    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME = TITAN_HADOOP_GRAPH_INPUT_TITAN + ".storage.hostname";
@@ -29,7 +30,7 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, HadoopV
     private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.titan.input.";
     private static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
 
-    protected VertexQueryFilter vertexQuery;
+    protected FaunusVertexQueryFilter vertexQuery;
     protected boolean trackPaths;
     protected TitanHadoopSetup titanSetup;
     protected BasicConfiguration titanConf;
@@ -37,7 +38,7 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, HadoopV
     @Override
     public void setConf(final Configuration config) {
 
-        this.vertexQuery = VertexQueryFilter.create(config);
+        this.vertexQuery = FaunusVertexQueryFilter.create(config);
         this.trackPaths = config.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
         this.titanConf = com.thinkaurelius.titan.hadoop.config.ConfigurationUtil.extractInputConfiguration(config);
 

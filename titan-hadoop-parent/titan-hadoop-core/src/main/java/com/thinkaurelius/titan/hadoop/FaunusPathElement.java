@@ -22,7 +22,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
             LoggerFactory.getLogger(FaunusPathElement.class);
 
     public static final Configuration EMPTY_CONFIG = EmptyConfiguration.immutable();
-    private static final Tracker DEFAULT_TRACK = new Tracker();
+    static final Tracker DEFAULT_TRACK = new Tracker();
 
     protected Tracker tracker = DEFAULT_TRACK;
     protected long pathCounter = 0;
@@ -40,7 +40,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
         boolean trackPaths = (configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false));
-        if (trackPaths) this.tracker = new Tracker((this instanceof HadoopVertex) ? new HadoopVertex.MicroVertex(this.id) : new StandardFaunusEdge.MicroEdge(this.id));
+        if (trackPaths) this.tracker = new Tracker((this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new StandardFaunusEdge.MicroEdge(this.id));
         log.debug("Set trackPaths=" + this.tracker.trackPaths + " from config option " + Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS);
     }
 
@@ -49,8 +49,13 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     @Override
-    protected FaunusTypeManager getTypeManager() {
+    public FaunusTypeManager getTypeManager() {
         return FaunusTypeManager.getTypeManager(configuration);
+    }
+
+    @Override
+    public FaunusVertexQuery query() {
+        return new FaunusVertexQuery(this);
     }
 
     //##################################
@@ -59,14 +64,20 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     protected static class Tracker {
 
-        private final boolean trackPaths;
-        private final List<List<MicroElement>> paths;
-        private final MicroElement microVersion;
+        final boolean trackPaths;
+        final List<List<MicroElement>> paths;
+        final MicroElement microVersion;
 
         public Tracker(MicroElement microVersion) {
             this.trackPaths = true;
             this.microVersion = microVersion;
             this.paths = new ArrayList<List<MicroElement>>();
+        }
+
+        public Tracker(List<List<MicroElement>> paths, MicroElement microVersion) {
+            this.trackPaths = true;
+            this.microVersion = microVersion;
+            this.paths = paths;
         }
 
         private Tracker() {
@@ -77,7 +88,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     }
 
-    private boolean hasTrackPaths() {
+    public boolean hasTrackPaths() {
         return tracker.trackPaths;
     }
 

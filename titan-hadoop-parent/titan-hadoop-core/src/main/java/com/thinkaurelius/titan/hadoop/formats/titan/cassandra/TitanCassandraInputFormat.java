@@ -4,8 +4,7 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
 
@@ -41,7 +40,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, HadoopVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         return new TitanCassandraRecordReader(this.graph, this.vertexQuery, (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
     }
 
@@ -53,7 +52,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         config.set("cassandra.input.keyspace", titanConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
         final SlicePredicate predicate = new SlicePredicate();
-        predicate.setSlice_range(getSliceRange(this.vertexQuery, config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
+        predicate.setSlice_range(getSliceRange(titanSetup.inputSlice(vertexQuery), config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
         ConfigHelper.setInputSlicePredicate(config, predicate);
         ConfigHelper.setInputInitialAddress(config, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
         if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
@@ -68,8 +67,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         this.config = config;
     }
 
-    private SliceRange getSliceRange(final VertexQueryFilter inputFilter, final int limit) {
-        final SliceQuery slice = titanSetup.inputSlice(inputFilter);
+    private SliceRange getSliceRange(final SliceQuery slice, final int limit) {
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(slice.getSliceStart().asByteBuffer());
         sliceRange.setFinish(slice.getSliceEnd().asByteBuffer());

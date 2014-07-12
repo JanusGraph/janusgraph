@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.ElementState;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -44,10 +45,10 @@ public class CommitVerticesMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private boolean drop;
-        private final Holder<HadoopVertex> holder = new Holder<HadoopVertex>();
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
@@ -56,7 +57,7 @@ public class CommitVerticesMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             final boolean keep;
             final boolean hasPaths = value.hasPaths();
 
@@ -76,7 +77,7 @@ public class CommitVerticesMapReduce {
                 verticesKept++;
             } else {
                 final long vertexId = value.getLongId();
-                this.holder.set('k', new HadoopVertex(context.getConfiguration(), vertexId));
+                this.holder.set('k', new FaunusVertex(context.getConfiguration(), vertexId));
 
                 Iterator<Edge> itty = value.getEdges(OUT).iterator();
                 while (itty.hasNext()) {
@@ -111,11 +112,11 @@ public class CommitVerticesMapReduce {
 
     public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
 
-        private final Holder<HadoopVertex> holder = new Holder<HadoopVertex>();
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            HadoopVertex vertex = null;
+            FaunusVertex vertex = null;
             final Set<Long> ids = new HashSet<Long>();
 
             boolean isDeleted = false;
@@ -125,7 +126,7 @@ public class CommitVerticesMapReduce {
                     ids.add(holder.get().getLongId());
                     // todo: once vertex is found, do individual removes to save memory
                 } else {
-                    vertex = (HadoopVertex) holder.get();
+                    vertex = (FaunusVertex) holder.get();
                     isDeleted = tag == 'd';
                 }
             }
@@ -136,14 +137,14 @@ public class CommitVerticesMapReduce {
             } else {
                 // vertex not on the same machine as the vertices being deleted
                 for (final Long id : ids) {
-                    context.write(key, this.holder.set('k', new HadoopVertex(context.getConfiguration(), id)));
+                    context.write(key, this.holder.set('k', new FaunusVertex(context.getConfiguration(), id)));
                 }
             }
 
         }
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, HadoopVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         private boolean trackState;
 
@@ -153,8 +154,8 @@ public class CommitVerticesMapReduce {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            HadoopVertex vertex = null;
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            FaunusVertex vertex = null;
             final Set<Long> ids = new HashSet<Long>();
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
@@ -162,10 +163,10 @@ public class CommitVerticesMapReduce {
                     ids.add(holder.get().getLongId());
                     // todo: once vertex is found, do individual removes to save memory
                 } else if (tag == 'v') {
-                    vertex = (HadoopVertex) holder.get();
+                    vertex = (FaunusVertex) holder.get();
                 } else {
-                    vertex = (HadoopVertex) holder.get();
-                    vertex.setLifeCycle(ElementState.DELETED);
+                    vertex = (FaunusVertex) holder.get();
+                    vertex.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                     Iterator<Edge> itty = vertex.getEdges(Direction.BOTH).iterator();
                     while (itty.hasNext()) {
                         itty.next();
@@ -182,10 +183,8 @@ public class CommitVerticesMapReduce {
                 else if (!vertex.isRemoved())
                     context.write(NullWritable.get(), vertex);
 
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_KEPT, ((List) vertex.getEdges(OUT)).size());
-//                context.getCounter(Counters.OUT_EDGES_KEPT).increment(((List) vertex.getEdges(OUT)).size());
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_KEPT, ((List) vertex.getEdges(IN)).size());
-//                context.getCounter(Counters.IN_EDGES_KEPT).increment(((List) vertex.getEdges(IN)).size());
+                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_KEPT, Iterables.size(vertex.getEdges(OUT)));
+                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_KEPT, Iterables.size(vertex.getEdges(IN)));
             }
         }
     }

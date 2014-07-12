@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
@@ -28,10 +28,10 @@ import java.util.Map;
  */
 public class ValueGroupCountMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, WritableComparable, LongWritable, WritableComparable, LongWritable> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, WritableComparable, LongWritable, WritableComparable, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, WritableComparable, LongWritable, WritableComparable, LongWritable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, WritableComparable, LongWritable, WritableComparable, LongWritable>();
         mapReduceDriver.setMapper(new ValueGroupCountMapReduce.Map());
         mapReduceDriver.setCombiner(new ValueGroupCountMapReduce.Combiner());
         mapReduceDriver.setReducer(new ValueGroupCountMapReduce.Reduce());
@@ -170,9 +170,9 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         Configuration config = ValueGroupCountMapReduce.createConfiguration(Vertex.class, "age", IntWritable.class);
         this.mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> vertices = new HashMap<Long, HadoopVertex>();
+        Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
         for (long i = 0; i < 15; i++) {
-            HadoopVertex v = new HadoopVertex(EmptyConfiguration.immutable(), i);
+            FaunusVertex v = new FaunusVertex(EmptyConfiguration.immutable(), i);
             v.setProperty("age", i);
             vertices.put(i, v);
             v.startPath();
@@ -188,9 +188,9 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         Configuration config = ValueGroupCountMapReduce.createConfiguration(Vertex.class, "age", Text.class);
         this.mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> vertices = new HashMap<Long, HadoopVertex>();
+        Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
         for (long i = 0; i < 15; i++) {
-            HadoopVertex v = new HadoopVertex(EmptyConfiguration.immutable(), i);
+            FaunusVertex v = new FaunusVertex(EmptyConfiguration.immutable(), i);
             v.setProperty("age", i);
             vertices.put(i, v);
             v.startPath();

@@ -277,7 +277,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private static long getIndexId(IndexType index) {
         SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
         assert base instanceof TitanSchemaVertex;
-        return base.getID();
+        return base.getLongId();
     }
 
     private static Iterable<MixedIndexType> getMixedIndexes(RelationType type) {

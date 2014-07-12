@@ -2,9 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -13,9 +11,10 @@ import com.tinkerpop.blueprints.Direction;
 public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge {
 
     private final FaunusEdgeLabel label;
-    private final HadoopVertex vertex;
+    private final FaunusVertex vertex;
 
-    public SimpleFaunusEdge(FaunusEdgeLabel label, HadoopVertex vertex) {
+    public SimpleFaunusEdge(FaunusEdgeLabel label, FaunusVertex vertex) {
+        Preconditions.checkArgument(label.isUnidirected(),"Invalid edge label: %s",label);
         this.label = label;
         this.vertex = vertex;
     }
@@ -34,6 +33,12 @@ public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge
     public TitanVertex getVertex(Direction dir) {
         if (dir!=Direction.IN) throw new UnsupportedOperationException();
         return vertex;
+    }
+
+    @Override
+    public long getVertexId(Direction dir) {
+        if (dir!=Direction.IN) throw new UnsupportedOperationException();
+        return vertex.getLongId();
     }
 
     @Override
@@ -60,4 +65,5 @@ public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge
     public FaunusRelationType getType() {
         return label;
     }
+
 }

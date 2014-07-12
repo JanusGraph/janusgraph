@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
@@ -56,23 +55,17 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
     }
 
     @Override
-    void updateSchema(final HadoopSerializer.Schema schema) {
-        super.updateSchema(schema);
-        schema.add(label);
-    }
-
-    @Override
     public EdgeLabel getEdgeLabel() {
         return (EdgeLabel)type;
     }
 
 
     @Override
-    public InternalVertex getVertex(int pos) {
+    public TitanVertex getVertex(int pos) {
         if (pos==0) {
-            return new HadoopVertex(this.configuration, this.outVertex);
+            return new FaunusVertex(this.configuration, this.outVertex);
         } else if (pos==1) {
-            return new HadoopVertex(this.configuration, this.inVertex);
+            return new FaunusVertex(this.configuration, this.inVertex);
         } else {
             throw ExceptionFactory.bothIsNotSupported();
         }
@@ -121,22 +114,18 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
         type = label;
     }
 
-    final void setLabel(String label) {
-        setLabel(getTypeManager().getEdgeLabel(label));
-    }
-
     //##################################
     // Serialization Proxy
     //##################################
 
     @Override
     public void write(final DataOutput out) throws IOException {
-        new HadoopSerializer(this.getConf()).writeEdge(this, out);
+        new FaunusSerializer(this.getConf()).writeEdge(this, out);
     }
 
     @Override
     public void readFields(final DataInput in) throws IOException {
-        new HadoopSerializer(this.getConf()).readEdge(this, in);
+        new FaunusSerializer(this.getConf()).readEdge(this, in);
 
     }
 

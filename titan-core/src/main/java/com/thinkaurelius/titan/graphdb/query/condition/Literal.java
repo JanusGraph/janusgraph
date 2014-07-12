@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanElement;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-abstract class Literal<E extends TitanElement> implements Condition<E> {
+public abstract class Literal<E extends TitanElement> implements Condition<E> {
 
     @Override
     public Type getType() {

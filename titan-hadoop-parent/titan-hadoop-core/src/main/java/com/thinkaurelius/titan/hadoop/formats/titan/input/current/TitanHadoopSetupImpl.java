@@ -75,6 +75,11 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
             }
 
             @Override
+            public boolean isVertexLabelSystemType(long typeid) {
+                return typeid == BaseLabel.VertexLabelEdge.getLongId();
+            }
+
+            @Override
             public boolean isTypeSystemType(long typeid) {
                 return typeid == BaseKey.SchemaCategory.getLongId() ||
                         typeid == BaseKey.SchemaDefinitionProperty.getLongId() ||
@@ -98,16 +103,6 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     @Override
     public RelationReader getRelationReader(long vertexid) {
         return graph.getEdgeSerializer();
-    }
-
-    @Override
-    public SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
-        if (inputFilter.limit == 0) {
-            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY,false);
-            return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
-        } else {
-            return super.inputSlice(inputFilter);
-        }
     }
 
     @Override

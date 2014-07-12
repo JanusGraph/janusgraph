@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configurable;
@@ -29,7 +29,7 @@ import java.io.IOException;
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ScriptInputFormat extends FileInputFormat<NullWritable, HadoopVertex> implements Configurable {
+public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> implements Configurable {
 
     public static final String TITAN_HADOOP_GRAPH_INPUT_SCRIPT_FILE = "titan.hadoop.input.script.file";
 
@@ -37,7 +37,7 @@ public class ScriptInputFormat extends FileInputFormat<NullWritable, HadoopVerte
     private Configuration config;
 
     @Override
-    public RecordReader<NullWritable, HadoopVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
         return new ScriptRecordReader(this.vertexQuery, context);
     }
 

@@ -14,4 +14,7 @@ public interface FaunusRelation extends TitanRelation {
 
     public void updateLifeCycle(ElementLifeCycle.Event event);
 
+    public void setLifeCycle(byte lifecycle);
+
+
 }

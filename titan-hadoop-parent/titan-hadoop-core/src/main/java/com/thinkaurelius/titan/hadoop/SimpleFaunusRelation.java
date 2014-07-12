@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class SimpleFaunusRelation implements FaunusRelation {
+public abstract class SimpleFaunusRelation extends LifeCycleElement implements FaunusRelation {
 
     protected abstract Object otherValue();
 
@@ -48,11 +48,6 @@ public abstract class SimpleFaunusRelation implements FaunusRelation {
         return getType().getName() + "->" + otherValue();
     }
 
-    @Override
-    public int compareTo(TitanElement o) {
-        return Long.valueOf(getLongId()).compareTo(o.getLongId());
-    }
-
     //##################################
     // Default
     //##################################
@@ -69,30 +64,6 @@ public abstract class SimpleFaunusRelation implements FaunusRelation {
 
     @Override
     public boolean hasId() {
-        return false;
-    }
-
-    public void updateLifeCycle(ElementLifeCycle.Event event) {
-        //Do nothing
-    }
-
-    @Override
-    public boolean isNew() {
-        return true;
-    }
-
-    @Override
-    public boolean isLoaded() {
-        return false;
-    }
-
-    @Override
-    public boolean isModified() {
-        return false;
-    }
-
-    @Override
-    public boolean isRemoved() {
         return false;
     }
 

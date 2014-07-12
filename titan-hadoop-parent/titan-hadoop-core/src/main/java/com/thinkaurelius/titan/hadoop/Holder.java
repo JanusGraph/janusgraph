@@ -20,7 +20,7 @@ public class Holder<T extends FaunusPathElement> extends GenericWritable impleme
     }
 
     private static Class[] CLASSES = {
-            HadoopVertex.class,
+            FaunusVertex.class,
             StandardFaunusEdge.class
     };
 
@@ -85,7 +85,7 @@ public class Holder<T extends FaunusPathElement> extends GenericWritable impleme
     public int compareTo(final Holder<T> holder) {
         final FaunusElement e1 = holder.get();
         final FaunusElement e2 = this.get();
-        if (e1 instanceof HadoopVertex && e2 instanceof HadoopVertex)
+        if (e1 instanceof FaunusVertex && e2 instanceof FaunusVertex)
             return e1.compareTo(e2);
         else
             return 0;

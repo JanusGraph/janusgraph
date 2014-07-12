@@ -3,7 +3,9 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
 import com.thinkaurelius.titan.graphdb.schema.PropertyKeyDefinition;
 
 import javax.annotation.Nullable;
@@ -26,6 +28,9 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
             }
     );
 
+    public static final FaunusPropertyKey VALUE = new FaunusPropertyKey(
+            new PropertyKeyDefinition(Tokens._VALUE, FaunusElement.NO_ID, Cardinality.SINGLE, Object.class),false);
+
     private final PropertyKeyDefinition definition;
     private final Function<FaunusElement,T> implicitFunction;
 
@@ -37,6 +42,7 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
 
     public FaunusPropertyKey(PropertyKeyDefinition definition, Function<FaunusElement,T> implicitFunction) {
         super(definition,true);
+        Preconditions.checkArgument(definition.getCardinality()==Cardinality.SINGLE);
         this.definition = definition;
         this.implicitFunction = implicitFunction;
     }

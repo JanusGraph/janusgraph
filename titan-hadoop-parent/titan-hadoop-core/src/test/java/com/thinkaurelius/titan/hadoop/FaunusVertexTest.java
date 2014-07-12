@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -26,27 +27,27 @@ import static com.tinkerpop.blueprints.Direction.*;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class HadoopVertexTest extends BaseTest {
+public class FaunusVertexTest extends BaseTest {
 
     public void testRawComparator() throws IOException {
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
-        HadoopVertex vertex2 = new HadoopVertex(EmptyConfiguration.immutable(), 11);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), 11);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
 
-        assertEquals(-1, new HadoopSerializer.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
-        assertEquals(1, new HadoopSerializer.Comparator().compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
-        assertEquals(0, new HadoopSerializer.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        assertEquals(-1, new FaunusSerializer.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes2.toByteArray(), 0, bytes2.size()));
+        assertEquals(1, new FaunusSerializer.Comparator().compare(bytes2.toByteArray(), 0, bytes2.size(), bytes1.toByteArray(), 0, bytes1.size()));
+        assertEquals(0, new FaunusSerializer.Comparator().compare(bytes1.toByteArray(), 0, bytes1.size(), bytes1.toByteArray(), 0, bytes1.size()));
 
         System.out.println("Vertex with 0 properties has a byte size of: " + bytes1.toByteArray().length);
     }
 
     public void testSimpleSerialization() throws IOException {
 
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
@@ -59,7 +60,7 @@ public class HadoopVertexTest extends BaseTest {
         // out edge types size 1 byte (variable int)
         // in edge types size 1 byte (variable int)
         assertEquals(7, bytes.toByteArray().length);
-        HadoopVertex vertex2 = new HadoopVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 0 properties has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
@@ -70,8 +71,8 @@ public class HadoopVertexTest extends BaseTest {
         assertFalse(vertex2.hasPaths());
         assertEquals(vertex1.pathCount(), 0);
         assertEquals(vertex2.pathCount(), 0);
-        assertFalse(vertex1.trackPaths);
-        assertFalse(vertex2.trackPaths);
+        assertFalse(vertex1.hasTrackPaths());
+        assertFalse(vertex2.hasTrackPaths());
         assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.IN).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.BOTH).iterator().hasNext());
@@ -81,7 +82,7 @@ public class HadoopVertexTest extends BaseTest {
 
     public void testVertexSerialization() throws IOException {
 
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
         vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 2, "knows"));
         vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 3, "knows"));
         vertex1.setProperty("name", "marko");
@@ -103,12 +104,12 @@ public class HadoopVertexTest extends BaseTest {
         for (Object p : vertex1.getProperties("home")) {
             assertTrue(ImmutableSet.of("New Mexico", "California").contains(p));
         }
-        assertEquals(8, Iterables.size(vertex1.getProperties()));
+        assertEquals(8, Iterables.size(vertex1.getPropertyCollection()));
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         vertex1.write(new DataOutputStream(bytes));
-        HadoopVertex vertex2 = new HadoopVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 6 properties and 2 outgoing edges has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
@@ -126,7 +127,7 @@ public class HadoopVertexTest extends BaseTest {
         for (Object p : vertex1.getProperties("home")) {
             assertTrue(ImmutableSet.of("New Mexico", "California").contains(p));
         }
-        assertEquals(8, Iterables.size(vertex1.getProperties()));
+        assertEquals(8, Iterables.size(vertex1.getPropertyCollection()));
 
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
@@ -141,7 +142,7 @@ public class HadoopVertexTest extends BaseTest {
         Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
 
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
         vertex1.setConf(configuration);
         vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), 2, "knows"));
         vertex1.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), 3, vertex1.getLongId(), "knows"));
@@ -156,14 +157,14 @@ public class HadoopVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("longitude"), 10.01d);
         assertEquals(vertex1.getProperty("latitude"), 11.399f);
         assertEquals(vertex1.getProperty("size"), 10l);
-        vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(10l), new HadoopVertex.MicroVertex(1l)), false);
-        vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(10l), new HadoopVertex.MicroVertex(2l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(10l), new FaunusVertex.MicroVertex(1l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(10l), new FaunusVertex.MicroVertex(2l)), false);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         vertex1.write(new DataOutputStream(bytes));
 
-        HadoopVertex vertex2 = new HadoopVertex(configuration, new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(configuration, new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 4 properties and 2 paths has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
@@ -204,17 +205,17 @@ public class HadoopVertexTest extends BaseTest {
     }
 
     public void testVertexSerializationNoProperties() throws IOException {
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex1.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex1.getLongId(), vertex1.getLongId(), "knows"));
 
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
         assertEquals(vertex1.getPropertyKeys().size(), 0);
-        assertEquals(vertex1.getProperties().size(), 0);
+        assertEquals(vertex1.getPropertyCollection().size(), 0);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
-        HadoopVertex vertex2 = new HadoopVertex(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         System.out.println("Vertex with 0 properties and 1 outgoing edge has a byte size of: " + bytes.toByteArray().length);
 
@@ -223,7 +224,7 @@ public class HadoopVertexTest extends BaseTest {
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
         assertEquals(vertex1.getPropertyKeys().size(), 0);
-        assertEquals(vertex1.getProperties().size(), 0);
+        assertEquals(vertex1.getPropertyCollection().size(), 0);
         assertEquals(asList(vertex1.getEdges(OUT)).size(), 1);
         assertEquals(asList(vertex1.getEdges(IN)).size(), 0);
         assertEquals(asList(vertex1.getEdges(BOTH)).size(), 1);
@@ -233,14 +234,14 @@ public class HadoopVertexTest extends BaseTest {
         assertNull(vertex2.getProperty("age"));
         assertNull(vertex2.removeProperty("age"));
         assertEquals(vertex2.getPropertyKeys().size(), 0);
-        assertEquals(vertex2.getProperties().size(), 0);
+        assertEquals(vertex2.getPropertyCollection().size(), 0);
         assertEquals(asList(vertex2.getEdges(OUT)).size(), 1);
         assertEquals(asList(vertex2.getEdges(IN)).size(), 0);
         assertEquals(asList(vertex2.getEdges(BOTH)).size(), 1);
     }
 
     public void testRemovingEdges() {
-        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
         vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
         vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
@@ -250,7 +251,7 @@ public class HadoopVertexTest extends BaseTest {
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
         assertEquals(vertex.getProperty("name"), "marko");
 
-        vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
+        vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
         vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
         vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
@@ -262,7 +263,7 @@ public class HadoopVertexTest extends BaseTest {
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
         assertEquals(vertex.getProperty("name"), "marko");
 
-        vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
+        vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
         vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "knows"));
         vertex.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), vertex.getLongId(), vertex.getLongId(), "created"));
@@ -275,8 +276,8 @@ public class HadoopVertexTest extends BaseTest {
     }
 
     public void testGetVerticesAndQuery() throws Exception {
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
-        for (HadoopVertex vertex : graph.values()) {
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
+        for (FaunusVertex vertex : graph.values()) {
             if (vertex.getId().equals(1l)) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
                 assertTrue(vertex.getVertices(OUT).iterator().hasNext());
@@ -311,7 +312,7 @@ public class HadoopVertexTest extends BaseTest {
     }
 
     public void testGetEdges() throws Exception {
-        Map<Long, HadoopVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
+        Map<Long, FaunusVertex> vertices = generateGraph(ExampleGraph.TINKERGRAPH, new Configuration());
 
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "knows")).size(), 2);
         assertEquals(asList(vertices.get(1l).getEdges(Direction.OUT, "created")).size(), 1);
@@ -343,7 +344,7 @@ public class HadoopVertexTest extends BaseTest {
     }
 
     public void testPropertyHandling() throws Exception {
-        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         assertEquals(vertex.getLongId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 0);
         vertex.setProperty("name", "marko");
@@ -351,7 +352,7 @@ public class HadoopVertexTest extends BaseTest {
         vertex.addProperty("name", "marko a. rodriguez");
         assertEquals(vertex.getPropertyKeys().size(), 1);
         Set<String> names = new HashSet<String>();
-        Iterables.addAll(names, (Iterable) vertex.getProperties("name"));
+        Iterables.addAll(names, (Iterable) vertex.getPropertyValues("name"));
         assertEquals(names.size(), 2);
         assertTrue(names.contains("marko"));
         assertTrue(names.contains("marko a. rodriguez"));
@@ -361,8 +362,8 @@ public class HadoopVertexTest extends BaseTest {
         } catch (IllegalStateException e) {
         }
         int counter = 0;
-        for (FaunusProperty property : vertex.getProperties()) {
-            assertEquals(property.getTypeName(), "name");
+        for (TitanProperty property : vertex.getProperties()) {
+            assertEquals(property.getPropertyKey().getName(), "name");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
         }
@@ -372,14 +373,14 @@ public class HadoopVertexTest extends BaseTest {
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex.write(new DataOutputStream(bytes));
-        vertex = new HadoopVertex(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        vertex = new FaunusVertex(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         ///////// END SERIALIZE
 
         assertEquals(vertex.getLongId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 1);
         names = new HashSet<String>();
-        Iterables.addAll(names, (Iterable) vertex.getProperties("name"));
+        Iterables.addAll(names, (Iterable) vertex.getPropertyValues("name"));
         assertEquals(names.size(), 2);
         assertTrue(names.contains("marko"));
         assertTrue(names.contains("marko a. rodriguez"));
@@ -389,8 +390,8 @@ public class HadoopVertexTest extends BaseTest {
         } catch (IllegalStateException e) {
         }
         counter = 0;
-        for (FaunusProperty property : vertex.getProperties()) {
-            assertEquals(property.getTypeName(), "name");
+        for (TitanProperty property : vertex.getProperties()) {
+            assertEquals(property.getPropertyKey().getName(), "name");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
         }
@@ -423,11 +424,11 @@ public class HadoopVertexTest extends BaseTest {
         // a 2.6 million length string == ~5 books worth of data
         assertEquals(value.length(), 2621440);
 
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex1.setProperty("name", value);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
-        HadoopVertex vertex2 = new HadoopVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(vertex2.getProperty("name"), value);
     }
 }

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -17,12 +17,12 @@ import java.util.Map;
  */
 public class SideEffectMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new SideEffectMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     /*
@@ -56,7 +56,7 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.outE().count()}");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getProperty("degree"), 3l);
@@ -78,7 +78,7 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.inE.count()}");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getProperty("degree"), 0l);

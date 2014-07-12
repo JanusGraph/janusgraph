@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class AbstractElement implements InternalElement {
+public abstract class AbstractElement implements InternalElement, Comparable<TitanElement> {
 
     private long id;
 
@@ -58,7 +58,13 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public int compareTo(TitanElement other) {
-        return Longs.compare(getCompareId(),(other instanceof AbstractElement)?((AbstractElement)other).getCompareId():other.getLongId());
+        return compare(this,other);
+    }
+
+    public static int compare(TitanElement e1, TitanElement e2) {
+        long e1id = (e1 instanceof AbstractElement)?((AbstractElement)e1).getCompareId():e1.getLongId();
+        long e2id = (e2 instanceof AbstractElement)?((AbstractElement)e2).getCompareId():e2.getLongId();
+        return Longs.compare(e1id,e2id);
     }
 
     @Override

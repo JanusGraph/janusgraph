@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -20,10 +20,10 @@ import java.util.Map;
  */
 public class CommitVerticesMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new CommitVerticesMapReduce.Map());
         mapReduceDriver.setCombiner(new CommitVerticesMapReduce.Combiner());
         mapReduceDriver.setReducer(new CommitVerticesMapReduce.Reduce());
@@ -34,7 +34,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
         assertEquals(graph.get(2l).pathCount(), 1);
@@ -56,7 +56,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         //config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
         assertEquals(results.size(), 0);
 
 //        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 6);
@@ -71,7 +71,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         //config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
         graph.get(5l).startPath();
         graph.get(3l).startPath();
 
@@ -95,7 +95,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         //config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
         graph.get(1l).startPath();
         graph.get(2l).startPath();
         graph.get(4l).startPath();
@@ -108,7 +108,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         assertEquals(graph.get(4l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 1);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH, "created").iterator().hasNext());
         }
 

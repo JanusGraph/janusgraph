@@ -18,23 +18,33 @@ import java.io.IOException;
  */
 public class StandardFaunusProperty extends StandardFaunusRelation implements FaunusProperty {
 
-    private final long vertexid;
-    private final Object value;
+    protected long vertexid;
+    protected Object value;
 
-    public StandardFaunusProperty(HadoopVertex vertex, FaunusPropertyKey type, Object value) {
+    public StandardFaunusProperty(final Configuration configuration) {
+        super(configuration, FaunusElement.NO_ID, FaunusPropertyKey.VALUE);
+    }
+
+    public StandardFaunusProperty(final Configuration configuration, final DataInput in) throws IOException {
+        super(configuration, FaunusElement.NO_ID, FaunusPropertyKey.VALUE);
+        this.readFields(in);
+    }
+
+    public StandardFaunusProperty(FaunusVertex vertex, FaunusPropertyKey type, Object value) {
         this(FaunusElement.NO_ID, vertex, type, value);
     }
 
-    public StandardFaunusProperty(long id, HadoopVertex vertex, String type, Object value) {
+    public StandardFaunusProperty(long id, FaunusVertex vertex, String type, Object value) {
         this(id, vertex, vertex.getTypeManager().getPropertyKey(type), value);
     }
 
-    public StandardFaunusProperty(long id, HadoopVertex vertex, FaunusPropertyKey type, Object value) {
+    public StandardFaunusProperty(long id, FaunusVertex vertex, FaunusPropertyKey type, Object value) {
         this(vertex.getConf(),id,vertex.getLongId(),type,value);
     }
 
     public StandardFaunusProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
         super(config, id, type);
+        Preconditions.checkArgument(!type.isImplicit(),"Cannot set implicit properties: " + type);
         setConf(config);
         Preconditions.checkArgument(vertex>=0);
         Preconditions.checkArgument(value!=null);
@@ -59,10 +69,16 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     }
 
     @Override
-    public InternalVertex getVertex(int pos) {
+    public TitanVertex getVertex(int pos) {
         Preconditions.checkArgument(pos==0,"Invalid position: %s",pos);
-        return new HadoopVertex(getConf(), vertexid);
+        return new FaunusVertex(getConf(), vertexid);
     }
+
+    final void setKey(FaunusPropertyKey key) {
+        Preconditions.checkNotNull(key);
+        type = key;
+    }
+
 
     //##################################
     // Serialization Proxy
@@ -70,12 +86,13 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     @Override
     public void write(final DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
+        new FaunusSerializer(this.getConf()).writeProperty(this, out);
     }
 
     @Override
     public void readFields(final DataInput in) throws IOException {
-        throw new UnsupportedOperationException();
+        new FaunusSerializer(this.getConf()).readProperty(this, in);
+
     }
 
     //##################################

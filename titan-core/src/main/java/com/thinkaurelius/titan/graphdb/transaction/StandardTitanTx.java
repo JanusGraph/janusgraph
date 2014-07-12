@@ -805,7 +805,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             return SystemTypeManager.getSystemType(typeid);
         } else {
             InternalVertex v = getInternalVertex(typeid);
-            assert v instanceof RelationType;
             return (RelationType) v;
         }
     }
@@ -848,6 +847,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     //-------- Vertex Labels -----------------
+
+    @Override
+    public VertexLabel getExistingVertexLabel(long id) {
+        assert idInspector.isVertexLabelVertexId(id);
+        InternalVertex v = getInternalVertex(id);
+        return (VertexLabelVertex)v;
+    }
 
     @Override
     public boolean containsVertexLabel(String name) {

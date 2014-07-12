@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 
 import org.apache.hadoop.conf.Configuration;
@@ -173,14 +173,14 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     public void handleStatement(final Statement s) throws RDFHandlerException {
         if (this.asProperties.contains(s.getPredicate().toString())) {
-            final HadoopVertex subject = new HadoopVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
-            final HadoopVertex subject = new HadoopVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
@@ -188,14 +188,14 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             this.queue.add(subject);
         } else {
             long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
-            final HadoopVertex subject = new HadoopVertex(this.configuration, subjectId);
+            final FaunusVertex subject = new FaunusVertex(this.configuration, subjectId);
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
 
             long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
-            final HadoopVertex object = new HadoopVertex(this.configuration, objectId);
+            final FaunusVertex object = new FaunusVertex(this.configuration, objectId);
             object.setProperty(RDFInputFormat.URI, s.getObject().stringValue());
             if (this.useFragments)
                 object.setProperty(RDFInputFormat.NAME, createFragment(s.getObject()));

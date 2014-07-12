@@ -276,8 +276,4 @@ public class FulgoraNeighborVertex implements InternalVertex {
         return false;
     }
 
-    @Override
-    public int compareTo(TitanElement titanElement) {
-        return Longs.compare(getLongId(), titanElement.getLongId());
-    }
 }

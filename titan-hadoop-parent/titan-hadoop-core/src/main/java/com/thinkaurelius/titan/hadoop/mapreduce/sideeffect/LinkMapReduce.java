@@ -57,7 +57,7 @@ public class LinkMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private Direction direction;
         private String label;
@@ -80,7 +80,7 @@ public class LinkMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             final long valueId = value.getLongId();
 
             if (value.hasPaths()) {
@@ -161,23 +161,23 @@ public class LinkMapReduce {
             this.direction = this.direction.opposite();
         }
 
-        private final Holder<HadoopVertex> holder = new Holder<HadoopVertex>();
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             long edgesCreated = 0;
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             char outTag = 'x';
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((HadoopVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                     outTag = 'v';
                 } else if (tag == 'e') {
                     vertex.addEdge(this.direction, (StandardFaunusEdge) holder.get());
                     edgesCreated++;
                 } else {
-                    vertex.addEdges(Direction.BOTH, (HadoopVertex) holder.get());
+                    vertex.addEdges(Direction.BOTH, (FaunusVertex) holder.get());
                 }
             }
 
@@ -194,7 +194,7 @@ public class LinkMapReduce {
 
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, HadoopVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         private Direction direction;
 
@@ -205,18 +205,18 @@ public class LinkMapReduce {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long edgesCreated = 0;
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((HadoopVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else if (tag == 'e') {
                     vertex.addEdge(this.direction, (StandardFaunusEdge) holder.get());
                     edgesCreated++;
                 } else {
-                    vertex.addEdges(Direction.BOTH, (HadoopVertex) holder.get());
+                    vertex.addEdges(Direction.BOTH, (FaunusVertex) holder.get());
                 }
             }
             context.write(NullWritable.get(), vertex);

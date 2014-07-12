@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
@@ -22,7 +22,7 @@ import java.io.InputStreamReader;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ScriptRecordReader extends RecordReader<NullWritable, HadoopVertex> {
+public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private static final String READ_CALL = "read(vertex,line)";
     private static final String VERTEX = "vertex";
@@ -32,7 +32,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, HadoopVertex>
     private final VertexQueryFilter vertexQuery;
     private final Configuration configuration;
     private final LineRecordReader lineRecordReader;
-    private HadoopVertex vertex = new HadoopVertex();
+    private FaunusVertex vertex = new FaunusVertex();
 
     public ScriptRecordReader(final VertexQueryFilter vertexQuery, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader = new LineRecordReader();
@@ -58,7 +58,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, HadoopVertex>
             else {
                 try {
                     this.engine.put(LINE, this.lineRecordReader.getCurrentValue().toString());
-                    this.vertex = new HadoopVertex(this.configuration);
+                    this.vertex = new FaunusVertex(this.configuration);
                     this.engine.put(VERTEX, this.vertex);
                     if ((Boolean) engine.eval(READ_CALL)) {
                         this.vertexQuery.defaultFilter(this.vertex);
@@ -77,7 +77,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, HadoopVertex>
     }
 
     @Override
-    public HadoopVertex getCurrentValue() {
+    public FaunusVertex getCurrentValue() {
         return this.vertex;
     }
 

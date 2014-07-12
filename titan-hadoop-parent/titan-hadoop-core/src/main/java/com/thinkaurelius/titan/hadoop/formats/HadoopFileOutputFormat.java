@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -18,7 +18,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class HadoopFileOutputFormat extends FileOutputFormat<NullWritable, HadoopVertex> {
+public abstract class HadoopFileOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
     public DataOutputStream getDataOuputStream(final TaskAttemptContext job) throws IOException, InterruptedException {
         final Configuration conf = job.getConfiguration();

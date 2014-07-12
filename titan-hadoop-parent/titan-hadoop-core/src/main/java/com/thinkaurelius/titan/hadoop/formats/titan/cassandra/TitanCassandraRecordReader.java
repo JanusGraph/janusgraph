@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
@@ -16,15 +17,15 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanCassandraRecordReader extends RecordReader<NullWritable, HadoopVertex> {
+public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private ColumnFamilyRecordReader reader;
     private TitanCassandraHadoopGraph graph;
-    private VertexQueryFilter vertexQuery;
+    private FaunusVertexQueryFilter vertexQuery;
     private Configuration configuration;
-    private HadoopVertex vertex;
+    private FaunusVertex vertex;
 
-    public TitanCassandraRecordReader(final TitanCassandraHadoopGraph graph, final VertexQueryFilter vertexQuery, final ColumnFamilyRecordReader reader) {
+    public TitanCassandraRecordReader(final TitanCassandraHadoopGraph graph, final FaunusVertexQueryFilter vertexQuery, final ColumnFamilyRecordReader reader) {
         this.graph = graph;
         this.vertexQuery = vertexQuery;
         this.reader = reader;
@@ -40,10 +41,10 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Hadoo
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
             // TODO titan05 integration -- the duplicate() call may be unnecessary
-            final HadoopVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().duplicate(), this.reader.getCurrentValue());
+            final FaunusVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().duplicate(), this.reader.getCurrentValue());
             if (null != temp) {
                 this.vertex = temp;
-                this.vertexQuery.defaultFilter(this.vertex);
+                this.vertexQuery.filterRelationsOf(this.vertex);
                 return true;
             }
         }
@@ -56,7 +57,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Hadoo
     }
 
     @Override
-    public HadoopVertex getCurrentValue() throws IOException, InterruptedException {
+    public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
         return this.vertex;
     }
 

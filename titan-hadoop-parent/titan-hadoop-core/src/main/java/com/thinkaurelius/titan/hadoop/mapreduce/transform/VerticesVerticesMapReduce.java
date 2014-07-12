@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
@@ -38,12 +38,12 @@ public class VerticesVerticesMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private Direction direction;
         private String[] labels;
 
-        private final Holder<HadoopVertex> holder = new Holder<HadoopVertex>();
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
 
@@ -54,13 +54,13 @@ public class VerticesVerticesMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
 
             if (value.hasPaths()) {
                 long edgesTraversed = 0l;
                 if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
                     for (final Edge edge : value.getEdges(OUT, this.labels)) {
-                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), ((StandardFaunusEdge) edge).getVertexId(IN));
+                        final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), ((StandardFaunusEdge) edge).getVertexId(IN));
                         vertex.getPaths(value, false);
                         this.longWritable.set(vertex.getLongId());
                         context.write(this.longWritable, this.holder.set('p', vertex));
@@ -70,7 +70,7 @@ public class VerticesVerticesMapReduce {
 
                 if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
                     for (final Edge edge : value.getEdges(IN, this.labels)) {
-                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), ((StandardFaunusEdge) edge).getVertexId(OUT));
+                        final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), ((StandardFaunusEdge) edge).getVertexId(OUT));
                         vertex.getPaths(value, false);
                         this.longWritable.set(vertex.getLongId());
                         context.write(this.longWritable, this.holder.set('p', vertex));
@@ -87,15 +87,15 @@ public class VerticesVerticesMapReduce {
         }
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, HadoopVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((HadoopVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else if (tag == 'p') {
                     vertex.getPaths(holder.get(), true);
                 } else {

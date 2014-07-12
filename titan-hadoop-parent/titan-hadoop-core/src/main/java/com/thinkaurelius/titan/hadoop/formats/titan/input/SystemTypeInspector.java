@@ -9,6 +9,8 @@ public interface SystemTypeInspector {
 
     public boolean isVertexExistsSystemType(long typeid);
 
+    public boolean isVertexLabelSystemType(long typeid);
+
     public boolean isTypeSystemType(long typeid);
 
 }

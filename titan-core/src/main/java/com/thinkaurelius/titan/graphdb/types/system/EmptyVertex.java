@@ -284,8 +284,4 @@ public class EmptyVertex implements InternalVertex {
         throw new UnsupportedOperationException(errorName + " don't have an associated transaction");
     }
 
-    @Override
-    public int compareTo(TitanElement titanElement) {
-        return Longs.compare(getLongId(),titanElement.getLongId());
-    }
 }

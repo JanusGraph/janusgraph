@@ -183,7 +183,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         return types(type.getName());
     }
 
-    private Q types(String... types) {
+    public Q types(String... types) {
         Preconditions.checkArgument(types!=null);
         for (String type : types) Preconditions.checkArgument(StringUtils.isNotBlank(type),"Invalid type: %s",type);
         this.types=types;

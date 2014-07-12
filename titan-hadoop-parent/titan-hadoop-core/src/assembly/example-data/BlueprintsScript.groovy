@@ -1,6 +1,7 @@
+import com.thinkaurelius.titan.hadoop.FaunusVertex
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge
-import com.thinkaurelius.titan.hadoop.HadoopVertex
+import com.thinkaurelius.titan.hadoop.FaunusVertex
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge
 import com.tinkerpop.blueprints.Edge
 import com.tinkerpop.blueprints.Graph
@@ -20,7 +21,7 @@ import static com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapRed
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Daniel Kuppitz (daniel at thinkaurelius.com)
  */
-def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph, final Mapper.Context context) {
+def Vertex getOrCreateVertex(final FaunusVertex hadoopVertex, final Graph graph, final Mapper.Context context) {
     final String uniqueKey = "name";
     final Object uniqueValue = hadoopVertex.getProperty(uniqueKey);
     final Vertex blueprintsVertex;

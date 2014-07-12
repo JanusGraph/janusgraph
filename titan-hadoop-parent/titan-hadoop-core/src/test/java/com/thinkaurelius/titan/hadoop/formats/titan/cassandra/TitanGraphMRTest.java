@@ -1,70 +1,21 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanGraphOutputMapReduce;
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-
-import org.apache.hadoop.mapreduce.OutputFormat;
+import com.thinkaurelius.titan.hadoop.*;
 
 import com.thinkaurelius.titan.hadoop.formats.TitanOutputFormatTest;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
-import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.ElementState;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.impls.tg.TinkerGraph;
-import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 
-import groovy.lang.MissingMethodException;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
-import org.apache.hadoop.mrunit.types.Pair;
-import org.apache.log4j.Level;
-
-import javax.script.ScriptException;
-
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-
-import org.apache.commons.configuration.BaseConfiguration;
-import org.elasticsearch.common.collect.Iterables;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class TitanGraphMRTest extends TitanOutputFormatTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex> vertexMapReduceDriver;
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> edgeMapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> vertexMapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> edgeMapReduceDriver;
 
 //    private static TitanGraph startUpCassandra() throws Exception {
 //        ModifiableConfiguration configuration = GraphDatabaseConfiguration.buildConfiguration();

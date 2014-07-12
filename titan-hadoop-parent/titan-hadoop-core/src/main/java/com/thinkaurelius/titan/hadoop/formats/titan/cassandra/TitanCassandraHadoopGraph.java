@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanHadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 
@@ -26,7 +26,7 @@ public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
         super(setup);
     }
 
-    public HadoopVertex readHadoopVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
+    public FaunusVertex readHadoopVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
         return super.readHadoopVertex(configuration, StaticArrayBuffer.of(key), new CassandraMapIterable(value));
     }
 

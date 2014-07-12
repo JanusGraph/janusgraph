@@ -411,15 +411,17 @@ public class IndexSerializer {
             Iterable<TitanProperty> props;
             if (onlyLoaded ||
                     (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.getLongId()))) {
-                VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query());
+                //going through transaction so we can query deleted vertices
+                VertexCentricQueryBuilder qb = ((InternalVertex)vertex).tx().query(vertex);
                 qb.noPartitionRestriction().type(key);
                 if (onlyLoaded) qb.queryOnlyLoaded();
                 props = qb.properties();
             } else {
-                props = vertex.getProperties();
+                props = vertex.getProperties(key);
             }
             for (TitanProperty p : props) {
                 assert !onlyLoaded || p.isLoaded() || p.isRemoved();
+                assert key.getDataType().equals(p.getValue().getClass()) : key + " -> " + p;
                 values.add(new RecordEntry(p.getLongId(),p.getValue()));
             }
         }
@@ -645,7 +647,7 @@ public class IndexSerializer {
             if (AttributeUtil.hasGenericDataType(f.getFieldKey())) {
                 out.writeClassAndObject(value);
             } else {
-                assert value.getClass().equals(f.getFieldKey().getDataType());
+                assert value.getClass().equals(f.getFieldKey().getDataType()) : value.getClass() + " - " + f.getFieldKey().getDataType();
                 out.writeObjectNotNull(value);
             }
         }

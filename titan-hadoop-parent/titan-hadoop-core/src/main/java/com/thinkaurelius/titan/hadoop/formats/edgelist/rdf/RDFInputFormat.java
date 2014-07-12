@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
 import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.edgelist.EdgeListInputMapReduce;
@@ -48,9 +48,9 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
                 EdgeListInputMapReduce.Combiner.class,
                 EdgeListInputMapReduce.Reduce.class,
                 LongWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 EdgeListInputMapReduce.createConfiguration());
     }
 }

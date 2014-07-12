@@ -25,7 +25,7 @@ import com.tinkerpop.blueprints.Element;
  * @see TitanVertex
  * @see TitanRelation
  */
-public interface TitanElement extends Element, Idfiable, Comparable<TitanElement>, Removable {
+public interface TitanElement extends Element, Idfiable, Removable {
 
     /**
      * Returns a unique identifier for this entity.

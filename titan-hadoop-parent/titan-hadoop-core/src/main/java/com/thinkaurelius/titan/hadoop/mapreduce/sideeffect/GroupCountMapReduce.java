@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
@@ -53,7 +53,7 @@ public class GroupCountMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, Text, LongWritable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
 
         private Closure keyClosure;
         private Closure valueClosure;
@@ -89,10 +89,10 @@ public class GroupCountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object object = (null == this.keyClosure) ? new HadoopVertex.MicroVertex(value.getLongId()) : this.keyClosure.call(value);
+                    final Object object = (null == this.keyClosure) ? new FaunusVertex.MicroVertex(value.getLongId()) : this.keyClosure.call(value);
                     final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
                     HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
@@ -125,7 +125,7 @@ public class GroupCountMapReduce {
         private final Text textWritable = new Text();
         private final LongWritable longWritable = new LongWritable();
 
-        public void dischargeMap(final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void dischargeMap(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.textWritable.set(null == entry.getKey() ? Tokens.NULL : entry.getKey().toString());
                 this.longWritable.set(entry.getValue());
@@ -135,7 +135,7 @@ public class GroupCountMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             this.dischargeMap(context);
             this.outputs.close();
         }

@@ -37,6 +37,7 @@ public class FaunusTypeManager implements TypeSource {
         vertexLabels.put(FaunusVertexLabel.DEFAULT_VERTEXLABEL.getName(),FaunusVertexLabel.DEFAULT_VERTEXLABEL);
         relationTypes.put(FaunusPropertyKey.COUNT.getName(),FaunusPropertyKey.COUNT);
         relationTypes.put(FaunusEdgeLabel.LINK.getName(),FaunusEdgeLabel.LINK);
+        relationTypes.put(FaunusPropertyKey.VALUE.getName(),FaunusPropertyKey.VALUE);
     }
 
     public FaunusVertexLabel getVertexLabel(String name) {
@@ -66,7 +67,7 @@ public class FaunusTypeManager implements TypeSource {
     }
 
     @Override
-    public RelationType getRelationType(String name) {
+    public FaunusRelationType getRelationType(String name) {
         FaunusRelationType rt = relationTypes.get(name);
         if (rt==null) {
             RelationTypeDefinition def = schemaProvider.getRelationType(name);
