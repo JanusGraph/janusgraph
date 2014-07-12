@@ -28,13 +28,13 @@ public class FaunusElementTest extends TestCase {
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
-        assertEquals(bytes1.size(), 7);
+        assertEquals(bytes1.size(), 8);
         // 1 long id + 1 variable int paths + 1 short properties +  2 vinteger edge types (2)
         // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 1 byte long id
 
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
-        assertEquals(bytes2.size(), 23);
+        assertEquals(bytes2.size(), 24);
         // 1 long id + 1 int paths + 1 short properties + 2 vinteger edge types (2)
         // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 9 byte long id
 

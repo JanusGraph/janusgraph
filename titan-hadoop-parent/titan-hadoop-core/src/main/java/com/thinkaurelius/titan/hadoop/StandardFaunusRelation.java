@@ -30,6 +30,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     @Override
     public void setProperty(FaunusRelationType type, Object value) {
         if (type.isPropertyKey()) {
+            Preconditions.checkArgument(!((FaunusPropertyKey)type).isImplicit(),"Cannot set implicit properties: %s",type);
             setRelation(new SimpleFaunusProperty((FaunusPropertyKey)type,value));
         } else {
             FaunusEdgeLabel label = (FaunusEdgeLabel)type;
@@ -97,18 +98,19 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     }
 
     @Override
-    public RelationIdentifier getId() {
-        long[] ids = new long[isProperty()?3:4];
-        ids[1]=type.getLongId();
-        ids[2]=getLongId();
-        if (isProperty()) {
-            ids[0]=((StandardFaunusProperty)this).getVertex().getLongId();
-        } else {
-            StandardFaunusEdge edge = (StandardFaunusEdge)this;
-            ids[0]=edge.getVertex(Direction.OUT).getLongId();
-            ids[3]=edge.getVertex(Direction.IN).getLongId();
-        }
-        return RelationIdentifier.get(ids);
+    public Object getId() {
+        return getLongId();
+//        long[] ids = new long[isProperty()?3:4];
+//        ids[1]=type.getLongId();
+//        ids[2]=getLongId();
+//        if (isProperty()) {
+//            ids[0]=((StandardFaunusProperty)this).getVertex().getLongId();
+//        } else {
+//            StandardFaunusEdge edge = (StandardFaunusEdge)this;
+//            ids[0]=edge.getVertex(Direction.OUT).getLongId();
+//            ids[3]=edge.getVertex(Direction.IN).getLongId();
+//        }
+//        return RelationIdentifier.get(ids);
     }
 
     /* ---------------------------------------------------------------

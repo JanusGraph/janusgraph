@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.hadoop.conf.Configuration;
 
@@ -20,6 +21,10 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     protected long vertexid;
     protected Object value;
+
+    public StandardFaunusProperty() {
+        this(EmptyConfiguration.immutable());
+    }
 
     public StandardFaunusProperty(final Configuration configuration) {
         super(configuration, FaunusElement.NO_ID, FaunusPropertyKey.VALUE);
@@ -44,10 +49,10 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     public StandardFaunusProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
         super(config, id, type);
-        Preconditions.checkArgument(!type.isImplicit(),"Cannot set implicit properties: " + type);
         setConf(config);
         Preconditions.checkArgument(vertex>=0);
         Preconditions.checkArgument(value!=null);
+        Preconditions.checkArgument(!type.isImplicit(),"Cannot set implicit properties: " + type);
         Preconditions.checkArgument(AttributeUtil.hasGenericDataType(type) ||
                 type.getDataType().isInstance(value),"Value does not match data type: %s",value);
         this.value = value;

@@ -132,7 +132,8 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     }
 
     protected void setRelation(final FaunusRelation relation) {
-        Preconditions.checkArgument(getAdjustedMultiplicity(relation.getType())==Multiplicity.MANY2ONE);
+        Preconditions.checkArgument(getAdjustedMultiplicity(relation.getType())==Multiplicity.MANY2ONE,
+                "setProperty can only be used for single valued keys. Use addProperty instead.");
         //Mark all existing ones for the type as deleted
         final Iterator<FaunusRelation> rels = outAdjacency.get(relation.getType()).iterator();
         while (rels.hasNext()) {
@@ -208,8 +209,6 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
                                             "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
                                 }
                             }
-                            if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which" +
-                                    "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
                         }
                         break;
                     case MULTI: //Nothing to check
@@ -295,10 +294,13 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     @Override
     public <T> T getProperty(PropertyKey key) {
         FaunusPropertyKey type = (FaunusPropertyKey)key;
-        Iterable<TitanProperty> properties = query().type(type).properties();
-        if (type.getCardinality()==Cardinality.SINGLE) return Iterables.getOnlyElement(properties).getValue();
+        Iterator<TitanProperty> properties = query().type(type).properties().iterator();
+        if (type.getCardinality()==Cardinality.SINGLE) {
+            if (properties.hasNext()) return properties.next().getValue();
+            else return (T)null;
+        }
         List result = Lists.newArrayList();
-        for (TitanProperty p : properties) result.add(p.getValue());
+        while (properties.hasNext()) result.add(properties.next().getValue());
         return (T)result;
     }
 

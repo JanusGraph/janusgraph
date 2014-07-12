@@ -34,19 +34,23 @@ public class DefaultSchemaProvider implements SchemaProvider {
     }
 
     public static SchemaProvider asBackupProvider(final SchemaProvider provider) {
+        return asBackupProvider(provider,INSTANCE);
+    }
+
+    public static SchemaProvider asBackupProvider(final SchemaProvider provider, final SchemaProvider backup) {
         return new SchemaProvider() {
             @Override
             public EdgeLabelDefinition getEdgeLabel(String name) {
                 EdgeLabelDefinition def = provider.getEdgeLabel(name);
                 if (def!=null) return def;
-                else return INSTANCE.getEdgeLabel(name);
+                else return backup.getEdgeLabel(name);
             }
 
             @Override
             public PropertyKeyDefinition getPropertyKey(String name) {
                 PropertyKeyDefinition def = provider.getPropertyKey(name);
                 if (def!=null) return def;
-                else return INSTANCE.getPropertyKey(name);
+                else return backup.getPropertyKey(name);
             }
 
             @Override
@@ -58,7 +62,7 @@ public class DefaultSchemaProvider implements SchemaProvider {
             public VertexLabelDefinition getVertexLabel(String name) {
                 VertexLabelDefinition def = provider.getVertexLabel(name);
                 if (def!=null) return def;
-                else return INSTANCE.getVertexLabel(name);
+                else return backup.getVertexLabel(name);
             }
         };
     }

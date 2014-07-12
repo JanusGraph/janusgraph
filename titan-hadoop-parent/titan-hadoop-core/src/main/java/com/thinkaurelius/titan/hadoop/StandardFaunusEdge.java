@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
@@ -26,6 +27,10 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     protected long outVertex;
     protected long inVertex;
+
+    public StandardFaunusEdge() {
+        this(EmptyConfiguration.immutable());
+    }
 
     public StandardFaunusEdge(final Configuration configuration) {
         super(configuration, FaunusElement.NO_ID, FaunusEdgeLabel.LINK);

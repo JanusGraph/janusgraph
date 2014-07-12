@@ -32,8 +32,8 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
             return direction==((CacheEdge)element).getVertexCentricDirection();
         } else if (element instanceof TitanEdge) {
             return ((TitanEdge)element).getVertex(direction).equals(baseVertex);
-        } else if (element instanceof TitanProperty && direction==Direction.OUT) {
-            return ((TitanProperty)element).getVertex().equals(baseVertex);
+        } else if (element instanceof TitanProperty) {
+            return direction==Direction.OUT;
         }
         return false;
     }

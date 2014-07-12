@@ -23,11 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -110,20 +106,22 @@ public class HadoopGraphSONUtility {
             // some like TinkerGraph will return a string.  the same is done for edges below
             object.put(GraphSONTokens._ID, Long.valueOf(object.remove(GraphSONTokens._ID).toString()));
 
-            List<Edge> edges = (List<Edge>) vertex.getEdges(OUT);
-            if (!edges.isEmpty()) {
+            Iterator<Edge> edges = vertex.getEdges(OUT).iterator();
+            if (edges.hasNext()) {
                 final JSONArray outEdgesArray = new JSONArray();
-                for (final Edge outEdge : edges) {
+                while (edges.hasNext()) {
+                    Edge outEdge = edges.next();
                     final JSONObject edgeObject = GraphSONUtility.jsonFromElement(outEdge, getElementPropertyKeys(outEdge, true), GraphSONMode.COMPACT);
                     outEdgesArray.put(edgeObject);
                 }
                 object.put(_OUT_E, outEdgesArray);
             }
 
-            edges = (List<Edge>) vertex.getEdges(IN);
-            if (!edges.isEmpty()) {
+            edges = vertex.getEdges(IN).iterator();
+            if (edges.hasNext()) {
                 final JSONArray inEdgesArray = new JSONArray();
-                for (final Edge inEdge : edges) {
+                while (edges.hasNext()) {
+                    Edge inEdge = edges.next();
                     final JSONObject edgeObject = GraphSONUtility.jsonFromElement(inEdge, getElementPropertyKeys(inEdge, false), GraphSONMode.COMPACT);
                     inEdgesArray.put(edgeObject);
                 }

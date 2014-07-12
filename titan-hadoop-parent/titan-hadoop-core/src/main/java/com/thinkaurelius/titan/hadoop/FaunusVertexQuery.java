@@ -121,23 +121,26 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
         for (Direction direction : Direction.proper) {
             if (dir!=direction && dir!=Direction.BOTH) continue;
 
-            SetMultimap<FaunusRelationType, FaunusRelation> adjacency = element.getAdjacency(dir);
+            SetMultimap<FaunusRelationType, FaunusRelation> adjacency = element.getAdjacency(direction);
             if (types.length==0) {
-                result = adjacency.values();
+                if (result==null) result=adjacency.values();
+                else result = Iterables.concat(result,adjacency.values());
             } else {
                 for (String type : types) {
                     FaunusRelationType rt = typeManager.getRelationType(type);
+                    if (rt==null) continue;
                     Iterable<FaunusRelation> rels;
                     if (rt.isPropertyKey() && ((FaunusPropertyKey)rt).isImplicit()) {
                         FaunusPropertyKey key = (FaunusPropertyKey)rt;
-                        rels = Lists.newArrayList((FaunusRelation)new SimpleFaunusProperty(key,key.computeImplicit(element)));
+                        Object value = key.computeImplicit(element);
+                        if (value!=null)
+                            rels = Lists.newArrayList((FaunusRelation)new SimpleFaunusProperty(key,value));
+                        else rels = Collections.EMPTY_LIST;
                     } else {
                         rels = adjacency.get(rt);
                     }
-                    if (rt!=null) {
-                        if (result==null) result=rels;
-                        else result = Iterables.concat(result,rels);
-                    }
+                    if (result==null) result=rels;
+                    else result = Iterables.concat(result,rels);
                 }
             }
         }
@@ -200,6 +203,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
 
     @Override
     public Iterable<TitanProperty> properties() {
+        dir = Direction.OUT;
         return (Iterable)getRelations(RelationCategory.PROPERTY);
     }
 
@@ -216,8 +220,8 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
             public Vertex apply(@Nullable TitanEdge edge) {
                 if (dir!=Direction.BOTH) return edge.getVertex(dir.opposite());
                 else {
-                    assert (edge instanceof FaunusVertex);
-                    return edge.getOtherVertex((FaunusVertex)edge);
+                    assert (baseElement instanceof FaunusVertex);
+                    return edge.getOtherVertex((FaunusVertex)baseElement);
                 }
             }
         });
@@ -303,7 +307,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
         @Override
         public boolean evaluate(TitanRelation relation) {
             FaunusRelation rel = (FaunusRelation)relation;
-            return !rel.getType().isHidden() && !rel.isRemoved();
+            return !rel.getType().isHiddenType() && !rel.isRemoved();
         }
     }
 

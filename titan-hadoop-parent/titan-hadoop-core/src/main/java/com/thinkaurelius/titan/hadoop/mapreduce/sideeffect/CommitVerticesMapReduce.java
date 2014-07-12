@@ -166,12 +166,12 @@ public class CommitVerticesMapReduce {
                     vertex = (FaunusVertex) holder.get();
                 } else {
                     vertex = (FaunusVertex) holder.get();
-                    vertex.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                     Iterator<Edge> itty = vertex.getEdges(Direction.BOTH).iterator();
                     while (itty.hasNext()) {
                         itty.next();
                         itty.remove();
                     }
+                    vertex.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                 }
             }
             if (null != vertex) {

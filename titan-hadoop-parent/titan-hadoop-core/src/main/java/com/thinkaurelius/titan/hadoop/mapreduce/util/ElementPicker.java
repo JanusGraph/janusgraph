@@ -19,9 +19,7 @@ public class ElementPicker {
     }
 
     public static String getPropertyAsString(final FaunusElement element, final String key) {
-        if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
-            return element.getId().toString();
-        else if (key.equals(Tokens._PROPERTIES)) {
+        if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
             for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
@@ -31,12 +29,10 @@ public class ElementPicker {
                 properties.put(Tokens._LABEL, ((StandardFaunusEdge) element).getLabel());
 
             return properties.toString();
-        } else if (key.equals(Tokens.LABEL) && element instanceof StandardFaunusEdge) {
-            return ((StandardFaunusEdge) element).getLabel();
         } else {
             if (element instanceof FaunusVertex) {
                 List values = new ArrayList();
-                Iterables.addAll(values, ((FaunusVertex) element).getProperties(key));
+                Iterables.addAll(values, ((FaunusVertex) element).getPropertyValues(key));
                 if (values.size() == 0)
                     return Tokens.NULL;
                 else if (values.size() == 1)
@@ -55,21 +51,17 @@ public class ElementPicker {
     }
 
     public static Object getProperty(final FaunusElement element, final String key) {
-        if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
-            return element.getId();
-        else if (key.equals(Tokens._PROPERTIES)) {
+        if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
             for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getId());
             return properties;
-        } else if (key.equals(Tokens.LABEL) && element instanceof StandardFaunusEdge) {
-            return ((StandardFaunusEdge) element).getLabel();
         } else {
             if (element instanceof FaunusVertex) {
                 List values = new ArrayList();
-                Iterables.addAll(values, ((FaunusVertex) element).getProperties(key));
+                Iterables.addAll(values, ((FaunusVertex) element).getPropertyValues(key));
                 if (values.size() == 0)
                     return null;
                 else if (values.size() == 1)

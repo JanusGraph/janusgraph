@@ -21,10 +21,14 @@ public class FaunusTypeManager implements TypeSource {
 
     private final ConcurrentMap<String,FaunusVertexLabel> vertexLabels;
     private final ConcurrentMap<String,FaunusRelationType> relationTypes;
-    private final SchemaProvider schemaProvider;
+    private SchemaProvider schemaProvider;
 
     private FaunusTypeManager() {
         this(DefaultSchemaProvider.INSTANCE);
+    }
+
+    public void setSchemaProvider(SchemaProvider provider) {
+        this.schemaProvider=provider;
     }
 
     public FaunusTypeManager(SchemaProvider provider) {
@@ -38,6 +42,11 @@ public class FaunusTypeManager implements TypeSource {
         relationTypes.put(FaunusPropertyKey.COUNT.getName(),FaunusPropertyKey.COUNT);
         relationTypes.put(FaunusEdgeLabel.LINK.getName(),FaunusEdgeLabel.LINK);
         relationTypes.put(FaunusPropertyKey.VALUE.getName(),FaunusPropertyKey.VALUE);
+        relationTypes.put(FaunusPropertyKey.ID.getName(),FaunusPropertyKey.ID);
+        relationTypes.put(FaunusPropertyKey._ID.getName(),FaunusPropertyKey._ID);
+        relationTypes.put(FaunusPropertyKey.LABEL.getName(),FaunusPropertyKey.LABEL);
+
+
     }
 
     public FaunusVertexLabel getVertexLabel(String name) {
@@ -48,17 +57,6 @@ public class FaunusTypeManager implements TypeSource {
         }
         assert vl!=null;
         return vl;
-    }
-
-    public FaunusEdgeLabel getEdgeLabel(String name) {
-        FaunusRelationType rt = relationTypes.get(name);
-        if (rt==null) {
-            relationTypes.putIfAbsent(name,new FaunusEdgeLabel(schemaProvider.getEdgeLabel(name),false));
-            rt = relationTypes.get(name);
-        }
-        assert rt!=null;
-        if (!(rt instanceof FaunusEdgeLabel)) throw new IllegalArgumentException("Not an edge label: " + name);
-        return (FaunusEdgeLabel)rt;
     }
 
     @Override
@@ -78,8 +76,7 @@ public class FaunusTypeManager implements TypeSource {
             rt = relationTypes.get(name);
         }
         assert rt!=null;
-        if (!(rt instanceof FaunusPropertyKey)) throw new IllegalArgumentException("Not a property key: " + name);
-        return (FaunusPropertyKey)rt;
+        return rt;
     }
 
     public FaunusPropertyKey getPropertyKey(String name) {
@@ -91,6 +88,17 @@ public class FaunusTypeManager implements TypeSource {
         assert rt!=null;
         if (!(rt instanceof FaunusPropertyKey)) throw new IllegalArgumentException("Not a property key: " + name);
         return (FaunusPropertyKey)rt;
+    }
+
+    public FaunusEdgeLabel getEdgeLabel(String name) {
+        FaunusRelationType rt = relationTypes.get(name);
+        if (rt==null) {
+            relationTypes.putIfAbsent(name,new FaunusEdgeLabel(schemaProvider.getEdgeLabel(name),false));
+            rt = relationTypes.get(name);
+        }
+        assert rt!=null;
+        if (!(rt instanceof FaunusEdgeLabel)) throw new IllegalArgumentException("Not an edge label: " + name);
+        return (FaunusEdgeLabel)rt;
     }
 
 

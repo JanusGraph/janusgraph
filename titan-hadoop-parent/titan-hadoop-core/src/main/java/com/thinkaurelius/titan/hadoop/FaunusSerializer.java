@@ -132,7 +132,7 @@ public class FaunusSerializer {
     private void readElement(final FaunusElement element, Schema schema, final DataInput in) throws IOException {
         element.id = WritableUtils.readVLong(in);
         if (trackState) element.setLifeCycle(in.readByte());
-        element.outAdjacency = readEdges(element,in,Direction.IN,schema);
+        element.outAdjacency = readEdges(element,in,Direction.OUT,schema);
     }
 
     private void writeElement(final FaunusElement element, final Schema schema, final DataOutput out) throws IOException {

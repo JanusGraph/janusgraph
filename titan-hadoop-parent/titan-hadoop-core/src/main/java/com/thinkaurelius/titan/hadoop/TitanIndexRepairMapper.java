@@ -24,15 +24,15 @@ import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 
 /**
  * Given (1) an InputFormat that iterates a Titan edgestore and converts each
- * row into a HadoopVertex and (2) the name of an already-defined index in
- * either the REGISTERED or ENABLED state, consider each HadoopVertex and
+ * row into a FaunusVertex and (2) the name of an already-defined index in
+ * either the REGISTERED or ENABLED state, consider each FaunusVertex and
  * rebuild the named index accordingly. The index is written through a
  * TitanGraph instance. The KEYOUT and VALUEOUT type parameters are NullWritable
  * because this Mapper produces no conventional SequenceFile output. There's
  * nothing to combine or reduce since the writes go through TitanGraph and its
  * non-Hadoop backend interface.
  */
-public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, NullWritable, NullWritable> {
+public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable> {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanIndexRepairMapper.class);
@@ -57,7 +57,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, N
 
     @Override
     public void setup(
-            final Mapper<NullWritable, HadoopVertex, NullWritable, NullWritable>.Context context) {
+            final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) {
         Configuration hadoopConf = COMPAT.getContextConfiguration(context);
         BasicConfiguration titanConf = ConfigurationUtil.extractOutputConfiguration(hadoopConf);
         indexName = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_NAME);
@@ -71,7 +71,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, N
     }
 
     @Override
-    public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, NullWritable>.Context context) {
+    public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) {
         try {
             titanGraph.commit();
             COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_TRANSACTIONS, 1L);
@@ -94,8 +94,8 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, HadoopVertex, N
     @Override
     public void map(
             final NullWritable key, // ignored
-            final HadoopVertex value,
-            final Mapper<NullWritable, HadoopVertex, NullWritable, NullWritable>.Context context) {
+            final FaunusVertex value,
+            final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) {
         if (!atLeastOneValidKey) {
             String legalStates = Joiner.on(", ").join(ACCEPTED_INDEX_STATUSES);
             throw new IllegalStateException("At least one of the "

@@ -23,6 +23,41 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
                 public Long apply(@Nullable FaunusElement element) {
                     if (element instanceof FaunusPathElement)
                         return Long.valueOf(((FaunusPathElement)element).pathCount());
+                    else return 0l;
+                }
+            }
+    );
+
+    public static final FaunusPropertyKey<Long> ID = new FaunusPropertyKey<Long>(
+            new PropertyKeyDefinition(Tokens.ID, FaunusElement.NO_ID,Cardinality.SINGLE,Long.class),
+            new Function<FaunusElement, Long>() {
+                @Nullable
+                @Override
+                public Long apply(@Nullable FaunusElement element) {
+                    return element.getLongId();
+                }
+            }
+    );
+
+    public static final FaunusPropertyKey<Long> _ID = new FaunusPropertyKey<Long>(
+            new PropertyKeyDefinition(Tokens._ID, FaunusElement.NO_ID,Cardinality.SINGLE,Long.class),
+            new Function<FaunusElement, Long>() {
+                @Nullable
+                @Override
+                public Long apply(@Nullable FaunusElement element) {
+                    return element.getLongId();
+                }
+            }
+    );
+
+    public static final FaunusPropertyKey<String> LABEL = new FaunusPropertyKey<String>(
+            new PropertyKeyDefinition(Tokens.LABEL, FaunusElement.NO_ID,Cardinality.SINGLE,String.class),
+            new Function<FaunusElement, String>() {
+                @Nullable
+                @Override
+                public String apply(@Nullable FaunusElement element) {
+                    if (element instanceof FaunusVertex) return ((FaunusVertex)element).getLabel();
+                    else if (element instanceof FaunusRelation) return ((FaunusRelation)element).getType().getName();
                     else return null;
                 }
             }
@@ -41,7 +76,7 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
     }
 
     public FaunusPropertyKey(PropertyKeyDefinition definition, Function<FaunusElement,T> implicitFunction) {
-        super(definition,true);
+        super(definition,false);
         Preconditions.checkArgument(definition.getCardinality()==Cardinality.SINGLE);
         this.definition = definition;
         this.implicitFunction = implicitFunction;

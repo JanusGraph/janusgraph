@@ -36,11 +36,11 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     private FaunusVertexLabel vertexLabel = FaunusVertexLabel.DEFAULT_VERTEXLABEL;
 
     public FaunusVertex() {
-        super(EmptyConfiguration.immutable(), -1l);
+        super(EmptyConfiguration.immutable(), NO_ID);
     }
 
     public FaunusVertex(final Configuration configuration) {
-        super(configuration, -1l);
+        super(configuration, NO_ID);
     }
 
     public FaunusVertex(final Configuration configuration, final long id) {
@@ -48,7 +48,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public FaunusVertex(final Configuration configuration, final DataInput in) throws IOException {
-        super(configuration, -1l);
+        super(configuration, NO_ID);
         this.readFields(in);
     }
 
@@ -79,6 +79,10 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
         this.vertexLabel = label;
     }
 
+    public void setVertexLabel(String label) {
+        setVertexLabel(getTypeManager().getVertexLabel(label));
+    }
+
     @Override
     public String getLabel() {
         return vertexLabel.getName();
@@ -107,7 +111,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     @Override
     public TitanProperty addProperty(PropertyKey key, Object value) {
-        Preconditions.checkArgument(key instanceof FaunusProperty);
+        Preconditions.checkArgument(key instanceof FaunusPropertyKey);
         return addProperty(new StandardFaunusProperty(this,(FaunusPropertyKey)key,value));
     }
 
@@ -254,6 +258,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     private void removeAllEdges(final Direction dir, FaunusRelationType... types) {
+        if (types==null || types.length==0) return;
         for (Iterator iterator = query().direction(dir).types(types).titanEdges().iterator(); iterator.hasNext(); ) {
             iterator.next();
             iterator.remove();

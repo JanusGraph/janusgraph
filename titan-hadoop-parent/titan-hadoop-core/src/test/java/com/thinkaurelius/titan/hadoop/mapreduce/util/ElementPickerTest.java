@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.*;
 
 import junit.framework.TestCase;
 
@@ -34,29 +32,32 @@ public class ElementPickerTest extends TestCase {
 
     public void testLabel() {
         FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
-        assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), null);
-        vertex.setProperty(Tokens.LABEL, "aType");
+        assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), "_default");
+        try {
+            vertex.setProperty(Tokens.LABEL, "aType");
+            fail();
+        } catch (IllegalArgumentException e) {}
+        vertex.setVertexLabel("aType");
         assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), "aType");
 
         StandardFaunusEdge edge = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1l, 10l, 10l, "knows");
         assertEquals(ElementPicker.getProperty(edge, Tokens.LABEL), "knows");
         try {
             edge.setProperty(Tokens.LABEL, "self");
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-        }
+            fail();
+        } catch (IllegalArgumentException e) { }
         assertEquals(ElementPicker.getProperty(edge, Tokens.LABEL), "knows");
         assertEquals(ElementPicker.getPropertyAsString(edge, Tokens.LABEL), "knows");
 
     }
 
     public void testMultiProperties() {
+        FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable()).setSchemaProvider(FaunusVertexTest.TestSchemaProvider.INSTANCE);
         FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
-        vertex.addProperty("name","marko1");
-        vertex.addProperty("name","marko2");
+        vertex.addProperty("namelist","marko1");
+        vertex.addProperty("namelist","marko2");
         assertEquals(vertex.getPropertyKeys().size(), 1);
-        assertTrue(((Collection) ElementPicker.getProperty(vertex, "name")).contains("marko1"));
-        assertTrue(((Collection) ElementPicker.getProperty(vertex, "name")).contains("marko2"));
+        assertTrue(((Collection) ElementPicker.getProperty(vertex, "namelist")).contains("marko1"));
+        assertTrue(((Collection) ElementPicker.getProperty(vertex, "namelist")).contains("marko2"));
     }
 }

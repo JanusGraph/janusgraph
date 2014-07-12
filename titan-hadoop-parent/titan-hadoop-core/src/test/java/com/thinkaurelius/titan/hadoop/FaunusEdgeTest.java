@@ -26,7 +26,7 @@ public class FaunusEdgeTest extends TestCase {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
         edge1.write(out);
-        assertEquals(bytes.size(), 12);
+        assertEquals(13, bytes.size());
         // long id (vlong), path counters (vlong), long vid (vlong), long vid (vlong), String label
         // 1 + 1 + 1 + 1 + 10 byte label = 13
 
