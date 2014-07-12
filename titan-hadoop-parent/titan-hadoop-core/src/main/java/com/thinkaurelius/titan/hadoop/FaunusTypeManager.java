@@ -27,22 +27,14 @@ public class FaunusTypeManager implements TypeSource {
         this(DefaultSchemaProvider.INSTANCE);
     }
 
-    public void setSchemaProvider(SchemaProvider provider) {
-        this.schemaProvider=provider;
-    }
-
-    public void clear() {
-        vertexLabels.clear();
-        relationTypes.clear();
-    }
-
     public FaunusTypeManager(SchemaProvider provider) {
-        if (provider!=DefaultSchemaProvider.INSTANCE) {
-            provider = DefaultSchemaProvider.asBackupProvider(provider);
-        }
-        this.schemaProvider=provider;
         vertexLabels = Maps.newConcurrentMap();
         relationTypes = Maps.newConcurrentMap();
+        setSchemaProvider(provider);
+        initialize();
+    }
+
+    private final void initialize() {
         vertexLabels.put(FaunusVertexLabel.DEFAULT_VERTEXLABEL.getName(),FaunusVertexLabel.DEFAULT_VERTEXLABEL);
         relationTypes.put(FaunusPropertyKey.COUNT.getName(),FaunusPropertyKey.COUNT);
         relationTypes.put(FaunusEdgeLabel.LINK.getName(),FaunusEdgeLabel.LINK);
@@ -50,8 +42,19 @@ public class FaunusTypeManager implements TypeSource {
         relationTypes.put(FaunusPropertyKey.ID.getName(),FaunusPropertyKey.ID);
         relationTypes.put(FaunusPropertyKey._ID.getName(),FaunusPropertyKey._ID);
         relationTypes.put(FaunusPropertyKey.LABEL.getName(),FaunusPropertyKey.LABEL);
+    }
 
+    public void setSchemaProvider(SchemaProvider provider) {
+        if (provider!=DefaultSchemaProvider.INSTANCE) {
+            provider = DefaultSchemaProvider.asBackupProvider(provider);
+        }
+        this.schemaProvider=provider;
+    }
 
+    public void clear() {
+        vertexLabels.clear();
+        relationTypes.clear();
+        initialize();
     }
 
     public FaunusVertexLabel getVertexLabel(String name) {
