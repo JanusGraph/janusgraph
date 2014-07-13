@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.solr;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -12,19 +13,19 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.solr.transform.GeoToWktConverter;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.Not;
 import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -33,7 +34,9 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+
 import org.apache.zookeeper.KeeperException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,14 +49,13 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * @author Jared Holmberg (jholmberg@bericotechnoLogies.com)
  */
 public class SolrIndex implements IndexProvider {
+    private static final Logger logger = LoggerFactory.getLogger(SolrIndex.class);
+
+    private static final String CORE_PARAM = "collection";
 
     public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS,"max-result-set-size",
             "Maxium number of results to return if no limit is specified",
             ConfigOption.Type.MASKABLE, 100000);
-
-    public static final ConfigOption<Integer> COMMIT_BATCH_SIZE = new ConfigOption<Integer>(INDEX_NS,"commit-batch-size",
-            "Commit batch size",
-            ConfigOption.Type.MASKABLE, 1000);
 
     public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(INDEX_NS,"key-field-names",
             "Field name that uniquely identifies each document in Solr",
@@ -75,16 +77,19 @@ public class SolrIndex implements IndexProvider {
             "Http connection max connections per host",
             ConfigOption.Type.GLOBAL_OFFLINE, "http://localhost:2181");
 
-    private static int batchSize;
-    private static int maxResultSetSize;
+    public static final ConfigOption<String[]> CORES = new ConfigOption<String[]>(INDEX_NS,"cores",
+            "Solr cores that are going to be used.",
+            ConfigOption.Type.GLOBAL_OFFLINE, new String[] { "titan" });
 
-    private static final Logger Log = LoggerFactory.getLogger(SolrIndex.class);
+    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().build();
 
     /**
      * Builds a mapping between the core name and its respective Solr Server connection.
      */
     CloudSolrServer solrServer;
     private Map<String, String> keyFieldIds;
+    private final String[] cores;
+    private int maxResults;
 
     /**
      *  There are several different modes in which the index can be configured with Solr:
@@ -157,40 +162,40 @@ public class SolrIndex implements IndexProvider {
      *  </p>
      * @param config Titan configuration passed in at start up time
      */
-    public SolrIndex(Configuration config) throws StorageException {
+    public SolrIndex(Configuration config) throws BackendException {
         try {
             String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
-            String collectionName = config.get(GraphDatabaseConfiguration.INDEX_NAME);
+            cores = config.get(CORES);
 
             solrServer = new CloudSolrServer(zookeeperUrl, true);
             solrServer.connect();
-            createCollectionIfNotExists(solrServer, config);
-            solrServer.setDefaultCollection(collectionName);
+            createCollectionIfNotExists(solrServer, config, cores);
+            if (cores.length == 1)
+                solrServer.setDefaultCollection(cores[0]);
 
-            waitForRecoveriesToFinish(solrServer, collectionName);
+            for (String collection : cores)
+                waitForRecoveriesToFinish(solrServer, collection);
         } catch (IOException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } catch (SolrServerException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } catch (InterruptedException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } catch (KeeperException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
 
         keyFieldIds = parseKeyFieldsForCores(config);
-
-        batchSize = config.get(COMMIT_BATCH_SIZE);
-        maxResultSetSize = config.get(MAX_RESULT_SET_SIZE);
+        maxResults = config.get(MAX_RESULT_SET_SIZE);
     }
 
-    private Map<String, String> parseKeyFieldsForCores(Configuration config) throws StorageException {
+    private Map<String, String> parseKeyFieldsForCores(Configuration config) throws BackendException {
         Map<String, String> keyFieldNames = new HashMap<String, String>();
         String[] coreFieldStatements = config.get(KEY_FIELD_NAMES);
         for (String coreFieldStatement : coreFieldStatements) {
             String[] parts = coreFieldStatement.trim().split("=");
             if (parts.length != 2) {
-                throw new PermanentStorageException("Unable to parse the core name / key field name pair. It should be of the format core=field");
+                throw new PermanentBackendException("Unable to parse the core name / key field name pair. It should be of the format core=field");
             }
             String coreName = parts[0];
             String keyFieldName = parts[1];
@@ -208,26 +213,23 @@ public class SolrIndex implements IndexProvider {
      * @param key New key to register
      * @param information Datatype to register for the key
      * @param tx enclosing transaction
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Override
-    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         //Since all data types must be defined in the schema.xml, pre-registering a type does not work
     }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         //TODO: research usage of the informations parameter
         try {
-            List<String> deleteIds = new ArrayList<String>();
-            Collection<SolrInputDocument> newDocuments = new ArrayList<SolrInputDocument>();
-            Collection<SolrInputDocument> updateDocuments = new ArrayList<SolrInputDocument>();
-            boolean isLastBatch = false;
-
             for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String coreName = stores.getKey();
                 String keyIdField = keyFieldIds.get(coreName);
-                int numProcessed = 0;
+
+                List<String> deleteIds = new ArrayList<String>();
+                Collection<SolrInputDocument> changes = new ArrayList<SolrInputDocument>();
 
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docId = entry.getKey();
@@ -239,11 +241,11 @@ public class SolrIndex implements IndexProvider {
                     //Handle any deletions
                     if (mutation.hasDeletions()) {
                         if (mutation.isDeleted()) {
-                            Log.trace("Deleting entire document {}", docId);
+                            logger.trace("Deleting entire document {}", docId);
                             deleteIds.add(docId);
                         } else {
                             HashSet<IndexEntry> fieldDeletions = Sets.newHashSet(mutation.getDeletions());
-                            deleteIndividualFieldsFromIndex(keyIdField, docId, fieldDeletions);
+                            deleteIndividualFieldsFromIndex(coreName, keyIdField, docId, fieldDeletions);
                         }
                     } else {
                         HashSet<IndexEntry> fieldDeletions = Sets.newHashSet(mutation.getDeletions());
@@ -252,92 +254,115 @@ public class SolrIndex implements IndexProvider {
                                 fieldDeletions.remove(indexEntry);
                             }
                         }
-                        deleteIndividualFieldsFromIndex(keyIdField, docId, fieldDeletions);
+                        deleteIndividualFieldsFromIndex(coreName, keyIdField, docId, fieldDeletions);
                     }
 
                     if (mutation.hasAdditions()) {
-                        List<IndexEntry> additions = mutation.getAdditions();
-                        if (mutation.isNew()) { //Index
-                            Log.trace("Adding new document {}", docId);
-                            SolrInputDocument newDoc = new SolrInputDocument();
-                            newDoc.addField(keyIdField, docId);
-                            for (IndexEntry ie : additions) {
-                                Object fieldValue = ie.value;
-                                if (fieldValue instanceof Geoshape) {
-                                    fieldValue = GeoToWktConverter.convertToWktString((Geoshape) fieldValue);
-                                }
-                                newDoc.addField(ie.field, fieldValue);
-                            }
-                            newDocuments.add(newDoc);
+                        SolrInputDocument doc = new SolrInputDocument();
+                        doc.setField(keyIdField, docId);
 
-                        } else { //Update
-                            boolean needUpsert = !mutation.hasDeletions();
-                            SolrInputDocument updateDoc = new SolrInputDocument();
-                            updateDoc.addField(keyIdField, docId);
-                            for (IndexEntry ie : additions) {
-                                Map<String, String> updateFields = new HashMap<String, String>();
-                                Object fieldValue = ie.value;
-                                if (fieldValue instanceof Geoshape) {
-                                    fieldValue = GeoToWktConverter.convertToWktString((Geoshape) fieldValue);
-                                }
-                                updateFields.put("set", fieldValue.toString());
-                                updateDoc.addField(ie.field, updateFields);
-                            }
+                        boolean isNewDoc = mutation.isNew();
 
-                            updateDocuments.add(updateDoc);
+                        if (isNewDoc && logger.isTraceEnabled())
+                            logger.trace("Adding new document {}", docId);
+
+                        for (IndexEntry e : mutation.getAdditions()) {
+                            final Object fieldValue = (e.value instanceof Geoshape)
+                                                         ? GeoToWktConverter.convertToWktString((Geoshape) e.value)
+                                                         : e.value;
+
+                            doc.setField(e.field, isNewDoc
+                                    ? fieldValue : new HashMap<String, Object>(1) {{ put("set", fieldValue); }});
                         }
-                    }
-                    numProcessed++;
-                    if (numProcessed == stores.getValue().size()) {
-                        isLastBatch = true;
-                    }
 
-                    commitDeletes(deleteIds, isLastBatch);
-                    commitDocumentChanges(newDocuments, isLastBatch);
-                    commitDocumentChanges(updateDocuments, isLastBatch);
+                        changes.add(doc);
+                    }
                 }
+
+                commitDeletes(coreName, deleteIds);
+                commitDocumentChanges(coreName, changes);
             }
         } catch (Exception e) {
             throw storageException(e);
         }
     }
 
-    private void deleteIndividualFieldsFromIndex(String keyIdField, String docId, HashSet<IndexEntry> fieldDeletions) throws SolrServerException, IOException {
-        if (!fieldDeletions.isEmpty()) {
-            Map<String, String> fieldDeletes = new HashMap<String, String>();
-            fieldDeletes.put("set", null);
-            SolrInputDocument doc = new SolrInputDocument();
-            doc.addField(keyIdField, docId);
-            StringBuilder sb = new StringBuilder();
-            for (IndexEntry fieldToDelete : fieldDeletions) {
-                doc.addField(fieldToDelete.field, fieldDeletes);
-                sb.append(fieldToDelete).append(",");
+    @Override
+    public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        try {
+            for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
+                final String coreName = stores.getKey();
+
+                List<String> deleteIds = new ArrayList<String>();
+                List<SolrInputDocument> newDocuments = new ArrayList<SolrInputDocument>();
+
+                for (Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
+                    final String docID = entry.getKey();
+                    final List<IndexEntry> content = entry.getValue();
+
+                    if (content == null || content.isEmpty()) {
+                        if (logger.isTraceEnabled())
+                            logger.trace("Deleting document [{}]", docID);
+
+                        deleteIds.add(docID);
+                        continue;
+                    }
+
+                    newDocuments.add(new SolrInputDocument() {{
+                        setField(keyFieldIds.get(coreName), docID);
+
+                        for (IndexEntry addition : content) {
+                            Object fieldValue = addition.value;
+                            setField(addition.field, (fieldValue instanceof Geoshape)
+                                    ? GeoToWktConverter.convertToWktString((Geoshape) fieldValue)
+                                    : fieldValue);
+                        }
+                    }});
+                }
+
+                commitDeletes(coreName, deleteIds);
+                commitDocumentChanges(coreName, newDocuments);
             }
-            Log.trace("Deleting individual fields [{}] for document {}", sb.toString(), docId);
-            solrServer.add(doc);
-            solrServer.commit();
+        } catch (Exception e) {
+            throw new TemporaryBackendException("Could not restore Solr index", e);
         }
     }
 
-    private void commitDocumentChanges(Collection<SolrInputDocument> documents, boolean isLastBatch) throws SolrServerException, IOException {
-        int numUpdates = documents.size();
-        if (numUpdates == 0) {
+    private void deleteIndividualFieldsFromIndex(String coreName, String keyIdField, String docId, HashSet<IndexEntry> fieldDeletions) throws SolrServerException, IOException {
+        if (fieldDeletions.isEmpty())
             return;
+
+        Map<String, String> fieldDeletes = new HashMap<String, String>(1) {{ put("set", null); }};
+
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField(keyIdField, docId);
+        StringBuilder sb = new StringBuilder();
+        for (IndexEntry fieldToDelete : fieldDeletions) {
+            doc.addField(fieldToDelete.field, fieldDeletes);
+            sb.append(fieldToDelete).append(",");
         }
 
+        if (logger.isTraceEnabled())
+            logger.trace("Deleting individual fields [{}] for document {}", sb.toString(), docId);
+
+        UpdateRequest singleDocument = newUpdateRequest(coreName);
+        singleDocument.add(doc);
+        solrServer.request(singleDocument);
+    }
+
+    private void commitDocumentChanges(String coreName, Collection<SolrInputDocument> documents) throws SolrServerException, IOException {
+        if (documents.size() == 0)
+            return;
+
         try {
-            if (numUpdates >= batchSize || isLastBatch) {
-                solrServer.add(documents);
-                solrServer.commit();
-                documents.clear();
-            }
+            solrServer.request(newUpdateRequest(coreName).add(documents));
         } catch (HttpSolrServer.RemoteSolrException rse) {
-            Log.error("Unable to save documents to Solr as one of the shape objects stored were not compatible with Solr.", rse);
-            Log.error("Details in failed document batch: ");
+            logger.error("Unable to save documents to Solr as one of the shape objects stored were not compatible with Solr.", rse);
+            logger.error("Details in failed document batch: ");
             for (SolrInputDocument d : documents) {
                 Collection<String> fieldNames = d.getFieldNames();
                 for (String name : fieldNames) {
-                    Log.error(name + ":" + d.getFieldValue(name).toString());
+                    logger.error(name + ":" + d.getFieldValue(name).toString());
                 }
             }
 
@@ -345,32 +370,25 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private void commitDeletes(List<String> deleteIds, boolean isLastBatch) throws SolrServerException, IOException {
-        int numDeletes = deleteIds.size();
-        if (numDeletes == 0) {
+    private void commitDeletes(String coreName, List<String> deleteIds) throws SolrServerException, IOException {
+        if (deleteIds.size() == 0)
             return;
-        }
 
-        if (numDeletes >= batchSize || isLastBatch) {
-            solrServer.deleteById(deleteIds);
-            solrServer.commit();
-            deleteIds.clear();
-        }
+        solrServer.request(newUpdateRequest(coreName).deleteById(deleteIds));
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         List<String> result;
         String core = query.getStore();
         String keyIdField = keyFieldIds.get(core);
-        SolrQuery solrQuery = new SolrQuery();
-        solrQuery.setQuery("*:*");
+        SolrQuery solrQuery = newQuery(core);
         solrQuery = buildQuery(solrQuery, query.getCondition());
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
-            for (int i = 0; i < orders.size(); i++) {
-                String item = orders.get(i).getKey();
-                SolrQuery.ORDER order = orders.get(i).getOrder() == Order.ASC ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
+            for (IndexQuery.OrderEntry order1 : orders) {
+                String item = order1.getKey();
+                SolrQuery.ORDER order = order1.getOrder() == Order.ASC ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc;
                 solrQuery.addSort(new SolrQuery.SortClause(item, order));
             }
         }
@@ -378,14 +396,14 @@ public class SolrIndex implements IndexProvider {
         if (query.hasLimit()) {
             solrQuery.setRows(query.getLimit());
         } else {
-            solrQuery.setRows(maxResultSetSize);
+            solrQuery.setRows(maxResults);
         }
         try {
             QueryResponse response = solrServer.query(solrQuery);
-            Log.debug("Executed query [{}] in {} ms", query.getCondition(), response.getElapsedTime());
+            logger.debug("Executed query [{}] in {} ms", query.getCondition(), response.getElapsedTime());
             int totalHits = response.getResults().size();
-            if (!query.hasLimit() && totalHits >= maxResultSetSize) {
-                Log.warn("Query result set truncated to first [{}] elements for query: {}", MAX_RESULT_SET_SIZE, query);
+            if (!query.hasLimit() && totalHits >= maxResults) {
+                logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
             }
             result = new ArrayList<String>(totalHits);
             for (SolrDocument hit : response.getResults()) {
@@ -393,52 +411,48 @@ public class SolrIndex implements IndexProvider {
             }
 
         } catch (HttpSolrServer.RemoteSolrException e) {
-            Log.error("Query did not complete because parameters were not recognized : ", e);
-            throw new PermanentStorageException(e);
+            logger.error("Query did not complete because parameters were not recognized : ", e);
+            throw new PermanentBackendException(e);
         } catch (SolrServerException e) {
-            Log.error("Unable to query Solr index.", e);
-            throw new PermanentStorageException(e);
+            logger.error("Unable to query Solr index.", e);
+            throw new PermanentBackendException(e);
         }
         return result;
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         List<RawQuery.Result<String>> result;
         String core = query.getStore();
         String keyIdField = keyFieldIds.get(core);
-        SolrQuery solrQuery = new SolrQuery();
-        solrQuery.setQuery("*:*");
-        solrQuery.addFilterQuery(query.getQuery());
-        solrQuery.addField(keyIdField);
-        solrQuery.addField("score");
-        solrQuery.setStart(query.getOffset());
-        if (query.hasLimit()) {
-            solrQuery.setRows(query.getLimit());
-        } else {
-            solrQuery.setRows(maxResultSetSize);
-        }
+        SolrQuery solrQuery = newQuery(core)
+                                .addFilterQuery(query.getQuery())
+                                .addField(keyIdField)
+                                .addField("score")
+                                .setStart(query.getOffset())
+                                .setRows(query.hasLimit() ? query.getLimit() : maxResults);
 
         try {
             QueryResponse response = solrServer.query(solrQuery);
-            Log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
+            if (logger.isDebugEnabled())
+                logger.debug("Executed query [{}] in {} ms", query.getQuery(), response.getElapsedTime());
+
             int totalHits = response.getResults().size();
-            if (!query.hasLimit() && totalHits >= maxResultSetSize) {
-                Log.warn("Query result set truncated to first [{}] elements for query: {}", MAX_RESULT_SET_SIZE, query);
+            if (!query.hasLimit() && totalHits >= maxResults) {
+                logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
             }
             result = new ArrayList<RawQuery.Result<String>>(totalHits);
 
             for (SolrDocument hit : response.getResults()) {
                 double score = Double.parseDouble(hit.getFieldValue("score").toString());
-                result.add(
-                        new RawQuery.Result<String>(hit.getFieldValue(keyIdField).toString(), score));
+                result.add(new RawQuery.Result<String>(hit.getFieldValue(keyIdField).toString(), score));
             }
         } catch (HttpSolrServer.RemoteSolrException e) {
-            Log.error("Query did not complete because parameters were not recognized : ", e);
-            throw new PermanentStorageException(e);
+            logger.error("Query did not complete because parameters were not recognized : ", e);
+            throw new PermanentBackendException(e);
         } catch (SolrServerException e) {
-            Log.error("Unable to query Solr index.", e);
-            throw new PermanentStorageException(e);
+            logger.error("Unable to query Solr index.", e);
+            throw new PermanentBackendException(e);
         }
         return result;
     }
@@ -596,35 +610,40 @@ public class SolrIndex implements IndexProvider {
      * race conditions.
      *
      * @return New Transaction Handle
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Override
-    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return new DefaultTransaction(config);
     }
 
     @Override
-    public void close() throws StorageException {
-        Log.trace("Shutting down connection to Solr", solrServer);
+    public void close() throws BackendException {
+        logger.trace("Shutting down connection to Solr", solrServer);
         solrServer.shutdown();
         solrServer = null;
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         try {
-            Log.trace("Clearing storage from Solr", solrServer);
-            solrServer.deleteByQuery("*:*");
-            solrServer.commit();
+            logger.trace("Clearing storage from Solr", solrServer);
+
+            for (String core : cores) {
+                UpdateRequest deleteAll = newUpdateRequest(core);
+                deleteAll.deleteByQuery("*:*");
+
+                solrServer.request(deleteAll);
+            }
         } catch (SolrServerException e) {
-            Log.error("Unable to clear storage from index due to server error on Solr.", e);
-            throw new PermanentStorageException(e);
+            logger.error("Unable to clear storage from index due to server error on Solr.", e);
+            throw new PermanentBackendException(e);
         } catch (IOException e) {
-            Log.error("Unable to clear storage from index due to low-level I/O error.", e);
-            throw new PermanentStorageException(e);
+            logger.error("Unable to clear storage from index due to low-level I/O error.", e);
+            throw new PermanentBackendException(e);
         } catch (Exception e) {
-            Log.error("Unable to clear storage from index due to general error.", e);
-            throw new PermanentStorageException(e);
+            logger.error("Unable to clear storage from index due to general error.", e);
+            throw new PermanentBackendException(e);
         }
     }
 
@@ -659,35 +678,40 @@ public class SolrIndex implements IndexProvider {
         return false;
     }
 
-    private StorageException storageException(Exception solrException) {
-        return new TemporaryStorageException("Unable to complete query on Solr.", solrException);
+    @Override
+    public IndexFeatures getFeatures() {
+        return SOLR_FEATURES;
     }
 
-    private static void createCollectionIfNotExists(CloudSolrServer server, Configuration config)
+    private BackendException storageException(Exception solrException) {
+        return new TemporaryBackendException("Unable to complete query on Solr.", solrException);
+    }
+
+    private static void createCollectionIfNotExists(CloudSolrServer server, Configuration config, String[] collections)
             throws IOException, SolrServerException, KeeperException, InterruptedException {
-        String collection = config.get(GraphDatabaseConfiguration.INDEX_NAME);
+        for (String collection : collections) {
+            if (!checkIfCollectionExists(server, collection)) {
+                Integer numShards = config.get(NUM_SHARDS);
+                Integer maxShardsPerNode = config.get(MAX_SHARDS_PER_NODE);
+                Integer replicationFactor = config.get(REPLICATION_FACTOR);
 
-        if (!checkIfCollectionExists(server, collection)) {
-            Integer numShards = config.get(NUM_SHARDS);
-            Integer maxShardsPerNode = config.get(MAX_SHARDS_PER_NODE);
-            Integer replicationFactor = config.get(REPLICATION_FACTOR);
+                CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
 
-            CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
+                createRequest.setCollectionName(collection);
+                createRequest.setNumShards(numShards);
+                createRequest.setMaxShardsPerNode(maxShardsPerNode);
+                createRequest.setReplicationFactor(replicationFactor);
 
-            createRequest.setCollectionName(collection);
-            createRequest.setNumShards(numShards);
-            createRequest.setMaxShardsPerNode(maxShardsPerNode);
-            createRequest.setReplicationFactor(replicationFactor);
-
-            CollectionAdminResponse createResponse = createRequest.process(server);
-            if (createResponse.isSuccess()) {
-                Log.trace("Collection {} successfully created.", collection);
-            } else {
-                throw new SolrServerException(Joiner.on("\n").join(createResponse.getErrorMessages()));
+                CollectionAdminResponse createResponse = createRequest.process(server);
+                if (createResponse.isSuccess()) {
+                    logger.trace("Collection {} successfully created.", collection);
+                } else {
+                    throw new SolrServerException(Joiner.on("\n").join(createResponse.getErrorMessages()));
+                }
             }
-        }
 
-        waitForRecoveriesToFinish(server, collection);
+            waitForRecoveriesToFinish(server, collection);
+        }
     }
 
     /**
@@ -735,7 +759,17 @@ public class SolrIndex implements IndexProvider {
                 }
             }
         } finally {
-            Log.info("Exiting solr wait");
+            logger.info("Exiting solr wait");
         }
+    }
+
+    private static UpdateRequest newUpdateRequest(String core) {
+        UpdateRequest req = new UpdateRequest();
+        req.setParam(CORE_PARAM, core);
+        req.setAction(UpdateRequest.ACTION.COMMIT, true, true);
+        return req;
+    }
+    private static SolrQuery newQuery(String core) {
+        return new SolrQuery().setParam(CORE_PARAM, core).setQuery("*:*");
     }
 }

@@ -39,7 +39,8 @@ public class SolrIndexTest extends IndexProviderTest {
         String solrHome = Joiner.on(File.separator).join(System.getProperty("user.dir"), "titan-solr", "target", "test-classes", "solr");
         File solrXml = new File(solrHome, "solr.xml");
         miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml, null, null);
-        uploadConfigDirToZk(Joiner.on(File.separator).join(solrHome, "collection1"));
+        uploadConfigDirToZk(Joiner.on(File.separator).join(solrHome, "store1"));
+        uploadConfigDirToZk(Joiner.on(File.separator).join(solrHome, "store2"));
     }
 
     @AfterClass
@@ -64,7 +65,12 @@ public class SolrIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
 
         config.set(SolrIndex.ZOOKEEPER_URL, miniSolrCloudCluster.getZkServer().getZkAddress(), index);
-        config.set(SolrIndex.KEY_FIELD_NAMES, new String[]{"edge=document_id","vertex=document_id"}, index);
+        config.set(SolrIndex.CORES, new String[] { "store1", "store2", "edge", "vertex" }, index);
+        config.set(SolrIndex.KEY_FIELD_NAMES, new String[] {
+                      "edge=document_id", "vertex=document_id",
+                      "store1=document_id", "store2=document_id"
+                   },
+                   index);
 
         return config.restrictTo(index);
     }

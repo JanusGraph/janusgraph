@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.solr.transform;
 
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
@@ -18,7 +17,7 @@ public class GeoToWktConverterTest {
      * format understood by Solr.
      */
     @Test
-    public void testConvertGeoshapePointToWktString() throws PermanentStorageException {
+    public void testConvertGeoshapePointToWktString() throws BackendException {
         Geoshape p1 = Geoshape.point(35.4, 48.9); //no spaces, no negative values
         Geoshape p2 = Geoshape.point(-35.4,48.9); //negative longitude value
         Geoshape p3 = Geoshape.point(35.4, -48.9); //negative latitude value
