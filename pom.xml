@@ -106,6 +106,7 @@
         <module>titan-rexster</module>
         <module>titan-all</module>
         <module>titan-dist</module>
+        <module>titan-solr</module>
     </modules>
     <build>
         <directory>${basedir}/target</directory>
@@ -433,6 +434,11 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math</artifactId>
                 <version>2.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>4.3.2</version>
             </dependency>
             <dependency>
                 <groupId>org.yaml</groupId>

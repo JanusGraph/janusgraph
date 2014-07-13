@@ -81,7 +81,9 @@ public abstract class IndexProviderTest {
 
     @Before
     public void setUp() throws Exception {
-        openIndex().clearStorage();
+        index = openIndex();
+        index.clearStorage();
+        index.close();
         open();
     }
 
@@ -715,13 +717,13 @@ public abstract class IndexProviderTest {
      ==================================================================================*/
 
 
-    private void initialize(String store) throws BackendException {
+    protected void initialize(String store) throws BackendException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
             if (index.supports(info.getValue())) index.register(store,info.getKey(),info.getValue(),tx);
         }
     }
 
-    private void add(String store, String docid, Map<String, Object> doc, boolean isNew) {
+    protected void add(String store, String docid, Map<String, Object> doc, boolean isNew) {
         add(store, docid, doc, isNew, 0);
     }
 
