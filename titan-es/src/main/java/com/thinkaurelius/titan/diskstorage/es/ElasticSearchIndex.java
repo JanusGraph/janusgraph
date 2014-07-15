@@ -368,7 +368,8 @@ public class ElasticSearchIndex implements IndexProvider {
                         bulkrequests++;
                     }
                     if (mutation.hasAdditions()) {
-                        int ttl = determineTTL(mutation.getAdditions());
+                        int ttl = mutation.determineTTL();
+
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
                             brb.add(new IndexRequest(indexName, storename, docid).source(getContent(mutation.getAdditions(),ttl)));
@@ -394,25 +395,6 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    //Compute TTL and ensure that all index entries have the same TTL (if any)
-    private static int determineTTL(List<IndexEntry> additions) {
-        Preconditions.checkArgument(!additions.isEmpty());
-        int ttl=-1;
-        for (IndexEntry add : additions) {
-            int ittl = 0;
-            if (add.hasMetaData()) {
-                Preconditions.checkArgument(add.getMetaData().size()==1 && add.getMetaData().containsKey(EntryMetaData.TTL),
-                        "Elasticsearch only support TTL meta data. Found: %s",add.getMetaData());
-                ittl = (Integer)add.getMetaData().get(EntryMetaData.TTL);
-            }
-            if (ttl<0) ttl=ittl;
-            Preconditions.checkArgument(ttl==ittl,"Elasticsearch only supports uniform TTL values across all " +
-                    "index fields, but got additions: %s",additions);
-        }
-        assert ttl>=0;
-        return ttl;
-    }
-
     public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         BulkRequestBuilder bulk = client.prepareBulk();
         int requests = 0;
@@ -435,7 +417,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         // Add
                         if (log.isTraceEnabled())
                             log.trace("Adding entire document {}", docID);
-                        bulk.add(new IndexRequest(indexName, store, docID).source(getContent(content,determineTTL(content))));
+                        bulk.add(new IndexRequest(indexName, store, docID).source(getContent(content, IndexMutation.determineTTL(content))));
                         requests++;
                     }
                 }

@@ -285,6 +285,9 @@
         <!--<field name="sku" type="textTight" indexed="true" stored="true" omitNorms="true"/>-->
         <field name="name" type="string" indexed="true" stored="true"/>
         <field name="blah" type="string" indexed="true" stored="true"/>
+        <field name="ttl"  type="string" indexed="true" stored="true" />
+        <field name="expire_at" type="date" indexed="true" stored="true" />
+        <field name="timestamp" type="date" indexed="true" stored="true" />
 
         <field name="nameString" type="string" indexed="true" stored="true"/>
         <field name="textString" type="string" indexed="true" stored="true"/>

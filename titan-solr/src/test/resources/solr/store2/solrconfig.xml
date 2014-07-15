@@ -1649,6 +1649,22 @@
          http://wiki.apache.org/solr/UpdateRequestProcessor
 
       -->
+    <updateRequestProcessorChain default="true">
+        <processor class="solr.TimestampUpdateProcessorFactory">
+            <str name="fieldName">timestamp</str>
+        </processor>
+        <processor class="solr.processor.DocExpirationUpdateProcessorFactory">
+            <int name="autoDeletePeriodSeconds">5</int>
+            <str name="ttlFieldName">ttl</str>
+            <str name="expirationFieldName">expire_at</str>
+        </processor>
+        <processor class="solr.FirstFieldValueUpdateProcessorFactory">
+            <str name="fieldName">expire_at_dt</str>
+        </processor>
+        <processor class="solr.LogUpdateProcessorFactory" />
+        <processor class="solr.RunUpdateProcessorFactory" />
+    </updateRequestProcessorChain>
+
     <!-- Deduplication
 
          An example dedup update processor that creates the "id" field

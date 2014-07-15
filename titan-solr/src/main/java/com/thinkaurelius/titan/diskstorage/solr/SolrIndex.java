@@ -81,14 +81,20 @@ public class SolrIndex implements IndexProvider {
             "Solr cores that are going to be used.",
             ConfigOption.Type.GLOBAL_OFFLINE, new String[] { "titan" });
 
-    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().build();
+    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<String>(INDEX_NS,"ttl_field",
+            "Name of the TTL field for Solr cores.",
+            ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
+
+    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
 
     /**
      * Builds a mapping between the core name and its respective Solr Server connection.
      */
     CloudSolrServer solrServer;
-    private Map<String, String> keyFieldIds;
+    private final Map<String, String> keyFieldIds;
     private final String[] cores;
+    private final String ttlField;
+
     private int maxResults;
 
     /**
@@ -187,6 +193,7 @@ public class SolrIndex implements IndexProvider {
 
         keyFieldIds = parseKeyFieldsForCores(config);
         maxResults = config.get(MAX_RESULT_SET_SIZE);
+        ttlField = config.get(TTL_FIELD);
     }
 
     private Map<String, String> parseKeyFieldsForCores(Configuration config) throws BackendException {
@@ -258,6 +265,8 @@ public class SolrIndex implements IndexProvider {
                     }
 
                     if (mutation.hasAdditions()) {
+                        int ttl = mutation.determineTTL();
+
                         SolrInputDocument doc = new SolrInputDocument();
                         doc.setField(keyIdField, docId);
 
@@ -274,6 +283,9 @@ public class SolrIndex implements IndexProvider {
                             doc.setField(e.field, isNewDoc
                                     ? fieldValue : new HashMap<String, Object>(1) {{ put("set", fieldValue); }});
                         }
+
+                        if (isNewDoc && ttl > 0)
+                            doc.setField(ttlField, String.format("+%dSECONDS", ttl));
 
                         changes.add(doc);
                     }
@@ -400,16 +412,19 @@ public class SolrIndex implements IndexProvider {
         }
         try {
             QueryResponse response = solrServer.query(solrQuery);
-            logger.debug("Executed query [{}] in {} ms", query.getCondition(), response.getElapsedTime());
+
+            if (logger.isDebugEnabled())
+                logger.debug("Executed query [{}] in {} ms", query.getCondition(), response.getElapsedTime());
+
             int totalHits = response.getResults().size();
-            if (!query.hasLimit() && totalHits >= maxResults) {
+
+            if (!query.hasLimit() && totalHits >= maxResults)
                 logger.warn("Query result set truncated to first [{}] elements for query: {}", maxResults, query);
-            }
+
             result = new ArrayList<String>(totalHits);
             for (SolrDocument hit : response.getResults()) {
                 result.add(hit.getFieldValue(keyIdField).toString());
             }
-
         } catch (HttpSolrServer.RemoteSolrException e) {
             logger.error("Query did not complete because parameters were not recognized : ", e);
             throw new PermanentBackendException(e);
@@ -697,6 +712,7 @@ public class SolrIndex implements IndexProvider {
 
                 CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
 
+                createRequest.setConfigName(collection);
                 createRequest.setCollectionName(collection);
                 createRequest.setNumShards(numShards);
                 createRequest.setMaxShardsPerNode(maxShardsPerNode);

@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 public class SolrIndexTest extends IndexProviderTest {
 
     protected static final int NUM_SERVERS = 5;
-    protected static final String CONF_DIR_IN_ZK = "conf1";
+    protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge" };
 
     private static MiniSolrCloudCluster miniSolrCloudCluster;
 
@@ -39,8 +39,9 @@ public class SolrIndexTest extends IndexProviderTest {
         String solrHome = Joiner.on(File.separator).join(System.getProperty("user.dir"), "titan-solr", "target", "test-classes", "solr");
         File solrXml = new File(solrHome, "solr.xml");
         miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml, null, null);
-        uploadConfigDirToZk(Joiner.on(File.separator).join(solrHome, "store1"));
-        uploadConfigDirToZk(Joiner.on(File.separator).join(solrHome, "store2"));
+        for (String core : CORES) {
+            uploadConfigDirToZk(core, Joiner.on(File.separator).join(solrHome, core));
+        }
     }
 
     @AfterClass
@@ -65,7 +66,7 @@ public class SolrIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
 
         config.set(SolrIndex.ZOOKEEPER_URL, miniSolrCloudCluster.getZkServer().getZkAddress(), index);
-        config.set(SolrIndex.CORES, new String[] { "store1", "store2", "edge", "vertex" }, index);
+        config.set(SolrIndex.CORES, CORES, index);
         config.set(SolrIndex.KEY_FIELD_NAMES, new String[] {
                       "edge=document_id", "vertex=document_id",
                       "store1=document_id", "store2=document_id"
@@ -108,8 +109,8 @@ public class SolrIndexTest extends IndexProviderTest {
         return dispatchFilter.getCores().getZkController();
     }
 
-    protected static void uploadConfigDirToZk(String collectionConfigDir) throws Exception {
+    protected static void uploadConfigDirToZk(String coreName, String collectionConfigDir) throws Exception {
         ZkController zkController = getZkController();
-        zkController.uploadConfigDir(new File(collectionConfigDir), CONF_DIR_IN_ZK);
+        zkController.uploadConfigDir(new File(collectionConfigDir), coreName);
     }
 }
