@@ -70,8 +70,6 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
     private TitanIndex index;
     private RelationType indexRelationType;
 
-    private Map<String, IndexMutation> reindexDocs;
-
     public enum Counters {
         SUCCESSFUL_TRANSACTIONS,
         FAILED_TRANSACTIONS,
