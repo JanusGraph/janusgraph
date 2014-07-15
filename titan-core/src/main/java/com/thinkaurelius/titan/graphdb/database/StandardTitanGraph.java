@@ -260,14 +260,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         @Override
         public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
+            tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once and cache eviction works!
             TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.SchemaName, typeName),null);
+            tx.getTxHandle().enableCache();
             return v!=null?v.getLongId():null;
         }
 
         @Override
         public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
             SliceQuery query = queryCache.getQuery(type,dir);
-            return edgeQuery(schemaId, query, tx.getTxHandle());
+            tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once!
+            EntryList result = edgeQuery(schemaId, query, tx.getTxHandle());
+            tx.getTxHandle().enableCache();
+            return result;
         }
 
     };
@@ -590,7 +595,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 if (hasSecondaryPersistence) {
                     LogTxStatus status = LogTxStatus.SECONDARY_SUCCESS;
                     Map<String,Throwable> indexFailures = ImmutableMap.of();
-                    boolean triggerSuccess = false;
+                    boolean triggerSuccess = true;
 
                     try {
                         //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
@@ -604,6 +609,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
                         if (logTxIdentifier!=null) {
                             try {
+                                triggerSuccess = false;
                                 final Log triggerLog = backend.getTriggerLog(logTxIdentifier);
                                 Future<Message> env = triggerLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {

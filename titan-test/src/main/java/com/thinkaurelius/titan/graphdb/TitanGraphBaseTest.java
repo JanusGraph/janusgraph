@@ -55,6 +55,10 @@ public abstract class TitanGraphBaseTest {
 
     public abstract WriteConfiguration getConfiguration();
 
+    public Configuration getConfig() {
+        return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+    }
+
     @Before
     public void setUp() throws Exception {
         this.config = getConfiguration();

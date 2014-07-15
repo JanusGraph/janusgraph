@@ -4,13 +4,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.schema.SchemaAction;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -25,7 +31,13 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
+import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.PROPERTY;
 import static org.junit.Assert.*;
 
 /**
@@ -756,6 +768,205 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         //Test name mapping
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"ptext:ducks").properties()));
     }
+
+    private void addVertex(int time, String name, double height) {
+        newTx();
+        TitanVertex v = tx.addVertex();
+        v.setProperty("name",name);
+        v.setProperty("time",time);
+        v.setProperty("height",height);
+        newTx();
+    }
+
+    @Test
+    public void testIndexReplay() throws Exception {
+        final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
+        final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+        clopen( option(SYSTEM_LOG_TRANSACTIONS), true
+                ,option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS)
+                ,option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+                ,option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
+                ,option(STORAGE_WRITE_WAITTIME), new StandardDuration(300, TimeUnit.MILLISECONDS)
+                ,option(TestMockIndexProvider.INDEX_BACKEND_PROXY,INDEX), getConfig().get(INDEX_BACKEND,INDEX)
+                ,option(INDEX_BACKEND,INDEX), TestMockIndexProvider.class.getName()
+                ,option(TestMockIndexProvider.INDEX_MOCK_FAILADD,INDEX), true
+        );
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.buildIndex("mi",Vertex.class).indexKey(name, Mapping.TEXT.getParameter()).indexKey(age).buildMixedIndex(INDEX);
+        finishSchema();
+        TitanVertex vs[] = new TitanVertex[4];
+
+        vs[0] = tx.addVertex();
+        ElementHelper.setProperties(vs[0],"name","Big Boy Bobson","age",55);
+        newTx();
+        vs[1] = tx.addVertex();
+        vs[2] = tx.addVertex();
+        vs[3] = tx.addVertex();
+        ElementHelper.setProperties(vs[1],"name","Long Little Lewis","age",35);
+        ElementHelper.setProperties(vs[2],"name","Tall Long Tiger","age",75);
+        ElementHelper.setProperties(vs[3],"name","Long John Don","age",15);
+        newTx();
+        vs[2] = tx.getVertex(vs[2].getLongId());
+        vs[2].remove();
+        vs[3] = tx.getVertex(vs[3].getLongId());
+        vs[3].setProperty("name","Bad Boy Badsy");
+        vs[3].removeProperty("age");
+        newTx();
+        vs[0] = tx.getVertex(vs[0].getLongId());
+        vs[0].setProperty("age", 66);
+        newTx();
+
+        clopen();
+        //Just to make sure nothing has been persisted to index
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"boy"),
+                ElementCategory.VERTEX,0,new boolean[]{true,true},"mi");
+        /*
+        Transaction Recovery
+         */
+        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph,startTime,TimeUnit.MILLISECONDS);
+        //wait
+        Thread.sleep(12000L);
+
+        recovery.shutdown();
+        long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
+
+
+        clopen();
+
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"boy"),
+                ElementCategory.VERTEX,2,new boolean[]{true,true},"mi");
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"long"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"mi");
+//        Vertex v = Iterables.getOnlyElement(tx.query().has("name",Text.CONTAINS,"long").vertices());
+//        System.out.println(v.getProperty("age"));
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "long").interval("age", 30, 40),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
+        evaluateQuery(tx.query().has("age",75),
+                ElementCategory.VERTEX,0,new boolean[]{true,true},"mi");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "boy").interval("age", 60, 70),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"mi");
+        evaluateQuery(tx.query().interval("age",0,100),
+                ElementCategory.VERTEX,2,new boolean[]{true,true},"mi");
+
+
+        assertEquals(1,recoveryStats[0]); //schema transaction was successful
+        assertEquals(4,recoveryStats[1]); //all 4 index transaction had provoked errors in the indexing backend
+    }
+
+    @Test
+    public void testIndexUpdatesWithoutReindex() throws InterruptedException {
+        Object[] settings = new Object[]{option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0, TimeUnit.MILLISECONDS),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        };
+
+        clopen(settings);
+        final String defName = "Mountain rocks are great friends";
+        final int defTime = 5;
+        final double defHeight = 101.1;
+
+        //Creates types and index only one key
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey height = mgmt.makePropertyKey("height").dataType(Decimal.class).make();
+        TitanGraphIndex index = mgmt.buildIndex("theIndex",Vertex.class)
+                .indexKey(name, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+        finishSchema();
+
+        //Add initial data
+        addVertex(defTime,defName,defHeight);
+
+        //Indexes should not yet be in use
+        clopen(settings);
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("time",5),
+                ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx.query().interval("height",100,200),
+                ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
+                ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+                ElementCategory.VERTEX,1,new boolean[]{false,true},"theIndex");
+        newTx();
+
+        //Add another key to index ------------------------------------------------------
+        finishSchema();
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),mgmt.getPropertyKey("time"));
+        finishSchema();
+        newTx();
+
+        //Add more data
+        addVertex(defTime,defName,defHeight);
+        tx.commit();
+        //Should not yet be able to enable since not yet registered
+        try {
+            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+            fail();
+        } catch (IllegalArgumentException e) {}
+//        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX);
+        mgmt.commit();
+
+        Thread.sleep(2000);
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        //Add more data
+        addVertex(defTime,defName,defHeight);
+
+        //One more key should be indexed but only sees partial data
+        clopen(settings);
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks"),
+                ElementCategory.VERTEX,3,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("time",5),
+                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().interval("height",100,200),
+                ElementCategory.VERTEX,3,new boolean[]{false,true});
+        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
+                ElementCategory.VERTEX,2,new boolean[]{false,true},"theIndex");
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+                ElementCategory.VERTEX,2,new boolean[]{false,true},"theIndex");
+        newTx();
+
+        //Add another key to index ------------------------------------------------------
+        finishSchema();
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),mgmt.getPropertyKey("height"));
+        finishSchema();
+
+        //Add more data
+        addVertex(defTime,defName,defHeight);
+        tx.commit();
+        mgmt.commit();
+
+        Thread.sleep(2000);
+        finishSchema();
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        //Add more data
+        addVertex(defTime,defName,defHeight);
+
+        //One more key should be indexed but only sees partial data
+        clopen(settings);
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks"),
+                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("time",5),
+                ElementCategory.VERTEX,4,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().interval("height",100,200),
+                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
+                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
+        newTx();
+
+
+    }
+
+
 
    /* ==================================================================================
                             SPECIAL CONCURRENT UPDATE CASES

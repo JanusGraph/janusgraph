@@ -533,13 +533,13 @@ public class Backend implements LockerProvider {
         put("inmemory", null);
     }};
 
-    private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
+    public static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
         put("lucene", "com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
         put("elasticsearch", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
         put("es", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
     }};
 
-    private static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
+    public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
         put("default","com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager");
     }};
 

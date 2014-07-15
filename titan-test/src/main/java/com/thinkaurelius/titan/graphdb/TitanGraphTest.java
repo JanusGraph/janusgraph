@@ -25,6 +25,7 @@ import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
@@ -53,6 +54,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
 
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1379,6 +1381,70 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v205"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
+
+    }
+
+    @Test
+    public void testIndexUpdateSyncWithMultipleInstances() throws InterruptedException {
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        );
+
+        StandardTitanGraph graph2 = (StandardTitanGraph) TitanFactory.open(config);
+        TitanTransaction tx2;
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        ElementHelper.setProperties(tx.addVertex(),"name","v1");
+        newTx();
+        evaluateQuery(tx.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
+        tx2 = graph2.newTransaction();
+        evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
+        //Leave tx2 open to delay acknowledgement
+
+        mgmt.buildIndex("theIndex",Vertex.class).indexKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+        mgmt.commit();
+
+        TitanTransaction tx3 = graph2.newTransaction();
+        ElementHelper.setProperties(tx3.addVertex(),"name","v2");
+        tx3.commit();
+        newTx();
+        ElementHelper.setProperties(tx.addVertex(),"name","v3");
+        tx.commit();
+
+        Thread.sleep(2000); //Wait for the index to register in graph2
+        finishSchema();
+        try {
+            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+            fail(); //Open tx2 should not make this possible
+        } catch (IllegalArgumentException e) {}
+        finishSchema();
+        tx2.commit(); //Release transaction and wait a little for registration which should make enabling possible
+        Thread.sleep(500);
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        tx2 = graph2.newTransaction();
+        ElementHelper.setProperties(tx2.addVertex(),"name","v4"); //Should be added to index but index not yet enabled
+        tx2.commit();
+
+        newTx();
+        evaluateQuery(tx.query().has("name","v1"),ElementCategory.VERTEX,0,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name","v2"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+
+        Thread.sleep(2000);
+        tx2 = graph2.newTransaction();
+        evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,0,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name","v2"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        tx2.commit();
+
+        graph2.shutdown();
 
     }
 

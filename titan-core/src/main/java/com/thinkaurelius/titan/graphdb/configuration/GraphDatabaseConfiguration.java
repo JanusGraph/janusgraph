@@ -393,12 +393,12 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
             "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(100000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(100L, TimeUnit.SECONDS));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(10L, TimeUnit.SECONDS));
 
 
     /**
