@@ -30,5 +30,4 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         graph.shutdown();
         super.testCompetingThreads();
     }
-
 }

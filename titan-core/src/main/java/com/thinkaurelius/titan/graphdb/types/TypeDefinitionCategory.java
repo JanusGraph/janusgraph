@@ -2,10 +2,11 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
@@ -16,8 +17,8 @@ import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Joshua Shinavier (http://fortytwo.net)
  */
-
 public enum TypeDefinitionCategory {
 
     //Relation Types
@@ -42,23 +43,32 @@ public enum TypeDefinitionCategory {
     //Consistency Types
     CONSISTENCY_LEVEL(ConsistencyModifier.class),
 
+    // type modifiers
+    TTL(Integer.class),
+
     //Vertex Label
     PARTITIONED(Boolean.class),
     STATIC(Boolean.class),
 
     //Schema Edges
     RELATIONTYPE_INDEX(),
-    CONSISTENCY_MODIFIER(),
+    TYPE_MODIFIER(),
     INDEX_FIELD(RelationCategory.EDGE,Parameter[].class),
     INDEX_SCHEMA_CONSTRAINT();
 
     public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
     public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
-    public static final Set<TypeDefinitionCategory> CONSISTENCY_MODIFIER_DEFINITION_CATEGORIES = ImmutableSet.of(CONSISTENCY_LEVEL);
     public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
     public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED,STATIC);
+    public static final Set<TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES;
 
-
+    static {
+        ImmutableSet.Builder<TypeDefinitionCategory> builder = ImmutableSet.builder();
+        for (ModifierType type : ModifierType.values()) {
+            builder.add(type.getCategory());
+        }
+        TYPE_MODIFIER_DEFINITION_CATEGORIES = builder.build();
+    }
 
     private final RelationCategory relationCategory;
     private final Class dataType;

@@ -14,6 +14,8 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
@@ -55,6 +57,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public final boolean supportsNumeric;
     public final boolean supportsText;
 
+    public IndexFeatures indexFeatures;
+
     private static final Logger log =
             LoggerFactory.getLogger(TitanIndexTest.class);
 
@@ -65,6 +69,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     public abstract boolean supportsLuceneStyleQueries();
+
+    @Override
+    public void open(WriteConfiguration config) {
+        super.open(config);
+        indexFeatures = graph.getBackend().getIndexFeatures().get(INDEX);
+    }
 
     @Rule
     public TestName methodName = new TestName();
@@ -104,7 +114,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "Hulu").edges()));
         for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez",u.getProperty("name"));
-        v = Iterables.getOnlyElement(tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        v = (Vertex) Iterables.getOnlyElement(tx.query().has("name", Text.CONTAINS, "marko").vertices());
         v.setProperty("name", "Marko");
         e = Iterables.getOnlyElement(v.getEdges(Direction.OUT));
         e.setProperty("name","Tubu Rubu");
@@ -967,6 +977,168 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
 
+
+   /* ==================================================================================
+                                     TIME-TO-LIVE
+     ==================================================================================*/
+
+    @Test
+    public void testVertexTTLWithMixedIndices() throws Exception {
+        if (!features.hasCellTTL() || !indexFeatures.supportsDocumentTTL()) {
+            return;
+        }
+
+        PropertyKey name = makeKey("name", String.class);
+        PropertyKey time = makeKey("time", Long.class);
+        PropertyKey text = makeKey("text", String.class);
+
+        VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
+        mgmt.setTTL(event, 2, TimeUnit.SECONDS);
+
+        mgmt.buildIndex("index1",Vertex.class).
+                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(INDEX);
+        mgmt.buildIndex("index2",Vertex.class).indexOnly(event).
+                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+
+        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
+        finishSchema();
+
+        Vertex v1 = tx.addVertex("event");
+        v1.setProperty("name", "first event");
+        v1.setProperty("text", "this text will help to identify the first event");
+        long time1 = System.currentTimeMillis();
+        v1.setProperty("time", time1);
+        Vertex v2 = tx.addVertex("event");
+        v2.setProperty("name", "second event");
+        v2.setProperty("text", "this text won't match");
+        long time2 = time1 + 1;
+        v2.setProperty("time", time2);
+
+        time = tx.getPropertyKey("time");
+        evaluateQuery(tx.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+
+
+        clopen();
+
+        Object v1Id = v1.getId();
+        Object v2Id = v2.getId();
+
+        time = tx.getPropertyKey("time");
+        evaluateQuery(tx.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,1,new boolean[]{true,true}, time, Order.DESC,"index1");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+
+        v1 = tx.getVertex(v1Id);
+        v2 = tx.getVertex(v1Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+
+        Thread.sleep(6000); // default ttl recycle interval is 5s
+
+        clopen();
+        time = tx.getPropertyKey("time");
+
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","event"),
+                ElementCategory.VERTEX,0,new boolean[]{true,true},"index2");
+        evaluateQuery(tx.query().has("name","first event").orderBy(time,Order.DESC),
+                ElementCategory.VERTEX,0,new boolean[]{true,true}, time, Order.DESC,"index1");
+
+
+        v1 = tx.getVertex(v1Id);
+        v2 = tx.getVertex(v2Id);
+        assertNull(v1);
+        assertNull(v2);
+    }
+
+    @Test
+    public void testEdgeTTLWithMixedIndices() throws Exception {
+        if (!features.hasCellTTL() || !indexFeatures.supportsDocumentTTL()) {
+            return;
+        }
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
+        PropertyKey time = makeKey("time", Long.class);
+
+        EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTTL(label, 2, TimeUnit.SECONDS);
+
+        mgmt.buildIndex("index1",Edge.class).
+                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(INDEX);
+        mgmt.buildIndex("index2",Edge.class).indexOnly(label).
+                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+
+        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
+        assertEquals(2, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
+        finishSchema();
+
+        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
+
+        Edge e1 = tx.addEdge(v1, v2, "likes");
+        e1.setProperty("name", "v1 likes v2");
+        e1.setProperty("text", "this will help to identify the edge");
+        long time1 = System.currentTimeMillis();
+        e1.setProperty("time", time1);
+        Edge e2 = tx.addEdge(v2, v3, "likes");
+        e2.setProperty("name", "v2 likes v3");
+        e2.setProperty("text", "this won't match anything");
+        long time2 = time1 + 1;
+        e2.setProperty("time", time2);
+        Object e1Id = e1.getId();
+        Object e2Id = e2.getId();
+
+        clopen();
+
+        time = tx.getPropertyKey("time");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","likes"),
+                ElementCategory.EDGE,1,new boolean[]{true,true},"index2");
+        evaluateQuery(tx.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
+                ElementCategory.EDGE,1,new boolean[]{true,true}, time, Order.DESC,"index1");
+        v1 = tx.getVertex(v1.getLongId());
+        v2 = tx.getVertex(v2.getLongId());
+        v3 = tx.getVertex(v3.getLongId());
+        e1 = tx.getEdge(e1Id);
+        e2 = tx.getEdge(e1Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        assertNotNull(v3);
+        assertNotNull(e1);
+        assertNotNull(e2);
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getEdges(Direction.OUT).iterator().hasNext());
+
+
+        Thread.sleep(6000);
+        clopen();
+
+        time = tx.getPropertyKey("time");
+        // ...indexes have expired
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has("label","likes"),
+                ElementCategory.EDGE,0,new boolean[]{true,true},"index2");
+        evaluateQuery(tx.query().has("name","v2 likes v3").orderBy(time,Order.DESC),
+                ElementCategory.EDGE,0,new boolean[]{true,true}, time, Order.DESC,"index1");
+
+        v1 = tx.getVertex(v1.getLongId());
+        v2 = tx.getVertex(v2.getLongId());
+        v3 = tx.getVertex(v3.getLongId());
+        e1 = tx.getEdge(e1Id);
+        e2 = tx.getEdge(e1Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        assertNotNull(v3);
+        // edges have expired from the graph...
+        assertNull(e1);
+        assertNull(e2);
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(v2.getEdges(Direction.OUT).iterator().hasNext());
+
+    }
 
    /* ==================================================================================
                             SPECIAL CONCURRENT UPDATE CASES

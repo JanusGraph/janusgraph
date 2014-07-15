@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 
 /**
  * Describes features supported by a storage backend.
@@ -93,14 +94,35 @@ public interface StoreFeatures {
     public boolean hasTimestamps();
 
     /**
+     * If this storage backend supports one particular type of data
+     * timestamp/version better than others. For example, HBase server-side TTLs
+     * assume row timestamps are in milliseconds; some Cassandra client utils
+     * assume timestamps in microseconds. This method should return null if the
+     * backend has no preference for a specific timestamp resolution.
+     *
+     * This method will be ignored by Titan if {@link #hasTimestamps()} is
+     * false.
+     *
+     * @return null or a Timestamps enum value
+     */
+    public Timestamps getPreferredTimestamps();
+
+    /**
      * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
      * is provided as a meta-data annotation on the {@link com.thinkaurelius.titan.diskstorage.Entry}, the entry will
      * disappear from the storage backend after the given amount of time.
      *
      * @return true if the storage backend supports TTL, else false
      */
-    public boolean hasTTL();
+    public boolean hasCellTTL();
 
+    /**
+     * Returns true if this storage backend supports time-to-live (TTL) settings on a per-store basis. That means, that
+     * entries added to such a store will require after a configured amount of time.
+     *
+     * @return
+     */
+    public boolean hasStoreTTL();
 
     /**
      * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication
@@ -109,7 +131,6 @@ public interface StoreFeatures {
      * @return
      */
     public boolean hasVisibility();
-
 
     /**
      * Get a transaction configuration that enforces key consistency. This

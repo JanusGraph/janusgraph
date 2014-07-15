@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.IntegerSerializer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.util.encoding.StringEncoding;
 
@@ -160,7 +161,6 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             caches[currentIndex]=cache;
         }
 
-        @Override
         public boolean hasMetaData() {
             verifyAccess();
             return !metadata.isEmpty();
@@ -519,6 +519,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     public static MetaDataSerializer getSerializer(EntryMetaData meta) {
         switch (meta) {
             case TTL:
+                return IntSerializer.INSTANCE;
             case TIMESTAMP:
                 return LongSerializer.INSTANCE;
             case VISIBILITY:
@@ -537,6 +538,29 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
     }
 
+    private static enum IntSerializer implements MetaDataSerializer<Integer> {
+
+        INSTANCE;
+
+        @Override
+        public int getByteLength(Integer value) {
+            return 4;
+        }
+
+        @Override
+        public void write(byte[] data, int startPos, Integer value) {
+            assert data.length>=startPos+getByteLength(value);
+            assert value!=null;
+            StaticArrayBuffer.putInt(data, startPos, value);
+        }
+
+        @Override
+        public Integer read(byte[] data, int startPos) {
+            assert data.length>=startPos+4;
+            return StaticArrayBuffer.getInt(data, startPos);
+        }
+    }
+      
     private static enum LongSerializer implements MetaDataSerializer<Long> {
 
         INSTANCE;

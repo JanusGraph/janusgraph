@@ -176,7 +176,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 Preconditions.checkArgument(!processorLogs.containsKey(userLogName),
                         "Processors have already been registered for user log: %s",userLogName);
                 try {
-                    Log log = graph.getBackend().getTriggerLog(userLogName);
+                    Log log = graph.getBackend().getUserLog(userLogName);
                     log.registerReaders(readMarker,Iterables.transform(processors, new Function<ChangeProcessor, MessageReader>() {
                         @Nullable
                         @Override

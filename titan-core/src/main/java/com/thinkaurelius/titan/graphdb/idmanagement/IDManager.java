@@ -508,6 +508,7 @@ public class IDManager {
 
     public long getPartitionHashForId(long id) {
         Preconditions.checkArgument(id>0);
+        Preconditions.checkState(partitionBits>0, "no partition bits");
         long result = 0;
         int offset = 0;
         while (offset<Long.SIZE) {

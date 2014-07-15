@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import org.junit.*;
@@ -42,7 +43,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Before
     public void setUp() throws Exception {
-        openStorageManager().clearStorage();
+        StoreManager m = openStorageManager();
+        m.clearStorage();
+        m.close();
         open();
     }
 
@@ -914,7 +917,108 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         examineGetKeysResults(keyIterator, 10, 40, 1);
     }
 
+    @Test
+    public void testTtl() throws Exception {
+
+        if (!manager.getFeatures().hasCellTTL()) {
+            return;
+        }
+
+        StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
+
+        int ttls[] = new int[]{0, 1, 2};
+        List<Entry> additions = new LinkedList<Entry>();
+        for (int i = 0; i < ttls.length; i++) {
+            StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
+            StaticArrayEntry entry = (StaticArrayEntry) StaticArrayEntry.of(col, col);
+            entry.setMetaData(EntryMetaData.TTL, ttls[i]);
+            additions.add(entry);
+        }
+
+        store.mutate(key, additions, KeyColumnValueStore.NO_DELETIONS, tx);
+        tx.commit();
+        // commitTime starts just after the commit, so we won't check for expiration too early
+        long commitTime = System.currentTimeMillis();
+
+        tx = startTx();
+
+        StaticBuffer columnStart = KeyColumnValueStoreUtil.longToByteBuffer(0);
+        StaticBuffer columnEnd = KeyColumnValueStoreUtil.longToByteBuffer(ttls.length);
+        List<Entry> result =
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
+        Assert.assertEquals(ttls.length, result.size());
+
+        // wait for one cell to expire
+        Thread.sleep(commitTime + 1001 - System.currentTimeMillis());
+
+        // cells immediately expire upon TTL, even before rollback()
+        result =
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
+        Assert.assertEquals(ttls.length - 1, result.size());
+
+        tx.rollback();
+        result =
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
+        Assert.assertEquals(ttls.length - 1, result.size());
+
+        Thread.sleep(commitTime + 2001 - System.currentTimeMillis());
+        tx.rollback();
+        result =
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
+        Assert.assertEquals(ttls.length - 2, result.size());
+
+        // cell 0 doesn't expire due to TTL of 0 (infinite)
+        Thread.sleep(commitTime + 4001 - System.currentTimeMillis());
+        tx.rollback();
+        result =
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
+        Assert.assertEquals(ttls.length - 2, result.size());
+    }
+
+    @Test
+    public void testStoreTTL() throws Exception {
+        KeyColumnValueStoreManager storeManager = manager;
+        if (storeManager.getFeatures().hasCellTTL()) {
+            storeManager = new TTLKVCSManager(storeManager,101);
+        } else if (!storeManager.getFeatures().hasStoreTTL()) {
+            return;
+        }
+
+        assertTrue(storeManager.getFeatures().hasStoreTTL());
+        assertTrue(storeManager instanceof CustomizeStoreKCVSManager);
+
+        // 5 seconds TTL on every column
+        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) storeManager).openDatabase("testStore_with_TTL", 3);
+
+        populateDBWith100Keys(storeWithTTL);
+
+        tx.commit();
+        tx = startTx();
+
+        final StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(2);
+
+        StaticBuffer start = KeyColumnValueStoreUtil.stringToByteBuffer("a");
+        StaticBuffer end = KeyColumnValueStoreUtil.stringToByteBuffer("d");
+
+        EntryList results = storeWithTTL.getSlice(new KeySliceQuery(key, new SliceQuery(start, end)), tx);
+        Assert.assertEquals(3, results.size());
+
+        Thread.sleep(4000); // let's sleep for 4 seconds
+
+        tx.commit();
+        tx = startTx();
+
+        results = storeWithTTL.getSlice(new KeySliceQuery(key, new SliceQuery(start, end)), tx);
+        Assert.assertEquals(0, results.size()); // should be empty if TTL was applied properly
+
+        storeWithTTL.close();
+    }
+
     protected void populateDBWith100Keys() throws Exception {
+        populateDBWith100Keys(store);
+    }
+
+    protected void populateDBWith100Keys(KeyColumnValueStore store) throws Exception {
         Random random = new Random();
 
         for (int i = 1; i <= 100; i++) {

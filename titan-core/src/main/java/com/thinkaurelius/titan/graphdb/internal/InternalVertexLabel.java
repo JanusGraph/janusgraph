@@ -9,5 +9,7 @@ public interface InternalVertexLabel extends VertexLabel {
 
     public boolean hasDefaultConfiguration();
 
+    public int getTTL();
+
 
 }

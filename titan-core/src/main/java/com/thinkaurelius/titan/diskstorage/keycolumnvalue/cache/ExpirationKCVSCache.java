@@ -80,7 +80,7 @@ public class ExpirationKCVSCache extends KCVSCache {
         incActionBy(1, CacheMetricsAction.RETRIEVAL,txh);
         if (isExpired(query)) {
             incActionBy(1, CacheMetricsAction.MISS,txh);
-            return store.getSlice(query, getTx(txh));
+            return store.getSlice(query, unwrapTx(txh));
         }
 
         try {
@@ -88,7 +88,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                 @Override
                 public EntryList call() throws Exception {
                     incActionBy(1, CacheMetricsAction.MISS,txh);
-                    return store.getSlice(query, getTx(txh));
+                    return store.getSlice(query, unwrapTx(txh));
                 }
             });
         } catch (Exception e) {
@@ -117,7 +117,7 @@ public class ExpirationKCVSCache extends KCVSCache {
         //Request remaining ones from backend
         if (!remainingKeys.isEmpty()) {
             incActionBy(remainingKeys.size(), CacheMetricsAction.MISS,txh);
-            Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, getTx(txh));
+            Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, unwrapTx(txh));
             for (int i=0;i<keys.size();i++) {
                 StaticBuffer key = keys.get(i);
                 EntryList subresult = subresults.get(key);

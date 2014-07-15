@@ -73,7 +73,6 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
         return this;
     }
 
-
     @Override
     public EdgeLabel make() {
         TypeDefinitionMap definition = makeDefinition();

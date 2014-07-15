@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.database.indexing;
 
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
@@ -14,6 +15,8 @@ public class StandardIndexInformation implements IndexInformation {
 
     public static final StandardIndexInformation INSTANCE = new StandardIndexInformation();
 
+    private static final IndexFeatures STANDARD_FEATURES = new IndexFeatures.Builder().build();
+
     private StandardIndexInformation() {
     }
 
@@ -25,5 +28,10 @@ public class StandardIndexInformation implements IndexInformation {
     @Override
     public boolean supports(KeyInformation information) {
         return true;
+    }
+
+    @Override
+    public IndexFeatures getFeatures() {
+        return STANDARD_FEATURES;
     }
 }

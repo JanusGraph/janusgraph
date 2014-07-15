@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.testcategory.SerialTests;
@@ -132,7 +133,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             assertEquals(Multiplicity.MULTI,knows.getMultiplicity());
             assertFalse(person.isPartitioned());
             assertEquals(Integer.class,uid.getDataType());
-            //Retrieving in and out relations for the relation types
+            //Retrieving in and out relations for the relation types...
             InternalRelationType namei = (InternalRelationType)name;
             InternalRelationType knowsi = (InternalRelationType)knows;
             InternalRelationType uidi = (InternalRelationType)uid;
@@ -146,10 +147,12 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             assertEquals(1, Iterables.size(namei.getRelationIndexes()));
             assertEquals(namei, Iterables.getOnlyElement(namei.getRelationIndexes()));
             assertEquals(knowsi, Iterables.getOnlyElement(knowsi.getRelationIndexes()));
+            //.. and vertex labels
+            assertEquals(0,((InternalVertexLabel)person).getTTL());
 
             tx.commit();
             //Needs to read on first iteration, after that it doesn't change anymore
-            verifyStoreMetrics(EDGESTORE_NAME,ImmutableMap.of(M_GET_SLICE, 18l));
+            verifyStoreMetrics(EDGESTORE_NAME,ImmutableMap.of(M_GET_SLICE, 19l));
             verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 7l, M_ACQUIRE_LOCK, 3l));
         }
 

@@ -1,9 +1,12 @@
 package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.BaseTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * The TitanManagement interface provides methods to define, update, and inspect the schema of a Titan graph.
@@ -229,6 +232,25 @@ public interface TitanManagement extends TitanConfiguration {
      */
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency);
 
+    /**
+     * Retrieves the time-to-live for the given {@link TitanSchemaType} as a {@link Duration}.
+     * If none has been explicitly defined, a zero-length {@link Duration} is returned.
+     *
+     * @param type
+     * @return
+     */
+    public Duration getTTL(TitanSchemaType type);
+
+    /**
+     * Sets the time-to-live for the given {@link TitanSchemaType}. The most granular time unit used for TTL values
+     *  is seconds. Any argument will be rounded to seconds if it is more granular than that.
+     *
+     * @param type the affected type
+     * @param ttl time-to-live
+     * @param unit time unit of the specified ttl
+     */
+    public void setTTL(TitanSchemaType type, int ttl, TimeUnit unit);
+
     /*
     ##################### SCHEMA UPDATE ##########################
      */
@@ -249,7 +271,6 @@ public interface TitanManagement extends TitanConfiguration {
      * @param updateAction
      */
     public void updateIndex(TitanIndex index, SchemaAction updateAction);
-
 
     /*
     ##################### PROXY FOR TITANTRANSACTION ##########################

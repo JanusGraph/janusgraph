@@ -36,5 +36,4 @@ public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
     public final boolean isEdgeLabel() {
         return true;
     }
-
 }

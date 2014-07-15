@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -177,7 +178,14 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
+
                         column.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
+
+                        Integer ttl = (Integer) ent.getMetaData().get(EntryMetaData.TTL);
+                        if (null != ttl && ttl > 0) {
+                            column.setTtl(ttl);
+                        }
+
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setColumn_or_supercolumn(cosc);

@@ -28,9 +28,10 @@ public class StaticArrayEntryTest {
 
     private static final RelationCache cache = new RelationCache(Direction.OUT,5,105,"Hello");
 
-    private static final EntryMetaData[] metaSchema = { EntryMetaData.TIMESTAMP, EntryMetaData.VISIBILITY};
+    private static final EntryMetaData[] metaSchema = { EntryMetaData.TIMESTAMP, EntryMetaData.TTL, EntryMetaData.VISIBILITY};
     private static final Map<EntryMetaData,Object> metaData = new EntryMetaData.Map() {{
         put(EntryMetaData.TIMESTAMP,Long.valueOf(101));
+        put(EntryMetaData.TTL, 42);
         put(EntryMetaData.VISIBILITY,"SOS/K5a-89 SOS/sdf3");
     }};
 
@@ -230,7 +231,16 @@ public class StaticArrayEntryTest {
         }
     }
 
-
+    @Test
+    public void testTTLMetadata() throws Exception {
+        WriteBuffer wb = new WriteByteBuffer(128);
+        wb.putInt(1).putInt(2).putInt(3).putInt(4);
+        int valuePos = wb.getPosition();
+        wb.putInt(5).putInt(6);
+        StaticArrayEntry entry = new StaticArrayEntry(wb.getStaticBuffer(),valuePos);
+        entry.setMetaData(EntryMetaData.TTL, 42);
+        assertEquals(42, entry.getMetaData().get(EntryMetaData.TTL));
+    }
 
     private static void checkEntry(Entry e, Map<Integer,Long> entries) {
         ReadBuffer rb = e.asReadBuffer();

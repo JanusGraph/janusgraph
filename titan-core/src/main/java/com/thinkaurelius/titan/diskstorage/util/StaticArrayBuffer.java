@@ -166,10 +166,21 @@ public class StaticArrayBuffer implements StaticBuffer {
     @Override
     public int getInt(int position) {
         int base = require(position, INT_LEN);
-        return (array[base++] & 0xFF) << 24 //
-                | (array[base++] & 0xFF) << 16 //
-                | (array[base++] & 0xFF) << 8 //
-                | array[base++] & 0xFF;
+        return getInt(array, base);
+    }
+
+    public static int getInt(byte[] array, int offset) {
+        return (array[offset++] & 0xFF) << 24
+                | (array[offset++] & 0xFF) << 16
+                | (array[offset++] & 0xFF) << 8
+                | array[offset] & 0xFF;
+    }
+
+    public static void putInt(byte[] array, int offset, final int value) {
+        array[offset++]= (byte)((value >> 24) & 0xFF);
+        array[offset++]= (byte)((value >> 16) & 0xFF);
+        array[offset++]= (byte)((value >> 8) & 0xFF);
+        array[offset]= (byte)(value & 0xFF);
     }
 
     @Override

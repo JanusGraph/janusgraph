@@ -16,19 +16,16 @@ import java.util.Map;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class KCVSCache implements KeyColumnValueStore {
+public abstract class KCVSCache extends KCVSProxy {
 
     public static final List<Entry> NO_DELETIONS = ImmutableList.of();
 
     private final String metricsName;
     private final boolean validateKeysOnly = true;
 
-    protected final KeyColumnValueStore store;
-
     protected KCVSCache(KeyColumnValueStore store, String metricsName) {
+        super(store);
         this.metricsName = metricsName;
-        Preconditions.checkNotNull(store);
-        this.store = store;
     }
 
     protected boolean hasValidateKeysOnly() {
@@ -56,44 +53,18 @@ public abstract class KCVSCache implements KeyColumnValueStore {
         ((CacheTransaction) txh).mutate(this, key, additions, deletions);
     }
 
-    //############### SIMPLE PROXY ###########
-
-    protected final StoreTransaction getTx(StoreTransaction txh) {
+    @Override
+    protected final StoreTransaction unwrapTx(StoreTransaction txh) {
         assert txh instanceof CacheTransaction;
         return ((CacheTransaction) txh).getWrappedTransaction();
     }
 
     public EntryList getSliceNoCache(KeySliceQuery query, StoreTransaction txh) throws BackendException {
-        return store.getSlice(query,getTx(txh));
+        return store.getSlice(query,unwrapTx(txh));
     }
 
     public Map<StaticBuffer, EntryList> getSliceNoCache(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
-        return store.getSlice(keys,query,getTx(txh));
-    }
-
-    @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
-        store.acquireLock(key, column, expectedValue, getTx(txh));
-    }
-
-    @Override
-    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws BackendException {
-        return store.getKeys(keyQuery, getTx(txh));
-    }
-
-    @Override
-    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws BackendException {
-        return store.getKeys(columnQuery, getTx(txh));
-    }
-
-    @Override
-    public String getName() {
-        return store.getName();
-    }
-
-    @Override
-    public void close() throws BackendException {
-        store.close();
+        return store.getSlice(keys,query,unwrapTx(txh));
     }
 
 }

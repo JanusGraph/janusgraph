@@ -59,6 +59,7 @@ public class LuceneIndex implements IndexProvider {
     private static final int MAX_STRING_FIELD_LEN = 256;
 
     private static final Version LUCENE_VERSION = Version.LUCENE_41;
+    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().build();
 
     private static final int GEO_MAX_LEVELS = 11;
 
@@ -163,6 +164,7 @@ public class LuceneIndex implements IndexProvider {
 
                     Preconditions.checkNotNull(doc);
                     for (IndexEntry del : mutation.getDeletions()) {
+                        Preconditions.checkArgument(!del.hasMetaData(),"Lucene index does not support indexing meta data: %s",del);
                         String key = del.field;
                         if (doc.getField(key) != null) {
                             if (log.isTraceEnabled())
@@ -265,6 +267,7 @@ public class LuceneIndex implements IndexProvider {
                                KeyInformation.IndexRetriever informations) {
         Preconditions.checkNotNull(doc);
         for (IndexEntry e : content) {
+            Preconditions.checkArgument(!e.hasMetaData(),"Lucene index does not support indexing meta data: %s",e);
             if (log.isTraceEnabled())
                 log.trace("Adding field [{}] on document [{}]", e.field, docID);
 
@@ -524,6 +527,11 @@ public class LuceneIndex implements IndexProvider {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING || mapping==Mapping.TEXT) return true;
         }
         return false;
+    }
+
+    @Override
+    public IndexFeatures getFeatures() {
+        return LUCENE_FEATURES;
     }
 
     @Override

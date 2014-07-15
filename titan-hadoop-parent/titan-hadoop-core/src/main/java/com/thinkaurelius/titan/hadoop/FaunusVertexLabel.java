@@ -45,6 +45,11 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
     }
 
     @Override
+    public int getTTL() {
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return getName();
     }

@@ -21,5 +21,4 @@ public interface CompositeIndexType extends IndexType {
     public Cardinality getCardinality();
 
     public ConsistencyModifier getConsistencyModifier();
-
 }

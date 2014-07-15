@@ -45,6 +45,10 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         this.mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
     }
 
+    public void add(String store, String docid, IndexEntry entry, boolean isNew) {
+        getIndexMutation(store,docid, isNew, false).addition(new IndexEntry(entry.field, entry.value, entry.getMetaData()));
+    }
+
     public void add(String store, String docid, String key, Object value, boolean isNew) {
         getIndexMutation(store,docid,isNew,false).addition(new IndexEntry(key,value));
     }

@@ -124,6 +124,12 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
         assertEquals(Collections.emptyMap(), mgr.getCompressionOptions(cf));
     }
 
+    @Test
+    public void testTTLSupported() throws Exception {
+        StoreFeatures features = manager.getFeatures();
+        assertTrue(features.hasCellTTL());
+    }
+
     @Override
     public AbstractCassandraStoreManager openStorageManager() throws BackendException {
         return openStorageManager(getBaseStorageConfiguration());

@@ -18,5 +18,4 @@ public class Titan {
     public static String version() {
         return TitanConstants.VERSION;
     }
-
 }

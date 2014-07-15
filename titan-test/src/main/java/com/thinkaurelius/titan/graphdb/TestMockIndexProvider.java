@@ -85,4 +85,9 @@ public class TestMockIndexProvider implements IndexProvider {
     public boolean supports(KeyInformation information) {
         return index.supports(information);
     }
+
+    @Override
+    public IndexFeatures getFeatures() {
+        return index.getFeatures();
+    }
 }

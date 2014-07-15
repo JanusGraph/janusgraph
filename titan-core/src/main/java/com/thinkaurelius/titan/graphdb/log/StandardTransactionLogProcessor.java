@@ -233,7 +233,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             BackendOperation.execute(new Callable<Boolean>(){
                 @Override
                 public Boolean call() throws Exception {
-                    final Log triggerLog = graph.getBackend().getTriggerLog(logTxIdentifier);
+                    final Log triggerLog = graph.getBackend().getUserLog(logTxIdentifier);
                     Future<Message> env = triggerLog.add(userLogContent);
                     if (env.isDone()) {
                         env.get();
