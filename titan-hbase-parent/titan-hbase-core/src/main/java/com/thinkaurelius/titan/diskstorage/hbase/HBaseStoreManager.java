@@ -1,5 +1,58 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import static com.thinkaurelius.titan.diskstorage.Backend.EDGESTORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.ID_STORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.INDEXSTORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
+import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+
+import javax.annotation.Nullable;
+
+import org.apache.hadoop.hbase.ClusterStatus;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HRegionInfo;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.ServerName;
+import org.apache.hadoop.hbase.TableNotEnabledException;
+import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HConnectionManager;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Row;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.zookeeper.ClientCnxn;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -8,37 +61,32 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
-import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CustomizeStoreKCVSManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
-
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.util.Pair;
-import org.apache.hadoop.hbase.util.VersionInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
-import static com.thinkaurelius.titan.diskstorage.Backend.*;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 /**
  * Storage Manager for HBase
@@ -167,6 +215,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final int PORT_DEFAULT = 9160;
 
+    public static final Timestamps PREFERRED_TIMESTAMPS = Timestamps.MILLI;
+
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
             new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
 
@@ -204,6 +254,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final boolean skipSchemaCheck;
     private final String compatClass;
     private final HBaseCompat compat;
+
+    private static final ConcurrentHashMap<HBaseStoreManager, Throwable> openManagers =
+            new ConcurrentHashMap<HBaseStoreManager, Throwable>();
 
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -267,6 +320,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new PermanentBackendException(e);
         }
 
+        if (logger.isTraceEnabled()) {
+            openManagers.put(this, new Throwable("Manager Opened"));
+            dumpOpenManagers();
+        }
+
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
     }
 
@@ -287,9 +345,20 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return "hbase[" + tableName + "@" + super.toString() + "]";
     }
 
+    public void dumpOpenManagers() {
+        int estimatedSize = openManagers.size();
+        logger.trace("---- Begin open HBase store manager list ({} managers) ----", estimatedSize);
+        for (HBaseStoreManager m : openManagers.keySet()) {
+            logger.trace("Manager {} opened at:", m, openManagers.get(m));
+        }
+        logger.trace("----   End open HBase store manager list ({} managers)  ----", estimatedSize);
+    }
+
     @Override
     public void close() {
         openStores.clear();
+        if (logger.isTraceEnabled())
+            openManagers.remove(this);
         IOUtils.closeQuietly(cnx);
     }
 
@@ -301,7 +370,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
                 .orderedScan(true).unorderedScan(true).batchMutation(true)
                 .multiQuery(true).distributed(true).keyOrdered(true).storeTTL(true)
-//                .timestamps(true)
+                .timestamps(true).preferredTimestamps(PREFERRED_TIMESTAMPS)
                 .keyConsistent(c);
 
         try {
@@ -399,34 +468,28 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     @Override
     public void clearStorage() throws BackendException {
-        HBaseAdmin adm = getAdminInterface();
+        HBaseAdmin adm = null;
 
         try { // first of all, check if table exists, if not - we are done
+            adm = getAdminInterface();
             if (!adm.tableExists(tableName)) {
                 logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
                 return;
             }
         } catch (IOException e) {
             throw new TemporaryBackendException(e);
+        } finally {
+            IOUtils.closeQuietly(adm);
         }
 
-        /*
-         * The commented code is the recommended way to truncate an HBase table.
-         * But it's so slow. The titan-hbase test suite takes 18 minutes to
-         * complete on my machine using the Scanner method. It takes 1 hour 17
-         * minutes to complete using the disable-delete-and-recreate method
-         * commented below. (after - before) below is usually between 3000 and
-         * 3100 ms on my machine, but it runs so many times in the test suite
-         * that it adds up.
-         */
 //        long before = System.currentTimeMillis();
 //        try {
 //            adm.disableTable(tableName);
 //            adm.deleteTable(tableName);
 //        } catch (IOException e) {
-//            throw new PermanentStorageException(e);
+//            throw new PermanentBackendException(e);
 //        }
-//        ensureTableExists(tableName);
+//        ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
 //        long after = System.currentTimeMillis();
 //        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
 
@@ -444,21 +507,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             ResultScanner scanner = null;
 
-            long ts = -1;
+            long timestamp = times.getTime().getNativeTimestamp();
 
             try {
                 scanner = table.getScanner(scan);
 
                 for (Result res : scanner) {
                     Delete d = new Delete(res.getRow());
-                    //Despite comment in Delete.java, LATEST_TIMESTAMP seems to be System.currentTimeMillis()
-                    //LATEST_TIMESTAMP is the default for the constructor invoked above, so it's redundant anyway
-                    //d.setTimestamp(HConstants.LATEST_TIMESTAMP);
 
-                    if (-1 == ts)
-                        ts = guessTimestamp(res);
-
-                    d.setTimestamp(ts);
+                    d.setTimestamp(timestamp);
                     table.delete(d);
                 }
             } finally {
@@ -500,15 +557,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         } catch (IOException e) {
             logger.warn("Unexpected IOException", e);
         } finally {
-            if (null != table) {
-                try {
-                    table.close();
-                } catch (IOException e) {
-                    logger.warn("Failed to close HTable {}", table, e);
-                }
-            }
+            IOUtils.closeQuietly(table);
         }
-
         return result;
     }
 
@@ -671,11 +721,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private HTableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
-        HBaseAdmin adm = getAdminInterface();
+        HBaseAdmin adm = null;
 
         HTableDescriptor desc;
 
         try { // Create our table, if necessary
+            adm = getAdminInterface();
             /*
              * Some HBase versions/impls respond badly to attempts to create a
              * table without at least one CF. See #661. Creating a CF along with
@@ -688,6 +739,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             }
         } catch (IOException e) {
             throw new TemporaryBackendException(e);
+        } finally {
+            IOUtils.closeQuietly(adm);
         }
 
         return desc;
@@ -752,86 +805,54 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void ensureColumnFamilyExists(String tableName, String columnFamily, int ttlInSeconds) throws BackendException {
-        HBaseAdmin adm = getAdminInterface();
-        HTableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
+        HBaseAdmin adm = null;
+        try {
+            adm = getAdminInterface();
+            HTableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
 
-        Preconditions.checkNotNull(desc);
+            Preconditions.checkNotNull(desc);
 
-        HColumnDescriptor cf = desc.getFamily(columnFamily.getBytes());
+            HColumnDescriptor cf = desc.getFamily(columnFamily.getBytes());
 
-        // Create our column family, if necessary
-        if (cf == null) {
-            try {
-                if (!adm.isTableDisabled(tableName)) {
-                    adm.disableTable(tableName);
+            // Create our column family, if necessary
+            if (cf == null) {
+                try {
+                    if (!adm.isTableDisabled(tableName)) {
+                        adm.disableTable(tableName);
+                    }
+                } catch (TableNotEnabledException e) {
+                    logger.debug("Table {} already disabled", tableName);
+                } catch (IOException e) {
+                    throw new TemporaryBackendException(e);
                 }
-            } catch (TableNotEnabledException e) {
-                logger.debug("Table {} already disabled", tableName);
-            } catch (IOException e) {
-                throw new TemporaryBackendException(e);
-            }
-
-            try {
-                HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
-
-                setCFOptions(cdesc, ttlInSeconds);
-
-                adm.addColumn(tableName, cdesc);
 
                 try {
-                    logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
-                    Thread.sleep(1000L);
-                } catch (InterruptedException ie) {
-                    throw new TemporaryBackendException(ie);
+                    HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
+
+                    setCFOptions(cdesc, ttlInSeconds);
+
+                    adm.addColumn(tableName, cdesc);
+
+                    try {
+                        logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException ie) {
+                        throw new TemporaryBackendException(ie);
+                    }
+
+                    adm.enableTable(tableName);
+                } catch (TableNotFoundException ee) {
+                    logger.error("TableNotFoundException", ee);
+                    throw new PermanentBackendException(ee);
+                } catch (org.apache.hadoop.hbase.TableExistsException ee) {
+                    logger.debug("Swallowing exception {}", ee);
+                } catch (IOException ee) {
+                    throw new TemporaryBackendException(ee);
                 }
-
-                adm.enableTable(tableName);
-            } catch (TableNotFoundException ee) {
-                logger.error("TableNotFoundException", ee);
-                throw new PermanentBackendException(ee);
-            } catch (org.apache.hadoop.hbase.TableExistsException ee) {
-                logger.debug("Swallowing exception {}", ee);
-            } catch (IOException ee) {
-                throw new TemporaryBackendException(ee);
             }
+        } finally {
+            IOUtils.closeQuietly(adm);
         }
-    }
-
-    private static long guessTimestamp(Result res) {
-
-        Long sampleTime = res.getMap().firstEntry().getValue().firstEntry().getValue().firstEntry().getKey();
-        // Estimate timestamp unit from order of magnitude assuming UNIX epoch -- not compatible with arbitrary custom timestamps
-        Preconditions.checkArgument(null != sampleTime);
-        final double exponent = Math.log10(sampleTime);
-        final TimestampProvider prov;
-
-        /*
-         * These exponent brackets approximately cover UNIX Epoch timestamps
-         * between:
-         *
-         * Sat Sep 8 21:46:40 EDT 2001
-         *
-         * Thu Sep 26 21:46:40 EDT 33658
-         *
-         * Even though it won't rollover, this timestamp guessing kludge still
-         * eventually be refactored away to support arbitrary timestamps
-         * provided by the user. There's no good reason clearStorage() should be
-         * timestamp sensitive, it's just that truncating tables in the way
-         * recommended by HBase is so incredibly slow that it more than doubles
-         * the walltime taken by the titan-hbase test suite.
-         */
-        if (12 <= exponent && exponent < 15)
-            prov = Timestamps.MILLI;
-        else if (15 <= exponent && exponent < 18)
-            prov = Timestamps.MICRO;
-        else if (18 <= exponent && exponent < 21)
-            prov = Timestamps.NANO;
-        else
-            throw new IllegalStateException("Timestamp " + sampleTime + " does not match expected UNIX Epoch timestamp in milli-, micro-, or nanosecond units.  clearStorage() does not support custom timestamps.");
-
-        logger.debug("Guessed timestamp provider " + prov);
-
-        return prov.getTime().getNativeTimestamp();
     }
 
     private void setCFOptions(HColumnDescriptor cdesc, int ttlInSeconds) {
@@ -840,14 +861,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         if (ttlInSeconds > 0)
             cdesc.setTimeToLive(ttlInSeconds);
-    }
-
-    private HBaseAdmin getAdminInterface() {
-        try {
-            return new HBaseAdmin(hconf);
-        } catch (IOException e) {
-            throw new TitanException(e);
-        }
     }
 
     /**
@@ -941,5 +954,34 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
                     GraphDatabaseConfiguration.STORAGE_PORT, HBASE_CONFIGURATION_NAMESPACE);
         }
+    }
+
+    private <T> T runWithAdmin(BackendFunction<HBaseAdmin, T> closure) throws BackendException {
+        HBaseAdmin adm = null;
+        try {
+            adm = new HBaseAdmin(cnx);
+            return closure.apply(adm);
+        } catch (IOException e) {
+            throw new TitanException(e);
+        } finally {
+            IOUtils.closeQuietly(adm);
+        }
+    }
+
+    private HBaseAdmin getAdminInterface() {
+        try {
+            return new HBaseAdmin(cnx);
+        } catch (IOException e) {
+            throw new TitanException(e);
+        }
+    }
+
+    /**
+     * Similar to {@link Function}, except that the {@code apply} method is allowed
+     * to throw {@link BackendException}.
+     */
+    private static interface BackendFunction<F, T> {
+
+        T apply(F input) throws BackendException;
     }
 }
