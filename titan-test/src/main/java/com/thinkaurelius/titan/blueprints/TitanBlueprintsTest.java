@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.impls.GraphTest;
@@ -8,10 +10,14 @@ import com.tinkerpop.blueprints.util.io.gml.GMLReaderTestSuite;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLReaderTestSuite;
 import com.tinkerpop.blueprints.util.io.graphson.GraphSONReaderTestSuite;
 
+import java.io.File;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +39,8 @@ public abstract class TitanBlueprintsTest extends GraphTest {
             LoggerFactory.getLogger(TitanBlueprintsTest.class);
 
     private volatile String lastSeenMethodName;
+
+    protected final Map<String, TitanGraph> openGraphs = new HashMap<String, TitanGraph>();
 
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();
@@ -102,7 +110,7 @@ public abstract class TitanBlueprintsTest extends GraphTest {
      */
     public abstract boolean supportsMultipleGraphs();
 
-    public abstract void cleanUp() throws BackendException;
+    //public abstract void cleanUp() throws BackendException;
 
     public abstract void beforeSuite();
 
@@ -116,6 +124,55 @@ public abstract class TitanBlueprintsTest extends GraphTest {
     @Override
     public void doTestSuite(TestSuite testSuite) throws Exception {
         doTestSuite(testSuite, new HashSet<String>());
+    }
+
+    protected abstract TitanGraph openGraph(String uid);
+
+    protected void beforeOpeningGraph(String uid) {
+        log.debug("Opening graph[uid={}] for the first time", uid);
+    }
+
+    protected void extraCleanUp(String uid) throws BackendException {
+
+    }
+
+    @Override
+    public Graph generateGraph() {
+        return generateGraph("_DEFAULT_TITAN_GRAPH_UID");
+    }
+
+    @Override
+    public Graph generateGraph(String uid) {
+        synchronized (openGraphs) {
+            if (!openGraphs.containsKey(uid)) {
+                beforeOpeningGraph(uid);
+            } else if (openGraphs.get(uid).isOpen()) {
+                log.warn("Detected possible graph[uid={}] leak in Blueprints GraphTest method {}, shutting down the leaked graph",
+                        uid, getMostRecentMethodName());
+                openGraphs.get(uid).shutdown();
+            } else {
+                log.debug("Reopening previously-closed graph[uid={}]", uid);
+            }
+        }
+        log.info("Opening graph with uid={}", uid);
+        openGraphs.put(uid, openGraph(uid));
+        return openGraphs.get(uid);
+    }
+
+    public void cleanUp() throws BackendException {
+        synchronized (openGraphs) {
+            for (Map.Entry<String, TitanGraph> entry : openGraphs.entrySet()) {
+                String uid = entry.getKey();
+                TitanGraph g = entry.getValue();
+                if (g.isOpen()) {
+                    log.warn("Detected possible graph[uid={}] leak in Blueprints GraphTest method {}, shutting down the leaked graph",
+                        uid, getMostRecentMethodName());
+                    g.shutdown();
+                }
+                extraCleanUp(uid);
+            }
+            openGraphs.clear();
+        }
     }
 
     public void doTestSuite(TestSuite testSuite, Set<String> ignoreTests) throws Exception {

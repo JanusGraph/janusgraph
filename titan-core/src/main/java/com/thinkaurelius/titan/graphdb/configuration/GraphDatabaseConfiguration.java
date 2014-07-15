@@ -715,7 +715,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<ConflictAvoidanceMode> IDAUTHORITY_CONFLICT_AVOIDANCE = new ConfigOption<ConflictAvoidanceMode>(IDAUTHORITY_NS,"conflict-avoidance-mode",
             "This setting helps separate Titan instances sharing a single graph storage backend avoid contention when reserving ID blocks, " +
             "increasing overall throughput.",
-            ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.NONE);
+            ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
      * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}

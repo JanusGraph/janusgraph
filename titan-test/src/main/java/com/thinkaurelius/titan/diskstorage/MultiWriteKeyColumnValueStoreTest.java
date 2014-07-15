@@ -48,7 +48,9 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     @Before
     public void setUp() throws Exception {
-        openStorageManager().clearStorage();
+        StoreManager m = openStorageManager();
+        m.clearStorage();
+        m.close();
         open();
     }
 

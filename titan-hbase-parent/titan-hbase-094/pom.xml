@@ -57,25 +57,38 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--
-          HBase 0.94 master can't start with Guava 15.0 or newer:
-          https://issues.apache.org/jira/browse/HBASE-10174
-          This is marked "Won't Fix"
-        -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
+    <!-- Override Titan's managed versions for some libs where HBase 0.94
+         needs older versions.  See also maven-shade-plugin config below. -->
     <dependencyManagement>
-      <dependencies>
-	<dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>14.0.1</version>
-        </dependency>
-      </dependencies>
+        <dependencies>
+            <!--
+              HBase 0.94 master can't start with Guava 15.0 or newer:
+              https://issues.apache.org/jira/browse/HBASE-10174
+              This is marked "Won't Fix"
+            -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>14.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>2.4.0a</version>
+            </dependency>
+        </dependencies>
     </dependencyManagement>
 
     <build>
@@ -154,7 +167,15 @@
                 <version>2.2</version>
                 <executions>
                     <execution>
-                        <id>shade-guava-14</id>
+                        <!-- HBase 0.94 needs an older Protobuf version than newer HBase versions.
+                             Running with a Protobuf version mismatch can lead to these at runtime:
+                             UnsupportedOperationException: This is supposed to be overridden by subclasses.
+
+                             HBase 0.94 also needs an older Guava version.  Guava's 18 months between
+                             feature deprecation and feature removal sounds like a long time, but with
+                             the number of dependencies in Titan that ultimately use Guava, it's
+                             actually short enough to cause incompatibilities. -->
+                        <id>shade-hbase-094-libs</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
@@ -169,6 +190,7 @@
                             <artifactSet>
                                 <includes>
                                     <include>com.google.guava:guava</include>
+                                    <include>com.google.protobuf:protobuf-java</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
@@ -182,6 +204,10 @@
                                 <relocation>
                                     <pattern>com.google.common</pattern>
                                     <shadedPattern>com.google.common.guava14</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.protobuf</pattern>
+                                    <shadedPattern>com.google.protobuf.protobuf240a</shadedPattern>
                                 </relocation>
                             </relocations>
                             <!--

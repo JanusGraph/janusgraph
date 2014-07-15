@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -34,7 +35,9 @@ public abstract class KCVSLogTest extends LogTest {
 
     @Override
     public void setup() throws Exception {
-        openStorageManager().clearStorage();
+        StoreManager m = openStorageManager();
+        m.clearStorage();
+        m.close();
         super.setup();
     }
 

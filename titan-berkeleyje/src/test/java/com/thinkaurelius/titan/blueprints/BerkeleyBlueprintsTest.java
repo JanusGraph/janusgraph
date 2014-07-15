@@ -31,34 +31,35 @@ public class BerkeleyBlueprintsTest extends TitanBlueprintsTest {
         return generateGraph(DEFAULT_SUBDIR);
     }
 
-    private final Map<String, TitanGraph> openGraphs = new HashMap<String, TitanGraph>();
+    @Override
+    public void beforeOpeningGraph(String uid) {
+        String dir = BerkeleyStorageSetup.getHomeDir(uid);
+        log.debug("Cleaning directory {} before opening it for the first time", dir);
+        try {
+            BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
+            s.clearStorage();
+            s.close();
+            File dirFile = new File(dir);
+            Assert.assertFalse(dirFile.exists() && dirFile.listFiles().length > 0);
+        } catch (BackendException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
-    public Graph generateGraph(String uid) {
+    public TitanGraph openGraph(String uid) {
         String dir = BerkeleyStorageSetup.getHomeDir(uid);
-        synchronized (openGraphs) {
-            if (!openGraphs.containsKey(dir)) {
-                log.debug("Cleaning directory {} before opening it for the first time", dir);
-                try {
-                    BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
-                    s.clearStorage();
-                    s.close();
-                    File dirFile = new File(dir);
-                    Assert.assertFalse(dirFile.exists() && dirFile.listFiles().length > 0);
-                } catch (BackendException e) {
-                    throw new RuntimeException(e);
-                }
-            } else if (openGraphs.get(dir).isOpen()) {
-                log.warn("Detected possible graph leak in Blueprints GraphTest method {} (dir={})",
-                        getMostRecentMethodName(), dir);
-                openGraphs.get(dir).shutdown();
-            } else {
-                log.debug("Opening graph on " + dir + " without cleaning");
-            }
-        }
-        log.info("Opening graph with uid={} in directory {}", uid, dir);
-        openGraphs.put(dir, TitanFactory.open(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir)));
-        return openGraphs.get(dir);
+        return TitanFactory.open(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
+    }
+
+    @Override
+    public void extraCleanUp(String uid) throws BackendException {
+        String dir = BerkeleyStorageSetup.getHomeDir(uid);
+        BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
+        s.clearStorage();
+        s.close();
+        File dirFile = new File(dir);
+        Assert.assertFalse(dirFile.exists() && dirFile.listFiles().length > 0);
     }
 
     @Override
@@ -67,32 +68,9 @@ public class BerkeleyBlueprintsTest extends TitanBlueprintsTest {
     }
 
     @Override
-    public void cleanUp() throws BackendException {
-        synchronized (openGraphs) {
-            for (Map.Entry<String, TitanGraph> entry : openGraphs.entrySet()) {
-                String dir = entry.getKey();
-                TitanGraph g = entry.getValue();
-                if (g.isOpen()) {
-                    log.warn("Detected possible graph leak in Blueprints GraphTest method {} (dir={})",
-                        getMostRecentMethodName(), dir);
-                    g.shutdown();
-                }
-                BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
-                s.clearStorage();
-                s.close();
-                File dirFile = new File(dir);
-                Assert.assertFalse(dirFile.exists() && dirFile.listFiles().length > 0);
-            }
-            openGraphs.clear();
-        }
-    }
-
-
-    @Override
     public void beforeSuite() {
         //Nothing
     }
-
 
     @Override
     public void afterSuite() {

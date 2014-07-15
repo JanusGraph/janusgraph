@@ -2,8 +2,10 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 
 import javax.annotation.Nullable;
+
 import java.lang.reflect.Array;
 import java.util.Collection;
 

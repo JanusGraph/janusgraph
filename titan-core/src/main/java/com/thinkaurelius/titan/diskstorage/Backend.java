@@ -513,6 +513,7 @@ public class Backend implements LockerProvider {
         idAuthority.close();
         systemConfig.close();
         storeManager.clearStorage();
+        storeManager.close();
         //Indexes
         for (IndexProvider index : indexes.values()) index.clearStorage();
     }

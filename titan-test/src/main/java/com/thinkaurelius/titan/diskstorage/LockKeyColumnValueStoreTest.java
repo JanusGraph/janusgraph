@@ -37,6 +37,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCh
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 
 import static org.easymock.EasyMock.*;
 
@@ -73,7 +74,14 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Before
     public void setUp() throws Exception {
-        openStorageManager(0).clearStorage();
+
+        StoreManager tmp = null;
+        try {
+            tmp = openStorageManager(0);
+            tmp.clearStorage();
+        } finally {
+            tmp.close();
+        }
 
         for (int i = 0; i < CONCURRENCY; i++) {
             LocalLockMediators.INSTANCE.clear(concreteClassName + i);

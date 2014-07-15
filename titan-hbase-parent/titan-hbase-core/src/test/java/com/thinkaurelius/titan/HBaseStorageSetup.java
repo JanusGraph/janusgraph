@@ -3,6 +3,7 @@ package com.thinkaurelius.titan;
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
@@ -36,7 +37,12 @@ public class HBaseStorageSetup {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, true);
+        config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
+//        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
+//                    ".hbase.zookeeper.quorum","localhost");
+//        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
+//                "hbase.zookeeper.property.clientPort",2181);
         return config;
     }
 
@@ -53,7 +59,7 @@ public class HBaseStorageSetup {
      * @throws RuntimeException
      *             if starting HBase fails for any other reason
      */
-    public static HBaseStatus startHBase() throws IOException {
+    public synchronized static HBaseStatus startHBase() throws IOException {
         if (HBASE != null) {
             log.info("HBase already started");
             return HBASE;
@@ -78,7 +84,7 @@ public class HBaseStorageSetup {
      * Check whether {@link #HBASE_PID_FILE} describes an HBase daemon. If so,
      * kill it. Otherwise, do nothing.
      */
-    private static void killIfRunning() {
+    public synchronized static void killIfRunning() {
         HBaseStatus stat = HBaseStatus.read(HBASE_PID_FILE);
 
         if (null == stat) {
@@ -92,7 +98,7 @@ public class HBaseStorageSetup {
     /**
      * Delete HBase data under the current working directory.
      */
-    private static void deleteData() {
+    private synchronized static void deleteData() {
         try {
             // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
             File hbaseRoot = new File("./target/hbase-root");
@@ -135,7 +141,7 @@ public class HBaseStorageSetup {
      * @param stat
      *            the running HBase daemon to stop
      */
-    private static void shutdownHBase(HBaseStatus stat) {
+    private synchronized static void shutdownHBase(HBaseStatus stat) {
 
         log.info("Shutting down HBase...");
 
@@ -147,6 +153,8 @@ public class HBaseStorageSetup {
         stat.getFile().delete();
 
         log.info("Deleted {}", stat.getFile());
+
+        HBASE = null;
     }
 
     /**

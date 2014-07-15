@@ -13,7 +13,7 @@
     <properties>
         <hadoop.profile>2.0</hadoop.profile>
         <hadoop.version>2.2.0</hadoop.version>
-        <hbase.version.base>0.98.2</hbase.version.base>
+        <hbase.version.base>0.98.3</hbase.version.base>
         <hbase.version>${hbase.version.base}-hadoop2</hbase.version>
         <!-- <hadoop.version>2.2.0</hadoop.version> -->
         <jruby.version>1.6.8</jruby.version>

@@ -2,11 +2,16 @@ package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseCompatLoader;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.tinkerpop.blueprints.Graph;
 
 import java.io.IOException;
+
+import org.apache.hadoop.hbase.util.VersionInfo;
+import org.junit.AfterClass;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -22,20 +27,18 @@ public class HBaseBlueprintsTest extends TitanBlueprintsTest {
         }
     }
 
-    @Override
-    public void afterSuite() {
-        // we don't need to restart on each test because cleanup is in please
+    @AfterClass
+    public static void stopHBase() {
+        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
+        if (VersionInfo.getVersion().startsWith("0.96"))
+            HBaseStorageSetup.killIfRunning();
     }
 
     @Override
-    public Graph generateGraph() {
-        return TitanFactory.open(HBaseStorageSetup.getHBaseGraphConfiguration());
-    }
-
-    @Override
-    public void cleanUp() throws BackendException {
+    public void extraCleanUp(String uid) throws BackendException {
         HBaseStoreManager s = new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
         s.clearStorage();
+        s.close();
     }
 
     @Override
@@ -44,7 +47,7 @@ public class HBaseBlueprintsTest extends TitanBlueprintsTest {
     }
 
     @Override
-    public Graph generateGraph(String s) {
-        throw new UnsupportedOperationException();
+    protected TitanGraph openGraph(String uid) {
+        return TitanFactory.open(HBaseStorageSetup.getHBaseGraphConfiguration());
     }
 }
