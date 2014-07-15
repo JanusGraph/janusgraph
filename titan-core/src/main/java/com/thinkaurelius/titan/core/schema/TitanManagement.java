@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.BaseTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -164,7 +165,7 @@ public interface TitanManagement extends TitanConfiguration {
          * @param key
          * @return this IndexBuilder
          */
-        public IndexBuilder indexKey(PropertyKey key);
+        public IndexBuilder addKey(PropertyKey key);
 
         /**
          * Adds the given key and associated parameters to the composite key of this index
@@ -172,7 +173,7 @@ public interface TitanManagement extends TitanConfiguration {
          * @param parameters
          * @return this IndexBuilder
          */
-        public IndexBuilder indexKey(PropertyKey key, Parameter... parameters);
+        public IndexBuilder addKey(PropertyKey key, Parameter... parameters);
 
         /**
          * Restricts this index to only those elements that have the provided schemaType. If this graph index indexes
@@ -271,6 +272,15 @@ public interface TitanManagement extends TitanConfiguration {
      * @param updateAction
      */
     public void updateIndex(TitanIndex index, SchemaAction updateAction);
+
+    /*
+    ##################### CLUSTER MANAGEMENT ##########################
+     */
+
+    public Set<String> getOpenInstances();
+
+    public void forceCloseInstance(String instanceId);
+
 
     /*
     ##################### PROXY FOR TITANTRANSACTION ##########################

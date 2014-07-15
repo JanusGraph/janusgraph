@@ -128,7 +128,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
             throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
         }
-        globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
+        globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);

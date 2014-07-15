@@ -42,6 +42,8 @@ import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfigura
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
@@ -88,6 +90,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
@@ -113,6 +116,7 @@ public class ManagementSystem implements TitanManagement {
     private final Set<TitanSchemaVertex> updatedTypes;
     private final Set<Callable<Boolean>> updatedTypeTriggers;
 
+    private final Timepoint txStartTime;
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
@@ -134,7 +138,7 @@ public class ManagementSystem implements TitanManagement {
         this.graphShutdownRequired = false;
 
         this.transaction = (StandardTitanTx) graph.newTransaction();
-
+        this.txStartTime = graph.getConfiguration().getTimestampProvider().getTime();
         this.isOpen = true;
     }
 
@@ -158,8 +162,18 @@ public class ManagementSystem implements TitanManagement {
         }
     };
 
-    private Set<String> getOpenInstances() {
-        return modifyConfig.getContainedNamespaces(REGISTRATION_NS);
+    @Override
+    public Set<String> getOpenInstances() {
+        return Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
+    }
+
+    @Override
+    public void forceCloseInstance(String instanceId) {
+        Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME,instanceId),"Instance [%s] is not currently open",instanceId);
+        Timepoint registrationTime = modifyConfig.get(REGISTRATION_TIME,instanceId);
+        Preconditions.checkArgument(registrationTime.compareTo(txStartTime)<0,"The to-be-closed instance [%s] was started after this transaction" +
+                "which indicates a successful restart and can hence not be closed: %s vs %s",instanceId,registrationTime,txStartTime);
+        modifyConfig.remove(REGISTRATION_TIME,instanceId);
     }
 
     private void ensureOpen() {
@@ -512,14 +526,14 @@ public class ManagementSystem implements TitanManagement {
         }
 
         @Override
-        public TitanManagement.IndexBuilder indexKey(PropertyKey key) {
+        public TitanManagement.IndexBuilder addKey(PropertyKey key) {
             Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
             keys.put(key,null);
             return this;
         }
 
         @Override
-        public TitanManagement.IndexBuilder indexKey(PropertyKey key, Parameter... parameters) {
+        public TitanManagement.IndexBuilder addKey(PropertyKey key, Parameter... parameters) {
             Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
             keys.put(key,parameters);
             return this;

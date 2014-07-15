@@ -31,6 +31,7 @@ public class TitanHadoopGraph {
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
+    private final boolean verifyVertexExistence = false;
 
     public TitanHadoopGraph(final TitanHadoopSetup setup) {
         this.setup = setup;
@@ -43,15 +44,12 @@ public class TitanHadoopGraph {
         final long vertexId = this.vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
         FaunusVertex vertex = new FaunusVertex(configuration, vertexId);
-        boolean isSystemType = false;
-        boolean foundVertexState = false;
+        boolean foundVertexState = !verifyVertexExistence;
         for (final Entry data : entries) {
             try {
                 RelationReader relationReader = setup.getRelationReader(vertex.getLongId());
                 final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
-                if (this.systemTypes.isTypeSystemType(relation.typeId)) {
-                    isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
-                } else if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {
+                if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {
                     foundVertexState = true;
                 } else if (this.systemTypes.isVertexLabelSystemType(relation.typeId)) {
                     //Vertex Label
@@ -102,7 +100,11 @@ public class TitanHadoopGraph {
             }
         }
         vertex.setLifeCycle(ElementLifeCycle.Loaded);
-        return (isSystemType || !foundVertexState) ? null : vertex;
+        
+        /*Since we are filtering out system relation types, we might end up with vertices that have no incident relations.
+         This is especially true for schema vertices. Those are filtered out.     */
+        if (!foundVertexState || !vertex.query().relations().iterator().hasNext()) return null;
+        return vertex;
     }
 
     public void close() {

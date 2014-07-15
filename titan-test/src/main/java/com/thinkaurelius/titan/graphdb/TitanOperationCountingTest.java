@@ -323,7 +323,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
         PropertyKey uid = makeKey("uid",String.class);
-        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildCompositeIndex();
+        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
         mgmt.setConsistency(index, ConsistencyModifier.LOCK);
         finishSchema();
 

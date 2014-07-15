@@ -1232,7 +1232,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
         mgmt.createEdgeIndex(knows,"byTime",Direction.BOTH,time);
-        mgmt.buildIndex("timeIndex",Vertex.class).indexKey(time).buildCompositeIndex();
+        mgmt.buildIndex("timeIndex",Vertex.class).addKey(time).buildCompositeIndex();
         mgmt.makeVertexLabel("people").make();
         finishSchema();
 
@@ -1339,7 +1339,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         time = mgmt.getPropertyKey("time");
         name = mgmt.getPropertyKey("name");
         mgmt.createPropertyIndex(sensor,"byTime",Order.DESC,time);
-        mgmt.buildIndex("bySensorReading",Vertex.class).indexKey(name).buildCompositeIndex();
+        mgmt.buildIndex("bySensorReading",Vertex.class).addKey(name).buildCompositeIndex();
         finishSchema();
         newTx();
         //Add some sensor data that should already be indexed even though index is not yet enabled
@@ -1414,7 +1414,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
         //Leave tx2 open to delay acknowledgement
 
-        mgmt.buildIndex("theIndex",Vertex.class).indexKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+        mgmt.buildIndex("theIndex",Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
         mgmt.commit();
 
         TitanTransaction tx3 = graph2.newTransaction();
@@ -1453,6 +1453,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         evaluateQuery(tx2.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
         evaluateQuery(tx2.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
         tx2.commit();
+
+        //Finally test retrieving and closing open instances
+
+        Set<String> openInstances = mgmt.getOpenInstances();
+        assertEquals(2,openInstances.size());
+        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId()));
+        assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
+        mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
 
         graph2.shutdown();
 
@@ -1523,7 +1531,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
-        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildCompositeIndex();
+        mgmt.buildIndex("etype",Edge.class).addKey(t).buildCompositeIndex();
         ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
         finishSchema();
 
@@ -1692,9 +1700,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Create property with name pname and a vertex
         PropertyKey w = makeKey(weight,Integer.class);
         PropertyKey f = ((StandardPropertyKeyMaker)mgmt.makePropertyKey(foo)).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
-        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildCompositeIndex();
+        mgmt.buildIndex(foo,Vertex.class).addKey(f).buildCompositeIndex();
         PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
-        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildCompositeIndex();
+        mgmt.buildIndex(bar,Vertex.class).addKey(b).buildCompositeIndex();
         finishSchema();
 
         TitanVertex v = tx.addVertex();
@@ -3238,16 +3246,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         VertexLabel org = mgmt.makeVertexLabel("organization").make();
 
-        TitanGraphIndex edge1 = mgmt.buildIndex("edge1",Edge.class).indexKey(time).indexKey(weight).buildCompositeIndex();
-        TitanGraphIndex edge2 = mgmt.buildIndex("edge2",Edge.class).indexOnly(connect).indexKey(text).buildCompositeIndex();
+        TitanGraphIndex edge1 = mgmt.buildIndex("edge1",Edge.class).addKey(time).addKey(weight).buildCompositeIndex();
+        TitanGraphIndex edge2 = mgmt.buildIndex("edge2",Edge.class).indexOnly(connect).addKey(text).buildCompositeIndex();
 
-        TitanGraphIndex prop1 = mgmt.buildIndex("prop1",TitanProperty.class).indexKey(time).buildCompositeIndex();
-        TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).indexKey(weight).indexKey(text).buildCompositeIndex();
+        TitanGraphIndex prop1 = mgmt.buildIndex("prop1",TitanProperty.class).addKey(time).buildCompositeIndex();
+        TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).addKey(weight).addKey(text).buildCompositeIndex();
 
-        TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).indexKey(time).indexOnly(person).unique().buildCompositeIndex();
-        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).indexKey(text).indexOnly(person).buildCompositeIndex();
-        TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).indexKey(time).indexKey(name).indexOnly(org).buildCompositeIndex();
-        TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).indexKey(name).buildCompositeIndex();
+        TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).addKey(time).indexOnly(person).unique().buildCompositeIndex();
+        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).addKey(text).indexOnly(person).buildCompositeIndex();
+        TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).addKey(time).addKey(name).indexOnly(org).buildCompositeIndex();
+        TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).addKey(name).buildCompositeIndex();
 
 
         // ########### INSPECTION & FAILURE ##############
@@ -3279,22 +3287,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         try {
             //Parameters not supported
-            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildCompositeIndex();
+            mgmt.buildIndex("blablub",Vertex.class).addKey(text, Mapping.TEXT.getParameter()).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Name already in use
-            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildCompositeIndex();
+            mgmt.buildIndex("edge1",Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //ImplicitKeys not allowed
-            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildCompositeIndex();
+            mgmt.buildIndex("jupdup",Vertex.class).addKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Unique is only allowed for vertex
-            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildCompositeIndex();
+            mgmt.buildIndex("edgexyz",Edge.class).addKey(time).unique().buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -3335,22 +3343,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         try {
             //Parameters not supported
-            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildCompositeIndex();
+            mgmt.buildIndex("blablub",Vertex.class).addKey(text, Mapping.TEXT.getParameter()).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Name already in use
-            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildCompositeIndex();
+            mgmt.buildIndex("edge1",Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //ImplicitKeys not allowed
-            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildCompositeIndex();
+            mgmt.buildIndex("jupdup",Vertex.class).addKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Unique is only allowed for vertex
-            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildCompositeIndex();
+            mgmt.buildIndex("edgexyz",Edge.class).addKey(time).unique().buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -3701,7 +3709,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testForceIndexUsage() {
         PropertyKey age = makeKey("age",Integer.class);
         PropertyKey time = makeKey("time",Long.class);
-        mgmt.buildIndex("time",Vertex.class).indexKey(time).buildCompositeIndex();
+        mgmt.buildIndex("time",Vertex.class).addKey(time).buildCompositeIndex();
         finishSchema();
 
         for (int i=1;i<=10;i++) {
@@ -3792,12 +3800,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testIndexRetrieval() {
         PropertyKey id = mgmt.makePropertyKey("uid").dataType(Integer.class).make();
-        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildCompositeIndex();
-        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildCompositeIndex();
+        mgmt.buildIndex("vuid",Vertex.class).unique().addKey(id).buildCompositeIndex();
+        mgmt.buildIndex("euid",Edge.class).addKey(id).buildCompositeIndex();
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildCompositeIndex();
-        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildCompositeIndex();
+        mgmt.buildIndex("vname",Vertex.class).addKey(name).buildCompositeIndex();
+        mgmt.buildIndex("ename",Edge.class).addKey(name).buildCompositeIndex();
         mgmt.makeEdgeLabel("connect").signature(id, name).make();
         finishSchema();
 
@@ -4114,7 +4122,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
-        mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName).buildCompositeIndex();
+        mgmt.buildIndex("edge-name", Edge.class).addKey(edgeName).buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label, 1, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(edgeName).getLength(TimeUnit.SECONDS));
@@ -4150,8 +4158,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         PropertyKey place = mgmt.makePropertyKey("place").dataType(String.class).make();
         mgmt.setTTL(name, 42, TimeUnit.SECONDS);
         mgmt.setTTL(place, 1, TimeUnit.SECONDS);
-        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
-        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(place).buildCompositeIndex();
+        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).addKey(name).buildCompositeIndex();
+        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).addKey(name).addKey(place).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
         assertEquals(42, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
@@ -4198,8 +4206,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Long.class).make();
-        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
-        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(time).buildCompositeIndex();
+        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).addKey(name).buildCompositeIndex();
+        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).addKey(name).addKey(time).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));

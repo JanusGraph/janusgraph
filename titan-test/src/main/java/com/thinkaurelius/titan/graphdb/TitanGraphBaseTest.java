@@ -228,13 +228,13 @@ public abstract class TitanGraphBaseTest {
 
     public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
         PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(name,Vertex.class).indexKey(key).buildCompositeIndex();
+        mgmt.buildIndex(name,Vertex.class).addKey(key).buildCompositeIndex();
         return key;
     }
 
     public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
         PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(name,Vertex.class).indexKey(key).unique().buildCompositeIndex();
+        mgmt.buildIndex(name,Vertex.class).addKey(key).unique().buildCompositeIndex();
         return key;
     }
 

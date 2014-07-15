@@ -39,7 +39,6 @@ import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.PROPERTY;
 import static org.junit.Assert.*;
 
 /**
@@ -99,8 +98,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public void testSimpleUpdate() {
         PropertyKey text = makeKey("name",String.class);
         EdgeLabel knows = makeLabel("knows");
-        mgmt.buildIndex("namev",Vertex.class).indexKey(text).buildCompositeIndex();
-        mgmt.buildIndex("namee",Edge.class).indexKey(text).buildCompositeIndex();
+        mgmt.buildIndex("namev",Vertex.class).addKey(text).buildCompositeIndex();
+        mgmt.buildIndex("namee",Edge.class).addKey(text).buildCompositeIndex();
         finishSchema();
 
         Vertex v = tx.addVertex();
@@ -143,8 +142,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         createExternalEdgeIndex(time,INDEX);
 
         PropertyKey category = makeKey("category",Integer.class);
-        mgmt.buildIndex("vcategory",Vertex.class).indexKey(category).buildCompositeIndex();
-        mgmt.buildIndex("ecategory",Edge.class).indexKey(category).buildCompositeIndex();
+        mgmt.buildIndex("vcategory",Vertex.class).addKey(category).buildCompositeIndex();
+        mgmt.buildIndex("ecategory",Edge.class).addKey(category).buildCompositeIndex();
 
         PropertyKey group = makeKey("group",Byte.class);
         createExternalVertexIndex(group,INDEX);
@@ -338,11 +337,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         VertexLabel org = mgmt.makeVertexLabel("org").make();
 
         TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).
-                indexKey(name,Mapping.STRING.getParameter()).buildMixedIndex(INDEX);
+                addKey(name, Mapping.STRING.getParameter()).buildMixedIndex(INDEX);
         TitanGraphIndex index2 = mgmt.buildIndex("index2",Vertex.class).indexOnly(person).
-                indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildMixedIndex(INDEX);
+                addKey(text, Mapping.TEXT.getParameter()).addKey(weight).buildMixedIndex(INDEX);
         TitanGraphIndex index3 = mgmt.buildIndex("index3",Vertex.class).indexOnly(org).
-                indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildMixedIndex(INDEX);
+                addKey(text, Mapping.TEXT.getParameter()).addKey(weight).buildMixedIndex(INDEX);
 
         // ########### INSPECTION & FAILURE ##############
         assertTrue(mgmt.containsGraphIndex("index1"));
@@ -370,12 +369,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildMixedIndex(INDEX);
+            mgmt.buildIndex("index2",Vertex.class).addKey(weight).buildMixedIndex(INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildCompositeIndex();
+            mgmt.buildIndex("index2",Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
@@ -413,12 +412,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildMixedIndex(INDEX);
+            mgmt.buildIndex("index2",Vertex.class).addKey(weight).buildMixedIndex(INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildCompositeIndex();
+            mgmt.buildIndex("index2",Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
@@ -513,8 +512,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey text = makeKey("text", String.class);
         PropertyKey flag = makeKey("flag",Boolean.class);
 
-        TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).indexKey(name).indexKey(weight).buildCompositeIndex();
-        TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).indexKey(weight).indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+        TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
+        TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).addKey(weight).addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
         external.getName(); internal.getName();
         finishSchema();
 
@@ -741,39 +740,39 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         setupChainGraph(numV,strs);
         clopen();
 
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry)").vertices()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "v.text:ducks").vertices()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "v.text:(farm uncle berry)").vertices()));
         assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").vertices()));
-        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").offset(10).vertices()));
-        assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
+        assertEquals(numV / strs.length * 2 - 10, Iterables.size(graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").offset(10).vertices()));
+        assertEquals(10, Iterables.size(graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).vertices()));
         assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertices()));
         assertEquals(0,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertices()));
         //Test name mapping
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"vtext:ducks").vertices()));
-        assertEquals(0,Iterables.size(graph.indexQuery(VINDEX,"etext:ducks").vertices()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "vtext:ducks").vertices()));
+        assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "etext:ducks").vertices()));
 
 
         //Same queries for edges
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:ducks").edges()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "e.text:ducks").edges()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry)").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
+        assertEquals(numV / strs.length, Iterables.size(graph.indexQuery(EINDEX, "e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").edges()));
-        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").offset(10).edges()));
-        assertEquals(10,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
-        assertEquals(10,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges()));
+        assertEquals(numV / strs.length * 2 - 10, Iterables.size(graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").offset(10).edges()));
+        assertEquals(10, Iterables.size(graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).edges()));
+        assertEquals(10, Iterables.size(graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges()));
         assertEquals(0,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges()));
         //Test name mapping
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"etext:ducks").edges()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "etext:ducks").edges()));
 
         //Same queries for edges
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:ducks").properties()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry)").properties()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(PINDEX, "p.text:(farm uncle berry)").properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").properties()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").properties()));
         assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").offset(10).properties()));
-        assertEquals(10,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).properties()));
-        assertEquals(10,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties()));
+        assertEquals(10, Iterables.size(graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).properties()));
+        assertEquals(10, Iterables.size(graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties()));
         assertEquals(0,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties()));
         //Test name mapping
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"ptext:ducks").properties()));
@@ -804,7 +803,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.buildIndex("mi",Vertex.class).indexKey(name, Mapping.TEXT.getParameter()).indexKey(age).buildMixedIndex(INDEX);
+        mgmt.buildIndex("mi",Vertex.class).addKey(name, Mapping.TEXT.getParameter()).addKey(age).buildMixedIndex(INDEX);
         finishSchema();
         TitanVertex vs[] = new TitanVertex[4];
 
@@ -882,7 +881,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey height = mgmt.makePropertyKey("height").dataType(Decimal.class).make();
         TitanGraphIndex index = mgmt.buildIndex("theIndex",Vertex.class)
-                .indexKey(name, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+                .addKey(name, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
         finishSchema();
 
         //Add initial data
@@ -996,9 +995,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.setTTL(event, 2, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Vertex.class).
-                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(INDEX);
+                addKey(name, Mapping.STRING.getParameter()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Vertex.class).indexOnly(event).
-                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+                addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
@@ -1070,9 +1069,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.setTTL(label, 2, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Edge.class).
-                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(INDEX);
+                addKey(name, Mapping.STRING.getParameter()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Edge.class).indexOnly(label).
-                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+                addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(2, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
