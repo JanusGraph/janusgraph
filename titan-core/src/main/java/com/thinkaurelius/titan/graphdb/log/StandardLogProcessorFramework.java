@@ -97,7 +97,6 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         } catch (BackendException e) {
             throw new TitanException(e);
         }
-        graph.shutdown();
     }
 
 

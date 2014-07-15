@@ -26,6 +26,15 @@ public enum ElementCategory {
         }
     }
 
+    public boolean isRelation() {
+        switch(this) {
+            case VERTEX: return false;
+            case EDGE:
+            case PROPERTY: return true;
+            default: throw new IllegalArgumentException();
+        }
+    }
+
     public boolean isValidConstraint(TitanSchemaType type) {
         Preconditions.checkNotNull(type);
         switch(this) {

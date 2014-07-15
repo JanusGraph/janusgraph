@@ -301,7 +301,22 @@ public class IndexSerializer {
             documents = Maps.newHashMap();
             documentsPerStore.put(index.getStoreName(),documents);
         }
-        documents.put(element2String(element),entries);
+        getDocuments(documentsPerStore,index).put(element2String(element),entries);
+    }
+
+    private Map<String,List<IndexEntry>> getDocuments(Map<String,Map<String,List<IndexEntry>>> documentsPerStore, MixedIndexType index) {
+        Map<String,List<IndexEntry>> documents = documentsPerStore.get(index.getStoreName());
+        if (documents==null) {
+            documents = Maps.newHashMap();
+            documentsPerStore.put(index.getStoreName(),documents);
+        }
+        return documents;
+    }
+
+    public void removeElement(Object elementId, MixedIndexType index, Map<String,Map<String,List<IndexEntry>>> documentsPerStore) {
+        Preconditions.checkArgument((index.getElement()==ElementCategory.VERTEX && elementId instanceof Long) ||
+                (index.getElement().isRelation() && elementId instanceof RelationIdentifier),"Invalid element id [%s] provided for index: %s",elementId,index);
+        getDocuments(documentsPerStore,index).put(element2String(elementId),Lists.<IndexEntry>newArrayList());
     }
 
     public Set<IndexUpdate<StaticBuffer,Entry>> reindexElement(TitanElement element, CompositeIndexType index) {
@@ -600,11 +615,13 @@ public class IndexSerializer {
     }
 
     private static final String element2String(TitanElement element) {
-        if (element instanceof TitanVertex) return longID2Name(element.getLongId());
-        else {
-            RelationIdentifier rid = (RelationIdentifier) element.getId();
-            return rid.toString();
-        }
+        return element2String(element.getId());
+    }
+
+    private static final String element2String(Object elementId) {
+        Preconditions.checkArgument(elementId instanceof Long || elementId instanceof RelationIdentifier);
+        if (elementId instanceof Long) return longID2Name((Long)elementId);
+        else return ((RelationIdentifier) elementId).toString();
     }
 
     private static final Object string2ElementId(String str) {

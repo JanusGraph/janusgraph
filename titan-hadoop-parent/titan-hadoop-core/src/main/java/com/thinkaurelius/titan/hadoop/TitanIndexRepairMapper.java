@@ -63,9 +63,6 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
 
     private static final HadoopCompat COMPAT = HadoopCompatLoader.getDefaultCompat();
 
-    private static final EnumSet<SchemaStatus> ACCEPTED_INDEX_STATUSES =
-            EnumSet.of(SchemaStatus.ENABLED, SchemaStatus.REGISTERED);
-
     private StandardTitanGraph graph;
     private ManagementSystem mgmt;
     private String indexName;
@@ -247,14 +244,14 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
         boolean isValidIndex = true;
         if (index instanceof RelationTypeIndex ||
                 (index instanceof TitanGraphIndex && ((TitanGraphIndex)index).isCompositeIndex()) ) {
-            isValidIndex = ACCEPTED_INDEX_STATUSES.contains(schemaVertex.getStatus());
+            isValidIndex = SchemaAction.REINDEX.getApplicableStatus().contains(schemaVertex.getStatus());
         } else {
             Preconditions.checkArgument(index instanceof TitanGraphIndex,"Unexpected index: %s",index);
             TitanGraphIndex gindex = (TitanGraphIndex)index;
             Preconditions.checkArgument(gindex.isMixedIndex());
             for (PropertyKey key : gindex.getFieldKeys()) {
                 SchemaStatus status = gindex.getIndexStatus(key);
-                if (status!=SchemaStatus.DISABLED && !ACCEPTED_INDEX_STATUSES.contains(status)) {
+                if (status!=SchemaStatus.DISABLED && !SchemaAction.REINDEX.getApplicableStatus().contains(status)) {
                     isValidIndex=false;
                     log.warn("Index {} has key {} in an invalid status {}",index,key,status);
                 }

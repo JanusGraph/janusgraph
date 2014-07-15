@@ -209,7 +209,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public TitanManagement getManagementSystem() {
-        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger);
+        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger, schemaCache);
     }
 
     public Set<? extends TitanTransaction> getOpenTransactions() {

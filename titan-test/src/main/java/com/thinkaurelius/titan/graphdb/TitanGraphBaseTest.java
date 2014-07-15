@@ -84,8 +84,8 @@ public abstract class TitanGraphBaseTest {
     }
 
     public void finishSchema() {
-        assert mgmt!=null;
-        mgmt.commit();
+        if (mgmt!=null && mgmt.isOpen())
+            mgmt.commit();
         mgmt=graph.getManagementSystem();
         newTx();
         graph.commit();

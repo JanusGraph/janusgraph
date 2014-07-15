@@ -125,7 +125,6 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     public synchronized void shutdown() throws TitanException {
         cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()),CLEAN_SLEEP_TIME.getNativeUnit());
-        graph.shutdown();
     }
 
     private void fixSecondaryFailure(final StandardTransactionId txId, final TxEntry entry) {
@@ -203,7 +202,11 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                                 TitanSchemaVertex indexV = (TitanSchemaVertex)tx.getVertex(restore.indexId);
                                 MixedIndexType index = (MixedIndexType)indexV.asIndexType();
                                 TitanElement element = restore.retrieve(tx);
-                                graph.getIndexSerializer().reindexElement(element,index,restoredDocs);
+                                if (element!=null) {
+                                    graph.getIndexSerializer().reindexElement(element,index,restoredDocs);
+                                } else { //Element is deleted
+                                    graph.getIndexSerializer().removeElement(restore.elementId,index,restoredDocs);
+                                }
                             }
                             indexTx.restore(restoredDocs);
                             indexTx.commit();

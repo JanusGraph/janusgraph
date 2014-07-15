@@ -355,7 +355,7 @@ public class Backend implements LockerProvider {
             return new KCVSLogManager(sm,logConfig);
         } else {
             Preconditions.checkArgument(config!=null);
-            LogManager lm = getImplementationClass(config,config.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
+            LogManager lm = getImplementationClass(logConfig,logConfig.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
             Preconditions.checkNotNull(lm);
             return lm;
         }

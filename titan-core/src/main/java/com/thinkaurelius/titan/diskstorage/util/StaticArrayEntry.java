@@ -298,7 +298,7 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
     public String toString() {
         String s = super.toString();
         int pos = getValuePosition()*4;
-        return s.substring(0,pos-1) + "->" + s.substring(pos);
+        return s.substring(0,pos-1) + "->" + (getValuePosition()<length()?s.substring(pos):"");
     }
 
     //########## CACHE ############

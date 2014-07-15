@@ -17,6 +17,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -52,6 +53,8 @@ public class ManagementSystem implements TitanManagement {
     private final TransactionalConfiguration transactionalConfig;
     private final ModifiableConfiguration modifyConfig;
     private final UserModifiableConfiguration userConfig;
+    private final SchemaCache schemaCache;
+
 
     private final StandardTitanTx transaction;
 
@@ -61,12 +64,14 @@ public class ManagementSystem implements TitanManagement {
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
-    public ManagementSystem(StandardTitanGraph graph, KCVSConfiguration config, Log sysLog, ManagementLogger mgmtLogger) {
+    public ManagementSystem(StandardTitanGraph graph, KCVSConfiguration config, Log sysLog,
+                            ManagementLogger mgmtLogger, SchemaCache schemaCache) {
         Preconditions.checkArgument(config!=null && graph!=null && sysLog!=null && mgmtLogger!=null);
         this.graph = graph;
         this.baseConfig = config;
         this.sysLog = sysLog;
         this.mgmtLogger = mgmtLogger;
+        this.schemaCache = schemaCache;
         this.transactionalConfig = new TransactionalConfiguration(baseConfig);
         this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
@@ -127,6 +132,9 @@ public class ManagementSystem implements TitanManagement {
         //Communicate schema changes
         if (!updatedTypes.isEmpty()) {
             mgmtLogger.sendCacheEviction(updatedTypes,updatedTypeTriggers,getOpenInstances());
+            for (TitanSchemaVertex schemaVertex : updatedTypes) {
+                schemaCache.expireSchemaElement(schemaVertex.getLongId());
+            }
         }
 
         if (graphShutdownRequired) graph.shutdown();
@@ -251,7 +259,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     private static String composeRelationTypeIndexName(RelationType type, String name) {
-        return type.getName()+RELATION_INDEX_SEPARATOR+name;
+        return String.valueOf(type.getLongId())+RELATION_INDEX_SEPARATOR+name;
     }
 
     @Override
