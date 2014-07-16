@@ -47,6 +47,10 @@ import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
+import com.thinkaurelius.titan.graphdb.schema.PropertyKeyDefinition;
+import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
+import com.thinkaurelius.titan.graphdb.schema.VertexLabelDefinition;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -1013,6 +1017,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx.getVertex(v13).remove();
         assertEquals(1,Iterables.size(v.query().types(link).direction(BOTH).edges()));
 
+        //Finally, test the schema container
+        SchemaContainer schemaContainer = new SchemaContainer(graph);
+        assertTrue(schemaContainer.containsRelationType("weight"));
+        assertTrue(schemaContainer.containsRelationType("friend"));
+        assertTrue(schemaContainer.containsVertexLabel("person"));
+        VertexLabelDefinition vld = schemaContainer.getVertexLabel("tag");
+        assertTrue(vld.isPartitioned());
+        assertFalse(vld.isStatic());
+        PropertyKeyDefinition pkd = schemaContainer.getPropertyKey("name");
+        assertEquals(Cardinality.SET,pkd.getCardinality());
+        assertEquals(String.class,pkd.getDataType());
+        EdgeLabelDefinition eld = schemaContainer.getEdgeLabel("child");
+        assertEquals("child",eld.getName());
+        assertEquals(child.getLongId(),eld.getLongId());
+        assertEquals(Multiplicity.ONE2MANY,eld.getMultiplicity());
+        assertFalse(eld.isUnidirected());
     }
 
     /**
