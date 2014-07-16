@@ -20,10 +20,12 @@ import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.Not;
 import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -34,6 +36,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 import org.apache.zookeeper.KeeperException;
 
@@ -85,12 +88,38 @@ public class SolrIndex implements IndexProvider {
             "Name of the TTL field for Solr cores.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
+    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(INDEX_NS,"mode",
+            "The operation mode for Solr (HTTP or SolrCloud)",
+            ConfigOption.Type.GLOBAL_OFFLINE, "cloud");
+
+    /** HTTP Configuration */
+
+    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<String[]>(INDEX_NS,"http-urls",
+            "List of URLs to use to connect to Solr Servers (LBSolrServer is used), don't add core name to the URL.",
+            ConfigOption.Type.GLOBAL_OFFLINE, new String[] { "http://localhost:8983/solr" });
+
+    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<Integer>(INDEX_NS,"http-connection-timeout",
+            "Solr HTTP connection timeout.",
+            ConfigOption.Type.GLOBAL_OFFLINE, 5000);
+
+    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<Boolean>(INDEX_NS,"http-compression",
+            "Enable/disable compression on the HTTP connections made to Solr.",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(INDEX_NS,"http-max-per-host",
+            "Maximum number of HTTP connections per Solr host.",
+            ConfigOption.Type.GLOBAL_OFFLINE, 20);
+
+    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<Integer>(INDEX_NS,"http-max",
+            "Maximum number of HTTP connections in total to all Solr servers.",
+            ConfigOption.Type.GLOBAL_OFFLINE, 100);
+
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
 
     /**
      * Builds a mapping between the core name and its respective Solr Server connection.
      */
-    CloudSolrServer solrServer;
+    SolrServer solrServer;
     private final Map<String, String> keyFieldIds;
     private final String[] cores;
     private final String ttlField;
@@ -100,9 +129,11 @@ public class SolrIndex implements IndexProvider {
     /**
      *  There are several different modes in which the index can be configured with Solr:
      *  <ol>
-     *    <li>EmbeddedSolrServer - used when Solr runs in same JVM as titan. Good for development but not encouraged</li>
      *    <li>HttpSolrServer - used to connect to Solr instance via Apache HTTP client to a specific solr instance bound to a specific URL.</li>
-     *    <li>CloudSolrServer - used to connect to a SolrCloud cluster that uses Apache Zookeeper. This lets clients hit one host and Zookeeper distributes queries and writes automatically</li>
+     *    <li>
+     *        CloudSolrServer - used to connect to a SolrCloud cluster that uses Apache Zookeeper.
+     *                      This lets clients hit one host and Zookeeper distributes queries and writes automatically
+     *    </li>
      *  </ol>
      *  <p>
      *      An example follows in configuring Solr support for Titan::
@@ -117,30 +148,19 @@ public class SolrIndex implements IndexProvider {
      *
      *                  public MyClass(String mode) {
      *                      config = new BaseConfiguration()
-     *                      if (mode.equals(SOLR_MODE_EMBEDDED)) {
-     *                          config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("solr"));
-     *                          String home = "titan-solr/target/test-classes/solr";
-     *                          config.setProperty(SOLR_MODE, SOLR_MODE_EMBEDDED);
-     *                          config.setProperty(SOLR_CORE_NAMES, "core1,core2,core3");
-     *                          config.setProperty(SOLR_HOME, home);
-     *
-     *                      } else if (mode.equals(SOLR_MODE_HTTP)) {
-     *                          config.setProperty(SOLR_MODE, SOLR_MODE_HTTP);
-     *                          config.setProperty(SOLR_HTTP_URL, "http://localhost:8983/solr");
-     *                          config.setProperty(SOLR_HTTP_CONNECTION_TIMEOUT, 10000); //in milliseconds
-     *
+     *                      if (mode.equals(SOLR_MODE_HTTP)) {
+     *                          config.set(SOLR_MODE, "http");
+     *                          config.set(HTTP_URL, new String[] { "http://localhost:8983/solr" });
+     *                          config.set(HTTP_CONNECTION_TIMEOUT, 10000); //in milliseconds
      *                      } else if (mode.equals(SOLR_MODE_CLOUD)) {
-     *                          config.setProperty(SOLR_MODE, SOLR_MODE_CLOUD);
+     *                          config.set(SOLR_MODE, SOLR_MODE_CLOUD);
      *                          //Don't add the protocol: http:// or https:// to the url
-     *                          config.setProperty(SOLR_CLOUD_ZOOKEEPER_URL, "localhost:2181")
-     *                          //Set the default collection for Solr in Zookeeper.
-     *                          //Titan allows for more but just needs a default one as a fallback
-     *                          config.setProperty(SOLR_CLOUD_COLLECTION, "store");
+     *                          config.set(SOLR_CLOUD_ZOOKEEPER_URL, "localhost:2181");
      *                      }
      *
-     *                      config.setProperty(SOLR_CORE_NAMES, "store,store1,store2,store3");
+     *                      config.set(CORES, new String[] { "a", "b", "c" });
      *                      //A key/value list where key is the core name and value us the name of the field used in solr to uniquely identify a document.
-     *                      config.setProperty(SOLR_KEY_FIELD_NAMES, "store=document_id,store1=document_id,store2=document_id,store3=document_id");
+     *                      config.set(KEY_FIELD_NAMES, new String[] { "store=document_id" , "store1=document_id" });
      *                  }
      *              }
      *          }
@@ -168,19 +188,37 @@ public class SolrIndex implements IndexProvider {
      *  </p>
      * @param config Titan configuration passed in at start up time
      */
-    public SolrIndex(Configuration config) throws BackendException {
+    public SolrIndex(final Configuration config) throws BackendException {
+        String mode = config.get(SOLR_MODE);
+
+        cores = config.get(CORES);
+
         try {
-            String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
-            cores = config.get(CORES);
+            if (mode.equalsIgnoreCase("cloud")) {
+                String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
 
-            solrServer = new CloudSolrServer(zookeeperUrl, true);
-            solrServer.connect();
-            createCollectionIfNotExists(solrServer, config, cores);
-            if (cores.length == 1)
-                solrServer.setDefaultCollection(cores[0]);
+                CloudSolrServer cloudServer = new CloudSolrServer(zookeeperUrl, true);
+                cloudServer.connect();
+                createCollectionIfNotExists(cloudServer, config, cores);
+                if (cores.length == 1)
+                    cloudServer.setDefaultCollection(cores[0]);
 
-            for (String collection : cores)
-                waitForRecoveriesToFinish(solrServer, collection);
+                for (String collection : cores)
+                    waitForRecoveriesToFinish(cloudServer, collection);
+
+                solrServer = cloudServer;
+            } else if (mode.equalsIgnoreCase("http")) {
+                HttpClient clientParams = HttpClientUtil.createClient(new ModifiableSolrParams() {{
+                    add(HttpClientUtil.PROP_ALLOW_COMPRESSION, config.get(HTTP_ALLOW_COMPRESSION).toString());
+                    add(HttpClientUtil.PROP_CONNECTION_TIMEOUT, config.get(HTTP_CONNECTION_TIMEOUT).toString());
+                    add(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, config.get(HTTP_MAX_CONNECTIONS_PER_HOST).toString());
+                    add(HttpClientUtil.PROP_MAX_CONNECTIONS, config.get(HTTP_GLOBAL_MAX_CONNECTIONS).toString());
+                }});
+
+                solrServer = new LBHttpSolrServer(clientParams, config.get(HTTP_URLS));
+            } else {
+                throw new IllegalArgumentException("Unknown Solr operation mode: " + mode);
+            }
         } catch (IOException e) {
             throw new PermanentBackendException(e);
         } catch (SolrServerException e) {
@@ -229,7 +267,6 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
-        //TODO: research usage of the informations parameter
         try {
             for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String coreName = stores.getKey();
