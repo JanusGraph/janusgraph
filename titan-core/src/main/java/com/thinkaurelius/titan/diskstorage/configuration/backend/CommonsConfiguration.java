@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -83,8 +84,7 @@ public class CyclicPathFilterMap {
                 }
             }
 
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.PATHS_FILTERED, pathsFiltered);
-            //context.getCounter(Counters.PATHS_FILTERED).increment(pathsFiltered);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.PATHS_FILTERED, pathsFiltered);
             context.write(NullWritable.get(), value);
         }
     }

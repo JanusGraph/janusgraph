@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -53,8 +54,7 @@ public class CountMapReduce {
                 final long pathCount = value.pathCount();
                 this.longWritable.set(pathCount);
                 context.write(NullWritable.get(), this.longWritable);
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_COUNTED, pathCount > 0 ? 1 : 0);
-                //context.getCounter(Counters.VERTICES_COUNTED).increment(pathCount > 0 ? 1 : 0);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_COUNTED, pathCount > 0 ? 1 : 0);
             } else {
                 long edgesCounted = 0;
                 long pathCount = 0;
@@ -67,8 +67,7 @@ public class CountMapReduce {
                 }
                 this.longWritable.set(pathCount);
                 context.write(NullWritable.get(), this.longWritable);
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_COUNTED, edgesCounted);
-                //context.getCounter(Counters.EDGES_COUNTED).increment(edgesCounted);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_COUNTED, edgesCounted);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);

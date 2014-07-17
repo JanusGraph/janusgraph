@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -41,10 +42,8 @@ public class CountMapReduceTest extends BaseTest {
             assertEquals(result.getSecond().get(), 6);
         }
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CountMapReduce.Counters.VERTICES_COUNTED), 6L);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 6l);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CountMapReduce.Counters.EDGES_COUNTED), 0L);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 0l);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CountMapReduce.Counters.VERTICES_COUNTED), 6L);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CountMapReduce.Counters.EDGES_COUNTED), 0L);
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
@@ -59,10 +58,8 @@ public class CountMapReduceTest extends BaseTest {
             assertEquals(result.getSecond().get(), 6);
         }
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CountMapReduce.Counters.VERTICES_COUNTED), 0L);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 0l);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CountMapReduce.Counters.EDGES_COUNTED), 6L);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 6l);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CountMapReduce.Counters.VERTICES_COUNTED), 0L);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CountMapReduce.Counters.EDGES_COUNTED), 6L);
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 
@@ -85,10 +82,8 @@ public class CountMapReduceTest extends BaseTest {
         assertEquals(results.size(), 1);
         assertEquals(results.get(0).getSecond().get(), 23l);
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CountMapReduce.Counters.VERTICES_COUNTED), 4L);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.VERTICES_COUNTED).getValue(), 4l);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CountMapReduce.Counters.EDGES_COUNTED), 0L);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CountMapReduce.Counters.EDGES_COUNTED).getValue(), 0l);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CountMapReduce.Counters.VERTICES_COUNTED), 4L);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CountMapReduce.Counters.EDGES_COUNTED), 0L);
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
 }

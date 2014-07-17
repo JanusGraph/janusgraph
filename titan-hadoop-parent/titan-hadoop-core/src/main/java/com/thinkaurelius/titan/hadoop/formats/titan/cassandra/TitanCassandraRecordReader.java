@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
-import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.hadoop.conf.Configuration;
@@ -34,7 +34,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         this.reader.initialize(inputSplit, taskAttemptContext);
-        this.configuration = HadoopCompatLoader.getDefaultCompat().getContextConfiguration(taskAttemptContext);
+        this.configuration = DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext);
     }
 
     @Override

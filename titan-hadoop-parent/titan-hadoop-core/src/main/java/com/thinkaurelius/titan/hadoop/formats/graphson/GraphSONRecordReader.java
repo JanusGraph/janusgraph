@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configuration;
@@ -32,7 +32,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     @Override
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);
-        this.configuration = HadoopCompatLoader.getDefaultCompat().getContextConfiguration(context);
+        this.configuration = DEFAULT_COMPAT.getContextConfiguration(context);
         //this.configuration = context.getConfiguration();
     }
 

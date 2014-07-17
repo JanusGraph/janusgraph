@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -50,7 +51,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
             }
             for (Edge edge : vertex.getEdges(Direction.OUT, "created")) {
                 //System.out.println(vertex + " " + edge);
-                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(edge + " path count", ((StandardFaunusEdge) edge).pathCount(), 1);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
                 assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
@@ -67,8 +68,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 4);
     }
 
     public void testOutAllTraversalWithPaths() throws Exception {
@@ -98,8 +98,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
     }
 
     public void testOutAllTraversal() throws Exception {
@@ -130,8 +129,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
     }
 
     public void testBothCreatedTraversal() throws Exception {
@@ -156,7 +154,6 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 8);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 8);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 8);
     }
 }

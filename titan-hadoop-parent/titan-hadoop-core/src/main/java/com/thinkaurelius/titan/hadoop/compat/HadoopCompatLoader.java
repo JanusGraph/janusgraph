@@ -14,15 +14,7 @@ public class HadoopCompatLoader {
     private static final Logger log =
             LoggerFactory.getLogger(HadoopCompatLoader.class);
 
-    private static volatile HadoopCompat defaultCompat;
-
-    public static HadoopCompat getDefaultCompat() {
-        // Volatile semantics are enough -- it's OK if we create and return more than one
-        if (null == defaultCompat) {
-            defaultCompat = getCompat();
-        }
-        return defaultCompat;
-    }
+    public static final HadoopCompat DEFAULT_COMPAT = getCompat();
 
     // TODO add a string argument that allows specifying a class instead of relying heuristics around VersionInfo.getVersion()
     // TODO add threadsafe caching that is aware of the string argument and instantiates a compat for each argument at most once (assuming the instantiation succeeds)

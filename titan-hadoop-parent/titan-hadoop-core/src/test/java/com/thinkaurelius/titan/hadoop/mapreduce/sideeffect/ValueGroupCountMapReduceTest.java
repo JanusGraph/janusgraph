@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -65,8 +66,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
             }
         }
 
-        assertEquals(12, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
-//        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(12, DEFAULT_COMPAT.getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
     }
 
     public void testVertexNoProperty() throws Exception {
@@ -84,8 +84,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
             }
         }
 
-        assertEquals(12, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
-//        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(12, DEFAULT_COMPAT.getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
     }
 
     public void testEdgeTimeProperty() throws Exception {
@@ -108,8 +107,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
             }
         }
 
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
     }
 
     public void testEdgeLabelDistribution1() throws Exception {
@@ -135,8 +133,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
             }
         }
 
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
     }
 
     public void testEdgeLabelDistribution2() throws Exception {
@@ -162,8 +159,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
             }
         }
 
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED).getValue());
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, ValueGroupCountMapReduce.Counters.PROPERTIES_COUNTED));
     }
 
     public void testPropertySortingOnInteger() throws Exception {

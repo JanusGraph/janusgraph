@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -43,10 +44,8 @@ public class PropertyFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.VERTICES_FILTERED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.EDGES_FILTERED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -65,10 +64,8 @@ public class PropertyFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.VERTICES_FILTERED).getValue(), 3);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 3);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.EDGES_FILTERED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 3);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -87,10 +84,8 @@ public class PropertyFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.VERTICES_FILTERED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.EDGES_FILTERED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -114,10 +109,8 @@ public class PropertyFilterMapTest extends BaseTest {
         }
         assertEquals(counter, 2);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.VERTICES_FILTERED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyFilterMap.Counters.EDGES_FILTERED).getValue(), 10);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 10);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.VERTICES_FILTERED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyFilterMap.Counters.EDGES_FILTERED), 10);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }

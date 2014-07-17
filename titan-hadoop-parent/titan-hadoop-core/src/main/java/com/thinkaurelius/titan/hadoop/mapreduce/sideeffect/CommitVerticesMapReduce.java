@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
@@ -103,10 +105,8 @@ public class CommitVerticesMapReduce {
                 verticesDropped++;
             }
 
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_DROPPED, verticesDropped);
-//            context.getCounter(Counters.VERTICES_DROPPED).increment(verticesDropped);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_KEPT, verticesKept);
-//            context.getCounter(Counters.VERTICES_KEPT).increment(verticesKept);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_DROPPED, verticesDropped);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_KEPT, verticesKept);
         }
     }
 
@@ -183,8 +183,8 @@ public class CommitVerticesMapReduce {
                 else if (!vertex.isRemoved())
                     context.write(NullWritable.get(), vertex);
 
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_KEPT, Iterables.size(vertex.getEdges(OUT)));
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_KEPT, Iterables.size(vertex.getEdges(IN)));
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_KEPT, Iterables.size(vertex.getEdges(OUT)));
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_KEPT, Iterables.size(vertex.getEdges(IN)));
             }
         }
     }

@@ -229,18 +229,13 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE))
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
-        // Create temporary sequence file directory if we have multiple jobs chained together
-        final String jobTmp;
-        if (1 < jobs.size()) {
-            Path tmpPath = graph.getTemporarySeqFileLocation();
-            final FileSystem fs = FileSystem.get(graph.getConf());
-            fs.mkdirs(tmpPath);
-            logger.info("Created " + tmpPath + " on filesystem " + fs);
-            jobTmp = tmpPath.toString() + "/" + Tokens.JOB;
-            logger.info("Set jobTmp=" + jobTmp);
-        } else {
-            jobTmp = null;
-        }
+        // Create temporary job data directory on the filesystem
+        Path tmpPath = graph.getJobDir();
+        final FileSystem fs = FileSystem.get(graph.getConf());
+        fs.mkdirs(tmpPath);
+        logger.debug("Created " + tmpPath + " on filesystem " + fs);
+        final String jobTmp = tmpPath.toString() + "/" + Tokens.JOB;
+        logger.debug("Set jobDir=" + jobTmp);
 
         //////// CHAINING JOBS TOGETHER
 
@@ -248,7 +243,7 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             final Job job = this.jobs.get(i);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
-
+            SequenceFileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
             //job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
             job.setJar(hadoopFileJar);
 
@@ -260,7 +255,6 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
                     FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
                 }
             } else {
-                Preconditions.checkNotNull(jobTmp);
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
                 FileInputFormat.setInputPaths(job, new Path(jobTmp + "-" + (i - 1)));
                 FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
@@ -272,9 +266,7 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
             } else {
-                Preconditions.checkNotNull(jobTmp);
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
-                SequenceFileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
                 MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
             }
@@ -292,10 +284,10 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
         }
 
         final FileSystem hdfs = FileSystem.get(this.getConf());
-        if (null != graph.getTemporarySeqFileLocation() &&
-            graph.getTemporarySeqFileOverwrite() &&
-            hdfs.exists(graph.getTemporarySeqFileLocation())) {
-            hdfs.delete(graph.getTemporarySeqFileLocation(), true);
+        if (null != graph.getJobDir() &&
+            graph.getJobDirOverwrite() &&
+            hdfs.exists(graph.getJobDir())) {
+            hdfs.delete(graph.getJobDir(), true);
         }
 
         if (showHeader) {
@@ -320,12 +312,7 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
 
-        final String jobTmp;
-        if (1 < jobs.size()) {
-            jobTmp = graph.getTemporarySeqFileLocation().toString() + "/" + Tokens.JOB;
-        } else {
-            jobTmp = null;
-        }
+        final String jobTmp = graph.getJobDir().toString() + "/" + Tokens.JOB;
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
@@ -334,10 +321,10 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             } catch (final Exception e) {
             }
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
-            //logger.info("Job data location: " + jobTmp + "-" + i);
             boolean success = job.waitForCompletion(true);
             if (i > 0) {
                 Preconditions.checkNotNull(jobTmp);
+                logger.debug("Cleaninng job data location: " + jobTmp + "-" + i);
                 final Path path = new Path(jobTmp + "-" + (i - 1));
                 // delete previous intermediate graph data
                 for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.GRAPH + "*"))) {

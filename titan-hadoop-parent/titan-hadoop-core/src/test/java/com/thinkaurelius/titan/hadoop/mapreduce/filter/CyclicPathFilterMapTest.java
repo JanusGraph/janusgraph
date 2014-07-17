@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -63,8 +64,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CyclicPathFilterMap.Counters.PATHS_FILTERED).getValue(), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -108,8 +108,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         assertEquals(graph.get(6l).pathCount(), 0);
 
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CyclicPathFilterMap.Counters.PATHS_FILTERED).getValue(), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }

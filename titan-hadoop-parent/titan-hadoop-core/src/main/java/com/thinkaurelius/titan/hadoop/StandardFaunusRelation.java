@@ -2,22 +2,28 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.tinkerpop.blueprints.Direction;
+
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class StandardFaunusRelation extends FaunusPathElement implements FaunusRelation {
 
-    protected FaunusRelationType type;
+    private FaunusRelationType type;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(StandardFaunusRelation.class);
 
     public StandardFaunusRelation(Configuration config, long id, FaunusRelationType type) {
         super(config,id);
         this.type=type;
+        Preconditions.checkNotNull(this.type);
     }
 
     @Override
@@ -25,7 +31,6 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
         super.updateSchema(schema);
         schema.add(type);
     }
-
 
     @Override
     public void setProperty(FaunusRelationType type, Object value) {
@@ -39,9 +44,8 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
         }
     }
 
-
     public String getTypeName() {
-        return type.getName();
+        return null != type ? type.getName() : null;
     }
 
     @Override
@@ -57,7 +61,6 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     public int getArity() {
         return type.isPropertyKey()?1:2;
     }
-
 
     public abstract TitanVertex getVertex(int pos);
 
@@ -126,5 +129,9 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     }
 
 
+    protected void setType(FaunusRelationType t) {
+        type = t;
+        Preconditions.checkNotNull(type);
+    }
 
 }

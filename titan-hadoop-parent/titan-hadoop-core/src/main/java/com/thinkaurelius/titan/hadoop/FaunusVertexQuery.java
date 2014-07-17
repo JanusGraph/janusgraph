@@ -18,6 +18,10 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -26,6 +30,9 @@ import java.util.*;
 public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVertexQuery> implements TitanVertexQuery<FaunusVertexQuery> {
 
     private FaunusPathElement baseElement;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(FaunusVertexQuery.class);
 
     private boolean queryAll;
 
@@ -145,13 +152,13 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
             }
         }
 
-        result = new FilterIterable(condition, element, result);
+        result = new FilterIterable(condition, element, result, dir);
 
         //Order
         if (!orders.isEmpty()) {
             ArrayList<FaunusRelation> allRels = Lists.newArrayList(result);
             Collections.sort(allRels,orders);
-            result = new RemoveOriginalIterable(allRels, element);
+            result = new RemoveOriginalIterable(allRels, element, dir);
         }
         //Limit
         if (limit!= Query.NO_LIMIT) {
@@ -315,10 +322,12 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
 
         private final Iterable<FaunusRelation> original;
         private final FaunusElement element;
+        private final Direction dir;
 
-        private RemoveOriginalIterable(Iterable<FaunusRelation> original, FaunusElement element) {
+        private RemoveOriginalIterable(Iterable<FaunusRelation> original, FaunusElement element, Direction dir) {
             this.original = original;
             this.element = element;
+            this.dir = dir;
         }
 
 
@@ -344,8 +353,14 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
                 public void remove() {
                     current.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                     if (current.isNew()) {
-                        element.inAdjacency.remove(current.getType(),current);
-                        element.outAdjacency.remove(current.getType(), current);
+                        if (dir.equals(Direction.BOTH) || dir.equals(Direction.IN)) {
+                            log.trace("edge removal: edge={} direction={} (in)", current, dir);
+                            element.inAdjacency.remove(current.getType(),current);
+                        }
+                        if (dir.equals(Direction.BOTH) || dir.equals(Direction.OUT)) {
+                            log.trace("edge removal: edge={} direction={} (out)", current, dir);
+                            element.outAdjacency.remove(current.getType(), current);
+                        }
                     }
                     element.updateLifeCycle(ElementLifeCycle.Event.REMOVED_RELATION);
                 }
@@ -358,12 +373,14 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
         private final Condition<TitanRelation> condition;
         private final FaunusElement element;
         private final Iterable<FaunusRelation> original;
+        private final Direction dir;
 
         private FilterIterable(Condition<TitanRelation> condition, FaunusElement element,
-                               Iterable<FaunusRelation> original) {
+                               Iterable<FaunusRelation> original, Direction dir) {
             this.condition = condition;
             this.element = element;
             this.original = original;
+            this.dir = dir;
         }
 
         @Override
@@ -401,10 +418,15 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
                 public void remove() {
                     if (next==null && !reachedEnd) {
                         current.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+                        //log.trace("Lifecycle removal");
                         if (current.isNew()) {
                             iter.remove();
-                            element.inAdjacency.remove(current.getType(),current);
-                            element.outAdjacency.remove(current.getType(),current);
+                            if (dir.equals(Direction.BOTH) || dir.equals(Direction.IN)) {
+                                element.inAdjacency.remove(current.getType(),current);
+                            }
+                            if (dir.equals(Direction.BOTH) || dir.equals(Direction.OUT)) {
+                                element.outAdjacency.remove(current.getType(),current);
+                            }
                         }
                         element.updateLifeCycle(ElementLifeCycle.Event.REMOVED_RELATION);
                     } else throw new UnsupportedOperationException();

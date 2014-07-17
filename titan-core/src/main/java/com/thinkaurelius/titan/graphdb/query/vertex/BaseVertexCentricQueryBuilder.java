@@ -83,7 +83,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     @Override
     public Q adjacent(TitanVertex vertex) {
-        Preconditions.checkArgument(vertex!=null,"Not a valid provided for adjacency constraint");
+        Preconditions.checkArgument(vertex!=null,"Not a valid vertex provided for adjacency constraint");
         this.adjacentVertex = vertex;
         return getThis();
     }

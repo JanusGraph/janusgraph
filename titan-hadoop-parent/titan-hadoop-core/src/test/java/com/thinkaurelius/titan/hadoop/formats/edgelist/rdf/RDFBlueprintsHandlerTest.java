@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
+import com.thinkaurelius.titan.hadoop.FaunusTypeManager;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
@@ -40,6 +41,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     }
 
     public void testUseFragments() throws Exception {
+        FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
         config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
         config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
@@ -58,7 +60,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
         assertEquals(handler.next().getProperty("name"), "Abraham_Lincoln");
         assertEquals(handler.next().getProperty("name"), "Person");
-        assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "type");
+        FaunusElement faunusElement = handler.next();
+        assertNotNull(faunusElement);
+        assertTrue(faunusElement instanceof StandardFaunusEdge);
+        assertEquals("type", ((StandardFaunusEdge)faunusElement).getLabel());
         assertFalse(handler.hasNext());
 
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/2000/01/rdf-schema#label> \"Abraham Lincoln\" .");
@@ -71,6 +76,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     }
 
     public void testAsProperties() throws Exception {
+        FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
         config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
         config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -95,6 +101,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
 
     public void testLiteralProperties() throws Exception {
+        FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
         config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
         config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
@@ -140,6 +147,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     }
 
     public void testMultiLineParse() throws Exception {
+        FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
         config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
         config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);

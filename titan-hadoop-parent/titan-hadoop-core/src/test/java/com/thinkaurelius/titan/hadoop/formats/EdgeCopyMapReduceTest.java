@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -22,9 +22,6 @@ public class EdgeCopyMapReduceTest extends BaseTest {
 
     MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
-    private static final HadoopCompat COMPAT =
-            HadoopCompatLoader.getDefaultCompat();
-
     public void setUp() {
         mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new EdgeCopyMapReduce.Map());
@@ -39,10 +36,8 @@ public class EdgeCopyMapReduceTest extends BaseTest {
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
     public void testInversionWithTinkerGraphInEdges() throws Exception {
@@ -53,10 +48,8 @@ public class EdgeCopyMapReduceTest extends BaseTest {
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
     public void testInversionWithGraphOfTheGodsOutEdges() throws Exception {
@@ -67,10 +60,8 @@ public class EdgeCopyMapReduceTest extends BaseTest {
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
     public void testInversionWithGraphOfTheGodsInEdges() throws Exception {
@@ -81,10 +72,8 @@ public class EdgeCopyMapReduceTest extends BaseTest {
         }
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
 }

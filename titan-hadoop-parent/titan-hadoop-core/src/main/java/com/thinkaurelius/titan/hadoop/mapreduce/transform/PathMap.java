@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.SafeMapperOutputs;
 import com.tinkerpop.blueprints.Direction;
@@ -61,8 +62,7 @@ public class PathMap {
                     this.textWritable.set(path.toString());
                     this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
-//                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
@@ -75,8 +75,7 @@ public class PathMap {
                         edgesProcessed++;
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
-//                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);

@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -122,11 +123,9 @@ public class LinkMapReduce {
                     }
                 }
                 if (this.direction.equals(OUT)) {
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_CREATED, edgesCreated);
-                    //context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_CREATED, edgesCreated);
                 } else {
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_CREATED, edgesCreated);
-                    //context.getCounter(Counters.IN_EDGES_CREATED).increment(edgesCreated);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_CREATED, edgesCreated);
                 }
 
             }
@@ -184,11 +183,9 @@ public class LinkMapReduce {
             context.write(key, this.holder.set(outTag, vertex));
 
             if (this.direction.equals(OUT)) {
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_CREATED, edgesCreated);
-                //context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_CREATED, edgesCreated);
             } else {
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_CREATED, edgesCreated);
-                //context.getCounter(Counters.IN_EDGES_CREATED).increment(edgesCreated);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_CREATED, edgesCreated);
             }
         }
 
@@ -222,11 +219,9 @@ public class LinkMapReduce {
             context.write(NullWritable.get(), vertex);
 
             if (this.direction.equals(OUT)) {
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_CREATED, edgesCreated);
-                //context.getCounter(Counters.OUT_EDGES_CREATED).increment(edgesCreated);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_CREATED, edgesCreated);
             } else {
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_CREATED, edgesCreated);
-                //context.getCounter(Counters.IN_EDGES_CREATED).increment(edgesCreated);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_CREATED, edgesCreated);
             }
         }
     }

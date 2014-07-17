@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -49,10 +50,8 @@ public class VerticesMapTest extends BaseTest {
             }
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.EDGES_PROCESSED).getValue(), 12);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesMap.Counters.EDGES_PROCESSED), 12);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesMap.Counters.EDGES_PROCESSED), 12);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesMap.Counters.VERTICES_PROCESSED), 6);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -75,10 +74,8 @@ public class VerticesMapTest extends BaseTest {
             }
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.EDGES_PROCESSED).getValue(), 12);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesMap.Counters.EDGES_PROCESSED), 12);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesMap.Counters.EDGES_PROCESSED), 12);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesMap.Counters.VERTICES_PROCESSED), 6);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }

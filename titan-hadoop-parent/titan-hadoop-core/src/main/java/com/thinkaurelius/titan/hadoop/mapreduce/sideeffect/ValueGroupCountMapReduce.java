@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -75,16 +76,14 @@ public class ValueGroupCountMapReduce {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.map.incr(ElementPicker.getProperty(value, this.property), value.pathCount());
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.PROPERTIES_COUNTED, 1L);
-//                    context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROPERTIES_COUNTED, 1L);
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         this.map.incr(ElementPicker.getProperty(edge, this.property), edge.pathCount());
-                        HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.PROPERTIES_COUNTED, 1L);
-//                        context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
+                        DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROPERTIES_COUNTED, 1L);
                     }
                 }
             }

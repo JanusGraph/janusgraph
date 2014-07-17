@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -54,10 +55,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
-        assertEquals(12, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
+        assertEquals(12, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
     }
 
     public void testEdgePropertySizeDistribution() throws Exception {
@@ -78,10 +77,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
     }
 
     public void testVertexDistribution() throws Exception {
@@ -97,10 +94,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(12, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
+        assertEquals(12, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
 
     }
 
@@ -117,10 +112,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
 
     }
 }

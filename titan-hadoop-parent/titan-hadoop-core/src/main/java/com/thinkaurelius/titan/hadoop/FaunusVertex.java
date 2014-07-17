@@ -14,6 +14,8 @@ import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -35,6 +37,9 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     private FaunusVertexLabel vertexLabel = FaunusVertexLabel.DEFAULT_VERTEXLABEL;
 
+    private static final Logger log =
+            LoggerFactory.getLogger(FaunusVertex.class);
+
     public FaunusVertex() {
         super(EmptyConfiguration.immutable(), NO_ID);
     }
@@ -54,9 +59,16 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     public void addAll(final FaunusVertex vertex) {
         this.id = vertex.getLongId();
-        this.inAdjacency = vertex.inAdjacency;
-        this.outAdjacency = vertex.outAdjacency;
+//        this.inAdjacency = vertex.inAdjacency;
+//        this.outAdjacency = vertex.outAdjacency;
+        initializeAdjacency(Direction.BOTH);
+        this.inAdjacency.putAll(vertex.inAdjacency);
+        this.outAdjacency.putAll(vertex.outAdjacency);
         this.getPaths(vertex, false);
+        /* TODO reconsider lifecycle handling -- what does it mean to add a
+         * removed vertex to a live one? do we just want to ignore the removed
+         * vertex? take its edges but keep the recipient alive?
+         */
         this.lifecycle = vertex.getLifeCycle();
         this.addEdges(BOTH, vertex);
     }
@@ -178,7 +190,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     @Override
     public Iterable<TitanRelation> getRelations() {
-        return query().relations();
+         return query().relations();
     }
 
     @Override
@@ -213,12 +225,23 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public StandardFaunusEdge addEdge(final StandardFaunusEdge edge) {
-        edge.setConf(getConf());
+        // Do not call setConf here, it's not necessary and it wipes the path tracker state
+        //edge.setConf(getConf());
         return (StandardFaunusEdge)super.addRelation(edge);
     }
 
+    /**
+     * Copy edges from another vertex to this one.
+     *
+     * @param direction
+     *            direction of edges to copy from the perspective of the
+     *            {@code vertex} parameter
+     * @param vertex
+     *            the other vertex (source of copied edges)
+     */
     public void addEdges(final Direction direction, final FaunusVertex vertex) {
         for (TitanEdge edge : vertex.query().direction(direction).titanEdges()) {
+            log.trace("Copying edge {} from vertex {} to vertex {}", edge, vertex, this);
             addEdge((StandardFaunusEdge)edge);
         }
     }

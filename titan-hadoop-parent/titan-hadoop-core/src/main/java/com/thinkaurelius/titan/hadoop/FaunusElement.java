@@ -12,6 +12,10 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -36,6 +40,9 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
             return !e.isRemoved();
         }
     };
+
+    private static final Logger log =
+            LoggerFactory.getLogger(FaunusElement.class);
 
     public static final long NO_ID = -1;
     static final SetMultimap<FaunusRelationType, FaunusRelation> EMPTY_ADJACENCY = ImmutableSetMultimap.of();
@@ -124,7 +131,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
         else return outAdjacency;
     }
 
-    private void initializeAdjacency(Direction dir) {
+    protected void initializeAdjacency(Direction dir) {
         if ((dir==Direction.OUT || dir==Direction.BOTH) && this.outAdjacency == EMPTY_ADJACENCY)
             outAdjacency = HashMultimap.create();
         if ((dir==Direction.IN || dir==Direction.BOTH) && this.inAdjacency == EMPTY_ADJACENCY)
@@ -217,6 +224,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
                 }
                 adjacency.put(relation.getType(), relation);
                 updateLifeCycle(ElementLifeCycle.Event.ADDED_RELATION);
+                log.trace("Added relation {} to {}", relation, this);
             }
         }
         if (old!=null) return old;
@@ -225,7 +233,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
 
     private static void ensureUniqueness(FaunusRelationType type, SetMultimap<FaunusRelationType, FaunusRelation> adjacency) {
         for (FaunusRelation rel : adjacency.get(type)) {
-            if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which" +
+            if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which " +
                     "violates the multiplicity constraint: " + type.getMultiplicity());
         }
     }

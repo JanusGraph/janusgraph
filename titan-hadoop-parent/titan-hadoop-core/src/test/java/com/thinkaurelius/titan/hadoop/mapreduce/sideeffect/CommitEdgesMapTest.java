@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -45,14 +46,10 @@ public class CommitEdgesMapTest extends BaseTest {
             assertFalse(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 0);
     }
 
     public void testKeepAllEdges() throws Exception {
@@ -72,14 +69,10 @@ public class CommitEdgesMapTest extends BaseTest {
             assertTrue(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 6);
     }
 
     public void testDropAllCreatedEdge() throws Exception {
@@ -109,14 +102,10 @@ public class CommitEdgesMapTest extends BaseTest {
         }
         assertEquals(counter, 3);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 2);
     }
 
     public void testKeepAllCreatedEdge() throws Exception {
@@ -148,14 +137,10 @@ public class CommitEdgesMapTest extends BaseTest {
         }
         assertEquals(counter, 5);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_DROPPED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.OUT_EDGES_KEPT).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_DROPPED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitEdgesMap.Counters.IN_EDGES_KEPT).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_DROPPED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.OUT_EDGES_KEPT), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_DROPPED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitEdgesMap.Counters.IN_EDGES_KEPT), 4);
     }
 
 }

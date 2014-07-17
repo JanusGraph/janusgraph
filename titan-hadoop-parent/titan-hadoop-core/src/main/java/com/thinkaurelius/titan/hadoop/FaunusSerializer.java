@@ -22,6 +22,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -42,6 +44,9 @@ public class FaunusSerializer {
     private final boolean trackState;
     private final boolean trackPaths;
     private final Configuration configuration;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(FaunusSerializer.class);
 
     public FaunusSerializer(final Configuration configuration) {
         Preconditions.checkNotNull(configuration);
@@ -113,8 +118,11 @@ public class FaunusSerializer {
     private void readPathElement(final FaunusPathElement element, Schema schema, final DataInput in) throws IOException {
         readElement(element, schema, in);
         if (trackPaths) {
-            element.tracker = new FaunusPathElement.Tracker(readElementPaths(in),
+            List<List<MicroElement>> paths = readElementPaths(in);
+            element.tracker = new FaunusPathElement.Tracker(paths,
                     (element instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(element.id) : new StandardFaunusEdge.MicroEdge(element.id));
+
+            log.trace("readPathElement element={} paths={}", element, paths);
         } else {
             element.pathCounter = WritableUtils.readVLong(in);
             element.tracker = FaunusPathElement.DEFAULT_TRACK;
@@ -199,6 +207,7 @@ public class FaunusSerializer {
                                 throw ExceptionFactory.bothIsNotSupported();
                         }
                         relation = edge;
+                        log.trace("readEdges edge={} paths={}", edge, edge.tracker.paths);
                     } else {
                         assert type.isPropertyKey() && direction==Direction.OUT;
                         final StandardFaunusProperty property = new StandardFaunusProperty(configuration);

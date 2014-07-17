@@ -1,7 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 
@@ -31,13 +34,15 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
     private final ScriptEngine engine = new FaunusGremlinScriptEngine();
     private final VertexQueryFilter vertexQuery;
     private final Configuration configuration;
+    private final BasicConfiguration titanConf;
     private final LineRecordReader lineRecordReader;
     private FaunusVertex vertex = new FaunusVertex();
 
     public ScriptRecordReader(final VertexQueryFilter vertexQuery, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader = new LineRecordReader();
         this.vertexQuery = vertexQuery;
-        this.configuration = HadoopCompatLoader.getDefaultCompat().getContextConfiguration(context);
+        this.configuration = DEFAULT_COMPAT.getContextConfiguration(context);
+        this.titanConf = TitanHadoopConfiguration.of(configuration);
 
         final FileSystem fs = FileSystem.get(configuration);
         try {

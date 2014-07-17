@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementChecker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Compare;
@@ -88,8 +89,7 @@ public class IntervalFilterMap {
             if (this.isVertex) {
                 if (value.hasPaths() && !(this.startChecker.isLegal(value) && this.endChecker.isLegal(value))) {
                     value.clearPaths();
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_FILTERED, 1L);
-                    //context.getCounter(Counters.VERTICES_FILTERED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_FILTERED, 1L);
                 }
             } else {
                 long counter = 0;
@@ -100,8 +100,7 @@ public class IntervalFilterMap {
                         counter++;
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_FILTERED, counter);
-                //context.getCounter(Counters.EDGES_FILTERED).increment(counter);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_FILTERED, counter);
             }
             context.write(NullWritable.get(), value);
         }

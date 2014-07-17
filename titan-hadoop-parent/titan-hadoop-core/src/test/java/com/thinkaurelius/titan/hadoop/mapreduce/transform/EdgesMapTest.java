@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -41,12 +42,9 @@ public class EdgesMapTest extends BaseTest {
             }
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesMap.Counters.IN_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesMap.Counters.OUT_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesMap.Counters.IN_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesMap.Counters.OUT_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesMap.Counters.VERTICES_PROCESSED), 6);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -68,12 +66,9 @@ public class EdgesMapTest extends BaseTest {
             }
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesMap.Counters.IN_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesMap.Counters.OUT_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesMap.Counters.VERTICES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesMap.Counters.VERTICES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesMap.Counters.IN_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesMap.Counters.OUT_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesMap.Counters.VERTICES_PROCESSED), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
@@ -245,8 +246,13 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
-        final String outputJobPrefix = this.graph.getTemporarySeqFileLocation().toString() + "/" + Tokens.JOB;
-        hdfs.mkdirs(this.graph.getTemporarySeqFileLocation());
+
+        Path tmpPath = graph.getJobDir();
+        final FileSystem fs = FileSystem.get(graph.getConf());
+        fs.mkdirs(tmpPath);
+        logger.debug("Created " + tmpPath + " on filesystem " + fs);
+        final String jobTmp = tmpPath.toString() + "/" + Tokens.JOB;
+        logger.debug("Set jobDir=" + jobTmp);
 
         //////// CHAINING JOBS TOGETHER
 
@@ -254,8 +260,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             final Job job = this.jobs.get(i);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
+            FileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
             job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
-            FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 
             // configure job inputs
             if (i == 0) {
@@ -266,7 +272,7 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
                 }
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPaths(job, new Path(outputJobPrefix + "-" + (i - 1)));
+                FileInputFormat.setInputPaths(job, new Path(jobTmp + "-" + (i - 1)));
                 FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
             }
 
@@ -293,8 +299,10 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
         }
 
         final FileSystem hdfs = FileSystem.get(this.getConf());
-        if (this.graph.getTemporarySeqFileOverwrite() && hdfs.exists(this.graph.getTemporarySeqFileLocation())) {
-            hdfs.delete(this.graph.getTemporarySeqFileLocation(), true);
+        if (null != graph.getJobDir() &&
+            this.graph.getJobDirOverwrite() &&
+            hdfs.exists(this.graph.getJobDir())) {
+            hdfs.delete(this.graph.getJobDir(), true);
         }
 
         if (showHeader) {
@@ -318,7 +326,9 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-        final String jobPath = this.graph.getTemporarySeqFileLocation().toString() + "/" + Tokens.JOB;
+
+        final String jobTmp = graph.getJobDir().toString() + "/" + Tokens.JOB;
+
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             try {
@@ -326,10 +336,11 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             } catch (final Exception e) {
             }
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
-            logger.info("Job data location: " + jobPath + "-" + i);
             boolean success = job.waitForCompletion(true);
             if (i > 0) {
-                final Path path = new Path(jobPath + "-" + (i - 1));
+                Preconditions.checkNotNull(jobTmp);
+                final Path path = new Path(jobTmp + "-" + (i - 1));
+                logger.debug("Cleaning job data location: " + jobTmp + "-" + i);
                 // delete previous intermediate graph data
                 for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.GRAPH + "*"))) {
                     hdfs.delete(temp.getPath(), true);

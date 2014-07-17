@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -40,10 +41,8 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesVerticesMap.Counters.IN_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesVerticesMap.Counters.IN_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED), 0);
 
         noPaths(graph, Edge.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
@@ -65,10 +64,8 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(graph.get(6l).pathCount(), 1);
 
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesVerticesMap.Counters.IN_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesVerticesMap.Counters.IN_EDGES_PROCESSED), 0);
 
         noPaths(graph, Edge.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
@@ -89,10 +86,8 @@ public class EdgesVerticesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 1);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgesVerticesMap.Counters.IN_EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, EdgesVerticesMap.Counters.IN_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesVerticesMap.Counters.OUT_EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgesVerticesMap.Counters.IN_EDGES_PROCESSED), 6);
 
         noPaths(graph, Edge.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);

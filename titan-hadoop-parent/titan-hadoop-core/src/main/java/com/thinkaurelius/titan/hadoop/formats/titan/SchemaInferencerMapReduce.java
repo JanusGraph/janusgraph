@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.hadoop.formats.titan;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -30,7 +32,7 @@ public class SchemaInferencerMapReduce {
         PROPERTY_KEYS_CREATED
     }
 
-    private static final long funnyLong = -123456789l;
+    private static final long funnyLong = Long.MAX_VALUE;
     private static final LongWritable funnyKey = new LongWritable(funnyLong);
 
     public static Configuration createConfiguration() {
@@ -86,7 +88,8 @@ public class SchemaInferencerMapReduce {
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            this.graph = (TitanGraph) TitanGraphOutputMapReduce.generateGraph(context.getConfiguration());
+            Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
+            this.graph = TitanGraphOutputMapReduce.generateGraph(TitanHadoopConfiguration.of(c));
         }
 
         @Override
@@ -104,16 +107,14 @@ public class SchemaInferencerMapReduce {
                             // TODO: Automated type inference
                             // typeMaker.makeKey(property2, graph.makeType().dataType(Class.forName(vertex.getProperty(property).toString())));
                             typeMaker.makePropertyKey(graph.makePropertyKey(typeName));
-                            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.PROPERTY_KEYS_CREATED, 1L);
-//                                context.getCounter(Counters.PROPERTY_KEYS_CREATED).increment(1l);
+                            DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROPERTY_KEYS_CREATED, 1L);
                         } else if (type=='l') {
                             //typeMaker.makeLabel(property2, graph.makeType());
                             typeMaker.makeEdgeLabel(graph.makeEdgeLabel(typeName));
-                            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGE_LABELS_CREATED, 1L);
-//                                context.getCounter(Counters.EDGE_LABELS_CREATED).increment(1l);
+                            DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGE_LABELS_CREATED, 1L);
                         } else if (type=='v') {
                             typeMaker.makeVertexLabel(graph.makeVertexLabel(typeName));
-                            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_LABELS_CREATED, 1L);
+                            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_LABELS_CREATED, 1L);
 
                         } else throw new IllegalArgumentException("Unexpected type: " + type);
                     }
