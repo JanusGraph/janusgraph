@@ -25,7 +25,7 @@ import java.util.Iterator;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FaunusVertexQueryFilter extends FaunusVertexQuery {
+public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterable<FaunusRelation> {
 
     private RelationCategory resultType;
 
@@ -57,6 +57,11 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery {
         } catch (final Exception e) {
             throw new RuntimeException("VertexQueryFilter compilation error: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public Iterator<FaunusRelation> iterator() {
+        throw new UnsupportedOperationException("This filter can only be used for query construction, not execution.");
     }
 
     private static class DummyVertex {
@@ -111,7 +116,7 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery {
     @Override
     protected Iterable<FaunusRelation> getRelations(RelationCategory returnType) {
         resultType = returnType;
-        return Collections.EMPTY_LIST;
+        return this;
     }
 
     @Override

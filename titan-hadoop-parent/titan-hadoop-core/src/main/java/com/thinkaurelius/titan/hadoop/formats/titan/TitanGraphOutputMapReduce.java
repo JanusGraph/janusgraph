@@ -272,8 +272,8 @@ public class TitanGraphOutputMapReduce {
                 qb.adjacent((TitanVertex) graph.getVertex(edge.getVertexId(dir.opposite())));
             }
         }
-        qb.has(ImplicitKey.TITANID.getName(), Cmp.EQUAL, faunusRelation.getLongId());
-        TitanRelation titanRelation = (TitanRelation)Iterables.getFirst(qb.relations(),null);
+//        qb.has(ImplicitKey.TITANID.getName(), Cmp.EQUAL, faunusRelation.getLongId()); TODO: must check for multiplicity constraints
+        TitanRelation titanRelation = (TitanRelation)Iterables.getFirst(faunusRelation.isEdge()?qb.titanEdges():qb.properties(),null);
         assert titanRelation==null || titanRelation.getLongId()==faunusRelation.getLongId();
         return titanRelation;
     }
