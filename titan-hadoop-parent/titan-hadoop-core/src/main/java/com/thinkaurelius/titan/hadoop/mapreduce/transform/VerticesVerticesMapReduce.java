@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -78,8 +79,7 @@ public class VerticesVerticesMapReduce {
                     }
                 }
                 value.clearPaths();
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_TRAVERSED, edgesTraversed);
-//                context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_TRAVERSED, edgesTraversed);
             }
 
             this.longWritable.set(value.getLongId());

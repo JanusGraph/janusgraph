@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.hadoop;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import java.io.FileInputStream;
 import java.util.Map;
 import java.util.Properties;
@@ -14,8 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
@@ -26,9 +26,6 @@ public class TitanIndexRepair {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanIndexRepair.class);
-
-    private static final HadoopCompat COMPAT =
-            HadoopCompatLoader.getDefaultCompat();
 
     public static void cassandraRepair(String titanPropertiesPath, String indexName, String indexType) throws Exception {
         cassandraRepair(titanPropertiesPath, indexName, indexType, "org.apache.cassandra.dht.Murmur3Partitioner");
@@ -70,7 +67,7 @@ public class TitanIndexRepair {
     }
 
     private static void repairIndex(HadoopGraph hg) throws Exception {
-        HadoopCompiler compiler = COMPAT.newCompiler(hg);
+        HadoopCompiler compiler = DEFAULT_COMPAT.newCompiler(hg);
         Class<? extends Mapper<?,?,?,?>> mapper = TitanIndexRepairMapper.class;
         compiler.addMap(mapper, NullWritable.class, NullWritable.class, hg.getConf());
         compiler.completeSequence();

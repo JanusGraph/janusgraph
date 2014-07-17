@@ -1,27 +1,49 @@
 package com.thinkaurelius.titan.hadoop;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanRelation;
+import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
+import com.thinkaurelius.titan.core.schema.SchemaAction;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper;
-import com.thinkaurelius.titan.graphdb.internal.*;
+import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
 import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
@@ -32,19 +54,9 @@ import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.tinkerpop.blueprints.Direction;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Mapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.tinkerpop.blueprints.Direction;
 
 /**
  * Given (1) an InputFormat that iterates a Titan edgestore and converts each
@@ -60,8 +72,6 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanIndexRepairMapper.class);
-
-    private static final HadoopCompat COMPAT = HadoopCompatLoader.getDefaultCompat();
 
     private StandardTitanGraph graph;
     private ManagementSystem mgmt;
@@ -80,7 +90,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
     @Override
     public void setup(
             final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) throws IOException {
-        Configuration hadoopConf = COMPAT.getContextConfiguration(context);
+        Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
         BasicConfiguration titanConf = ConfigurationUtil.extractOutputConfiguration(hadoopConf);
         indexName = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_NAME);
         indexType = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_TYPE);
@@ -97,7 +107,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             validateIndexStatus();
         } catch (final Exception e) {
             mgmt.rollback();
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
             throw new IOException(e.getMessage(), e);
         }
     }
@@ -106,19 +116,19 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
     public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) {
         try {
             mgmt.commit();
-            COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_TRANSACTIONS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_TRANSACTIONS, 1L);
         } catch (RuntimeException e) {
             log.error("Transaction commit threw runtime exception:", e);
-            COMPAT.incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
             throw e;
         }
 
         try {
             graph.shutdown();
-            COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_GRAPH_SHUTDOWNS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_GRAPH_SHUTDOWNS, 1L);
         } catch (RuntimeException e) {
             log.error("Graph shutdown threw runtime exception:", e);
-            COMPAT.incrementContextCounter(context, Counters.FAILED_GRAPH_SHUTDOWNS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.FAILED_GRAPH_SHUTDOWNS, 1L);
             throw e;
         }
     }
@@ -219,7 +229,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             } else throw new UnsupportedOperationException("Unsupported index found: "+index);
         } catch (final Exception e) {
             mgmt.rollback();
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
             throw new IOException(e.getMessage(), e);
         }
 

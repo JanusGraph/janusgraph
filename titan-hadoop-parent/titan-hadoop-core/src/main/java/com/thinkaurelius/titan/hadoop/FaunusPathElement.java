@@ -1,6 +1,14 @@
 package com.thinkaurelius.titan.hadoop;
 
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_PATHS;
+
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
+import com.thinkaurelius.titan.hadoop.config.HadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.hadoop.conf.Configurable;
@@ -28,8 +36,11 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     protected long pathCounter = 0;
     protected Configuration configuration = EMPTY_CONFIG;
 
+    // This isn't final because it mirrors configuration, and configuration is not final
+    private BasicConfiguration titanConf;
+
     public FaunusPathElement(final long id) {
-        super(id);
+        this(new Configuration(), id);
     }
 
     public FaunusPathElement(final Configuration configuration, final long id) {
@@ -39,9 +50,16 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
-        boolean trackPaths = (configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false));
-        if (trackPaths) this.tracker = new Tracker((this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new StandardFaunusEdge.MicroEdge(this.id));
-        log.debug("Set trackPaths=" + this.tracker.trackPaths + " from config option " + Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS);
+        Preconditions.checkNotNull(configuration);
+        WriteConfiguration rc = new HadoopConfiguration(getConf());
+        titanConf = new ModifiableConfiguration(TitanHadoopConfiguration.ROOT_NS, rc, Restriction.NONE);
+
+        boolean trackPaths = titanConf.get(PIPELINE_TRACK_PATHS);
+        if (trackPaths) {
+            this.tracker = new Tracker((this instanceof FaunusVertex) ?
+                    new FaunusVertex.MicroVertex(this.id) :
+                    new StandardFaunusEdge.MicroEdge(this.id));
+        }
     }
 
     public Configuration getConf() {
@@ -100,6 +118,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
         checkPathsEnabled();
         if (append) path.add(tracker.microVersion);
         tracker.paths.add(path);
+        log.trace("Added path {} to {} (append={})", path, this, append);
     }
 
     public void addPaths(final List<List<MicroElement>> paths, final boolean append) throws IllegalStateException {
@@ -108,8 +127,10 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
             for (final List<MicroElement> path : paths) {
                 addPath(path, append);
             }
-        } else
+        } else {
             tracker.paths.addAll(paths);
+            log.trace("Adding all paths in list {} to {} (append={})", paths, this, append);
+        }
     }
 
     public List<List<MicroElement>> getPaths() throws IllegalStateException {
@@ -146,6 +167,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
             tracker.paths.clear();
         } else
             this.pathCounter = 0;
+        log.trace("Cleared paths on {}", this);
     }
 
     public long pathCount() {

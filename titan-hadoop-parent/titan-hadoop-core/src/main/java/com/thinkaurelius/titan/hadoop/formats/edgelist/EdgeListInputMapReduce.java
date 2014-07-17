@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.hadoop.conf.Configuration;
@@ -16,7 +17,6 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.*;
 
@@ -64,8 +64,7 @@ public class EdgeListInputMapReduce {
                     this.map.put(inId, vertex);
                 }
                 vertex.addEdge(IN, WritableUtils.clone((StandardFaunusEdge) value, context.getConfiguration()));
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_PROCESSED, 1L);
-                //context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_PROCESSED, 1L);
                 this.counter++;
             } else {
                 final long id = value.getLongId();
@@ -91,8 +90,7 @@ public class EdgeListInputMapReduce {
             for (final FaunusVertex vertex : this.map.values()) {
                 this.longWritable.set(vertex.getLongId());
                 context.write(this.longWritable, vertex);
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_EMITTED, 1L);
-                //context.getCounter(Counters.VERTICES_EMITTED).increment(1l);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_EMITTED, 1L);
             }
             this.map.clear();
             this.counter = 0;
@@ -122,10 +120,10 @@ public class EdgeListInputMapReduce {
                 vertex.addEdges(BOTH, value);
                 vertex.addAllProperties(value.getPropertyCollection());
             }
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_CREATED, 1L);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_PROPERTIES_CREATED, vertex.getPropertyCollection().size());
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_CREATED, Iterables.size(vertex.getEdges(OUT)));
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_CREATED, Iterables.size(vertex.getEdges(IN)));
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_CREATED, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_PROPERTIES_CREATED, vertex.getPropertyCollection().size());
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_CREATED, Iterables.size(vertex.getEdges(OUT)));
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_CREATED, Iterables.size(vertex.getEdges(IN)));
             context.write(NullWritable.get(), vertex);
         }
     }

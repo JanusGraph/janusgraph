@@ -15,6 +15,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,6 +35,9 @@ import java.util.Properties;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class BaseTest extends TestCase {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(BaseTest.class);
 
     public static final String TEST_DATA_OUTPUT_PATH = "target/test-data/output";
     public static enum ExampleGraph {
@@ -251,9 +256,25 @@ public abstract class BaseTest extends TestCase {
                 assertEquals(v1.getProperty(key), v2.getProperty(key));
             }
             if (exampleGraph != ExampleGraph.GRAPH_OF_THE_GODS_2) {
-                assertEquals(asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
-                assertEquals(asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
-                assertEquals(asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
+
+                log.debug("{}: inE dump start", v2);
+                for (Edge inE : v1.getEdges(Direction.IN)) {
+                    log.debug("inE {}", inE);
+                }
+                log.debug("{}: inE dump end", v2);
+
+
+                assertEquals(v2.getProperty("name").toString() + " in edge count", asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
+
+                log.debug("{}: outE dump start", v2);
+                for (Edge outE : v1.getEdges(Direction.OUT)) {
+                    log.debug("outE {}", outE);
+                }
+                log.debug("{}: outE dump end", v2);
+
+                assertEquals(v2.getProperty("name").toString() + " out edge count", asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
+                assertEquals(v2.getProperty("name").toString() + " edge count", asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
+
 
                 assertEquals(v1.getEdgeLabels(Direction.BOTH).size(), v2.getEdgeLabels(Direction.BOTH).size());
                 assertEquals(v1.getEdgeLabels(Direction.IN).size(), v2.getEdgeLabels(Direction.IN).size());

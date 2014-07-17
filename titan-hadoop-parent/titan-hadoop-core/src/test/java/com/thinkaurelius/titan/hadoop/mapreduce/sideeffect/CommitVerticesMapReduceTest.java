@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -43,11 +44,8 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 1);
         assertEquals(graph.get(6l).pathCount(), 1);
 
-
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_KEPT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 6);
 
     }
 
@@ -59,10 +57,8 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
         assertEquals(results.size(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_KEPT).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 0);
 
     }
 
@@ -83,10 +79,8 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         assertFalse(graph.get(5l).getEdges(Direction.BOTH).iterator().hasNext());
         assertFalse(graph.get(3l).getEdges(Direction.BOTH).iterator().hasNext());
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_KEPT).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 2);
 
     }
 
@@ -120,10 +114,8 @@ public class CommitVerticesMapReduceTest extends BaseTest {
         assertFalse(graph.get(4l).getEdges(Direction.OUT, "knows").iterator().hasNext());
         assertFalse(graph.get(6l).getEdges(Direction.BOTH).iterator().hasNext());
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_DROPPED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CommitVerticesMapReduce.Counters.VERTICES_KEPT).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_DROPPED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CommitVerticesMapReduce.Counters.VERTICES_KEPT), 4);
 
     }
 }

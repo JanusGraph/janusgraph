@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 
 import org.apache.hadoop.conf.Configuration;
@@ -57,10 +58,8 @@ public class LinkMapReduceTest extends BaseTest {
         assertEquals(asList(graph.get(5l).getEdges(BOTH)).size(), 1);
         assertFalse(graph.get(6l).getEdges(BOTH).iterator().hasNext());
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.OUT_EDGES_CREATED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, LinkMapReduce.Counters.OUT_EDGES_CREATED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.IN_EDGES_CREATED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, LinkMapReduce.Counters.IN_EDGES_CREATED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, LinkMapReduce.Counters.OUT_EDGES_CREATED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, LinkMapReduce.Counters.IN_EDGES_CREATED), 2);
     }
 
     public void testCreated2Traversal() throws Exception {
@@ -86,10 +85,8 @@ public class LinkMapReduceTest extends BaseTest {
         assertEquals(asList(graph.get(5l).getEdges(BOTH)).size(), 1);
         assertFalse(graph.get(6l).getEdges(BOTH).iterator().hasNext());
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.OUT_EDGES_CREATED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, LinkMapReduce.Counters.OUT_EDGES_CREATED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(LinkMapReduce.Counters.IN_EDGES_CREATED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, LinkMapReduce.Counters.IN_EDGES_CREATED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, LinkMapReduce.Counters.OUT_EDGES_CREATED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, LinkMapReduce.Counters.IN_EDGES_CREATED), 2);
     }
 }
 

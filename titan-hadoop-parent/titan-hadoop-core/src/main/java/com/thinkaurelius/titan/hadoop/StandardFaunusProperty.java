@@ -7,8 +7,11 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -21,6 +24,9 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     protected long vertexid;
     protected Object value;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(StandardFaunusProperty.class);
 
     public StandardFaunusProperty() {
         this(EmptyConfiguration.immutable());
@@ -50,13 +56,14 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     public StandardFaunusProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
         super(config, id, type);
         setConf(config);
-        Preconditions.checkArgument(vertex>=0);
-        Preconditions.checkArgument(value!=null);
+        Preconditions.checkArgument(vertex>=0, "Vertex id %d", vertex);
+        Preconditions.checkNotNull(value, "property value must be non-null");
         Preconditions.checkArgument(!type.isImplicit(),"Cannot set implicit properties: " + type);
         Preconditions.checkArgument(AttributeUtil.hasGenericDataType(type) ||
                 type.getDataType().isInstance(value),"Value does not match data type: %s",value);
         this.value = value;
         this.vertexid = vertex;
+        log.debug("Initialized property {}", this);
     }
 
     public Object getValue() {
@@ -65,7 +72,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     @Override
     public PropertyKey getPropertyKey() {
-        return (PropertyKey)type;
+        return (PropertyKey)getType();
     }
 
     @Override
@@ -81,7 +88,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     final void setKey(FaunusPropertyKey key) {
         Preconditions.checkNotNull(key);
-        type = key;
+        setType(key);
     }
 
 
@@ -107,7 +114,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(vertexid).append(getLongId()).append(type).append(value).toHashCode();
+        return new HashCodeBuilder().append(vertexid).append(getLongId()).append(getType()).append(value).toHashCode();
     }
 
     @Override
@@ -116,11 +123,11 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
         else if (oth == null || !(oth instanceof TitanProperty)) return false;
         TitanProperty p = (TitanProperty) oth;
         if (hasId() || p.hasId()) return getLongId()==p.getLongId();
-        return type.equals(p.getPropertyKey()) && value.equals(p.getValue()) && vertexid==p.getVertex().getLongId();
+        return getType().equals(p.getPropertyKey()) && value.equals(p.getValue()) && vertexid==p.getVertex().getLongId();
     }
 
     @Override
     public String toString() {
-        return getTypeName() + "->" + value.toString();
+        return getTypeName() + "->" + (null != value ? value.toString() : null);
     }
 }

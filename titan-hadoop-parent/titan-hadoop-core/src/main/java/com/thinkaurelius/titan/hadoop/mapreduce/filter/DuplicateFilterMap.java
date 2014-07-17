@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -43,7 +44,7 @@ public class DuplicateFilterMap {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            final Configuration c = HadoopCompatLoader.getDefaultCompat().getContextConfiguration(context);
+            final Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
             this.isVertex = c.getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.trackPaths = c.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
         }
@@ -61,8 +62,7 @@ public class DuplicateFilterMap {
                         value.clearPaths();
                         value.startPath();
                     }
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_DEDUPED, 1L);
-                    //context.getCounter(Counters.VERTICES_DEDUPED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_DEDUPED, 1L);
                 }
             } else {
                 long counter = 0;
@@ -80,8 +80,7 @@ public class DuplicateFilterMap {
                         counter++;
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_DEDUPED, counter);
-                //context.getCounter(Counters.EDGES_DEDUPED).increment(counter);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_DEDUPED, counter);
             }
 
             context.write(NullWritable.get(), value);

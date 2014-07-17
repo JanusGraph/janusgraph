@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -43,18 +44,12 @@ public class IdentityMapTest extends BaseTest {
             }
         }
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_PROPERTY_COUNT), 12);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_PROPERTY_COUNT).getValue(), 12);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT).getValue(), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_PROPERTY_COUNT), 12);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT), 6);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -74,18 +69,12 @@ public class IdentityMapTest extends BaseTest {
             }
         }
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_PROPERTY_COUNT), 12);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.VERTEX_PROPERTY_COUNT).getValue(), 12);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT).getValue(), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.VERTEX_PROPERTY_COUNT), 12);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.OUT_EDGE_PROPERTY_COUNT), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, IdentityMap.Counters.IN_EDGE_PROPERTY_COUNT), 6);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }

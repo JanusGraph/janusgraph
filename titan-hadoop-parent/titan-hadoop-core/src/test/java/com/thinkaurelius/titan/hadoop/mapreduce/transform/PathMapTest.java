@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.conf.Configuration;
@@ -56,11 +57,8 @@ public class PathMapTest extends BaseTest {
         assertEquals(results.get(2).getSecond().toString(), "[v[1], v[3]]");
         assertEquals(results.get(3).getSecond().toString(), "[v[1], v[3]]");
 
-
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PathMap.Counters.VERTICES_PROCESSED).getValue(), 3);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PathMap.Counters.VERTICES_PROCESSED), 3);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PathMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PathMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PathMap.Counters.VERTICES_PROCESSED), 3);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PathMap.Counters.OUT_EDGES_PROCESSED), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }

@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -60,10 +61,8 @@ public class DuplicateFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.VERTICES_DEDUPED).getValue(), 3);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, DuplicateFilterMap.Counters.VERTICES_DEDUPED), 3);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.EDGES_DEDUPED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, DuplicateFilterMap.Counters.EDGES_DEDUPED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, DuplicateFilterMap.Counters.VERTICES_DEDUPED), 3);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, DuplicateFilterMap.Counters.EDGES_DEDUPED), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -101,10 +100,8 @@ public class DuplicateFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.VERTICES_DEDUPED).getValue(), 3);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, DuplicateFilterMap.Counters.VERTICES_DEDUPED), 3);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.EDGES_DEDUPED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, DuplicateFilterMap.Counters.EDGES_DEDUPED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, DuplicateFilterMap.Counters.VERTICES_DEDUPED), 3);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, DuplicateFilterMap.Counters.EDGES_DEDUPED), 0);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -148,10 +145,8 @@ public class DuplicateFilterMapTest extends BaseTest {
             }
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.VERTICES_DEDUPED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, DuplicateFilterMap.Counters.VERTICES_DEDUPED), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(DuplicateFilterMap.Counters.EDGES_DEDUPED).getValue(), 1);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, DuplicateFilterMap.Counters.EDGES_DEDUPED), 1);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, DuplicateFilterMap.Counters.VERTICES_DEDUPED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, DuplicateFilterMap.Counters.EDGES_DEDUPED), 1);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }

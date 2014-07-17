@@ -1,19 +1,20 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
-import java.io.IOException;
-import java.util.Iterator;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -65,10 +66,8 @@ public class CommitEdgesMap {
                         edgesKept++;
                 }
             }
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_DROPPED, edgesDropped);
-//            context.getCounter(Counters.IN_EDGES_DROPPED).increment(edgesDropped);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_KEPT, edgesKept);
-//            context.getCounter(Counters.IN_EDGES_KEPT).increment(edgesKept);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_DROPPED, edgesDropped);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_KEPT, edgesKept);
 
             ///////////////////
 
@@ -90,10 +89,8 @@ public class CommitEdgesMap {
                         edgesKept++;
                 }
             }
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_DROPPED, edgesDropped);
-//            context.getCounter(Counters.OUT_EDGES_DROPPED).increment(edgesDropped);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_KEPT, edgesKept);
-//            context.getCounter(Counters.OUT_EDGES_KEPT).increment(edgesKept);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_DROPPED, edgesDropped);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_KEPT, edgesKept);
 
             context.write(NullWritable.get(), value);
         }

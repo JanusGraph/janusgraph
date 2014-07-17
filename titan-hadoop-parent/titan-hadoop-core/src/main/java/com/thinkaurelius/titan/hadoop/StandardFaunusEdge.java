@@ -12,6 +12,8 @@ import com.tinkerpop.blueprints.util.StringFactory;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -27,6 +29,9 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     protected long outVertex;
     protected long inVertex;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(StandardFaunusEdge.class);
 
     public StandardFaunusEdge() {
         this(EmptyConfiguration.immutable());
@@ -61,7 +66,7 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     @Override
     public EdgeLabel getEdgeLabel() {
-        return (EdgeLabel)type;
+        return (EdgeLabel)getType();
     }
 
 
@@ -116,7 +121,7 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     final void setLabel(FaunusEdgeLabel label) {
         Preconditions.checkNotNull(label);
-        type = label;
+        setType(label);
     }
 
     //##################################
@@ -126,12 +131,13 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
     @Override
     public void write(final DataOutput out) throws IOException {
         new FaunusSerializer(this.getConf()).writeEdge(this, out);
+        //log.debug("Serialized   {} with {} paths", this, tracker.paths.size());
     }
 
     @Override
     public void readFields(final DataInput in) throws IOException {
         new FaunusSerializer(this.getConf()).readEdge(this, in);
-
+        //log.debug("Deserialized {} with paths {}", this, tracker.paths);
     }
 
     //##################################
@@ -140,12 +146,16 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     @Override
     public String toString() {
-        return StringFactory.edgeString(this);
+        try {
+            return StringFactory.edgeString(this);
+        } catch (NullPointerException e) {
+            return "StandardFaunusEdge[null]";
+        }
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(outVertex).append(inVertex).append(getLongId()).append(type).toHashCode();
+        return new HashCodeBuilder().append(outVertex).append(inVertex).append(getLongId()).append(getType()).toHashCode();
     }
 
     @Override
@@ -154,7 +164,7 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
         else if (oth == null || !(oth instanceof TitanEdge)) return false;
         TitanEdge e = (TitanEdge) oth;
         if (hasId() || e.hasId()) return getLongId()==e.getLongId();
-        return type.equals(e.getEdgeLabel()) && outVertex==e.getVertex(Direction.OUT).getLongId() &&
+        return getType().equals(e.getEdgeLabel()) && outVertex==e.getVertex(Direction.OUT).getLongId() &&
                 inVertex==e.getVertex(Direction.IN).getLongId();
     }
 

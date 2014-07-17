@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.conf.Configuration;
@@ -66,10 +67,8 @@ public class SideEffectMapTest extends BaseTest {
         assertEquals(results.get(5l).getProperty("degree"), 0l);
         assertEquals(results.get(6l).getProperty("degree"), 1l);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, SideEffectMap.Counters.VERTICES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, SideEffectMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.OUT_EDGES_PROCESSED), 0);
     }
 
 
@@ -88,10 +87,8 @@ public class SideEffectMapTest extends BaseTest {
         assertEquals(results.get(5l).getProperty("degree"), 1l);
         assertEquals(results.get(6l).getProperty("degree"), 0l);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, SideEffectMap.Counters.VERTICES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(SideEffectMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, SideEffectMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.OUT_EDGES_PROCESSED), 0);
     }
 
 }

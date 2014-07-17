@@ -1,9 +1,12 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.SafeMapperOutputs;
@@ -27,6 +30,8 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 
 import java.io.IOException;
+
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_MAP_SPILL_OVER;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -66,8 +71,10 @@ public class GroupCountMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
+            Configuration hc = DEFAULT_COMPAT.getContextConfiguration(context);
+            ModifiableHadoopConfiguration titanConf = TitanHadoopConfiguration.of(hc);
             try {
-                this.mapSpillOver = context.getConfiguration().getInt(Tokens.TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
+                this.mapSpillOver = titanConf.get(PIPELINE_MAP_SPILL_OVER);
                 final String keyClosureString = context.getConfiguration().get(KEY_CLOSURE, null);
                 if (null == keyClosureString)
                     this.keyClosure = null;
@@ -95,8 +102,7 @@ public class GroupCountMapReduce {
                     final Object object = (null == this.keyClosure) ? new FaunusVertex.MicroVertex(value.getLongId()) : this.keyClosure.call(value);
                     final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
-                    //context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
                 }
             } else {
                 long edgesProcessed = 0;
@@ -109,8 +115,7 @@ public class GroupCountMapReduce {
                         edgesProcessed++;
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
-                //context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
 
             // protected against memory explosion

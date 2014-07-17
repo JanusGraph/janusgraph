@@ -1,10 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -15,9 +16,11 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.elasticsearch.common.collect.Iterators;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -63,8 +66,7 @@ public class EdgeCopyMapReduce {
             }
             this.longWritable.set(value.getLongId());
             context.write(this.longWritable, this.vertexHolder.set('r', value));
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_COPIED, edgesInverted);
-            //context.getCounter(Counters.EDGES_COPIED).increment(edgesInverted);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_COPIED, edgesInverted);
         }
 
     }
@@ -72,6 +74,9 @@ public class EdgeCopyMapReduce {
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         private Direction direction = Direction.OUT;
+
+        private static final Logger log =
+                LoggerFactory.getLogger(Reduce.class);
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
@@ -87,14 +92,17 @@ public class EdgeCopyMapReduce {
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
                     edgesAggregated = edgesAggregated + Iterables.size(holder.get().getEdges(direction.opposite()));
+                    //log.debug("Copying edges with direction {} from {} to {}", direction.opposite(), holder.get(), vertex);
                     vertex.addEdges(direction.opposite(), holder.get());
+                    //log.trace("In-edge count after copy on {}: {}", vertex, Iterators.size(vertex.getEdges(Direction.IN).iterator()));
                 } else {
+                    //log.debug("Calling addAll on vertex {} with parameter vertex {}", vertex, holder.get());
                     vertex.addAll(holder.get());
+                    //log.trace("In-edge count after addAll on {}: {}", vertex, Iterators.size(vertex.getEdges(Direction.IN).iterator()));
                 }
             }
             context.write(NullWritable.get(), vertex);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_ADDED, edgesAggregated);
-            //context.getCounter(Counters.EDGES_ADDED).increment(edgesAggregated);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_ADDED, edgesAggregated);
         }
     }
 }

@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.*;
-import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -12,6 +12,8 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +25,9 @@ import static com.tinkerpop.blueprints.Direction.*;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class VerticesEdgesMapReduce {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(VerticesEdgesMapReduce.class);
 
     public static final String DIRECTION = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".direction";
     public static final String LABELS = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".labels";
@@ -57,6 +62,9 @@ public class VerticesEdgesMapReduce {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
 
+            if (log.isTraceEnabled())
+                log.trace("{}.map: trackPaths={}", getClass().getSimpleName(), trackPaths);
+
             if (value.hasPaths()) {
                 long edgesTraversed = 0l;
 
@@ -89,6 +97,7 @@ public class VerticesEdgesMapReduce {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
+                            log.trace("shellEdge pathCount={} for edgelabel={}", shellEdge.pathCount(), e.getLabel());
                         } else {
                             edge.getPaths(value, false);
                             shellEdge.getPaths(value, false);
@@ -100,8 +109,7 @@ public class VerticesEdgesMapReduce {
                 }
 
                 value.clearPaths();
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_TRAVERSED, edgesTraversed);
-//                context.getCounter(Counters.EDGES_TRAVERSED).increment(edgesTraversed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_TRAVERSED, edgesTraversed);
             }
 
 
@@ -158,6 +166,10 @@ public class VerticesEdgesMapReduce {
                         break;
                     }
                 }
+
+
+                if (log.isTraceEnabled())
+                    log.trace("{}.reduce: edge={} pathCount={}", getClass().getSimpleName(), fe, fe.pathCount());
             }
 
             context.write(NullWritable.get(), vertex);

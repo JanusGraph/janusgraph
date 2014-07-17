@@ -50,9 +50,13 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery {
     public static FaunusVertexQueryFilter create(final Configuration configuration) {
         engine.put("v", new DummyVertex(FaunusTypeManager.getTypeManager(configuration)));
         try {
-            FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().relations()"));
-            if (null != configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER))
+            // Can't default to v.query().relations() -- this causes a class cast exception when attempting to convert the Iterable return value of relations() to a FaunusVertexQueryFilter
+            FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query()"));
+            if (null != configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER)) {
                 query.setDoesFilter(true);
+            }
+            // Move relations() call down here for the side effect (sets the resultType)
+            query.relations();
             return query;
         } catch (final Exception e) {
             throw new RuntimeException("VertexQueryFilter compilation error: " + e.getMessage(), e);

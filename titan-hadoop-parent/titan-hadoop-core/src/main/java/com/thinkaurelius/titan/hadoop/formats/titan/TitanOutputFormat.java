@@ -4,7 +4,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.noop.NoOpOutputFormat;
@@ -28,7 +27,8 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
     @Override
     public void addMapReduceJobs(final HadoopCompiler compiler) {
 
-        final boolean inferSchema = ConfigurationUtil.get(compiler.getConf(), INFER_SCHEMA);
+        final boolean inferSchema =
+                TitanHadoopConfiguration.of(compiler.getConf()).get(INFER_SCHEMA);
 
         if (inferSchema) {
             compiler.addMapReduce(SchemaInferencerMapReduce.Map.class,
