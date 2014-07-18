@@ -59,48 +59,48 @@ public class TitanHBaseOutputFormatTest extends TitanOutputFormatTest {
     public void testBulkLoading() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
-        super.testBulkLoading(getConfiguration(), f1);
+        super.doBulkLoading(getConfiguration(), f1);
     }
 
     public void testBulkElementDeletions() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkElementDeletions(getConfiguration(), f1, f2);
+        super.doBulkElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testFewElementDeletions() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testFewElementDeletions(getConfiguration(), f1, f2);
+        super.doFewElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyDeletions() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkVertexPropertyDeletions(getConfiguration(), f1, f2);
+        super.doBulkVertexPropertyDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyUpdates() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkVertexPropertyUpdates(getConfiguration(), f1, f2);
+        super.doBulkVertexPropertyUpdates(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgeDerivations() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkEdgeDerivations(getConfiguration(), f1, f2);
+        super.doBulkEdgeDerivations(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgePropertyUpdates() throws Exception {
         startUpHBase();
         HadoopGraph f1 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
+        super.doBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
     }
 }

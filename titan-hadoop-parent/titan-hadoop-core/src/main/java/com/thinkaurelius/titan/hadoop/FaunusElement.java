@@ -139,16 +139,28 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     }
 
     protected void setRelation(final FaunusRelation relation) {
-        Preconditions.checkArgument(getAdjustedMultiplicity(relation.getType())==Multiplicity.MANY2ONE,
-                "setProperty can only be used for single valued keys. Use addProperty instead.");
-        //Mark all existing ones for the type as deleted
+        int killedRels = 0;
         final Iterator<FaunusRelation> rels = outAdjacency.get(relation.getType()).iterator();
         while (rels.hasNext()) {
             FaunusRelation r = rels.next();
             if (r.isNew()) rels.remove();
             r.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
             updateLifeCycle(ElementLifeCycle.Event.REMOVED_RELATION);
+            killedRels++;
         }
+
+        final Multiplicity adjMulti = getAdjustedMultiplicity(relation.getType());
+
+        if (adjMulti != Multiplicity.MANY2ONE && 0 < killedRels) {
+            // Calling setRelation on a multi-valued type will delete any
+            // existing relations of that type, no matter how many -- log this
+            // behavior and suggest addRelation to suppress the warning when
+            // using a multi-valued type
+            log.warn( "setRelation deleted {} relations of type {} with multiplicity {}; " +
+                      "use addRelation instead of setRelation to avoid deletion",
+                      killedRels, relation.getType(), adjMulti);
+        }
+
         addRelation(relation);
     }
 

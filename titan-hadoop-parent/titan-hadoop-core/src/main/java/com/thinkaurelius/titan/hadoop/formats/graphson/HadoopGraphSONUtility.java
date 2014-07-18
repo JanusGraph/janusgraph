@@ -18,6 +18,8 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.codehaus.jettison.json.JSONTokener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,6 +35,9 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class HadoopGraphSONUtility {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(HadoopGraphSONUtility.class);
 
     private static final String _OUT_E = "_outE";
     private static final String _IN_E = "_inE";
@@ -74,6 +79,7 @@ public class HadoopGraphSONUtility {
 
             return vertex;
         } catch (Exception e) {
+            log.error("JSON parse exception", e);
             throw new IOException(e.getMessage(), e);
         }
     }
