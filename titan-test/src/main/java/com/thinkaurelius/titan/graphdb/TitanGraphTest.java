@@ -71,6 +71,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -2127,6 +2128,112 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
             tx2.commit();
         }
+    }
+
+    @Test
+    public void testConcurrentConsistencyEnforcement() throws Exception {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        TitanGraphIndex nameIndex = mgmt.buildIndex("name", Vertex.class)
+                .addKey(name).unique().buildCompositeIndex();
+        mgmt.setConsistency(nameIndex, ConsistencyModifier.LOCK);
+        EdgeLabel married = mgmt.makeEdgeLabel("married").multiplicity(Multiplicity.ONE2ONE).make();
+        mgmt.setConsistency(married,ConsistencyModifier.LOCK);
+        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
+        finishSchema();
+
+        TitanVertex baseV = tx.addVertex();
+        baseV.setProperty("name","base");
+        newTx();
+        final long baseVid = baseV.getLongId();
+        final String nameA = "a", nameB = "b";
+        final int parallelThreads = 4;
+        final AtomicInteger totalExe = new AtomicInteger();
+
+        int numSuccess = executeParallelTransactions(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                TitanVertex a = tx.addVertex();
+                TitanVertex base = tx.getVertex(baseVid);
+                base.addEdge("married",a);
+            }
+        },parallelThreads);
+
+        assertTrue("At most 1 tx should succeed: " + numSuccess,numSuccess<=1);
+
+        numSuccess = executeParallelTransactions(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex a = tx.addVertex();
+                a.setProperty("name",nameA);
+                Vertex b = tx.addVertex();
+                b.setProperty("name",nameB);
+                b.addEdge("friend",b);
+            }
+        },parallelThreads);
+
+        newTx();
+        int numA = Iterables.size(tx.query().has("name",nameA).vertices());
+        int numB = Iterables.size(tx.query().has("name",nameB).vertices());
+//        System.out.println(numA + " - " + numB);
+        assertTrue("At most 1 tx should succeed: " + numSuccess,numSuccess<=1);
+        assertTrue(numA<=1);
+        assertTrue(numB<=1);
+    }
+
+    private int executeSerialTransaction(final TransactionJob job, int number) {
+        final AtomicInteger txSuccess = new AtomicInteger(0);
+        for (int i = 0; i < number; i++) {
+            TitanTransaction tx = graph.newTransaction();
+            try {
+                job.run(tx);
+                tx.commit();
+                txSuccess.incrementAndGet();
+            } catch (Exception ex) {
+                tx.rollback();
+                ex.printStackTrace();
+            }
+        }
+        return txSuccess.get();
+    }
+
+    private int executeParallelTransactions(final TransactionJob job, int number) {
+        final CountDownLatch startLatch = new CountDownLatch(number);
+        final CountDownLatch finishLatch = new CountDownLatch(number);
+        final AtomicInteger txSuccess = new AtomicInteger(0);
+        for (int i = 0; i < number; i++) {
+            new Thread() {
+                public void run() {
+                    awaitAllThreadsReady();
+                    TitanTransaction tx = graph.newTransaction();
+                    try {
+                        job.run(tx);
+                        tx.commit();
+                        txSuccess.incrementAndGet();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        if (tx.isOpen()) tx.rollback();
+                    } finally {
+                        finishLatch.countDown();
+                    }
+                }
+
+                private void awaitAllThreadsReady() {
+                    startLatch.countDown();
+                    try {
+                        startLatch.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+        }
+
+        try {
+            finishLatch.await(10000,TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return txSuccess.get();
     }
 
    /* ==================================================================================
