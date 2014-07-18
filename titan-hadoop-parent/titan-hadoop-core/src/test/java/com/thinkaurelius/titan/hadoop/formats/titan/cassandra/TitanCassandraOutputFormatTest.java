@@ -33,6 +33,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);
         backend.clearStorage();
+        backend.close();
 
         return TitanFactory.open(configuration);
     }

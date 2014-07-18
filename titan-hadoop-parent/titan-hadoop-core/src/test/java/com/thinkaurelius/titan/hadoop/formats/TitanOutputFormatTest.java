@@ -55,6 +55,8 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(names.contains("nemean"));
         assertTrue(names.contains("hydra"));
         assertTrue(names.contains("cerberus"));
+
+        g.shutdown();
     }
 
     public void doBulkElementDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
@@ -64,20 +66,25 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(17, new GremlinPipeline(g).E().count());
 
         new HadoopPipeline(f2).V().drop().submit();
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
         bulkLoadGraphOfTheGods(f1);
+        g.shutdown();
         g = TitanFactory.open(configuration);
         new HadoopPipeline(f2).E().drop().submit();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
         new HadoopPipeline(f2).V().drop().submit();
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
+
+        g.shutdown();
     }
 
     public void doFewElementDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
@@ -87,6 +94,7 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(17, new GremlinPipeline(g).E().count());
 
         new HadoopPipeline(f2).E().has("label", "battled").drop().submit();
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(14, new GremlinPipeline(g).E().count());
@@ -95,12 +103,15 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(2, new GremlinPipeline(g).E().has("label", "father").count());
 
         new HadoopPipeline(f2).V().has("name", "hercules").drop().submit();
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(11, new GremlinPipeline(g).V().count());
         assertEquals(12, new GremlinPipeline(g).E().count());
         assertEquals(0, new GremlinPipeline(g).E().has("label", "battled").count());
         assertEquals(0, new GremlinPipeline(g).E().has("label", "mother").count());
         assertEquals(1, new GremlinPipeline(g).E().has("label", "father").count());
+
+        g.shutdown();
     }
 
     public void doBulkVertexPropertyDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
@@ -122,17 +133,27 @@ public class TitanOutputFormatTest extends BaseTest {
                 return edge;
             }
         }).iterate();
+
+        g.shutdown();
     }
 
     public void doBulkVertexPropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+        // Declare schema in Titan
         TitanGraph g = TitanFactory.open(configuration);
         g.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
         g.commit();
+
+        // Reload schema from Titan into Faunus's Type Manager
+        FaunusTypeManager.getTypeManager(null).clear();
+        SchemaProvider titanSchemaProvider = new SchemaContainer(g);
+        FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(null); //argument is ignored
+        typeManager.setSchemaProvider(titanSchemaProvider);
 
         bulkLoadGraphOfTheGods(f1);
 
         new HadoopPipeline(f2).V().sideEffect("{it.name = 'marko' + it.name}").submit();
 
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
@@ -151,30 +172,22 @@ public class TitanOutputFormatTest extends BaseTest {
         }).iterate();
 
         new HadoopPipeline(f2).V().drop().submit();
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
         bulkLoadGraphOfTheGods(f1);
 
-        // This schema reload has to happen after bulkLoadGraphOfTheGods --
-        // it calls GraphSONUtility which does not seem to play well with
-        // multivalued property keys like name.
-        FaunusTypeManager.getTypeManager(null).clear();
-        SchemaProvider titanSchemaProvider = new SchemaContainer(g);
-        FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(null); //argument is ignored
-        typeManager.setSchemaProvider(titanSchemaProvider);
-
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
         int counter = 0;
+        g.shutdown();
         g = TitanFactory.open(configuration);
         new HadoopPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
-
-        typeManager.clear();
-        typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
 
         TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
         for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanProperty>>() {
@@ -188,6 +201,12 @@ public class TitanOutputFormatTest extends BaseTest {
             counter++;
         }
         assertEquals(counter, 2);
+
+        // Reset/clear types to avoid interference with subsequent tests
+        typeManager.clear();
+        typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
+
+        g.shutdown();
     }
 
     public void doBulkEdgeDerivations(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
@@ -201,6 +220,8 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(PipeHelper.areEqual(
                 new GremlinPipeline(g).V("name", "hercules").out("father").out("father"),
                 new GremlinPipeline(g).V("name", "hercules").out("grandfather")));
+
+        g.shutdown();
     }
 
     public void doBulkEdgePropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
@@ -230,19 +251,34 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("father").count());
         assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("mother").count());
         assertEquals(5, new GremlinPipeline(g).V("name", "hercules").out().count());
+
+        g.shutdown();
     }
 
     public void doUnidirectionEdges(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+        // Declare schema in Titan
         TitanGraph g = TitanFactory.open(configuration);
         g.makeEdgeLabel("father").unidirected().make();
         g.commit();
 
+//        // Reload schema from Titan into Faunus's Type Manager
+//        FaunusTypeManager.getTypeManager(null).clear();
+//        SchemaProvider titanSchemaProvider = new SchemaContainer(g);
+//        FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(null); //argument is ignored
+//        typeManager.setSchemaProvider(titanSchemaProvider);
+
         bulkLoadGraphOfTheGods(f1);
+        g.shutdown();
         g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
         assertEquals(new GremlinPipeline(g).V("name", "hercules").out("father").count(), 1);
         assertEquals(new GremlinPipeline(g).V("name", "jupiter").in("father").count(), 0);
+        g.shutdown();
+
+//        // Reset/clear types to avoid interference with subsequent tests
+//        typeManager.clear();
+//        typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
     }
 
     // TODO: Unidirectional edges test cases
