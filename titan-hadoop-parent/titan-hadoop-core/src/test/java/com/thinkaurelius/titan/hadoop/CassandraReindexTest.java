@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.hadoop;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
+import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -10,90 +9,39 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_CONF_FILE;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRIGGER_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.buildConfiguration;
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.EDGE;
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.PROPERTY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static com.tinkerpop.blueprints.Direction.OUT;
 import static org.junit.Assert.fail;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.QueryDescription;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraphQuery;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.core.schema.SchemaAction;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
-import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
-import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest.TestConfigOption;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
-import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
-
-import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
-import static com.tinkerpop.blueprints.Direction.OUT;
 
 public class CassandraReindexTest extends TitanGraphBaseTest {
 
     @Test
-    public void testIndexUpdatesWithoutReindex() throws Exception {
+    public void testIndexUpdatesWithReindex() throws Exception {
         clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
@@ -240,6 +188,8 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
     }
 
+    // Need to make CassandraStorageSetup's static initializer play nice with titan-hadoop-parent before that code can be used here
+
     @Override
     public WriteConfiguration getConfiguration() {
         String ks = getClass().getSimpleName();
@@ -251,12 +201,8 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         config.set(PAGE_SIZE,500);
         return config.getConfiguration();
     }
-
-    /*
-     * Cassandra only accepts keyspace names 48 characters long or shorter made
-     * up of alphanumeric characters and underscores.
-     */
-    private static String cleanKeyspaceName(String raw) {
+    
+    public static String cleanKeyspaceName(String raw) {
         Preconditions.checkNotNull(raw);
         Preconditions.checkArgument(0 < raw.length());
 
