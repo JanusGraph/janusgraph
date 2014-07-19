@@ -246,7 +246,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     private static void ensureUniqueness(FaunusRelationType type, SetMultimap<FaunusRelationType, FaunusRelation> adjacency) {
         for (FaunusRelation rel : adjacency.get(type)) {
             if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which " +
-                    "violates the multiplicity constraint: " + type.getMultiplicity());
+                    "violates the multiplicity constraint: " + type.getMultiplicity() + " on type " + type);
         }
     }
 

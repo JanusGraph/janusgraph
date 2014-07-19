@@ -11,6 +11,8 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -18,6 +20,9 @@ import java.io.IOException;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanCassandraRecordReader.class);
 
     private ColumnFamilyRecordReader reader;
     private TitanCassandraHadoopGraph graph;

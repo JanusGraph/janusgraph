@@ -72,6 +72,7 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-cassandra</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -234,6 +235,7 @@
                                 <excludes>
                                     <exclude>**/*PipelineTest.java</exclude>
                                     <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                                    <exclude>**/CassandraReindexTest.java</exclude>
                                     <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
                                 </excludes>
                             </configuration>
@@ -266,6 +268,7 @@
                             <configuration>
                                 <includes>
                                     <include>**/TitanCassandraOutputFormatTest.java</include>
+                                    <include>**/CassandraReindexTest.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>

@@ -60,6 +60,8 @@ public class ConfigurationUtil {
     public static <T> T get(final Configuration config, final ConfigOption<T> opt) {
         CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(config, "", false));
         BasicConfiguration bc = new BasicConfiguration(TitanHadoopConfiguration.ROOT_NS, cc, Restriction.NONE);
+        if (!bc.has(opt))
+            return null;
         return bc.get(opt);
     }
 

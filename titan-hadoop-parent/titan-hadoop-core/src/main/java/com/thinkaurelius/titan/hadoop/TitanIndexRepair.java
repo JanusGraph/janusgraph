@@ -32,6 +32,13 @@ public class TitanIndexRepair {
     }
 
     public static void cassandraRepair(String titanPropertiesPath, String indexName, String indexType, String partitioner) throws Exception {
+        Properties p = new Properties();
+        p.load(new FileInputStream(titanPropertiesPath));
+
+        cassandraRepair(p, indexName, indexType, partitioner);
+    }
+
+    public static void cassandraRepair(Properties titanInputProperties, String indexName, String indexType, String partitioner) throws Exception {
         Configuration hadoopConfig = TitanGraphOutputMapReduce.createConfiguration();
 
         hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_FORMAT), TitanCassandraInputFormat.class.getCanonicalName());
@@ -42,11 +49,10 @@ public class TitanIndexRepair {
         hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_FORMAT), NullOutputFormat.class.getCanonicalName());
         log.info("Set output format {}", ConfigurationUtil.get(hadoopConfig, TitanHadoopConfiguration.OUTPUT_FORMAT));
         hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.SIDE_EFFECT_FORMAT), TextOutputFormat.class.getCanonicalName());
+        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.JOBDIR_LOCATION), "jobs");
+        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.JOBDIR_OVERWRITE), "true");
 
-        Properties p = new Properties();
-        p.load(new FileInputStream(titanPropertiesPath));
-
-        for (Map.Entry<Object, Object> e : p.entrySet()) {
+        for (Map.Entry<Object, Object> e : titanInputProperties.entrySet()) {
             String k;
             String v = e.getValue().toString();
             k = ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS) + "." + e.getKey().toString();
