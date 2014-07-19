@@ -13,6 +13,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRIGGER_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.buildConfiguration;
+import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.EDGE;
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.PROPERTY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -38,6 +39,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.QueryDescription;
@@ -80,17 +82,18 @@ import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuild
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
+import static com.tinkerpop.blueprints.Direction.OUT;
 
 public class CassandraReindexTest extends TitanGraphBaseTest {
 
     @Test
     public void testIndexUpdatesWithoutReindex() throws Exception {
-
         clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
@@ -98,14 +101,17 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         //Types without index
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
         PropertyKey sensor = mgmt.makePropertyKey("sensor").dataType(Double.class).cardinality(Cardinality.LIST).make();
         finishSchema();
 
-        //Add some sensor data
+        //Add some sensor & friend data
         TitanVertex v = tx.addVertex();
         for (int i=0;i<10;i++) {
             v.addProperty("sensor",i).setProperty("time",i);
             v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
         }
         newTx();
         //Indexes should not yet be in use
@@ -114,6 +120,10 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
                 PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
                 PROPERTY,0,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,0,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
         evaluateQuery(tx.query().has("name","v105"),
@@ -125,15 +135,19 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         sensor = mgmt.getPropertyKey("sensor");
         time = mgmt.getPropertyKey("time");
         name = mgmt.getPropertyKey("name");
+        friend = mgmt.getEdgeLabel("friend");
         mgmt.createPropertyIndex(sensor,"byTime",Order.DESC,time);
+        mgmt.createEdgeIndex(friend,"byTime",Direction.OUT,Order.DESC,time);
         mgmt.buildIndex("bySensorReading",Vertex.class).addKey(name).buildCompositeIndex();
         finishSchema();
         newTx();
-        //Add some sensor data that should already be indexed even though index is not yet enabled
+        //Add some sensor & friend data that should already be indexed even though index is not yet enabled
         v = tx.getVertex(v.getLongId());
         for (int i=100;i<110;i++) {
             v.addProperty("sensor",i).setProperty("time",i);
             v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
         }
         tx.commit();
         //Should not yet be able to enable since not yet registered
@@ -142,10 +156,15 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
             fail();
         } catch (IllegalArgumentException e) {}
         try {
+            mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
             mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.REGISTER_INDEX);
         mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.REGISTER_INDEX);
         mgmt.commit();
 
@@ -153,15 +172,18 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         Thread.sleep(2000);
         finishSchema();
         mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
         mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
         finishSchema();
 
-        //Add some more sensor data
+        //Add some more sensor & friend data
         newTx();
         v = tx.getVertex(v.getLongId());
         for (int i=200;i<210;i++) {
             v.addProperty("sensor",i).setProperty("time",i);
             v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
         }
         newTx();
         //Use indexes now but only see new data
@@ -172,6 +194,12 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,0,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v105"),
@@ -179,12 +207,13 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("name","v205"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
 
-        // Run a reindex job
+        // Run some reindex jobs
         Properties titanInputProperties = new Properties();
         titanInputProperties.setProperty("storage.backend", "cassandrathrift");
         String ks = getClass().getSimpleName();
         titanInputProperties.setProperty("storage.keyspace", cleanKeyspaceName(ks));
         TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "sensor", "org.apache.cassandra.dht.Murmur3Partitioner");
+        TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "friend", "org.apache.cassandra.dht.Murmur3Partitioner");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "bySensorReading", "", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         newTx();
@@ -197,6 +226,12 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v105"),
