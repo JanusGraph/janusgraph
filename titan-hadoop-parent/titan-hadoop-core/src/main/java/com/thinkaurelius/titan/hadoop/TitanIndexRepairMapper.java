@@ -115,7 +115,8 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
     @Override
     public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) {
         try {
-            mgmt.commit();
+            if (null != mgmt && mgmt.isOpen())
+                mgmt.commit();
             DEFAULT_COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_TRANSACTIONS, 1L);
         } catch (RuntimeException e) {
             log.error("Transaction commit threw runtime exception:", e);
@@ -124,7 +125,8 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
         }
 
         try {
-            graph.shutdown();
+            if (null != graph && graph.isOpen())
+                graph.shutdown();
             DEFAULT_COMPAT.incrementContextCounter(context, Counters.SUCCESSFUL_GRAPH_SHUTDOWNS, 1L);
         } catch (RuntimeException e) {
             log.error("Graph shutdown threw runtime exception:", e);
@@ -214,6 +216,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
                         Set<IndexSerializer.IndexUpdate<StaticBuffer,Entry>> updates =
                             indexSerializer.reindexElement(element, (CompositeIndexType) indexType);
                         for (IndexSerializer.IndexUpdate<StaticBuffer,Entry> update : updates) {
+                            log.debug("Mutating index {}: {}", indexType, update.getEntry());
                             mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
                         }
                     }
@@ -227,12 +230,14 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
                 }
 
             } else throw new UnsupportedOperationException("Unsupported index found: "+index);
+
+//            log.info("Committing mutator {} in mapper {}", mutator, this);
+//            mutator.commit();
         } catch (final Exception e) {
             mgmt.rollback();
             DEFAULT_COMPAT.incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
             throw new IOException(e.getMessage(), e);
         }
-
     }
 
     /**
