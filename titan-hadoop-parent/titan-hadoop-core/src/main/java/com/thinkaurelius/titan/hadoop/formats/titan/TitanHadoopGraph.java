@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.hadoop.*;
@@ -60,6 +61,8 @@ public class TitanHadoopGraph {
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
                 final RelationType type = typeManager.getExistingRelationType(relation.typeId);
+                if (((InternalRelationType)type).isHiddenType()) continue; //Ignore hidden types
+
                 StandardFaunusRelation frel;
                 if (type.isPropertyKey()) {
                     Object value = relation.getValue();
@@ -100,7 +103,7 @@ public class TitanHadoopGraph {
             }
         }
         vertex.setLifeCycle(ElementLifeCycle.Loaded);
-        
+
         /*Since we are filtering out system relation types, we might end up with vertices that have no incident relations.
          This is especially true for schema vertices. Those are filtered out.     */
         if (!foundVertexState || !vertex.query().relations().iterator().hasNext()) return null;

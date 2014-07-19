@@ -156,7 +156,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
             // existing relations of that type, no matter how many -- log this
             // behavior and suggest addRelation to suppress the warning when
             // using a multi-valued type
-            log.warn( "setRelation deleted {} relations of type {} with multiplicity {}; " +
+            log.info( "setRelation deleted {} relations of type {} with multiplicity {}; " +
                       "use addRelation instead of setRelation to avoid deletion",
                       killedRels, relation.getType(), adjMulti);
         }
