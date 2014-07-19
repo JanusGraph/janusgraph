@@ -322,7 +322,7 @@ public class IndexSerializer {
         for (ParameterIndexField field: index.getFieldKeys()) {
             PropertyKey key = field.getFieldKey();
             if (field.getStatus()==SchemaStatus.DISABLED) continue;
-            Object value = element.getProperty(key);
+            Object value = element.getProperty(key.getName());
             if (value!=null) {
                 entries.add(new IndexEntry(key2Field(field), value));
             }
