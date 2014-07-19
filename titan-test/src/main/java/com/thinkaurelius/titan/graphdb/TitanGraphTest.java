@@ -1332,14 +1332,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //Types without index
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
         PropertyKey sensor = mgmt.makePropertyKey("sensor").dataType(Double.class).cardinality(Cardinality.LIST).make();
         finishSchema();
 
-        //Add some sensor data
+        //Add some sensor & friend data
         TitanVertex v = tx.addVertex();
         for (int i=0;i<10;i++) {
             v.addProperty("sensor",i).setProperty("time",i);
             v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
         }
         newTx();
         //Indexes should not yet be in use
@@ -1348,6 +1351,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
                 PROPERTY,0,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,0,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
         evaluateQuery(tx.query().has("name","v105"),
@@ -1359,15 +1366,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         sensor = mgmt.getPropertyKey("sensor");
         time = mgmt.getPropertyKey("time");
         name = mgmt.getPropertyKey("name");
+        friend = mgmt.getEdgeLabel("friend");
         mgmt.createPropertyIndex(sensor,"byTime",Order.DESC,time);
+        mgmt.createEdgeIndex(friend,"byTime",Direction.OUT,Order.DESC,time);
         mgmt.buildIndex("bySensorReading",Vertex.class).addKey(name).buildCompositeIndex();
         finishSchema();
         newTx();
-        //Add some sensor data that should already be indexed even though index is not yet enabled
+        //Add some sensor & friend data that should already be indexed even though index is not yet enabled
         v = tx.getVertex(v.getLongId());
         for (int i=100;i<110;i++) {
             v.addProperty("sensor",i).setProperty("time",i);
             v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
         }
         tx.commit();
         //Should not yet be able to enable since not yet registered
@@ -1376,10 +1387,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             fail();
         } catch (IllegalArgumentException e) {}
         try {
+            mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
             mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.REGISTER_INDEX);
         mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.REGISTER_INDEX);
         mgmt.commit();
 
@@ -1387,15 +1403,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Thread.sleep(2000);
         finishSchema();
         mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
         mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
         finishSchema();
 
-        //Add some more sensor data
+        //Add some more sensor & friend data
         newTx();
         v = tx.getVertex(v.getLongId());
         for (int i=200;i<210;i++) {
             v.addProperty("sensor",i).setProperty("time",i);
             v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
         }
         newTx();
         //Use indexes now but only see new data
@@ -1406,6 +1425,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,0,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v105"),
