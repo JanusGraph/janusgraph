@@ -78,9 +78,13 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.util.encoding.ConversionHelper;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
+
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,6 +103,9 @@ import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIn
  * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class ManagementSystem implements TitanManagement {
+
+    private static final Logger slf =
+            LoggerFactory.getLogger(ManagementSystem.class);
 
     private final StandardTitanGraph graph;
     private final Log sysLog;
@@ -164,7 +171,9 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public Set<String> getOpenInstances() {
-        return Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
+        Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
+        slf.debug("Open instances: {}", openInstances);
+        return openInstances;
     }
 
     @Override
