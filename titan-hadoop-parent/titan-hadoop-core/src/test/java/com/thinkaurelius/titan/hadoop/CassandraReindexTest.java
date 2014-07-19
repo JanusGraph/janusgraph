@@ -182,18 +182,21 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         titanInputProperties.setProperty("storage.backend", "cassandrathrift");
         String ks = getClass().getSimpleName();
         titanInputProperties.setProperty("storage.keyspace", cleanKeyspaceName(ks));
-        //TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "sensor", "org.apache.cassandra.dht.Murmur3Partitioner");
+        TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "sensor", "org.apache.cassandra.dht.Murmur3Partitioner");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "bySensorReading", "", "org.apache.cassandra.dht.Murmur3Partitioner");
 
+        newTx();
+
+        // Use indexes, see old and new data
         v = tx.getVertex(v.getLongId());
         evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time",Order.DESC),
-                PROPERTY,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+                PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
-                ElementCategory.VERTEX,0,new boolean[]{true,true},"bySensorReading");
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v105"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v205"),
