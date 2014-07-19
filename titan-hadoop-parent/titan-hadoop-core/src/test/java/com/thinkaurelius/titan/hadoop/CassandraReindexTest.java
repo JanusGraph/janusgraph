@@ -84,6 +84,8 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
+import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
+
 public class CassandraReindexTest extends TitanGraphBaseTest {
 
     @Test
@@ -201,142 +203,6 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v205"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
-    }
-
-    public static void evaluateQuery(TitanGraphQuery query, ElementCategory resultType,
-            int expectedResults, boolean[] subQuerySpecs,
-            PropertyKey orderKey1, Order order1,
-            String... intersectingIndexes) {
-        evaluateQuery(query,resultType,expectedResults,subQuerySpecs,ImmutableMap.of(orderKey1,order1),intersectingIndexes);
-    }
-
-    public static void evaluateQuery(TitanGraphQuery query, ElementCategory resultType,
-            int expectedResults, boolean[] subQuerySpecs,
-            PropertyKey orderKey1, Order order1, PropertyKey orderKey2, Order order2,
-            String... intersectingIndexes) {
-        evaluateQuery(query,resultType,expectedResults,subQuerySpecs,ImmutableMap.of(orderKey1,order1,orderKey2,order2),intersectingIndexes);
-    }
-
-    public static void evaluateQuery(TitanGraphQuery query, ElementCategory resultType,
-            int expectedResults, boolean[] subQuerySpecs,
-            String... intersectingIndexes) {
-        evaluateQuery(query,resultType,expectedResults,subQuerySpecs,ImmutableMap.<PropertyKey,Order>of(),intersectingIndexes);
-    }
-
-    public static void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
-                               int expectedResults, int numSubQueries, boolean[] subQuerySpecs) {
-        evaluateQuery(query,resultType,expectedResults,numSubQueries, subQuerySpecs, ImmutableMap.<PropertyKey,Order>of());
-    }
-
-    public static void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
-                               int expectedResults, int numSubQueries, boolean[] subQuerySpecs,
-                               PropertyKey orderKey, Order order) {
-        evaluateQuery(query,resultType,expectedResults,numSubQueries, subQuerySpecs, ImmutableMap.of(orderKey,order));
-    }
-
-
-    public static void evaluateQuery(TitanGraphQuery query, ElementCategory resultType,
-                               int expectedResults, boolean[] subQuerySpecs,
-                               Map<PropertyKey,Order> orderMap, String... intersectingIndexes) {
-        if (intersectingIndexes==null) intersectingIndexes=new String[0];
-        QueryDescription qd;
-        switch(resultType) {
-            case PROPERTY: qd = query.describeForProperties(); break;
-            case EDGE: qd = query.describeForEdges(); break;
-            case VERTEX: qd = query.describeForVertices(); break;
-            default: throw new AssertionError();
-        }
-        assertEquals(1,qd.getNoCombinedQueries());
-        assertEquals(1,qd.getNoSubQueries());
-        QueryDescription.SubQuery sq = qd.getSubQueries().get(0);
-        assertNotNull(sq);
-        if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
-            assertEquals(subQuerySpecs[0],sq.isFitted());
-            assertEquals(subQuerySpecs[1],sq.isSorted());
-        }
-        StandardQueryDescription.StandardSubQuery ssq = (StandardQueryDescription.StandardSubQuery)sq;
-        assertEquals(intersectingIndexes.length,ssq.numIntersectingQueries());
-        assertEquals(Sets.newHashSet(intersectingIndexes),Sets.newHashSet(ssq.getIntersectingQueries()));
-        //Check order
-        OrderList orders = ((StandardQueryDescription)qd).getQueryOrder();
-        assertNotNull(orders);
-        assertEquals(orderMap.size(),orders.size());
-        for (int i=0;i<orders.size();i++) {
-            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
-        }
-        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
-
-        Iterable<? extends TitanElement> result;
-        switch(resultType) {
-            case PROPERTY: result = query.properties(); break;
-            case EDGE: result = query.edges(); break;
-            case VERTEX: result = query.vertices(); break;
-            default: throw new AssertionError();
-        }
-        int no = 0;
-        TitanElement previous = null;
-        for (TitanElement e : result) {
-            assertNotNull(e);
-            no++;
-            if (previous!=null && !orders.isEmpty()) {
-                assertTrue(orders.compare(previous,e)<=0);
-            }
-            previous = e;
-        }
-        assertEquals(expectedResults,no);
-    }
-
-
-    public static void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
-                               int expectedResults, int numSubQueries, boolean[] subQuerySpecs,
-                               Map<PropertyKey,Order> orderMap) {
-        QueryDescription qd;
-        switch(resultType) {
-            case PROPERTY: qd = query.describeForProperties(); break;
-            case EDGE: qd = query.describeForEdges(); break;
-            case RELATION: qd = ((BasicVertexCentricQueryBuilder)query).describeForRelations(); break;
-            default: throw new AssertionError();
-        }
-        assertEquals(1,qd.getNoCombinedQueries());
-        assertEquals(numSubQueries,qd.getNoSubQueries());
-        List<? extends QueryDescription.SubQuery> subqs = qd.getSubQueries();
-        assertEquals(numSubQueries,subqs.size());
-        for (int i=0;i<numSubQueries;i++) {
-            QueryDescription.SubQuery sq = subqs.get(i);
-            assertNotNull(sq);
-            if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
-                assertEquals(subQuerySpecs[0],sq.isFitted());
-                assertEquals(subQuerySpecs[1],sq.isSorted());
-            }
-            assertEquals(1,((StandardQueryDescription.StandardSubQuery)sq).numIntersectingQueries());
-        }
-        //Check order
-        OrderList orders = ((StandardQueryDescription)qd).getQueryOrder();
-        assertNotNull(orders);
-        assertEquals(orderMap.size(),orders.size());
-        for (int i=0;i<orders.size();i++) {
-            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
-        }
-        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
-
-        Iterable<? extends TitanElement> result;
-        switch(resultType) {
-            case PROPERTY: result = query.properties(); break;
-            case EDGE: result = query.edges(); break;
-            case RELATION: result = query.relations(); break;
-            default: throw new AssertionError();
-        }
-        int no = 0;
-        TitanElement previous = null;
-        for (TitanElement e : result) {
-            assertNotNull(e);
-            no++;
-            if (previous!=null && !orders.isEmpty()) {
-                assertTrue(orders.compare(previous,e)<=0);
-            }
-            previous = e;
-        }
-        assertEquals(expectedResults,no);
     }
 
     @Override
