@@ -110,6 +110,7 @@ public class TitanFactory {
 
         private Builder() {
             super(GraphDatabaseConfiguration.buildConfiguration());
+            ReflectiveConfigOptionLoader.loadOnce();
         }
 
         /**
