@@ -27,6 +27,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.attribute.Text;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.SchemaAction;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -42,33 +43,45 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
 
     @Test
     public void testMixedIndexUpdatesWithReindex() throws Exception {
-        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
+        Object[] settings = new Object[]{option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0, TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
-        );
+        };
 
-        mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        clopen(settings);
+
+        mgmt.makePropertyKey("desc").dataType(String.class).make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        // Declare a mixed index
+        TitanGraphIndex mixedIndex = mgmt.buildIndex("mixedTest",Vertex.class).addKey(name, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX_NAME);
         finishSchema();
 
         // Create some named vertices
         for (int i=0;i<10;i++) {
             TitanVertex v = tx.addVertex();
             v.setProperty("name", "v"+i);
+            v.setProperty("desc", "d"+i);
         }
         newTx();
+
+        clopen(settings);
 
         // Check on one by name
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
         newTx();
 
-        // Declare a mixed index
-        PropertyKey name = mgmt.getPropertyKey("name");
-        TitanGraphIndex mixedIndex = mgmt.buildIndex("mixedTest",Vertex.class).addKey(name).buildMixedIndex(INDEX_NAME);
-        //TitanGraphIndex mixedIndex = mgmt.buildIndex("mixedTest",Vertex.class).buildMixedIndex(INDEX_NAME);
-        //mgmt.addIndexKey(mixedIndex, name);
         finishSchema();
+        mgmt.addIndexKey(mgmt.getGraphIndex("mixedTest"),mgmt.getPropertyKey("desc"));
+        finishSchema();
+        newTx();
 
+        for (int i=20;i<30;i++) {
+            TitanVertex v = tx.addVertex();
+            v.setProperty("name", "v"+i);
+            v.setProperty("desc", "d"+i);
+        }
+        newTx();
 
         // Should not yet be able to enable since not yet registered
         try {
@@ -77,7 +90,7 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         } catch (IllegalArgumentException e) {}
 
         // Register
-        mgmt.updateIndex(mgmt.getGraphIndex("mixedTest"), SchemaAction.REGISTER_INDEX);
+//        mgmt.updateIndex(mgmt.getGraphIndex("mixedTest"), SchemaAction.REGISTER_INDEX);
         mgmt.commit();
 
         // Log propagation sleep (?)
@@ -85,26 +98,23 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         finishSchema();
 
         // Enable index
-        mgmt.updateIndex(mgmt.getGraphIndex("mixedTest"), SchemaAction.ENABLE_INDEX); // This line fails:
-        /*
-         * java.lang.IllegalArgumentException: Update action [ENABLE_INDEX] does not apply to any fields for index [com.thinkaurelius.titan.graphdb.database.management.TitanGraphIndexWrapper@d81a4e1]
-         *    at com.google.common.base.Preconditions.checkArgument(Preconditions.java:120)
-         *    at com.thinkaurelius.titan.graphdb.database.management.ManagementSystem.updateIndex(ManagementSystem.java:613)
-         *    at com.thinkaurelius.titan.hadoop.CassandraReindexTest.testMixedIndexUpdatesWithReindex(CassandraReindexTest.java:240)
-         */
+        mgmt.updateIndex(mgmt.getGraphIndex("mixedTest"), SchemaAction.ENABLE_INDEX);
         finishSchema();
 
         // Add more named vertices that should get mixed index entries
         for (int i=100;i<110;i++) {
             TitanVertex v = tx.addVertex();
             v.addProperty("name", "v"+i);
+            v.setProperty("desc", "d"+i);
         }
         newTx();
 
+        Thread.sleep(10000L);
+
         // Check that we only see new data
-        evaluateQuery(tx.query().has("name", Text.CONTAINS, "v5"),
+        evaluateQuery(tx.query().has("desc", Text.CONTAINS, "d5"),
                 ElementCategory.VERTEX,0,new boolean[]{true,true},"mixedTest");
-        evaluateQuery(tx.query().has("name", Text.CONTAINS, "v105"),
+        evaluateQuery(tx.query().has("desc", Text.CONTAINS, "d105"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"mixedTest");
         newTx();
 
@@ -114,16 +124,20 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         String ks = getClass().getSimpleName();
         titanInputProperties.setProperty("storage.keyspace", cleanKeyspaceName(ks));
         titanInputProperties.setProperty("index.search.backend", "elasticsearch");
-        titanInputProperties.setProperty("index.search.directory", "es");
-        titanInputProperties.setProperty("index.search.client-only", "false");
-        titanInputProperties.setProperty("index.search.local-mode", "true");
+        // External ES, must be started manually before tests and cleaned afterward
+        titanInputProperties.setProperty("index.search.client-only", "true");
+        titanInputProperties.setProperty("index.search.local-mode", "false");
+        // Embedded ES -- plays badly with MR
+        //titanInputProperties.setProperty("index.search.directory", "es");
+        //titanInputProperties.setProperty("index.search.client-only", "false");
+        //titanInputProperties.setProperty("index.search.local-mode", "true");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "mixedTest", "", "org.apache.cassandra.dht.Murmur3Partitioner");
         newTx();
 
         // Use index, see old and new data
-        evaluateQuery(tx.query().has("name", Text.CONTAINS, "v5"),
+        evaluateQuery(tx.query().has("desc", Text.CONTAINS, "d5"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"mixedTest");
-        evaluateQuery(tx.query().has("name", Text.CONTAINS, "v105"),
+        evaluateQuery(tx.query().has("desc", Text.CONTAINS, "d105"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"mixedTest");
     }
 
@@ -139,9 +153,13 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
         config.set(PAGE_SIZE,500);
         config.set(INDEX_BACKEND, "elasticsearch", INDEX_NAME);
-        config.set(INDEX_DIRECTORY, "es", INDEX_NAME);
-        config.set(LOCAL_MODE, true, INDEX_NAME);
-        config.set(CLIENT_ONLY, false, INDEX_NAME);
+        // External ES, must be started manually before tests and cleaned afterward
+        config.set(LOCAL_MODE, false, INDEX_NAME);
+        config.set(CLIENT_ONLY, true, INDEX_NAME);
+        // Embedded ES -- plays badly with MR
+//        config.set(INDEX_DIRECTORY, "es", INDEX_NAME);
+//        config.set(LOCAL_MODE, true, INDEX_NAME);
+//        config.set(CLIENT_ONLY, false, INDEX_NAME);
         return config.getConfiguration();
     }
 

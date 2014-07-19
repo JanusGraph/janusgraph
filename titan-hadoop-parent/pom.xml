@@ -235,7 +235,7 @@
                                 <excludes>
                                     <exclude>**/*PipelineTest.java</exclude>
                                     <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
-                                    <exclude>**/CassandraReindexTest.java</exclude>
+                                    <exclude>**/*ReindexTest.java</exclude>
                                     <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
                                 </excludes>
                             </configuration>
@@ -268,7 +268,7 @@
                             <configuration>
                                 <includes>
                                     <include>**/TitanCassandraOutputFormatTest.java</include>
-                                    <include>**/CassandraReindexTest.java</include>
+                                    <include>**/*ReindexTest.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
