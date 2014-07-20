@@ -120,4 +120,8 @@ public class ExpectedValueCheckingStore extends KCVSProxy {
     void deleteLocks(ExpectedValueCheckingTransaction tx) throws BackendException {
         locker.deleteLocks(tx.getLockTransaction());
     }
+
+    KeyColumnValueStore getBackingStore() {
+        return store;
+    }
 }

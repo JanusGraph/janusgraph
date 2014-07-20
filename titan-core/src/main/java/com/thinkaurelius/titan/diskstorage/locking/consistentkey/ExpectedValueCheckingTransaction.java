@@ -45,9 +45,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     private boolean isMutationStarted;
 
     /**
-     * Transaction on the store holding information. This is only used for
-     * locking-related metadata. No client data are read or written through this
-     * transaction.
+     * Transaction for reading and writing locking-related metadata. Also used
+     * for reading expected values provided as arguments to
+     * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      */
     private final StoreTransaction lockTx;
 
@@ -219,7 +219,8 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
                                                 final StaticBuffer ev, final ExpectedValueCheckingStore store) throws BackendException {
         final StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
         KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
-        Iterable<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
+        // Call getSlice on the wrapped store using the quorum+ consistency tx
+        Iterable<Entry> actualEntries = store.getBackingStore().getSlice(ksq, lockTx);
 
         if (null == actualEntries)
             actualEntries = ImmutableList.<Entry>of();
