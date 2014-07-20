@@ -11,7 +11,7 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>
-        <hbase.version>0.94.16</hbase.version>
+        <hbase.version>0.94.21</hbase.version>
         <hadoop.version>${hadoop1.version}</hadoop.version>
         <jruby.version>1.6.5</jruby.version>
         <hadoop.profile>1.0</hadoop.profile>
