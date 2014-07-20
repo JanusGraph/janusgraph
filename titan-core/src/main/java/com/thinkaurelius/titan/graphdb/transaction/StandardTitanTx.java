@@ -281,6 +281,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return config;
     }
 
+    @Override
     public StandardTitanGraph getGraph() {
         return graph;
     }

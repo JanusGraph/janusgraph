@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
@@ -30,6 +31,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsTransaction.class);
 
+    /**
+     * Returns the graph that this transaction is based on
+     * @return
+     */
+    protected abstract TitanGraph getGraph();
 
     @Override
     public void stopTransaction(Conclusion conclusion) {
@@ -47,7 +53,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Features getFeatures() {
-        throw new UnsupportedOperationException("Not supported threaded transaction graph. Call on parent graph");
+        return getGraph().getFeatures();
     }
 
     /**

@@ -36,7 +36,6 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     * ---------------------------------------------------------------
     */
 
-
     /**
      * Creates a new vertex in the graph.
      *
