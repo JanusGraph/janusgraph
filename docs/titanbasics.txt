@@ -212,7 +212,86 @@ Refer to the full list of configuration options _(todo:xref)_ for more informati
 Schema and Data Modeling
 ------------------------
 
-_to be written_
+Each Titan graph has a schema comprised of the edge labels, property keys, and vertex labels used therein. A Titan schema can either be explicitly or implicitly defined. Users are encouraged to explicitly define the graph schema during application development. An explicitly defined schema is an important component of a robust graph application and greatly improves collaborative software development. Note, that a Titan schema can be evolved over time without any interruption of normal database operations. Extending the schema does not slow down query answering and does not require database downtime.
+
+The schema type - i.e. edge label, property key, or vertex label - is assigned to elements in the graph - i.e. edge, properties or vertices respectively - when they are first created. The assigned schema type cannot be changed for a particular element. This ensures a stable type system that is easy to reason about.
+
+Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in the Titan Advanced section _(todo:xref)_.
+
+Defining Edge Labels
+~~~~~~~~~~~~~~~~~~~~
+
+Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals. 
+
+To define an edge label, call `makeEdgeLabel(String)` on an open graph or management transaction and provide the name of the edge label as the argument. Edge label names must be unique in the graph. This method returns a builder for edge labels that allows to define its multiplicity. The *multiplicity* of an edge label defines a multiplicity constraint on all edges of this label, that is, a maximum number of edges between pairs of vertices. Titan recognizes the following multiplicity settings.
+
+Edge Label Multiplicity
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.Multiplicity Settings
+* *MULTI*: Allows multiple edges of the same label between any pair of vertices. In other words, the graph is a _multi graph_ with respect to such edge label. There is no constraint on edge multiplicity.
+* *SIMPLE*: Allows at most one edge of such label between any pair of vertices. In other words, the graph is a _simple graph_ with respect to the label. Ensures that edges are unique for a given label and pairs of vertices.
+* *MANY2ONE*: Allows at most one outgoing edge of such label on any vertex in the graph but places no constraint on incoming edges. The edge label `mother` is an example with MANY2ONE multiplicity since each person has at most one mother but mothers can have multiple children.
+* *ONE2MANY*: Allows at most one incoming edge of such label on any vertex in the graph but places no constraint on outgoing edges. The edge label `winnerOf` is an example with ONE2MANY multiplicity since each contest is won by at most one person but a person can win multiple contests.
+* *ONE2ONE*:  Allows at most one incoming and one outgoing edge of such label on any vertex in the graph. The edge label 'marriedTo' is an example with ONE2ONE multiplicity since a person is married to exactly one other person.
+
+The default multiplicity is MULTI. The definition of an edge label is completed by calling the `make()` method on the builder which returns the defined edge label as shown in the following example.
+
+[source,gremlin]
+tx = g.newTransaction()
+follow = tx.makeEdgeLabel('follow').multiplicity(MULTI).make()
+mother = tx.makeEdgeLabel('mother').multiplicity(MANY2ONE).make()
+
+Defining Property Keys
+~~~~~~~~~~~~~~~~~~~~~~
+
+Properties on vertices and edges are key-value pairs. For instance, the property `name='Daniel'` has the key `name` and the value `'Daniel'`. Property keys are part of the Titan schema and can constrain the allowed data types and cardinality of values.
+
+To define a property key, call `makePropertyKey(String)` on an open graph or management transaction and provide the name of the property key as the argument. Property key names must be unique in the graph. This method returns a builder for the property keys.
+
+Property Key Data Type
+^^^^^^^^^^^^^^^^^^^^^^
+
+Use `dataType(Class)` to define the data type of a property key. Titan will enforce that all values associated with the key have the configured data type and thereby ensures that data added to the graph is valid. For instance, one can define that the `name` key has a String data type. 
+
+Define the data type as `Object.class` in order to allow any value to be associated with a key. This is the default configuration.
+
+Configured data types must be concrete classes and not interfaces or abstract classes. Titan enforces class equality, so adding a sub-class of a configured data type is not allowed.
+
+Property Key Cardinality
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use `cardinality(Cardinality)` to define the allowed cardinality of the values associated with the key on any given vertex.
+
+.Cardinality Settings
+* *SINGLE*: Allows at most one value per element for such key. In other words, the key->value mapping is unique for all elements in the graph. The property key `birthDate` is an example with SINGLE cardinality since each person has exactly one birth date.
+* *LIST*: Allows an arbitrary number of values per element for such key. In other words, the key is associated with a list of values allowing duplicate values. Assuming we model sensors as vertices in a graph, the property key `sensorReading` is an example with LIST cardinality to allow lots of (potentially duplicate) sensor readings to be recorded.
+* *SET*: Allows multiple values but no duplicate values per element for such key. In other words, the key is associated with a set of values. The property key `name` has SET cardinality if we want to capture all names of an individual (including nick name, maiden name, etc).
+
+The default cardinality setting is SINGLE.
+Note, that property keys used on edges and properties have cardinality SINGLE. Attaching multiple values for a single key on an edge or property is not supported.
+
+[source,gremlin]
+tx = g.newTransaction()
+birthDate = tx.makePropertyKey('birthDate').dataType(Long.class).cardinality(SINGLE).make()
+name = tx.makePropertyKey('name').dataType(String.class).cardinality(SET).make()
+birthDate = tx.makePropertyKey('sensorReading').dataType(Double.class).cardinality(LIST).make()
+
+Relation Types
+~~~~~~~~~~~~~~
+
+Edge labels and property keys are jointly referred to as *relation types*. Names of relation types must be unique in the graph which means that property keys and edge labels cannot have the same name. There are methods in the Titan API to query for the existence or retrieve relation types which encompasses both property keys and edge labels.
+
+Defining Vertex Labels
+~~~~~~~~~~~~~~~~~~~~~~
+
+Like edges, vertices have labels. Unlike edges, labels are optional for vertices. If no label is provided when calling `addVertex()` the default label is automatically assigned to the created vertex. Vertex labels are useful to distinguish different types of vertices, e.g. _user_ vertices and _product_ vertices.
+
+To define a vertex label, call `makeVertexLabel(String).make()` on an open graph or management transaction and provide the name of the vertex label as the argument. Vertex label names must be unique in the graph.
+
+[source,gremlin]
+tx = g.newTransaction()
+person = tx.makeVertexLabel('person').make();
 
 
 [[gremlin]]
