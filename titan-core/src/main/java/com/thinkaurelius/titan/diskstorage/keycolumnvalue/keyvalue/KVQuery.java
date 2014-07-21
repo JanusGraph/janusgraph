@@ -6,6 +6,9 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 
 /**
+ * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and
+ * end (exclusive) which satisfy the filter. Returns up to the specified limit number of key-value pairs {@link KeyValueEntry}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class KVQuery extends BaseQuery {
