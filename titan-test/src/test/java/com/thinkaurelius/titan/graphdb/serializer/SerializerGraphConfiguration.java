@@ -37,7 +37,7 @@ public class SerializerGraphConfiguration {
         TitanManagement mgmt = graph.getManagementSystem();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey any  = mgmt.makePropertyKey("any").dataType(Object.class).make();
-        mgmt.buildIndex("byTime",Vertex.class).indexKey(time).buildCompositeIndex();
+        mgmt.buildIndex("byTime",Vertex.class).addKey(time).buildCompositeIndex();
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").make();
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         mgmt.commit();
