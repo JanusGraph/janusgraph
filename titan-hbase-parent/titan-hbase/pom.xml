@@ -168,6 +168,17 @@
                 </executions>
             </plugin>
 
+            <!-- Redeclare gpg-plugin's sign-artifacts execution below the
+                 assembly plugin to guarantee that signing happens after assembly
+                 during the package lifecycle phase -->
+            <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
