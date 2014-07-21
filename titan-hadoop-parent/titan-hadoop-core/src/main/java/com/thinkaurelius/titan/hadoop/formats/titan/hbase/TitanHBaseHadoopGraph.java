@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanHadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 
@@ -24,7 +24,7 @@ public class TitanHBaseHadoopGraph extends TitanHadoopGraph {
         super(setup);
     }
 
-    public HadoopVertex readHadoopVertex(final Configuration configuration, byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
+    public FaunusVertex readHadoopVertex(final Configuration configuration, byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
         return super.readHadoopVertex(configuration, new StaticArrayBuffer(key), new HBaseMapIterable(rowMap));
     }
 

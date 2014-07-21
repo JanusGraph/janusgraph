@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopPathElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -36,11 +33,11 @@ public class BackFilterMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private int step;
         private boolean isVertex;
-        private final Holder<HadoopPathElement> holder = new Holder<HadoopPathElement>();
+        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
 
 
@@ -51,16 +48,16 @@ public class BackFilterMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
-                        if (path.get(this.step) instanceof HadoopEdge.MicroEdge)
+                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
+                        if (path.get(this.step) instanceof StandardFaunusEdge.MicroEdge)
                             throw new IOException("Back does not support backing up to previous edges");
 
                         final long backElementId = path.get(this.step).getId();
                         this.longWritable.set(backElementId);
-                        final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), backElementId);
+                        final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), backElementId);
                         vertex.addPath(path, false);
                         context.write(this.longWritable, this.holder.set('p', vertex));
                     }
@@ -68,15 +65,15 @@ public class BackFilterMapReduce {
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        for (final List<HadoopPathElement.MicroElement> path : edge.getPaths()) {
-                            if (path.get(this.step) instanceof HadoopEdge.MicroEdge)
+                        for (final List<FaunusPathElement.MicroElement> path : edge.getPaths()) {
+                            if (path.get(this.step) instanceof StandardFaunusEdge.MicroEdge)
                                 throw new IOException("Back does not support backing up to previous edges");
 
                             final long backElementId = path.get(this.step).getId();
                             this.longWritable.set(backElementId);
-                            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), backElementId);
+                            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), backElementId);
                             vertex.addPath(path, false);
                             context.write(this.longWritable, this.holder.set('p', vertex));
                         }
@@ -85,28 +82,28 @@ public class BackFilterMapReduce {
                 }
 
                 for (final Edge e : value.getEdges(Direction.IN)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths())
                         edge.clearPaths();
                 }
             }
 
-            this.longWritable.set(value.getIdAsLong());
+            this.longWritable.set(value.getLongId());
             context.write(this.longWritable, this.holder.set('v', value));
         }
     }
 
     public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
-        private final Holder<HadoopVertex> holder = new Holder<HadoopVertex>();
+        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             char outTag = 'x';
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((HadoopVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                     outTag = 'v';
                 } else if (tag == 'p') {
                     vertex.getPaths(holder.get(), true);
@@ -118,15 +115,15 @@ public class BackFilterMapReduce {
         }
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, HadoopVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((HadoopVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else if (tag == 'p') {
                     vertex.getPaths(holder.get(), true);
                 } else {

@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
@@ -53,7 +51,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
 
         //3) TitanType
         InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
-        int typecompare = t1.compareTo(t2);
+        int typecompare = AbstractElement.compare(t1,t2);
         if (typecompare != 0) return typecompare;
         assert t1.equals(t2);
 
@@ -97,15 +95,15 @@ public class RelationComparator implements Comparator<InternalRelation> {
             }
         } else {
             Preconditions.checkArgument(r1.isEdge() && r2.isEdge());
-            int vertexcompare = r1.getVertex(EdgeDirection.position(dir1.opposite())).
-                    compareTo(r2.getVertex(EdgeDirection.position(dir1.opposite())));
+            int vertexcompare = AbstractElement.compare(r1.getVertex(EdgeDirection.position(dir1.opposite())),
+                    r2.getVertex(EdgeDirection.position(dir1.opposite())));
             if (vertexcompare != 0) return vertexcompare;
         }
         // Breakout: if type&direction are the same, and the end points of the relation are the same and the type is constrained, the relations must be the same
         if (t1.getMultiplicity().isConstrained()) return 0;
 
         // 7)compare relation ids
-        return r1.compareTo(r2);
+        return AbstractElement.compare(r1,r2);
     }
 
     public static int compareValues(Object v1, Object v2, Order order) {

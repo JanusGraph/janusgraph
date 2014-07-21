@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.BaseTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -164,7 +165,7 @@ public interface TitanManagement extends TitanConfiguration {
          * @param key
          * @return this IndexBuilder
          */
-        public IndexBuilder indexKey(PropertyKey key);
+        public IndexBuilder addKey(PropertyKey key);
 
         /**
          * Adds the given key and associated parameters to the composite key of this index
@@ -172,7 +173,7 @@ public interface TitanManagement extends TitanConfiguration {
          * @param parameters
          * @return this IndexBuilder
          */
-        public IndexBuilder indexKey(PropertyKey key, Parameter... parameters);
+        public IndexBuilder addKey(PropertyKey key, Parameter... parameters);
 
         /**
          * Restricts this index to only those elements that have the provided schemaType. If this graph index indexes
@@ -271,6 +272,36 @@ public interface TitanManagement extends TitanConfiguration {
      * @param updateAction
      */
     public void updateIndex(TitanIndex index, SchemaAction updateAction);
+
+    /*
+    ##################### CLUSTER MANAGEMENT ##########################
+     */
+
+    /**
+     * Returns a set of unique instance ids for all Titan instances that are currently
+     * part of this graph cluster.
+     *
+     * @return
+     */
+    public Set<String> getOpenInstances();
+
+    /**
+     * Forcefully removes a Titan instance from this graph cluster as identified by its name.
+     * <p/>
+     * This method should be used with great care and only in cases where a Titan instance
+     * has been abnormally terminated (i.e. killed instead of properly shut-down). If this happens, the instance
+     * will continue to be listed as an open instance which means that 1) a new instance with the same id cannot
+     * be started and 2) schema updates will fail because the killed instance cannot acknowledge the schema update.
+     *
+     * <p/>
+     * Throws an exception if the instance is not part of this cluster or if the instance has
+     * been started after the start of this management transaction which is indicative of the instance
+     * having been restarted successfully.
+     *
+     * @param instanceId
+     */
+    public void forceCloseInstance(String instanceId);
+
 
     /*
     ##################### PROXY FOR TITANTRANSACTION ##########################

@@ -17,7 +17,6 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.*;
@@ -38,7 +37,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         if (tx.isOpen())
             return this;
 
-        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(getID());
+        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(getLongId());
         if (next == null) throw InvalidElementException.removedException(this);
         else return next;
     }
@@ -50,8 +49,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public long getCompareId() {
-        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(getID());
-        else return getID();
+        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(getLongId());
+        else return getLongId();
     }
 
     @Override
@@ -61,7 +60,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Object getId() {
-        return getID();
+        return getLongId();
     }
 
     @Override

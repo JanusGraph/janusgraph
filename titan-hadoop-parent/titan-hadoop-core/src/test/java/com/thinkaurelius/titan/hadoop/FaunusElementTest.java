@@ -20,21 +20,21 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class HadoopElementTest extends TestCase {
+public class FaunusElementTest extends TestCase {
 
     public void testBasicSerialization() throws IOException {
-        HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
-        HadoopVertex vertex2 = new HadoopVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
-        assertEquals(bytes1.size(), 7);
+        assertEquals(bytes1.size(), 8);
         // 1 long id + 1 variable int paths + 1 short properties +  2 vinteger edge types (2)
         // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 1 byte long id
 
         ByteArrayOutputStream bytes2 = new ByteArrayOutputStream();
         vertex2.write(new DataOutputStream(bytes2));
-        assertEquals(bytes2.size(), 23);
+        assertEquals(bytes2.size(), 24);
         // 1 long id + 1 int paths + 1 short properties + 2 vinteger edge types (2)
         // ? + 1 + 1 + 2 + 2 + 2 = 11 bytes + 9 byte long id
 
@@ -46,10 +46,10 @@ public class HadoopElementTest extends TestCase {
     }
 
     public void testElementComparator() throws IOException {
-        HadoopVertex a = new HadoopVertex(EmptyConfiguration.immutable(), 10);
-        HadoopVertex b = new HadoopVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
-        HadoopVertex c = new HadoopVertex(EmptyConfiguration.immutable(), 10);
-        HadoopVertex d = new HadoopVertex(EmptyConfiguration.immutable(), 12);
+        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex b = new FaunusVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
+        FaunusVertex c = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex d = new FaunusVertex(EmptyConfiguration.immutable(), 12);
 
         assertEquals(a.compareTo(a), 0);
         assertEquals(a.compareTo(b), -1);
@@ -82,7 +82,7 @@ public class HadoopElementTest extends TestCase {
 
         //////// test raw byte comparator
 
-        HadoopSerializer.Comparator comparator = new HadoopSerializer.Comparator();
+        FaunusSerializer.Comparator comparator = new FaunusSerializer.Comparator();
 
         assertEquals(0, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), aBytes.toByteArray(), 0, aBytes.size()));
         assertEquals(-1, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));
@@ -106,7 +106,7 @@ public class HadoopElementTest extends TestCase {
     }
 
     public void testSettingIdPropertyException() {
-        HadoopVertex a = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
+        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         try {
             a.setProperty(Tokens.ID, 11l);
             assertFalse(true);
@@ -114,7 +114,7 @@ public class HadoopElementTest extends TestCase {
             assertTrue(true);
         }
 
-        HadoopEdge b = new HadoopEdge(EmptyConfiguration.immutable(), 1l, 2l, 13l, "self");
+        StandardFaunusEdge b = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1l, 2l, 13l, "self");
         try {
             b.setProperty(Tokens.ID, 10);
             assertFalse(true);
@@ -134,13 +134,13 @@ public class HadoopElementTest extends TestCase {
     public void testPathIteratorRemove() {
         Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
-        HadoopVertex vertex1 = new HadoopVertex(configuration, 10);
+        FaunusVertex vertex1 = new FaunusVertex(configuration, 10);
         assertEquals(vertex1.pathCount(), 0);
-        vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
-        vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(3l)), false);
-        vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(4l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
+        vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(4l)), false);
         assertEquals(vertex1.pathCount(), 3);
-        Iterator<List<HadoopPathElement.MicroElement>> itty = vertex1.getPaths().iterator();
+        Iterator<List<FaunusPathElement.MicroElement>> itty = vertex1.getPaths().iterator();
         while (itty.hasNext()) {
             if (itty.next().get(1).getId() == 3l)
                 itty.remove();
@@ -149,8 +149,8 @@ public class HadoopElementTest extends TestCase {
     }
 
     public void testPathHash() {
-        List<HadoopPathElement.MicroElement> path1 = (List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l));
-        List<HadoopPathElement.MicroElement> path2 = (List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l));
+        List<FaunusPathElement.MicroElement> path1 = (List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l));
+        List<FaunusPathElement.MicroElement> path2 = (List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l));
 
         assertEquals(new HashSet(path1).size(), 2);
         assertEquals(new HashSet(path2).size(), 1);

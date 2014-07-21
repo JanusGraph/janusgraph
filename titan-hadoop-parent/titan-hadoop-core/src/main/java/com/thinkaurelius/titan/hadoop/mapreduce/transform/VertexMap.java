@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.hadoop.conf.Configuration;
@@ -34,7 +35,7 @@ public class VertexMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private Collection<Long> ids;
 
@@ -45,11 +46,10 @@ public class VertexMap {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            if (this.ids.contains(value.getIdAsLong())) {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+            if (this.ids.contains(value.getLongId())) {
                 value.startPath();
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
-//                context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
             } else {
                 value.clearPaths();
             }

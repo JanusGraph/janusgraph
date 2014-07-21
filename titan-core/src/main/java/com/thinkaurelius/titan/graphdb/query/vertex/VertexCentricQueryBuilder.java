@@ -13,13 +13,10 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Implementation of {@link TitanVertexQuery} that extends {@link AbstractVertexCentricQueryBuilder}
+ * Implementation of {@link TitanVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
  * {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}. However, there is
  * one important special case: If the constructed query is simple (i.e. {@link com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery#isSimple()=true}
@@ -34,7 +31,7 @@ import java.util.Map;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements TitanVertexQuery<VertexCentricQueryBuilder> {
+public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements TitanVertexQuery<VertexCentricQueryBuilder> {
 
     private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
 

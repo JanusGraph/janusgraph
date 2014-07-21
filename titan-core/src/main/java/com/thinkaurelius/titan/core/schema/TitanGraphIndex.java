@@ -70,4 +70,17 @@ public interface TitanGraphIndex extends TitanIndex {
      */
     public SchemaStatus getIndexStatus(PropertyKey key);
 
+    /**
+     * Whether this is a composite index
+     * @return
+     */
+    public boolean isCompositeIndex();
+
+    /**
+     * Whether this is a mixed index
+     * @return
+     */
+    public boolean isMixedIndex();
+
+
 }

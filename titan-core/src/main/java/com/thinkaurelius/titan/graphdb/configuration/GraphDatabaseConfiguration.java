@@ -178,7 +178,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
             "The version of Titan with which this database was created.  Don't manually set this property.",
-            ConfigOption.Type.FIXED, String.class);
+            ConfigOption.Type.FIXED, String.class).hide();
 
     // ################ INSTANCE REGISTRATION #######################
     // ##############################################################
@@ -187,7 +187,7 @@ public class GraphDatabaseConfiguration {
             "This is used internally to keep track of open instances.",true);
 
     public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
-            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class);
+            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class).hide();
 
     // ################ CACHE #######################
     // ################################################
@@ -394,12 +394,12 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
             "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(100000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(100L, TimeUnit.SECONDS));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(10L, TimeUnit.SECONDS));
 
 
     /**

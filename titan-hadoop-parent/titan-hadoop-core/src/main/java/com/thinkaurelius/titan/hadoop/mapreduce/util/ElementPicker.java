@@ -3,11 +3,9 @@ package com.thinkaurelius.titan.hadoop.mapreduce.util;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopElement;
-import com.thinkaurelius.titan.hadoop.HadoopProperty;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.FaunusProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,25 +18,21 @@ public class ElementPicker {
     protected ElementPicker() {
     }
 
-    public static String getPropertyAsString(final HadoopElement element, final String key) {
-        if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
-            return element.getId().toString();
-        else if (key.equals(Tokens._PROPERTIES)) {
+    public static String getPropertyAsString(final FaunusElement element, final String key) {
+        if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
-            for (final HadoopProperty property : element.getProperties()) {
+            for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
-            properties.put(Tokens._ID, element.getId());
-            if (element instanceof HadoopEdge)
-                properties.put(Tokens._LABEL, ((HadoopEdge) element).getLabel());
+            properties.put(Tokens._ID, element.getLongId());
+            if (element instanceof StandardFaunusEdge)
+                properties.put(Tokens._LABEL, ((StandardFaunusEdge) element).getLabel());
 
             return properties.toString();
-        } else if (key.equals(Tokens.LABEL) && element instanceof HadoopEdge) {
-            return ((HadoopEdge) element).getLabel();
         } else {
-            if (element instanceof HadoopVertex) {
+            if (element instanceof FaunusVertex) {
                 List values = new ArrayList();
-                Iterables.addAll(values, ((HadoopVertex) element).getProperties(key));
+                Iterables.addAll(values, ((FaunusVertex) element).getPropertyValues(key));
                 if (values.size() == 0)
                     return Tokens.NULL;
                 else if (values.size() == 1)
@@ -56,22 +50,18 @@ public class ElementPicker {
         }
     }
 
-    public static Object getProperty(final HadoopElement element, final String key) {
-        if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
-            return element.getId();
-        else if (key.equals(Tokens._PROPERTIES)) {
+    public static Object getProperty(final FaunusElement element, final String key) {
+        if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
-            for (final HadoopProperty property : element.getProperties()) {
+            for (final TitanProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
-            properties.put(Tokens._ID, element.getId());
+            properties.put(Tokens._ID, element.getLongId());
             return properties;
-        } else if (key.equals(Tokens.LABEL) && element instanceof HadoopEdge) {
-            return ((HadoopEdge) element).getLabel();
         } else {
-            if (element instanceof HadoopVertex) {
+            if (element instanceof FaunusVertex) {
                 List values = new ArrayList();
-                Iterables.addAll(values, ((HadoopVertex) element).getProperties(key));
+                Iterables.addAll(values, ((FaunusVertex) element).getPropertyValues(key));
                 if (values.size() == 0)
                     return null;
                 else if (values.size() == 1)

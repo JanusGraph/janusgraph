@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
 
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
@@ -43,7 +44,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, HadoopVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         return new TitanHBaseRecordReader(this.graph, this.vertexQuery, (TableRecordReader) this.tableInputFormat.createRecordReader(inputSplit, taskAttemptContext));
     }
 
@@ -53,17 +54,17 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         this.graph = new TitanHBaseHadoopGraph(titanSetup);
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, titanConf.get(HBaseStoreManager.HBASE_TABLE));
+        config.set(TableInputFormat.INPUT_TABLE, titanInputConf.get(HBaseStoreManager.HBASE_TABLE));
         //config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        config.set(HConstants.ZOOKEEPER_QUORUM, titanInputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
 //        if (basicConf.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-        if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(titanConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (titanInputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(titanInputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();
         scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
-        scanner.setFilter(getColumnFilter(this.vertexQuery));
+        scanner.setFilter(getColumnFilter(titanSetup.inputSlice(this.vertexQuery)));
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
         Method converter;
         try {
@@ -77,7 +78,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         this.tableInputFormat.setConf(config);
     }
 
-    private Filter getColumnFilter(VertexQueryFilter inputFilter) {
+    private Filter getColumnFilter(SliceQuery query) {
         return null;
         //TODO: return HBaseKeyColumnValueStore.getFilter(titanSetup.inputSlice(inputFilter));
     }

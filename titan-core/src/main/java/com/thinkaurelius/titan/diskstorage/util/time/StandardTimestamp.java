@@ -13,8 +13,10 @@ public class StandardTimestamp implements Timestamp {
     private static final Logger log =
             LoggerFactory.getLogger(StandardTimestamp.class);
 
-    private final long sinceEpoch;
-    private final TimeUnit unit;
+    private long sinceEpoch;
+    private TimeUnit unit;
+
+    private StandardTimestamp() {} //For serialization
 
     public StandardTimestamp(long sinceEpoch, TimeUnit unit) {
         Preconditions.checkNotNull(unit);

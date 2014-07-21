@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
@@ -13,7 +13,6 @@ import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
 import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -45,6 +44,8 @@ import java.util.Map;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler {
+// TODO tolerate null temporary SequenceFile path when only running a single job, like Hadoop2Compiler already does
+
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
@@ -68,6 +69,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
 
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
+
+    private static final String JOB_JAR = "titan-hadoop-1-" + TitanConstants.VERSION + "-job.jar";
 
     public Hadoop1Compiler(final HadoopGraph graph) {
         this.graph = graph;
@@ -210,24 +213,24 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
 
         String hadoopFileJar = graph.getConf().get(MAPRED_JAR, null);
         if (null == hadoopFileJar) {
-            if (new File("target/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
-                hadoopFileJar = "target/" + Tokens.TITAN_HADOOP_JOB_JAR;
+            if (new File("target/" + JOB_JAR).exists()) {
+                hadoopFileJar = "target/" + JOB_JAR;
                 logger.warn("Using the developer Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("../target/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
-                hadoopFileJar = "../target/" + Tokens.TITAN_HADOOP_JOB_JAR;
+            } else if (new File("../target/" + JOB_JAR).exists()) {
+                hadoopFileJar = "../target/" + JOB_JAR;
                 logger.warn("Using the developer Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("lib/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
-                hadoopFileJar = "lib/" + Tokens.TITAN_HADOOP_JOB_JAR;
+            } else if (new File("lib/" + JOB_JAR).exists()) {
+                hadoopFileJar = "lib/" + JOB_JAR;
                 logger.warn("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("../lib/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
-                hadoopFileJar = "../lib/" + Tokens.TITAN_HADOOP_JOB_JAR;
+            } else if (new File("../lib/" + JOB_JAR).exists()) {
+                hadoopFileJar = "../lib/" + JOB_JAR;
                 logger.warn("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
             } else {
                 final String titanHadoopHome = System.getenv(Tokens.TITAN_HADOOP_HOME);
                 if (null == titanHadoopHome || titanHadoopHome.isEmpty())
-                    throw new IllegalStateException("TITAN_HADOOP_HOME must be set in order to locate the Titan/Hadoop job jar: " + Tokens.TITAN_HADOOP_JOB_JAR);
-                if (new File(titanHadoopHome + "/lib/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
-                    hadoopFileJar = titanHadoopHome + "/lib/" + Tokens.TITAN_HADOOP_JOB_JAR;
+                    throw new IllegalStateException("TITAN_HADOOP_HOME must be set in order to locate the Titan/Hadoop job jar: " + JOB_JAR);
+                if (new File(titanHadoopHome + "/lib/" + JOB_JAR).exists()) {
+                    hadoopFileJar = titanHadoopHome + "/lib/" + JOB_JAR;
                     logger.info("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
                 }
             }
@@ -235,7 +238,7 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             logger.info("Using the provided Titan/Hadoop job jar: " + hadoopFileJar);
         }
         if (null == hadoopFileJar)
-            throw new IllegalStateException("The Titan/Hadoop job jar could not be found: " + Tokens.TITAN_HADOOP_JOB_JAR);
+            throw new IllegalStateException("The Titan/Hadoop job jar could not be found: " + JOB_JAR);
 
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS))
             logger.warn("Path tracking is enabled for this Titan/Hadoop job (space and time expensive)");
@@ -243,8 +246,13 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
-        final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
-        hdfs.mkdirs(this.graph.getOutputLocation());
+
+        Path tmpPath = graph.getJobDir();
+        final FileSystem fs = FileSystem.get(graph.getConf());
+        fs.mkdirs(tmpPath);
+        logger.debug("Created " + tmpPath + " on filesystem " + fs);
+        final String jobTmp = tmpPath.toString() + "/" + Tokens.JOB;
+        logger.debug("Set jobDir=" + jobTmp);
 
         //////// CHAINING JOBS TOGETHER
 
@@ -252,8 +260,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             final Job job = this.jobs.get(i);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
+            FileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
             job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
-            FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 
             // configure job inputs
             if (i == 0) {
@@ -264,7 +272,7 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
                 }
             } else {
                 job.setInputFormatClass(INTERMEDIATE_INPUT_FORMAT);
-                FileInputFormat.setInputPaths(job, new Path(outputJobPrefix + "-" + (i - 1)));
+                FileInputFormat.setInputPaths(job, new Path(jobTmp + "-" + (i - 1)));
                 FileInputFormat.setInputPathFilter(job, NoSideEffectFilter.class);
             }
 
@@ -272,11 +280,11 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             if (i == this.jobs.size() - 1) {
                 LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, HadoopVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
             } else {
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, HadoopVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
             }
         }
     }
@@ -291,8 +299,10 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
         }
 
         final FileSystem hdfs = FileSystem.get(this.getConf());
-        if (this.graph.getOutputLocationOverwrite() && hdfs.exists(this.graph.getOutputLocation())) {
-            hdfs.delete(this.graph.getOutputLocation(), true);
+        if (null != graph.getJobDir() &&
+            this.graph.getJobDirOverwrite() &&
+            hdfs.exists(this.graph.getJobDir())) {
+            hdfs.delete(this.graph.getJobDir(), true);
         }
 
         if (showHeader) {
@@ -316,7 +326,9 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
 
         this.composeJobs();
         logger.info("Compiled to " + this.jobs.size() + " MapReduce job(s)");
-        final String jobPath = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
+
+        final String jobTmp = graph.getJobDir().toString() + "/" + Tokens.JOB;
+
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             try {
@@ -324,10 +336,11 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             } catch (final Exception e) {
             }
             logger.info("Executing job " + (i + 1) + " out of " + this.jobs.size() + ": " + job.getJobName());
-            logger.info("Job data location: " + jobPath + "-" + i);
             boolean success = job.waitForCompletion(true);
             if (i > 0) {
-                final Path path = new Path(jobPath + "-" + (i - 1));
+                Preconditions.checkNotNull(jobTmp);
+                final Path path = new Path(jobTmp + "-" + (i - 1));
+                logger.debug("Cleaning job data location: " + jobTmp + "-" + i);
                 // delete previous intermediate graph data
                 for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.GRAPH + "*"))) {
                     hdfs.delete(temp.getPath(), true);

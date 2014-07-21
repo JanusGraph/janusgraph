@@ -67,7 +67,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
         if (this==ID) {
             return (O)e.getId();
         } else if (this==TITANID) {
-            return (O)Long.valueOf(e.getID());
+            return (O)Long.valueOf(e.getLongId());
         } else if (this==LABEL) {
             if (e instanceof TitanEdge) {
                 return (O)((TitanEdge) e).getLabel();
@@ -152,7 +152,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public long getID() {
+    public long getLongId() {
         return id;
     }
 
@@ -162,7 +162,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public void setID(long id) {
+    public void setId(long id) {
         throw new IllegalStateException("SystemType has already been assigned an id");
     }
 

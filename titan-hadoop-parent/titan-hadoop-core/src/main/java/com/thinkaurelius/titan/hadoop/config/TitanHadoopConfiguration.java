@@ -1,7 +1,19 @@
 package com.thinkaurelius.titan.hadoop.config;
 
+import java.util.Iterator;
+import java.util.Map;
+
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.hadoop.conf.Configuration;
+
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class TitanHadoopConfiguration {
 
@@ -40,14 +52,17 @@ public class TitanHadoopConfiguration {
             "Package and classname of the output format class.  This must implment the Hadoop OutputFormat interface.",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<String> OUTPUT_LOCATION = new ConfigOption<String>(
-            OUTPUT_NS, "location",
-            "Path to the default output file",
+    public static final ConfigNamespace JOBDIR_NS =
+            new ConfigNamespace(TRUNK_NS, "jobdir", "Temporary SequenceFile configuration");
+
+    public static final ConfigOption<String> JOBDIR_LOCATION = new ConfigOption<String>(
+            JOBDIR_NS, "location",
+            "An HDFS path used to store temporary SequenceFiles in between executions of MR jobs chained together by Titan-Hadoop",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<Boolean> OUTPUT_OVERWRITE = new ConfigOption<Boolean>(
-            OUTPUT_NS, "overwrite",
-            "Whether to overwrite the default output file",
+    public static final ConfigOption<Boolean> JOBDIR_OVERWRITE = new ConfigOption<Boolean>(
+            JOBDIR_NS, "overwrite",
+            "Whether to temporary SequenceFiles",
             ConfigOption.Type.LOCAL, true);
 
     public static final ConfigNamespace OUTPUT_CONF_NS =
@@ -78,4 +93,81 @@ public class TitanHadoopConfiguration {
             SIDE_EFFECT_NS, "format",
             "Package and classname of the output format to use for computation side effects.  This must implement the Hadoop OutputFormat interface.",
             ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigNamespace INDEX_NS =
+            new ConfigNamespace(TRUNK_NS, "reindex", "Titan-Hadoop index repair configuration");
+
+    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(
+            INDEX_NS, "name",
+            "The name of a Titan index to build or repair.  The index must already be enabled or installed.",
+            ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigOption<String> INDEX_TYPE = new ConfigOption<String>(
+            INDEX_NS, "type",
+            "The relationtype of a Titan index to build or repair.  The index must already be enabled or installed.",
+            ConfigOption.Type.LOCAL, String.class);
+
+    public static ModifiableHadoopConfiguration of(Configuration c) {
+        Preconditions.checkNotNull(c);
+        return new ModifiableHadoopConfiguration(c);
+    }
+
+    public static class ModifiableHadoopConfiguration extends ModifiableConfiguration {
+
+        private final Configuration conf;
+
+        public ModifiableHadoopConfiguration(Configuration c) {
+            super(TitanHadoopConfiguration.ROOT_NS, new HadoopConfiguration(c), Restriction.NONE);
+            this.conf = c;
+        }
+
+        public Configuration getHadoopConfiguration() {
+            return conf;
+        }
+
+        public Class<?> getClass(ConfigOption<String> opt, Class<?> cls) {
+            return conf.getClass(ConfigElement.getPath(opt), cls);
+        }
+
+        public <T> Class<? extends T> getClass(ConfigOption<String> opt,  Class<? extends T> defaultValue, Class<T> iface) {
+            return conf.getClass(ConfigElement.getPath(opt), defaultValue, iface);
+        }
+
+        public void setClass(ConfigOption<String> opt, Class<?> cls, Class<?> iface) {
+            conf.setClass(ConfigElement.getPath(opt), cls, iface);
+        }
+
+        public BasicConfiguration extractInputGraphConfiguration() {
+            CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS)));
+            return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
+        }
+
+        public BasicConfiguration extractOutputGraphConfiguration() {
+            CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS)));
+            return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
+        }
+
+        public BaseConfiguration extractConfiguration(final String prefix) {
+            return extractConfiguration(prefix, true);
+        }
+
+        public BaseConfiguration extractConfiguration(final String prefix, final boolean removeDelimChar) {
+            final BaseConfiguration extract = new BaseConfiguration();
+            final Iterator<Map.Entry<String, String>> itty = conf.iterator();
+            while (itty.hasNext()) {
+                final Map.Entry<String, String> entry = itty.next();
+                final String key = entry.getKey();
+                final String value = entry.getValue();
+                extract.setProperty(key, value);
+                if (key.startsWith(prefix)) {
+                    if (removeDelimChar) {
+                        extract.setProperty(key.substring(prefix.length() + 1), value);
+                    } else {
+                        extract.setProperty(key.substring(prefix.length()), value);
+                    }
+                }
+            }
+            return extract;
+        }
+    }
 }

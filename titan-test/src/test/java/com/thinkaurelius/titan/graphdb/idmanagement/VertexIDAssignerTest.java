@@ -105,7 +105,7 @@ public class VertexIDAssignerTest {
                 if (!flush) idAssigner.assignIDs(relations);
                 if (trial == -1) {
                     for (TitanVertex v : vertices) {
-                        System.out.println(idAssigner.getIDManager().getPartitionId(v.getID()));
+                        System.out.println(idAssigner.getIDManager().getPartitionId(v.getLongId()));
                     }
                     System.out.println("_____________________________________________");
                 }

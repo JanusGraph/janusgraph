@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configuration;
@@ -15,16 +16,16 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanHBaseRecordReader extends RecordReader<NullWritable, HadoopVertex> {
+public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private TableRecordReader reader;
     private TitanHBaseHadoopGraph graph;
-    private VertexQueryFilter vertexQuery;
+    private FaunusVertexQueryFilter vertexQuery;
     private Configuration configuration;
 
-    private HadoopVertex vertex;
+    private FaunusVertex vertex;
 
-    public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final VertexQueryFilter vertexQuery, final TableRecordReader reader) {
+    public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final FaunusVertexQueryFilter vertexQuery, final TableRecordReader reader) {
         this.graph = graph;
         this.vertexQuery = vertexQuery;
         this.reader = reader;
@@ -39,10 +40,10 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, HadoopVer
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
-            final HadoopVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
+            final FaunusVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
             if (null != temp) {
                 this.vertex = temp;
-                this.vertexQuery.defaultFilter(this.vertex);
+                this.vertexQuery.filterRelationsOf(this.vertex);
                 return true;
             }
         }
@@ -55,7 +56,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, HadoopVer
     }
 
     @Override
-    public HadoopVertex getCurrentValue() throws IOException, InterruptedException {
+    public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
         return this.vertex;
     }
 

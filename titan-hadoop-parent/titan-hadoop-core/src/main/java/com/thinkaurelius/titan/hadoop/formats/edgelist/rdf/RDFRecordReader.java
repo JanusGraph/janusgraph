@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.FaunusElement;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -14,12 +14,12 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class RDFRecordReader extends RecordReader<NullWritable, HadoopElement> {
+public class RDFRecordReader extends RecordReader<NullWritable, FaunusElement> {
 
     private RDFBlueprintsHandler handler;
     private LineRecordReader lineRecordReader;
 
-    private HadoopElement element;
+    private FaunusElement element;
 
     public RDFRecordReader(final Configuration configuration) throws IOException {
         this.lineRecordReader = new LineRecordReader();
@@ -54,7 +54,7 @@ public class RDFRecordReader extends RecordReader<NullWritable, HadoopElement> {
     }
 
     @Override
-    public HadoopElement getCurrentValue() {
+    public FaunusElement getCurrentValue() {
         return this.element;
     }
 

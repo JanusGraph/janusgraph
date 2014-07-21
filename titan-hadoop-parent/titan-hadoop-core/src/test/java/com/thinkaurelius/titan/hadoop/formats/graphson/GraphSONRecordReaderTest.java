@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -27,12 +28,12 @@ public class GraphSONRecordReaderTest extends BaseTest {
         reader.initialize(new FileSplit(new Path(GraphSONRecordReaderTest.class.getResource("graph-of-the-gods.json").toURI()), 0, Long.MAX_VALUE, new String[]{}),
                 HadoopCompatLoader.getCompat().newTask(new Configuration(), new TaskAttemptID()));
         int counter = 0;
-        Map<Long, HadoopVertex> graph = new HashMap<Long, HadoopVertex>();
+        Map<Long, FaunusVertex> graph = new HashMap<Long, FaunusVertex>();
         while (reader.nextKeyValue()) {
             counter++;
             assertEquals(reader.getCurrentKey(), NullWritable.get());
-            HadoopVertex vertex = reader.getCurrentValue();
-            graph.put(vertex.getIdAsLong(), vertex);
+            FaunusVertex vertex = reader.getCurrentValue();
+            graph.put(vertex.getLongId(), vertex);
         }
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(counter, 12);
@@ -49,8 +50,8 @@ public class GraphSONRecordReaderTest extends BaseTest {
         while (reader.nextKeyValue()) {
             counter++;
             assertEquals(reader.getCurrentKey(), NullWritable.get());
-            HadoopVertex vertex = reader.getCurrentValue();
-            assertEquals(((List) vertex.getEdges(Direction.IN)).size(), 0);
+            FaunusVertex vertex = reader.getCurrentValue();
+            assertEquals(Iterables.size(vertex.getEdges(Direction.IN)), 0);
         }
         assertEquals(counter, 12);
         reader.close();
@@ -66,8 +67,8 @@ public class GraphSONRecordReaderTest extends BaseTest {
         while (reader.nextKeyValue()) {
             counter++;
             assertEquals(reader.getCurrentKey(), NullWritable.get());
-            HadoopVertex vertex = reader.getCurrentValue();
-            assertEquals(((List) vertex.getEdges(Direction.BOTH)).size(), 0);
+            FaunusVertex vertex = reader.getCurrentValue();
+            assertEquals(Iterables.size(vertex.getEdges(Direction.BOTH)), 0);
         }
         assertEquals(counter, 12);
         reader.close();

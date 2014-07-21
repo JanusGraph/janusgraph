@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.carrotsearch.hppc.LongArrayList;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
@@ -19,14 +18,11 @@ import com.thinkaurelius.titan.olap.OLAPTest;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Vertex;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -103,7 +99,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertEquals("group",g.getLabel());
             assertEquals(names.size(),Iterables.size(g.getProperties("name")));
             assertTrue(g.hasId());
-            gids[i]=g.getID();
+            gids[i]=g.getLongId();
             if (i>0) {
                 g.addEdge("base",tx.getVertex(gids[0]));
             }
@@ -193,7 +189,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
                 if (partition<0) partition=pid;
                 else assertEquals(partition,pid);
                 int numRels = 0;
-                TitanVertex v = txx.getVertex(vs[vi].getID());
+                TitanVertex v = txx.getVertex(vs[vi].getLongId());
                 for (TitanRelation r : v.query().relations()) {
                     numRels++;
                     assertEquals(partition,getPartitionID(r,idManager));
@@ -294,13 +290,13 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
 
     public static int getPartitionID(TitanVertex vertex, IDManager idManager) {
-        long p = idManager.getPartitionId(vertex.getID());
+        long p = idManager.getPartitionId(vertex.getLongId());
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }
 
     public static int getPartitionID(TitanRelation relation, IDManager idManager) {
-        long p = relation.getID() & (idManager.getPartitionBound()-1);
+        long p = relation.getLongId() & (idManager.getPartitionBound()-1);
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }

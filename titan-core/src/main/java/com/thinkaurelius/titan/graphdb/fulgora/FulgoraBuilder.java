@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
@@ -137,7 +137,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         return executor;
     }
 
-    private class QueryBuilder<M> extends AbstractVertexCentricQueryBuilder<QueryBuilder<M>> implements OLAPQueryBuilder<S,M,QueryBuilder<M>> {
+    private class QueryBuilder<M> extends BasicVertexCentricQueryBuilder<QueryBuilder<M>> implements OLAPQueryBuilder<S,M,QueryBuilder<M>> {
 
         private final StandardTitanTx tx;
         private String name = null;

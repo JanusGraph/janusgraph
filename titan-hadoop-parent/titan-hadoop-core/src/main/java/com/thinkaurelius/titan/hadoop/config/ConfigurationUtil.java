@@ -60,16 +60,14 @@ public class ConfigurationUtil {
     public static <T> T get(final Configuration config, final ConfigOption<T> opt) {
         CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(config, "", false));
         BasicConfiguration bc = new BasicConfiguration(TitanHadoopConfiguration.ROOT_NS, cc, Restriction.NONE);
+        if (!bc.has(opt))
+            return null;
         return bc.get(opt);
     }
 
-    public static <T> void set(final Configuration config, final ConfigOption<T> opt, T value) {
-        CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(config, "", false));
-        ModifiableConfiguration mc = new ModifiableConfiguration(TitanHadoopConfiguration.ROOT_NS, cc, Restriction.NONE);
-        mc.set(opt, value);
-    }
-
     public static <T> void copyValue(final Configuration sink, BasicConfiguration source, ConfigOption<T> opt) {
-        ConfigurationUtil.set(sink, opt, source.get(opt));
+        CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(sink, "", false));
+        ModifiableConfiguration mc = new ModifiableConfiguration(TitanHadoopConfiguration.ROOT_NS, cc, Restriction.NONE);
+        mc.set(opt, source.get(opt));
     }
 }

@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -12,27 +14,28 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class
-        DirectionCondition<E extends TitanRelation> extends Literal<E> {
+public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
 
     private final TitanVertex baseVertex;
-    private final int relationPos;
     private final Direction direction;
 
     public DirectionCondition(TitanVertex vertex, Direction dir) {
         assert vertex != null && dir != null;
         this.baseVertex = vertex;
         this.direction = dir;
-        this.relationPos = (dir == Direction.BOTH) ? -1 : EdgeDirection.position(dir);
     }
 
     @Override
     public boolean evaluate(E element) {
-        if (relationPos<0) return true;
+        if (direction==Direction.BOTH) return true;
         if (element instanceof CacheEdge) {
             return direction==((CacheEdge)element).getVertexCentricDirection();
+        } else if (element instanceof TitanEdge) {
+            return ((TitanEdge)element).getVertex(direction).equals(baseVertex);
+        } else if (element instanceof TitanProperty) {
+            return direction==Direction.OUT;
         }
-        return ((InternalRelation) element).getVertex(relationPos).equals(baseVertex);
+        return false;
     }
 
     public Direction getDirection() {
@@ -41,7 +44,7 @@ public class
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(relationPos).append(baseVertex).toHashCode();
+        return new HashCodeBuilder().append(getType()).append(direction).append(baseVertex).toHashCode();
     }
 
     @Override
@@ -53,7 +56,7 @@ public class
             return false;
 
         DirectionCondition oth = (DirectionCondition)other;
-        return relationPos == oth.relationPos && baseVertex.equals(oth.baseVertex);
+        return direction == oth.direction && baseVertex.equals(oth.baseVertex);
     }
 
     @Override

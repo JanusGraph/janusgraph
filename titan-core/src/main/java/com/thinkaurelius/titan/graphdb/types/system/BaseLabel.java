@@ -25,7 +25,7 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
     @Override
     public long[] getSignature() {
-        return new long[]{BaseKey.SchemaDefinitionDesc.getID()};
+        return new long[]{BaseKey.SchemaDefinitionDesc.getLongId()};
     }
 
     @Override

@@ -85,6 +85,10 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         return index.query(query,keyInformations,indexTx);
     }
 
+    public void restore(Map<String, Map<String,List<IndexEntry>>> documents) throws BackendException {
+        index.restore(documents,keyInformations,indexTx);
+    }
+
     @Override
     public void commit() throws BackendException {
         flushInternal();

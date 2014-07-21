@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.hadoop.FaunusTypeManager;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.TitanOutputFormatTest;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
@@ -32,6 +33,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);
         backend.clearStorage();
+        backend.close();
 
         return TitanFactory.open(configuration);
     }
@@ -58,56 +60,56 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
     public void testBulkLoading() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
-        super.testBulkLoading(getConfiguration(), f1);
+        super.doBulkLoading(getConfiguration(), f1);
     }
 
     public void testBulkElementDeletions() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkElementDeletions(getConfiguration(), f1, f2);
+        super.doBulkElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testFewElementDeletions() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testFewElementDeletions(getConfiguration(), f1, f2);
+        super.doFewElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyDeletions() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkVertexPropertyDeletions(getConfiguration(), f1, f2);
+        super.doBulkVertexPropertyDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyUpdates() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkVertexPropertyUpdates(getConfiguration(), f1, f2);
+        super.doBulkVertexPropertyUpdates(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgeDerivations() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkEdgeDerivations(getConfiguration(), f1, f2);
+        super.doBulkEdgeDerivations(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgePropertyUpdates() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
+        super.doBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
     }
 
     public void testUnidirectionEdges() throws Exception {
         startUpCassandra();
         HadoopGraph f1 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         HadoopGraph f2 = createHadoopGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testUnidirectionEdges(getConfiguration(), f1, f2);
+        super.doUnidirectionEdges(getConfiguration(), f1, f2);
     }
 
 }

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.HadoopElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusElement;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.edgelist.EdgeListInputMapReduce;
@@ -21,7 +21,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement> implements MapReduceFormat {
+public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement> implements MapReduceFormat {
 
     public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT = "titan.hadoop.input.rdf.format";
     public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME = "titan.hadoop.input.rdf.use-localname";
@@ -33,7 +33,7 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement>
     public static final String NAME = "name";
 
     @Override
-    public RecordReader<NullWritable, HadoopElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
+    public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
         return new RDFRecordReader(context.getConfiguration());
     }
 
@@ -48,9 +48,9 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement>
                 EdgeListInputMapReduce.Combiner.class,
                 EdgeListInputMapReduce.Reduce.class,
                 LongWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 EdgeListInputMapReduce.createConfiguration());
     }
 }

@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -13,15 +12,15 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import java.util.*;
 
 /**
- * Implementation of {@link TitanMultiVertexQuery} that extends {@link AbstractVertexCentricQueryBuilder}
+ * Implementation of {@link TitanMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
- * {@link #execute(com.thinkaurelius.titan.graphdb.internal.RelationCategory, com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder.ResultConstructor)}.
+ * {@link #execute(com.thinkaurelius.titan.graphdb.internal.RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
  * </p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder<MultiVertexCentricQueryBuilder> implements TitanMultiVertexQuery<MultiVertexCentricQueryBuilder> {
+public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<MultiVertexCentricQueryBuilder> implements TitanMultiVertexQuery<MultiVertexCentricQueryBuilder> {
 
     /**
      * The base vertices of this query
@@ -63,7 +62,7 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 	 */
 
     /**
-     * Constructs the BaseVertexCentricQuery through {@link AbstractVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
+     * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
      * If the query asks for an implicit key, the resulting map is computed and returned directly.
      * If the query is empty, a map that maps each vertex to an empty list is returned.
      * Otherwise, the query is executed for all vertices through the transaction which will effectively

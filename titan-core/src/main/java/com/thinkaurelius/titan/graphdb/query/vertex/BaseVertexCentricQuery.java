@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * The base implementation for {@link VertexCentricQuery} which does not yet contain a reference to the
- * base vertex of the query. This query is constructed by {@link AbstractVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+ * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
  * and then later extended by single or multi-vertex query which add the vertex to the query.
  * </p>
  * This class override many methods in {@link com.thinkaurelius.titan.graphdb.query.ElementQuery} - check there

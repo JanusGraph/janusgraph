@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -71,7 +71,7 @@ public class OrderMapReduce {
         return comparatorClass;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, WritableComparable, Text> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, WritableComparable, Text> {
 
         private String key;
         private boolean isVertex;
@@ -93,7 +93,7 @@ public class OrderMapReduce {
         private WritableComparable writable;
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.text.set(ElementPicker.getPropertyAsString(value, this.elementKey));
@@ -115,7 +115,7 @@ public class OrderMapReduce {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         this.text.set(ElementPicker.getPropertyAsString(edge, this.elementKey));
                         final Object temp = ElementPicker.getProperty(edge, this.key);
@@ -141,7 +141,7 @@ public class OrderMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

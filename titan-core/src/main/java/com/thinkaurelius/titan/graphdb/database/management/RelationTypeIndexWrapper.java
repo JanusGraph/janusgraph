@@ -83,4 +83,9 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
     public SchemaStatus getIndexStatus() {
         return type.getStatus();
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }

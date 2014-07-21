@@ -42,8 +42,11 @@ import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfigura
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -75,9 +78,13 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.util.encoding.ConversionHelper;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
+
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -87,6 +94,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
@@ -96,6 +104,9 @@ import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIn
  */
 public class ManagementSystem implements TitanManagement {
 
+    private static final Logger slf =
+            LoggerFactory.getLogger(ManagementSystem.class);
+
     private final StandardTitanGraph graph;
     private final Log sysLog;
     private final ManagementLogger mgmtLogger;
@@ -104,21 +115,26 @@ public class ManagementSystem implements TitanManagement {
     private final TransactionalConfiguration transactionalConfig;
     private final ModifiableConfiguration modifyConfig;
     private final UserModifiableConfiguration userConfig;
+    private final SchemaCache schemaCache;
+
 
     private final StandardTitanTx transaction;
 
     private final Set<TitanSchemaVertex> updatedTypes;
     private final Set<Callable<Boolean>> updatedTypeTriggers;
 
+    private final Timepoint txStartTime;
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
-    public ManagementSystem(StandardTitanGraph graph, KCVSConfiguration config, Log sysLog, ManagementLogger mgmtLogger) {
+    public ManagementSystem(StandardTitanGraph graph, KCVSConfiguration config, Log sysLog,
+                            ManagementLogger mgmtLogger, SchemaCache schemaCache) {
         Preconditions.checkArgument(config!=null && graph!=null && sysLog!=null && mgmtLogger!=null);
         this.graph = graph;
         this.baseConfig = config;
         this.sysLog = sysLog;
         this.mgmtLogger = mgmtLogger;
+        this.schemaCache = schemaCache;
         this.transactionalConfig = new TransactionalConfiguration(baseConfig);
         this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
@@ -129,7 +145,7 @@ public class ManagementSystem implements TitanManagement {
         this.graphShutdownRequired = false;
 
         this.transaction = (StandardTitanTx) graph.newTransaction();
-
+        this.txStartTime = graph.getConfiguration().getTimestampProvider().getTime();
         this.isOpen = true;
     }
 
@@ -153,8 +169,20 @@ public class ManagementSystem implements TitanManagement {
         }
     };
 
-    private Set<String> getOpenInstances() {
-        return modifyConfig.getContainedNamespaces(REGISTRATION_NS);
+    @Override
+    public Set<String> getOpenInstances() {
+        Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
+        slf.debug("Open instances: {}", openInstances);
+        return openInstances;
+    }
+
+    @Override
+    public void forceCloseInstance(String instanceId) {
+        Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME,instanceId),"Instance [%s] is not currently open",instanceId);
+        Timepoint registrationTime = modifyConfig.get(REGISTRATION_TIME,instanceId);
+        Preconditions.checkArgument(registrationTime.compareTo(txStartTime)<0,"The to-be-closed instance [%s] was started after this transaction" +
+                "which indicates a successful restart and can hence not be closed: %s vs %s",instanceId,registrationTime,txStartTime);
+        modifyConfig.remove(REGISTRATION_TIME,instanceId);
     }
 
     private void ensureOpen() {
@@ -179,6 +207,9 @@ public class ManagementSystem implements TitanManagement {
         //Communicate schema changes
         if (!updatedTypes.isEmpty()) {
             mgmtLogger.sendCacheEviction(updatedTypes,updatedTypeTriggers,getOpenInstances());
+            for (TitanSchemaVertex schemaVertex : updatedTypes) {
+                schemaCache.expireSchemaElement(schemaVertex.getLongId());
+            }
         }
 
         if (graphShutdownRequired) graph.shutdown();
@@ -200,6 +231,10 @@ public class ManagementSystem implements TitanManagement {
 
     private void close() {
         isOpen = false;
+    }
+
+    public StandardTitanTx getWrappedTx() {
+        return transaction;
     }
 
     private TitanEdge addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
@@ -299,7 +334,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     private static String composeRelationTypeIndexName(RelationType type, String name) {
-        return type.getName()+RELATION_INDEX_SEPARATOR+name;
+        return String.valueOf(type.getLongId())+RELATION_INDEX_SEPARATOR+name;
     }
 
     @Override
@@ -500,14 +535,14 @@ public class ManagementSystem implements TitanManagement {
         }
 
         @Override
-        public TitanManagement.IndexBuilder indexKey(PropertyKey key) {
+        public TitanManagement.IndexBuilder addKey(PropertyKey key) {
             Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
             keys.put(key,null);
             return this;
         }
 
         @Override
-        public TitanManagement.IndexBuilder indexKey(PropertyKey key, Parameter... parameters) {
+        public TitanManagement.IndexBuilder addKey(PropertyKey key, Parameter... parameters) {
             Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
             keys.put(key,parameters);
             return this;
@@ -597,8 +632,7 @@ public class ManagementSystem implements TitanManagement {
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
                 break;
             case REINDEX:
-                //TODO: implement using Titan-Hadoop
-                break;
+                throw new UnsupportedOperationException(updateAction + " requires a manual step: run a MapReduce reindex on index name \"" + index.getName() + "\"");
             case ENABLE_INDEX:
                 setStatus(schemaVertex,SchemaStatus.ENABLED,keySubset);
                 updatedTypes.add(schemaVertex);
@@ -625,13 +659,13 @@ public class ManagementSystem implements TitanManagement {
 
         private UpdateStatusTrigger(StandardTitanGraph graph, TitanSchemaVertex vertex, SchemaStatus newStatus, Iterable<PropertyKeyVertex> keys) {
             this.graph = graph;
-            this.schemaVertexId = vertex.getID();
+            this.schemaVertexId = vertex.getLongId();
             this.newStatus = newStatus;
             this.propertyKeys = Sets.newHashSet(Iterables.transform(keys,new Function<PropertyKey, Long>() {
                 @Nullable
                 @Override
                 public Long apply(@Nullable PropertyKey propertyKey) {
-                    return propertyKey.getID();
+                    return propertyKey.getLongId();
                 }
             }));
         }
@@ -747,7 +781,7 @@ public class ManagementSystem implements TitanManagement {
         updatedTypes.add(schemaVertex);
     }
 
-    private TitanSchemaVertex getSchemaVertex(TitanSchemaElement element) {
+    public TitanSchemaVertex getSchemaVertex(TitanSchemaElement element) {
         if (element instanceof RelationType) {
             Preconditions.checkArgument(element instanceof RelationTypeVertex,"Invalid schema element provided: %s",element);
             return (RelationTypeVertex)element;

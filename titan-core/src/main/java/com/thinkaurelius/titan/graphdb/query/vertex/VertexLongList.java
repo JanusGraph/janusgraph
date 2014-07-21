@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -35,8 +34,8 @@ public class VertexLongList implements VertexListInternal {
 
     @Override
     public void add(TitanVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && vertices.get(vertices.size()-1)<=n.getID();
-        vertices.add(n.getID());
+        if (!vertices.isEmpty()) sorted = sorted && vertices.get(vertices.size()-1)<=n.getLongId();
+        vertices.add(n.getLongId());
     }
 
     @Override

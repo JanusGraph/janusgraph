@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -22,18 +23,18 @@ import java.util.Map;
  */
 public class CyclicPathFilterMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new CyclicPathFilterMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testVertices() throws Exception {
         Configuration config = CyclicPathFilterMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -43,9 +44,9 @@ public class CyclicPathFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l)), false);
 
         assertEquals(graph.get(1l).pathCount(), 3);
         assertEquals(graph.get(2l).pathCount(), 0);
@@ -63,8 +64,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CyclicPathFilterMap.Counters.PATHS_FILTERED).getValue(), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -74,23 +74,23 @@ public class CyclicPathFilterMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
-        assertEquals(((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 0);
+        assertEquals(((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 0);
         assertEquals(graph.get(2l).pathCount(), 0);
         assertEquals(graph.get(3l).pathCount(), 0);
         assertEquals(graph.get(4l).pathCount(), 0);
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l)), false);
 
         assertEquals(graph.get(1l).pathCount(), 0);
-        assertEquals(((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 3);
+        assertEquals(((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 3);
         assertEquals(graph.get(2l).pathCount(), 0);
         assertEquals(graph.get(3l).pathCount(), 0);
         assertEquals(graph.get(4l).pathCount(), 0);
@@ -100,7 +100,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         graph = runWithGraph(graph, mapReduceDriver);
 
         assertEquals(graph.get(1l).pathCount(), 0);
-        assertEquals(((HadoopEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 1);
+        assertEquals(((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT).iterator().next()).pathCount(), 1);
         assertEquals(graph.get(2l).pathCount(), 0);
         assertEquals(graph.get(3l).pathCount(), 0);
         assertEquals(graph.get(4l).pathCount(), 0);
@@ -108,8 +108,7 @@ public class CyclicPathFilterMapTest extends BaseTest {
         assertEquals(graph.get(6l).pathCount(), 0);
 
 
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(CyclicPathFilterMap.Counters.PATHS_FILTERED).getValue(), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, CyclicPathFilterMap.Counters.PATHS_FILTERED), 2);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }

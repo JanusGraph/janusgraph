@@ -152,7 +152,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                 RelationCache relCache = tx.getEdgeSerializer().parseRelation(
                                         conditionQuery.entries.get(0),true,tx);
                 final long vertexid = conditionQuery.vertexId;
-                if (relCache.typeId != BaseKey.VertexExists.getID() &&
+                if (relCache.typeId != BaseKey.VertexExists.getLongId() &&
                         (!idManager.isPartitionedVertex(vertexid) || idManager.isCanonicalVertexId(vertexid)) ) {
                     log.warn("Found deleted vertex with id: {}|{}|{}. Skipping",conditionQuery.vertexId,idManager.isPartitionedVertex(vertexid),relCache);
                     if (idManager.isPartitionedVertex(vertexid)) getMessageAccumulator(vertexid).markDeleted();
@@ -293,7 +293,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                             assert frq instanceof FulgoraEdgeQuery;
                             Preconditions.checkArgument(r instanceof TitanEdge);
                             combinedMsg = ((FulgoraEdgeQuery)frq).process((TitanEdge)r, edgeSerializer.parseDirection(data),
-                                    getVertexState(((TitanEdge) r).getOtherVertex(vertex).getID()),combinedMsg);
+                                    getVertexState(((TitanEdge) r).getOtherVertex(vertex).getLongId()),combinedMsg);
                         }
                     }
                     if (combinedMsg!=null) pulledMessages.put(queryName,combinedMsg);
@@ -354,7 +354,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
 
 
     private void processVertex(FulgoraVertex<S> vertex, Map<String,Object> pulledMessages) {
-        long vertexId = vertex.getID();
+        long vertexId = vertex.getLongId();
         try {
             vertex.setProcessedProperties(pulledMessages);
             S newState = job.process(vertex);

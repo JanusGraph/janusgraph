@@ -25,7 +25,7 @@ import com.tinkerpop.blueprints.Element;
  * @see TitanVertex
  * @see TitanRelation
  */
-public interface TitanElement extends Element, Idfiable, Comparable<TitanElement>, Removable {
+public interface TitanElement extends Element, Idfiable, Removable {
 
     /**
      * Returns a unique identifier for this entity.
@@ -48,7 +48,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
      *
      * @return Unique long id
      */
-    public long getID();
+    public long getLongId();
 
     /**
      * Checks whether this entity has a unique identifier.
@@ -57,7 +57,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
      * assigned an identifier at the end of a transaction.
      *
      * @return true if this entity has been assigned a unique id, else false
-     * @see #getID()
+     * @see #getLongId()
      */
     public boolean hasId();
 

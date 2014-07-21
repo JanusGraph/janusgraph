@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -73,7 +73,7 @@ public class VertexQueryFilter extends DefaultVertexQuery {
         throw new UnsupportedOperationException("This VertexQuery is used for graph filtering, not element counting");
     }
 
-    public void defaultFilter(final HadoopVertex vertex) {
+    public void defaultFilter(final FaunusVertex vertex) {
         if (!this.doesFilter) return;
         vertex.removeEdges(Tokens.Action.KEEP, this.direction, this.labels);
         Iterator<Edge> itty;

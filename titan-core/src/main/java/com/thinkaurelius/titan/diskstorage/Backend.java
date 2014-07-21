@@ -296,6 +296,10 @@ public class Backend implements LockerProvider {
         copy.putAll(indexes);
         return copy.build();
     }
+//
+//    public IndexProvider getIndexProvider(String name) {
+//        return indexes.get(name);
+//    }
 
     public KCVSLog getSystemTxLog() {
         try {
@@ -352,7 +356,7 @@ public class Backend implements LockerProvider {
             return new KCVSLogManager(sm,logConfig);
         } else {
             Preconditions.checkArgument(config!=null);
-            LogManager lm = getImplementationClass(config,config.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
+            LogManager lm = getImplementationClass(logConfig,logConfig.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
             Preconditions.checkNotNull(lm);
             return lm;
         }
@@ -544,13 +548,13 @@ public class Backend implements LockerProvider {
         put("inmemory", null);
     }};
 
-    private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
+    public static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
         put("lucene", "com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
         put("elasticsearch", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
         put("es", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
     }};
 
-    private static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
+    public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
         put("default","com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager");
     }};
 

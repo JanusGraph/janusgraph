@@ -23,7 +23,7 @@ public class ElementHelper {
             else return ImmutableList.of(value);
         } else {
             assert element instanceof TitanVertex;
-            return Iterables.transform(((VertexCentricQueryBuilder) (((TitanVertex) element).query())).type(key).properties(), new Function<TitanProperty, Object>() {
+            return Iterables.transform((((TitanVertex) element).query()).keys(key.getName()).properties(), new Function<TitanProperty, Object>() {
                 @Nullable
                 @Override
                 public Object apply(@Nullable TitanProperty titanProperty) {

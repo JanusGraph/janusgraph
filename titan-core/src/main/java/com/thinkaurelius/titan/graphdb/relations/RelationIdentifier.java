@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -34,9 +32,9 @@ public final class RelationIdentifier {
 
     static final RelationIdentifier get(InternalRelation r) {
         if (r.hasId()) {
-            return new RelationIdentifier(r.getVertex(0).getID(),
-                    r.getType().getID(),
-                    r.getID(),(r.isEdge()?r.getVertex(1).getID():0));
+            return new RelationIdentifier(r.getVertex(0).getLongId(),
+                    r.getType().getLongId(),
+                    r.getLongId(),(r.isEdge()?r.getVertex(1).getLongId():0));
         } else return null;
     }
 
@@ -131,7 +129,7 @@ public final class RelationIdentifier {
 
         for (TitanRelation r : rels) {
             //Find current or previous relation
-            if (r.getID() == relationId ||
+            if (r.getLongId() == relationId ||
                     ((r instanceof StandardRelation) && ((StandardRelation)r).getPreviousID()==relationId)) return r;
         }
         return null;

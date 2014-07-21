@@ -2,16 +2,15 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
+import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
-import com.thinkaurelius.titan.hadoop.ElementState;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopProperty;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
@@ -33,6 +32,7 @@ public class TitanHadoopGraph {
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
+    private final boolean verifyVertexExistence = false;
 
     public TitanHadoopGraph(final TitanHadoopSetup setup) {
         this.setup = setup;
@@ -41,59 +41,73 @@ public class TitanHadoopGraph {
         this.vertexReader = setup.getVertexReader();
     }
 
-    protected HadoopVertex readHadoopVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
+    protected FaunusVertex readHadoopVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
         final long vertexId = this.vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
-        HadoopVertex vertex = new HadoopVertex(configuration, vertexId);
-        vertex.setState(ElementState.LOADED);
-        boolean isSystemType = false;
-        boolean foundVertexState = false;
+        FaunusVertex vertex = new FaunusVertex(configuration, vertexId);
+        boolean foundVertexState = !verifyVertexExistence;
         for (final Entry data : entries) {
             try {
-                RelationReader relationReader = setup.getRelationReader(vertex.getIdAsLong());
+                RelationReader relationReader = setup.getRelationReader(vertex.getLongId());
                 final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
-                if (this.systemTypes.isTypeSystemType(relation.typeId)) {
-                    isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
-                } else if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {
+                if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {
                     foundVertexState = true;
+                } else if (this.systemTypes.isVertexLabelSystemType(relation.typeId)) {
+                    //Vertex Label
+                    long vertexLabelId = relation.getOtherVertexId();
+                    VertexLabel vl = typeManager.getExistingVertexLabel(vertexLabelId);
+                    vertex.setVertexLabel(vertex.getTypeManager().getVertexLabel(vl.getName()));
                 }
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
                 final RelationType type = typeManager.getExistingRelationType(relation.typeId);
+                if (((InternalRelationType)type).isHiddenType()) continue; //Ignore hidden types
+
+                StandardFaunusRelation frel;
                 if (type.isPropertyKey()) {
-                    assert !relation.hasProperties();
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    final HadoopProperty p = new HadoopProperty(relation.relationId, type.getName(), value);
-                    p.setState(ElementState.LOADED);
-                    vertex.addProperty(p);
+                    final StandardFaunusProperty fprop = new StandardFaunusProperty(relation.relationId, vertex, type.getName(), value);
+                    vertex.addProperty(fprop);
+                    frel = fprop;
                 } else {
                     assert type.isEdgeLabel();
-                    HadoopEdge edge;
+                    StandardFaunusEdge fedge;
                     if (relation.direction.equals(Direction.IN))
-                        edge = new HadoopEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
+                        fedge = new StandardFaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
                     else if (relation.direction.equals(Direction.OUT))
-                        edge = new HadoopEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
+                        fedge = new StandardFaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
                     else
                         throw ExceptionFactory.bothIsNotSupported();
-                    edge.setState(ElementState.LOADED);
-                    if (relation.hasProperties()) {
-                        // load edge properties
-                        for (final LongObjectCursor<Object> next : relation) {
-                            assert next.value != null;
-                            edge.setProperty(typeManager.getExistingRelationType(next.key).getName(), next.value);
-                        }
-                        for (final HadoopProperty p : edge.getProperties())
-                            p.setState(ElementState.LOADED);
-                    }
-                    vertex.addEdge(relation.direction, edge);
+                    vertex.addEdge(fedge);
+                    frel = fedge;
                 }
-
+                if (relation.hasProperties()) {
+                    // load relation properties
+                    for (final LongObjectCursor<Object> next : relation) {
+                        assert next.value != null;
+                        RelationType rt = typeManager.getExistingRelationType(next.key);
+                        if (rt.isPropertyKey()) {
+                            frel.setProperty((PropertyKey)vertex.getTypeManager().getPropertyKey(rt.getName()),next.value);
+                        } else {
+                            assert next.value instanceof Long;
+                            frel.setProperty((EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.getName()),new FaunusVertex(configuration,(Long)next.value));
+                        }
+                    }
+                    for (TitanRelation rel : frel.query().queryAll().relations())
+                        ((FaunusRelation)rel).setLifeCycle(ElementLifeCycle.Loaded);
+                }
+                frel.setLifeCycle(ElementLifeCycle.Loaded);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        return (isSystemType || !foundVertexState) ? null : vertex;
+        vertex.setLifeCycle(ElementLifeCycle.Loaded);
+
+        /*Since we are filtering out system relation types, we might end up with vertices that have no incident relations.
+         This is especially true for schema vertices. Those are filtered out.     */
+        if (!foundVertexState || !vertex.query().relations().iterator().hasNext()) return null;
+        return vertex;
     }
 
     public void close() {

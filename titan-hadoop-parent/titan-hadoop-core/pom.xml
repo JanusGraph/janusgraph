@@ -29,6 +29,19 @@
             <optional>true</optional>
             <!-- <scope>test</scope> -->
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+            <!-- TODO this should be scoped test -->
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <!-- TODO this should be scoped test -->
+        </dependency>
 
         <!-- Need this for compile-time imports on
              org.apache.hadoop.hbase.mapreduce -->

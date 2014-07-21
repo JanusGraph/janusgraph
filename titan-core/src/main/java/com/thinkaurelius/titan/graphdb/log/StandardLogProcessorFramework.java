@@ -97,7 +97,6 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         } catch (BackendException e) {
             throw new TitanException(e);
         }
-        graph.shutdown();
     }
 
 
@@ -207,44 +206,15 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         private void readRelations(TransactionLogHeader.Entry txentry,
                                    StandardTitanTx tx, StandardChangeState changes) {
             for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
-                Change state = modification.state;
-                assert state.isProper();
-                long outVertexId = modification.outVertexId;
-                Entry relEntry = modification.relationEntry;
-                InternalVertex outVertex = tx.getInternalVertex(outVertexId);
-                //Special relation parsing, compare to {@link RelationConstructor}
-                RelationCache relCache = tx.getEdgeSerializer().readRelation(relEntry, false, tx);
-                assert relCache.direction == Direction.OUT;
-                InternalRelationType type = (InternalRelationType)tx.getExistingRelationType(relCache.typeId);
-                assert type.getBaseType()==null;
-                InternalRelation rel;
-                if (type.isPropertyKey()) {
-                    if (state==Change.REMOVED) {
-                        rel = new StandardProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(),ElementLifeCycle.Removed);
-                    } else {
-                        rel = new CacheProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(),relEntry);
-                    }
-                } else {
-                    assert type.isEdgeLabel();
-                    InternalVertex otherVertex = tx.getInternalVertex(relCache.getOtherVertexId());
-                    if (state==Change.REMOVED) {
-                        rel = new StandardEdge(relCache.relationId, (EdgeLabel) type, outVertex, otherVertex,ElementLifeCycle.Removed);
-                    } else {
-                        rel = new CacheEdge(relCache.relationId, (EdgeLabel) type, outVertex, otherVertex,relEntry);
-                    }
-                }
-                if (state==Change.REMOVED && relCache.hasProperties()) { //copy over properties
-                    for (LongObjectCursor<Object> entry : relCache) {
-                        rel.setPropertyDirect(tx.getExistingRelationType(entry.key),entry.value);
-                    }
-                }
+                InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
 
                 //Special case for vertex addition/removal
-                if (rel.getType().equals(BaseKey.VertexExists) && !(outVertex instanceof TitanSchemaElement)) {
+                Change state = modification.state;
+                if (rel.getType().equals(BaseKey.VertexExists) && !(rel.getVertex(0) instanceof TitanSchemaElement)) {
                     if (state==Change.REMOVED) { //Mark as removed
-                        ((StandardVertex)outVertex).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+                        ((StandardVertex)rel.getVertex(0)).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                     }
-                    changes.addVertex(outVertex,state);
+                    changes.addVertex(rel.getVertex(0), state);
                 } else if (!rel.isHidden()) {
                     changes.addRelation(rel,state);
                 }

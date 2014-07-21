@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.noop;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -11,13 +11,13 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class NoOpRecordWriter extends RecordWriter<NullWritable, HadoopVertex> {
+public class NoOpRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
 
     public NoOpRecordWriter() {
     }
 
     @Override
-    public final void write(final NullWritable key, final HadoopVertex vertex) throws IOException {
+    public final void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
 
     }
 

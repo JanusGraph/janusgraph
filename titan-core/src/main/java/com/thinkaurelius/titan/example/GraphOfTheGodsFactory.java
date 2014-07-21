@@ -43,16 +43,16 @@ public class GraphOfTheGodsFactory {
         //Create Schema
         TitanManagement mgmt = graph.getManagementSystem();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildCompositeIndex();
+        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).addKey(name).unique().buildCompositeIndex();
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildMixedIndex(INDEX_NAME);
+        mgmt.buildIndex("vertices",Vertex.class).addKey(age).buildMixedIndex(INDEX_NAME);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
         final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
         TitanGraphIndex eindex = mgmt.buildIndex("edges",Edge.class)
-                .indexKey(reason).indexKey(place).buildMixedIndex(INDEX_NAME);
+                .addKey(reason).addKey(place).buildMixedIndex(INDEX_NAME);
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();

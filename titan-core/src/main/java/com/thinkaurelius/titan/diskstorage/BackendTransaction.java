@@ -65,6 +65,7 @@ public class BackendTransaction implements LoggableTransaction {
     private final Map<String, IndexTransaction> indexTx;
 
     private boolean acquiredLock = false;
+    private boolean cacheEnabled = true;
 
     public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
                               StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
@@ -102,6 +103,14 @@ public class BackendTransaction implements LoggableTransaction {
         IndexTransaction itx = indexTx.get(index);
         Preconditions.checkNotNull(itx, "Unknown index: " + index);
         return itx;
+    }
+
+    public void disableCache() {
+        this.cacheEnabled = false;
+    }
+
+    public void enableCache() {
+        this.cacheEnabled = true;
     }
 
     public void commitStorage() throws BackendException {
@@ -244,7 +253,8 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new Callable<EntryList>() {
             @Override
             public EntryList call() throws Exception {
-                return edgeStore.getSlice(query, storeTx);
+                return cacheEnabled?edgeStore.getSlice(query, storeTx):
+                                    edgeStore.getSliceNoCache(query,storeTx);
             }
 
             @Override
@@ -259,7 +269,8 @@ public class BackendTransaction implements LoggableTransaction {
             return executeRead(new Callable<Map<StaticBuffer,EntryList>>() {
                 @Override
                 public Map<StaticBuffer,EntryList> call() throws Exception {
-                    return edgeStore.getSlice(keys, query, storeTx);
+                    return cacheEnabled?edgeStore.getSlice(keys, query, storeTx):
+                                        edgeStore.getSliceNoCache(keys, query, storeTx);
                 }
 
                 @Override
@@ -369,7 +380,8 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new Callable<EntryList>() {
             @Override
             public EntryList call() throws Exception {
-                return indexStore.getSlice(query, storeTx);
+                return cacheEnabled?indexStore.getSlice(query, storeTx):
+                                    indexStore.getSliceNoCache(query, storeTx);
             }
 
             @Override

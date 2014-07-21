@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -23,6 +22,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetupCommon;
@@ -38,7 +38,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     private final StandardTitanTx tx;
 
     public TitanHadoopSetupImpl(final Configuration config) {
-        BasicConfiguration bc = ConfigurationUtil.extractInputConfiguration(config);
+        BasicConfiguration bc = TitanHadoopConfiguration.of(config).extractInputGraphConfiguration();
         graph = (StandardTitanGraph)TitanFactory.open(bc);
 
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().setVertexCacheSize(200).start();
@@ -72,16 +72,21 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
             @Override
             public boolean isVertexExistsSystemType(long typeid) {
-                return typeid == BaseKey.VertexExists.getID();
+                return typeid == BaseKey.VertexExists.getLongId();
+            }
+
+            @Override
+            public boolean isVertexLabelSystemType(long typeid) {
+                return typeid == BaseLabel.VertexLabelEdge.getLongId();
             }
 
             @Override
             public boolean isTypeSystemType(long typeid) {
-                return typeid == BaseKey.SchemaCategory.getID() ||
-                        typeid == BaseKey.SchemaDefinitionProperty.getID() ||
-                        typeid == BaseKey.SchemaDefinitionDesc.getID() ||
-                        typeid == BaseKey.SchemaName.getID() ||
-                        typeid == BaseLabel.SchemaDefinitionEdge.getID();
+                return typeid == BaseKey.SchemaCategory.getLongId() ||
+                        typeid == BaseKey.SchemaDefinitionProperty.getLongId() ||
+                        typeid == BaseKey.SchemaDefinitionDesc.getLongId() ||
+                        typeid == BaseKey.SchemaName.getLongId() ||
+                        typeid == BaseLabel.SchemaDefinitionEdge.getLongId();
             }
         };
     }
@@ -99,16 +104,6 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     @Override
     public RelationReader getRelationReader(long vertexid) {
         return graph.getEdgeSerializer();
-    }
-
-    @Override
-    public SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
-        if (inputFilter.limit == 0) {
-            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY,false);
-            return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
-        } else {
-            return super.inputSlice(inputFilter);
-        }
     }
 
     @Override

@@ -39,7 +39,6 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.pipes.transform.TransformPipe;
 import com.tinkerpop.pipes.util.structures.Pair;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -224,7 +223,7 @@ public class HadoopPipeline {
                     LongWritable.class,
                     Holder.class,
                     NullWritable.class,
-                    HadoopVertex.class,
+                    FaunusVertex.class,
                     EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
         }
     }
@@ -241,7 +240,7 @@ public class HadoopPipeline {
         this.state.assertNotLocked();
         this.compiler.addMap(IdentityMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 IdentityMap.createConfiguration());
         makeMapReduceString(IdentityMap.class);
         return this;
@@ -259,7 +258,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(TransformMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 TransformMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
 
         this.state.lock();
@@ -279,7 +278,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(VerticesMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 VerticesMap.createConfiguration(this.state.incrStep() != 0));
 
         makeMapReduceString(VerticesMap.class);
@@ -298,7 +297,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(EdgesMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 EdgesMap.createConfiguration(this.state.incrStep() != 0));
 
         makeMapReduceString(EdgesMap.class);
@@ -320,7 +319,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(VertexMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 VertexMap.createConfiguration(ids));
 
         makeMapReduceString(VertexMap.class);
@@ -370,7 +369,7 @@ public class HadoopPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 VerticesVerticesMapReduce.createConfiguration(direction, labels));
         this.state.set(Vertex.class);
         makeMapReduceString(VerticesVerticesMapReduce.class, direction.name(), Arrays.asList(labels));
@@ -421,7 +420,7 @@ public class HadoopPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 VerticesEdgesMapReduce.createConfiguration(direction, labels));
         this.state.set(Edge.class);
         makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
@@ -463,7 +462,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(EdgesVerticesMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 EdgesVerticesMap.createConfiguration(direction));
         this.state.set(Vertex.class);
         makeMapReduceString(EdgesVerticesMap.class, direction.name());
@@ -620,7 +619,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(FilterMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 FilterMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
         makeMapReduceString(FilterMap.class);
         return this;
@@ -664,7 +663,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(PropertyFilterMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 PropertyFilterMap.createConfiguration(this.state.getElementType(), key, compare, values));
         makeMapReduceString(PropertyFilterMap.class, compare.name(), Arrays.asList(values));
         return this;
@@ -718,7 +717,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(IntervalFilterMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 IntervalFilterMap.createConfiguration(this.state.getElementType(), key, startValue, endValue));
         makeMapReduceString(IntervalFilterMap.class, key, startValue, endValue);
         return this;
@@ -735,7 +734,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(DuplicateFilterMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 DuplicateFilterMap.createConfiguration(this.state.getElementType()));
         makeMapReduceString(DuplicateFilterMap.class);
         return this;
@@ -758,7 +757,7 @@ public class HadoopPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 BackFilterMapReduce.createConfiguration(this.state.getElementType(), this.state.getStep(step)));
         makeMapReduceString(BackFilterMapReduce.class, step);
         return this;
@@ -783,7 +782,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(CyclicPathFilterMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 CyclicPathFilterMap.createConfiguration(this.state.getElementType()));
         makeMapReduceString(CyclicPathFilterMap.class);
         return this;
@@ -804,7 +803,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(SideEffectMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 SideEffectMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
 
         makeMapReduceString(SideEffectMap.class);
@@ -891,7 +890,7 @@ public class HadoopPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 LinkMapReduce.createConfiguration(direction, label, this.state.getStep(step), mergeWeightKey));
 
         log.debug("Added {} job with direction {}, label {}, step {}, merge weight key {}", LinkMapReduce.class.getSimpleName(), direction, label, step, mergeWeightKey);
@@ -977,13 +976,13 @@ public class HadoopPipeline {
                     LongWritable.class,
                     Holder.class,
                     NullWritable.class,
-                    HadoopVertex.class,
+                    FaunusVertex.class,
                     CommitVerticesMapReduce.createConfiguration(action));
             makeMapReduceString(CommitVerticesMapReduce.class, action.name());
         } else {
             this.compiler.addMap(CommitEdgesMap.Map.class,
                     NullWritable.class,
-                    HadoopVertex.class,
+                    FaunusVertex.class,
                     CommitEdgesMap.createConfiguration(action));
             makeMapReduceString(CommitEdgesMap.class, action.name());
         }
@@ -1015,7 +1014,7 @@ public class HadoopPipeline {
 
         this.compiler.addMap(ScriptMap.Map.class,
                 NullWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 ScriptMap.createConfiguration(scriptUri, args));
         makeMapReduceString(CommitEdgesMap.class, scriptUri);
         // this.state.lock();
