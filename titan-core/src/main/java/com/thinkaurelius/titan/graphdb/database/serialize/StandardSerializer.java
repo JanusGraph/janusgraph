@@ -1,23 +1,27 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class StandardSerializer extends StandardAttributeHandling implements Serializer {
 
+    private static final Logger log = LoggerFactory.getLogger(StandardSerializer.class);
+
     private final KryoSerializer backupSerializer;
 
     public StandardSerializer(boolean allowCustomSerialization) {
-        if (allowCustomSerialization) backupSerializer = new KryoSerializer(DEFAULT_REGISTRATIONS);
-        else backupSerializer = null;
+        backupSerializer = new KryoSerializer(getDefaultRegistrations(),!allowCustomSerialization);
     }
 
     public StandardSerializer() {
@@ -25,14 +29,13 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     }
 
     private KryoSerializer getBackupSerializer() {
-        Preconditions.checkState(backupSerializer!=null,"Serializer is not configured for custom object serialization");
+        assert backupSerializer!=null;
         return backupSerializer;
     }
 
     private boolean supportsNullSerialization(Class type) {
         return getSerializer(type) instanceof SupportsNullSerializer;
     }
-
 
     @Override
     public <T> T readObjectByteOrder(ReadBuffer buffer, Class<T> type) {
@@ -134,14 +137,25 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
                 ((OrderPreservingSerializer)s).writeByteOrder(this,object);
             } else {
                 if (s!=null) s.write(this, object);
-                else getBackupSerializer().writeObjectNotNull(this,object);
+                else {
+                    try {
+                        getBackupSerializer().writeObjectNotNull(this,object);
+                    } catch (Exception e) {
+                        throw new TitanException("Serializer Restriction: Cannot serialize object of type: " + object.getClass(),e);
+                    }
+                }
             }
             return this;
         }
 
         @Override
         public DataOutput writeClassAndObject(Object object) {
-            getBackupSerializer().writeClassAndObject(this,object);
+            try {
+                getBackupSerializer().writeClassAndObject(this,object);
+            } catch (Exception e) {
+                throw new TitanException("Serializer Restriction: Cannot serialize object of type: " + (object==null?"null":object.getClass()),e);
+            }
+
             return this;
         }
 

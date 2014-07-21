@@ -40,13 +40,16 @@ public class KryoSerializer {
         }
     };
 
+    public KryoSerializer(final List<Class> defaultRegistrations) {
+        this(defaultRegistrations,false);
+    }
 
-    public KryoSerializer(final List<Class<? extends Object>> defaultRegistrations) {
-        this.registerRequired=false;
+    public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired) {
+        this.registerRequired=registrationRequired;
         this.registrations = new HashMap<Integer,TypeRegistration>();
 
         for (Class clazz : defaultRegistrations) {
-            Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
+//            Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
             objectVerificationCache.put(clazz,Boolean.TRUE);
         }
 
