@@ -81,24 +81,4 @@ public class KVUtil {
         }
     };
 
-    public static class RangeKeySelector implements KeySelector {
-
-        private final StaticBuffer lower; //inclusive
-        private final StaticBuffer upper; //exclusive
-
-        public RangeKeySelector(StaticBuffer lower, StaticBuffer upper) {
-            this.lower = lower;
-            this.upper = upper;
-        }
-
-        @Override
-        public boolean include(StaticBuffer key) {
-            return lower.compareTo(key) <= 0 && upper.compareTo(key) > 0;
-        }
-
-        @Override
-        public boolean reachedLimit() {
-            return false;
-        }
-    }
 }

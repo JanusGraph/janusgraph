@@ -212,32 +212,6 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         return column.compareTo(columnStart) >= 0 && column.compareTo(columnEnd) < 0;
     }
 
-    private class ContainsSelector implements KeySelector {
-
-        private final StaticBuffer checkKey;
-        private boolean contains = false;
-
-        private ContainsSelector(StaticBuffer key) {
-            checkKey = key;
-        }
-
-        public boolean contains() {
-            return contains;
-        }
-
-        @Override
-        public boolean include(StaticBuffer keycolumn) {
-            contains = equalKey(keycolumn, checkKey);
-            return false;
-        }
-
-        @Override
-        public boolean reachedLimit() {
-            return true;
-        }
-
-    }
-
     private class KeyRangeSliceSelector implements KeySelector {
         private final KeyRangeQuery query;
 
