@@ -58,7 +58,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <titan.compatible.versions>0.5.0-SNAPSHOT</titan.compatible.versions>
+        <titan.compatible.versions></titan.compatible.versions>
         <tinkerpop.version>2.5.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
