@@ -38,11 +38,11 @@ public class KVUtil {
     };
 
     public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws BackendException {
-        return convert(store.getSlice(keyStart, keyEnd, KeySelector.SelectAll, txh));
+        return convert(store.getSlice(new KVQuery(keyStart,keyEnd), txh));
     }
 
     public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws BackendException {
-        return convert(store.getSlice(keyStart, keyEnd, new LimitedSelector(limit), txh));
+        return convert(store.getSlice(new KVQuery(keyStart, keyEnd, limit), txh));
     }
 
     public static EntryList convert(RecordIterator<KeyValueEntry> iter) throws BackendException {

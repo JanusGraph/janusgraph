@@ -1,45 +1,43 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
-
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 /**
- * Determines which keys match a particular retrieval request against a {@link OrderedKeyValueStore}.
- *
- * @see OrderedKeyValueStore#getSlice(com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, KeySelector, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)
+ * A {@link KeySelector} utility that can be generated out of a given {@link KVQuery}
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public interface KeySelector {
+public class KeySelector {
 
-    /**
-     * KeySelector that returns all keys as matching
-     */
-    public static final KeySelector SelectAll = new KeySelector() {
+    private final Predicate<StaticBuffer> keyFilter;
+    private final int limit;
+    private int count;
 
-        @Override
-        public boolean include(StaticBuffer key) {
+    public KeySelector(Predicate<StaticBuffer> keyFilter, int limit) {
+        Preconditions.checkArgument(limit > 0, "The count limit needs to be positive. Given: " + limit);
+        Preconditions.checkArgument(keyFilter!=null);
+        this.keyFilter = keyFilter;
+        this.limit = limit;
+        count = 0;
+    }
+
+    public static final KeySelector of(int limit) {
+        return new KeySelector(Predicates.<StaticBuffer>alwaysTrue(), limit);
+    }
+
+    public boolean include(StaticBuffer key) {
+        if (keyFilter.apply(key)) {
+            count++;
             return true;
-        }
+        } else return false;
+    }
 
-        @Override
-        public boolean reachedLimit() {
-            return false;
-        }
-
-    };
-
-    /**
-     * Whether key should be included in the result set.
-     * @param key
-     * @return
-     */
-    public boolean include(StaticBuffer key);
-
-    /**
-     * Whether the retrieval limit has been reached.
-     * @return
-     */
-    public boolean reachedLimit();
+    public boolean reachedLimit() {
+        if (count >= limit) return true;
+        else return false;
+    }
 
 }
