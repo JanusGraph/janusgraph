@@ -11,7 +11,6 @@ import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -55,20 +54,30 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
-        etx.prepareForMutations();
-        manager.mutateMany(mutations, etx.getDataTransaction());
+        boolean hasAtLeastOneLock = etx.prepareForMutations();
+        if (hasAtLeastOneLock) {
+            // Force all mutations on this transaction to use strong consistency
+            log.debug("Mutations on transaction {} using consistent store transaction {} due to held locks", etx, etx.getConsistentTx());
+            manager.mutateMany(mutations, etx.getConsistentTx());
+        } else {
+            log.debug("Mutations on transaction {} using possibly-inconsistent store transaction {} due to no held locks", etx, etx.getInconsistentTx());
+            manager.mutateMany(mutations, etx.getInconsistentTx());
+        }
     }
 
     @Override
     public ExpectedValueCheckingTransaction beginTransaction(BaseTransactionConfig configuration) throws BackendException {
-        StoreTransaction tx = manager.beginTransaction(configuration);
+        // Get a transaction without any guarantees about strong consistency
+        StoreTransaction inconsistentTx = manager.beginTransaction(configuration);
 
+        // Get a transaction that provides global strong consistency
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
         BaseTransactionConfig consistentTxCfg = new StandardBaseTransactionConfig.Builder(configuration)
-                .customOptions(customOptions)
-                .build();
-        StoreTransaction consistentTx = manager.beginTransaction(consistentTxCfg);
-        ExpectedValueCheckingTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);
+                .customOptions(customOptions).build();
+        StoreTransaction strongConsistentTx = manager.beginTransaction(consistentTxCfg);
+
+        // Return a wrapper around both the inconsistent and consistent store transactions
+        ExpectedValueCheckingTransaction wrappedTx = new ExpectedValueCheckingTransaction(inconsistentTx, strongConsistentTx, maxReadTime);
         return wrappedTx;
     }
 

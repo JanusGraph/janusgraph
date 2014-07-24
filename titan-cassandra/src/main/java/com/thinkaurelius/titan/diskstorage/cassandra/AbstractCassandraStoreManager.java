@@ -10,14 +10,12 @@ import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.tinkerpop.blueprints.Graph;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -177,14 +175,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
         this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
         this.atomicBatch = config.get(ATOMIC_BATCH_MUTATE);
-
-        // Hack to warn against relying on locking with low write consistency
-        // This check doesn't really belong here, but it's likely to be temporary anyway
-        String writecl = config.get(CASSANDRA_WRITE_CONSISTENCY);
-        boolean batchLoading = config.get(STORAGE_BATCH);
-        if (!( batchLoading ||"ALL".equals(writecl) || "QUORUM".equals(writecl))) {
-            log.warn("Titan locking is unreliable when its Cassandra write consistency level is configured below QUORUM (configured level is {})", writecl);
-        }
 
         // SSL truststore location sanity check
         if (config.get(SSL_ENABLED) && config.get(SSL_TRUSTSTORE_LOCATION).isEmpty())
