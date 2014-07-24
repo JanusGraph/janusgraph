@@ -1,0 +1,240 @@
+package com.thinkaurelius.titan.diskstorage;
+
+import static org.easymock.EasyMock.capture;
+import static org.easymock.EasyMock.expect;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.easymock.Capture;
+import org.easymock.CaptureType;
+import org.easymock.EasyMock;
+import org.easymock.IMocksControl;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
+import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
+/**
+ * Test transaction handling in {@link ExpectedValueCheckingStore} and related
+ * classes, particularly with respect to consistency levels offered by the
+ * underlying store.
+ */
+public class ExpectedValueCheckingTest {
+
+    private IMocksControl ctrl;
+    private ExpectedValueCheckingStoreManager expectManager;
+    private KeyColumnValueStoreManager backingManager;
+    private LockerProvider lockerProvider;
+    private StoreFeatures backingFeatures;
+    private ModifiableConfiguration globalConfig;
+    private ModifiableConfiguration localConfig;
+    private ModifiableConfiguration defaultConfig;
+    private StoreTransaction consistentTx;
+    private StoreTransaction inconsistentTx;
+    private StoreTransaction expectTx;
+    private Locker backingLocker;
+    private KeyColumnValueStore backingStore;
+    private KeyColumnValueStore expectStore;
+    private Capture<BaseTransactionConfig> txConfigCapture;
+    private BaseTransactionConfig defaultTxConfig;
+
+    private static final String STORE_NAME = "ExpectTestStore";
+    private static final String LOCK_SUFFIX = "_expecttest";
+    private static final String LOCKER_NAME = STORE_NAME + LOCK_SUFFIX;
+
+    private static final StaticBuffer DATA_KEY = BufferUtil.getIntBuffer(1);
+    private static final StaticBuffer DATA_COL = BufferUtil.getIntBuffer(2);
+    private static final StaticBuffer DATA_VAL = BufferUtil.getIntBuffer(4);
+
+    private static final StaticBuffer LOCK_KEY = BufferUtil.getIntBuffer(32);
+    private static final StaticBuffer LOCK_COL = BufferUtil.getIntBuffer(64);
+    private static final StaticBuffer LOCK_VAL = BufferUtil.getIntBuffer(128);
+
+    @Before
+    public void setupMocks() throws BackendException {
+
+        // Initialize mock controller
+        ctrl = EasyMock.createStrictControl();
+        ctrl.checkOrder(true);
+
+        // Setup some config mocks and objects
+        backingManager = ctrl.createMock(KeyColumnValueStoreManager.class);
+        lockerProvider = ctrl.createMock(LockerProvider.class);
+        globalConfig = GraphDatabaseConfiguration.buildConfiguration();
+        localConfig = GraphDatabaseConfiguration.buildConfiguration();
+        defaultConfig = GraphDatabaseConfiguration.buildConfiguration();
+        // Set some properties on the configs, just so that global/local/default can be easily distinguished
+        globalConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "global");
+        localConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "local");
+        defaultConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "default");
+        defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(Timestamps.MICRO).build();
+        backingFeatures = new StandardStoreFeatures.Builder().keyConsistent(globalConfig, localConfig).build();
+
+
+        // Setup behavior specification starts below this line
+
+
+        // 1. Construct manager
+        // The EVCSManager ctor retrieves the backing store's features and stores it in an instance field
+        expect(backingManager.getFeatures()).andReturn(backingFeatures).once();
+
+        // 2. Begin transaction
+        // EVCTx begins two transactions on the backingManager: one with globalConfig and one with localConfig
+        // The capture is used in the @After method to check the config
+        txConfigCapture = new Capture<BaseTransactionConfig>(CaptureType.ALL);
+        inconsistentTx = ctrl.createMock(StoreTransaction.class);
+        consistentTx = ctrl.createMock(StoreTransaction.class);
+        expect(backingManager.beginTransaction(capture(txConfigCapture))).andReturn(inconsistentTx);
+        expect(backingManager.beginTransaction(capture(txConfigCapture))).andReturn(consistentTx);
+
+        // 3. Open a database
+        backingLocker = ctrl.createMock(Locker.class);
+        backingStore = ctrl.createMock(KeyColumnValueStore.class);
+        expect(backingManager.openDatabase(STORE_NAME)).andReturn(backingStore);
+        expect(backingStore.getName()).andReturn(STORE_NAME);
+        expect(lockerProvider.getLocker(LOCKER_NAME)).andReturn(backingLocker);
+
+        // Carry out setup behavior against mocks
+        ctrl.replay();
+        // 1. Construct manager
+        expectManager = new ExpectedValueCheckingStoreManager(backingManager, LOCK_SUFFIX, lockerProvider, new StandardDuration(1L, TimeUnit.SECONDS));
+        // 2. Begin transaction
+        expectTx = expectManager.beginTransaction(defaultTxConfig);
+        // 3. Open a database
+        expectStore = expectManager.openDatabase(STORE_NAME);
+
+        // Verify behavior and reset the mocks for test methods to use
+        ctrl.verify();
+        ctrl.reset();
+    }
+
+    @After
+    public void verifyMocks() {
+        ctrl.verify();
+        ctrl.reset();
+
+        // Check capture created in the @Before method
+        assertTrue(txConfigCapture.hasCaptured());
+        List<BaseTransactionConfig> txCfgs = txConfigCapture.getValues();
+        assertEquals(2, txCfgs.size());
+        // First backing store transaction should use default tx config
+        assertEquals("default", txCfgs.get(0).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
+        // Second backing store transaction should use global strong consistency config
+        assertEquals("global",  txCfgs.get(1).getCustomOption(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID));
+        // The order in which these transactions are opened isn't really significant;
+        // testing them in order is kind of overspecifying the impl's behavior.
+        // Could probably relax the ordering selectively here with some thought, but
+        // I want to keep order checking on in general for the EasyMock control.
+    }
+
+    @Test
+    public void testMutateWithLockUsesConsistentTx() throws BackendException {
+        final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
+        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+        final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
+
+        // 1. Acquire a lock
+        backingLocker.writeLock(kc, consistentTx);
+
+        // 2. Run a mutation
+        // N.B. mutation coordinates do not overlap with the lock, but consistentTx should be used anyway
+        // 2.1. Check locks & expected values before mutating data
+        backingLocker.checkLocks(consistentTx);
+        StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
+        KeySliceQuery expectedValueQuery = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
+        expect(backingStore.getSlice(expectedValueQuery, consistentTx)) // expected value read must use strong consistency
+            .andReturn(StaticArrayEntryList.of(StaticArrayEntry.of(LOCK_COL, LOCK_VAL)));
+        // 2.2. Mutate data
+        backingStore.mutate(DATA_KEY, adds, dels, consistentTx); // writes by txs with locks must use strong consistency
+
+        ctrl.replay();
+        // 1. Lock acquisition
+        expectStore.acquireLock(LOCK_KEY, LOCK_COL, LOCK_VAL, expectTx);
+        // 2. Mutate
+        expectStore.mutate(DATA_KEY, adds, dels, expectTx);
+    }
+
+    @Test
+    public void testMutateWithoutLockUsesInconsistentTx() throws BackendException {
+        // Run a mutation
+        final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
+        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+        backingStore.mutate(DATA_KEY, adds, dels, inconsistentTx); // consistency level is unconstrained w/o locks
+
+        ctrl.replay();
+        expectStore.mutate(DATA_KEY, adds, dels, expectTx);
+    }
+
+    @Test
+    public void testMutateManyWithLockUsesConsistentTx() throws BackendException {
+        final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
+        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+
+        Map<String, Map<StaticBuffer, KCVMutation>> mutations =
+                ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
+                        ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, dels)));
+        final KeyColumn kc = new KeyColumn(LOCK_KEY, LOCK_COL);
+
+        // Acquire a lock
+        backingLocker.writeLock(kc, consistentTx);
+
+        // 2. Run mutateMany
+        // 2.1. Check locks & expected values before mutating data
+        backingLocker.checkLocks(consistentTx);
+        StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
+        KeySliceQuery expectedValueQuery = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
+        expect(backingStore.getSlice(expectedValueQuery, consistentTx)) // expected value read must use strong consistency
+            .andReturn(StaticArrayEntryList.of(StaticArrayEntry.of(LOCK_COL, LOCK_VAL)));
+        // 2.2. Run mutateMany on backing manager to modify data
+        backingManager.mutateMany(mutations, consistentTx); // writes by txs with locks must use strong consistency
+
+        ctrl.replay();
+        // Lock acquisition
+        expectStore.acquireLock(LOCK_KEY, LOCK_COL, LOCK_VAL, expectTx);
+        // Mutate
+        expectManager.mutateMany(mutations, expectTx);
+    }
+
+    @Test
+    public void testMutateManyWithoutLockUsesInconsistentTx() throws BackendException {
+        final ImmutableList<Entry> adds = ImmutableList.of(StaticArrayEntry.of(DATA_COL, DATA_VAL));
+        final ImmutableList<StaticBuffer> dels = ImmutableList.<StaticBuffer>of();
+
+        Map<String, Map<StaticBuffer, KCVMutation>> mutations =
+                ImmutableMap.<String, Map<StaticBuffer, KCVMutation>>of(STORE_NAME,
+                        ImmutableMap.<StaticBuffer, KCVMutation>of(DATA_KEY, new KCVMutation(adds, dels)));
+
+        // Run mutateMany
+        backingManager.mutateMany(mutations, inconsistentTx); // consistency level is unconstrained w/o locks
+
+        ctrl.replay();
+        // Run mutateMany
+        expectManager.mutateMany(mutations, expectTx);
+    }
+}
