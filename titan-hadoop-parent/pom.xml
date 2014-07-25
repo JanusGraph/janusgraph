@@ -195,7 +195,7 @@
                                 <goal>copy-resources</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
                                 <resources>
                                     <resource>
                                         <directory>${project.build.directory}/shared-resources</directory>
