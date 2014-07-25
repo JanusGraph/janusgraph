@@ -38,6 +38,8 @@
             <artifactId>titan-hadoop-core</artifactId>
             <version>${project.version}</version>
             <classifier>shared-resources</classifier>
+            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.mrunit</groupId>
