@@ -30,7 +30,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,9 +89,14 @@ public class TitanGraphOutputMapReduce {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean("mapred.map.tasks.speculative.execution", false);
         configuration.setBoolean("mapred.reduce.tasks.speculative.execution", false);
+        // This set of Cassandra specific config defaults does not belong here and should be refactored away
         configuration.set("titan.hadoop.input.storage.backend", "embeddedcassandra");
         configuration.set("titan.hadoop.output.storage.backend", "embeddedcassandra");
-        configuration.set("titan.hadoop.output.storage.conf-file", TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
+        URL cassandraYaml = TitanCassandraOutputFormat.class.getResource("cassandra.yaml");
+        if (null == cassandraYaml)
+            cassandraYaml = ClassLoader.getSystemResource("cassandra.yaml");
+        if (null != cassandraYaml)
+            configuration.set("titan.hadoop.output.storage.conf-file", cassandraYaml.toString());
         configuration.set("titan.hadoop.output.cache.db-cache", "false");
         return configuration;
     }
