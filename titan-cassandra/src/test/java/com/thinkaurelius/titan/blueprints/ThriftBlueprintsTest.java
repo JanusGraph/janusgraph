@@ -17,7 +17,7 @@ public class ThriftBlueprintsTest extends AbstractCassandraBlueprintsTest {
 
     @Override
     public void beforeSuite() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override

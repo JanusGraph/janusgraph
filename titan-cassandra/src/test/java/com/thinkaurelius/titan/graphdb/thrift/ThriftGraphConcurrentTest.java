@@ -19,6 +19,6 @@ public class ThriftGraphConcurrentTest extends TitanGraphConcurrentTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 }

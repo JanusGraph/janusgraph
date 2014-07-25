@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.pkgtest;
 
 import org.junit.Test;
 
-public class BerkeleyESAssemblyIT extends AssemblyITSupport {
+public class BerkeleyESAssemblyIT extends AbstractTitanAssemblyIT {
     
     @Test
     public void testBerkeleyGettingStarted() throws Exception {

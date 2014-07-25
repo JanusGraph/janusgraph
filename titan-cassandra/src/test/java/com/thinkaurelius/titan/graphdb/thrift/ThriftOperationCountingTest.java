@@ -9,7 +9,7 @@ public class ThriftOperationCountingTest extends TitanOperationCountingTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override

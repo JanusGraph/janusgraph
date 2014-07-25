@@ -10,7 +10,7 @@ public class EmbeddedPartitionGraphTest extends TitanPartitionGraphTest {
 
     @BeforeClass
     public static void startEmbeddedCassandra() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override
