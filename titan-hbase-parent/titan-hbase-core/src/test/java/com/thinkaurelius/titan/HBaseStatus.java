@@ -42,20 +42,12 @@ public class HBaseStatus {
     }
 
     public String getScriptDir() {
-        return getScriptDirForHBaseVersion(version);
+        return HBaseStorageSetup.getScriptDirForHBaseVersion(version);
     }
 
-    public static String getScriptDirForHBaseVersion(String hv) {
-        if (hv.startsWith("0.94."))
-            return "../titan-hbase-094/bin/";
-        if (hv.startsWith("0.96."))
-            return "../titan-hbase-096/bin/";
-        if (hv.startsWith("0.98."))
-            return "../titan-hbase-098/bin/";
-
-        throw new RuntimeException("Unsupported HBase test version " + hv);
+    public String getConfDir() {
+        return HBaseStorageSetup.getConfDirForHBaseVersion(version);
     }
-
 
     public static HBaseStatus read(String path) {
 

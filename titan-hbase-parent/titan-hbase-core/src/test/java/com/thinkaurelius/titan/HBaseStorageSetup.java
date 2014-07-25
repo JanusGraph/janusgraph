@@ -19,19 +19,56 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HBaseStorageSetup {
 
     private static final Logger log = LoggerFactory.getLogger(HBaseStorageSetup.class);
 
     // hbase config for testing
-    private static final String HBASE_CONFIG_DIR = "./conf";
 
-    private static final String HBASE_PID_FILE = "/tmp/titan-hbase-test-daemon.pid";
+    public static final String HBASE_PARENT_DIR_PROP = "test.hbase.parentdir";
+
+    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^0\\.(9[468])\\..*");
+
+    private static final String HBASE_PARENT_DIR;
 
     private static final String HBASE_TARGET_VERSION = VersionInfo.getVersion();
 
+    static {
+        String parentDir = "..";
+        String tmp = System.getProperty(HBASE_PARENT_DIR_PROP);
+        if (null != tmp) {
+            parentDir = tmp;
+        }
+        HBASE_PARENT_DIR = parentDir;
+    }
+
+    private static final String HBASE_PID_FILE = "/tmp/titan-hbase-test-daemon.pid";
+
     private volatile static HBaseStatus HBASE = null;
+
+    public static String getScriptDirForHBaseVersion(String hv) {
+        return getDirForHBaseVersion(hv, "bin");
+    }
+
+    public static String getConfDirForHBaseVersion(String hv) {
+        return getDirForHBaseVersion(hv, "conf");
+    }
+
+    public static String getDirForHBaseVersion(String hv, String lastSubdir) {
+        Matcher m = HBASE_SUPPORTED_VERSION_PATTERN.matcher(hv);
+        if (m.matches()) {
+            String minor = m.group(1);
+            String result = String.format("%s%stitan-hbase-0%s/%s/", HBASE_PARENT_DIR, File.separator, minor, lastSubdir);
+            log.debug("Built {} path for HBase version {}: {}", lastSubdir, hv, result);
+            return result;
+        } else {
+            throw new RuntimeException("Unsupported HBase test version " + hv + " does not match pattern " + HBASE_SUPPORTED_VERSION_PATTERN);
+        }
+    }
+
 
     public static ModifiableConfiguration getHBaseConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
@@ -70,8 +107,8 @@ public class HBaseStorageSetup {
         deleteData();
 
         log.info("Starting HBase");
-        String scriptPath = HBaseStatus.getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
-        runCommand(scriptPath, "--config", HBASE_CONFIG_DIR, "start", "master");
+        String scriptPath = getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
+        runCommand(scriptPath, "--config", getConfDirForHBaseVersion(HBASE_TARGET_VERSION), "start", "master");
 
         HBASE = HBaseStatus.write(HBASE_PID_FILE, HBASE_TARGET_VERSION);
 
@@ -146,7 +183,7 @@ public class HBaseStorageSetup {
         log.info("Shutting down HBase...");
 
         // First try graceful shutdown through the script...
-        runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master");
+        runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", stat.getConfDir(), "stop", "master");
 
         log.info("Shutdown HBase");
 
