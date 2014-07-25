@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-1</artifactId>
-    <name>Titan-Hadoop for Hadoop 1.x</name>
+    <name>Titan-Hadoop: 1.x Compatibility Shim</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>

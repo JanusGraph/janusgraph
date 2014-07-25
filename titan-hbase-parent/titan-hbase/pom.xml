@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hbase</artifactId>
-    <name>Titan-HBase: Jar with Core and Compat Shims</name>
+    <name>Titan-HBase: Universal binary</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>

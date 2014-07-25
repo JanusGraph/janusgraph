@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-parent</artifactId>
-    <name>Titan-Hadoop-Parent: Distributed Graph Processing</name>
+    <name>Titan-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
     <url>http://thinkaurelius.github.com/titan/</url>
 
