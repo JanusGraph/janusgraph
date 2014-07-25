@@ -33,6 +33,14 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-hadoop-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>shared-resources</classifier>
+            <scope>test</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
             <version>0.94.12</version>
