@@ -43,11 +43,6 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hadoop-2</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>titan-hbase-core</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
