@@ -32,11 +32,9 @@ import java.util.List;
 public class TitanHBaseInputFormat extends TitanInputFormat {
 
 //    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "titan.hadoop.input.storage.tablename";
-    static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
-
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private TitanHBaseHadoopGraph graph;
-
+    private byte[] edgestoreFamily;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -45,7 +43,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     @Override
     public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanHBaseRecordReader(this.graph, this.vertexQuery, (TableRecordReader) this.tableInputFormat.createRecordReader(inputSplit, taskAttemptContext));
+        return new TitanHBaseRecordReader(this.graph, this.vertexQuery, (TableRecordReader) this.tableInputFormat.createRecordReader(inputSplit, taskAttemptContext), edgestoreFamily);
     }
 
     @Override
@@ -63,7 +61,14 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();
-        scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
+        // TODO the mapping is private in HBaseStoreManager and leaks here -- replace String database/CF names with an enum where each value has both a short and long name
+        if (titanInputConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
+            scanner.addFamily("e".getBytes());
+            edgestoreFamily = Bytes.toBytes("e");
+        } else {
+            scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
+            edgestoreFamily = Bytes.toBytes(Backend.EDGESTORE_NAME);
+        }
         scanner.setFilter(getColumnFilter(titanSetup.inputSlice(this.vertexQuery)));
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
         Method converter;
