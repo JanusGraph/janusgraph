@@ -29,6 +29,15 @@ public interface TransactionBuilder {
     public TransactionBuilder enableBatchLoading();
 
     /**
+     * Disables batch loading by ensuring that consistency checks are applied in this transaction. This allows
+     * an individual transaction to use consistency checks when the graph as a whole is configured to not use them,
+     * which is useful when defining schema elements in a graph with batch-loading enabled.
+     *
+     * @return
+     */
+    public TransactionBuilder disableBatchLoading();
+
+    /**
      * Configures the size of the internal caches used in the transaction.
      *
      * @param size

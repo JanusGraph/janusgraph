@@ -144,7 +144,7 @@ public class ManagementSystem implements TitanManagement {
         this.updatedTypeTriggers = new HashSet<Callable<Boolean>>();
         this.graphShutdownRequired = false;
 
-        this.transaction = (StandardTitanTx) graph.newTransaction();
+        this.transaction = (StandardTitanTx) graph.buildTransaction().disableBatchLoading().start();
         this.txStartTime = graph.getConfiguration().getTimestampProvider().getTime();
         this.isOpen = true;
     }

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -85,11 +86,13 @@ public class SchemaInferencerMapReduce {
     public static class Reduce extends org.apache.hadoop.mapreduce.Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private TitanGraph graph;
+        private TitanTransaction tx;
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            this.graph = TitanGraphOutputMapReduce.generateGraph(TitanHadoopConfiguration.of(c));
+            graph = TitanGraphOutputMapReduce.generateGraph(TitanHadoopConfiguration.of(c));
+            tx = graph.buildTransaction().disableBatchLoading().start();
         }
 
         @Override
@@ -100,20 +103,20 @@ public class SchemaInferencerMapReduce {
                     for (final String property : vertex.getPropertyKeys()) {
                         final char type = property.charAt(0);
                         final String typeName = property.substring(1);
-                        if ( ((type=='k' || type=='l') && graph.getRelationType(typeName)!=null)
-                                || (type=='v' && graph.containsVertexLabel(typeName))) continue;
+                        if ( ((type=='k' || type=='l') && tx.getRelationType(typeName)!=null)
+                                || (type=='v' && tx.containsVertexLabel(typeName))) continue;
 
                         if (type=='k') {
                             // TODO: Automated type inference
-                            // typeMaker.makeKey(property2, graph.makeType().dataType(Class.forName(vertex.getProperty(property).toString())));
-                            typeMaker.makePropertyKey(graph.makePropertyKey(typeName));
+                            // typeMaker.makeKey(property2, tx.makeType().dataType(Class.forName(vertex.getProperty(property).toString())));
+                            typeMaker.makePropertyKey(tx.makePropertyKey(typeName));
                             DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROPERTY_KEYS_CREATED, 1L);
                         } else if (type=='l') {
-                            //typeMaker.makeLabel(property2, graph.makeType());
-                            typeMaker.makeEdgeLabel(graph.makeEdgeLabel(typeName));
+                            //typeMaker.makeLabel(property2, tx.makeType());
+                            typeMaker.makeEdgeLabel(tx.makeEdgeLabel(typeName));
                             DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGE_LABELS_CREATED, 1L);
                         } else if (type=='v') {
-                            typeMaker.makeVertexLabel(graph.makeVertexLabel(typeName));
+                            typeMaker.makeVertexLabel(tx.makeVertexLabel(typeName));
                             DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_LABELS_CREATED, 1L);
 
                         } else throw new IllegalArgumentException("Unexpected type: " + type);
@@ -128,8 +131,8 @@ public class SchemaInferencerMapReduce {
 
         @Override
         public void cleanup(final Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            this.graph.commit();
-            this.graph.shutdown();
+            tx.commit();
+            graph.shutdown();
         }
     }
 }

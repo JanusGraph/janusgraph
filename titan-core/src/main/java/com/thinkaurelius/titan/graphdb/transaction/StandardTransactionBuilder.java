@@ -112,6 +112,15 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public StandardTransactionBuilder disableBatchLoading() {
+        hasEnabledBatchLoading = false;
+        verifyUniqueness = true;
+        verifyExternalVertexExistence = true;
+        acquireLocks = true;
+        return this;
+    }
+
+    @Override
     public StandardTransactionBuilder setVertexCacheSize(int size) {
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
