@@ -68,6 +68,12 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         if (m==null) {
             m = new IndexMutation(isNew,isDeleted);
             storeMutations.put(docid, m);
+        } else {
+            //IndexMutation already exists => if we deleted and re-created it we need to remove the deleted flag
+            if (isNew && m.isDeleted()) {
+                m.resetDelete();
+                assert !m.isNew() && !m.isDeleted();
+            }
         }
         return m;
     }

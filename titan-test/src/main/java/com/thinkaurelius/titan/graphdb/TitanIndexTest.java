@@ -96,10 +96,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     @Test
     public void testSimpleUpdate() {
-        PropertyKey text = makeKey("name",String.class);
+        PropertyKey name = makeKey("name",String.class);
         EdgeLabel knows = makeLabel("knows");
-        mgmt.buildIndex("namev",Vertex.class).addKey(text).buildCompositeIndex();
-        mgmt.buildIndex("namee",Edge.class).addKey(text).buildCompositeIndex();
+        mgmt.buildIndex("namev",Vertex.class).addKey(name).buildMixedIndex(INDEX);
+        mgmt.buildIndex("namee",Edge.class).addKey(name).buildMixedIndex(INDEX);
         finishSchema();
 
         Vertex v = tx.addVertex();
@@ -119,12 +119,16 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         e.setProperty("name","Tubu Rubu");
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "Rubu").edges()));
+        assertEquals(0, Iterables.size(tx.query().has("name", Text.CONTAINS, "Hulu").edges()));
         for (Vertex u : tx.getVertices()) assertEquals("Marko",u.getProperty("name"));
-        newTx();
+        clopen();
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "Rubu").edges()));
+        assertEquals(0, Iterables.size(tx.query().has("name", Text.CONTAINS, "Hulu").edges()));
         for (Vertex u : tx.getVertices()) assertEquals("Marko",u.getProperty("name"));
     }
+
+
 
     @Test
     public void testIndexing() {
@@ -222,7 +226,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        //Mixed index queries
+        //Queries combining mixed and composite indexes
         assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).vertices()));
         assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).edges()));
 
@@ -275,7 +279,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
 
-        //Mixed index queries
+        //Queries combining mixed and composite indexes
         assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).vertices()));
         assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).edges()));
 
@@ -506,15 +510,15 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testInternalAndExternalIndexing() {
+    public void testCompositeAndMixedIndexing() {
         PropertyKey name = makeKey("name", String.class);
         PropertyKey weight = makeKey("weight",Decimal.class);
         PropertyKey text = makeKey("text", String.class);
         PropertyKey flag = makeKey("flag",Boolean.class);
 
-        TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
-        TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).addKey(weight).addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
-        external.getName(); internal.getName();
+        TitanGraphIndex composite = mgmt.buildIndex("composite",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
+        TitanGraphIndex mixed = mgmt.buildIndex("mixed",Vertex.class).addKey(weight).addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+        mixed.getName(); composite.getName();
         finishSchema();
 
         name = tx.getPropertyKey("name");
@@ -540,43 +544,43 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},external.getName());
+                numV/strs.length,new boolean[]{true,true},mixed.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has(flag.getName()),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},external.getName());
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(weight,Cmp.EQUAL,1.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},internal.getName());
+                numV/strs.length,new boolean[]{false,true},mixed.getName());
+        evaluateQuery(tx.query().has(name, Cmp.EQUAL, strs[0]).has(weight, Cmp.EQUAL, 1.5), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{true, true}, composite.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(weight,Cmp.EQUAL,1.5).has(flag.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},internal.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[2]).has(weight,Cmp.EQUAL,2.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},external.getName());
+                numV/divisor,new boolean[]{false,true},composite.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[2]).has(weight, Cmp.EQUAL, 2.5), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{true, true}, mixed.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[2]).has(weight,Cmp.EQUAL,2.5).has(flag.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},external.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[3]).has(name,Cmp.EQUAL,strs[3]).has(weight,Cmp.EQUAL,3.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},external.getName(),internal.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[3]).has(name,Cmp.EQUAL,strs[3]).has(weight,Cmp.EQUAL,3.5).has(flag.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},external.getName(),internal.getName());
+                numV/divisor,new boolean[]{false,true},mixed.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[3]).has(name,Cmp.EQUAL,strs[3]).has(weight,Cmp.EQUAL,3.5),ElementCategory.VERTEX,
+                numV/divisor,new boolean[]{true,true},mixed.getName(),composite.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[3]).has(name,Cmp.EQUAL,strs[3]).has(weight,Cmp.EQUAL,3.5).has(flag.getName()),ElementCategory.VERTEX,
+                numV/divisor,new boolean[]{false,true},mixed.getName(),composite.getName());
 
         clopen();
 
         //Same queries as above
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true});
+        evaluateQuery(tx.query().has(name, Cmp.EQUAL, strs[0]), ElementCategory.VERTEX,
+                numV / strs.length, new boolean[]{false, true});
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},external.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has(flag.getName()),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},external.getName());
+                numV/strs.length,new boolean[]{true,true},mixed.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[0]).has(flag.getName()), ElementCategory.VERTEX,
+                numV / strs.length, new boolean[]{false, true}, mixed.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(weight,Cmp.EQUAL,1.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},internal.getName());
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(weight,Cmp.EQUAL,1.5).has(flag.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},internal.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[2]).has(weight,Cmp.EQUAL,2.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},external.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[2]).has(weight,Cmp.EQUAL,2.5).has(flag.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},external.getName());
-        evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[3]).has(name,Cmp.EQUAL,strs[3]).has(weight,Cmp.EQUAL,3.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},external.getName(),internal.getName());
+                numV/divisor,new boolean[]{true,true},composite.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(weight, Cmp.EQUAL, 1.5).has(flag.getName()),ElementCategory.VERTEX,
+                numV/divisor,new boolean[]{false,true},composite.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[2]).has(weight,Cmp.EQUAL,2.5),ElementCategory.VERTEX,
+                numV/divisor,new boolean[]{true,true},mixed.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[2]).has(weight,Cmp.EQUAL,2.5).has(flag.getName()),ElementCategory.VERTEX,
+                numV/divisor,new boolean[]{false,true},mixed.getName());
+        evaluateQuery(tx.query().has(text, Text.CONTAINS, strs[3]).has(name, Cmp.EQUAL, strs[3]).has(weight, Cmp.EQUAL, 3.5), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{true, true}, mixed.getName(), composite.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[3]).has(name,Cmp.EQUAL,strs[3]).has(weight,Cmp.EQUAL,3.5).has(flag.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},external.getName(),internal.getName());
+                numV/divisor,new boolean[]{false,true},mixed.getName(),composite.getName());
 
     }
 

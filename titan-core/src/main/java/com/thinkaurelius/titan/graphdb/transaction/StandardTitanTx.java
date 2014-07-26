@@ -1088,9 +1088,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     return !query.matches(result);
                 } else return false;
             } else if (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY) {
-                //Loaded edges are immutable and new edges are previously filtered
+                //Loaded edges are immutable and new edges are previously filtered, however, we need to filter
+                //out new edges so that their old state doesn't reappear
                 Preconditions.checkArgument(result.isLoaded() || result.isNew());
-                return false;
+                return result.isNew();
             } else throw new IllegalArgumentException("Unexpected type: " + query.getResultType());
         }
 

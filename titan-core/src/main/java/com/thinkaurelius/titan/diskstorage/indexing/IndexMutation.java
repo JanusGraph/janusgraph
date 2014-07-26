@@ -19,7 +19,7 @@ import java.util.List;
 public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
 
     private final boolean isNew;
-    private final boolean isDeleted;
+    private boolean isDeleted;
 
     public IndexMutation(List<IndexEntry> additions, List<IndexEntry> deletions, boolean isNew, boolean isDeleted) {
         super(additions, deletions);
@@ -47,6 +47,10 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
 
     public boolean isDeleted() {
         return isDeleted;
+    }
+
+    public void resetDelete() {
+        isDeleted=false;
     }
 
     public static final Function<IndexEntry,String> ENTRY2FIELD_FCT = new Function<IndexEntry, String>() {
