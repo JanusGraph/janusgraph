@@ -471,7 +471,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             List<InternalVertex> newVs = vertexCache.getAllNew();
             Iterator<InternalVertex> viter = newVs.iterator();
             while (viter.hasNext()) {
-                if (viter.next() instanceof RelationType) viter.remove();
+                if (viter.next() instanceof TitanSchemaElement) viter.remove();
             }
             allVertices = Iterables.concat(newVs, new VertexIterable(graph, this));
         } else {
