@@ -62,12 +62,6 @@
             <type>zip</type>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hadoop-2</artifactId>
-            <version>${project.version}</version>
-            <classifier>job</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
             <version>0.98.2-hadoop2</version>

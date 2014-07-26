@@ -1,20 +1,13 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
-import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.FormatTools;
-import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
-import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -32,19 +25,22 @@ import org.apache.hadoop.mapreduce.lib.chain.ChainMapper;
 import org.apache.hadoop.mapreduce.lib.chain.ChainReducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
+import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.formats.FormatTools;
+import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
+import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -191,43 +187,17 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
 
     @Override
     public void composeJobs() throws IOException {
+
         if (this.jobs.size() == 0) {
             return;
         }
-
-        String hadoopFileJar = graph.getConf().get(MAPRED_JAR, null);
-        if (null == hadoopFileJar) {
-            if (new File("target/" + JOB_JAR).exists()) {
-                hadoopFileJar = "target/" + JOB_JAR;
-                logger.warn("Using the developer Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("../target/" + JOB_JAR).exists()) {
-                hadoopFileJar = "../target/" + JOB_JAR;
-                logger.warn("Using the developer Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("lib/" + JOB_JAR).exists()) {
-                hadoopFileJar = "lib/" + JOB_JAR;
-                logger.warn("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("../lib/" + JOB_JAR).exists()) {
-                hadoopFileJar = "../lib/" + JOB_JAR;
-                logger.warn("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-            } else {
-                final String titanHadoopHome = System.getenv(Tokens.TITAN_HADOOP_HOME);
-                if (null == titanHadoopHome || titanHadoopHome.isEmpty())
-                    throw new IllegalStateException("TITAN_HADOOP_HOME must be set in order to locate the Titan/Hadoop job jar: " + JOB_JAR);
-                if (new File(titanHadoopHome + "/lib/" + JOB_JAR).exists()) {
-                    hadoopFileJar = titanHadoopHome + "/lib/" + JOB_JAR;
-                    logger.info("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-                }
-            }
-        } else {
-            logger.info("Using the provided Titan/Hadoop job jar: " + hadoopFileJar);
-        }
-        if (null == hadoopFileJar)
-            throw new IllegalStateException("The Titan/Hadoop job jar could not be found: " + JOB_JAR);
 
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS))
             logger.warn("Path tracking is enabled for this Titan/Hadoop job (space and time expensive)");
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE))
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
+
+        JobClasspathConfigurer cpConf = JobClasspathConfigurers.get(graph);
 
         // Create temporary job data directory on the filesystem
         Path tmpPath = graph.getJobDir();
@@ -244,8 +214,7 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
             SequenceFileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
-            //job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
-            job.setJar(hadoopFileJar);
+            cpConf.configure(job);
 
             // configure job inputs
             if (i == 0) {
