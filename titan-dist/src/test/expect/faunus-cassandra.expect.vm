@@ -1,5 +1,5 @@
 #!/usr/bin/env expect
-set timeout 30
+set timeout 45
 spawn bin/gremlin.sh
 expect_after {
     timeout {
