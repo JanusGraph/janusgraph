@@ -15,6 +15,6 @@ public class ThriftOLAPTest extends FulgoraOLAPTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 }

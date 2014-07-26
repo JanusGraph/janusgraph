@@ -37,7 +37,6 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCh
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.system.IOUtils;
 
 import static org.easymock.EasyMock.*;
 
@@ -376,11 +375,11 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         expect(mockLockerProvider.getLocker(anyObject(String.class))).andReturn(mockLocker).times(numStores);
 
         // acquireLock calls writeLock, and we do it 2/3 * numStores times
-        mockLocker.writeLock(eq(new KeyColumn(key, col)), eq(tx.getLockTransaction()));
+        mockLocker.writeLock(eq(new KeyColumn(key, col)), eq(tx.getConsistentTx()));
         expectLastCall().times(numStores / 3 * 2);
 
         // mutateMany calls checkLocks, and we do it 2/3 * numStores times
-        mockLocker.checkLocks(tx.getLockTransaction());
+        mockLocker.checkLocks(tx.getConsistentTx());
         expectLastCall().times(numStores / 3 * 2);
 
         replay(mockLockerProvider);

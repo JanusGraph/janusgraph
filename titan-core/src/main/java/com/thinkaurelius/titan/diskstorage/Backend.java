@@ -104,6 +104,7 @@ public class Backend implements LockerProvider {
     private KCVSCache txLogStore;
     private IDAuthority idAuthority;
     private KCVSConfiguration systemConfig;
+    private boolean hasAttemptedClose;
 
     private final KCVSLogManager mgmtLogManager;
     private final KCVSLogManager txLogManager;
@@ -117,7 +118,6 @@ public class Backend implements LockerProvider {
     private final Duration maxReadTime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
-
 
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers =
@@ -483,21 +483,26 @@ public class Backend implements LockerProvider {
                 maxReadTime, indexTx, threadPool);
     }
 
-    public void close() throws BackendException {
-        mgmtLogManager.close();
-        txLogManager.close();
-        userLogManager.close();
+    public synchronized void close() throws BackendException {
+        if (!hasAttemptedClose) {
+            hasAttemptedClose = true;
+            mgmtLogManager.close();
+            txLogManager.close();
+            userLogManager.close();
 
-        edgeStore.close();
-        indexStore.close();
-        idAuthority.close();
-        systemConfig.close();
-        storeManager.close();
-        if(threadPool != null) {
-        	threadPool.shutdown();
+            edgeStore.close();
+            indexStore.close();
+            idAuthority.close();
+            systemConfig.close();
+            storeManager.close();
+            if(threadPool != null) {
+            	threadPool.shutdown();
+            }
+            //Indexes
+            for (IndexProvider index : indexes.values()) index.close();
+        } else {
+            log.debug("Backend {} has already been closed or cleared", this);
         }
-        //Indexes
-        for (IndexProvider index : indexes.values()) index.close();
     }
 
     /**
@@ -507,19 +512,27 @@ public class Backend implements LockerProvider {
      *
      * @throws BackendException
      */
-    public void clearStorage() throws BackendException {
-        mgmtLogManager.close();
-        txLogManager.close();
-        userLogManager.close();
+    public synchronized void clearStorage() throws BackendException {
+        if (!hasAttemptedClose) {
+            hasAttemptedClose = true;
+            mgmtLogManager.close();
+            txLogManager.close();
+            userLogManager.close();
 
-        edgeStore.close();
-        indexStore.close();
-        idAuthority.close();
-        systemConfig.close();
-        storeManager.clearStorage();
-        storeManager.close();
-        //Indexes
-        for (IndexProvider index : indexes.values()) index.clearStorage();
+            edgeStore.close();
+            indexStore.close();
+            idAuthority.close();
+            systemConfig.close();
+            storeManager.clearStorage();
+            storeManager.close();
+            //Indexes
+            for (IndexProvider index : indexes.values()) {
+                index.clearStorage();
+                index.close();
+            }
+        } else {
+            log.debug("Backend {} has already been closed or cleared", this);
+        }
     }
 
     //############ Registered Storage Managers ##############

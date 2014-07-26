@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-core</artifactId>
-    <name>Titan-Hadoop-Core</name>
+    <name>Titan-Hadoop: Version-independent Core</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>

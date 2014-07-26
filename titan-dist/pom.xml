@@ -6,7 +6,7 @@
         <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <artifactId>titan-dist</artifactId>
     <name>Titan-Dist: Tar and Zip Archives</name>
     <url>http://thinkaurelius.github.com/titan/</url>
@@ -16,7 +16,7 @@
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
-        <test.zipfile.path>${project.build.directory}/titan-${project.version}.zip</test.zipfile.path>
+        <test.zipfile.path>${project.build.directory}/titan-${project.version}-hadoop2.zip</test.zipfile.path>
 
         <!-- AsciiDoc -->
         <asciidoc.input.dir>${project.parent.basedir}/docs</asciidoc.input.dir>
@@ -30,6 +30,8 @@
         <!-- RPM/DEB packaging -->
         <pkg.release>1</pkg.release>
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
+
+        <skipDefaultDistroIT>${it.skip}</skipDefaultDistroIT>
     </properties>
 
     <dependencies>
@@ -41,8 +43,16 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hadoop-2</artifactId>
+            <artifactId>titan-hbase-core</artifactId>
             <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -52,14 +62,14 @@
             <type>zip</type>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hadoop-2</artifactId>
-            <version>${project.version}</version>
-            <classifier>job</classifier>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>0.98.2-hadoop2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
+            <artifactId>hbase-server</artifactId>
+            <!-- Need the -server artifact for hbase.mapreduce.TableInputFormat (Faunus) -->
             <version>0.98.2-hadoop2</version>
         </dependency>
         <dependency>
@@ -97,6 +107,7 @@
     </dependencies>
 
     <build>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
 
         <!-- Used during release:perform to upload to S3 -->
         <extensions>
@@ -688,7 +699,7 @@
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>filter-cassandra-rp-config</id>
+                                <id>filter-cassandra-murmur-config</id>
                                 <phase>process-test-resources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
@@ -697,6 +708,25 @@
                                     <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
                                     <filters>
                                         <filter>${project.basedir}/../titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                    </filters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/../titan-cassandra/config/cassandra</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>filter-cassandra-bop-config</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
+                                    <filters>
+                                        <filter>${project.basedir}/../titan-cassandra/config/cassandra-filters/localhost-bop.properties</filter>
                                     </filters>
                                     <resources>
                                         <resource>
@@ -806,12 +836,68 @@
                                 <goals>
                                     <goal>integration-test</goal>
                                 </goals>
+                                <configuration>
+                                    <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                    <skip>${skipDefaultDistroIT}</skip>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <excludes>
+                                        <exclude>**/*HBase*IT.java</exclude>
+                                        <exclude>**/*Cassandra*IT.java</exclude>
+                                    </excludes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>cassandra-murmur-integration-test</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                                    <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests</excludedGroups>
+                                    <reportNameSuffix>murmur</reportNameSuffix>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <includes>
+                                        <include>**/*Cassandra*IT.java</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>cassandra-bop-integration-test</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
+                                    <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                    <reportNameSuffix>bop</reportNameSuffix>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <includes>
+                                        <include>**/*Cassandra*IT.java</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>cassandra-hbase-integration-test</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <argLine>-Dtest.hbase.parentdir=${project.basedir}/../titan-hbase-parent/</argLine>
+                                    <reportNameSuffix>hbase</reportNameSuffix>
+                                    <failIfNoTests>false</failIfNoTests>
+                                    <includes>
+                                        <include>**/*HBase*IT.java</include>
+                                    </includes>
+                                </configuration>
                             </execution>
                             <execution>
                                 <id>verify</id>
                                 <goals>
                                     <goal>verify</goal>
                                 </goals>
+                                <configuration>
+                                    <failIfNoTests>true</failIfNoTests>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

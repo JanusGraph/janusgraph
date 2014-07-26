@@ -25,10 +25,13 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
 
     private FaunusVertex vertex;
 
-    public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final FaunusVertexQueryFilter vertexQuery, final TableRecordReader reader) {
+    private final byte[] edgestoreFamilyBytes;
+
+    public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final FaunusVertexQueryFilter vertexQuery, final TableRecordReader reader, final byte[] edgestoreFamilyBytes) {
         this.graph = graph;
         this.vertexQuery = vertexQuery;
         this.reader = reader;
+        this.edgestoreFamilyBytes = edgestoreFamilyBytes;
     }
 
     @Override
@@ -40,7 +43,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
-            final FaunusVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
+            final FaunusVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(edgestoreFamilyBytes));
             if (null != temp) {
                 this.vertex = temp;
                 this.vertexQuery.filterRelationsOf(this.vertex);

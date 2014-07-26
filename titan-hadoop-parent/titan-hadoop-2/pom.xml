@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-2</artifactId>
-    <name>Titan-Hadoop for Hadoop 2.x</name>
+    <name>Titan-Hadoop: 2.x Compatibility Shim</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
@@ -24,7 +24,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>titan-hadoop-core</artifactId>
             <version>${project.version}</version>
-            <classifier/>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -38,6 +37,8 @@
             <artifactId>titan-hadoop-core</artifactId>
             <version>${project.version}</version>
             <classifier>shared-resources</classifier>
+            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.mrunit</groupId>

@@ -1,0 +1,62 @@
+#!/usr/bin/env expect
+set timeout 180
+spawn bin/gremlin.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+expect gremlin>
+
+send "c = com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.buildConfiguration()\r"
+expect gremlin>
+send "m = new com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager(c)\r"
+expect gremlin>
+send "m.clearStorage()\r"
+expect gremlin>
+send "m.close()\r"
+expect gremlin>
+
+send "g = HadoopFactory.open(\"conf/hadoop/titan-hbase-output.properties\")\r"
+expect -re "hadoop"
+expect gremlin>
+
+send "g._()\r"
+expect gremlin>
+
+send "g.shutdown()\r"
+expect gremlin>
+
+send "g = HadoopFactory.open(\"conf/hadoop/titan-hbase-input.properties\")\r"
+expect -re "hadoop"
+expect gremlin>
+
+send "g._()\r"
+expect gremlin>
+
+send "g.E.count()\r"
+expect ==>17
+expect gremlin>
+
+send "g.V.count()\r"
+expect ==>12
+expect gremlin>
+
+send "g.V.map\r"
+expect gremlin>
+if { 12 != [regexp -all {==>} $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[saturn\], type=\[titan\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[jupiter\], type=\[god\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[neptune\], type=\[god\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[pluto\], type=\[god\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[sky\], type=\[location\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[sea\], type=\[location\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[tartarus\], type=\[location\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[hercules\], type=\[demigod\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[alcmene\], type=\[human\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[nemean\], type=\[monster\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[hydra\], type=\[monster\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "name=\[cerberus\], type=\[monster\]" $expect_out(buffer)] } { exit 1 }
+
+exit 0

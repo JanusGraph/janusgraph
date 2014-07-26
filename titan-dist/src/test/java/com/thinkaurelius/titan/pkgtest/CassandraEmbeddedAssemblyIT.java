@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.pkgtest;
 
 import org.junit.Test;
-import java.io.File;
 
-public class CassandraEmbeddedAssemblyIT extends AssemblyITSupport {
-    
+public class CassandraEmbeddedAssemblyIT extends AbstractTitanAssemblyIT {
+
     @Test
     public void testEmbeddedCassandraSimpleSession() throws Exception {
         testSimpleGremlinSession("conf/titan-cassandra-embedded.properties", "embeddedcassandra");

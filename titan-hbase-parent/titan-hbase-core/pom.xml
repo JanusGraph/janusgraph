@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hbase-core</artifactId>
-    <name>Titan-HBase: Core Components</name>
+    <name>Titan-HBase: Version-independent Core</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>

@@ -12,60 +12,75 @@ expect "==>90"
 expect gremlin>
 send "g = TitanFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
-${graphPostamble}
 expect gremlin>
+
+send "g.getBackend().clearStorage()\r"
+expect gremlin>
+
+send "g = TitanFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+expect gremlin>
+
 send "GraphOfTheGodsFactory.load(g)\r"
 expect ==>null
 expect gremlin>
+# Some of these queries rely on ES, so give it some time to reindex
+sleep 10
+
 send "saturn = g.V('name','saturn').next()\r"
-expect "==>v\\\[4\\\]"
+expect -re {v\[(\d+)\]}
 expect gremlin>
 send "saturn.map()\r"
 expect gremlin>
 if { -1 == [string first "==>age=10000"   $expect_out(buffer)] } { exit 1 }
 if { -1 == [string first "==>name=saturn" $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>type=titan"  $expect_out(buffer)] } { exit 1 }
+
+send "saturn.getLabel()\r"
+expect ==>titan
+expect gremlin>
+
 send "saturn.in('father').in('father').name\r"
 expect ==>hercules
 expect gremlin>
-# This next query relies on ES, so wait at a few seconds for it to reindex
-sleep 2
+
 send "g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()\r"
 expect gremlin>
-if { -1 == [string first "24-battled-\>40" $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "24-battled-\>36" $expect_out(buffer)] } { exit 1 }
+if { 2  != [regexp -all {\d+-battled->\d+} $expect_out(buffer)] } { exit 1 }
+
 send "g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect { it.bothV.name.next(2) }\r"
 expect gremlin>
 if { -1 == [string first "==>\[hercules, hydra\]"  $expect_out(buffer)] } { exit 1 }
 if { -1 == [string first "==>\[hercules, nemean\]" $expect_out(buffer)] } { exit 1 }
 send "hercules = saturn.as('x').in('father').loop('x'){it.loops < 3}.next()\r"
-expect "==>v\\\[24\\\]"
+expect -re {==>v\[(\d+)\]}
 expect gremlin>
 send "hercules.out('father','mother')\r"
 expect gremlin>
-if { -1 == [string first "==>v\[16\]" $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>v\[28\]" $expect_out(buffer)] } { exit 1 }
+if { 2  != [regexp -all {v\[(\d+)\]} $expect_out(buffer)] } { exit 1 }
 send "hercules.out('father','mother').name\r"
 expect gremlin>
 if { -1 == [string first "==>alcmene" $expect_out(buffer)] } { exit 1 }
 if { -1 == [string first "==>jupiter" $expect_out(buffer)] } { exit 1 }
-send "hercules.out('father','mother').type\r"
+send "hercules.out('father','mother').transform { it.getLabel() }\r"
 expect gremlin>
 if { -1 == [string first "==>god"   $expect_out(buffer)] } { exit 1 }
 if { -1 == [string first "==>human" $expect_out(buffer)] } { exit 1 }
-send "hercules.type\r"
+send "hercules.getLabel()\r"
 expect ==>demigod
 expect gremlin>
 send "hercules.out('battled')\r"
 expect gremlin>
-if { -1 == [string first "==>v\[36\]" $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>v\[40\]" $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>v\[44\]" $expect_out(buffer)] } { exit 1 }
+if { 3  != [regexp -all {v\[(\d+)\]} $expect_out(buffer)] } { exit 1 }
+
 send "hercules.out('battled').map\r"
 expect gremlin>
-if { -1 == [string first "==>\{name=nemean, type=monster\}"   $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>\{name=hydra, type=monster\}"    $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>\{name=cerberus, type=monster\}" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=nemean\}"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=hydra\}"    $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=cerberus\}" $expect_out(buffer)] } { exit 1 }
+send "hercules.out('battled').transform { it.getLabel() }\r"
+expect gremlin>
+if { 3  != [regexp -all {monster} $expect_out(buffer)] } { exit 1 }
+
 send "hercules.outE('battled').has('time',T.gt,1).inV.name\r"
 expect gremlin>
 if { -1 == [string first "==>hydra"   $expect_out(buffer)] } { exit 1 }
@@ -74,7 +89,7 @@ if { -1 == [string first "==>cerberus" $expect_out(buffer)] } { exit 1 }
 send "hercules.outE('battled').has('time',T.gt,1).inV.name.toString()\r"
 expect gremlin>
 send "pluto = g.V('name','pluto').next()\r"
-expect "==>v\\\[32\\\]"
+expect -re {==>v\[(\d+)\]}
 expect gremlin>
 send "pluto.out('lives').in('lives').name\r"
 expect gremlin>
@@ -92,8 +107,7 @@ if { -1 == [string first "==>sky" $expect_out(buffer)] } { exit 1 }
 if { -1 == [string first "==>sea" $expect_out(buffer)] } { exit 1 }
 send "pluto.out('brother').as('god').out('lives').as('place').select\r"
 expect gremlin>
-if { -1 == [string first "==>\[god:v\[16\], place:v\[8\]\]"  $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "==>\[god:v\[20\], place:v\[12\]\]" $expect_out(buffer)] } { exit 1 }
+if { 2  != [regexp -all {==>\[god:v\[\d+\], place:v\[\d+\]\]} $expect_out(buffer)] } { exit 1 }
 send "pluto.out('brother').as('god').out('lives').as('place').select\{it.name\}\r"
 expect gremlin>
 if { -1 == [string first "==>\[god:jupiter, place:sky\]" $expect_out(buffer)] } { exit 1 }
@@ -103,8 +117,7 @@ expect "==>no fear of death"
 expect gremlin>
 send "g.query().has('reason',CONTAINS,'loves').edges()\r"
 expect gremlin>
-if { -1 == [string first "16-lives-\>8"  $expect_out(buffer)] } { exit 1 }
-if { -1 == [string first "20-lives-\>12" $expect_out(buffer)] } { exit 1 }
+if { 2  != [regexp -all {\d+-lives->\d+} $expect_out(buffer)] } { exit 1 }
 send "g.query().has('reason',CONTAINS,'loves').edges().collect\{ \[it.outV.name.next(),it.reason,it.inV.name.next()\] \}\r"
 expect gremlin>
 if { -1 == [string first "==>\[jupiter, loves fresh breezes, sky\]" $expect_out(buffer)] } { exit 1 }

@@ -1,0 +1,23 @@
+<assembly>
+    <id>javadoc</id>
+    <baseDirectory>/</baseDirectory>
+
+    <formats>
+        <format>jar</format>
+    </formats>
+
+    <dependencySets>
+      <dependencySet>
+	<useProjectArtifact>false</useProjectArtifact>
+	<unpack>true</unpack>
+	<unpackOptions>
+	  <excludes>
+	    <exclude>META-INF/**</exclude>
+	  </excludes>
+	</unpackOptions>
+	<includes>
+	  <include>${project.groupId}:${project.artifactId}-*:jar:javadoc:${project.version}</include>
+	</includes>
+      </dependencySet>
+    </dependencySets>
+</assembly>
