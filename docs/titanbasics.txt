@@ -300,65 +300,74 @@ Gremlin Query Language
 
 image:https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png[link="http://gremlin.tinkerpop.com"]
 
-Titan supports the standard http://gremlin.tinkerpop.com[Gremlin] graph query language for complex graph traversal and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name." 
+http://gremlin.tinkerpop.com[Gremlin] is Titan's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name." 
 
-This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the http://gremlin.tinkerpop.com[online documentation]. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations[JVM language implementations] of Gremlin.
+Gremlin is developed independently from Titan and supported by most graph databases. By building applications on top of Titan through the Gremlin query language users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
+
+This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
+
+* http://gremlin.tinkerpop.com[Complete Gremlin Manual]
+* http://gremlindocs.com[Gremlin Cheat-Sheet]
+* http://sql2gremlin.com[Gremlin for SQL developers]
+
 
 [NOTE]
-See the http://gremlin.tinkerpop.com[Gremlin Manual] to learn more about the language.
+See the http://gremlin.tinkerpop.com[Gremlin Manual] for a complete documentation of the Gremlin query language.
 
 Introductory Traversals
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset.
+When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset discussed
+in the introduction (ref).
 
 [source,gremlin]
-gremlin> g.V('name','hercules').out('father').out('father').name
+gremlin> g.V.has('name','hercules').out('father').out('father').name
 ==>saturn
 
 The query above can be read:
 
 . `g`: for the current graph.
-. `V('name','hercules')`: get all vertices with name property "hercules" (there is only one).
+. `V`: for all vertices in this graph
+. `has('name','hercules')`: filters the vertices down to those with name property "hercules" (there is only one).
 . `out('father')`: traverse outgoing father edge's from Hercules.
 . `out('father')`: traverse outgoing father edge's from Hercules' father's vertex (i.e. Jupiter).
 . `name`: get the name property of the "hercules" vertex's grandfather.
 
-Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
+Taken together, these steps form a path-like traversal query. Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
 
 [source,gremlin]
 gremlin> g                                                            
 ==>titangraph[cassandrathrift:127.0.0.1]
-gremlin> g.V('name','hercules')
+gremlin> g.V.has('name','hercules')
 ==>v[24]
-gremlin> g.V('name','hercules').out('father')
+gremlin> g.V.has('name','hercules').out('father')
 ==>v[16]
-gremlin> g.V('name','hercules').out('father').out('father')
+gremlin> g.V.has('name','hercules').out('father').out('father')
 ==>v[20]
-gremlin> g.V('name','hercules').out('father').out('father').name
+gremlin> g.V.has('name','hercules').out('father').out('father').name
 ==>saturn
 
 For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.
 
 [source,gremlin]
-gremlin> g.V('name','hercules').name                            
+gremlin> g.V.has('name','hercules').name                            
 ==>hercules
-gremlin> g.V('name','hercules').out('father').name              
+gremlin> g.V.has('name','hercules').out('father').name              
 ==>jupiter
-gremlin> g.V('name','hercules').out('father').out('father').name
+gremlin> g.V.has('name','hercules').out('father').out('father').name
 ==>saturn
 
-Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure.
+Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure. 
 
 [source,gremlin]
-gremlin> g.V('name','hercules').out('father').loop(1){true}{true}.name
+gremlin> g.V.has('name','hercules').out('father').loop(1){true}{true}.name
 ==>jupiter
 ==>saturn
 
 Some more traversal examples are provided below.
 
 [source,gremlin]
-gremlin> hercules = g.V('name','hercules').next() 
+gremlin> hercules = g.V.has('name','hercules').next() 
 ==>v[24]
 gremlin> hercules.out('father','mother').type
 ==>god
@@ -372,18 +381,23 @@ gremlin> hercules.out('battled').map
 ==>{name=hydra, type=monster}
 ==>{name=cerberus, type=monster}
 
-Traversing with Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies"). 
 
-Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies"). Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin.
+Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
 
 [source,gremlin]
-gremlin> theseus = g.addVertex([name:'theseus',type:'human'])
+gremlin> theseus = g.addVertex('human')
 ==>v[302]
-gremlin> cerberus = g.V('name','cerberus').next()
+gremlin> theseus.setProperty('name','theseus')
+==>null
+gremlin> cerberus = g.V.has('name','cerberus').next()
 ==>v[48]
-gremlin> g.addEdge(theseus,cerberus,'battled')
-==>e[151200009:302:36028797018964038][302-battled->48]
+gremlin> battle = theseus.addEdge('battled',cerberus)
+==>e[cU-48-14p-8g][302-battled->48]
+gremlin> battle.setProperty('time',22)
+==>null
+
+When adding a vertex, an optional vertex label can be provided. An edge label must be specified when adding edges. Properties as key-value pairs can be set on both vertices and edges. When a property key is defined with SET or LIST cardinality, `addProperty` must be used when adding a respective property to a vertex.
 
 [source,gremlin]
 gremlin> hercules.out('battled').in('battled').except([hercules]).name
@@ -398,15 +412,21 @@ The example above has 4 chained functions: `out`, `in`, `except`, and `property`
 
 When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
 
+[NOTE]
+The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation. Additional https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations[JVM language implementations] of Gremlin are available.
 
 
-[[rexster]]
-Rexster Graph Server
---------------------
+[[server]]
+Titan Server
+------------
 
 image:https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png[link="http://rexster.tinkerpop.com"]
 
-http://rexster.tinkerpop.com[Rexster] exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.  Rexster and Titan can be separately downloaded and configured to work together, or they can be downloaded together through the `titan-server` distribution on the _TODO xref to downloads_ page.
+Titan uses the http://rexster.tinkerpop.com[Rexster] engine as the server component to process and answer client queries. 
+
+Rexster exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.  Rexster and Titan can be separately downloaded and configured to work together, or they can be downloaded together through the `titan-server` distribution on the _TODO xref to downloads_ page.
+
+Rexster, like Gremlin, is part of the http://www.tinkerpop.com[TinkerPop] open source graph stack which consists of a number of products that simplify graph application development. Titan supports the entire TinkerPop stack.
 
 The Benefits of Rexster
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -629,16 +649,150 @@ Rexster has a rich https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[API]
 Indexing for better Performance
 -------------------------------
 
-_to be written_
-
-[[vertex-indexes]]
-Vertex-centric indexes
-~~~~~~~~~~~~~~~~~~~~~~
-
+Titan supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
 
 [[graph-indexes]]
-Graph indexes
-~~~~~~~~~~~~~
+Graph Index
+~~~~~~~~~~~
+
+Graph indexes are global index structures over the entire graph which allow efficient retrieval of vertices or edges by their properties for sufficiently selective conditions. For instance, consider the following queries
+
+[source,gremlin]
+g.V.has('name','hercules')
+g.E.has('reason',CONTAINS,'loves')
+
+The first query asks for all vertices with the name `hercules`. The second asks for all edges where the property reason contains the word `loves`. Without a graph index answering those queries would require a full scan over all vertices or edges in the graph to find those that match the given condition which is very inefficient and infeasible for huge graphs.
+
+Titan distinguishes between two types of graph indexes: *composite* and *mixed* indexes. Composite indexes are very fast and efficient but limited to equality lookups for a particular, previously-defined combination of property keys. Mixed indexes can be used for lookups on any combination of indexed keys and support multiple condition predicates in addition to equality depending on the backing index store.
+
+Both types of indexes are created through the Titan management system and the index builder returned by `TitanManagement.buildIndex(String,Class)` where the first argument defines the name of the index and the second argument specifies the type of element to be indexed (e.g. `Vertex.class`). The name of a graph index must be unique.
+Graph indexes build against newly defined property keys, i.e. property keys that are defined in the same management transaction as the index, are immediately available. Graph indexes build against property keys that are already in use require the execution of a *reindex procedure* _(REF)_ to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the index will not be available. It is encouraged to define graph indexes in the same transaction as the initial schema.
+
+[NOTE]
+In the absence of an index, Titan will default to a full graph scan in order to retrieve the desired list of vertices. While this produces the correct result set, the graph scan can be very inefficient and lead to poor overall system performance in a production environment. Enable the `force-index` configuration option in production deployments of Titan to prohibit graph scans.
+
+Composite Index
+^^^^^^^^^^^^^^^
+
+Composite indexes retrieve vertices or edges by one or a (fixed) composition of multiple keys. 
+Consider the following composite index definitions.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('name').dataType(String.class).make()
+age = mgmt.makePropertyKey('age').dataType(Integer.class).make()
+mgmt.buildIndex('byName',Vertex.class).addKey(name).buildCompositeIndex()
+mgmt.buildIndex('byNameAndAge',Vertex.class).addKey(name).addKey(age).buildCompositeIndex()
+mgmt.commit()
+
+First, two property keys `name` and `age` are defined. Next, a simple composite index on just the name property key is built. Titan will use this index to answer the following query.
+
+[source,gremlin]
+g.V.has('name','hercules')
+
+The second composite graph index includes both keys. Titan will use this index to answer the following query.
+
+[source,gremlin]
+g.V.has('age',30).has('name','hercules')
+
+Note, that all keys of a composite graph index must be found in the query's equality conditions for this index to be used. For example, the following query cannot be answered with either of the indexes because it only contains a constraint on `age` but not `name`.
+
+[source,gremlin]
+g.V.has('age',30)
+
+Also note, that composite graph indexes can only be used for equality constraints like those in the queries above. The following query would be answered with just the simple composite index defined on the `name` key because the age constraint is not an equality constraint.
+
+[source,gremlin]
+g.V.has('name','hercules').interval('age',20,50)
+
+Composite indexes do not require configuration of an external indexing backend and are supported through the primary storage backend. Hence, composite index modifications are persisted through the same transaction as graph modifications which means that those changes are atomic and/or consistent if the underlying storage backend supports atomicity and/or consistency.
+
+Index Uniqueness
+++++++++++++++++
+
+Composite indexes can also be used to enforce property uniqueness in the graph. If a composite graph index is defined as `unique()` there can be at most one vertex or edge for any given concatenation of property values associated with the keys of that index. 
+For instance, to enforce that names are unique across the entire graph the following composite graph index would be defined.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('name').dataType(String.class).make()
+mgmt.buildIndex('byName',Vertex.class).addKey(name).unique().buildCompositeIndex()
+mgmt.commit()
+
+[NOTE]
+To enforce uniqueness against an eventually consistent storage backend, the consistency _(REF)_ of the index must be explicitly set to enabling locking.
+
+Mixed Index
+^^^^^^^^^^^
+
+Mixed indexes retrieve vertices or edges by any combination of previously added property keys.
+Mixed indexes provide more flexibility than composite indexes and support additional condition predicates beyond equality. On the other hand, mixed indexes are slower for most equality queries than composite indexes.
+
+Unlike composite indexes, mixed indexes require the configuration of an indexing backend _(REF)_ and use that indexing backend to execute lookup operations. Titan can support multiple indexing backends in a single installation. Each indexing backend must be uniquely identified by name in the Titan configuration which is called the *indexing backend name*.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('name').dataType(String.class).make()
+age = mgmt.makePropertyKey('age').dataType(Integer.class).make()
+mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name).addKey(age).buildMixedIndex("search")
+mgmt.commit()
+
+The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that Titan knows which configured indexing backend it should use for this particular index.
+While this index definition looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
+
+[source,gremlin]
+g.V.has('name',CONTAINS,'hercules').interval('age',20,50)
+g.V.has('name',CONTAINS,'hercules')
+g.V.has('age',LESS_THAN,50)
+
+Mixed indexes support full-text search, range search, geo search and others. Refer to the search predicate overview _(REF)_ for a list of predicates supported by a particular indexing backend.
+
+[NOTE]
+Unlike composite indexes, mixed indexes do not support uniqueness.
+
+Adding Property Keys
+++++++++++++++++++++
+
+Property keys can be added to an existing mixed index which allows subsequent queries to include this key in the query condition.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+location = mgmt.makePropertyKey('location').dataType(Geoshape.class).make()
+nameAndAge = mgmt.getGraphIndex('nameAndAge')
+mgmt.addIndexKey(nameAndAge,location)
+mgmt.commit()
+
+To add a newly defined key, we first retrieve the existing index from the management transaction by its name and then invoke the `addIndexKey` method to add the key to this index.
+
+If the added key is defined in the same management transaction, it will be immediately available for querying. If the property key has already been in use, added the key requires the execution of a *reindex procedure* _(REF)_ to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the key will not be available in the mixed index.
+
+Mapping Parameters
+++++++++++++++++++
+
+When adding a property key to a mixed index - either through the index builder or the `addIndexKey` method - a list of parameters can be optionally specified to adjust how the property value is mapped into the indexing backend. Refer to the mapping parameters overview _(REF)_ for a complete list of parameter types supported by each indexing backend.
+
+Label Constraint
+^^^^^^^^^^^^^^^^
+
+In many cases it is desirable to only index vertices or edges with a particular label. For instance, one may want to index only gods by their name and not every single vertex that has a name property.
+When defining an index it is possible to restrict the index to a particular vertex or edge label using the `indexOnly` method of the index builder. The following creates a composite index for the property key `name` that indexes only vertices labeled `god`.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('name').dataType(String.class).make()
+god = mgmt.getVertexLabel('god')
+mgmt.buildIndex('byName',Vertex.class).addKey(name).indexOnly(god).buildCompositeIndex()
+mgmt.commit()
+
+Label restrictions similarly apply to mixed indexes. When a composite index with label restriction is defined as unique, the uniqueness constraint only applies to properties on vertices or edges for the specified label.
+
+
+[[vertex-indexes]]
+Vertex-centric Index
+~~~~~~~~~~~~~~~~~~~~
+
+
+
 
 
 [[tx]]

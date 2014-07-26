@@ -74,6 +74,8 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
             return addVertex(((Number) id).longValue(),null);
         } else if (id instanceof VertexLabel) {
             return addVertex((VertexLabel)id);
+        } else if (id instanceof String) {
+            return addVertex((String)id);
         } else {
 //            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
             return addVertex(null,null);
