@@ -11,7 +11,7 @@ import com.google.common.base.Preconditions;
  */
 public class LongEncoding {
 
-    private static final String BASE_SYMBOLS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String BASE_SYMBOLS = "0123456789abcdefghijklmnopqrstuvwxyz";
 
     public static long decode(String s) {
         return decode(s,BASE_SYMBOLS);
@@ -27,7 +27,7 @@ public class LongEncoding {
         for (char ch : s.toCharArray()) {
             num *= B;
             int pos = symbols.indexOf(ch);
-            if (pos<0) throw new NumberFormatException("Sybmol set does not match string");
+            if (pos<0) throw new NumberFormatException("Symbol set does not match string");
             num += pos;
         }
         return num;
