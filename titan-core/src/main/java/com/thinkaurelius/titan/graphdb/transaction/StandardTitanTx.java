@@ -1088,10 +1088,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     return !query.matches(result);
                 } else return false;
             } else if (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY) {
-                //Loaded edges are immutable and new edges are previously filtered, however, we need to filter
-                //out new edges so that their old state doesn't reappear
                 Preconditions.checkArgument(result.isLoaded() || result.isNew());
-                return result.isNew();
+                //Loaded relations are immutable so we don't need to check those
+                //New relations could be modified in this transaction to now longer match the query, hence we need to
+                //check for this case and consider the relations deleted
+                return result.isNew() && !query.matches(result);
             } else throw new IllegalArgumentException("Unexpected type: " + query.getResultType());
         }
 
