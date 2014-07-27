@@ -4052,9 +4052,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testWithoutIndex() {
-        PropertyKey kid = graph.makePropertyKey("kid").dataType(Long.class).make();
-        graph.makePropertyKey("name").dataType(String.class).make();
-        graph.makeEdgeLabel("knows").signature(kid).make();
+        PropertyKey kid = mgmt.makePropertyKey("kid").dataType(Long.class).make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.makeEdgeLabel("knows").signature(kid).make();
+        finishSchema();
+
         Random random = new Random();
         int numV = 1000;
         TitanVertex previous = null;

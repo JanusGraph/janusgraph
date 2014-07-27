@@ -83,30 +83,13 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
     * ---------------------------------------------------------------
     */
 
-
     /**
-     * Returns a {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} instance to define a new {@link PropertyKey} with the given name.
-     * By defining types explicitly (rather than implicitly through usage) one can control various
-     * aspects of the key and associated consistency constraints.
-     * <p/>
+     * Checks whether a type with the specified name exists.
      *
-     * @return a {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} instance
-     * @see com.thinkaurelius.titan.core.schema.PropertyKeyMaker
-     * @see PropertyKey
+     * @param name name of the type
+     * @return true, if a type with the given name exists, else false
      */
-    public PropertyKeyMaker makePropertyKey(String name);
-
-    /**
-     * Returns a {@link com.thinkaurelius.titan.core.schema.EdgeLabelMaker} instance to define a new {@link EdgeLabel} with the given name.
-     * By defining types explicitly (rather than implicitly through usage) one can control various
-     * aspects of the label and associated consistency constraints.
-     * <p/>
-     *
-     * @return a {@link com.thinkaurelius.titan.core.schema.EdgeLabelMaker} instance
-     * @see com.thinkaurelius.titan.core.schema.EdgeLabelMaker
-     * @see EdgeLabel
-     */
-    public EdgeLabelMaker makeEdgeLabel(String name);
+    public boolean containsRelationType(String name);
 
     /**
      * Returns the {@link RelationType} uniquely identified by the given name, or NULL if such does not exist.
@@ -115,7 +98,6 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      * @return
      */
     public RelationType getRelationType(String name);
-
 
     /**
      * Whether a vertex label with the given name exists in the graph.
@@ -135,15 +117,6 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      * @return
      */
     public VertexLabel getVertexLabel(String name);
-
-    /**
-     * Returns a {@link VertexLabelMaker} to define a new vertex label with the given name. Note, that the name must
-     * be unique.
-     *
-     * @param name
-     * @return
-     */
-    public VertexLabelMaker makeVertexLabel(String name);
 
 
    /* ---------------------------------------------------------------

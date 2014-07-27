@@ -456,7 +456,8 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
-        graph.makePropertyKey(prop).dataType(Integer.class).make();
+        makeKey(prop,Integer.class);
+        finishSchema();
 
         final int numV = 100;
         final long[] vids = new long[numV];

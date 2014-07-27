@@ -171,13 +171,13 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public PropertyKeyMaker makePropertyKey(String name) {
-        return getAutoStartTx().makePropertyKey(name);
+    public boolean containsRelationType(String name) {
+        return getAutoStartTx().containsRelationType(name);
     }
 
     @Override
-    public EdgeLabelMaker makeEdgeLabel(String name) {
-        return getAutoStartTx().makeEdgeLabel(name);
+    public RelationType getRelationType(String name) {
+        return getAutoStartTx().getRelationType(name);
     }
 
     @Override
@@ -188,11 +188,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public VertexLabel getVertexLabel(String name) {
         return getAutoStartTx().getVertexLabel(name);
-    }
-
-    @Override
-    public VertexLabelMaker makeVertexLabel(String name) {
-        return getAutoStartTx().makeVertexLabel(name);
     }
 
     @Override
@@ -218,11 +213,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
         return getAutoStartTx().multiQuery(vertices);
-    }
-
-    @Override
-    public RelationType getRelationType(String name) {
-        return getAutoStartTx().getRelationType(name);
     }
 
     @Override

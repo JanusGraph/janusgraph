@@ -228,7 +228,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public RelationType getRelationType(String name);
 
     /**
-     * Returns the property key with the given name.
+     * Returns the property key with the given name. If automatic type making is enabled, it will make the property key
+     * using the configured default type maker if a key with the given name does not exist.
      *
      * @param name name of the property key to return
      * @return the property key with the given name
@@ -239,7 +240,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public PropertyKey getPropertyKey(String name);
 
     /**
-     * Returns the edge label with the given name.
+     * Returns the edge label with the given name. If automatic type making is enabled, it will make the edge label
+     * using the configured default type maker if a label with the given name does not exist.
      *
      * @param name name of the edge label to return
      * @return the edge label with the given name
