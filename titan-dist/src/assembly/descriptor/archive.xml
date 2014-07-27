@@ -52,13 +52,9 @@
             <unpack>false</unpack>
             <scope>runtime</scope>
             <useProjectArtifact>false</useProjectArtifact>
-            <excludes>
-                <exclude>*:*:*:shared-resources:*</exclude>
-                <exclude>*:*:*:example-data:*</exclude>
-                <exclude>*:*:*:javadoc:*</exclude>
-                <exclude>*:*:*:tests:*</exclude>
-                <exclude>*:*:pom:*</exclude>
-            </excludes>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
         </dependencySet>
 
         <!-- HTML copy of core Javadoc -->
