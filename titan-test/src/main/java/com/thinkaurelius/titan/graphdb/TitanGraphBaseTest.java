@@ -190,7 +190,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public Log openUserLog(String identifier) {
-        return openLog(USER_LOG, Backend.USER_LOG_PREFIX +identifier);
+        return openLog(USER_LOG, GraphDatabaseConfiguration.USER_LOG_PREFIX +identifier);
     }
 
     public Log openTxLog() {
