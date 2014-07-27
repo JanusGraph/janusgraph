@@ -32,20 +32,45 @@ font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
 /* Change title size and font */
 
 #main h2 {
-    font-size: 24px/26px;
+    font-size: 28px/30px;
     font-weight: bold;
     font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
 }
 
 /*Make text black */
 body,.post .post-content,.post-content blockquote,.tab-holder .news-list li .post-holder .meta,#sidebar #jtwt,.meta,.review blockquote div,.search input,.project-content .project-info h4,.title-row,.simple-products-slider .price .amount,
-.quantity .qty,.quantity .minus,.quantity .plus,.blog-shortcode h3.timeline-title, #reviews #comments > h2{color:#000000 !important;}
+.quantity .qty,.quantity .minus,.quantity .plus,.blog-shortcode h3.timeline-title, #reviews #comments > h2{
+color:#000000 !important;
+}
 
 /* Change text size and line height */
 body, #sidebar .slide-excerpt h2, .footer-area .slide-excerpt h2, #slidingbar-area .slide-excerpt h2 {
 font-size: 15px;
 line-height: 22px;
 }
+
+
+/* Make note font color grey */
+.note p, .note th {
+    color: #747474 !important;
+}
+
+/* Make toc have background color and adjust padding */
+div#main > div.chapter > div.toc {
+margin-left: 15px;
+padding: 10px;
+background-color: #EEE;
+}
+
+/* Change link color */
+a.link {
+    color:#e10707 !important;
+}
+a.link:hover {
+    color:#e10707 !important;
+    text-decoration: underline;
+}
+
 
 /* Delete the following from titanblob.css to make the font size go to default for the body text:
 

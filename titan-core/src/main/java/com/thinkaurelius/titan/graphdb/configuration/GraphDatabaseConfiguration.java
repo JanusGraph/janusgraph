@@ -609,16 +609,16 @@ public class GraphDatabaseConfiguration {
      * of de-congesting a single id pool in the database.
      */
     public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
-            "Whether the graph's element IDs should be randomly distributed across the space of available IDs " +
-            "(true) or allocated in increasing order (false). Unless explicitly set, this defaults false for  " +
-            "stores that hash keys and defaults true for stores that preserve key order (such as HBase and Cassandra " +
-            "with ByteOrderedPartitioner).",
+            "Whether the graph's element should be randomly distributed across the cluster " +
+            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
+            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
+            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
             ConfigOption.Type.FIXED, false);
-//    public static final String IDS_PARTITION_KEY = "partition";
-//    public static final boolean IDS_PARTITION_DEFAULT = false;
+
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
-            "The maximum number of ID partitions in the graph. Must be bigger than 1 and a power of 2.",
+            "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
+                    "in the Titan graph cluster. Must be bigger than 1 and a power of 2.",
             ConfigOption.Type.FIXED, 64, new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer integer) {
@@ -654,7 +654,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Boolean> IDS_FLUSH = new ConfigOption<Boolean>(IDS_NS,"flush",
             "When true, vertices and edges are assigned IDs immediately upon creation.  When false, " +
-            "IDs are assigned only when the transaction commits.",
+            "IDs are assigned only when the transaction commits. Must be disabled for graph partitioning to work.",
             ConfigOption.Type.MASKABLE, true);
 //    public static final String IDS_FLUSH_KEY = "flush";
 //    public static final boolean IDS_FLUSH_DEFAULT = true;
@@ -725,7 +725,7 @@ public class GraphDatabaseConfiguration {
      * is disabled.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
-            "Number of times the system attempts attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
+            "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 5);
 //    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
 //    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
@@ -859,7 +859,8 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace ATTRIBUTE_NS = new ConfigNamespace(ROOT_NS,"attributes","Configuration options for attribute handling");
 
     public static final ConfigOption<Boolean> ATTRIBUTE_ALLOW_ALL_SERIALIZABLE = new ConfigOption<Boolean>(ATTRIBUTE_NS,"allow-all",
-            "Enables Titan to store any kind of attribute value in the database",
+            "Enables Titan to persist any valid data type. Disabling this option restricts data types to native types and explicitly" +
+                    "registered ones.",
             ConfigOption.Type.GLOBAL_OFFLINE, true);
 //    public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allow-all";
 //    public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
