@@ -1252,7 +1252,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testSchemaNameChange() {
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
-        mgmt.createEdgeIndex(knows,"byTime",Direction.BOTH,time);
+        mgmt.buildEdgeIndex(knows, "byTime", Direction.BOTH, time);
         mgmt.buildIndex("timeIndex",Vertex.class).addKey(time).buildCompositeIndex();
         mgmt.makeVertexLabel("people").make();
         finishSchema();
@@ -1367,8 +1367,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         time = mgmt.getPropertyKey("time");
         name = mgmt.getPropertyKey("name");
         friend = mgmt.getEdgeLabel("friend");
-        mgmt.createPropertyIndex(sensor,"byTime",Order.DESC,time);
-        mgmt.createEdgeIndex(friend,"byTime",Direction.OUT,Order.DESC,time);
+        mgmt.buildPropertyIndex(sensor, "byTime", Order.DESC, time);
+        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, Order.DESC, time);
         mgmt.buildIndex("bySensorReading",Vertex.class).addKey(name).buildCompositeIndex();
         finishSchema();
         newTx();
@@ -2586,15 +2586,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
         EdgeLabel link = mgmt.makeEdgeLabel("link").unidirected().make();
 
-        RelationTypeIndex name1 = mgmt.createPropertyIndex(name,"weightDesc",weight);
+        RelationTypeIndex name1 = mgmt.buildPropertyIndex(name, "weightDesc", weight);
 
-        RelationTypeIndex connect1 = mgmt.createEdgeIndex(connect,"weightAsc",Direction.BOTH,Order.ASC,weight);
-        RelationTypeIndex connect2 = mgmt.createEdgeIndex(connect,"weightDesc",Direction.OUT,Order.DESC,weight);
-        RelationTypeIndex connect3 = mgmt.createEdgeIndex(connect,"time+weight",Direction.OUT,Order.DESC,time,weight);
+        RelationTypeIndex connect1 = mgmt.buildEdgeIndex(connect, "weightAsc", Direction.BOTH, Order.ASC, weight);
+        RelationTypeIndex connect2 = mgmt.buildEdgeIndex(connect, "weightDesc", Direction.OUT, Order.DESC, weight);
+        RelationTypeIndex connect3 = mgmt.buildEdgeIndex(connect, "time+weight", Direction.OUT, Order.DESC, time, weight);
 
-        RelationTypeIndex child1 = mgmt.createEdgeIndex(child,"time",Direction.OUT,time);
+        RelationTypeIndex child1 = mgmt.buildEdgeIndex(child, "time", Direction.OUT, time);
 
-        RelationTypeIndex link1 = mgmt.createEdgeIndex(link,"time",Direction.OUT,time);
+        RelationTypeIndex link1 = mgmt.buildEdgeIndex(link, "time", Direction.OUT, time);
 
         final String name1n = name1.getName(), connect1n = connect1.getName(), connect2n = connect2.getName(),
                 connect3n = connect3.getName(), child1n = child1.getName(), link1n = link1.getName();
@@ -2612,7 +2612,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(mgmt.getRelationIndexes(weight)));
         try {
            //Name already exists
-           mgmt.createEdgeIndex(connect,"weightAsc",Direction.OUT,time);
+           mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
            fail();
         } catch (IllegalArgumentException e) {}
 //        try {
@@ -2622,12 +2622,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //        } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to multiplicity constraint
-           mgmt.createEdgeIndex(child,"blablub",Direction.IN,time);
+           mgmt.buildEdgeIndex(child, "blablub", Direction.IN, time);
            fail();
         } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to unidirectionality
-           mgmt.createEdgeIndex(link,"blablub",Direction.BOTH,time);
+           mgmt.buildEdgeIndex(link, "blablub", Direction.BOTH, time);
            fail();
         } catch (IllegalArgumentException e) {}
 
@@ -2656,7 +2656,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(mgmt.getRelationIndexes(weight)));
         try {
            //Name already exists
-           mgmt.createEdgeIndex(connect,"weightAsc",Direction.OUT,time);
+           mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
            fail();
         } catch (IllegalArgumentException e) {}
 //        try {
@@ -2666,12 +2666,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //        } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to multiplicity constraint
-           mgmt.createEdgeIndex(child,"blablub",Direction.IN,time);
+           mgmt.buildEdgeIndex(child, "blablub", Direction.IN, time);
            fail();
         } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to unidirectionality
-           mgmt.createEdgeIndex(link,"blablub",Direction.BOTH,time);
+           mgmt.buildEdgeIndex(link, "blablub", Direction.BOTH, time);
            fail();
         } catch (IllegalArgumentException e) {}
 
@@ -4241,7 +4241,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int ttl = 1; // artificially low TTL for test
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
-        mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
+        mgmt.buildEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
         mgmt.setTTL(wavedAt, ttl, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
         assertEquals(ttl, mgmt.getTTL(wavedAt).getLength(TimeUnit.SECONDS));

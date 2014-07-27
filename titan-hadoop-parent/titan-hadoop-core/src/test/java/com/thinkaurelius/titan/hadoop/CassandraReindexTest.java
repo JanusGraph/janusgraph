@@ -84,8 +84,8 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         time = mgmt.getPropertyKey("time");
         name = mgmt.getPropertyKey("name");
         friend = mgmt.getEdgeLabel("friend");
-        mgmt.createPropertyIndex(sensor,"byTime",Order.DESC,time);
-        mgmt.createEdgeIndex(friend,"byTime",Direction.OUT,Order.DESC,time);
+        mgmt.buildPropertyIndex(sensor, "byTime", Order.DESC, time);
+        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, Order.DESC, time);
         mgmt.buildIndex("bySensorReading",Vertex.class).addKey(name).buildCompositeIndex();
         finishSchema();
         newTx();

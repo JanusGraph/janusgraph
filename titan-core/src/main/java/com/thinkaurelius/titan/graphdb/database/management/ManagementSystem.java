@@ -43,7 +43,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfigurati
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
@@ -268,26 +267,26 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys) {
-        return createEdgeIndex(label, name, direction, Order.ASC, sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys) {
+        return buildEdgeIndex(label, name, direction, Order.ASC, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
-        return createRelationTypeIndex(label, name, direction, sortOrder, sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
+        return buildRelationTypeIndex(label, name, direction, sortOrder, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, RelationType... sortKeys) {
-        return createPropertyIndex(key, name, Order.ASC, sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, RelationType... sortKeys) {
+        return buildPropertyIndex(key, name, Order.ASC, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys) {
-        return createRelationTypeIndex(key, name, Direction.OUT, sortOrder, sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys) {
+        return buildRelationTypeIndex(key, name, Direction.OUT, sortOrder, sortKeys);
     }
 
-    private RelationTypeIndex createRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
+    private RelationTypeIndex buildRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
         Preconditions.checkArgument(type!=null && direction!=null && sortOrder!=null && sortKeys!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Name cannot be blank: %s",name);
         Token.verifyName(name);

@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.diskstorage.BaseTransaction;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 
@@ -35,7 +34,7 @@ public interface TitanManagement extends TitanConfiguration {
      */
 
     /**
-     * Identical to {@link #createEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
      * with default sort order {@link Order#ASC}.
      *
      * @param label
@@ -44,7 +43,7 @@ public interface TitanManagement extends TitanConfiguration {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys);
 
     /**
      * Creates a {@link RelationTypeIndex} for the provided edge label. That means, that all edges of that label will be
@@ -60,10 +59,10 @@ public interface TitanManagement extends TitanConfiguration {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys);
 
     /**
-     * Identical to {@link #createPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * Identical to {@link #buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
      * with default sort order {@link Order#ASC}.
      *
      * @param key
@@ -71,7 +70,7 @@ public interface TitanManagement extends TitanConfiguration {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, RelationType... sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, RelationType... sortKeys);
 
     /**
      * Creates a {@link RelationTypeIndex} for the provided property key. That means, that all properties of that key will be
@@ -85,7 +84,7 @@ public interface TitanManagement extends TitanConfiguration {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys);
 
     /**
      * Whether a {@link RelationTypeIndex} with the given name has been defined for the provided {@link RelationType}
