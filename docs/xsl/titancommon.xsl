@@ -57,6 +57,8 @@
     <link rel='stylesheet' id='media-css-css'  href='http://intelliscence.com/web/work/demos/titan/wp-content/themes/Avada/css/media.css' type='text/css' media='all' />
     <link rel='stylesheet' id='animate-css-css'  href='http://intelliscence.com/web/work/demos/titan/wp-content/themes/Avada/css/animate-custom.css' type='text/css' media='all' />
     <link rel='stylesheet' id='inline-blob-from-avada-prototype' href='css/titanblob.css' type='text/css' media='all' />
+    <link rel='stylesheet' id='inline-blob-from-avada-prototype-titan-docs-specific' href='css/titandocs.css' type='text/css' media='all' />
+
 
     <script type="text/javascript">
       WebFontConfig = {

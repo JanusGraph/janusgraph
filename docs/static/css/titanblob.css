@@ -586,10 +586,7 @@ font-family:"Antic Slab", Arial, Helvetica, sans-serif !important;
 font-family:"Antic Slab", Arial, Helvetica, sans-serif !important;
 }
 
-body,#sidebar .slide-excerpt h2, .footer-area .slide-excerpt h2,#slidingbar-area .slide-excerpt h2{
-font-size:13px;
-line-height:20px;
-}
+
 .project-content .project-info h4,.gform_wrapper label,.gform_wrapper .gfield_description{
 font-size:13px !important;
 line-height:20px !important;
