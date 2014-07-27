@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 
+/**
+ * @deprecated
+ */
 public class HadoopReadConfiguration implements ReadConfiguration {
 
     private final Configuration config;

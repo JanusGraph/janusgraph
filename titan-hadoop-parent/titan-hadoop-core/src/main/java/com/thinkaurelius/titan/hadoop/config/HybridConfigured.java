@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.Modifiable
  * can go through either object, but writes can only be done through the
  * {@code Configuration}.
  *
+ * @deprecated
  */
 public class HybridConfigured extends Configured {
 
