@@ -12,8 +12,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.HBaseStatus;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +43,7 @@ public class HBaseStorageSetup {
         HBASE_PARENT_DIR = parentDir;
     }
 
-    private static final String HBASE_PID_FILE = "/tmp/titan-hbase-test-daemon.pid";
+    private static final String HBASE_STAT_FILE = "/tmp/titan-hbase-test-daemon.stat";
 
     private volatile static HBaseStatus HBASE = null;
 
@@ -110,7 +108,7 @@ public class HBaseStorageSetup {
         String scriptPath = getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
         runCommand(scriptPath, "--config", getConfDirForHBaseVersion(HBASE_TARGET_VERSION), "start", "master");
 
-        HBASE = HBaseStatus.write(HBASE_PID_FILE, HBASE_TARGET_VERSION);
+        HBASE = HBaseStatus.write(HBASE_STAT_FILE, HBASE_TARGET_VERSION);
 
         registerKillerHook(HBASE);
 
@@ -118,11 +116,11 @@ public class HBaseStorageSetup {
     }
 
     /**
-     * Check whether {@link #HBASE_PID_FILE} describes an HBase daemon. If so,
+     * Check whether {@link #HBASE_STAT_FILE} describes an HBase daemon. If so,
      * kill it. Otherwise, do nothing.
      */
     public synchronized static void killIfRunning() {
-        HBaseStatus stat = HBaseStatus.read(HBASE_PID_FILE);
+        HBaseStatus stat = HBaseStatus.read(HBASE_STAT_FILE);
 
         if (null == stat) {
             log.info("HBase is not running");
