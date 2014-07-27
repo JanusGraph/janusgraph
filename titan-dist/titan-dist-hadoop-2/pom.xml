@@ -131,6 +131,28 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>wagon-maven-plugin</artifactId>
                     </plugin>
+
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-murmur-config</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-cassandra-bop-config</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
                 </plugins>
             </build>
         </profile>

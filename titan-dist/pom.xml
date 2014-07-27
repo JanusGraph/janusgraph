@@ -267,6 +267,26 @@
             </plugin>
 
             <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <executions>
                     <execution>
@@ -702,7 +722,7 @@
                             <artifactId>maven-compiler-plugin</artifactId>
                             <executions>
                                 <execution>
-                                    <id>compile-package-tests</id>
+                                    <id>compile-tests</id>
                                     <phase>test-compile</phase>
                                     <goals>
                                         <goal>testCompile</goal>
@@ -716,7 +736,7 @@
                             <executions>
                                 <execution>
                                     <id>filter-cassandra-murmur-config</id>
-                                    <phase>process-test-resources</phase>
+                                    <phase>none</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -735,7 +755,7 @@
                                 </execution>
                                 <execution>
                                     <id>filter-cassandra-bop-config</id>
-                                    <phase>process-test-resources</phase>
+                                    <phase>none</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -754,7 +774,7 @@
                                 </execution>
                                 <execution>
                                     <id>filter-expect-scripts</id>
-                                    <phase>process-test-resources</phase>
+                                    <phase>none</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
@@ -770,7 +790,7 @@
                                 </execution>
                                 <execution>
                                     <id>filter-test-resources</id>
-                                    <phase>process-test-resources</phase>
+                                    <phase>none</phase>
                                     <goals>
                                         <goal>copy-resources</goal>
                                     </goals>
