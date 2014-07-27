@@ -76,92 +76,25 @@ public class GraphDatabaseConfiguration {
 
     public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Titan Graph Database");
 
-    // ################ GENERAL #######################
+    // ########## Graph-level Config Options ##########
     // ################################################
 
-    /**
-     * Configures the {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
-     * is disabled.
-     */
-    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",
-            "Configures the DefaultTypeMaker to be used by this graph. If set to 'none', automatic creation of types is disabled.",
-            ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String s) {
-            return s!=null && preregisteredAutoType.containsKey(s);
-        }
-    });
-//    public static final String AUTO_TYPE_KEY = "autotype";
-//    public static final String AUTO_TYPE_DEFAULT = "blueprints";
+    public static final ConfigNamespace GRAPH_NS = new ConfigNamespace(ROOT_NS,"graph",
+            "Configuration options for transaction handling");
 
-    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
-        put("none", DisableDefaultSchemaMaker.INSTANCE);
-        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
-    }};
 
-    /**
-     * If this option is enabled, a transaction will retrieval all of a vertex's properties when asking for any property.
-     * This will significantly speed up subsequent property lookups on the same vertex, hence this option is enabled by default.
-     * Disable this option when the graph contains vertices with very many properties such that retrieving all of them substantially
-     * increases latencies compared to a single property retrieval.
-     */
-    public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(ROOT_NS,"fast-property",
-            "Whether to pre-fetch all properties on first vertex property access. This can eliminate backend calls on subsequent" +
-                    "property access for the same vertex at the expense of retrieving all properties at once.",
-            ConfigOption.Type.MASKABLE, Boolean.class);
-//    public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
-
-    /**
-     * When enabled, Titan will accept user provided vertex ids as long as they are valid Titan vertex ids - see
-     * {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)}. When enabled, Titan will now longer allocate and assign
-     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(Long)}.
-     * <p/>
-     * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
-     * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
-     */
-    public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(ROOT_NS,"set-vertex-id",
+    public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(GRAPH_NS,"set-vertex-id",
             "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled. " +
                 "Useful when operating Titan in concert with another storage system that assigns long ids but disables some" +
-                    "of Titan's advanced features. EXPERT FEATURE - USE WITH GREAT CARE.",
+                    "of Titan's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
 
-    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(ROOT_NS,"force-index",
-            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
-                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided.",
-            ConfigOption.Type.MASKABLE, false);
-
-    public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<Duration>(ROOT_NS,"max-commit-time",
-            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
-                    "Must be longer than the maximum allowed write time.",
-            ConfigOption.Type.GLOBAL, new StandardDuration(10, TimeUnit.SECONDS));
-//
-//    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
-//    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
-
-
-    /**
-     * When true, Titan will ignore unknown index key fields in queries.
-     */
-    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(ROOT_NS, "ignore-unknown-index-key",
-            "Whether to ignore undefined types encountered in user-provided index queries",
-            ConfigOption.Type.MASKABLE, false);
-//    public static final String IGNORE_UNKNOWN_INDEX_FIELD_KEY = "ignore-unknown-index-key";
-//    public static final boolean IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT = false;
-
-    public static final String UKNOWN_FIELD_NAME = "unknown_key";
-
-
-    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(ROOT_NS, "timestamps",
-            "The timestamp resolution to use when writing to storage and indices",
+    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(GRAPH_NS, "timestamps",
+            "The timestamp resolution to use when writing to storage and indices. Sets the time source for the entire graph cluster. " +
+                    "To avoid potential inaccuracies the configured time resolution should match those of the backend systems",
             ConfigOption.Type.FIXED, Timestamps.class, Timestamps.MICRO);
 
-
-    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(ROOT_NS,"log-tx",
-            "Whether transaction mutations should be logged to Titan's system log",
-            ConfigOption.Type.GLOBAL, false);
-
-    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
+    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(GRAPH_NS,"unique-instance-id",
             "Unique identifier for this Titan instance.  This must be unique among all instances " +
             "concurrently accessing the same stores or indexes.  It's automatically generated by " +
             "concatenating the hostname, process id, and a static (process-wide) counter. " +
@@ -169,18 +102,18 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.LOCAL, String.class);
 
 
-    public static final ConfigOption<Short> UNIQUE_INSTANCE_ID_SUFFIX = new ConfigOption<Short>(ROOT_NS,"unique-instance-id-suffix",
+    public static final ConfigOption<Short> UNIQUE_INSTANCE_ID_SUFFIX = new ConfigOption<Short>(GRAPH_NS,"unique-instance-id-suffix",
             "When this is set and " + UNIQUE_INSTANCE_ID.getName() + " is not, this Titan " +
             "instance's unique identifier is generated by concatenating the hostname to the " +
             "provided number.  This is a legacy option which is currently only useful if the JVM's " +
             "ManagementFactory.getRuntimeMXBean().getName() is not unique between processes.",
             ConfigOption.Type.LOCAL, Short.class);
 
-    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
-            "The version of Titan with which this database was created.  Don't manually set this property.",
+    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(GRAPH_NS,"titan-version",
+            "The version of Titan with which this database was created. Automatically set on first start. Don't manually set this property.",
             ConfigOption.Type.FIXED, String.class).hide();
 
-    // ################ INSTANCE REGISTRATION #######################
+    // ################ INSTANCE REGISTRATION (system) #######################
     // ##############################################################
 
     public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS,"system-registration",
@@ -189,23 +122,83 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
             "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class).hide();
 
+
+    // ################ Transaction #######################
+    // ################################################
+
+    public static final ConfigNamespace TRANSACTION_NS = new ConfigNamespace(ROOT_NS,"tx",
+            "Configuration options for transaction handling");
+
+    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(TRANSACTION_NS,"log-tx",
+            "Whether transaction mutations should be logged to Titan's write-ahead transaction log which can be used for recovery of partially failed transactions",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<Duration>(TRANSACTION_NS,"max-commit-time",
+            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
+                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
+                    "Must be longer than the maximum allowed write time.",
+            ConfigOption.Type.GLOBAL, new StandardDuration(10, TimeUnit.SECONDS));
+
+
+    // ################ Query Processing #######################
+    // ################################################
+
+    public static final ConfigNamespace QUERY_NS = new ConfigNamespace(ROOT_NS,"query",
+            "Configuration options for query processing");
+
+    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(QUERY_NS, "ignore-unknown-index-key",
+            "Whether to ignore undefined types encountered in user-provided index queries",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final String UKNOWN_FIELD_NAME = "unknown_key";
+
+
+    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(QUERY_NS,"force-index",
+            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
+                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided " +
+                    "on large graphs. Recommended for production use of Titan.",
+            ConfigOption.Type.MASKABLE, false);
+
+
+    public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(QUERY_NS,"fast-property",
+            "Whether to pre-fetch all properties on first vertex property access. This can eliminate backend calls on subsequent" +
+                    "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
+                    "expensive for vertices with many properties",
+            ConfigOption.Type.MASKABLE, Boolean.class);
+
+    // ################ SCHEMA #######################
+    // ################################################
+
+    public static final ConfigNamespace SCHEMA_NS = new ConfigNamespace(ROOT_NS,"schema",
+            "Schema related configuration options");
+
+    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(SCHEMA_NS,"default",
+            "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
+                    "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
+            ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
+        @Override
+        public boolean apply(@Nullable String s) {
+            return s!=null && preregisteredAutoType.containsKey(s);
+        }
+    });
+
+    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
+        put("none", DisableDefaultSchemaMaker.INSTANCE);
+        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
+    }};
+
+
     // ################ CACHE #######################
     // ################################################
 
-//    public static final String CACHE_NAMESPACE = "cache";
     public static final ConfigNamespace CACHE_NS = new ConfigNamespace(ROOT_NS,"cache","Configuration options that modify Titan's caching behavior");
 
-    /**
-     * Whether this Titan instance should use a database level cache in front of the
-     * storage backend in order to speed up frequent queries across transactions
-     */
-//    public static final String DB_CACHE_KEY = "db-cache";
-//    public static final boolean DB_CACHE_DEFAULT = false;
+
     public static final ConfigOption<Boolean> DB_CACHE = new ConfigOption<Boolean>(CACHE_NS,"db-cache",
             "Whether to enable Titan's database-level cache, which is shared across all transactions. " +
             "Enabling this option speeds up traversals by holding hot graph elements in memory, " +
             "but also increases the likelihood of reading stale data.  Disabling it forces each " +
-            "transaction to indepedendently fetch graph elements from storage before reading/writing them.",
+            "transaction to independently fetch graph elements from storage before reading/writing them.",
             ConfigOption.Type.MASKABLE, false);
 
     /**
@@ -862,8 +855,6 @@ public class GraphDatabaseConfiguration {
 
     // ############## Attributes ######################
     // ################################################
-
-    public static final String ATTRIBUTE_NAMESPACE = "attributes";
 
     public static final ConfigNamespace ATTRIBUTE_NS = new ConfigNamespace(ROOT_NS,"attributes","Configuration options for attribute handling");
 

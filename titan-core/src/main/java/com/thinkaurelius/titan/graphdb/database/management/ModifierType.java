@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.schema;
+package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 
