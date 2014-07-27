@@ -29,6 +29,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -110,7 +112,7 @@ public class OrderMapReduce {
                             context.write(this.writable, this.text);
                         }
                     }
-                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
                 }
             } else {
                 long edgesProcessed = 0;
@@ -134,7 +136,7 @@ public class OrderMapReduce {
                         edgesProcessed++;
                     }
                 }
-                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);

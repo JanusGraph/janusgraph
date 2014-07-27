@@ -15,13 +15,15 @@ import org.apache.hadoop.util.ReflectionUtils;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class HadoopFileOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
     public DataOutputStream getDataOuputStream(final TaskAttemptContext job) throws IOException, InterruptedException {
-        final Configuration conf = job.getConfiguration();
+        final Configuration conf = DEFAULT_COMPAT.getContextConfiguration(job);
         boolean isCompressed = getCompressOutput(job);
         CompressionCodec codec = null;
         String extension = "";

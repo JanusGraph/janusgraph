@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
 
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
@@ -12,6 +11,8 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
+
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -37,7 +38,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         this.reader.initialize(inputSplit, taskAttemptContext);
-        this.configuration = taskAttemptContext.getConfiguration();
+        this.configuration = DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext);
     }
 
     @Override
