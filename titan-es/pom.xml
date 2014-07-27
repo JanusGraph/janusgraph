@@ -133,7 +133,7 @@
                                     <directory>bin/</directory>
                                 </fileset>
                                 <fileset>
-                                    <directory>conf/</directory>
+                                    <directory>config/</directory>
                                 </fileset>
                             </filesets>
                         </configuration>
