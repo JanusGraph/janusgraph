@@ -42,6 +42,13 @@
             <classifier>tests</classifier>
             <!-- TODO this should be scoped test -->
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-es</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Need this for compile-time imports on
              org.apache.hadoop.hbase.mapreduce -->
