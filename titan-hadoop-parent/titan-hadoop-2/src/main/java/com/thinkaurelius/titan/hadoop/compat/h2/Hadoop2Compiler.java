@@ -1,16 +1,11 @@
-package com.thinkaurelius.titan.hadoop.compat;
+package com.thinkaurelius.titan.hadoop.compat.h2;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
-import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.FormatTools;
-import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
-import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -26,84 +21,81 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.chain.ChainMapper;
+import org.apache.hadoop.mapreduce.lib.chain.ChainReducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
+import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
+import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurers;
+import com.thinkaurelius.titan.hadoop.formats.FormatTools;
+import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
+import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler {
-// TODO tolerate null temporary SequenceFile path when only running a single job, like Hadoop2Compiler already does
-
+public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler {
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
-    private static final String MAPRED_JAR = "mapred.jar";
 
-    public static final Logger logger = Logger.getLogger(Hadoop1Compiler.class);
+    enum State {MAPPER, REDUCER, NONE}
+
+    private static final String ARROW = " > ";
+    private static final String MAPREDUCE_MAP_OUTPUT_COMPRESS = "mapreduce.map.output.compress";
+    private static final String MAPREDUCE_MAP_OUTPUT_COMPRESS_CODEC = "mapreduce.map.output.compress.codec";
+
+    public static final Logger logger = Logger.getLogger(Hadoop2Compiler.class);
 
     private HadoopGraph graph;
 
     protected final List<Job> jobs = new ArrayList<Job>();
 
-    private final List<Class<? extends Mapper>> mapSequenceClasses = new ArrayList<Class<? extends Mapper>>();
-    private Class<? extends WritableComparable> mapOutputKey = NullWritable.class;
-    private Class<? extends WritableComparable> mapOutputValue = NullWritable.class;
-    private Class<? extends WritableComparable> outputKey = NullWritable.class;
-    private Class<? extends WritableComparable> outputValue = NullWritable.class;
-
-    private Class<? extends Reducer> combinerClass = null;
-    private Class<? extends WritableComparator> comparatorClass = null;
-    private Class<? extends Reducer> reduceClass = null;
+    private State state = State.NONE;
 
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
-    private static final String JOB_JAR = "titan-hadoop-1-" + TitanConstants.VERSION + "-job.jar";
+    static final String JOB_JAR = "titan-hadoop-2-" + TitanConstants.VERSION + "-job.jar";
 
-    public Hadoop1Compiler(final HadoopGraph graph) {
+    private static final String MAPRED_JAR = "mapred.jar";
+
+    public Hadoop2Compiler(final HadoopGraph graph) {
         this.graph = graph;
-        this.setConf(new Configuration());
-        this.addConfiguration(this.graph.getConf());
+        this.setConf(new Configuration(this.graph.getConf()));
     }
 
-    private String toStringOfJob(final Class sequenceClass) {
-        final List<String> list = new ArrayList<String>();
-        for (final Class klass : this.mapSequenceClasses) {
-            list.add(klass.getCanonicalName());
-        }
-        if (null != reduceClass) {
-            list.add(this.reduceClass.getCanonicalName());
-        }
-        return sequenceClass.getSimpleName() + list.toString();
+    private String makeClassName(final Class klass) {
+        return klass.getCanonicalName().replace(klass.getPackage().getName() + ".", "");
     }
 
-    private String[] toStringMapSequenceClasses() {
-        final List<String> list = new ArrayList<String>();
-        for (final Class klass : this.mapSequenceClasses) {
-            list.add(klass.getName());
-        }
-        return list.toArray(new String[list.size()]);
+    @Override
+    public void addMapReduce(final Class<? extends Mapper> mapper,
+                             final Class<? extends Reducer> combiner,
+                             final Class<? extends Reducer> reducer,
+                             final Class<? extends WritableComparable> mapOutputKey,
+                             final Class<? extends WritableComparable> mapOutputValue,
+                             final Class<? extends WritableComparable> reduceOutputKey,
+                             final Class<? extends WritableComparable> reduceOutputValue,
+                             final Configuration configuration) {
+        this.addMapReduce(mapper, combiner, reducer, null, mapOutputKey, mapOutputValue, reduceOutputKey, reduceOutputValue, configuration);
     }
 
-    private void addConfiguration(final Configuration configuration) {
-        for (final Map.Entry<String, String> entry : configuration) {
-            this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue()); // TODO why does this line exist?
-            this.getConf().set(entry.getKey(), entry.getValue());
-        }
-    }
-
+    @Override
     public void addMapReduce(final Class<? extends Mapper> mapper,
                              final Class<? extends Reducer> combiner,
                              final Class<? extends Reducer> reducer,
@@ -113,140 +105,103 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
                              final Class<? extends WritableComparable> reduceOutputKey,
                              final Class<? extends WritableComparable> reduceOutputValue,
                              final Configuration configuration) {
+       try {
+            final Job job;
 
-        this.addConfiguration(configuration);
-        this.mapSequenceClasses.add(mapper);
-        this.combinerClass = combiner;
-        this.reduceClass = reducer;
-        this.comparatorClass = comparator;
-        this.mapOutputKey = mapOutputKey;
-        this.mapOutputValue = mapOutputValue;
-        this.outputKey = reduceOutputKey;
-        this.outputValue = reduceOutputValue;
-        this.completeSequence();
+            // Combine this.getConf() with the configuration argument (latter takes precedence)
+            final Configuration mergedConf = new Configuration(this.getConf());
+            final Iterator<Entry<String,String>> it = configuration.iterator();
+            while (it.hasNext()) {
+                Entry<String,String> ent = it.next();
+                mergedConf.set(ent.getKey(), ent.getValue());
+            }
+
+            if (State.NONE == this.state || State.REDUCER == this.state) {
+                // Set merged configuration for the new job
+                //
+                // This really does matter; just setting the config in
+                // ChainMapper.addMapper and ChainReducer.setReducer invocations
+                // below is not sufficient for some jobs that use a combiner.
+                // For example, LinkMapReduce.Combiner expects to use custom
+                // config keys like DIRECTION. Leaving out this step effectively
+                // drops that combiner's custom keys and makes tests using
+                // linkIn pipeline steps fail.
+                job = Job.getInstance(mergedConf);
+                job.setJobName(makeClassName(mapper) + ARROW + makeClassName(reducer));
+                this.jobs.add(job);
+            } else {
+                job = this.jobs.get(this.jobs.size() - 1);
+                job.setJobName(job.getJobName() + ARROW + makeClassName(mapper) + ARROW + makeClassName(reducer));
+            }
+            job.setNumReduceTasks(this.getConf().getInt("mapreduce.job.reduces", this.getConf().getInt("mapreduce.tasktracker.reduce.tasks.maximum", 1)));
+
+            ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+            ChainReducer.setReducer(job, reducer, mapOutputKey, mapOutputValue, reduceOutputKey, reduceOutputValue, configuration);
+
+            if (null != comparator)
+                job.setSortComparatorClass(comparator);
+            if (null != combiner)
+                job.setCombinerClass(combiner);
+            if (null == job.getConfiguration().get(MAPREDUCE_MAP_OUTPUT_COMPRESS, null))
+                job.getConfiguration().setBoolean(MAPREDUCE_MAP_OUTPUT_COMPRESS, true);
+            if (null == job.getConfiguration().get(MAPREDUCE_MAP_OUTPUT_COMPRESS_CODEC, null))
+                job.getConfiguration().setClass(MAPREDUCE_MAP_OUTPUT_COMPRESS_CODEC, DefaultCodec.class, CompressionCodec.class);
+            this.state = State.REDUCER;
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+
     }
 
-    public void addMapReduce(final Class<? extends Mapper> mapper,
-                             final Class<? extends Reducer> combiner,
-                             final Class<? extends Reducer> reducer,
-                             final Class<? extends WritableComparable> mapOutputKey,
-                             final Class<? extends WritableComparable> mapOutputValue,
-                             final Class<? extends WritableComparable> reduceOutputKey,
-                             final Class<? extends WritableComparable> reduceOutputValue,
-                             final Configuration configuration) {
-
-        this.addConfiguration(configuration);
-        this.mapSequenceClasses.add(mapper);
-        this.combinerClass = combiner;
-        this.reduceClass = reducer;
-        this.mapOutputKey = mapOutputKey;
-        this.mapOutputValue = mapOutputValue;
-        this.outputKey = reduceOutputKey;
-        this.outputValue = reduceOutputValue;
-        this.completeSequence();
-    }
-
+    @Override
     public void addMap(final Class<? extends Mapper> mapper,
                        final Class<? extends WritableComparable> mapOutputKey,
                        final Class<? extends WritableComparable> mapOutputValue,
                        final Configuration configuration) {
-
-        this.addConfiguration(configuration);
-        this.mapSequenceClasses.add(mapper);
-        this.mapOutputKey = mapOutputKey;
-        this.mapOutputValue = mapOutputValue;
-        this.outputKey = mapOutputKey;
-        this.outputValue = mapOutputValue;
-
-    }
-
-    public void completeSequence() {
-        if (this.mapSequenceClasses.size() > 0) {
-            this.getConf().setStrings(MapSequence.MAP_CLASSES, toStringMapSequenceClasses());
+        try {
             final Job job;
-            try {
-                job = new Job(this.getConf(), this.toStringOfJob(MapSequence.class));
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage(), e);
-            }
-
-            job.setJarByClass(HadoopCompiler.class);
-            job.setMapperClass(MapSequence.Map.class);
-            if (null != this.reduceClass) {
-                job.setReducerClass(this.reduceClass);
-                if (null != this.combinerClass)
-                    job.setCombinerClass(this.combinerClass);
-                // if there is a reduce task, compress the map output to limit network traffic
-                if (null == job.getConfiguration().get(MAPRED_COMPRESS_MAP_OUTPUT, null))
-                    job.getConfiguration().setBoolean(MAPRED_COMPRESS_MAP_OUTPUT, true);
-                if (null == job.getConfiguration().get(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC, null))
-                    job.getConfiguration().setClass(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC, DefaultCodec.class, CompressionCodec.class);
-            } else {
+            if (State.NONE == this.state) {
+                job = Job.getInstance(this.getConf());
                 job.setNumReduceTasks(0);
+                job.setJobName(makeClassName(mapper));
+                this.jobs.add(job);
+            } else {
+                job = this.jobs.get(this.jobs.size() - 1);
+                job.setJobName(job.getJobName() + ARROW + makeClassName(mapper));
             }
 
-            job.setMapOutputKeyClass(this.mapOutputKey);
-            job.setMapOutputValueClass(this.mapOutputValue);
-            if (null != this.comparatorClass)
-                job.setSortComparatorClass(this.comparatorClass);
-            // else
-            //   job.setSortComparatorClass(NullWritable.Comparator.class);
-            job.setOutputKeyClass(this.outputKey);
-            job.setOutputValueClass(this.outputValue);
-
-
-            this.jobs.add(job);
-
-            this.setConf(new Configuration());
-            this.addConfiguration(this.graph.getConf());
-            this.mapSequenceClasses.clear();
-            this.combinerClass = null;
-            this.reduceClass = null;
-            this.comparatorClass = null;
+            if (State.MAPPER == this.state || State.NONE == this.state) {
+                ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+                this.state = State.MAPPER;
+            } else {
+                ChainReducer.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+                this.state = State.REDUCER;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 
+    @Override
+    public void completeSequence() {
+        // noop
+    }
+
+    @Override
     public void composeJobs() throws IOException {
+
         if (this.jobs.size() == 0) {
             return;
         }
-
-        String hadoopFileJar = graph.getConf().get(MAPRED_JAR, null);
-        if (null == hadoopFileJar) {
-            if (new File("target/" + JOB_JAR).exists()) {
-                hadoopFileJar = "target/" + JOB_JAR;
-                logger.warn("Using the developer Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("../target/" + JOB_JAR).exists()) {
-                hadoopFileJar = "../target/" + JOB_JAR;
-                logger.warn("Using the developer Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("lib/" + JOB_JAR).exists()) {
-                hadoopFileJar = "lib/" + JOB_JAR;
-                logger.warn("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-            } else if (new File("../lib/" + JOB_JAR).exists()) {
-                hadoopFileJar = "../lib/" + JOB_JAR;
-                logger.warn("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-            } else {
-                final String titanHadoopHome = System.getenv(Tokens.TITAN_HADOOP_HOME);
-                if (null == titanHadoopHome || titanHadoopHome.isEmpty())
-                    throw new IllegalStateException("TITAN_HADOOP_HOME must be set in order to locate the Titan/Hadoop job jar: " + JOB_JAR);
-                if (new File(titanHadoopHome + "/lib/" + JOB_JAR).exists()) {
-                    hadoopFileJar = titanHadoopHome + "/lib/" + JOB_JAR;
-                    logger.info("Using the distribution Titan/Hadoop job jar: " + hadoopFileJar);
-                }
-            }
-        } else {
-            logger.info("Using the provided Titan/Hadoop job jar: " + hadoopFileJar);
-        }
-        if (null == hadoopFileJar)
-            throw new IllegalStateException("The Titan/Hadoop job jar could not be found: " + JOB_JAR);
 
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS))
             logger.warn("Path tracking is enabled for this Titan/Hadoop job (space and time expensive)");
         if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE))
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
-        final FileSystem hdfs = FileSystem.get(this.graph.getConf());
+        JobClasspathConfigurer cpConf = JobClasspathConfigurers.get(graph.getConf().get(MAPRED_JAR), JOB_JAR);
 
+        // Create temporary job data directory on the filesystem
         Path tmpPath = graph.getJobDir();
         final FileSystem fs = FileSystem.get(graph.getConf());
         fs.mkdirs(tmpPath);
@@ -260,8 +215,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             final Job job = this.jobs.get(i);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
             ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
-            FileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
-            job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
+            SequenceFileOutputFormat.setOutputPath(job, new Path(jobTmp + "-" + i));
+            cpConf.configure(job);
 
             // configure job inputs
             if (i == 0) {
@@ -289,6 +244,7 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
         }
     }
 
+    @Override
     public int run(final String[] args) throws Exception {
         String script = null;
         boolean showHeader = true;
@@ -300,9 +256,9 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
 
         final FileSystem hdfs = FileSystem.get(this.getConf());
         if (null != graph.getJobDir() &&
-            this.graph.getJobDirOverwrite() &&
-            hdfs.exists(this.graph.getJobDir())) {
-            hdfs.delete(this.graph.getJobDir(), true);
+            graph.getJobDirOverwrite() &&
+            hdfs.exists(graph.getJobDir())) {
+            hdfs.delete(graph.getJobDir(), true);
         }
 
         if (showHeader) {
@@ -339,8 +295,8 @@ public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler 
             boolean success = job.waitForCompletion(true);
             if (i > 0) {
                 Preconditions.checkNotNull(jobTmp);
+                logger.debug("Cleaninng job data location: " + jobTmp + "-" + i);
                 final Path path = new Path(jobTmp + "-" + (i - 1));
-                logger.debug("Cleaning job data location: " + jobTmp + "-" + i);
                 // delete previous intermediate graph data
                 for (final FileStatus temp : hdfs.globStatus(new Path(path.toString() + "/" + Tokens.GRAPH + "*"))) {
                     hdfs.delete(temp.getPath(), true);

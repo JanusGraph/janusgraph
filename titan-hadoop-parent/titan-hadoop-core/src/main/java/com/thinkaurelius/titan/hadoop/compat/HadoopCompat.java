@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
 
 /**
  * This interface encapsulates both API and bytecode-level
@@ -92,4 +93,23 @@ public interface HadoopCompat {
      * @return current value
      */
     public long getCounter(MapReduceDriver counters, Enum<?> e);
+
+    /**
+     * Construct a {@link com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer}
+     * that sets the Mapreduce job jar config key to the supplied value.  The job jar
+     * should contain Faunus's classes plus its entire dependency tree ("fat" jar).
+     *
+     * @param mapredJarPath path to the mapreduce job jar
+     * @return a configurer
+     */
+    public JobClasspathConfigurer newMapredJarConfigurer(String mapredJarPath);
+
+    /**
+     * Construct a {@link com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer}
+     * that walks the classpath and adds all jars its finds to the Hadoop Jobs's
+     * classpaths via the Hadoop Distributed Cache.
+     *
+     * @return a configurer
+     */
+    public JobClasspathConfigurer newDistCacheConfigurer();
 }
