@@ -19,6 +19,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -60,7 +62,7 @@ public class PropertyMapMap {
                     for (int i = 0; i < value.pathCount(); i++) {
                         this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
                     }
-                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
                 }
             } else {
                 long edgesProcessed = 0;
@@ -75,7 +77,7 @@ public class PropertyMapMap {
                         edgesProcessed++;
                     }
                 }
-                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
         }

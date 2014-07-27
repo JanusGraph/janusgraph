@@ -6,7 +6,6 @@ import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.LOCAL_MO
 import static com.thinkaurelius.titan.example.GraphOfTheGodsFactory.INDEX_NAME;
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -20,10 +19,12 @@ import static org.junit.Assert.fail;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.es.ElasticsearchRunner;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.attribute.Text;
@@ -40,6 +41,20 @@ import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutp
 import com.tinkerpop.blueprints.Vertex;
 
 public class CassandraESReindexTest extends TitanGraphBaseTest {
+
+    private static final String ES_HOME = "../../titan-es";
+
+    @BeforeClass
+    public static void startES() {
+        ElasticsearchRunner r = new ElasticsearchRunner(ES_HOME);
+        r.stop();
+        r.start();
+    }
+
+    @AfterClass
+    public static void stopES() {
+        new ElasticsearchRunner(ES_HOME).stop();
+    }
 
     @Test
     public void testMixedIndexUpdatesWithReindex() throws Exception {

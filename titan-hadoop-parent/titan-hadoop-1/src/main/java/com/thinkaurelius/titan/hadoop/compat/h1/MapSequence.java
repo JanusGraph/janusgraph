@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.compat;
+package com.thinkaurelius.titan.hadoop.compat.h1;
 
 import com.thinkaurelius.titan.hadoop.Tokens;
 

@@ -27,12 +27,12 @@ public class HadoopCompatLoader {
         final String className;
 
         if (ver.startsWith("1.")) {
-            className = pkgName + ".Hadoop1Compat";
+            className = pkgName + ".h1.Hadoop1Compat";
         } else {
-            className = pkgName + ".Hadoop2Compat";
+            className = pkgName + ".h2.Hadoop2Compat";
         }
 
-        log.debug("Attempting to load class {} with a nullary constructor", className);
+        log.debug("Attempting to load class {} and instantiate with nullary constructor", className);
         try {
             Constructor<?> ctor = Class.forName(className).getConstructor();
             log.debug("Invoking constructor {}", ctor);

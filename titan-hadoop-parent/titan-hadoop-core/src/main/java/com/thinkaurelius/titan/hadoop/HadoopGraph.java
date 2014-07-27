@@ -94,6 +94,8 @@ public class HadoopGraph extends HybridConfigured {
         this.setInputLocation(new Path(path));
     }
 
+    // JOB AND FILESYSTEM
+
     public Path getJobDir() {
         if (!getTitanConf().has(JOBDIR_LOCATION))
             return null;
@@ -111,6 +113,10 @@ public class HadoopGraph extends HybridConfigured {
 
     public boolean getJobDirOverwrite() {
         return getTitanConf().get(JOBDIR_OVERWRITE);
+    }
+
+    public FileSystem getFileSystem() throws IOException {
+        return FileSystem.get(getConf());
     }
 
     public boolean getTrackPaths() {

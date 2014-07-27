@@ -9,6 +9,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -18,6 +20,6 @@ public class ScriptOutputFormat extends HadoopFileOutputFormat {
 
     @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
-        return new ScriptRecordWriter(super.getDataOuputStream(job), job.getConfiguration());
+        return new ScriptRecordWriter(super.getDataOuputStream(job), DEFAULT_COMPAT.getContextConfiguration(job));
     }
 }

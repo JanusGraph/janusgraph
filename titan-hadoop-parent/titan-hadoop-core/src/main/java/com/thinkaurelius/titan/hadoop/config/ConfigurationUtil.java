@@ -16,6 +16,8 @@ import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
+ *
+ * @deprecated
  */
 public class ConfigurationUtil {
 

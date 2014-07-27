@@ -7,8 +7,8 @@
     </formats>
 
     <componentDescriptors>
-        <componentDescriptor>src/assembly/descriptor/common.component.xml</componentDescriptor>
-        <componentDescriptor>src/assembly/descriptor/cassandra.component.xml</componentDescriptor>
-        <componentDescriptor>src/assembly/descriptor/configs.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/common.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/cassandra.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/configs.component.xml</componentDescriptor>
     </componentDescriptors>
 </assembly>

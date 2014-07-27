@@ -1,0 +1,130 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.thinkaurelius.titan</groupId>
+        <artifactId>titan-dist</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <packaging>pom</packaging>
+    <artifactId>titan-dist-hadoop-1</artifactId>
+    <name>Titan-Dist: Archive with Hadoop 1</name>
+    <url>http://thinkaurelius.github.com/titan/</url>
+
+    <properties>
+        <hadoop.version.tag>hadoop1</hadoop.version.tag>
+        <assembly.descriptor.dir>${project.parent.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
+        <assembly.resources.dir>${project.parent.basedir}/src/assembly/resources</assembly.resources.dir>
+        <assembly.static.dir>${project.parent.basedir}/src/assembly/static</assembly.static.dir>
+        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-all</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase</artifactId>
+            <version>0.94.21</version>
+            <exclusions>
+                <!-- This includes an unshaded copy of Snakeyaml
+                     that's binary-incompatible with Cassandra 2.0.
+                     If allowed into the classpath before Cassandra's
+                     current Snakeyaml jar, this will lead to
+                     NoSuchMethodError when attempting to start an
+                     embedded Cassandra instance. -->
+                <exclusion>
+                    <groupId>org.jruby</groupId>
+                    <artifactId>jruby-complete</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-titan-gremlin-imports</id>
+                        <phase>generate-resources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-murmur-config</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-cassandra-bop-config</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

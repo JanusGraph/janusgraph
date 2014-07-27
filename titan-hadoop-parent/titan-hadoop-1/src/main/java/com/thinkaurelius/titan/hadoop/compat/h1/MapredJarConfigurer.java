@@ -1,8 +1,9 @@
-package com.thinkaurelius.titan.hadoop.compat;
+package com.thinkaurelius.titan.hadoop.compat.h1;
+
+import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;
-
-import org.apache.hadoop.mapreduce.Job;
 
 public class MapredJarConfigurer implements JobClasspathConfigurer {
 
@@ -14,6 +15,6 @@ public class MapredJarConfigurer implements JobClasspathConfigurer {
 
     @Override
     public void configure(Job job) throws IOException {
-        job.setJar(mapredJar);
+        job.getConfiguration().set(Hadoop1Compat.CFG_JOB_JAR, mapredJar);
     }
 }

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.compat;
+package com.thinkaurelius.titan.hadoop.compat.h1;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
