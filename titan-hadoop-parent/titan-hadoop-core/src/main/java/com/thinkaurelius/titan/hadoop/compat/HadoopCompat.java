@@ -32,17 +32,64 @@ public interface HadoopCompat {
      */
     public HadoopCompiler newCompiler(HadoopGraph g);
 
+    /**
+     * Instantiate a new TaskAttemptContext using the given attempt ID and configuration.
+     *
+     * @param c configuration
+     * @param t task attempt ID
+     * @return new context object
+     */
     public TaskAttemptContext newTask(Configuration c, TaskAttemptID t);
 
+    /**
+     * Return the Hadoop configuration key which takes a boolean value and
+     * controls whether Hadoop will attempt speculative execution of mappers.
+     *
+     * @return string config key
+     */
     public String getSpeculativeMapConfigKey();
 
+    /**
+     * Return the Hadoop configuration key which takes a boolean value and
+     * controls whether Hadoop will attempt speculative execution of reducers.
+     *
+     * @return string config key
+     */
     public String getSpeculativeReduceConfigKey();
 
+    public String getMapredJarConfigKey();
+
+    /**
+     * Add {@code incr} to the counter designated by {@code counter} on {@code context}.
+     *
+     * @param context Hadoop task IO context containing counter state
+     * @param counter name of the counter
+     * @param incr amount to add to the counter's current value
+     */
     public void incrementContextCounter(TaskInputOutputContext context, Enum<?> counter, long incr);
 
+    /**
+     * Get configuration from the supplied task attempt context and return it.
+     *
+     * @param context Hadoop task attempt context
+     * @return configuration on supplied {@code context}
+     */
     public Configuration getContextConfiguration(TaskAttemptContext context);
 
+    /**
+     * Get configuration from the supplied job context and return it.
+     *
+     * @param context Hadoop job context
+     * @return configuration on supplied {@code context}
+     */
     public Configuration getJobContextConfiguration(JobContext context);
 
+    /**
+     * Get the value of the counter specified by {@code e} on {@code counters}.
+     *
+     * @param counters MRUnit test driver containing counter state
+     * @param e the name of the counter whose value should be retrieved
+     * @return current value
+     */
     public long getCounter(MapReduceDriver counters, Enum<?> e);
 }
