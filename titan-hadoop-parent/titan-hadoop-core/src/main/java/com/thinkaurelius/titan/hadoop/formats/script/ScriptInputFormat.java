@@ -16,6 +16,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * ScriptInputFormat supports the arbitrary parsing of a \n-based file format.
  * Each line of the file is passed to the Gremlin/Groovy script identified by the titan.hadoop.input.script.file property.
@@ -43,7 +45,7 @@ public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVerte
 
     @Override
     protected boolean isSplitable(final JobContext context, final Path file) {
-        return null == new CompressionCodecFactory(context.getConfiguration()).getCodec(file);
+        return null == new CompressionCodecFactory(DEFAULT_COMPAT.getJobContextConfiguration(context)).getCodec(file);
     }
 
     @Override
