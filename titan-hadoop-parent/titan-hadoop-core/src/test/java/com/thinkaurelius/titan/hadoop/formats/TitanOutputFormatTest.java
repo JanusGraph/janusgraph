@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
 import com.thinkaurelius.titan.graphdb.schema.SchemaProvider;
 import com.thinkaurelius.titan.hadoop.BaseTest;
@@ -140,8 +141,9 @@ public class TitanOutputFormatTest extends BaseTest {
     public void doBulkVertexPropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         // Declare schema in Titan
         TitanGraph g = TitanFactory.open(configuration);
-        g.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
-        g.commit();
+        TitanManagement mgmt = g.getManagementSystem();
+        mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.commit();
 
         // Reload schema from Titan into Faunus's Type Manager
         FaunusTypeManager.getTypeManager(null).clear();
@@ -258,8 +260,9 @@ public class TitanOutputFormatTest extends BaseTest {
     public void doUnidirectionEdges(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         // Declare schema in Titan
         TitanGraph g = TitanFactory.open(configuration);
-        g.makeEdgeLabel("father").unidirected().make();
-        g.commit();
+        TitanManagement mgmt = g.getManagementSystem();
+        mgmt.makeEdgeLabel("father").unidirected().make();
+        mgmt.commit();
 
 //        // Reload schema from Titan into Faunus's Type Manager
 //        FaunusTypeManager.getTypeManager(null).clear();
