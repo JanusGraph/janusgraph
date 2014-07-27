@@ -632,7 +632,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 if (hasSecondaryPersistence) {
                     LogTxStatus status = LogTxStatus.SECONDARY_SUCCESS;
                     Map<String,Throwable> indexFailures = ImmutableMap.of();
-                    boolean triggerSuccess = true;
+                    boolean userlogSuccess = true;
 
                     try {
                         //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
@@ -646,9 +646,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
                         if (logTxIdentifier!=null) {
                             try {
-                                triggerSuccess = false;
-                                final Log triggerLog = backend.getUserLog(logTxIdentifier);
-                                Future<Message> env = triggerLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
+                                userlogSuccess = false;
+                                final Log userLog = backend.getUserLog(logTxIdentifier);
+                                Future<Message> env = userLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {
                                     try {
                                         env.get();
@@ -656,7 +656,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                                         throw ex.getCause();
                                     }
                                 }
-                                triggerSuccess=true;
+                                userlogSuccess=true;
                             } catch (Throwable e) {
                                 status = LogTxStatus.SECONDARY_FAILURE;
                                 log.error("Could not user-log committed transaction ["+transactionId+"] to " + logTxIdentifier, e);
@@ -667,7 +667,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             //[FAILURE] An exception here will be logged and not escalated; tx considered success and
                             // needs to be cleaned up later
                             try {
-                                txLog.add(txLogHeader.serializeSecondary(serializer,status,indexFailures,triggerSuccess),txLogHeader.getLogKey());
+                                txLog.add(txLogHeader.serializeSecondary(serializer,status,indexFailures,userlogSuccess),txLogHeader.getLogKey());
                             } catch (Throwable e) {
                                 log.error("Could not tx-log secondary persistence status on transaction ["+transactionId+"]",e);
                             }

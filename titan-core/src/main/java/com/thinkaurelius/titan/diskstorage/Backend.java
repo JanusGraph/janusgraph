@@ -134,7 +134,7 @@ public class Backend implements LockerProvider {
 
         mgmtLogManager = getKCVSLogManager(MANAGEMENT_LOG);
         txLogManager = getKCVSLogManager(TRANSACTION_LOG);
-        userLogManager = getLogManager(TRIGGER_LOG);
+        userLogManager = getLogManager(USER_LOG);
 
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);

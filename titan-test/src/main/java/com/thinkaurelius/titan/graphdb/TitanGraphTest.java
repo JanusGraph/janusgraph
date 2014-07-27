@@ -3086,18 +3086,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     public void simpleLogTest(final boolean withLogFailure) throws InterruptedException {
-        final String triggerName = "test";
+        final String userlogName = "test";
         final Serializer serializer = graph.getDataSerializer();
         final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
         final TimeUnit unit = times.getUnit();
         final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
         clopen( option(SYSTEM_LOG_TRANSACTIONS), true,
-                option(LOG_BACKEND,TRIGGER_LOG),(withLogFailure?TestMockLog.class.getName():LOG_BACKEND.getDefaultValue()),
-                option(TestMockLog.LOG_MOCK_FAILADD,TRIGGER_LOG),withLogFailure,
-                option(KCVSLog.LOG_READ_LAG_TIME,TRIGGER_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,TRIGGER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
-                option(LOG_SEND_DELAY,TRIGGER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
+                option(LOG_BACKEND, USER_LOG),(withLogFailure?TestMockLog.class.getName():LOG_BACKEND.getDefaultValue()),
+                option(TestMockLog.LOG_MOCK_FAILADD, USER_LOG),withLogFailure,
+                option(KCVSLog.LOG_READ_LAG_TIME, USER_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL, USER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
+                option(LOG_SEND_DELAY, USER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
                 option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
@@ -3111,37 +3111,37 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
 
         final Timepoint txTimes[] = new Timepoint[4];
-        //Transaction with custom triggerName
+        //Transaction with custom userlog name
         txTimes[0] = times.getTime();
-        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         TitanVertex v1 = tx2.addVertex();
         v1.setProperty("weight", 111.1);
         v1.addEdge("knows", v1);
         tx2.commit();
         final long v1id = v1.getLongId();
         txTimes[1] = times.getTime();
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         TitanVertex v2 = tx2.addVertex();
         v2.setProperty("weight",222.2);
         v2.addEdge("knows",tx2.getVertex(v1id));
         tx2.commit();
         final long v2id = v2.getLongId();
         //Only read tx
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         v1 = tx2.getVertex(v1id);
         assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
         assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
         tx2.commit();
         //Deleting transaction
         txTimes[2] = times.getTime();
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         v2 = tx2.getVertex(v2id);
         assertEquals(222.2,v2.<Decimal>getProperty("weight").doubleValue(),0.0);
         v2.remove();
         tx2.commit();
         //Edge modifying transaction
         txTimes[3] = times.getTime();
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         v1 = tx2.getVertex(v1id);
         assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
         Edge e = Iterables.getOnlyElement(v1.getEdges(Direction.OUT,"knows"));
@@ -3154,10 +3154,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final ReadMarker startMarker = ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS);
 
         Log txlog = openTxLog();
-        Log triggerLog = openTriggerLog(triggerName);
+        Log userLog = openUserLog(userlogName);
         final EnumMap<LogTxStatus,AtomicInteger> txMsgCounter = new EnumMap<LogTxStatus,AtomicInteger>(LogTxStatus.class);
         for (LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status,new AtomicInteger(0));
-        final AtomicInteger triggerMeta = new AtomicInteger(0);
+        final AtomicInteger userlogMeta = new AtomicInteger(0);
         txlog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
@@ -3177,8 +3177,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
                     if (logid!=null) {
                         assertTrue(logid instanceof String);
-                        assertEquals(triggerName,logid);
-                        triggerMeta.incrementAndGet();
+                        assertEquals(userlogName,logid);
+                        userlogMeta.incrementAndGet();
                     }
                 } else if (withLogFailure) {
                     assertTrue(status.isPrimarySuccess() || status==LogTxStatus.SECONDARY_FAILURE);
@@ -3194,45 +3194,45 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
             }
         });
-        final EnumMap<Change,AtomicInteger> triggerChangeCounter = new EnumMap<Change,AtomicInteger>(Change.class);
-        for (Change change : Change.values()) triggerChangeCounter.put(change,new AtomicInteger(0));
-        final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
-        triggerLog.registerReader(startMarker,new MessageReader() {
+        final EnumMap<Change,AtomicInteger> userChangeCounter = new EnumMap<Change,AtomicInteger>(Change.class);
+        for (Change change : Change.values()) userChangeCounter.put(change,new AtomicInteger(0));
+        final AtomicInteger userLogMsgCounter = new AtomicInteger(0);
+        userLog.registerReader(startMarker, new MessageReader() {
             @Override
             public void read(Message message) {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(msgTime>=startTime);
+                assertTrue(msgTime >= startTime);
                 assertNotNull(message.getSenderId());
                 StaticBuffer content = message.getContent();
-                assertTrue(content!=null && content.length()>0);
+                assertTrue(content != null && content.length() > 0);
                 TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
 
                 long txTime = txentry.getHeader().getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(txTime<=msgTime);
-                assertTrue(txTime>=startTime);
+                assertTrue(txTime <= msgTime);
+                assertTrue(txTime >= startTime);
                 long txid = txentry.getHeader().getId();
-                assertTrue(txid>0);
+                assertTrue(txid > 0);
                 for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
-                    assertTrue(modification.state==Change.ADDED || modification.state==Change.REMOVED);
-                    triggerChangeCounter.get(modification.state).incrementAndGet();
+                    assertTrue(modification.state == Change.ADDED || modification.state == Change.REMOVED);
+                    userChangeCounter.get(modification.state).incrementAndGet();
                 }
-                triggerMsgCounter.incrementAndGet();
+                userLogMsgCounter.incrementAndGet();
             }
         });
         Thread.sleep(4000);
         assertEquals(5,txMsgCounter.get(LogTxStatus.PRECOMMIT).get());
         assertEquals(4,txMsgCounter.get(LogTxStatus.PRIMARY_SUCCESS).get());
         assertEquals(1,txMsgCounter.get(LogTxStatus.COMPLETE_SUCCESS).get());
-        assertEquals(4,triggerMeta.get());
+        assertEquals(4, userlogMeta.get());
         if (withLogFailure) assertEquals(4,txMsgCounter.get(LogTxStatus.SECONDARY_FAILURE).get());
         else assertEquals(4,txMsgCounter.get(LogTxStatus.SECONDARY_SUCCESS).get());
-        //Trigger
+        //User-Log
         if (withLogFailure) {
-            assertEquals(0,triggerMsgCounter.get());
+            assertEquals(0, userLogMsgCounter.get());
         } else {
-            assertEquals(4,triggerMsgCounter.get());
-            assertEquals(7,triggerChangeCounter.get(Change.ADDED).get());
-            assertEquals(4,triggerChangeCounter.get(Change.REMOVED).get());
+            assertEquals(4, userLogMsgCounter.get());
+            assertEquals(7, userChangeCounter.get(Change.ADDED).get());
+            assertEquals(4,userChangeCounter.get(Change.REMOVED).get());
         }
 
         clopen();
@@ -3243,11 +3243,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
 
         /*
-        Use trigger framework
+        Use user log processing framework
          */
-        final AtomicInteger triggerCount = new AtomicInteger(0);
-        LogProcessorFramework triggers = TitanFactory.openTransactionLog(graph);
-        triggers.addLogProcessor(triggerName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
+        final AtomicInteger userLogCount = new AtomicInteger(0);
+        LogProcessorFramework userlogs = TitanFactory.openTransactionLog(graph);
+        userlogs.addLogProcessor(userlogName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
         .addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
@@ -3353,7 +3353,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 assertEquals(111.1,v1.<Decimal>getProperty(weight).doubleValue(),0.0);
                 assertEquals(1,Iterables.size(v1.getEdges(Direction.OUT)));
 
-                triggerCount.incrementAndGet();
+                userLogCount.incrementAndGet();
             }
         }).build();
 
@@ -3371,9 +3371,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         }
 
-        triggers.removeLogProcessor(triggerName);
-        triggers.shutdown();
-        assertEquals(4, triggerCount.get());
+        userlogs.removeLogProcessor(userlogName);
+        userlogs.shutdown();
+        assertEquals(4, userLogCount.get());
     }
 
 

@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRIGGER_LOG;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -189,8 +189,8 @@ public abstract class TitanGraphBaseTest {
         }
     }
 
-    public Log openTriggerLog(String identifier) {
-        return openLog(TRIGGER_LOG, Backend.USER_LOG_PREFIX +identifier);
+    public Log openUserLog(String identifier) {
+        return openLog(USER_LOG, Backend.USER_LOG_PREFIX +identifier);
     }
 
     public Log openTxLog() {

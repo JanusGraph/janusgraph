@@ -809,7 +809,7 @@ public class GraphDatabaseConfiguration {
 
     public static final String MANAGEMENT_LOG = "titan";
     public static final String TRANSACTION_LOG = "tx";
-    public static final String TRIGGER_LOG = "trigger";
+    public static final String USER_LOG = "user";
 
     public static final StandardDuration TRANSACTION_LOG_DEFAULT_TTL = new StandardDuration(7,TimeUnit.DAYS);
 

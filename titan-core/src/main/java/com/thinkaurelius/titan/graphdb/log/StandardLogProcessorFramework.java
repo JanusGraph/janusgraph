@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.graphdb.log;
 
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.LogProcessorBuilder;
@@ -23,13 +20,9 @@ import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
-import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +58,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
     }
 
     private void checkOpen() {
-        Preconditions.checkState(isOpen, "Trigger framework has already been closed");
+        Preconditions.checkState(isOpen, "Transaction log framework has already been closed");
     }
 
     @Override
@@ -75,7 +68,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             try {
                 processorLogs.get(logIdentifier).close();
             } catch (BackendException e) {
-                throw new TitanException("Could not close trigger log: "+ logIdentifier,e);
+                throw new TitanException("Could not close transaction log: "+ logIdentifier,e);
             }
             processorLogs.remove(logIdentifier);
             return true;
@@ -185,7 +178,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                         }
                     }));
                 } catch (BackendException e) {
-                    throw new TitanException("Could not open log for trigger: "+ userLogName,e);
+                    throw new TitanException("Could not open user transaction log for name: "+ userLogName,e);
                 }
             }
         }
@@ -193,12 +186,12 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
 
     private class MsgReaderConverter implements MessageReader {
 
-        private final String triggerName;
+        private final String userlogName;
         private final ChangeProcessor processor;
         private final int retryAttempts;
 
-        private MsgReaderConverter(String triggerName, ChangeProcessor processor, int retryAttempts) {
-            this.triggerName = triggerName;
+        private MsgReaderConverter(String userLogName, ChangeProcessor processor, int retryAttempts) {
+            this.userlogName = userLogName;
             this.processor = processor;
             this.retryAttempts = retryAttempts;
         }
@@ -240,8 +233,8 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                     readRelations(txentry,tx,changes);
                 } catch (Throwable e) {
                     tx.rollback();
-                    logger.error("Encountered exception [{}] when preparing processor [{}] for trigger [{}] on attempt {} of {}",
-                            e.getMessage(),processor,triggerName,i,retryAttempts);
+                    logger.error("Encountered exception [{}] when preparing processor [{}] for user log [{}] on attempt {} of {}",
+                            e.getMessage(),processor, userlogName,i,retryAttempts);
                     logger.error("Full exception: ",e);
                     continue;
                 }
@@ -252,8 +245,8 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 } catch (Throwable e) {
                     tx.rollback();
                     tx = null;
-                    logger.error("Encountered exception [{}] when running processor [{}] for trigger [{}] on attempt {} of {}",
-                            e.getMessage(),processor,triggerName,i,retryAttempts);
+                    logger.error("Encountered exception [{}] when running processor [{}] for user log [{}] on attempt {} of {}",
+                            e.getMessage(),processor, userlogName,i,retryAttempts);
                     logger.error("Full exception: ",e);
                 } finally {
                     if (tx!=null) tx.commit();
