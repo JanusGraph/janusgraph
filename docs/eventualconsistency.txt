@@ -2,12 +2,22 @@
 Eventually-Consistent Storage Backends
 --------------------------------------
 
+When running Titan against an eventually consistent storage backend special Titan features must be used to ensure data consistency and special considerations must be made regarding data degradation.
+
 This page summarizes some of the aspects to consider when running Titan on top of an eventually consistent storage backend like Apache Cassandra or Apache HBase.
 
 Data Consistency
 ~~~~~~~~~~~~~~~~
 
-On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency.
+On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency because the underlying storage backend does not provide transactional isolation. In the interest of efficiency, Titan does not use locking by default. Hence, the user has to decide for each schema element that defines a consistency constraint whether or not to use locking. Use `TitanManagement.setConsistency(element,ConsistencyModifier.LOCK)` to explicitly enable locking on a schema element as shown in the following examples.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('name').dataType(String.class).make()
+index = mgmt.buildIndex('byName',Vertex.class).addKey(name).unique().buildCompositeIndex()
+mgmt.setConsistency(name,ConsistencyModifier.LOCK) //Ensures only one name per vertex
+mgmt.setConsistency(index,ConsistencyModifier.LOCK) //Ensures name uniqueness in the graph
+mgmt.commit()
 
 When updating an element that is guarded by a uniqueness constraint, Titan uses the following protocol at the end of a transaction when calling `tx.commit()`:
 
@@ -33,6 +43,9 @@ locking-based consistency constraints sparingly with eventually
 consistent storage backends.  For use cases that require strict and or
 frequent consistency constraint enforcement, it is suggested to use a
 storage backend that provides transactional isolation.
+
+Forking Edges
+^^^^^^^^^^^^^
 
 Data Degradation
 ~~~~~~~~~~~~~~~~
