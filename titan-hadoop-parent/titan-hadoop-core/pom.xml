@@ -150,28 +150,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>deploy-main-files</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>deploy-file</goal>
-                        </goals>
-                        <configuration>
-                            <pomFile>${project.build.directory}/${project.artifactId}-${project.version}.pom</pomFile>
-                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
-                            <files>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar,${project.build.directory}/${project.artifactId}-${project.version}-tests.jar,${project.build.directory}/${project.artifactId}-${project.version}-javadoc.jar</files>
-                            <classifiers>sources,tests,javadoc</classifiers>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>default-deploy</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -184,28 +162,6 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>deploy-signatures</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy-file</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.build.directory}/${project.artifactId}-${project.version}.jar.asc</file>
-                                    <files>${project.build.directory}/${project.artifactId}-${project.version}-sources.jar.asc,${project.build.directory}/${project.artifactId}-${project.version}-tests.jar.asc,${project.build.directory}/${project.artifactId}-${project.version}-javadoc.jar.asc</files>
-                                    <classifiers>sources,tests,javadoc</classifiers>
-                                    <packaging>jar.asc</packaging>
-                                    <artifactId>${project.artifactId}</artifactId>
-                                    <groupId>${project.groupId}</groupId>
-                                    <version>${project.version}</version>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
