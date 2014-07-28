@@ -4,51 +4,8 @@ Eventually-Consistent Storage Backends
 
 This page summarizes some of the aspects to consider when running Titan on top of an eventually consistent storage backend like Apache Cassandra or Apache HBase.
 
-Data Degradation
+Data Consistency
 ~~~~~~~~~~~~~~~~
-
-On eventually consistent storage backends, certain failure conditions can cause the graph to become inconsistent. This is an inherent property of eventual consistency, in the sense, that accepted updates might not be persisted under certain operational circumstances or failures.
-
-From Titan's perspective, these conditions might cause the following graph inconsistencies.
-
-[horizontal]
-*Ghost Vertices*:: If a vertex gets deleted while it is concurrently
-being modified, the vertex might re-appear as a _ghost_.
-
-*Stale Index entries*:: Index entries might point to nonexistent
-vertices in case of partial mutation persistence.
-
-*Half-Edges*:: Only one direction of an edge gets persisted or deleted
-which might lead to the edge not being or incorrectly being retrieved.
-
-*Uni-directed Ghost Edges*:: A uni-directed edge points to a deleted
-vertex.
-
-While Titan attempts to combine mutations to make the occurrence of such inconsistencies less likely, they can never be completely avoided and will likely arise on sufficiently large graphs.
-
-The following strategies can be used to mitigate this issue:
-
-[horizontal]
-
-*Buffer Size*:: Configure the buffer-size in the <<graph-config,graph
-configuration>> to be large enough for all mutations in a
-transaction. This will reduce the likelihood of partial mutations
-causing inconsistencies.
-
-*Existence checks*:: Configure transactions to (double) check for the
-existence of vertices prior to returning them. Please see
-<<tx-config>> for more information and note that this can
-significantly decrease performance.  Note, that this does not fix the
-inconsistencies but hides some of them from the user.
-
-*Regular clean-ups*:: Run regular batch-jobs to repair inconsistencies
-in the graph using <<hadoop,Faunus>>.  This is the only strategy that
-can address all inconsistencies and effectively repair them. We will
-provide increasing support for such repairs in future versions of
-Faunus.
-
-Locking
-~~~~~~~
 
 On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency.
 
@@ -76,3 +33,45 @@ locking-based consistency constraints sparingly with eventually
 consistent storage backends.  For use cases that require strict and or
 frequent consistency constraint enforcement, it is suggested to use a
 storage backend that provides transactional isolation.
+
+Data Degradation
+~~~~~~~~~~~~~~~~
+
+On eventually consistent storage backends, certain failure conditions can cause the graph to become inconsistent. This is an inherent property of eventual consistency, in the sense, that accepted updates might not be persisted under certain operational circumstances or failures.
+
+From Titan's perspective, these conditions might cause the following graph inconsistencies.
+
+*Ghost Vertices*:: If a vertex gets deleted while it is concurrently
+being modified, the vertex might re-appear as a _ghost_.
+
+*Stale Index entries*:: Index entries might point to nonexistent
+vertices in case of partial mutation persistence.
+
+*Half-Edges*:: Only one direction of an edge gets persisted or deleted
+which might lead to the edge not being or incorrectly being retrieved.
+
+*Uni-directed Ghost Edges*:: A uni-directed edge points to a deleted
+vertex.
+
+While Titan attempts to combine mutations to make the occurrence of such inconsistencies less likely, they can never be completely avoided and will likely arise on sufficiently large graphs.
+
+The following strategies can be used to mitigate this issue:
+
+*Buffer Size*:: Configure the buffer-size in the <<graph-config,graph
+configuration>> to be large enough for all mutations in a
+transaction. This will reduce the likelihood of partial mutations
+causing inconsistencies.
+
+*Existence checks*:: Configure transactions to (double) check for the
+existence of vertices prior to returning them. Please see
+<<tx-config>> for more information and note that this can
+significantly decrease performance.  Note, that this does not fix the
+inconsistencies but hides some of them from the user.
+
+*Regular clean-ups*:: Run regular batch-jobs to repair inconsistencies
+in the graph using <<hadoop,Faunus>>.  This is the only strategy that
+can address all inconsistencies and effectively repair them. We will
+provide increasing support for such repairs in future versions of
+Faunus.
+
+

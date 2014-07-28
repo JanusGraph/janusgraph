@@ -5,7 +5,7 @@ include::bulkloading.txt[]
 
 include::multiquery.txt[]
 
-
+include::eventualconsistency.txt[]
 
 
 
@@ -15,7 +15,3 @@ include::serializer.txt[]
 
 include::monitoring.txt[]
 
-
-
-
-include::eventualconsistency.txt[]
