@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
@@ -65,22 +66,29 @@ public class ConfigurationPrinter {
     }
 
     private void printNamespace(ConfigNamespace n, String prefix) {
+        String newPrefix = prefix + n.getName() + ".";
+        if (n.isUmbrella()) newPrefix += "[X].";
 
-        stream.println(getNamespaceSectionHeader(n));
-        stream.println(TABLE_HEADER_LINES);
-        for (ConfigOption<?> o : getSortedChildOptions(n)) {
-            stream.println(getTableLineForOption(o, prefix));
+        if (n.isRoot()) newPrefix = ""; //Override for root namespace
+
+        //Only print namespace if it contains (visible) options
+        if (!Iterables.isEmpty(getSortedChildOptions(n))) {
+            stream.println(getNamespaceSectionHeader(n, prefix));
+            stream.println(TABLE_HEADER_LINES);
+            for (ConfigOption<?> o : getSortedChildOptions(n)) {
+                stream.println(getTableLineForOption(o, newPrefix));
+            }
+            stream.println(TABLE_FOOTER_LINES);
         }
-        stream.println(TABLE_FOOTER_LINES);
 
         for (ConfigNamespace cn : getSortedChildNamespaces(n)) {
-            final String newPrefix = prefix + cn.getName() + ".";
             printNamespace(cn, newPrefix);
         }
     }
 
-    private String getNamespaceSectionHeader(ConfigNamespace n) {
-        String fullName = ConfigElement.getPath(n);
+    private String getNamespaceSectionHeader(ConfigNamespace n, String prefix) {
+        String fullName = prefix + n.getName();
+        if (n.isUmbrella()) fullName += " *";
         return "==== " + fullName + " ====\n[role=\"font16\"]\n" + n.getDescription() + "\n\n";
     }
 
@@ -88,7 +96,7 @@ public class ConfigurationPrinter {
         return getSortedChildren(n, new Function<ConfigElement, Boolean>() {
             @Override
             public Boolean apply(ConfigElement arg0) {
-                return arg0.isOption();
+                return arg0.isOption() && !((ConfigOption)arg0).isHidden();
             }
         });
     }
@@ -102,25 +110,25 @@ public class ConfigurationPrinter {
         });
     }
 
-        private String getTableLineForOption(ConfigOption o, String prefix) {
+    private String getTableLineForOption(ConfigOption o, String prefix) {
 
-            String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(
-                    prefix + o.getName(),
-                    removeDelim(o.getDescription()),
-                    o.getDatatype().getSimpleName(),
-                    removeDelim(getStringForDefaultValue(o)),
-                    o.getType());
+        String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(
+                prefix + o.getName(),
+                removeDelim(o.getDescription()),
+                o.getDatatype().getSimpleName(),
+                removeDelim(getStringForDefaultValue(o)),
+                o.getType());
 
-            if (DELIM_AT_LINE_START) {
-                line = DELIM + DELIM_PADDING + line;
-            }
-
-            if (DELIM_AT_LINE_END) {
-                line = line + DELIM_PADDING + DELIM;
-            }
-
-            return line;
+        if (DELIM_AT_LINE_START) {
+            line = DELIM + DELIM_PADDING + line;
         }
+
+        if (DELIM_AT_LINE_END) {
+            line = line + DELIM_PADDING + DELIM;
+        }
+
+        return line;
+    }
 
     @SuppressWarnings("unchecked")
     private <E> List<E> getSortedChildren(ConfigNamespace n, Function<ConfigElement, Boolean> predicate) {
