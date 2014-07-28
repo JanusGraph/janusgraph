@@ -18,6 +18,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -34,7 +36,7 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
 
     @Override
     public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
-        return new RDFRecordReader(context.getConfiguration());
+        return new RDFRecordReader(DEFAULT_COMPAT.getContextConfiguration(context));
     }
 
     @Override
