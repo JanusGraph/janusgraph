@@ -12,7 +12,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -76,10 +75,6 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigNamespace ELASTICSEARCH_NS =
             new ConfigNamespace(INDEX_NS, "elasticsearch", "Elasticsearch index configuration");
-
-    public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE =
-            new ConfigOption<Integer>(ELASTICSEARCH_NS, "max-result-set-size",
-            "Maxium number of results to return if no limit is specified", ConfigOption.Type.MASKABLE, 100000);
 
     public static final ConfigOption<Boolean> CLIENT_ONLY =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "client-only",
@@ -197,7 +192,7 @@ public class ElasticSearchIndex implements IndexProvider {
             node = null;
         }
 
-        maxResultsSize = config.get(MAX_RESULT_SET_SIZE);
+        maxResultsSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query result set max size to {}", maxResultsSize);
 
         client.admin().cluster().prepareHealth()

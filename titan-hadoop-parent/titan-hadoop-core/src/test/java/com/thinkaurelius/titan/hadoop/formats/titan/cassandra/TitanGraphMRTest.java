@@ -23,7 +23,7 @@ public class TitanGraphMRTest extends TitanOutputFormatTest {
 //        configuration.set(STORAGE_HOSTS,new String[]{"localhost"});
 //        configuration.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
 //        configuration.set(DB_CACHE, false);
-//        configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+//        configuration.set(ExpectedValueCheckingStore.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
 //        configuration.set(UNIQUE_INSTANCE_ID, "inst");
 //        Backend backend = new Backend(configuration);
 //        backend.initialize(configuration);

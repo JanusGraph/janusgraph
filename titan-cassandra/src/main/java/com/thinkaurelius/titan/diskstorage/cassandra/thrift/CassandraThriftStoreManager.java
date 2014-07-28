@@ -74,6 +74,19 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public static final ConfigNamespace THRIFT_NS =
             new ConfigNamespace(AbstractCassandraStoreManager.CASSANDRA_NS, "thrift",
                     "Options for Titan's own Thrift Cassandra backend");
+    /**
+     * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
+     * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
+     * <p/>
+     * HEADS UP: setting max message size proved itself hazardous to be set on the client, only server needs that
+     * kind of protection.
+     * <p/>
+     * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
+     */
+    public static final ConfigOption<Integer> THRIFT_FRAME_SIZE =
+            new ConfigOption<Integer>(THRIFT_NS, "frame-size",
+            "The thrift frame size in mega bytes", ConfigOption.Type.MASKABLE, 15);
+
 
     public static final ConfigNamespace CPOOL_NS =
             new ConfigNamespace(THRIFT_NS, "cpool", "Options for the Apache commons-pool connection manager");
@@ -140,6 +153,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
     private final CTConnectionPool pool;
     private final Deployment deployment;
+    private final int thriftFrameSizeBytes;
 
     public CassandraThriftStoreManager(Configuration config) throws BackendException {
         super(config);
@@ -150,9 +164,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
          */
         int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).getLength(TimeUnit.MILLISECONDS);
 
+        thriftFrameSizeBytes = config.get(THRIFT_FRAME_SIZE) * 1024 * 1024;
+
         CTConnectionFactory.Config factoryConfig = new CTConnectionFactory.Config(hostnames, port, username, password)
                                                                             .setTimeoutMS(thriftTimeoutMS)
-                                                                            .setFrameSize(thriftFrameSize);
+                                                                            .setFrameSize(thriftFrameSizeBytes);
 
         if (config.get(SSL_ENABLED)) {
             factoryConfig.setSSLTruststoreLocation(config.get(SSL_TRUSTSTORE_LOCATION));

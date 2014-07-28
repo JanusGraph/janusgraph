@@ -20,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.util.system.BackgroundThread;
 
@@ -61,6 +62,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@PreInitializeConfigOptions
 public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     private static final Logger log = LoggerFactory.getLogger(KCVSLog.class);

@@ -42,13 +42,6 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 public class ExpectedValueCheckingStore extends KCVSProxy {
 
-    /**
-     * Configuration setting key for the local lock mediator prefix
-     */
-    public static final ConfigOption<String> LOCAL_LOCK_MEDIATOR_PREFIX = new ConfigOption<String>(GraphDatabaseConfiguration.STORAGE_NS,
-            "local-lock-mediator-prefix","Local prefix to disambiguate multiple local titan instances",
-            ConfigOption.Type.LOCAL,String.class);
-
     private static final Logger log = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 
     final Locker locker;

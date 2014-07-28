@@ -73,20 +73,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             "True to use Cassandra atomic batch mutation, false to use non-atomic batches",
             ConfigOption.Type.MASKABLE, true);
 
-    /**
-     * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
-     * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
-     * <p/>
-     * HEADS UP: setting max message size proved itself hazardous to be set on the client, only server needs that
-     * kind of protection.
-     * <p/>
-     * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
-     */
-    public static final ConfigOption<Integer> CASSANDRA_THRIFT_FRAME_SIZE =
-            new ConfigOption<Integer>(CASSANDRA_NS, "thrift-frame-size",
-            "The thrift frame size in mega bytes (this has no effect on the embedded Cassandra backend)",
-            ConfigOption.Type.MASKABLE, 15);
-
     // Replication
     public static final ConfigOption<Integer> REPLICATION_FACTOR =
             new ConfigOption<Integer>(CASSANDRA_NS, "replication-factor",
@@ -154,9 +140,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final String keySpaceName;
     protected final Map<String, String> strategyOptions;
 
-    // see description for THRIFT_FRAME_SIZE and THRIFT_MAX_MESSAGE_SIZE for details
-    protected final int thriftFrameSize;
-
     protected final boolean compressionEnabled;
     protected final int compressionChunkSizeKB;
     protected final String compressionClass;
@@ -173,7 +156,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         super(config, PORT_DEFAULT);
 
         this.keySpaceName = config.get(CASSANDRA_KEYSPACE);
-        this.thriftFrameSize = config.get(CASSANDRA_THRIFT_FRAME_SIZE) * 1024 * 1024;
         this.compressionEnabled = config.get(CF_COMPRESSION);
         this.compressionChunkSizeKB = config.get(CF_COMPRESSION_BLOCK_SIZE);
         this.compressionClass = config.get(CF_COMPRESSION_TYPE);

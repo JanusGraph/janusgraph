@@ -63,12 +63,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public CassandraEmbeddedStoreManager(Configuration config) throws BackendException {
         super(config);
 
-        // Check if we have non-default thrift frame size or max message size set and warn users
-        // because embedded doesn't use Thrift, warning is good enough here otherwise it would
-        // make bad user experience if we don't warn at all or crash on this.
-        if (config.has(CASSANDRA_THRIFT_FRAME_SIZE))
-            log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
-
         String cassandraConfig = CASSANDRA_YAML_DEFAULT;
         if (config.has(GraphDatabaseConfiguration.STORAGE_CONF_FILE)) {
             cassandraConfig = config.get(GraphDatabaseConfiguration.STORAGE_CONF_FILE);

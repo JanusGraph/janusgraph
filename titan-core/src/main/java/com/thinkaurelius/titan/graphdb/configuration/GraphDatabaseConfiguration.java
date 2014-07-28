@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVS;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
@@ -18,7 +17,6 @@ import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
@@ -475,11 +473,13 @@ public class GraphDatabaseConfiguration {
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
 
+    public static final ConfigNamespace LOCK_NS =
+            new ConfigNamespace(STORAGE_NS, "lock", "Options for locking on eventually-consistent stores");
 
     /**
      * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
      */
-    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(STORAGE_NS,"lock-retries",
+    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(LOCK_NS, "retries",
             "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 3);
 //    public static final String LOCK_RETRY_COUNT = "lock-retries";
@@ -489,7 +489,7 @@ public class GraphDatabaseConfiguration {
      * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
      * This value should be a small multiple of the average consistent write time.
      */
-    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
+    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(LOCK_NS, "wait-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_WAIT_MS = "lock-wait-time";
@@ -501,7 +501,7 @@ public class GraphDatabaseConfiguration {
      * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
      * held applications are expired pre-maturely and as small as possible to avoid dead lock.
      */
-    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
+    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(LOCK_NS, "expiry-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
@@ -515,19 +515,30 @@ public class GraphDatabaseConfiguration {
      *
      * @see #LOCK_BACKEND
      */
-    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
+    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(LOCK_NS, "clean-expired",
             "Whether to delete expired locks from the storage backend",
             ConfigOption.Type.MASKABLE, false);
 
     /**
      * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
      */
-    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
+    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(LOCK_NS, "backend",
             "Locker type to use",
             ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
 //    public static final String LOCK_BACKEND = "lock-backend";
 //    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
 
+    /**
+     * Configuration setting key for the local lock mediator prefix
+     */
+    public static final ConfigOption<String> LOCK_LOCAL_MEDIATOR_GROUP =
+            new ConfigOption<String>(LOCK_NS, "local-mediator-group",
+            "This option determines the LocalLockMediator instance used for early detection of lock contention " +
+            "between concurrent Titan graph instances within the same process which are connected to the same " +
+            "storage backend.  Titan instances that have the same value for this variable will attempt to discover " +
+            "lock contention among themselves in memory before proceeding with the general-case distributed locking " +
+            "code.  Titan generates an appropriate default value for this option at startup.  Overridding " +
+            "the default is generally only useful in testing.", ConfigOption.Type.LOCAL, String.class);
 
 
     // ################ STORAGE - META #######################
@@ -748,6 +759,10 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> INDEX_CONF_FILE = new ConfigOption<String>(INDEX_NS,"conf-file",
             "Path to a configuration file for those indexing backends that require/support a separate config file",
             ConfigOption.Type.MASKABLE, String.class);
+
+    public static final ConfigOption<Integer> INDEX_MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS, "max-result-set-size",
+            "Maxium number of results to return if no limit is specified",
+            ConfigOption.Type.MASKABLE, 100000);
 
 
     // ############## Logging System ######################
@@ -1198,8 +1213,8 @@ public class GraphDatabaseConfiguration {
         //Read out global configuration
         try {
             // If lock prefix is unspecified, specify it now
-            if (!localbc.has(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX)) {
-                overwrite.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, storeManager.getName());
+            if (!localbc.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
+                overwrite.set(LOCK_LOCAL_MEDIATOR_GROUP, storeManager.getName());
             }
 
             //Freeze global configuration if not already frozen!

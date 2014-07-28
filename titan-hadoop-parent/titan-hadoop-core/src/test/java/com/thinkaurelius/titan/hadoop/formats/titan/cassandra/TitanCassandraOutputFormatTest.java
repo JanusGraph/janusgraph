@@ -6,9 +6,7 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.FaunusTypeManager;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.TitanOutputFormatTest;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
@@ -28,7 +26,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         configuration.set(STORAGE_HOSTS,new String[]{"localhost"});
         configuration.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
         configuration.set(DB_CACHE, false);
-        configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+        configuration.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
         configuration.set(UNIQUE_INSTANCE_ID, "inst");
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);
