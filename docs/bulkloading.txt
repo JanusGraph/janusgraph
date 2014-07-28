@@ -83,13 +83,13 @@ During bulk loading, the load on the cluster typically increases making it more 
 Tools
 ~~~~~
 
-Faunus
-^^^^^^
+Titan-Hadoop
+^^^^^^^^^^^^
 
 [.tss-floatright.tss-width-125]
 image:https://raw.github.com/wiki/thinkaurelius/faunus/images/faunus-character.png[]
 
-http://faunus.thinkaurelius.com[Faunus] is a Hadoop-based graph analytics engine that can operate on a Titan cluster. It can be used to pre-process and bulk load data into Titan. Faunus effectively parallelizes the loading process across multiple mappers. Since Faunus can use Titan as a https://github.com/thinkaurelius/faunus/wiki/Titan-Format[sink and source] it is a useful tool for incremental data loading into Titan.
+For very large graphs the best option to load data efficiently is Titan's Hadoop adapter using one of the supported input format and specifying Titan as the output format.
 
 BatchGraph
 ^^^^^^^^^^

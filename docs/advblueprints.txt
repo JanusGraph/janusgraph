@@ -9,38 +9,22 @@ http://blueprints.tinkerpop.com/[Blueprints] provides a set of common property g
 Using IdGraph
 ~~~~~~~~~~~~~
 
-It is possible to use Blueprints' https://github.com/tinkerpop/blueprints/wiki/Id-Implementation[IdGraph] with Titan. However, it is best to prepare Titan for IdGraph by declaring the `__id` index using `TitanGraph.makeType()`, and furthermore, it is _necessary_ if you intend to use IdGraph for user-specified ids on _both_ vertices and edges.  Use the appropriate data type (e.g. `String.class` for the ids you intend to use):
+It is possible to use Blueprints' https://github.com/tinkerpop/blueprints/wiki/Id-Implementation[IdGraph] with Titan. However, it is best to prepare Titan for IdGraph by declaring the `__id` index using `TitanGraph.makeType()`, and furthermore, it is _necessary_ if you intend to use IdGraph for user-specified ids on _both_ vertices and edges.  Use the appropriate data type (e.g. `String.class`) for the ids you intend to use:
 
 [source,gremlin]
-gremlin> g = TitanFactory.open("/tmp/test")
-==>titangraph[local:/tmp/test]
-gremlin> g.makeKey(IdGraph.ID).single().unique().indexed(Vertex.class).indexed(Edge.class).dataType(String.class).make()
-==>__id
-gremlin> ig = new IdGraph(g)
-==>idgraph[titangraph[local:/tmp/test]]
-gremlin> hercules = ig.addVertex("hercules")
-==>v[hercules]
-gremlin> g.v("hercules")
-==>null
-gremlin> zeus = ig.addVertex("zeus")
-==>v[zeus]
-gremlin> ig.addEdge("hercules-father", hercules, zeus, "father");
-==>e[hercules-father][hercules-father->zeus]
+g = TitanFactory.open("berkeleyje:/tmp/test")
+mgmt = g.getManagementSystem();
+id = mgmt.makeKey(IdGraph.ID).dataType(String.class).make()
+mgmt.buildIndex("byvid",Vertex.class).addKey(id).unique().buildCompositeIndex()
+mgmt.buildIndex("byeid",Edge.class).addKey(id).unique().buildCompositeIndex()
+mgmt.commit()
+ig = new IdGraph(g)
+hercules = ig.addVertex("hercules")
+g.v("hercules")
+zeus = ig.addVertex("zeus")
+ig.addEdge("hercules-father", hercules, zeus, "father");
 
 If only user defined ids on vertices (or edges) is needed, then use one of the overloaded `IdGraph` constructors.  It is still helpful, although not strictly necessary, to define an index:
 
 [source,gremlin]
-gremlin> g = TitanFactory.open("/tmp/test")
-==>titangraph[local:/tmp/test]
-gremlin> g.makeKey(IdGraph.ID).single().unique().indexed(Vertex.class).dataType(String.class).make()
-==>__id
-gremlin> ig = new IdGraph(g, true, false)  // true for vertices, false for edges
-==>idgraph[titangraph[local:/tmp/test]]
-gremlin> hercules = ig.addVertex("hercules")
-==>v[hercules]
-gremlin> g.v("hercules")
-==>null
-gremlin> zeus = ig.addVertex("zeus")
-==>v[zeus]
-gremlin> ig.addEdge("hercules-father", hercules, zeus, "father");
-==>e[11-4-1o][hercules-father->zeus]
+ig = new IdGraph(g, true, false)  // true for vertices, false for edges
