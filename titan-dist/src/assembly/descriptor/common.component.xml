@@ -5,10 +5,10 @@
         <fileSet>
             <directory>${assembly.static.dir}/bin</directory>
             <outputDirectory>/bin</outputDirectory>
-            <includes>
-                <include>gremlin.sh</include>
-                <include>gremlin.bat</include>
-            </includes>
+            <excludes>
+                <exclude>upgrade010to020.bat</exclude>
+                <exclude>upgrade010to020.sh</exclude>
+            </excludes>
         </fileSet>
         <fileSet>
             <directory>${assembly.static.dir}/ext</directory>
