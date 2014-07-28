@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -46,22 +47,31 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         }
     }
 
-    private static final Logger log =
-            LoggerFactory.getLogger(AbstractCassandraStoreManager.class);
-
     //################### CASSANDRA SPECIFIC CONFIGURATION OPTIONS ######################
-    public static final ConfigOption<String> CASSANDRA_READ_CONSISTENCY = new ConfigOption<String>(STORAGE_NS,"read-consistency-level",
+
+    public static final ConfigNamespace CASSANDRA_NS =
+            new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "cassandra", "Cassandra storage backend options");
+
+    public static final ConfigOption<String> CASSANDRA_KEYSPACE =
+            new ConfigOption<String>(CASSANDRA_NS, "keyspace",
+                    "The name of Titan's keyspace.  It will be created if it does not exist.",
+                    ConfigOption.Type.LOCAL, "titan");
+
+    // Consistency Levels and Atomic Batch
+    public static final ConfigOption<String> CASSANDRA_READ_CONSISTENCY =
+            new ConfigOption<String>(CASSANDRA_NS, "read-consistency-level",
             "The consistency level of read operations against Cassandra",
             ConfigOption.Type.MASKABLE, "QUORUM");
 
-//    public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
-//    public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
-
-    public static final ConfigOption<String> CASSANDRA_WRITE_CONSISTENCY = new ConfigOption<String>(STORAGE_NS,"write-consistency-level",
+    public static final ConfigOption<String> CASSANDRA_WRITE_CONSISTENCY =
+            new ConfigOption<String>(CASSANDRA_NS, "write-consistency-level",
             "The consistency level of write operations against Cassandra",
             ConfigOption.Type.MASKABLE, "QUORUM");
 
-//    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
+    public static final ConfigOption<Boolean> ATOMIC_BATCH_MUTATE =
+            new ConfigOption<Boolean>(CASSANDRA_NS, "atomic-batch-mutate",
+            "True to use Cassandra atomic batch mutation, false to use non-atomic batches",
+            ConfigOption.Type.MASKABLE, true);
 
     /**
      * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
@@ -72,59 +82,64 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * <p/>
      * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
      */
-    public static final ConfigOption<Integer> CASSANDRA_THRIFT_FRAME_SIZE = new ConfigOption<Integer>(STORAGE_NS,"thrift-frame-size",
-            "The thrift frame size in mega bytes",
+    public static final ConfigOption<Integer> CASSANDRA_THRIFT_FRAME_SIZE =
+            new ConfigOption<Integer>(CASSANDRA_NS, "thrift-frame-size",
+            "The thrift frame size in mega bytes (this has no effect on the embedded Cassandra backend)",
             ConfigOption.Type.MASKABLE, 15);
 
-//    public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
+    // Replication
+    public static final ConfigOption<Integer> REPLICATION_FACTOR =
+            new ConfigOption<Integer>(CASSANDRA_NS, "replication-factor",
+            "The number of data replicas (including the original copy) that should be kept. " +
+                    "This is only meaningful for storage backends that natively support data replication.",
+            ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-//    /**
-//     * This flag would be checked on first Titan run when Keyspace and CFs required
-//     * for operation are created. If this flag is set to "true" Snappy
-//     * compression mechanism would be used.  Default is "true" (see DEFAULT_COMPRESSION_FLAG).
-//     */
-//    public static final String ENABLE_COMPRESSION_KEY = "compression.enabled";
-//    public static final boolean DEFAULT_COMPRESSION_FLAG = true;
-//
-//    /**
-//     * This property allows to set appropriate initial compression chunk_size (in kilobytes) when compression is enabled,
-//     * Default: 64 (see DEFAULT_COMPRESSION_CHUNK_SIZE), should be positive 2^n.
-//     */
-//    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "compression.chunk_length_kb";
-//    public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
-
-    /**
-     * Controls the Cassandra sstable_compression for CFs created by Titan.
-     * <p>
-     * If a CF already exists, then Titan will not modify its compressor
-     * configuration. Put another way, this setting only affects a CF that Titan
-     * created because it didn't already exist.
-     * <p>
-     * Default: {@literal #DEFAULT_COMPRESSOR}
-     */
-    public static final ConfigOption<String> CASSANDRA_COMPRESSION_TYPE = new ConfigOption<String>(STORAGE_NS,"compression-type",
-            "The sstable_compression value to use when creating Titan's column families. " +
-            "This accepts any value allowed by Cassandra's sstable_compression option. " +
-            "Leave this unset to disable sstable_compression on Titan-created CFs.",
-            ConfigOption.Type.MASKABLE, "LZ4Compressor");
-
-    public static final ConfigOption<String> REPLICATION_STRATEGY = new ConfigOption<String>(STORAGE_NS, "replication-strategy-class",
+    public static final ConfigOption<String> REPLICATION_STRATEGY =
+            new ConfigOption<String>(CASSANDRA_NS, "replication-strategy-class",
             "The replication strategy to use for Titan keyspace",
             ConfigOption.Type.FIXED, "org.apache.cassandra.locator.SimpleStrategy");
 
-    public static final ConfigOption<List<String>> REPLICATION_OPTIONS = new ConfigOption<List<String>>(STORAGE_NS, "replication-strategy-options",
+    public static final ConfigOption<List<String>> REPLICATION_OPTIONS =
+            new ConfigOption<List<String>>(CASSANDRA_NS, "replication-strategy-options",
             "Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a " +
             "map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set " +
             "here takes precedence over one set with " + ConfigElement.getPath(REPLICATION_FACTOR),
             ConfigOption.Type.FIXED, new ArrayList<String>(0));
 
-//    public static final String COMPRESSION_KEY = "compression.sstable_compression";
-//    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
-//
+    // Compression
+    public static final ConfigOption<Boolean> CF_COMPRESSION =
+            new ConfigOption<Boolean>(CASSANDRA_NS, "compression",
+            "Whether the storage backend should use compression when storing the data", ConfigOption.Type.FIXED, true);
 
-    public static final ConfigOption<String> CASSANDRA_KEYSPACE = new ConfigOption<String>(STORAGE_NS,"keyspace",
-            "The name of Titan's keyspace.  It will be created if it does not exist.",
-            ConfigOption.Type.LOCAL, "titan");
+    public static final ConfigOption<String> CF_COMPRESSION_TYPE =
+            new ConfigOption<String>(CASSANDRA_NS, "compression-type",
+            "The sstable_compression value Titan uses when creating column families. " +
+            "This accepts any value allowed by Cassandra's sstable_compression option. " +
+            "Leave this unset to disable sstable_compression on Titan-created CFs.",
+            ConfigOption.Type.MASKABLE, "LZ4Compressor");
+
+    public static final ConfigOption<Integer> CF_COMPRESSION_BLOCK_SIZE =
+            new ConfigOption<Integer>(CASSANDRA_NS, "compression-block-size",
+            "The size of the compression blocks in kilobytes", ConfigOption.Type.FIXED, 64);
+
+    // SSL
+    public static final ConfigNamespace SSL_NS =
+            new ConfigNamespace(CASSANDRA_NS, "ssl", "Configuration options for SSL");
+
+    public static final ConfigNamespace SSL_TRUSTSTORE_NS =
+            new ConfigNamespace(SSL_NS, "truststore", "Configuration options for SSL Truststore.");
+
+    public static final ConfigOption<Boolean> SSL_ENABLED =
+            new ConfigOption<Boolean>(SSL_NS, "enabled",
+            "Controls use of the SSL connection to Cassandra", ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_LOCATION =
+            new ConfigOption<String>(SSL_TRUSTSTORE_NS, "location",
+            "Marks the location of the SSL Truststore.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_PASSWORD =
+            new ConfigOption<String>(SSL_TRUSTSTORE_NS, "password",
+            "The password to access SSL Truststore.", ConfigOption.Type.LOCAL, "");
 
     /**
      * The default Thrift port used by Cassandra. Set
@@ -136,29 +151,11 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final String SYSTEM_KS = "system";
 
-//    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
-//    public static final int REPLICATION_FACTOR_DEFAULT = 1;
-
-    public static final ConfigOption<Boolean> SSL_ENABLED = new ConfigOption<Boolean>(STORAGE_SSL_NS, "enabled",
-            "Controls use of the SSL connection to Cassandra", ConfigOption.Type.LOCAL, false);
-
-    public static final ConfigOption<String> SSL_TRUSTSTORE_LOCATION = new ConfigOption<String>(STORAGE_SSL_TRUSTSTORE, "location",
-            "Marks the location of the SSL Truststore.", ConfigOption.Type.LOCAL, "");
-
-    public static final ConfigOption<String> SSL_TRUSTSTORE_PASSWORD = new ConfigOption<String>(STORAGE_SSL_TRUSTSTORE, "password",
-            "The password to access SSL Truststore.", ConfigOption.Type.LOCAL, "");
-
-    public static final ConfigOption<Boolean> ATOMIC_BATCH_MUTATE = new ConfigOption<Boolean>(STORAGE_NS, "atomic-batch-mutate",
-            "True to use Cassandra atomic batch mutation, false to use non-atomic batches", ConfigOption.Type.MASKABLE, true);
-
     protected final String keySpaceName;
     protected final Map<String, String> strategyOptions;
 
     // see description for THRIFT_FRAME_SIZE and THRIFT_MAX_MESSAGE_SIZE for details
     protected final int thriftFrameSize;
-
-    private volatile StoreFeatures features = null;
-    private Partitioner partitioner = null;
 
     protected final boolean compressionEnabled;
     protected final int compressionChunkSizeKB;
@@ -166,14 +163,20 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     protected final boolean atomicBatch;
 
+    private volatile StoreFeatures features = null;
+    private Partitioner partitioner = null;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(AbstractCassandraStoreManager.class);
+
     public AbstractCassandraStoreManager(Configuration config) {
         super(config, PORT_DEFAULT);
 
         this.keySpaceName = config.get(CASSANDRA_KEYSPACE);
         this.thriftFrameSize = config.get(CASSANDRA_THRIFT_FRAME_SIZE) * 1024 * 1024;
-        this.compressionEnabled = config.get(STORAGE_COMPRESSION);
-        this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
-        this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
+        this.compressionEnabled = config.get(CF_COMPRESSION);
+        this.compressionChunkSizeKB = config.get(CF_COMPRESSION_BLOCK_SIZE);
+        this.compressionClass = config.get(CF_COMPRESSION_TYPE);
         this.atomicBatch = config.get(ATOMIC_BATCH_MUTATE);
 
         // SSL truststore location sanity check

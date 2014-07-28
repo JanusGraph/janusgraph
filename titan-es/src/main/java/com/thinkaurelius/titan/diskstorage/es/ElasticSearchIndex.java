@@ -7,10 +7,12 @@ import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -72,21 +74,28 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static final String TTL_FIELD = "_ttl";
 
-    public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS,"max-result-set-size",
-            "Maxium number of results to return if no limit is specified",
-            ConfigOption.Type.MASKABLE, 100000);
-    public static final ConfigOption<Boolean> CLIENT_ONLY = new ConfigOption<Boolean>(INDEX_NS,"client-only",
-            "Whether Titan connects to the indexing backend as a client",
-            ConfigOption.Type.GLOBAL_OFFLINE, true);
-    public static final ConfigOption<String> CLUSTER_NAME = new ConfigOption<String>(INDEX_NS,"cluster-name",
-            "The name of the indexing backend cluster",
-            ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
-    public static final ConfigOption<Boolean> LOCAL_MODE = new ConfigOption<Boolean>(INDEX_NS,"local-mode",
-            "Whether a full indexing instances is started embedded",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
-    public static final ConfigOption<Boolean> CLIENT_SNIFF = new ConfigOption<Boolean>(INDEX_NS,"sniff",
-            "Whether to enable cluster sniffing",
-            ConfigOption.Type.MASKABLE, true);
+    public static final ConfigNamespace ELASTICSEARCH_NS =
+            new ConfigNamespace(INDEX_NS, "elasticsearch", "Elasticsearch index configuration");
+
+    public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE =
+            new ConfigOption<Integer>(ELASTICSEARCH_NS, "max-result-set-size",
+            "Maxium number of results to return if no limit is specified", ConfigOption.Type.MASKABLE, 100000);
+
+    public static final ConfigOption<Boolean> CLIENT_ONLY =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "client-only",
+            "Whether Titan connects to the indexing backend as a client", ConfigOption.Type.GLOBAL_OFFLINE, true);
+
+    public static final ConfigOption<String> CLUSTER_NAME =
+            new ConfigOption<String>(ELASTICSEARCH_NS, "cluster-name",
+            "The name of the indexing backend cluster", ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
+
+    public static final ConfigOption<Boolean> LOCAL_MODE =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "local-mode",
+            "Whether a full indexing instances is started embedded",  ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Boolean> CLIENT_SNIFF =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "sniff",
+            "Whether to enable cluster sniffing", ConfigOption.Type.MASKABLE, true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
 //
