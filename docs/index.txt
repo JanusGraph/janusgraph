@@ -7,6 +7,7 @@ include::titanbasics.txt[]
 //include::using.txt[]
 
 include::storagebackends.txt[]
+
 include::indexbackends.txt[]
 
 include::advanced.txt[]

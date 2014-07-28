@@ -822,6 +822,21 @@ Mapping Parameters
 
 When adding a property key to a mixed index - either through the index builder or the `addIndexKey` method - a list of parameters can be optionally specified to adjust how the property value is mapped into the indexing backend. Refer to the mapping parameters overview _(REF)_ for a complete list of parameter types supported by each indexing backend.
 
+Ordering
+^^^^^^^^
+
+The order in which the results of a graph query are returned can be defined using the `orderBy()` method available on the graph query builder returned by `TitanGraph.query()`. The graph query builder is more verbose than previous examples but provides more features to define the desired result set. The `orderBy()` method expects two parameters:
+
+* The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key. 
+* The sort order: either increasing `Order.ASC` or decreasing `Order.DESC`
+
+For example, the query `g.query().has('name',CONTAINS,'hercules').orderBy('age',Order.DESC).limit(10).vertices()` retrieves the ten oldest individuals with 'hercules' in their name.
+
+When using `orderBy()` it is important to note that:
+
+* Composite graph indexes do not natively support ordering search results. All results will be retrieved and then sorted in-memory. For large result sets, this can be very expensive.
+* Mixed indexes support ordering natively and efficiently. However, the property key used in the orderBy method must have been previously added to the mixed indexed for native result ordering support. This is important in cases where the orderBy key is different from the query keys. If the property key is not part of the index, then sorting requires loading all results into memory.
+
 Label Constraint
 ^^^^^^^^^^^^^^^^
 
@@ -836,6 +851,13 @@ mgmt.buildIndex('byName',Vertex.class).addKey(name).indexOnly(god).buildComposit
 mgmt.commit()
 
 Label restrictions similarly apply to mixed indexes. When a composite index with label restriction is defined as unique, the uniqueness constraint only applies to properties on vertices or edges for the specified label.
+
+Composite vs Mixed Index
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+. Use a composite index for exact match index retrievals. Composite indexes do not require configuring or operating an external index system and are often significantly faster than mixed indexes.
+.. As an exception, use a mixed index for exact matches when the number of distinct values for query constraint is relatively small or if one value is expected to be associated with many elements in the graph (i.e. in case of low selectivity).
+. Use a mixed indexes for numeric range, full-text or geo-spatial indexing. Also, using a mixed index can speed up orderBy queries.
 
 
 [[vertex-indexes]]

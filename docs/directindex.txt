@@ -1,8 +1,8 @@
 [[direct-index-query]]
 Direct Index Query
-~~~~~~~~~~~~~~~~~~
+------------------
 
-Titan's `Graph.query()` querying mechanism supports boolean queries for vertices or edges. In other words, an element either matches the query or it does not.
+Titan's `Graph.query()` querying mechanism supports boolean queries for vertices or edges. In other words, an element either matches the query or it does not. There are no partial matches or result scoring.
 
 Some indexing backends additionally support fuzzy search queries. For those queries, a score is computed for each match to indicate the "goodness" of the match and results are returned in the order of their score. Fuzzy search is particularly useful when dealing with full-text search queries where matching more words is considered to be better.
 
@@ -24,7 +24,7 @@ for (Result<Vertex> result : graph.indexQuery("search","v.text:(farm uncle berry
 }
 
 Query String
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 
 The query string is handed directly to the indexing backend for processing and hence the query string syntax depends on what is supported by the indexing backend. For vertex queries, Titan will analyze the query string for property key references starting with "v." and replace those by a handle to the indexing field that corresponds to the property key. Likewise, for edge queries, Titan will replace property key references starting with "e.".
 Hence, to refer to a property of a vertex, use "v.[KEY_NAME]" in the query string. Likewise, for edges write "e.[KEY_NAME]".
@@ -37,9 +37,10 @@ graph.indexQuery("search","v.text:(farm uncle berry)").vertices()
 This query matches all vertices where the text contains any of the three words (grouped by parentheses) and score matches higher the more words are matched in the text.
 
 Gotchas
-^^^^^^^
+~~~~~~~
 
 When you have property keys that contain non-alphabetic characters, you have to escape the entire property key name with quotation marks, as in:
 
 [source,java]
 graph.indexQuery("search","v.\"first_name\":john").vertices()
+

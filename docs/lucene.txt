@@ -1,6 +1,6 @@
 [[lucene]]
 Lucene
-~~~~~~
+------
 
 //[.tss-center.tss-width-250]
 //image:titan-lucene.png[]
@@ -11,42 +11,39 @@ Apache Lucene is a high-performance, full-featured text search engine library wr
 Titan supports http://lucene.apache.org/[Lucene] as a single-machine, embedded index backend. Lucene has a slightly extended feature set and performs better in small-scale applications compared to <<elasticsearch,Elasticsearch>>, but is limited to single-machine deployments.
 
 Lucene Embedded Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For single machine deployments, Lucene runs embedded with Titan. Titan starts and interfaces with Lucene internally.
 
-To run Lucene embedded, add the following configuration options to the graph configuration file where @/tmp/searchindex/@ specifies the directory where Lucene should store the index data:
+To run Lucene embedded, add the following configuration options to the graph configuration file where `/tmp/searchindex/`specifies the directory where Lucene should store the index data:
 
 [source,properties]
-storage.index.search.backend=lucene
-storage.index.search.directory=/tmp/searchindex
+index.search.backend=lucene
+index.search.directory=/tmp/searchindex
 
-In the above configuration, the index backend is named @search@. Replace @search@ by a different name to change the name of the index.
+In the above configuration, the index backend is named `search`. Replace `search` by a different name to change the name of the index.
 
 Feature Support
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
-* *Full-Text*: Supports all @Text@ predicates to search for text properties that matches a given word, prefix or regular expression.
+* *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
 
-* *Geo*: Supports the @Geo.WITHIN@ condition to search for points that fall within a given geographic shape. Only supports points for indexing and circles and boxes for querying.
+* *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given geographic shape. Only supports points for indexing and circles and boxes for querying.
 
-* *Numeric Range*: Supports all numeric comparisons in @Compare@.
+* *Numeric Range*: Supports all numeric comparisons in `Compare`.
 
 Configuration Options
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
-.Lucene Configuration Options
-[cols="4,7,2,2,1",options="header"]
-|==========================
-|Option |Description |Value |Default |Modifiable
+Refer to the configuration reference _(REF)_ for a complete listing of all Lucene specific configuration options in addition to the general Titan configuration options. 
 
-|backend |Index backend implementation name |lucene |- |-
+Note, that each of the index backend options needs to be prefixed with `index.[INDEX-NAME].` where `[INDEX-NAME]` stands for the name of the index backend. For instance, if the index backend is named _search_ then these configuration options need to be prefixed with `index.search.`.
+To configure an index backend named _search_ to use Lucene as the index system, set the following configuration option:
 
-|directory |Directory to store Lucene data |string |- |yes
+[source,properties]
+index.search.backend = lucene
 
-|==========================
-
-Next Steps
-^^^^^^^^^^
+Further Reading
+~~~~~~~~~~~~~~~
 
 * Please refer to the http://lucene.apache.org/[Lucene homepage] and available documentation for more information on Lucene.
