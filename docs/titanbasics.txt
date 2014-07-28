@@ -1165,6 +1165,101 @@ However, when the storage backend is eventually consistent, the modifications th
 
 If Titan runs locally or against a storage backend that guarantees immediate visibility of modifications, this value can be set to 0.
 
+[[log]]
+Transaction Log
+---------------
+
+Titan can automatically log transactional changes for additional processing or as a record of change. To enable logging for a particular transaction, specify the name of the target log during the start of the transaction.
+
+[source,gremlin]
+tx = g.buildTransaction().setLogIdentifier('addedPerson').start()
+u = tx.addVertex('human')
+u.setProperty('name','proteros')
+u.setProperty('age',36)
+tx.commit()
+
+Upon commit, any changes made during the transaction are logged to the user logging system into a log named `addedPerson`. The log identifier specified during the start of the transaction identifies the log in which the changes are recorded thereby allowing different types of changes to be recorded in separate logs for individual processing.
+
+[source,gremlin]
+tx = g.buildTransaction().setLogIdentifier('battle').start()
+h = tx.V.has('name','hercules').next()
+m = tx.addVertex('monster')
+m.setProperty('name','phylatax')
+h.addEdge('battled',m).setProperty('time',22)
+tx.commit()
+
+Titan provides a user transaction log processor framework to process the recorded transactional changes. The transaction log processor is opened via `TitanFactory.openTransactionLog(TitanGraph)` against a previously opened Titan graph instance. One can then add processors for a particular log which holds transactional changes.
+
+[source,java]
+LogProcessorFramework logProcessor = TitanFactory.openTransactionLog(g);
+final AtomicInteger totalHumansAdded = new AtomicInteger(0);
+final AtomicInteger totalGodsAdded = new AtomicInteger(0);
+userlogs.addLogProcessor("addedPerson")
+        .setProcessorIdentifier("addedPersonCounter")
+        .setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+        .addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
+                for (TitanVertex v : changeState.getVertices(Change.ADDED)) {
+                    if (v.getLabel().equals("human")) totalHumansAdded.incrementAndGet();
+                }
+            }
+        })
+        .addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
+                for (TitanVertex v : changeState.getVertices(Change.ADDED)) {
+                    if (v.getLabel().equals("god")) totalGodsAdded.incrementAndGet();
+                }
+            }
+        })
+        .build();
+
+In this example, a *log processor* is build for the user transaction log named `addedPerson` to process the changes made in transactions which used the `addedPerson` log identifier. Two *change processors* are added to this log processor. The first processor counts the number of humans added and the second counts the number of gods added to the graph. 
+
+When a log processor is build against a particular log, such as the `addedPerson` log in the example above, it will start reading transactional change records from the log immediately upon successful construction and initialization up to the head of the log. The start time specified in the builder marks the time point in the log where the log processor will start reading records. Optionally, one can specify an identifier for the log processor in the builder. The log processor will use the identifier to regularly persist its state of processing, i.e. it will maintain a marker on the last read log record. If the log processor is later restarted with the same identifier, it will continue reading from the last read record. This is particularly useful when the log processor is supposed to run for long periods of time and is therefore likely to fail. In such failure situations, the log processor can simply be restarted with the same identifier.
+It must be ensured that log processor identifiers are unique in a Titan cluster in order to avoid conflicts on the persisted read markers.
+ 
+Change processors are executed individually and in multiple threads. If a change processor accesses global state it must be ensured that such state allows concurrent access. While the log processor reads log records sequentially, the changes are processed in multiple threads so it cannot be guaranteed that the log order is preserved in the change processors. 
+
+Note, that log processors run each registered change processor at least once for each record in the log which means that a single transactional change record may be processed multiple times under certain failure conditions. 
+One cannot add or remove change processor from a running log processor. In other words, a log processor is immutable after it is built. To change log processing, start a new log processor or shut down an existing one.
+
+
+
+[source,java]
+userlogs.addLogProcessor("battle")
+        .setProcessorIdentifier("battleTimer")
+        .setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+        .addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
+                TitanVertex h = (TitanVertex)tx.query().has("name","hercules").vertices().iterator().next();
+                for (TitanEdge edge : changeState.getEdges(h,Change.ADDED,Direction.OUT,"battled")) {
+                    System.out.println("Hercules fought at time: " + edge.getProperty("time"));
+                }
+            }
+        })
+        .build();
+
+Transaction Log Use Cases
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Record of Change
+^^^^^^^^^^^^^^^^
+
+
+Downstream Updates
+^^^^^^^^^^^^^^^^^^
+
+
+Triggers
+^^^^^^^^
+
+
+Log Configuration
+~~~~~~~~~~~~~~~~~
+
 
 [[common-questions]]
 Common Questions
