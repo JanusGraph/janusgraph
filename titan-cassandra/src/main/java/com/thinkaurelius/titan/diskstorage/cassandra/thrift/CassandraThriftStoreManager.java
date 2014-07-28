@@ -13,8 +13,12 @@ import java.util.concurrent.TimeUnit;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
@@ -46,8 +50,92 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
+@PreInitializeConfigOptions
 public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
+
+    public enum PoolExhaustedAction {
+        BLOCK(GenericKeyedObjectPool.WHEN_EXHAUSTED_BLOCK),
+        FAIL(GenericKeyedObjectPool.WHEN_EXHAUSTED_FAIL),
+        GROW(GenericKeyedObjectPool.WHEN_EXHAUSTED_GROW);
+
+        private final byte b;
+
+        PoolExhaustedAction(byte b) {
+            this.b = b;
+        }
+
+        public byte getByte() {
+            return b;
+        }
+    }
+
     private static final Logger log = LoggerFactory.getLogger(CassandraThriftStoreManager.class);
+
+    public static final ConfigNamespace THRIFT_NS =
+            new ConfigNamespace(AbstractCassandraStoreManager.CASSANDRA_NS, "thrift",
+                    "Options for Titan's own Thrift Cassandra backend");
+
+    public static final ConfigNamespace CPOOL_NS =
+            new ConfigNamespace(THRIFT_NS, "cpool", "Options for the Apache commons-pool connection manager");
+
+    public static final ConfigOption<PoolExhaustedAction> CPOOL_WHEN_EXHAUSTED =
+            new ConfigOption<PoolExhaustedAction>(CPOOL_NS, "when-exhausted",
+            "What to do when clients concurrently request more active connections than are allowed " +
+            "by the pool.  The value must be one of BLOCK, FAIL, or GROW.",
+            ConfigOption.Type.MASKABLE, PoolExhaustedAction.class, PoolExhaustedAction.BLOCK);
+
+    public static final ConfigOption<Integer> CPOOL_MAX_TOTAL =
+            new ConfigOption<Integer>(CPOOL_NS, "max-total",
+            "Max number of allowed Thrift connections, idle or active (-1 to leave undefined)",
+            ConfigOption.Type.MASKABLE, 32);
+
+    public static final ConfigOption<Integer> CPOOL_MAX_ACTIVE =
+            new ConfigOption<Integer>(CPOOL_NS, "max-active",
+            "Maximum number of concurrently in-use connections (-1 to leave undefined)",
+            ConfigOption.Type.MASKABLE, -1);
+
+    public static final ConfigOption<Integer> CPOOL_MAX_IDLE =
+            new ConfigOption<Integer>(CPOOL_NS, "max-idle",
+            "Maximum number of concurrently idle connections (-1 to leave undefined)",
+            ConfigOption.Type.MASKABLE, -1);
+
+    public static final ConfigOption<Integer> CPOOL_MIN_IDLE =
+            new ConfigOption<Integer>(CPOOL_NS, "min-idle",
+            "Minimum number of idle connections the pool attempts to maintain",
+            ConfigOption.Type.MASKABLE, 0);
+
+    // Wart: allowing -1 like commons-pool's convention precludes using StandardDuration
+    public static final ConfigOption<Long> CPOOL_MAX_WAIT =
+            new ConfigOption<Long>(CPOOL_NS, "max-wait",
+            "Maximum number of milliseconds to block when " + ConfigElement.getPath(CPOOL_WHEN_EXHAUSTED) +
+            " is set to BLOCK.  Has no effect when set to actions besides BLOCK.  Set to -1 to wait indefinitely.",
+            ConfigOption.Type.MASKABLE, -1L);
+
+    // Wart: allowing -1 like commons-pool's convention precludes using StandardDuration
+    public static final ConfigOption<Long> CPOOL_EVICTOR_PERIOD =
+            new ConfigOption<Long>(CPOOL_NS, "evictor-period",
+            "Approximate number of milliseconds between runs of the idle connection evictor.  " +
+            "Set to -1 to never run the idle connection evictor.",
+            ConfigOption.Type.MASKABLE, 30L * 1000L);
+
+    // Wart: allowing -1 like commons-pool's convention precludes using StandardDuration
+    public static final ConfigOption<Long> CPOOL_MIN_EVICTABLE_IDLE_TIME =
+            new ConfigOption<Long>(CPOOL_NS, "min-evictable-idle-time",
+            "Minimum number of milliseconds a connection must be idle before it is eligible for " +
+            "eviction.  See also " + ConfigElement.getPath(CPOOL_EVICTOR_PERIOD) + ".  Set to -1 to never evict " +
+            "idle connections.", ConfigOption.Type.MASKABLE, 60L * 1000L);
+
+    public static final ConfigOption<Boolean> CPOOL_IDLE_TESTS =
+            new ConfigOption<Boolean>(CPOOL_NS, "idle-test",
+            "Whether the idle connection evictor validates idle connections and drops those that fail to validate",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Integer> CPOOL_IDLE_TESTS_PER_EVICTION_RUN =
+            new ConfigOption<Integer>(CPOOL_NS, "idle-tests-per-eviction-run",
+            "When the value is negative, e.g. -n, roughly one nth of the idle connections are tested per run.  " +
+            "When the value is positive, e.g. n, the min(idle-count, n) connections are tested per run.",
+            ConfigOption.Type.MASKABLE, -1);
+
 
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
     private final CTConnectionPool pool;
@@ -62,8 +150,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
          */
         int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).getLength(TimeUnit.MILLISECONDS);
 
-        int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
-
         CTConnectionFactory.Config factoryConfig = new CTConnectionFactory.Config(hostnames, port, username, password)
                                                                             .setTimeoutMS(thriftTimeoutMS)
                                                                             .setFrameSize(thriftFrameSize);
@@ -76,14 +162,16 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         CTConnectionPool p = new CTConnectionPool(factoryConfig.build());
         p.setTestOnBorrow(true);
         p.setTestOnReturn(true);
-        p.setTestWhileIdle(false);
-        p.setWhenExhaustedAction(GenericKeyedObjectPool.WHEN_EXHAUSTED_BLOCK);
-        p.setMaxActive(-1); // "A negative value indicates no limit"
-        p.setMaxTotal(maxTotalConnections); // maxTotal limits active + idle
-        p.setMinIdle(0); // prevent evictor from eagerly creating unused connections
-        p.setMinEvictableIdleTimeMillis(60 * 1000L);
-        p.setTimeBetweenEvictionRunsMillis(30 * 1000L);
-
+        p.setTestWhileIdle(config.get(CPOOL_IDLE_TESTS));
+        p.setNumTestsPerEvictionRun(config.get(CPOOL_IDLE_TESTS_PER_EVICTION_RUN));
+        p.setWhenExhaustedAction(config.get(CPOOL_WHEN_EXHAUSTED).getByte());
+        p.setMaxActive(config.get(CPOOL_MAX_ACTIVE));
+        p.setMaxTotal(config.get(CPOOL_MAX_TOTAL)); // maxTotal limits active + idle
+        p.setMaxIdle(config.get(CPOOL_MAX_IDLE));
+        p.setMinIdle(config.get(CPOOL_MIN_IDLE));
+        p.setMaxWait(config.get(CPOOL_MAX_WAIT));
+        p.setTimeBetweenEvictionRunsMillis(config.get(CPOOL_EVICTOR_PERIOD));
+        p.setMinEvictableIdleTimeMillis(config.get(CPOOL_MIN_EVICTABLE_IDLE_TIME));
         this.pool = p;
 
         this.openStores = new HashMap<String, CassandraThriftKeyColumnValueStore>();

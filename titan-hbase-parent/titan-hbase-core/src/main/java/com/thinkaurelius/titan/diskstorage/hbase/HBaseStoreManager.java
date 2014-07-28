@@ -6,7 +6,6 @@ import static com.thinkaurelius.titan.diskstorage.Backend.INDEXSTORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
 import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 import java.io.IOException;
@@ -14,17 +13,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 
-import javax.annotation.Nullable;
-
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -48,7 +44,6 @@ import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
-import org.apache.zookeeper.ClientCnxn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +76,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
@@ -98,19 +92,36 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseStoreManager.class);
 
-    public static final ConfigOption<String> HBASE_TABLE = new ConfigOption<String>(STORAGE_NS,"tablename",
-            "The name of the table to store Titan's data in",
-            ConfigOption.Type.LOCAL, "titan");
+    public static final ConfigNamespace HBASE_NS =
+            new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "hbase", "HBase storage options");
 
-    public static final ConfigOption<Boolean> SHORT_CF_NAMES = new ConfigOption<Boolean>(STORAGE_NS,"short-cf-names",
-            "Whether to automatically shorten the names of frequently used column families to preserve space",
-            ConfigOption.Type.FIXED, true);
+    public static final ConfigOption<Boolean> SHORT_CF_NAMES =
+            new ConfigOption<Boolean>(HBASE_NS, "short-cf-names",
+            "Whether to shorten the names of Titan's column families to one-character mnemonics " +
+            "to conserve storage space", ConfigOption.Type.FIXED, true);
 
     public static final String COMPRESSION_DEFAULT = "-DEFAULT-";
 
-    public static final ConfigOption<String> COMPRESSION = new ConfigOption<String>(STORAGE_NS,"compression-algorithm",
-            "An HBase Compression.Algorithm enum string which will be applied to newly created column families",
+    public static final ConfigOption<String> COMPRESSION =
+            new ConfigOption<String>(HBASE_NS, "compression-algorithm",
+            "An HBase Compression.Algorithm enum string which will be applied to newly created column families. " +
+            "The compression algorithm must be installed and available on the HBase cluster.  Titan cannot install " +
+            "and configure new compression algorithms on the HBase cluster by itself.",
             ConfigOption.Type.MASKABLE, "GZ");
+
+    public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =
+            new ConfigOption<Boolean>(HBASE_NS, "skip-schema-check",
+            "Assume that Titan's HBase table and column families already exist. " +
+            "When this is true, Titan will not check for the existence of its table/CFs, " +
+            "nor will it attempt to create them under any circumstances.  This is useful " +
+            "when running Titan without HBase admin privileges.",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<String> HBASE_TABLE =
+            new ConfigOption<String>(HBASE_NS, "table",
+            "The name of the table Titan will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
+            " is false, Titan will automatically create this table if it does not already exist.",
+            ConfigOption.Type.LOCAL, "titan");
 
     /**
      * Related bug fixed in 0.98.0, 0.94.7, 0.95.0:
@@ -119,19 +130,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     public static final int MIN_REGION_COUNT = 3;
 
-    public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =  new ConfigOption<Boolean>(STORAGE_NS,"skip-schema-check",
-            "Assume that Titan's HBase table and column families already exist. " +
-            "When this is true, Titan will not check for the existence of its table/CFs, " +
-            "nor will it attempt to create them under any circumstances.  This is useful " +
-            "when running Titan without HBase admin privileges.",
-            ConfigOption.Type.MASKABLE, false);
-
     /**
      * The total number of HBase regions to create with Titan's table. This
      * setting only effects table creation; this normally happens just once when
      * Titan connects to an HBase backend for the first time.
      */
-    public static final ConfigOption<Integer> REGION_COUNT = new ConfigOption<Integer>(STORAGE_NS, "region-count",
+    public static final ConfigOption<Integer> REGION_COUNT =
+            new ConfigOption<Integer>(HBASE_NS, "region-count",
             "The number of initial regions set when creating Titan's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class, new Predicate<Integer>() {
                 @Override
@@ -174,7 +179,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *
      * These considerations may differ for other HBase implementations (e.g. MapR).
      */
-    public static final ConfigOption<Integer> REGIONS_PER_SERVER = new ConfigOption<Integer>(STORAGE_NS, "regions-per-server",
+    public static final ConfigOption<Integer> REGIONS_PER_SERVER =
+            new ConfigOption<Integer>(HBASE_NS, "regions-per-server",
             "The number of regions per regionserver to set when creating Titan's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class);
 
@@ -207,7 +213,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * doesn't yet officially support.
      *
      */
-    public static final ConfigOption<String> HBASE_COMPAT_CLASS = new ConfigOption<String>(STORAGE_NS, "hbase-compat-class",
+    public static final ConfigOption<String> COMPAT_CLASS =
+            new ConfigOption<String>(HBASE_NS, "compat-class",
             "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
             "When this option is unset, Titan calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
             "at runtime.  Setting this option forces Titan to instead reflectively load and instantiate the specified class.",
@@ -218,7 +225,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final Timestamps PREFERRED_TIMESTAMPS = Timestamps.MILLI;
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
-            new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
+            new ConfigNamespace(HBASE_NS, "ext", "Overrides for hbase-{site,default}.xml options", true);
 
     private static final BiMap<String, String> SHORT_CF_NAME_MAP =
             ImmutableBiMap.<String, String>builder()
@@ -271,7 +278,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
         this.skipSchemaCheck = config.get(SKIP_SCHEMA_CHECK);
-        this.compatClass = config.has(HBASE_COMPAT_CLASS) ? config.get(HBASE_COMPAT_CLASS) : null;
+        this.compatClass = config.has(COMPAT_CLASS) ? config.get(COMPAT_CLASS) : null;
         this.compat = HBaseCompatLoader.getCompat(compatClass);
 
         /*

@@ -292,8 +292,6 @@ public class GraphDatabaseConfiguration {
 
 //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
-    public static final ConfigNamespace STORAGE_SSL_NS = new ConfigNamespace(STORAGE_NS, "ssl", "Configuration options for SSL");
-    public static final ConfigNamespace STORAGE_SSL_TRUSTSTORE = new ConfigNamespace(STORAGE_SSL_NS, "truststore", "Configuration options for SSL Truststore.");
 
     /**
      * Storage directory for those storage backends that require local storage
@@ -394,7 +392,6 @@ public class GraphDatabaseConfiguration {
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, new StandardDuration(10L, TimeUnit.SECONDS));
 
-
     /**
      * If enabled, Titan attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
      * across the entire Titan graph database instance. Parallelization is only applicable to certain storage operations and
@@ -418,18 +415,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<String[]>(STORAGE_NS,"hostname",
             "Configuration key for the hostname or list of hostname of remote storage backend servers to connect to",
             ConfigOption.Type.LOCAL, new String[]{NetworkUtil.getLoopbackAddress()});
-    /**
-     * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
-     * <p/>
-     * Value = {@value}
-     */
-//    public static final String HOSTNAME_KEY = "hostname";
-    /**
-     * Default hostname at which to attempt connecting to remote storage backend
-     * <p/>
-     * Value = {@value}
-     */
-//    public static final String HOSTNAME_DEFAULT = NetworkUtil.getLoopbackAddress();
 
     /**
      * Configuration key for the port on which to connect to remote storage backend servers.
@@ -439,30 +424,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
             "Configuration key for the port on which to connect to remote storage backend servers",
             ConfigOption.Type.LOCAL, Integer.class);
-
-//    public static final String PORT_KEY = "port";
-
-    /**
-     * Whether the storage backend should compress the data when storing it on disk.
-     * Compression reduces the size on disk and speed up I/0 operations if the data is efficiently compressable.
-     */
-    public static final ConfigOption<Boolean> STORAGE_COMPRESSION = new ConfigOption<Boolean>(STORAGE_NS,"compression",
-            "Whether the storage backend should use compression when storing the data",
-            ConfigOption.Type.FIXED, true);
-
-    /**
-     * The size of blocks that are compressed individually in kilobyte
-     */
-    public static final ConfigOption<Integer> STORAGE_COMPRESSION_SIZE = new ConfigOption<Integer>(STORAGE_NS,"compression-block-size",
-            "The size of the compression blocks in kilobytes",
-            ConfigOption.Type.FIXED, 64);
-
-
-
-    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(STORAGE_NS,"replication-factor",
-            "The number of data replicas (including the original copy) that should be kept. " +
-            "This is only meaningful for storage backends that natively support data replication.",
-            ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     /**
      * Username and password keys to be used to specify an access credential that may be needed to connect
@@ -474,8 +435,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> AUTH_PASSWORD = new ConfigOption<String>(STORAGE_NS,"password",
             "Password to authenticate against backend",
             ConfigOption.Type.LOCAL, String.class);
-//    public static final String AUTH_USERNAME_KEY = "username";
-//    public static final String AUTH_PASSWORD_KEY = "password";
 
     /**
      * Default timeout when connecting to a remote database instance
@@ -501,17 +460,6 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
 //    public static final int SETUP_WAITTIME_DEFAULT = 60000;
 //    public static final String SETUP_WAITTIME_KEY = "setup-wait";
-
-    /**
-     * Default number of connections to pool when connecting to a remote database.
-     * <p/>
-     * Value = {@value}
-     */
-    public static final ConfigOption<Integer> CONNECTION_POOL_SIZE = new ConfigOption<Integer>(STORAGE_NS,"connection-pool-size",
-            "Default number of connections to pool when connecting to a remote database",
-            ConfigOption.Type.MASKABLE, 32);
-//    public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
-//    public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
 
     /**
      * Default number of results to pull over the wire when iterating over a distributed
@@ -797,7 +745,7 @@ public class GraphDatabaseConfiguration {
             "Configuration key for the port on which to connect to remote indexing backend servers",
             ConfigOption.Type.MASKABLE, Integer.class);
 
-    public static final ConfigOption<String> INDEX_CONF_FILE = new ConfigOption<String>(INDEX_NS,"conffile",
+    public static final ConfigOption<String> INDEX_CONF_FILE = new ConfigOption<String>(INDEX_NS,"conf-file",
             "Path to a configuration file for those indexing backends that require/support a separate config file",
             ConfigOption.Type.MASKABLE, String.class);
 

@@ -10,7 +10,6 @@ import java.util.Map;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -77,7 +76,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
 
         Map<String, String> defaultCfCompressionOps =
                 new ImmutableMap.Builder<String, String>()
-                .put("sstable_compression", DEFAULT_COMPRESSOR_PACKAGE + "." + AbstractCassandraStoreManager.CASSANDRA_COMPRESSION_TYPE.getDefaultValue())
+                .put("sstable_compression", DEFAULT_COMPRESSOR_PACKAGE + "." + AbstractCassandraStoreManager.CF_COMPRESSION_TYPE.getDefaultValue())
                 .put("chunk_length_kb", "64")
                 .build();
 
@@ -92,8 +91,8 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
         final String cf = TEST_CF_NAME + "_gzip";
 
         ModifiableConfiguration config = getBaseStorageConfiguration();
-        config.set(AbstractCassandraStoreManager.CASSANDRA_COMPRESSION_TYPE,cname);
-        config.set(GraphDatabaseConfiguration.STORAGE_COMPRESSION_SIZE,ckb);
+        config.set(AbstractCassandraStoreManager.CF_COMPRESSION_TYPE,cname);
+        config.set(AbstractCassandraStoreManager.CF_COMPRESSION_BLOCK_SIZE,ckb);
 
         AbstractCassandraStoreManager mgr = openStorageManager(config);
 
@@ -115,7 +114,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
         final String cf = TEST_CF_NAME + "_nocompress";
 
         ModifiableConfiguration config = getBaseStorageConfiguration();
-        config.set(GraphDatabaseConfiguration.STORAGE_COMPRESSION,false);
+        config.set(AbstractCassandraStoreManager.CF_COMPRESSION,false);
         AbstractCassandraStoreManager mgr = openStorageManager(config);
 
         // N.B.: clearStorage() truncates CFs but does not delete them
