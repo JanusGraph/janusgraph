@@ -217,7 +217,7 @@
                                 <goal>single</goal>
                             </goals>
                             <configuration>
-                                <attach>true</attach>
+                                <attach>false</attach>
                                 <descriptors>
                                     <descriptor>${project.build.directory}/shared-resources/hadoop-job.xml</descriptor>
                                 </descriptors>
