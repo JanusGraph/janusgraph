@@ -100,7 +100,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <attach>true</attach>
+                            <attach>false</attach>
                             <descriptors>
                                 <descriptor>src/assembly/shared-resources.xml</descriptor>
                             </descriptors>
@@ -113,7 +113,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <attach>true</attach>
+                            <attach>false</attach>
                             <descriptors>
                                 <descriptor>src/assembly/example-data.xml</descriptor>
                             </descriptors>
@@ -124,6 +124,41 @@
                     <execution>
                         <id>build-job-jar</id>
                         <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>install-shared-resources</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}-shared-resources.jar</file>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <classifier>shared-resources</classifier>
+                            <packaging>jar</packaging>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install-example-data</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}-example-data.zip</file>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <classifier>example-data</classifier>
+                            <packaging>zip</packaging>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -152,4 +187,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Redeclare gpg-plugin at the bottom to ensure it runs after all the other packaging goals -->
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
