@@ -28,7 +28,7 @@ Enabling the `storage.batch-loading` configuration option will have the biggest 
 
 In many bulk loading scenarios it is significantly cheaper to ensure data consistency prior to loading the data then ensuring data consistency while loading it into the database. The `storage.batch-loading` configuration option exists because of this observation.
 
-For example, consider the use case of bulk loading existing user profiles into Titan. Furthermore, assume that the username property key is defined as <<type-definition,in-unique>>, i.e. usernames must be unique across the entire graph. If the user profiles are imported from another database, username uniqueness might already guaranteed. If not, it is simple to sort the profiles by name and filter out duplicates or writing a Hadoop job that does such filtering. Now, we can enable `storage.batch-loading` which significantly reduces the bulk loading time because Titan does not have to check for every added user whether the name already exists in the database.
+For example, consider the use case of bulk loading existing user profiles into Titan. Furthermore, assume that the username property key has a unique composite index defined on it, i.e. usernames must be unique across the entire graph. If the user profiles are imported from another database, username uniqueness might already guaranteed. If not, it is simple to sort the profiles by name and filter out duplicates or writing a Hadoop job that does such filtering. Now, we can enable `storage.batch-loading` which significantly reduces the bulk loading time because Titan does not have to check for every added user whether the name already exists in the database.
 
 *Important*: Enabling `storage.batch-loading` requires the user to ensure that the loaded data is internally consistent and consistent with any data already in the graph. In particular, concurrent type creation can lead to severe data integrity issues when batch loading is enabled. Hence, we *strongly* encourage disabling automatic type creation by setting `autotype = none` in the graph configuration.
 
@@ -49,18 +49,14 @@ ID Acquisition Process
 
 When id blocks are frequently allocated by many Titan instances in parallel, allocation conflicts between instances will inevitably arise and slow down the allocation process. In addition, the increased write load due to bulk loading may further slow down the process to the point where Titan considers it failed and throws an exception. There are three configuration options that can be tuned to avoid this.
 
-1) `storage.idauthority-wait-time` configures the time in milliseconds the id pool manager waits for an id block application to be acknowledged by the storage backend. The shorter this time, the more likely it is that an application will fail on a congested storage cluster.
+1) `ids.authority.wait-time` configures the time in milliseconds the id pool manager waits for an id block application to be acknowledged by the storage backend. The shorter this time, the more likely it is that an application will fail on a congested storage cluster.
 
 *Rule of thumb*: Set this to the sum of the 95th percentile read and write times measured on the storage backend cluster under load.
 *Important*: This value should be the same across all Titan instances.
 
-2) `storage.idauthority-retries` configures the number of times the id pool manager attempts to acquire an id block before giving up and throwing an exception.
+2) `ids.renew-timeout` configures the number of milliseconds Titan’s id pool manager will wait in total while attempting to acquire a new id block before failing.
 
-*Rule of thumb*: Increase this value. The only downside of increasing it is that Titan will try for a long time on an unavailable storage backend cluster.
-
-3) `ids.renew-timeout` configures the number of milliseconds Titan’s id pool manager will wait in total while attempting to acquire a new id block before failing.
-
-*Rule of thumb*: Set this value to be larger than `2 x (storage.idauthority-retries) x (storage.idauthority-wait-time)`. The only downside of increasing it is that Titan will try for a long time on an unavailable storage backend cluster.
+*Rule of thumb*: Set this value to be as large feasible to not have to wait too long for unrecoverable failures. The only downside of increasing it is that Titan will try for a long time on an unavailable storage backend cluster.
 
 Optimizing Writes and Reads
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,7 +107,7 @@ If Faunus cannot be used for parallelizing the bulk loading process, here are so
 * In some cases, the graph data can be decomposed into multiple disconnected subgraphs. Those subgraphs can be loaded independently in parallel across multiple machines (for instance, using BatchGraph as described above).
 * If the graph cannot be decomposed, it is often beneficial to load in multiple steps where the last two steps can be parallelized across multiple machines:
 .. Make sure the vertex and edge data sets are de-duplicated and consistent.
-.. Set `batch.loading=true`. Possibly optimize additional configuration settings described above.
+.. Set `batch-loading=true`. Possibly optimize additional configuration settings described above.
 .. Add all the vertices with their properties to the graph (but no edges). Maintain a (distributed) map from vertex id (as defined by the loaded data) to Titan's internal vertex id (i.e. `vertex.getId()`) which is a 64 bit long id.
 .. Add all the edges using the map to look-up Titan's vertex id and retrieving the vertices using that id.
 

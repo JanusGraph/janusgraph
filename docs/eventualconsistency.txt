@@ -52,7 +52,7 @@ Locking
 
 On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency.
 
-When updating an element that is guarded by a uniqueness constraint, Titan uses the following protocol at the end of a transaction when calling @tx.commit()@:
+When updating an element that is guarded by a uniqueness constraint, Titan uses the following protocol at the end of a transaction when calling `tx.commit()`:
 
 . Acquire a lock on all elements that have a consistency constraint
 . Re-read those elements from the storage backend and verify that they match the state of the element in the current transaction prior to modification. If not, the element was concurrently modified and a PermanentLocking exception is thrown.
