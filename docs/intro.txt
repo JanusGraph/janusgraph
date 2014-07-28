@@ -2,20 +2,21 @@ Introduction
 ============
 
 This section gives an overview of Titan's architecture and benefits,
-followed by a quick tour of Titan features using a small example data
+followed by a quick tour of Titan features using a small tutorial data
 set.
 
 [[benefits]]
 The Benefits of Titan
 ---------------------
 
-Titan is designed to support the processing of graphs so large that they require storage and computational capacities beyond what a single machine can provide. This is Titan's foundational benefit. This section will discuss the various specific benefits of Titan and its underlying, supported persistence solutions.
+Titan is designed to support the processing of graphs so large that they require storage and computational capacities beyond what a single machine can provide. Scaling graph data processing is Titan's foundational benefit. This section will discuss the various specific benefits of Titan and its underlying, supported persistence solutions.
 
 General Titan Benefits
 ~~~~~~~~~~~~~~~~~~~~~~
 
 * Support for very large graphs. Titan graphs scale with the number of machines in the cluster.
-* Support for very many concurrent transactions. Titan's transactional capacity scale with the number of machines in the cluster. 
+* Support for very many concurrent transactions and operational graph processing. Titan's transactional capacity scales with the number of machines in the cluster and answers complex traversal queries on huge graphs in milliseconds.
+* Support for global graph analytics and batch graph processing through the Hadoop framework.
 * Support for geo, numeric range, and full text search for vertices and edges on very large graphs.
 * Native support for the popular property graph data model exposed by http://blueprints.tinkerpop.com[Blueprints].
 * Native support for the graph traversal language http://gremlin.tinkerpop.com[Gremlin].
@@ -81,7 +82,8 @@ Architectural Overview
 
 Titan is a graph database engine.  Titan itself is focused on compact
 graph serialization, rich graph data modeling, and efficient query
-execution.  Titan implements robust, modular interfaces for data
+execution.  In addition, Titan utilizes Hadoop for graph analytics and batch graph processing.
+Titan implements robust, modular interfaces for data
 persistence, data indexing, and client access.  Titan's modular
 architecture allows it to interoperate with a wide range of storage,
 index, and client technologies; it also eases the process of extending
@@ -207,10 +209,10 @@ The `GraphOfTheGodsFactory.create()` method does the following to the newly cons
 
 Please see the https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java[GraphOfTheGodsFactory source code] for details.
 
-For those using Titan/Cassandra (or Titan/HBase), be sure to make use of `bin/cassandra-es.local` (or `bin/hbase-es.local`) and `GraphOfTheGodsFactory.load()`.
+For those using Titan/Cassandra (or Titan/HBase), be sure to make use of `conf/cassandra-es.local` (or `conf/hbase-es.local`) and `GraphOfTheGodsFactory.load()`.
 
 [source,gremlin]
-gremlin> g = TitanFactory.open('bin/cassandra-es.local')
+gremlin> g = TitanFactory.open('conf/cassandra-es.local')
 ==>titangraph[cassandrathrift:127.0.0.1]
 gremlin> GraphOfTheGodsFactory.load(g)
 ==>null
@@ -223,7 +225,7 @@ The typical pattern for accessing data in a graph database is to first locate th
 Given that there is a unique index on `name` property, the Saturn vertex can be retrieved. The property map (i.e. the key/value pairs of Saturn) can then be examined. As demonstrated, the Saturn vertex has a `name` of "saturn," an `age` of 10000, and a `type` of "titan." The grandchild of Saturn can be retrieved with a traversal that expresses: "Who is Saturn's grandchild?" (the inverse of "father" is "child"). The result is Hercules.
 
 [source,gremlin]
-gremlin> saturn = g.V('name','saturn').next()
+gremlin> saturn = g.V.has('name','saturn').next()
 ==>v[4]
 gremlin> saturn.map()
 ==>name=saturn
@@ -366,34 +368,3 @@ gremlin> g.query().has('reason',CONTAINS,'loves').edges().collect{
 }
 ==>[jupiter, loves fresh breezes, sky]
 ==>[neptune, loves waves, sea]
-
-[[related-links]]
-Related Slides, Videos, and Articles
-------------------------------------
-
-This section collects some external media with background and
-orientation on Titan, the TinkerPop stack (including Gremlin), and the
-graph data model.
-
-Articles & Posters
-~~~~~~~~~~~~~~~~~~
-
-* http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/[Titan Provides Real-Time Big Graph Data]: A thorough evaluation of Titan based on a social network benchmark using real Twitter network data. _(August 2012)_
-* http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/[Educating the Planet with Pearson Education]: Presents a large-scale benchmark of Titan with a 121 billion edge graph. _(May 2013, in collaboration with Pearson Education)_
-* http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf[Titan: A Highly Scalable, Distributed Graph Database] (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at http://graphlab.org/workshop2012/agenda/[GraphLab 2012 conference])_
-* http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/[Brief Primer on Graph Databases]
-* https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model]
-
-Slide Presentations
-~~~~~~~~~~~~~~~~~~~
-
-* http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data[Titan: The Rise of Big Graph Data]: An Introduction to graphs, graph algorithms, and the Titan graph database. Also includes an overview of the graph database landscape. _(June 2012, hosted by http://www.jivesoftware.com/[Jive Software])_
-* http://www.slideshare.net/knowfrominfo/titan-talk-ebaymarch2013[Data - Information - Knowledge: Adding Value through Graph Analysis]: Discusses how graph analysis can add value to information and new advancements in Titan and Faunus. _(March 2013, presented at Ebay)_
-* http://www.slideshare.net/knowfrominfo/big-graph-data[Big Graph Data: Understanding a Complex World]: Solving 21st century problems with graphs and an overview of Titan and Faunus. _(November 2012, presented at http://www.meetup.com/Bay-Area-Graph-Geeks/events/85936692/[Bay Area Graph Geeks])_
-* http://www.slideshare.net/knowfrominfo/titan-big-graph-data-with-cassandra[Big Graph Data: Understanding a Complex World, Cassandra Edition]: Presentation of graph database use cases and Titan. Discusses some of Titan's unique features and how Titan uses Cassandra to scale. _(August 2012, presented at http://www.datastax.com/events/cassandrasummit2012[Cassandra 2012 Summit])_
-
-Videos
-~~~~~~
-
-* http://www.youtube.com/watch?v=ZkAYA4Kd8JE[C* Summit 2012: Titan Big Graph Data with Cassandra] 
-* http://www.youtube.com/watch?v=tYAWhBHQiXA[C* Summit 2013: Distributed Graph Computing with Titan and Faunus]

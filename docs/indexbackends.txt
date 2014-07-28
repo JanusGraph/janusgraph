@@ -1,35 +1,6 @@
-Management
-==========
-
-This section describes installation, configuration, and administration
-of Titan.
-
-[[storage-backends]]
-Storage Backends
-----------------
-
-Titan's data storage layer is pluggable.  Implementations of the
-pluggable storage layer -- that is, the software component tells Titan
-how to talk to its data store -- are called storage backends.
-
-This section describes configuration and administration of Titan's
-standard storage backends.
-
-This section only addresses configuration of the stock storage
-backends that come with Titan.  For information about writing a new
-storage backend for Titan, see _TODO: xref to StoreManager/KCVS
-overview_.
-
-include::cassandra.txt[]
-
-include::hbase.txt[]
-
-include::bdb.txt[]
-
-
 [[index-backends]]
 Index Backends
---------------
+==============
 
 [.tss-floatright.tss-width-250]
 image:titan-elasticsearch.png[]
@@ -201,5 +172,3 @@ include::lucene.txt[]
 include::textsearch.txt[]
 
 include::directindex.txt[]
-
-

@@ -1,6 +1,6 @@
 [[hbase]]
 HBase
-~~~~~
+-----
 
 [.tss-center.tss-width-250]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
@@ -9,12 +9,12 @@ image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.or
 Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
 
 HBase Setup
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 The following sections outline the various ways in which Titan can be used in concert with HBase.
 
 Local Server Mode
-+++++++++++++++++
+^^^^^^^^^^^^^^^^^
 
 image:titan-modes-local.png[]
 
@@ -30,14 +30,14 @@ starting master, logging to ../logs/hbase-master-machine-name.local.out
 Now, you can create an HBase TitanGraph as follows:
 
 [source,java]
-Configuration conf = new BaseConfiguration();
-conf.setProperty("storage.backend","hbase");
-TitanGraph g = TitanFactory.open(conf);
+TitanGraph g = TitanFactory.build()
+	.set("storage.backend","hbase")
+	.open()
 
 Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode
-++++++++++++++++++
+^^^^^^^^^^^^^^^^^^
 
 image:titan-modes-distributed.png[]
 
@@ -46,15 +46,15 @@ When the graph needs to scale beyond the confines of a single machine, then HBas
 For example, suppose we have a running HBase cluster with two machines at IP address 77.77.77.77 and 77.77.77.78, then connecting Titan with the cluster is accomplished as follows:
 
 [source,java]
-Configuration conf = new BaseConfiguration();
-conf.setProperty("storage.backend","hbase");
-conf.setProperty("storage.hostname","77.77.77.77,77.77.77.78");
-TitanGraph g = TitanFactory.open(conf);
+TitanGraph g = TitanFactory.build()
+	.set("storage.backend","hbase")
+	.set("storage.hostname","77.77.77.77,77.77.77.78")
+	.open()
 
 `storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode with Rexster
-+++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 image:titan-modes-rexster.png[]
 
@@ -85,45 +85,23 @@ In this case, each Rexster server would be configured to connect to the HBase cl
 </graph>
 
 HBase Specific Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In addition to the general _TODO xref to Graph-Configuration_, there are the following HBase specific Titan configuration options:
+Refer to the configuration reference _(REF)_ for a complete listing of all HBase specific configuration options in addition to the general Titan configuration options.
 
-.HBase Configuration Options
-[cols="4,7,2,2,1",options="header"]
-|==========================
-|Option |Description |Value |Default |Modifiable
+When configuring HBase it is recommended to consider the following HBase specific configuration options:
 
-|storage.tablename |
-Name of the HBase table in which to store the Titan specific column families
-|String |titan |No
-
-|storage.hostname |
-Comma separated list of IP addresses or hostnames of the HBase cluster
-nodes that this Titan instance connects to
-|IP addresses or hostnames. Leave empty to connect to localhost. |- |Yes
-
-|storage.port |
-Port on which to connect to HBase cluster nodes. Leave empty to use default port.
-|Integer |- |Yes
-
-| storage.short-cf-names |
-True to replace Titan's conventional column family names by single character
-mnemonics. http://hbase.apache.org/book/rowkey.design.html#keysize.cf[Short
-CF names save space because HBase stores the CF in every KeyValue].
-|Boolean |false in 0.4.x, true in 0.5.x |No
-
-|==========================
+* *tablename*: Name of the HBase table in which to store the Titan graph. Allows multiple Titan graphs to co-exist in the same HBase cluster.
 
 Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase-config` in the Titan configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through Titan.
 
 Global Graph Operations
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use http://thinkaurelius.github.com/faunus/[Faunus] to iterate over all vertices or edges in large graphs.
+Titan over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use Titan-Hadoop _(REF)_ to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 
 [.tss-center.tss-width-250]
 image:http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick/logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png[link="http://aws.amazon.com/ec2/"]
@@ -206,7 +184,7 @@ hadoop fs -ls /
 ----
 
 Tips and Tricks for Managing an HBase Cluster
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overal status check of the cluster.
 
@@ -241,7 +219,7 @@ sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start master
 Finally, if an HBase cluster has already been deployed and more memory is required of the master or region servers, simply edit the `$HBASE_HOME/conf/hbase-env.sh` files on the respective machines with requisite `-Xmx -Xms` parameters. Once edited, stop/start the master and/or region servers as described previous.
 
 Targeting Hadoop 2
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 Titan's HBase storage backend depends on the Apache HBase 0.94 Maven artifact.  This in turn depends on Hadoop 1.0.  However, http://hbase.apache.org/book/configuration.html#hadoop[HBase supports multiple Hadoop versions and recommends Hadoop 2].
 
@@ -255,7 +233,7 @@ Broadly, targeting Titan for Hadoop 2 is a two step process:
 These steps are described in the following two subsections.
 
 Rebuilding HBase with Hadoop 2
-++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this subsection, we download an HBase 0.94.12 release tarball and compile it against Hadoop 2.2.0.
 
@@ -266,7 +244,7 @@ In this subsection, we download an HBase 0.94.12 release tarball and compile it 
 The last command builds HBase using Hadoop 2.2.0 and installs the resulting Maven artifact into the local repository, which is an elaborate way of saying it copies the HBase jar into <code>~/.m2/repository/</code>.  This is necessary for the next step to work.
 
 Rebuilding Titan-HBase
-++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^
 
 In this subsection, we clone the Titan repository from GitHub and rebuild the titan-hbase artifact.  These commands should be run on the same machine as the commands in the "Rebuilding HBase with Hadoop 2" section preceding this one, or at least two machines that share a single <code>~/.m2/repository/</code> filesystem.
 

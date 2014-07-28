@@ -1,0 +1,4 @@
+Titan Internals
+===============
+
+include::datamodel.txt[]

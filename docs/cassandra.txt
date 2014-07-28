@@ -1,6 +1,6 @@
 [[cassandra]]
 Cassandra
-~~~~~~~~~
+---------
 
 [.tss-center.tss-width-250]
 image:http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/",width=250]
@@ -20,7 +20,7 @@ The following sections outline the various ways in which Titan can be used in co
 
 [[cassandra-local-server-mode]]
 Local Server Mode
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 image:titan-modes-local.png[]
 
@@ -32,15 +32,15 @@ Cassandra can be run as a standalone database on the same local host as Titan an
 Now, you can create a Cassandra TitanGraph as follows::
 
 [source,java]
-Configuration conf = new BaseConfiguration();
-conf.setProperty("storage.backend","cassandra");
-conf.setProperty("storage.hostname","127.0.0.1");
-TitanGraph g = TitanFactory.open(conf);
+TitanGraph g = TitanFactory.build()
+	.set("storage.backend","cassandra")
+	.set("storage.hostname","127.0.0.1")
+	.open()
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 image:titan-modes-distributed.png[]
 
@@ -49,15 +49,15 @@ When the graph needs to scale beyond the confines of a single machine, then Cass
 For example, suppose we have a running Cassandra cluster where one of the machines has the IP address 77.77.77.77, then connecting Titan with the cluster is accomplished as follows (comma separate IP addresses to reference more than one machine):
 
 [source,java]
-Configuration conf = new BaseConfiguration();
-conf.setProperty("storage.backend","cassandra");
-conf.setProperty("storage.hostname","77.77.77.77");
-TitanGraph g = TitanFactory.open(conf);
+TitanGraph g = TitanFactory.build()
+	.set("storage.backend","cassandra")
+	.set("storage.hostname","77.77.77.77")
+	.open()
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode with Rexster
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 image:titan-modes-rexster.png[]
 
@@ -88,7 +88,7 @@ In this case, each Rexster server would be configured to connect to the Cassandr
 </graph>
 
 Titan Embedded Mode
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 image:titan-modes-embedded.png[]
 
@@ -101,69 +101,27 @@ When running a cluster with Titan and Cassandra embedded, it is advisable to exp
 Note, that running Titan with Cassandra embedded requires GC tuning. While embedded Cassandra can provide lower latency query answering, its GC behavior under load is less predictable.
 
 Cassandra Specific Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In addition to the general _TODO: xref to Graph-Configuration_, there are the following Cassandra specific Titan configuration options:
+Refer to the configuration reference _(REF)_ for a complete listing of all Cassandra specific configuration options in addition to the general Titan configuration options.
 
-.Cassandra Configuration Options
-[cols="4,7,2,2,1",options="header"]
-|==========================
-|Option |Description |Value |Default |Modifiable
+When configuring Cassandra it is recommended to consider the following Cassandra specific configuration options:
 
-|storage.hostname |
-IP address or hostname of the Cassandra cluster node that this Titan
-instance connects to. Use a list of comma-separated hostnames or IP
-addresses to seed multiple multiple cassandra nodes
-|IP address or hostname |- |Yes
-
-|storage.port |
-Port on which to connect to Cassandra cluster node
-|Integer |9160 |Yes
-
-|storage.connection-timeout |
-Default time out in milliseconds after which to fail a connection
-attempt with a Cassandra node
-|Integer |10000 |Yes
-
-|storage.connection-pool-size |
-Maximum size of the connection pool for connections to the Cassandra
-cluster
-|Integer |32 |Yes
-
-|storage.read-consistency-level |
-Cassandra consistency level for read operations
-|String |QUORUM |Yes
-
-|storage.write-consistency-level |
-Cassandra consistency level for write operations
-|String |QUORUM |Yes
-
-|storage.replication-factor |
-The replication factor to use. The higher the replication factor, the
-more robust the graph database is to machine failure at the expense of
-data duplication. *The default value should be overwritten for
-production system to ensure robustness. A value of 3 is recommended.*
-This replication factor can only be set when the keyspace is initially
-created. **On an existing keyspace, this value is ignored.**
-|Integer |1 |No
-
-|storage.cassandra.thrift.frame_size_mb
-The maximum frame size to be used by thrift for transport. Increase
-this value when retrieving very large result sets. **Only applicable
-when storage.backend=cassandrathrift**
-|Integer |16 |No
-
-|==========================
+* *read-consistency-level*: Cassandra consistency level for read operations
+* *write-consistency-level*: Cassandra consistency level for write operations
+* *replication-factor*: The replication factor to use. The higher the replication factor, the more robust the graph database is to machine failure at the expense of data duplication. *The default value should be overwritten for production system to ensure robustness. A value of 3 is recommended.* This replication factor can only be set when the keyspace is initially created. **On an existing keyspace, this value is ignored.**
+* *thrift.frame_size_mb*: The maximum frame size to be used by thrift for transport. Increase this value when retrieving very large result sets. **Only applicable when storage.backend=cassandrathrift**
+* *keyspace*: The name of the keyspace to store the Titan graph in. Allows multiple Titan graphs to co-exist in the same Cassandra cluster.
 
 For more information on Cassandra consistency levels and acceptable values, please refer to the http://wiki.apache.org/cassandra/API10[Cassandra Thrift API]. In general, higher levels are more consistent and robust but have higher latency.
 
 Global Graph Operations
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use http://faunus.thinkaurelius.com/[Faunus] to iterate over all vertices or edges in large graphs.
+Titan over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use Titan-Hadoop _(REF)_ to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 
 [.tss-center.tss-width-250]
 image:http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png[link="http://aws.amazon.com/ec2/"]
@@ -174,19 +132,19 @@ Amazon Elastic Compute Cloud (Amazon EC2) is a web service that provides resizab
 Follow these steps to setup a Cassandra cluster on EC2 and deploy Titan over Cassandra. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
 
 Setup Cassandra Cluster
-+++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^
 
 These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://www.datastax.com/docs/datastax_enterprise2.0/ami/install_dse_ami[DataStax AMI Docs] and focus on aspects relevant for a Titan deployment.
 
 Setting up Security Group
-+++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Navigate to the EC2 Console Dashboard, then click on "Security Groups" under "Network & Security".
 
 * Create a new security group. Click Inbound.  Set the "Create a new rule" dropdown menu to "Custom TCP rule".  Add a rule for port 22 from source 0.0.0.0/0.  Add a rule for ports 1024-65535 from the security group members.  If you don't want to open all unprivileged ports among security group members, then at least open 7000, 7199, and 9160 among security group members.  Tip: the "Source" dropdown will autocomplete security group identifiers once "sg" is typed in the box, so you needn't have the exact value ready beforehand.
 
 Launch DataStax Cassandra AMI
-+++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * "Launch the https://aws.amazon.com/amis/datastax-auto-clustering-ami-2-2[DataStax AMI] in your desired zone 
 
@@ -219,7 +177,7 @@ Launch DataStax Cassandra AMI
 * Review and launch instances on the final wizard page.
 
 Verify Successful Instance Launch
-+++++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * SSH into any Cassandra instance node: `ssh -i [your-private-key].pem ubuntu@[public-dns-name-of-any-cassandra-instance]`
 
@@ -228,12 +186,12 @@ Verify Successful Instance Launch
 Note, that the AMI takes a few minutes to configure each instance. A shell prompt will appear upon successful configuration when you SSH into the instance.
 
 Launch Titan Instances
-++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^
 
 Launch additional EC2 instances to run Titan which are either configured in Remote Server Mode or Remote Server Mode with Rexster as described above. You only need to note the IP address of one of the Cassandra cluster instances and configure it as the host name. The particular EC2 instance to run and the particular configuration depends on your use case. 
 
 Example Titan Instance on Amazon Linux AMI
-++++++++++++++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Launch the http://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
 
@@ -256,7 +214,7 @@ You may add additional configuration options found on this page or under _TODO: 
 You have successfully connected this Titan instance to the Cassandra cluster and can start to operate on the graph.
 
 Connect to Cassandra cluster in EC2 from outside EC2
-++++++++++++++++++++++++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Opening the usual Cassandra ports (9160, 7000, 7199) in the security group is not enough, because the Cassandra nodes by default broadcast their ec2-internal IPs, and not their public-facing IPs.
 

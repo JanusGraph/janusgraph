@@ -1,14 +1,24 @@
 Appendices
 ==========
 
-include::configref.txt[]
+[[javadoc]]
+[appendix]
+API Documentation (JavaDoc)
+---------------------------
 
-include::related.txt[]
+Refer to the Titan API documentation _(REF)_ for a complete documentation of all core APIs exposed by Titan.
+
+
+
+
+//---------------------------
 
 include::versions.txt[]
 
 include::changelog.txt[]
 
 include::upgrade.txt[]
+
+include::relatedmaterial.txt[]
 
 include::acknowledgements.txt[]

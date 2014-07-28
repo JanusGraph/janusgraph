@@ -1,5 +1,4 @@
 [[related-projects]]
-[appendix]
 Related Third-Party Projects
 ----------------------------
 

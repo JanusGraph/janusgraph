@@ -1,0 +1,6 @@
+Useful Tools
+============
+
+include::relatedprojects.txt[]
+
+include::generating.txt[]
