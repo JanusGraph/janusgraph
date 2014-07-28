@@ -142,4 +142,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Redeclare gpg-plugin at the bottom to ensure it runs after all the other packaging goals -->
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
