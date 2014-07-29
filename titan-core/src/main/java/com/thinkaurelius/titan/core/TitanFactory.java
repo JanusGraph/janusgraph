@@ -236,14 +236,16 @@ public class TitanFactory {
             Preconditions.checkNotNull(configParent);
             Preconditions.checkArgument(configParent.isDirectory());
 
-            final Pattern p = Pattern.compile(
+            // TODO this mangling logic is a relic from the hardcoded string days; it should be deleted and rewritten as a setting on ConfigOption
+            final Pattern p = Pattern.compile("(" +
                     Pattern.quote(STORAGE_NS.getName()) + "\\..*" +
-                            "(" +
-                            Pattern.quote(STORAGE_DIRECTORY.getName()) + "|" +
-                            Pattern.quote(STORAGE_CONF_FILE.getName()) + "|" +
-                            Pattern.quote(INDEX_DIRECTORY.getName()) + "|" +
-                            Pattern.quote(INDEX_CONF_FILE.getName()) +
-                            ")");
+                            "(" + Pattern.quote(STORAGE_DIRECTORY.getName()) + "|" +
+                                  Pattern.quote(STORAGE_CONF_FILE.getName()) + ")"
+                    + "|" +
+                    Pattern.quote(INDEX_NS.getName()) + "\\..*" +
+                            "(" + Pattern.quote(INDEX_DIRECTORY.getName()) + "|" +
+                                  Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
+            + ")");
 
             final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                 @Override
