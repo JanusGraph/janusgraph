@@ -19,7 +19,12 @@ import static org.junit.Assert.fail;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex;
 import com.thinkaurelius.titan.diskstorage.es.ElasticsearchRunner;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -135,13 +140,16 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
 
         // Run a reindex job
         Properties titanInputProperties = new Properties();
-        titanInputProperties.setProperty("storage.backend", "cassandrathrift");
+        titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_BACKEND), "cassandrathrift");
         String ks = getClass().getSimpleName();
-        titanInputProperties.setProperty("storage.keyspace", cleanKeyspaceName(ks));
-        titanInputProperties.setProperty("index.search.backend", "elasticsearch");
+        titanInputProperties.setProperty(ConfigElement.getPath(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), cleanKeyspaceName(ks));
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_ACTIVE), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_IDLE), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.INDEX_BACKEND, "search"), "elasticsearch");
         // External ES, must be started manually before tests and cleaned afterward
-        titanInputProperties.setProperty("index.search.client-only", "true");
-        titanInputProperties.setProperty("index.search.local-mode", "false");
+        titanInputProperties.setProperty(ConfigElement.getPath(ElasticSearchIndex.CLIENT_ONLY, "search"), "true");
+        titanInputProperties.setProperty(ConfigElement.getPath(ElasticSearchIndex.LOCAL_MODE, "search"), "false");
         // Embedded ES -- plays badly with MR
         //titanInputProperties.setProperty("index.search.directory", "es");
         //titanInputProperties.setProperty("index.search.client-only", "false");

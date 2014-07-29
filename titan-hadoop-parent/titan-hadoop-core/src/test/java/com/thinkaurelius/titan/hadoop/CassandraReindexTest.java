@@ -18,6 +18,10 @@ import static org.junit.Assert.fail;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
@@ -157,9 +161,12 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
 
         // Run some reindex jobs
         Properties titanInputProperties = new Properties();
-        titanInputProperties.setProperty("storage.backend", "cassandrathrift");
+        titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_BACKEND), "cassandrathrift");
         String ks = getClass().getSimpleName();
-        titanInputProperties.setProperty("storage.keyspace", cleanKeyspaceName(ks));
+        titanInputProperties.setProperty(ConfigElement.getPath(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), cleanKeyspaceName(ks));
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_ACTIVE), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_IDLE), "1");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "sensor", "org.apache.cassandra.dht.Murmur3Partitioner");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "friend", "org.apache.cassandra.dht.Murmur3Partitioner");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "bySensorReading", "", "org.apache.cassandra.dht.Murmur3Partitioner");
