@@ -1,0 +1,10 @@
+Advanced Schema
+---------------
+
+to be written
+
+//		- unidirected edes
+//		- signature
+//		- vertex partitioning / static / ttl
+//		- list-valued properties => vertex centric indexing, graph indexing
+//			properties on properties

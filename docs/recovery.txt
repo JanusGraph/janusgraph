@@ -1,0 +1,7 @@
+Failure Recovery
+----------------
+
+to be written
+
+// recovery tx log
+// removed failed instances
