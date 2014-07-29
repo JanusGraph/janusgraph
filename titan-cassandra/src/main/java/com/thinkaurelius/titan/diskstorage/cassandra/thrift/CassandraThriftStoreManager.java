@@ -147,7 +147,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             new ConfigOption<Integer>(CPOOL_NS, "idle-tests-per-eviction-run",
             "When the value is negative, e.g. -n, roughly one nth of the idle connections are tested per run.  " +
             "When the value is positive, e.g. n, the min(idle-count, n) connections are tested per run.",
-            ConfigOption.Type.MASKABLE, -1);
+            ConfigOption.Type.MASKABLE, 0);
 
 
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
