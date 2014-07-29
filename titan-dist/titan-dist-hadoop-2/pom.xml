@@ -50,7 +50,7 @@
                             <finalName>/</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <descriptors>
-                                <descriptor>${assembly.descriptor.dir}/filesystem.xml</descriptor>
+                                <descriptor>src/assembly/descriptor/filesystem.xml</descriptor>
                             </descriptors>
                             <formats combine.self="override">
                                 <format>dir</format>

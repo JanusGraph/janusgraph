@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>mapred.job.tracker</name>
+    <!-- The default job tracker is "local".  This does not require a
+         Hadoop/MapReduce or any other external services.  It's easier
+         to get started with the "local" framework than with the
+         alternatives.
+
+         Change a JobTracker hostname:port pair to use an actual MR
+         cluster, e.g. <value>127.0.0.1:50300</value> -->
+    <value>local</value>
+  </property>
+  <!--
+  <property>
+    <name>mapred.job.tracker.http.address</name>
+    <value>127.0.0.1:50030</value>
+  </property>
+   -->
+</configuration>

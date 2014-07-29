@@ -648,7 +648,7 @@
                                         <appendAssemblyId>false</appendAssemblyId>
                                         <tarLongFileMode>gnu</tarLongFileMode>
                                         <descriptors>
-                                            <descriptor>${assembly.descriptor.dir}/archive.xml</descriptor>
+                                            <descriptor>${project.basedir}/src/assembly/descriptor/archive.xml</descriptor>
                                         </descriptors>
                                         <formats>
                                             <format>zip</format>
