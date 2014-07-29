@@ -1,13 +1,19 @@
 Advanced Topics
 ===============
 
+include::advschema.txt[]
+
+include::eventualconsistency.txt[]
+
+include::recovery.txt[]
+
+include::reindex.txt[]
+
 include::bulkloading.txt[]
 
 include::multiquery.txt[]
 
-include::eventualconsistency.txt[]
-
-
+include::partitioning.txt[]
 
 
 
