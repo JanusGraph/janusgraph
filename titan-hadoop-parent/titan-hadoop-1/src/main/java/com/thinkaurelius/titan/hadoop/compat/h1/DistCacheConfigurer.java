@@ -19,10 +19,12 @@ public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements 
     @Override
     public void configure(Job job) throws IOException {
 
-        for (Path p : getPaths()) {
+        for (Path p : getLocalPaths()) {
             Configuration conf = job.getConfiguration();
-            FileSystem fs = FileSystem.get(conf);
-            DistributedCache.addFileToClassPath(p, conf, fs);
+            FileSystem jobFS = FileSystem.get(conf);
+            FileSystem localFS = FileSystem.getLocal(conf);
+            Path stagedPath = uploadFileIfNecessary(localFS, p, jobFS);
+            DistributedCache.addFileToClassPath(stagedPath, conf, jobFS);
         }
 
         // We don't really need to set a mapred job jar here,

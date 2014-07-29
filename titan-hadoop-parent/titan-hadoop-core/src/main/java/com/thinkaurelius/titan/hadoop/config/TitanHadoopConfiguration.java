@@ -107,6 +107,9 @@ public class TitanHadoopConfiguration {
             "The relationtype of a Titan index to build or repair.  The index must already be enabled or installed.",
             ConfigOption.Type.LOCAL, String.class);
 
+//    public static final ConfigNamespace JARCACHE_NS =
+//            new ConfigNamespace(TRUNK_NS, "jarcache", "Jar staging and DistributedCache classpath settings");
+
     public static ModifiableHadoopConfiguration of(Configuration c) {
         Preconditions.checkNotNull(c);
         return new ModifiableHadoopConfiguration(c);

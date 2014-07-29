@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.hadoop.compat.h2;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 
@@ -16,7 +18,13 @@ public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements 
 
     @Override
     public void configure(Job job) throws IOException {
-        for (Path p : getPaths()) {
+
+        Configuration conf = job.getConfiguration();
+        FileSystem localFS = FileSystem.getLocal(conf);
+        FileSystem jobFS = FileSystem.get(conf);
+
+        for (Path p : getLocalPaths()) {
+            Path stagedPath = uploadFileIfNecessary(localFS, p, jobFS);
             // Calling this method decompresses the archive and makes Hadoop
             // handle its classfiles individually.  This leads to crippling
             // overhead times (10+ seconds) even with the LocalJobRunner
@@ -24,7 +32,7 @@ public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements 
             // copying and chmodding each classfile copy file individually.
             //job.addArchiveToClassPath(p);
             // Just add the compressed archive instead:
-            job.addFileToClassPath(p);
+            job.addFileToClassPath(stagedPath);
         }
 
         // We don't really need to set a mapred job jar here,
