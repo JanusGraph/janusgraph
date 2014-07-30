@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManag
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
 
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
@@ -28,7 +27,9 @@ import java.util.List;
  */
 public class TitanCassandraInputFormat extends TitanInputFormat {
 
-//    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE = "titan.hadoop.input.storage.keyspace";
+    // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
+    private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
+    private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat = new ColumnFamilyInputFormat();
     private TitanCassandraHadoopGraph graph;
@@ -40,21 +41,23 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        return new TitanCassandraRecordReader(this.graph, this.vertexQuery, (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
+    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext)
+            throws IOException, InterruptedException {
+
+        return new TitanCassandraRecordReader(this.graph, this.vertexQuery,
+                (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
     }
 
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        this.titanInputConf = TitanHadoopConfiguration.of(config).extractInputGraphConfiguration();
+
         this.graph = new TitanCassandraHadoopGraph(titanSetup);
 
-        config.set("cassandra.input.keyspace", titanInputConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
-        ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
-        final SlicePredicate predicate = new SlicePredicate();
-        predicate.setSlice_range(getSliceRange(titanSetup.inputSlice(vertexQuery), config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
-        ConfigHelper.setInputSlicePredicate(config, predicate);
+        // We should never write to the input graph
+        this.titanInputConf.set(GraphDatabaseConfiguration.STORAGE_READONLY, true);
+
+        // Copy some Titan configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
         ConfigHelper.setInputInitialAddress(config, titanInputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
         if (titanInputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
             ConfigHelper.setInputRpcPort(config, String.valueOf(titanInputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
@@ -62,8 +65,17 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
             ConfigHelper.setInputKeyspaceUserName(config, titanInputConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
         if (titanInputConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
             ConfigHelper.setInputKeyspacePassword(config, titanInputConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
-        // TODO config.set("storage.read-only", "true");
-        config.set("autotype", "none");
+
+        // Copy keyspace, force the CF setting to edgestore, honor widerows when set
+        final boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
+        // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
+        ConfigHelper.setInputColumnFamily(config, titanInputConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), Backend.EDGESTORE_NAME, wideRows);
+
+        // Set the column slice bounds via Faunus's vertex query filter
+        final SlicePredicate predicate = new SlicePredicate();
+        final int rangeBatchSize = config.getInt(RANGE_BATCH_SIZE_CONFIG, Integer.MAX_VALUE);
+        predicate.setSlice_range(getSliceRange(titanSetup.inputSlice(vertexQuery), rangeBatchSize));
+        ConfigHelper.setInputSlicePredicate(config, predicate);
 
         this.config = config;
     }

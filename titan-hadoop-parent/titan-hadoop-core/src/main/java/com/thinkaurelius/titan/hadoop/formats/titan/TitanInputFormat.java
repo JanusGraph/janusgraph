@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_PATHS;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.TITAN_INPUT_VERSION;
 
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -29,7 +30,7 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     protected boolean trackPaths;
     protected TitanHadoopSetup titanSetup;
     protected ModifiableHadoopConfiguration faunusConf;
-    protected BasicConfiguration titanInputConf;
+    protected ModifiableConfiguration titanInputConf;
 
     @Override
     public void setConf(final Configuration config) {

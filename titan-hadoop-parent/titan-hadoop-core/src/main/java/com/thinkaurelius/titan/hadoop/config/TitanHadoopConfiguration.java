@@ -3,15 +3,11 @@ package com.thinkaurelius.titan.hadoop.config;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.configuration.*;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
@@ -140,14 +136,14 @@ public class TitanHadoopConfiguration {
             conf.setClass(ConfigElement.getPath(opt), cls, iface);
         }
 
-        public BasicConfiguration extractInputGraphConfiguration() {
+        public ModifiableConfiguration extractInputGraphConfiguration() {
             CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS)));
-            return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
+            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
         }
 
-        public BasicConfiguration extractOutputGraphConfiguration() {
+        public ModifiableConfiguration extractOutputGraphConfiguration() {
             CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS)));
-            return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
+            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
         }
 
         public BaseConfiguration extractConfiguration(final String prefix) {
