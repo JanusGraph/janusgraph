@@ -54,9 +54,6 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
         this.graph = new TitanCassandraHadoopGraph(titanSetup);
 
-        // We should never write to the input graph
-        this.titanInputConf.set(GraphDatabaseConfiguration.STORAGE_READONLY, true);
-
         // Copy some Titan configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
         ConfigHelper.setInputInitialAddress(config, titanInputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
         if (titanInputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
