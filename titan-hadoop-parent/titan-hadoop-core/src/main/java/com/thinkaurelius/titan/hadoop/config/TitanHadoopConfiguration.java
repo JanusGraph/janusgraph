@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 public class TitanHadoopConfiguration {
 
     public static final ConfigNamespace ROOT_NS =
-            new ConfigNamespace(null, "h-root", "titan-hadoop configuration root");
+            new ConfigNamespace(null, "faunus", "Faunus configuration root");
 
     public static final ConfigNamespace TRUNK_NS =
             new ConfigNamespace(new ConfigNamespace(ROOT_NS, "titan", "titan-hadoop namespace"), "hadoop", "titan-hadoop namespace"); // TODO fix descriptions
