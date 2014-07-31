@@ -31,7 +31,6 @@ import java.util.List;
  */
 public class TitanHBaseInputFormat extends TitanInputFormat {
 
-//    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "titan.hadoop.input.storage.tablename";
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private TitanHBaseHadoopGraph graph;
     private byte[] edgestoreFamily;

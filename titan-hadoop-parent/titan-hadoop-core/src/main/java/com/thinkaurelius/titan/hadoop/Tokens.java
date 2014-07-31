@@ -57,8 +57,4 @@ public class Tokens {
 
     public static int DEFAULT_MAP_SPILL_OVER = 500;
 
-//    public static final String TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER = "titan.hadoop.pipeline.map-spill-over";
-//    public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = "titan.hadoop.pipeline.track-paths";
-//    public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = "titan.hadoop.pipeline.track-state";
-
 }
