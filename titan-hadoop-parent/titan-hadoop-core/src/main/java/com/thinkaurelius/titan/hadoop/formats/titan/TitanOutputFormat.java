@@ -19,17 +19,11 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapReduceFormat {
-
-    public static final ConfigOption<Boolean> INFER_SCHEMA = new ConfigOption<Boolean>(
-            TitanHadoopConfiguration.OUTPUT_NS, "infer-schema",
-            "Whether to attempt to automatically create Titan property keys and labels before writing data",
-            ConfigOption.Type.LOCAL, true);
-
     @Override
     public void addMapReduceJobs(final HadoopCompiler compiler) {
 
         final boolean inferSchema =
-                ModifiableHadoopConfiguration.of(compiler.getConf()).get(INFER_SCHEMA);
+                ModifiableHadoopConfiguration.of(compiler.getConf()).get(TitanHadoopConfiguration.OUTPUT_INFER_SCHEMA);
 
         if (inferSchema) {
             compiler.addMapReduce(SchemaInferencerMapReduce.Map.class,
