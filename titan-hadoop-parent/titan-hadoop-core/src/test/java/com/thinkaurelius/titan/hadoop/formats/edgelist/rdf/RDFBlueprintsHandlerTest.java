@@ -47,7 +47,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testUseFragments() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
@@ -83,7 +83,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testAsProperties() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_AS_PROPERTIES, new String[] { "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" });
         faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
@@ -109,7 +109,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testLiteralProperties() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_LITERAL_AS_PROPERTY, true);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
@@ -156,7 +156,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testMultiLineParse() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_LITERAL_AS_PROPERTY, true);
         faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
