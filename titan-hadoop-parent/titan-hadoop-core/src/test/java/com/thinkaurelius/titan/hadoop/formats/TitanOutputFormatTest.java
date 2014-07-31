@@ -11,7 +11,6 @@ import com.thinkaurelius.titan.graphdb.schema.SchemaProvider;
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -387,7 +386,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
 
     private void setCommonFaunusOptions(ModifiableHadoopConfiguration faunusConf) {
         // Side effect and misc
-        faunusConf.set(TitanOutputFormat.INFER_SCHEMA, true);
+        faunusConf.set(OUTPUT_INFER_SCHEMA, true);
         faunusConf.set(PIPELINE_TRACK_PATHS, true);
         faunusConf.set(PIPELINE_TRACK_STATE, true);
         faunusConf.set(SIDE_EFFECT_FORMAT, TextOutputFormat.class.getCanonicalName());

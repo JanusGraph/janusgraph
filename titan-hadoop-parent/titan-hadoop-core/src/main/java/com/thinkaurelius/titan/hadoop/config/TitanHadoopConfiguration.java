@@ -49,6 +49,11 @@ public class TitanHadoopConfiguration {
             "Package and classname of the output format class.  This must implment the Hadoop OutputFormat interface.",
             ConfigOption.Type.LOCAL, String.class);
 
+    public static final ConfigOption<Boolean> OUTPUT_INFER_SCHEMA = new ConfigOption<Boolean>(
+            OUTPUT_NS, "infer-schema",
+            "Whether to attempt to automatically create Titan property keys and labels before writing data",
+            ConfigOption.Type.LOCAL, true);
+
     public static final ConfigNamespace JOBDIR_NS =
             new ConfigNamespace(TRUNK_NS, "jobdir", "Temporary SequenceFile configuration");
 
