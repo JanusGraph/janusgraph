@@ -5,6 +5,8 @@ import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
 
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import junit.framework.TestCase;
 
 import org.apache.hadoop.conf.Configuration;
@@ -15,6 +17,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFConfig.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -43,8 +47,9 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testUseFragments() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
@@ -78,9 +83,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testAsProperties() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_AS_PROPERTIES, new String[] { "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" });
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
@@ -103,9 +109,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testLiteralProperties() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_LITERAL_AS_PROPERTY, true);
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
@@ -149,9 +156,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     public void testMultiLineParse() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
         Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_LITERAL_AS_PROPERTY, true);
+        faunusConf.getInputConf(RDF_ROOT).set(RDF_FORMAT, Syntax.N_TRIPLES);
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");

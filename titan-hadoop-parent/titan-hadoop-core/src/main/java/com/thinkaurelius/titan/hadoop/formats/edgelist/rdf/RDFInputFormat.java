@@ -25,15 +25,6 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
  */
 public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement> implements MapReduceFormat {
 
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT = "titan.hadoop.input.rdf.format";
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME = "titan.hadoop.input.rdf.use-localname";
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES = "titan.hadoop.input.rdf.as-properties";
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY = "titan.hadoop.input.rdf.literal-as-property";
-
-    public static final String URI = "uri";
-    public static final String CONTEXT = "context";
-    public static final String NAME = "name";
-
     @Override
     public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
         return new RDFRecordReader(DEFAULT_COMPAT.getContextConfiguration(context));

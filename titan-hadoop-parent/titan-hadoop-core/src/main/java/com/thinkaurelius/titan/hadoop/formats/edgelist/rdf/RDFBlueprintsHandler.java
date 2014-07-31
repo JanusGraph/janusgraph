@@ -1,10 +1,13 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.hadoop.FaunusTypeManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 
 import org.apache.hadoop.conf.Configuration;
@@ -21,13 +24,13 @@ import org.openrdf.rio.Rio;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+
+import static com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFConfig.*;
 
 
 /**
@@ -41,16 +44,13 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
     private final Configuration configuration;
     private final Set<String> asProperties = new HashSet<String>();
     private final boolean literalAsProperty;
-
     private final RDFParser parser;
     private final Queue<FaunusElement> queue = new LinkedList<FaunusElement>();
-
-    public static final Map<String, RDFFormat> formats = new HashMap<String, RDFFormat>();
+    private final String baseURI;
     private final Set<String> reservedFragments;
 
     // Immutable/constant data
     private static ImmutableMap<String, Character> dataTypeToClass;
-    private static final String BASE_URI = "http://thinkaurelius.com#";
     private static final char STRING = 's';
     private static final char INTEGER = 'i';
     private static final char FLOAT = 'f';
@@ -70,16 +70,6 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         dataTypeToClass = b.build();
     }
 
-    static {
-        formats.put("rdf-xml", RDFFormat.RDFXML);
-        formats.put("n-triples", RDFFormat.NTRIPLES);
-        formats.put("turtle", RDFFormat.TURTLE);
-        formats.put("n3", RDFFormat.N3);
-        formats.put("trix", RDFFormat.TRIX);
-        formats.put("trig", RDFFormat.TRIG);
-        //formats.put("n-quads", NQuadsFormat.NQUADS);
-    }
-
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
 
 
@@ -89,21 +79,24 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         //reservedFragments.add("type");
         reservedFragments.add("id");
 
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
+        ModifiableConfiguration rdfConf = faunusConf.getInputConf(RDF_ROOT);
+
         this.configuration = configuration;
-        this.useFragments = configuration.getBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
-        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
-        for (final String property : configuration.getStringCollection(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
+        this.baseURI = rdfConf.get(RDF_BASE_URI);
+        this.useFragments = rdfConf.get(RDF_USE_LOCALNAME);
+        this.literalAsProperty = rdfConf.get(RDF_LITERAL_AS_PROPERTY);
+        for (final String property : rdfConf.get(RDF_AS_PROPERTIES)) {
             this.asProperties.add(property.trim());
         }
 
-        String formatName = configuration.get(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT);
-        if (null == formatName) {
-            throw new RuntimeException("RDF format is required. Use " + RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT);
+        if (!rdfConf.has(RDF_FORMAT)) {
+            throw new RuntimeException("RDF format is required.  Set " + ConfigElement.getPath(RDF_FORMAT));
         }
-        RDFFormat format = formats.get(formatName);
-        if (null == format) {
-            throw new RuntimeException("unknown RDF format: " + formatName);
-        }
+        Syntax syntax = rdfConf.get(RDF_FORMAT);
+        RDFFormat format = syntax.getRDFFormat();
+        Preconditions.checkNotNull(format);
+
         this.parser = Rio.createParser(format);
 
         this.parser.setRDFHandler(this);
@@ -181,36 +174,36 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         if (this.asProperties.contains(s.getPredicate().toString())) {
             final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
-            subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
+            subject.setProperty(URI, s.getSubject().stringValue());
             if (this.useFragments)
-                subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
+                subject.setProperty(NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
             final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
-            subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
+            subject.setProperty(URI, s.getSubject().stringValue());
             if (this.useFragments)
-                subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
+                subject.setProperty(NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
         } else {
             long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
             final FaunusVertex subject = new FaunusVertex(this.configuration, subjectId);
-            subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
+            subject.setProperty(URI, s.getSubject().stringValue());
             if (this.useFragments)
-                subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
+                subject.setProperty(NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
 
             long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
             final FaunusVertex object = new FaunusVertex(this.configuration, objectId);
-            object.setProperty(RDFInputFormat.URI, s.getObject().stringValue());
+            object.setProperty(URI, s.getObject().stringValue());
             if (this.useFragments)
-                object.setProperty(RDFInputFormat.NAME, createFragment(s.getObject()));
+                object.setProperty(NAME, createFragment(s.getObject()));
             this.queue.add(object);
 
             final StandardFaunusEdge predicate = new StandardFaunusEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
-            predicate.setProperty(RDFInputFormat.URI, s.getPredicate().stringValue());
+            predicate.setProperty(URI, s.getPredicate().stringValue());
             if (null != s.getContext())
-                predicate.setProperty(RDFInputFormat.CONTEXT, s.getContext().stringValue());
+                predicate.setProperty(CONTEXT, s.getContext().stringValue());
             // TODO predicate.enablePath(this.enablePath);
             this.queue.add(predicate);
         }
@@ -224,7 +217,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         if (null == string)
             return false;
         try {
-            this.parser.parse(new StringReader(string), BASE_URI);
+            this.parser.parse(new StringReader(string), baseURI);
             return true;
         } catch (Exception e) {
             this.logger.error(e.getMessage());

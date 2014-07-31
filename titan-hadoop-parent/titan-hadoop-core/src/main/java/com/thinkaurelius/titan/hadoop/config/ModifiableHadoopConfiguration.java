@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop.config;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -59,9 +60,13 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         conf.setClass(ConfigElement.getPath(opt), cls, iface);
     }
 
-    public ModifiableConfiguration getInputConf() {
+    public ModifiableConfiguration getInputConf(ConfigNamespace root) {
         HadoopConfiguration inconf = new HadoopConfiguration(this.conf, ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS) + ".");
-        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, inconf,  Restriction.NONE);
+        return new ModifiableConfiguration(root, inconf,  Restriction.NONE);
+    }
+
+    public ModifiableConfiguration getInputConf() {
+        return getInputConf(GraphDatabaseConfiguration.ROOT_NS);
     }
 
     public ModifiableConfiguration getOutputConf() {
