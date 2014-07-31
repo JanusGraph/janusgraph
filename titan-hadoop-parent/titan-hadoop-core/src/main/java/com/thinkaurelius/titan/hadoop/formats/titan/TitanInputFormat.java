@@ -9,11 +9,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
 
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 
@@ -37,7 +35,7 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
 
         this.vertexQuery = FaunusVertexQueryFilter.create(config);
 
-        this.faunusConf = TitanHadoopConfiguration.of(config);
+        this.faunusConf = ModifiableHadoopConfiguration.of(config);
         this.titanInputConf = faunusConf.getInputConf();
         final String titanVersion = faunusConf.get(TITAN_INPUT_VERSION);
         this.trackPaths = faunusConf.get(PIPELINE_TRACK_PATHS);

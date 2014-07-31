@@ -1,22 +1,13 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.TitanOutputFormatTest;
-import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
@@ -30,7 +21,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
     }
 
     @Override
-    protected void setCustomFaunusOptions(TitanHadoopConfiguration.ModifiableHadoopConfiguration c) {
+    protected void setCustomFaunusOptions(ModifiableHadoopConfiguration c) {
         c.getHadoopConfiguration().set(
                 "cassandra.input.partitioner.class",
                 "org.apache.cassandra.dht.Murmur3Partitioner");

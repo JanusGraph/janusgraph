@@ -4,7 +4,7 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
 
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 
@@ -42,7 +42,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
         this.lineRecordReader = new LineRecordReader();
         this.vertexQuery = vertexQuery;
         this.configuration = DEFAULT_COMPAT.getContextConfiguration(context);
-        this.titanConf = TitanHadoopConfiguration.of(configuration);
+        this.titanConf = ModifiableHadoopConfiguration.of(configuration);
 
         final FileSystem fs = FileSystem.get(configuration);
         try {

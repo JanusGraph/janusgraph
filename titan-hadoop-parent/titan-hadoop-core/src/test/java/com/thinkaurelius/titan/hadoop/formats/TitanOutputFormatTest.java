@@ -9,10 +9,9 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
 import com.thinkaurelius.titan.graphdb.schema.SchemaProvider;
 import com.thinkaurelius.titan.hadoop.*;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanOutputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -348,8 +347,8 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
     }
 
     private HadoopGraph getGraphSONToTitan() {
-        TitanHadoopConfiguration.ModifiableHadoopConfiguration faunusConf =
-                new TitanHadoopConfiguration.ModifiableHadoopConfiguration();
+        ModifiableHadoopConfiguration faunusConf =
+                new ModifiableHadoopConfiguration();
 
         // Input
         faunusConf.set(INPUT_FORMAT, GraphSONInputFormat.class.getCanonicalName());
@@ -367,8 +366,8 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
     }
 
     private HadoopGraph getTitanToTitan() {
-        TitanHadoopConfiguration.ModifiableHadoopConfiguration faunusConf =
-                new TitanHadoopConfiguration.ModifiableHadoopConfiguration();
+        ModifiableHadoopConfiguration faunusConf =
+                new ModifiableHadoopConfiguration();
 
         ModifiableConfiguration titanConf = getTitanConfiguration();
 

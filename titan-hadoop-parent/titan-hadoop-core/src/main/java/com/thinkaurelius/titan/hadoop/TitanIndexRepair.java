@@ -6,8 +6,7 @@ import java.io.FileInputStream;
 import java.util.Map;
 import java.util.Properties;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -19,9 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanGraphOutputMapReduce;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraInputFormat;
 
 public class TitanIndexRepair {
@@ -42,7 +39,7 @@ public class TitanIndexRepair {
 
     public static void cassandraRepair(Properties titanProperties, String indexName, String indexType, String partitioner) throws Exception {
         Configuration hadoopConfig = new Configuration();
-        TitanHadoopConfiguration.ModifiableHadoopConfiguration titanConf = TitanHadoopConfiguration.of(hadoopConfig);
+        ModifiableHadoopConfiguration titanConf = ModifiableHadoopConfiguration.of(hadoopConfig);
 
         titanConf.set(TitanHadoopConfiguration.INDEX_NAME, indexName);
         titanConf.set(TitanHadoopConfiguration.INDEX_TYPE, indexType);

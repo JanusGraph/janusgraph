@@ -1,15 +1,9 @@
 package com.thinkaurelius.titan.hadoop.config;
 
-import java.util.Iterator;
-import java.util.Map;
-
 import com.thinkaurelius.titan.diskstorage.configuration.*;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class TitanHadoopConfiguration {
 
@@ -106,64 +100,4 @@ public class TitanHadoopConfiguration {
 //    public static final ConfigNamespace JARCACHE_NS =
 //            new ConfigNamespace(TRUNK_NS, "jarcache", "Jar staging and DistributedCache classpath settings");
 
-    public static ModifiableHadoopConfiguration of(Configuration c) {
-        Preconditions.checkNotNull(c);
-        return new ModifiableHadoopConfiguration(c);
-    }
-
-    public static class ModifiableHadoopConfiguration extends ModifiableConfiguration {
-
-        private final Configuration conf;
-
-        public ModifiableHadoopConfiguration() {
-            this(new Configuration());
-        }
-
-        public ModifiableHadoopConfiguration(Configuration c) {
-            super(TitanHadoopConfiguration.ROOT_NS, new HadoopConfiguration(c), Restriction.NONE);
-            this.conf = c;
-        }
-
-        public Configuration getHadoopConfiguration() {
-            return conf;
-        }
-
-        public void setAllOutput(Map<ConfigElement.PathIdentifier, Object> entries) {
-            ModifiableConfiguration out = getOutputConf();
-            for (Map.Entry<ConfigElement.PathIdentifier,Object> entry : entries.entrySet()) {
-                Preconditions.checkArgument(entry.getKey().element.isOption());
-                out.set((ConfigOption) entry.getKey().element, entry.getValue(), entry.getKey().umbrellaElements);
-            }
-        }
-
-        public void setAllInput(Map<ConfigElement.PathIdentifier, Object> entries) {
-            ModifiableConfiguration in = getInputConf();
-            for (Map.Entry<ConfigElement.PathIdentifier,Object> entry : entries.entrySet()) {
-                Preconditions.checkArgument(entry.getKey().element.isOption());
-                in.set((ConfigOption) entry.getKey().element, entry.getValue(), entry.getKey().umbrellaElements);
-            }
-        }
-
-        public Class<?> getClass(ConfigOption<String> opt, Class<?> cls) {
-            return conf.getClass(ConfigElement.getPath(opt), cls);
-        }
-
-        public <T> Class<? extends T> getClass(ConfigOption<String> opt,  Class<? extends T> defaultValue, Class<T> iface) {
-            return conf.getClass(ConfigElement.getPath(opt), defaultValue, iface);
-        }
-
-        public void setClass(ConfigOption<String> opt, Class<?> cls, Class<?> iface) {
-            conf.setClass(ConfigElement.getPath(opt), cls, iface);
-        }
-
-        public ModifiableConfiguration getInputConf() {
-            HadoopConfiguration inconf = new HadoopConfiguration(this.conf, ConfigElement.getPath(INPUT_CONF_NS) + ".");
-            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, inconf,  Restriction.NONE);
-        }
-
-        public ModifiableConfiguration getOutputConf() {
-            HadoopConfiguration outconf = new HadoopConfiguration(this.conf, ConfigElement.getPath(OUTPUT_CONF_NS) + ".");
-            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, outconf, Restriction.NONE);
-        }
-    }
 }

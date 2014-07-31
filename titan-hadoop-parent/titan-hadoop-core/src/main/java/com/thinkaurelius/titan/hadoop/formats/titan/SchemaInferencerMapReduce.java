@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -91,7 +91,7 @@ public class SchemaInferencerMapReduce {
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            graph = TitanGraphOutputMapReduce.generateGraph(TitanHadoopConfiguration.of(c));
+            graph = TitanGraphOutputMapReduce.generateGraph(ModifiableHadoopConfiguration.of(c));
             tx = graph.buildTransaction().disableBatchLoading().start();
         }
 

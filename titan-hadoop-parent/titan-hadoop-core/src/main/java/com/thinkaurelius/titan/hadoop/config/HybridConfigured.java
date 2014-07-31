@@ -5,7 +5,6 @@ import org.apache.hadoop.conf.Configured;
 
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ModifiableHadoopConfiguration;
 
 /**
  * Like Hadoop {@link Configured}, except that it maintains an additional
@@ -31,13 +30,13 @@ public class HybridConfigured extends Configured {
      */
     public HybridConfigured(Configuration conf) {
         super(conf);
-        titanConf = TitanHadoopConfiguration.of(conf);
+        titanConf = ModifiableHadoopConfiguration.of(conf);
     }
 
     @Override
     public void setConf(Configuration conf) {
         super.setConf(conf);
-        titanConf = TitanHadoopConfiguration.of(conf);
+        titanConf = ModifiableHadoopConfiguration.of(conf);
     }
 
     public ModifiableConfiguration getTitanConf() {

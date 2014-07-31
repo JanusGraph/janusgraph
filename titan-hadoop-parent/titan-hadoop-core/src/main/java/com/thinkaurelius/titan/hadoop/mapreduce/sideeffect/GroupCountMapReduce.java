@@ -5,8 +5,7 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.SafeMapperOutputs;
@@ -72,7 +71,7 @@ public class GroupCountMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             Configuration hc = DEFAULT_COMPAT.getContextConfiguration(context);
-            ModifiableHadoopConfiguration titanConf = TitanHadoopConfiguration.of(hc);
+            ModifiableHadoopConfiguration titanConf = ModifiableHadoopConfiguration.of(hc);
             try {
                 this.mapSpillOver = titanConf.get(PIPELINE_MAP_SPILL_OVER);
                 final String keyClosureString = context.getConfiguration().get(KEY_CLOSURE, null);

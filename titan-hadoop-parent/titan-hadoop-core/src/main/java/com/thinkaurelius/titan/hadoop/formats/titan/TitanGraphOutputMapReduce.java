@@ -3,23 +3,15 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.OUTPUT_FORMAT;
 
-import com.google.common.base.*;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.hadoop.*;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.*;
 
 import org.apache.hadoop.conf.Configuration;
@@ -34,7 +26,6 @@ import org.apache.log4j.Logger;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -108,7 +99,7 @@ public class TitanGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            this.graph = TitanGraphOutputMapReduce.generateGraph(TitanHadoopConfiguration.of(c));
+            this.graph = TitanGraphOutputMapReduce.generateGraph(ModifiableHadoopConfiguration.of(c));
             this.trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
             LOGGER.setLevel(Level.INFO);
         }
@@ -321,7 +312,7 @@ public class TitanGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            this.graph = TitanGraphOutputMapReduce.generateGraph(TitanHadoopConfiguration.of(c));
+            this.graph = TitanGraphOutputMapReduce.generateGraph(ModifiableHadoopConfiguration.of(c));
             this.trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
             LOGGER.setLevel(Level.INFO);
         }
