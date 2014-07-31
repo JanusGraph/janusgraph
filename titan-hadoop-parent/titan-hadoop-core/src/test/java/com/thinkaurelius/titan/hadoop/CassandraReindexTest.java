@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
 import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_TOTAL;
 import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_ACTIVE;
 import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_IDLE;
@@ -9,10 +8,6 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_CONF_FILE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.buildConfiguration;
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.EDGE;
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.PROPERTY;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -21,6 +16,7 @@ import static org.junit.Assert.fail;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
@@ -41,7 +37,6 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
