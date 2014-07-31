@@ -33,8 +33,6 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
  */
 public class ScriptInputFormat extends FileInputFormat<NullWritable, FaunusVertex> implements Configurable {
 
-//    public static final String TITAN_HADOOP_GRAPH_INPUT_SCRIPT_FILE = "titan.hadoop.input.script.file";
-
     private VertexQueryFilter vertexQuery;
     private Configuration config;
 

@@ -16,8 +16,6 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
  */
 public class ScriptOutputFormat extends HadoopFileOutputFormat {
 
-//    public static final String TITAN_HADOOP_GRAPH_OUTPUT_SCRIPT_FILE = "titan.hadoop.output.script.file";
-
     @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new ScriptRecordWriter(super.getDataOuputStream(job), DEFAULT_COMPAT.getContextConfiguration(job));
