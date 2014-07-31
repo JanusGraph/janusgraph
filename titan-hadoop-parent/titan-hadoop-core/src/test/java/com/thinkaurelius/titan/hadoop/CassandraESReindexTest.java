@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
 import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_TOTAL;
 import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_ACTIVE;
 import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_IDLE;
@@ -13,15 +12,12 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_CONF_FILE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.buildConfiguration;
 import static org.junit.Assert.fail;
 
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
@@ -45,12 +41,14 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.tinkerpop.blueprints.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CassandraESReindexTest extends TitanGraphBaseTest {
 
     private static final String ES_HOME = "../../titan-es";
+    private static final Logger log = LoggerFactory.getLogger(CassandraESReindexTest.class);
 
     @BeforeClass
     public static void startES() {
@@ -142,23 +140,27 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         newTx();
 
         // Run a reindex job
-        Properties titanInputProperties = new Properties();
-        titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_BACKEND), "cassandrathrift");
+        Properties titanProps = new Properties();
+        titanProps.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_BACKEND), "cassandrathrift");
         String ks = getClass().getSimpleName();
-        titanInputProperties.setProperty(ConfigElement.getPath(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), cleanKeyspaceName(ks));
-        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "-1");
-        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_ACTIVE), "1");
-        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_IDLE), "1");
-        titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.INDEX_BACKEND, "search"), "elasticsearch");
+        titanProps.setProperty(ConfigElement.getPath(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), cleanKeyspaceName(ks));
+        titanProps.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "-1");
+        titanProps.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_ACTIVE), "1");
+        titanProps.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_IDLE), "1");
+        titanProps.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.INDEX_BACKEND, "search"), "elasticsearch");
         // External ES, must be started manually before tests and cleaned afterward
-        titanInputProperties.setProperty(ConfigElement.getPath(ElasticSearchIndex.CLIENT_ONLY, "search"), "true");
-        titanInputProperties.setProperty(ConfigElement.getPath(ElasticSearchIndex.LOCAL_MODE, "search"), "false");
-        TitanIndexRepair.cassandraRepair(titanInputProperties, "mixedTest", "", "org.apache.cassandra.dht.Murmur3Partitioner");
+        titanProps.setProperty(ConfigElement.getPath(ElasticSearchIndex.CLIENT_ONLY, "search"), "true");
+        titanProps.setProperty(ConfigElement.getPath(ElasticSearchIndex.LOCAL_MODE, "search"), "false");
+        TitanIndexRepair.cassandraRepair(titanProps, "mixedTest", "", "org.apache.cassandra.dht.Murmur3Partitioner");
         newTx();
+
+        log.info("Reopened transaction with keyspace {}", config.get("storage.cassandra.keyspace", String.class));
+
+        Thread.sleep(10000L);
 
         // Use index, see old and new data
         evaluateQuery(tx.query().has("desc", Text.CONTAINS, "d5"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"mixedTest");
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mixedTest");
         evaluateQuery(tx.query().has("desc", Text.CONTAINS, "d105"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"mixedTest");
     }
