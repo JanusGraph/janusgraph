@@ -69,8 +69,12 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         return getInputConf(GraphDatabaseConfiguration.ROOT_NS);
     }
 
-    public ModifiableConfiguration getOutputConf() {
+    public ModifiableConfiguration getOutputConf(ConfigNamespace root) {
         HadoopConfiguration outconf = new HadoopConfiguration(this.conf, ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS) + ".");
-        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, outconf, Restriction.NONE);
+        return new ModifiableConfiguration(root, outconf, Restriction.NONE);
+    }
+
+    public ModifiableConfiguration getOutputConf() {
+        return getOutputConf(GraphDatabaseConfiguration.ROOT_NS);
     }
 }

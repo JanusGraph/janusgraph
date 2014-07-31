@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 
 import org.apache.hadoop.conf.Configuration;
@@ -17,6 +18,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import static com.thinkaurelius.titan.hadoop.formats.script.ScriptConfig.*;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -30,10 +33,11 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
 
     public ScriptRecordWriter(final DataOutputStream out, final Configuration configuration) throws IOException {
         this.out = out;
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
         final FileSystem fs = FileSystem.get(configuration);
         try {
             this.engine.put(OUTPUT, this.out);
-            this.engine.eval(new InputStreamReader(fs.open(new Path(configuration.get(ScriptOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(faunusConf.getOutputConf(SCRIPT_ROOT).get(SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }
