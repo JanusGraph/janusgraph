@@ -19,9 +19,6 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
  */
 public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapReduceFormat {
 
-//    public static final String TITAN_HADOOP_GRAPH_OUTPUT_TITAN = "titan.hadoop.output";
-//    public static final String TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA = "titan.hadoop.output.infer-schema";
-
     public static final ConfigOption<Boolean> INFER_SCHEMA = new ConfigOption<Boolean>(
             TitanHadoopConfiguration.OUTPUT_NS, "infer-schema",
             "Whether to attempt to automatically create Titan property keys and labels before writing data",
