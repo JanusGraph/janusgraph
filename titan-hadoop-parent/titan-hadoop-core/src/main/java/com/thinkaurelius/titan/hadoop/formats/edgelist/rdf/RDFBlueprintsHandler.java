@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 
 import org.apache.hadoop.conf.Configuration;
@@ -91,7 +92,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         }
 
         if (!rdfConf.has(RDF_FORMAT)) {
-            throw new RuntimeException("RDF format is required.  Set " + ConfigElement.getPath(RDF_FORMAT));
+            throw new RuntimeException("RDF format is required.  Set " + ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS) + "." + RDF_FORMAT.getName());
         }
         Syntax syntax = rdfConf.get(RDF_FORMAT);
         RDFFormat format = syntax.getRDFFormat();
