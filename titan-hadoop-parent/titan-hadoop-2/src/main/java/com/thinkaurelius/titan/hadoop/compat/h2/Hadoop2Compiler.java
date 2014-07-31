@@ -39,7 +39,6 @@ import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;

@@ -55,7 +55,6 @@ import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 
