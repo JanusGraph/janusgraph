@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.hadoop;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
+import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_TOTAL;
+import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_ACTIVE;
+import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_IDLE;
 import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.CLIENT_ONLY;
 import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.LOCAL_MODE;
 import static com.thinkaurelius.titan.example.GraphOfTheGodsFactory.INDEX_NAME;
@@ -143,17 +146,13 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_BACKEND), "cassandrathrift");
         String ks = getClass().getSimpleName();
         titanInputProperties.setProperty(ConfigElement.getPath(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), cleanKeyspaceName(ks));
-        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "-1");
         titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_ACTIVE), "1");
         titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_IDLE), "1");
         titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.INDEX_BACKEND, "search"), "elasticsearch");
         // External ES, must be started manually before tests and cleaned afterward
         titanInputProperties.setProperty(ConfigElement.getPath(ElasticSearchIndex.CLIENT_ONLY, "search"), "true");
         titanInputProperties.setProperty(ConfigElement.getPath(ElasticSearchIndex.LOCAL_MODE, "search"), "false");
-        // Embedded ES -- plays badly with MR
-        //titanInputProperties.setProperty("index.search.directory", "es");
-        //titanInputProperties.setProperty("index.search.client-only", "false");
-        //titanInputProperties.setProperty("index.search.local-mode", "true");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "mixedTest", "", "org.apache.cassandra.dht.Murmur3Partitioner");
         newTx();
 
@@ -175,14 +174,14 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         config.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
         config.set(PAGE_SIZE,500);
+        config.set(CPOOL_MAX_TOTAL, -1);
+        config.set(CPOOL_MAX_ACTIVE, 1);
+        config.set(CPOOL_MAX_IDLE, 1);
+
         config.set(INDEX_BACKEND, "elasticsearch", INDEX_NAME);
         // External ES, must be started manually before tests and cleaned afterward
         config.set(LOCAL_MODE, false, INDEX_NAME);
         config.set(CLIENT_ONLY, true, INDEX_NAME);
-        // Embedded ES -- plays badly with MR
-//        config.set(INDEX_DIRECTORY, "es", INDEX_NAME);
-//        config.set(LOCAL_MODE, true, INDEX_NAME);
-//        config.set(CLIENT_ONLY, false, INDEX_NAME);
         return config.getConfiguration();
     }
 

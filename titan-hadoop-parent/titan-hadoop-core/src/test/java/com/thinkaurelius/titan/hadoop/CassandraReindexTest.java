@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.hadoop;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
+import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_TOTAL;
+import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_ACTIVE;
+import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.CPOOL_MAX_IDLE;
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
@@ -164,7 +167,7 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         titanInputProperties.setProperty(ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_BACKEND), "cassandrathrift");
         String ks = getClass().getSimpleName();
         titanInputProperties.setProperty(ConfigElement.getPath(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), cleanKeyspaceName(ks));
-        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "1");
+        titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_TOTAL), "-1");
         titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_ACTIVE), "1");
         titanInputProperties.setProperty(ConfigElement.getPath(CassandraThriftStoreManager.CPOOL_MAX_IDLE), "1");
         TitanIndexRepair.cassandraRepair(titanInputProperties, "byTime", "sensor", "org.apache.cassandra.dht.Murmur3Partitioner");
@@ -203,6 +206,9 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         ModifiableConfiguration config = buildConfiguration();
         config.set(STORAGE_BACKEND,"embeddedcassandra");
         config.set(STORAGE_HOSTS,new String[]{"localhost"});
+        config.set(CPOOL_MAX_TOTAL, -1);
+        config.set(CPOOL_MAX_ACTIVE, 1);
+        config.set(CPOOL_MAX_IDLE, 1);
         config.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
         config.set(PAGE_SIZE,500);
