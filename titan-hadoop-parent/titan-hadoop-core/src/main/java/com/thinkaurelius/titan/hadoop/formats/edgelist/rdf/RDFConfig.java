@@ -1,8 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
+import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import org.openrdf.rio.RDFFormat;
+
+import javax.annotation.Nullable;
 
 public class RDFConfig {
 
@@ -52,7 +55,14 @@ public class RDFConfig {
             new ConfigOption<String[]>(RDF_ROOT, "as-properties",
             "A comma-separated list of predicate URIs for which matching triples " +
             "will be converted into properties instead of edges",
-            ConfigOption.Type.LOCAL, String[].class);
+            ConfigOption.Type.LOCAL, String[].class, new String[]{},
+            new Predicate<String[]>() {
+                @Override
+                public boolean apply(@Nullable String[] input) {
+                    // Zero-length array is allowed (and the default), but null disallowed
+                    return null != input;
+                }
+            });
 
     public static final ConfigOption<String> RDF_BASE_URI =
             new ConfigOption<String>(RDF_ROOT, "base-uri",
