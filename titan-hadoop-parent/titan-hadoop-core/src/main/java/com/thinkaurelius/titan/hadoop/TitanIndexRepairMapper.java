@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -91,9 +92,10 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
     public void setup(
             final Mapper<NullWritable, FaunusVertex, NullWritable, NullWritable>.Context context) throws IOException {
         Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        BasicConfiguration titanConf = ConfigurationUtil.extractOutputConfiguration(hadoopConf);
-        indexName = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_NAME);
-        indexType = ConfigurationUtil.get(hadoopConf, TitanHadoopConfiguration.INDEX_TYPE);
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(hadoopConf);
+        BasicConfiguration titanConf = faunusConf.getOutputConf();
+        indexName = faunusConf.get(TitanHadoopConfiguration.INDEX_NAME);
+        indexType = faunusConf.get(TitanHadoopConfiguration.INDEX_TYPE);
 
         try {
             Preconditions.checkNotNull(indexName, "Need to provide at least an index name for re-index job");
