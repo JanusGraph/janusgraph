@@ -106,7 +106,8 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             mgmt = (ManagementSystem) graph.getManagementSystem();
             validateIndexStatus();
         } catch (final Exception e) {
-            mgmt.rollback();
+            if (null != mgmt && mgmt.isOpen())
+                mgmt.rollback();
             DEFAULT_COMPAT.incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
             throw new IOException(e.getMessage(), e);
         }
