@@ -204,6 +204,25 @@
                                 </resources>
                             </configuration>
                         </execution>
+                        <execution>
+                            <id>filter-cassandra-murmur-config</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                <filters>
+                                    <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                </filters>
+                                <resources>
+                                    <resource>
+                                        <directory>${top.level.basedir}/titan-cassandra/config/cassandra</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
                     </executions>
                 </plugin>
 
@@ -267,6 +286,7 @@
                                 <goal>integration-test</goal>
                             </goals>
                             <configuration>
+                                <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
                                 <includes>
                                     <include>**/TitanCassandraOutputFormatTest.java</include>
                                     <include>**/*ReindexTest.java</include>

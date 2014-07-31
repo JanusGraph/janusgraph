@@ -39,7 +39,7 @@ public class TitanIndexRepair {
     }
 
     public static void cassandraRepair(Properties titanInputProperties, String indexName, String indexType, String partitioner) throws Exception {
-        Configuration hadoopConfig = TitanGraphOutputMapReduce.createConfiguration();
+        Configuration hadoopConfig = new Configuration();
 
         hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_FORMAT), TitanCassandraInputFormat.class.getCanonicalName());
         ConfigHelper.setInputPartitioner(hadoopConfig, partitioner);

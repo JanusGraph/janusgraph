@@ -167,22 +167,17 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        String ks = getClass().getSimpleName();
-        ModifiableConfiguration config = buildConfiguration();
-        config.set(STORAGE_BACKEND,"embeddedcassandra");
-        config.set(STORAGE_HOSTS,new String[]{"localhost"});
-        config.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
-        config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
-        config.set(PAGE_SIZE,500);
-        config.set(CPOOL_MAX_TOTAL, -1);
-        config.set(CPOOL_MAX_ACTIVE, 1);
-        config.set(CPOOL_MAX_IDLE, 1);
-
-        config.set(INDEX_BACKEND, "elasticsearch", INDEX_NAME);
-        // External ES, must be started manually before tests and cleaned afterward
-        config.set(LOCAL_MODE, false, INDEX_NAME);
-        config.set(CLIENT_ONLY, true, INDEX_NAME);
-        return config.getConfiguration();
+        String className = getClass().getSimpleName();
+        ModifiableConfiguration mc = CassandraStorageSetup.getEmbeddedConfiguration(className);
+        mc.set(PAGE_SIZE,500);
+        mc.set(CPOOL_MAX_TOTAL, -1);
+        mc.set(CPOOL_MAX_ACTIVE, 1);
+        mc.set(CPOOL_MAX_IDLE, 1);
+        // ES Index
+        mc.set(INDEX_BACKEND, "elasticsearch", INDEX_NAME);
+        mc.set(LOCAL_MODE, false, INDEX_NAME);
+        mc.set(CLIENT_ONLY, true, INDEX_NAME);
+        return mc.getConfiguration();
     }
 
     public static String cleanKeyspaceName(String raw) {

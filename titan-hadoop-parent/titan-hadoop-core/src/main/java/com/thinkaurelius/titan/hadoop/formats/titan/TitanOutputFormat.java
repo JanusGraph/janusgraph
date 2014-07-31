@@ -8,8 +8,11 @@ import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.noop.NoOpOutputFormat;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
+
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -40,6 +43,12 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                     FaunusVertex.class,
                     SchemaInferencerMapReduce.createConfiguration());
         }
+
+        Configuration outputConf = compiler.getConf();
+
+        outputConf.setBoolean(DEFAULT_COMPAT.getSpeculativeMapConfigKey(), false);
+        outputConf.setBoolean(DEFAULT_COMPAT.getSpeculativeReduceConfigKey(), false);
+
         compiler.addMapReduce(TitanGraphOutputMapReduce.VertexMap.class,
                 null,
                 TitanGraphOutputMapReduce.Reduce.class,
@@ -47,10 +56,10 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                 Holder.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                TitanGraphOutputMapReduce.createConfiguration());
+                outputConf);
         compiler.addMap(TitanGraphOutputMapReduce.EdgeMap.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                TitanGraphOutputMapReduce.createConfiguration());
+                outputConf);
     }
 }

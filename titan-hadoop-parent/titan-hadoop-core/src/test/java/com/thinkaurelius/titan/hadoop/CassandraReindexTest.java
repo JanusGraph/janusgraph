@@ -202,17 +202,13 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        String ks = getClass().getSimpleName();
-        ModifiableConfiguration config = buildConfiguration();
-        config.set(STORAGE_BACKEND,"embeddedcassandra");
-        config.set(STORAGE_HOSTS,new String[]{"localhost"});
-        config.set(CPOOL_MAX_TOTAL, -1);
-        config.set(CPOOL_MAX_ACTIVE, 1);
-        config.set(CPOOL_MAX_IDLE, 1);
-        config.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
-        config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
-        config.set(PAGE_SIZE,500);
-        return config.getConfiguration();
+        String className = getClass().getSimpleName();
+        ModifiableConfiguration mc = CassandraStorageSetup.getEmbeddedConfiguration(className);
+        mc.set(CPOOL_MAX_TOTAL, -1);
+        mc.set(CPOOL_MAX_ACTIVE, 1);
+        mc.set(CPOOL_MAX_IDLE, 1);
+        mc.set(PAGE_SIZE, 500);
+        return mc.getConfiguration();
     }
     
     public static String cleanKeyspaceName(String raw) {
