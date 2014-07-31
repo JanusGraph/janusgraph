@@ -13,6 +13,8 @@ import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.util.DefaultQuery;
@@ -45,14 +47,13 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
         return this.doesFilter;
     }
 
-    public static final String TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER = "titan.hadoop.input.vertex-query-filter";
-
     public static FaunusVertexQueryFilter create(final Configuration configuration) {
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
         engine.put("v", new DummyVertex(FaunusTypeManager.getTypeManager(configuration)));
         try {
             // Can't default to v.query().relations() -- this causes a class cast exception when attempting to convert the Iterable return value of relations() to a FaunusVertexQueryFilter
-            FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query()"));
-            if (null != configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER)) {
+            FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(faunusConf.get(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER));
+            if (faunusConf.has(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER)) {
                 query.setDoesFilter(true);
             }
             // Move relations() call down here for the side effect (sets the resultType)

@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.hadoop.formats;
 
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -25,8 +27,6 @@ import java.util.Set;
 
 public class VertexQueryFilter extends DefaultVertexQuery {
 
-    public static final String TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER = "titan.hadoop.input.vertex-query-filter";
-
     private static final GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
     private static final String V = "v";
     private static final DummyVertex DUMMY_VERTEX = new DummyVertex();
@@ -38,10 +38,11 @@ public class VertexQueryFilter extends DefaultVertexQuery {
     }
 
     public static VertexQueryFilter create(final Configuration configuration) {
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
         engine.put(V, DUMMY_VERTEX);
         try {
-            VertexQueryFilter query = (VertexQueryFilter) engine.eval(configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query()"));
-            if (null != configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER))
+            VertexQueryFilter query = (VertexQueryFilter) engine.eval(faunusConf.get(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER));
+            if (faunusConf.has(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER))
                 query.setDoesFilter(true);
             return query;
         } catch (final Exception e) {

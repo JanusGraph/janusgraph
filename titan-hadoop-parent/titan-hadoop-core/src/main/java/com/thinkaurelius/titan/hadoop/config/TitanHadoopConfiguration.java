@@ -29,6 +29,13 @@ public class TitanHadoopConfiguration {
     public static final ConfigNamespace INPUT_CONF_NS =
             new ConfigNamespace(INPUT_NS, "conf", "Settings for the input format class");
 
+    public static final ConfigOption<String> INPUT_VERTEX_QUERY_FILTER = new ConfigOption<String> (
+            INPUT_NS, "vertex-query-filter",
+            "A Gremlin vertex-centric query which limits the relations read by Faunus for each vertex.  " +
+            "This query string should assume the variable v represents a vertex (Faunus binds the v " +
+            "variable automatically before evaluating this query string).",
+            ConfigOption.Type.LOCAL, "v.query()");
+
     public static final ConfigOption<String> TITAN_INPUT_VERSION = new ConfigOption<String>(
             INPUT_NS, "db-version",
             "The version of the Titan database being read",
