@@ -92,6 +92,14 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hbase-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Elasticsearch MR -->
         <dependency>
             <groupId>org.elasticsearch</groupId>
@@ -302,6 +310,7 @@
                                 <goal>integration-test</goal>
                             </goals>
                             <configuration>
+                                <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/titan-hbase-parent/</argLine>
                                 <includes>
                                     <include>**/TitanHBaseOutputFormatTest.java</include>
                                 </includes>

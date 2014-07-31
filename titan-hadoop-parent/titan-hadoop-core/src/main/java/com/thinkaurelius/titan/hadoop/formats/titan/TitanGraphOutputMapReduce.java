@@ -9,6 +9,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.hadoop.*;
@@ -79,7 +81,10 @@ public class TitanGraphOutputMapReduce {
     public static TitanGraph generateGraph(final ModifiableHadoopConfiguration titanConf) {
         final Class<? extends OutputFormat> format = titanConf.getClass(OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
-            return TitanFactory.open(titanConf.extractOutputGraphConfiguration());
+            ModifiableConfiguration mc = titanConf.getOutputConf();
+            boolean present = mc.has(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE);
+            LOGGER.trace("Keyspace in_config=" + present + " value=" + mc.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
+            return TitanFactory.open(mc);
         } else {
             throw new RuntimeException("The provide graph output format is not a supported TitanOutputFormat: " + format.getName());
         }

@@ -38,7 +38,7 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
         this.vertexQuery = FaunusVertexQueryFilter.create(config);
 
         this.faunusConf = TitanHadoopConfiguration.of(config);
-        this.titanInputConf = faunusConf.extractInputGraphConfiguration();
+        this.titanInputConf = faunusConf.getInputConf();
         final String titanVersion = faunusConf.get(TITAN_INPUT_VERSION);
         this.trackPaths = faunusConf.get(PIPELINE_TRACK_PATHS);
         final String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;

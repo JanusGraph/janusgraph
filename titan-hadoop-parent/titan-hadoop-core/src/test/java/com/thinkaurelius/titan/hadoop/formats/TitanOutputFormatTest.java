@@ -1,40 +1,102 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
 import com.thinkaurelius.titan.graphdb.schema.SchemaProvider;
-import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.DefaultSchemaProvider;
-import com.thinkaurelius.titan.hadoop.FaunusTypeManager;
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.HadoopPipeline;
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
+import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.util.PipeHelper;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-import org.apache.commons.configuration.BaseConfiguration;
-
+import java.io.File;
 import java.util.List;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static org.junit.Assert.*;
+
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanOutputFormatTest extends BaseTest {
+public abstract class TitanOutputFormatTest extends BaseTestNG {
 
-    public void testTrue() {
-        assertTrue(true);
+    /**
+     * Return a TitanGraph configuration for the particular storage backend under test.
+     * For instance, a subclass testing the Cassandra input format would return a
+     * configuration with storage.backend set to cassandrathrift/cassandra, etc.
+     */
+    protected abstract ModifiableConfiguration getTitanConfiguration();
+
+    /**
+     * Return the full package.classname of the InputFormat to use when reading from Titan
+     */
+    protected abstract Class<?> getTitanInputFormatClass();
+
+    /**
+     * Return the full package.classname of the OutputFormat to use when writing to Titan
+     */
+    protected abstract Class<?> getTitanOutputFormatClass();
+
+    /**
+     * Set any additional Faunus/Hadoop options on the config about to used to
+     * instantiate a HadoopGraph instance.  Subclasses can use this method to set or
+     * overwrite arbitrary config keys right before HadoopGraph construction.
+     */
+    protected void setCustomFaunusOptions(ModifiableHadoopConfiguration c) { /* default noop */ }
+
+    private TitanGraph g;
+
+    private HadoopGraph f1, f2;
+
+    @After
+    public void cleanUp() {
+        close();
     }
 
-    public void bulkLoadGraphOfTheGods(final HadoopGraph f) throws Exception {
-        new HadoopPipeline(f)._().submit();
+    public void clear() throws Exception {
+        ModifiableConfiguration mc = getTitanConfiguration();
+        mc.set(UNIQUE_INSTANCE_ID, "deleter");
+        mc.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
+        Backend backend = new Backend(mc);
+        backend.initialize(mc);
+        backend.clearStorage();
+        backend.close();
     }
 
-    public void doBulkLoading(final BaseConfiguration configuration, final HadoopGraph f1) throws Exception {
+    @Before
+    public void setUp() throws Exception {
+        clear();
+        open();
+        f1 = getGraphSONToTitan();
+        f2 = getTitanToTitan();
+    }
+
+    @Test
+    public void testInGremlinImports() {
+        assertTrue(Imports.getImports().contains(getTitanOutputFormatClass().getPackage().getName() + ".*"));
+    }
+
+    @Test
+    public void testBulkLoading() throws Exception {
         bulkLoadGraphOfTheGods(f1);
-        TitanGraph g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
         new GremlinPipeline(g).V().sideEffect(new PipeFunction<Vertex, Vertex>() {
@@ -56,47 +118,38 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(names.contains("nemean"));
         assertTrue(names.contains("hydra"));
         assertTrue(names.contains("cerberus"));
-
-        g.shutdown();
     }
 
-    public void doBulkElementDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testBulkElementDeletions() throws Exception {
         bulkLoadGraphOfTheGods(f1);
-        TitanGraph g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
-
         new HadoopPipeline(f2).V().drop().submit();
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
-
         bulkLoadGraphOfTheGods(f1);
-        g.shutdown();
-        g = TitanFactory.open(configuration);
         new HadoopPipeline(f2).E().drop().submit();
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
-
         new HadoopPipeline(f2).V().drop().submit();
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
-
-        g.shutdown();
     }
 
-    public void doFewElementDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testFewElementDeletions() throws Exception {
         bulkLoadGraphOfTheGods(f1);
-        TitanGraph g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
         new HadoopPipeline(f2).E().has("label", "battled").drop().submit();
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(14, new GremlinPipeline(g).E().count());
         assertEquals(0, new GremlinPipeline(g).E().has("label", "battled").count());
@@ -104,22 +157,19 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(2, new GremlinPipeline(g).E().has("label", "father").count());
 
         new HadoopPipeline(f2).V().has("name", "hercules").drop().submit();
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(11, new GremlinPipeline(g).V().count());
         assertEquals(12, new GremlinPipeline(g).E().count());
         assertEquals(0, new GremlinPipeline(g).E().has("label", "battled").count());
         assertEquals(0, new GremlinPipeline(g).E().has("label", "mother").count());
         assertEquals(1, new GremlinPipeline(g).E().has("label", "father").count());
-
-        g.shutdown();
     }
 
-    public void doBulkVertexPropertyDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testBulkVertexPropertyDeletions() throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new HadoopPipeline(f2).V().sideEffect("{it.removeProperty('name')}").submit();
-        TitanGraph g = TitanFactory.open(configuration);
-
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
@@ -134,13 +184,11 @@ public class TitanOutputFormatTest extends BaseTest {
                 return edge;
             }
         }).iterate();
-
-        g.shutdown();
     }
 
-    public void doBulkVertexPropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testBulkVertexPropertyUpdates() throws Exception {
         // Declare schema in Titan
-        TitanGraph g = TitanFactory.open(configuration);
         TitanManagement mgmt = g.getManagementSystem();
         mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
         mgmt.commit();
@@ -155,8 +203,8 @@ public class TitanOutputFormatTest extends BaseTest {
 
         new HadoopPipeline(f2).V().sideEffect("{it.name = 'marko' + it.name}").submit();
 
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
+
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
@@ -174,21 +222,18 @@ public class TitanOutputFormatTest extends BaseTest {
         }).iterate();
 
         new HadoopPipeline(f2).V().drop().submit();
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
         bulkLoadGraphOfTheGods(f1);
 
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
         int counter = 0;
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         new HadoopPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
 
         TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
@@ -207,14 +252,14 @@ public class TitanOutputFormatTest extends BaseTest {
         // Reset/clear types to avoid interference with subsequent tests
         typeManager.clear();
         typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
-
-        g.shutdown();
     }
 
-    public void doBulkEdgeDerivations(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testBulkEdgeDerivations() throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new HadoopPipeline(f2).V().as("x").out("father").out("father").linkIn("grandfather", "x").submit();
-        TitanGraph g = TitanFactory.open(configuration);
+
+        clopen();
 
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(18, new GremlinPipeline(g).E().count());
@@ -222,14 +267,14 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(PipeHelper.areEqual(
                 new GremlinPipeline(g).V("name", "hercules").out("father").out("father"),
                 new GremlinPipeline(g).V("name", "hercules").out("grandfather")));
-
-        g.shutdown();
     }
 
-    public void doBulkEdgePropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testBulkEdgePropertyUpdates() throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new HadoopPipeline(f2).E().has("label", "battled").sideEffect("{it.time = it.time+1}").submit();
-        TitanGraph g = TitanFactory.open(configuration);
+
+        clopen();
 
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
@@ -253,13 +298,11 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("father").count());
         assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("mother").count());
         assertEquals(5, new GremlinPipeline(g).V("name", "hercules").out().count());
-
-        g.shutdown();
     }
 
-    public void doUnidirectionEdges(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
+    @Test
+    public void testUnidirectionEdges() throws Exception {
         // Declare schema in Titan
-        TitanGraph g = TitanFactory.open(configuration);
         TitanManagement mgmt = g.getManagementSystem();
         mgmt.makeEdgeLabel("father").unidirected().make();
         mgmt.commit();
@@ -271,13 +314,11 @@ public class TitanOutputFormatTest extends BaseTest {
 //        typeManager.setSchemaProvider(titanSchemaProvider);
 
         bulkLoadGraphOfTheGods(f1);
-        g.shutdown();
-        g = TitanFactory.open(configuration);
+        clopen();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
         assertEquals(new GremlinPipeline(g).V("name", "hercules").out("father").count(), 1);
         assertEquals(new GremlinPipeline(g).V("name", "jupiter").in("father").count(), 0);
-        g.shutdown();
 
 //        // Reset/clear types to avoid interference with subsequent tests
 //        typeManager.clear();
@@ -286,4 +327,72 @@ public class TitanOutputFormatTest extends BaseTest {
 
     // TODO: Unidirectional edges test cases
     // TODO: Multi-properties
+
+    private void close() {
+        if (null != g && g.isOpen())
+            g.shutdown();
+        g = null;
+    }
+
+    private void open() {
+        g = TitanFactory.open(getTitanConfiguration());
+    }
+
+    protected void clopen() {
+        close();
+        open();
+    }
+
+    private void bulkLoadGraphOfTheGods(final HadoopGraph f) throws Exception {
+        new HadoopPipeline(f)._().submit();
+    }
+
+    private HadoopGraph getGraphSONToTitan() {
+        TitanHadoopConfiguration.ModifiableHadoopConfiguration faunusConf =
+                new TitanHadoopConfiguration.ModifiableHadoopConfiguration();
+
+        // Input
+        faunusConf.set(INPUT_FORMAT, GraphSONInputFormat.class.getCanonicalName());
+        faunusConf.set(INPUT_LOCATION, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/graph-of-the-gods.json");
+
+        // Output
+        ModifiableConfiguration titanConf = getTitanConfiguration();
+        faunusConf.set(OUTPUT_FORMAT, getTitanOutputFormatClass().getCanonicalName());
+        faunusConf.setAllOutput(titanConf.getAll());
+
+        setCommonFaunusOptions(faunusConf);
+        setCustomFaunusOptions(faunusConf);
+
+        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+    }
+
+    private HadoopGraph getTitanToTitan() {
+        TitanHadoopConfiguration.ModifiableHadoopConfiguration faunusConf =
+                new TitanHadoopConfiguration.ModifiableHadoopConfiguration();
+
+        ModifiableConfiguration titanConf = getTitanConfiguration();
+
+        // Input
+        faunusConf.set(INPUT_FORMAT, getTitanInputFormatClass().getCanonicalName());
+        faunusConf.setAllInput(titanConf.getAll());
+
+        // Output
+        faunusConf.set(OUTPUT_FORMAT, getTitanOutputFormatClass().getCanonicalName());
+        faunusConf.setAllOutput(titanConf.getAll());
+
+        setCommonFaunusOptions(faunusConf);
+        setCustomFaunusOptions(faunusConf);
+
+        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+    }
+
+    private void setCommonFaunusOptions(ModifiableHadoopConfiguration faunusConf) {
+        // Side effect and misc
+        faunusConf.set(TitanOutputFormat.INFER_SCHEMA, true);
+        faunusConf.set(PIPELINE_TRACK_PATHS, true);
+        faunusConf.set(PIPELINE_TRACK_STATE, true);
+        faunusConf.set(SIDE_EFFECT_FORMAT, TextOutputFormat.class.getCanonicalName());
+        faunusConf.set(JOBDIR_LOCATION, Joiner.on(File.separator).join("target", "test-data", "output"));
+        faunusConf.set(JOBDIR_OVERWRITE, true);
+    }
 }

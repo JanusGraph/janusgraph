@@ -6,6 +6,8 @@ import java.io.FileInputStream;
 import java.util.Map;
 import java.util.Properties;
 
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -38,21 +40,23 @@ public class TitanIndexRepair {
         cassandraRepair(p, indexName, indexType, partitioner);
     }
 
-    public static void cassandraRepair(Properties titanInputProperties, String indexName, String indexType, String partitioner) throws Exception {
+    public static void cassandraRepair(Properties titanProperties, String indexName, String indexType, String partitioner) throws Exception {
         Configuration hadoopConfig = new Configuration();
+        TitanHadoopConfiguration.ModifiableHadoopConfiguration titanConf = TitanHadoopConfiguration.of(hadoopConfig);
 
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_FORMAT), TitanCassandraInputFormat.class.getCanonicalName());
+        titanConf.set(TitanHadoopConfiguration.INDEX_NAME, indexName);
+        titanConf.set(TitanHadoopConfiguration.INDEX_TYPE, indexType);
+        titanConf.set(TitanHadoopConfiguration.INPUT_FORMAT, TitanCassandraInputFormat.class.getCanonicalName());
+        log.info("Set input format {}", titanConf.get(TitanHadoopConfiguration.INPUT_FORMAT));
+        titanConf.set(TitanHadoopConfiguration.OUTPUT_FORMAT, NullOutputFormat.class.getCanonicalName());
+        log.info("Set output format {}", titanConf.get(TitanHadoopConfiguration.OUTPUT_FORMAT));
+        titanConf.set(TitanHadoopConfiguration.SIDE_EFFECT_FORMAT, TextOutputFormat.class.getCanonicalName());
+        titanConf.set(TitanHadoopConfiguration.JOBDIR_LOCATION, "jobs");
+        titanConf.set(TitanHadoopConfiguration.JOBDIR_OVERWRITE, true);
+
         ConfigHelper.setInputPartitioner(hadoopConfig, partitioner);
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.INDEX_NAME), indexName);
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.INDEX_TYPE), indexType);
 
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_FORMAT), NullOutputFormat.class.getCanonicalName());
-        log.info("Set output format {}", ConfigurationUtil.get(hadoopConfig, TitanHadoopConfiguration.OUTPUT_FORMAT));
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.SIDE_EFFECT_FORMAT), TextOutputFormat.class.getCanonicalName());
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.JOBDIR_LOCATION), "jobs");
-        hadoopConfig.set(ConfigElement.getPath(TitanHadoopConfiguration.JOBDIR_OVERWRITE), "true");
-
-        for (Map.Entry<Object, Object> e : titanInputProperties.entrySet()) {
+        for (Map.Entry<Object, Object> e : titanProperties.entrySet()) {
             String k;
             String v = e.getValue().toString();
             k = ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS) + "." + e.getKey().toString();

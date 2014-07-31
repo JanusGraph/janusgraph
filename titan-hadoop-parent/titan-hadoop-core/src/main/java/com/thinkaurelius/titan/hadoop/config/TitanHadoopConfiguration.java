@@ -115,6 +115,10 @@ public class TitanHadoopConfiguration {
 
         private final Configuration conf;
 
+        public ModifiableHadoopConfiguration() {
+            this(new Configuration());
+        }
+
         public ModifiableHadoopConfiguration(Configuration c) {
             super(TitanHadoopConfiguration.ROOT_NS, new HadoopConfiguration(c), Restriction.NONE);
             this.conf = c;
@@ -122,6 +126,22 @@ public class TitanHadoopConfiguration {
 
         public Configuration getHadoopConfiguration() {
             return conf;
+        }
+
+        public void setAllOutput(Map<ConfigElement.PathIdentifier, Object> entries) {
+            ModifiableConfiguration out = getOutputConf();
+            for (Map.Entry<ConfigElement.PathIdentifier,Object> entry : entries.entrySet()) {
+                Preconditions.checkArgument(entry.getKey().element.isOption());
+                out.set((ConfigOption) entry.getKey().element, entry.getValue(), entry.getKey().umbrellaElements);
+            }
+        }
+
+        public void setAllInput(Map<ConfigElement.PathIdentifier, Object> entries) {
+            ModifiableConfiguration in = getInputConf();
+            for (Map.Entry<ConfigElement.PathIdentifier,Object> entry : entries.entrySet()) {
+                Preconditions.checkArgument(entry.getKey().element.isOption());
+                in.set((ConfigOption) entry.getKey().element, entry.getValue(), entry.getKey().umbrellaElements);
+            }
         }
 
         public Class<?> getClass(ConfigOption<String> opt, Class<?> cls) {
@@ -136,37 +156,14 @@ public class TitanHadoopConfiguration {
             conf.setClass(ConfigElement.getPath(opt), cls, iface);
         }
 
-        public ModifiableConfiguration extractInputGraphConfiguration() {
-            CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_CONF_NS)));
-            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
+        public ModifiableConfiguration getInputConf() {
+            HadoopConfiguration inconf = new HadoopConfiguration(this.conf, ConfigElement.getPath(INPUT_CONF_NS) + ".");
+            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, inconf,  Restriction.NONE);
         }
 
-        public ModifiableConfiguration extractOutputGraphConfiguration() {
-            CommonsConfiguration cc = new CommonsConfiguration(extractConfiguration(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_CONF_NS)));
-            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, cc, Restriction.NONE);
-        }
-
-        public BaseConfiguration extractConfiguration(final String prefix) {
-            return extractConfiguration(prefix, true);
-        }
-
-        public BaseConfiguration extractConfiguration(final String prefix, final boolean removeDelimChar) {
-            final BaseConfiguration extract = new BaseConfiguration();
-            final Iterator<Map.Entry<String, String>> itty = conf.iterator();
-            while (itty.hasNext()) {
-                final Map.Entry<String, String> entry = itty.next();
-                final String key = entry.getKey();
-                final String value = entry.getValue();
-                extract.setProperty(key, value);
-                if (key.startsWith(prefix)) {
-                    if (removeDelimChar) {
-                        extract.setProperty(key.substring(prefix.length() + 1), value);
-                    } else {
-                        extract.setProperty(key.substring(prefix.length()), value);
-                    }
-                }
-            }
-            return extract;
+        public ModifiableConfiguration getOutputConf() {
+            HadoopConfiguration outconf = new HadoopConfiguration(this.conf, ConfigElement.getPath(OUTPUT_CONF_NS) + ".");
+            return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, outconf, Restriction.NONE);
         }
     }
 }
