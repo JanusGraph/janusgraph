@@ -1,9 +1,12 @@
 package com.thinkaurelius.titan.hadoop.config;
 
+import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Preconditions;
+
+import javax.annotation.Nullable;
 
 public class TitanHadoopConfiguration {
 
@@ -107,7 +110,12 @@ public class TitanHadoopConfiguration {
     public static final ConfigOption<String> INDEX_TYPE = new ConfigOption<String>(
             INDEX_NS, "type",
             "The relationtype of a Titan index to build or repair.  The index must already be enabled or installed.",
-            ConfigOption.Type.LOCAL, String.class);
+            ConfigOption.Type.LOCAL, String.class, "", new Predicate<String>() {
+                @Override
+                public boolean apply(@Nullable String input) {
+                    return null != input; // empty string acceptable
+                }
+            });
 
 //    public static final ConfigNamespace JARCACHE_NS =
 //            new ConfigNamespace(TRUNK_NS, "jarcache", "Jar staging and DistributedCache classpath settings");
