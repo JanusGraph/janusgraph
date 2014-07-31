@@ -12,7 +12,7 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <top.level.basedir>${basedir}/..</top.level.basedir>
+        <top.level.basedir>${project.parent.basedir}</top.level.basedir>
         <skipCassandra>${skipTests}</skipCassandra>
         <skipHBase>true</skipHBase>
         <skipPipeline>${skipTests}</skipPipeline>
@@ -190,7 +190,7 @@
                     <executions>
                         <execution>
                             <id>filter-shared-resources</id>
-                            <phase>process-resources</phase>
+                            <phase>process-test-resources</phase>
                             <goals>
                                 <goal>copy-resources</goal>
                             </goals>
