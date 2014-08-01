@@ -7,7 +7,7 @@ Concept Overview
 
 Titan-Hadoop is designed to support global graph traversals over massive-scale graphs. In particular, this typically leads to two particular use cases: graph derivations and graph statistics.
 
-* *Graph derivation*: Given an input graph, derive a new graph based upon the input graph's structure and semantics. Other terms include "graph rewriting":http://en.wikipedia.org/wiki/Graph_rewriting and graph transformations.
+* *Graph derivation*: Given an input graph, derive a new graph based upon the input graph's structure and semantics. Other terms include http://en.wikipedia.org/wiki/Graph_rewriting[graph rewriting] and graph transformations.
 ** deriving a _cousin_-graph from _father_ and _brother_ edges.
 ** deriving a youth _friend_-graph by removing all vertices with age greater than 30 and keeping only _friend_ edges.
 ** adding properties to the graph elements according to some traversal.
