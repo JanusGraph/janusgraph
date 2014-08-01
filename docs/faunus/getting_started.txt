@@ -7,7 +7,7 @@ image:gremlin-elephant.png[]
 
 Titan-Hadoop requires http://hadoop.apache.org/[Hadoop] cluster with MapReduce and HDFS is required.  If a Hadoop cluster already available, then Titan can be configured to use it. If no Hadoop cluster is at hand, then the provided http://whirr.apache.org/[Whirr] recipe can streamline deployment to http://aws.amazon.com/ec2/[Amazon EC2] (see <<faunus-on-ec2>>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[tutorial]). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop. For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (`$HADOOP_CONF_DIR`).
 
-Note: this wiki assumes that you are using Hadoop 1.x.  For Hadoop 2.x support, see the experimental https://github.com/thinkaurelius/faunus/tree/hadoop2[Hadoop2 branch]..
+Note: this wiki assumes that you are using Hadoop 1.x.  For Hadoop 2.x support, see the experimental https://github.com/thinkaurelius/faunus/tree/hadoop2[Hadoop2 branch] .
 
 Starting Hadoop
 ~~~~~~~~~~~~~~~
