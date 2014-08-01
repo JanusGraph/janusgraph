@@ -44,36 +44,61 @@ consistent storage backends.  For use cases that require strict and or
 frequent consistency constraint enforcement, it is suggested to use a
 storage backend that provides transactional isolation.
 
+Data Consistency without Locks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Because of the additional steps required to acquire a lock when committing a modifying transaction, locking is a fairly expensive way to ensure consistency and can lead to deadlock when very many concurrent transactions try to modify the same elements in the graph. Hence, locking should be used in situations where consistency is more important than write latency and the number of conflicting transactions is small.
+
+In other situations, it may be better to allow conflicting transactions to proceed and to resolve inconsistencies at read time. This is a design pattern commonly employed in large scale data systems and most effective when the actual likelihood of conflict is small. Hence, write transactions don't incur additional overhead and any (unlikely) conflict that does occur is detected and resolved at read time and later cleaned up. Titan makes it easy to use this strategy through the following features.
+
 Forking Edges
-^^^^^^^^^^^^^
++++++++++++++
 
-Data Degradation
-~~~~~~~~~~~~~~~~
+Because edge are stored as single records in the underlying storage backend, concurrently modifying a single edge would lead to conflict. Instead of locking, an edge label can be configured to use `ConsistencyModifier.FORK`. The following example creates a new edge label `related` and defines its consistency to FORK.
 
-On eventually consistent storage backends, certain failure conditions can cause the graph to become inconsistent. This is an inherent property of eventual consistency, in the sense, that accepted updates might not be persisted under certain operational circumstances or failures.
+[source,gremlin]
+related = mgmt.makeEdgeLabel('related').make()
+mgmt.setConsistency(related,ConsistencyModifier.FORK)
+mgmt.commit()
 
-From Titan's perspective, these conditions might cause the following graph inconsistencies.
+When modifying an edge whose label is configured to FORK the edge is a deleted and the modified edge is added as a new one. Hence, if two concurrent transactions modify the same edge, two modified copies of the edge will exist upon commit which can be resolved during querying traversals if needed.
 
-*Ghost Vertices*:: If a vertex gets deleted while it is concurrently
-being modified, the vertex might re-appear as a _ghost_.
+[NOTE]
+Edge forking only applies to MULTI edges. Edge labels with a multiplicity constraint cannot use this strategy since a constraint is build into the edge label definition that requires an explicit lock or use the conflict resolution mechanism of the underlying storage backend.
+
+Multi-Properties
+++++++++++++++++
+
+Modifying single valued properties on vertices concurrently can result in a conflict. Similarly to edges, one can allow an arbitrary number of properties on a vertex for a particular property key defined with cardinality LIST and FORK on modification. Hence, instead of conflict one reads multiple properties. Since Titan allows properties on properties, provenance information like `author` can be added to the properties to facilitate resolution at read time.
+
+Read more about multi-properties _(REF)_ to learn how to define those.
+
+Data Inconsistency
+~~~~~~~~~~~~~~~~~~
+
+Temporary Inconsistency
+^^^^^^^^^^^^^^^^^^^^^^^
+
+On eventually consistent storage backends, writes may not be immediately visible to the entire cluster causing temporary inconsistencies in the graph. This is an inherent property of eventual consistency, in the sense, that accepted updates must be propagated to other instances in the cluster and no guarantees are made with respect to read atomicity in the interest of performance.
+
+From Titan's perspective, eventual consistency might cause the following temporary graph inconsistencies in addition the general inconsistency that some parts of a transaction are visible while others aren't yet.
 
 *Stale Index entries*:: Index entries might point to nonexistent
-vertices in case of partial mutation persistence.
+vertices or edges. Similarly, a vertex or edge appears in the graph but is not yet indexed and hence ignored by global graph queries.
 
 *Half-Edges*:: Only one direction of an edge gets persisted or deleted
 which might lead to the edge not being or incorrectly being retrieved.
 
-*Uni-directed Ghost Edges*:: A uni-directed edge points to a deleted
-vertex.
+[NOTE]
+In order to avoid that write failures result in permanent inconsistencies in the graph it is recommended to use storage backends that support batch write atomicity and to ensure that write atomicity is enabled. Also, it needs to be ensured that the number modifications made in a single transaction is smaller than the configured `buffer-size` _(REF to graph config)_. The buffer size defines the maximum number of modifications that Titan will persist in a single batch. If a transaction has more modifications, the persistence will be split into multiple batches which are persisted individually which is useful for batch loading but invalidates write atomicity.
 
-While Titan attempts to combine mutations to make the occurrence of such inconsistencies less likely, they can never be completely avoided and will likely arise on sufficiently large graphs.
+Ghost Vertices
+^^^^^^^^^^^^^^
+
+A permanent inconsistency that can arise when operating Titan on eventually consistent storage backend is the phenomena of *ghost vertices*. If a vertex gets deleted while it is concurrently
+being modified, the vertex might re-appear as a _ghost_.
 
 The following strategies can be used to mitigate this issue:
-
-*Buffer Size*:: Configure the buffer-size in the <<graph-config,graph
-configuration>> to be large enough for all mutations in a
-transaction. This will reduce the likelihood of partial mutations
-causing inconsistencies.
 
 *Existence checks*:: Configure transactions to (double) check for the
 existence of vertices prior to returning them. Please see
@@ -81,10 +106,10 @@ existence of vertices prior to returning them. Please see
 significantly decrease performance.  Note, that this does not fix the
 inconsistencies but hides some of them from the user.
 
-*Regular clean-ups*:: Run regular batch-jobs to repair inconsistencies
+*Regular Clean-ups*:: Run regular batch-jobs to repair inconsistencies
 in the graph using <<hadoop,Faunus>>.  This is the only strategy that
 can address all inconsistencies and effectively repair them. We will
 provide increasing support for such repairs in future versions of
 Faunus.
 
-
+*Soft Deletes*:: Instead of deleting vertices, they are marked as deleted which keeps them in the graph for future analysis and allows to hide them from user-facing transactions.
