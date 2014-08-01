@@ -1,4 +1,4 @@
-[[faunus-config]]
+[[hadoop-config-and-shell]]
 Configuration and Shell Usage
 -----------------------------
 
@@ -10,25 +10,27 @@ The source of any Faunus job is a `HadoopGraph`. `HadoopGraph` is simply a wrapp
 HadoopGraph Construction
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-A Titan-Hadoop configuration file is used to construct a `HadoopGraph`. Assume a file named `bin/faunus.properties` as represented below.
+A Titan-Hadoop configuration file is used to construct a `HadoopGraph`. Assume a file named `conf/hadoop/titan-graphson.properties` as represented below.
 
 [source,properties]
 ----
 # input graph parameters
-faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
-faunus.input.location=graph-of-the-gods.json
+titan.hadoop.input.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat
+titan.hadoop.input.location=example-data/graph-of-the-gods.json
+# titan.hadoop.graph.input.vertex-query-filter=v.query().limit(0)
+
 # output data parameters
-faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
-faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
-faunus.output.location=output
-faunus.output.location.overwrite=true
+titan.hadoop.output.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat
+titan.hadoop.sideeffect.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+titan.hadoop.jobdir.location=jobs
+titan.hadoop.jobdir.overwrite=true
 ----
 
 With `HadoopFactory`, a configuration file is turned in a `HadoopGraph`. The `toString()` of the `HadoopGraph` denotes the input and output format of the graph. For instance, as seen below, a graph of type GraphSON is the input and a graph of type GraphSON is the output.
 
 [source,gremlin]
-gremlin> g = HadoopFactory.open('bin/faunus.properties')
-==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
+==>hadoopgraph[graphsoninputformat->graphsonoutputformat]
 
 Hadoop-Specific Configurations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -61,10 +63,7 @@ gremlin> g.getConf('mapred')
 ==>mapred.reduce.parallel.copies=5
 ...
 
-Titan-Hadoop Properties
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Within the global configuration, there are Titan-Hadoop-specific configurations. These properties can be isolated with `HadoopGraph.getConf('faunus')`. In general, any prefix string can be provided (e.g. `mapred` or `mapred.map`).
+The prefix for Titan-Hadoop's configuration keys is "titan.hadoop". These properties can be extracted from HadoopGraph's internal Hadoop Configuration instance by `HadoopGraph.getConf('titan.hadoop')`:
 
 [source,gremlin]
 gremlin> g.getConf('faunus')        
@@ -75,6 +74,10 @@ gremlin> g.getConf('faunus')
 ==>faunus.output.location=output
 ==>faunus.output.location.overwrite=true
 
+
+Titan-Hadoop Properties
+^^^^^^^^^^^^^^^^^^^^^^^
+ 
 Moreover, `HadoopGraph` provides getters/setters for mutating the most commonly used properties. 
 
 [source,gremlin]
