@@ -61,14 +61,12 @@ As dicussed in the introductory schema Section _(REF)_ Titan supports property k
 mgmt = g.getManagementSystem()
 mgmt.makePropertyKey('name').dataType(String.class).cardinality(LIST).make()
 mgmt.commit()
-
 v = g.addVertex([uid:'x521'])
 p1 = v.addProperty('name','Dan LaRocque')
 p1.setProperty('source','web')
 p2 = v.addProperty('name','dalaro')
 p2.setProperty('source','github')
 g.commit()
-
 v.getProperties('name')
 ==> Iterable over all name properties
 
@@ -92,7 +90,6 @@ Unidirected edges can be added on edges and properties, thereby giving Titan lim
 mgmt = g.getManagementSystem()
 mgmt.makeEdgeLabel('author').unidirected().make()
 mgmt.commit()
-
 user = g.v(4)
 u = g.v(8)
 v = g.v(16)
