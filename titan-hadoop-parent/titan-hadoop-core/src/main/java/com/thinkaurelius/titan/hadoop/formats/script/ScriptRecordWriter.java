@@ -37,7 +37,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
         final FileSystem fs = FileSystem.get(configuration);
         try {
             this.engine.put(OUTPUT, this.out);
-            this.engine.eval(new InputStreamReader(fs.open(new Path(faunusConf.getOutputConf(SCRIPT_ROOT).get(SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(faunusConf.getOutputConf(ROOT_NS).get(SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

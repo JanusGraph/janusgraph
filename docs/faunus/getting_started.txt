@@ -1,38 +1,19 @@
-[[faunus-getting-started]]
+[[hadoop-getting-started]]
 Getting Started
 ---------------
 
 [.tss-floatleft]
 image:gremlin-elephant.png[]
 
-Titan-Hadoop requires http://hadoop.apache.org/[Hadoop] cluster with MapReduce and HDFS is required.  If a Hadoop cluster already available, then Titan can be configured to use it. If no Hadoop cluster is at hand, then the provided http://whirr.apache.org/[Whirr] recipe can streamline deployment to http://aws.amazon.com/ec2/[Amazon EC2] (see <<faunus-on-ec2>>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[tutorial]). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop. For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (`$HADOOP_CONF_DIR`).
+Titan-Hadoop is designed to run on a many-node http://hadoop.apache.org/[Hadoop] cluster with MapReduce and HDFS.  Titan-Hadoop's MapReduce-based computing model is best suited to wide horizontal scaleout.  However, Titan-Hadoop is also capable of operating on a single machine, without a Hadoop cluster and even without HDFS.  Although running on a large cluster and dataset plays best to Titan-Hadoop's strengths, a localhost-only configuration and small dataset occupies a useful niche, supporting easy interactive experimentation and testing.
 
-Note: this wiki assumes that you are using Hadoop 1.x.  For Hadoop 2.x support, see the experimental https://github.com/thinkaurelius/faunus/tree/hadoop2[Hadoop2 branch] .
+Supported Hadoop configurations fall into roughly three broad categories, listed below in order of increasing complexity and resource requirements:
 
-Starting Hadoop
-~~~~~~~~~~~~~~~
+* No Hadoop cluster or services.  Titan-Hadoop uses the local filesystem and the "local" (in-process) MapReduce job runner.  This is easiest to setup.
+* Local pseudo-cluster.  Localhost runs multiple HDFS and MapReduce services that would normally be distributed between multiple nodes on a production cluster.
+* Remote multi-node cluster.  Of the three, this configuration most closely reflects a production cluster.
 
-image:hadoop-logo.jpg[]
-
-For using Titan-Hadoop locally on a single machine, a Hadoop pseudo-cluster can be used. Instructions to set up a http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[pseudo-cluster] are provided in the Hadoop documentation. Once the pseudo-cluster has been set up, it can be started by running the start script `$HADOOP_PREFIX/bin/start-all.sh`.
-
-[source,bourne]
-~$ start-all.sh
-starting namenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-namenode-markolaptop.local.out
-localhost: starting datanode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-datanode-markolaptop.local.out
-localhost: starting secondarynamenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-secondarynamenode-markolaptop.local.out
-starting jobtracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-jobtracker-markolaptop.local.out
-localhost: starting tasktracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-tasktracker-markolaptop.local.out
-
-image:hdfs-logo.jpg[]
-
-To ensure that the installation is running properly, do an `ls` on Hadoop's distributed file system, "HDFS":http://hadoop.apache.org/hdfs/. This should *not* return a view of the local filesystem, but instead a view of HDFS.
-
-[source,bourne]
-faunus$ hadoop fs -ls /
-Found 2 items
-drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /tmp
-drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /user
+This section uses the first configuration because it has the lowest barriers to entry.  Subsequent sections address using Titan-Hadoop in the more complex and capable configurations.
 
 //////////////////////////////////////////
 
@@ -44,26 +25,19 @@ Using Titan-Hadoop via Gremlin
 [.tss-floatleft]
 image:faunus-head.png[]
 
-Faunus can be downloaded from _TODO link to downloads page_. Faunus provides a http://gremlin.tinkerpop.com[Gremlin] implementation that can be used for convenient interactions with HDFS, interactions with the supported graph sources (including Titan), and for constructing Faunus jobs (a chain of 1 or more MapReduce jobs). The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] is started with `bin/gremlin.sh` (or `gremlin.bat` for Windows users). Set the `TITAN_HADOOP_HOME` environmental variable to the root location of the Faunus distribution.
-
-[source,gremlin]
-----
-$ bin/gremlin.sh 
-
-         \,,,/
-         (o o)
------oOOo-(_)-oOOo-----
-gremlin>
-----
+Titan-Hadoop provides a http://gremlin.tinkerpop.com[Gremlin] implementation that can be used for convenient interactions with HDFS, interactions with the supported graph sources (including Titan), and for configuring and executing chains of MapReduce jobs that implement Gremlin queries.
 
 //////////////////////////////////////////
 
-Getting Started
-~~~~~~~~~~~~~~~
+
+Graph of the Gods with Hadoop
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 image:graph-of-the-gods.png[]
 
-These examples use the same <<getting-started,Graph of the Gods>> toy dataset described earlier in the manual.  _xref to Faunus-specific variation on the Blueprints GraphSON format_). This graph has 12 vertices/17 edges and denotes people, places, monsters and their various types of relationships to one another. A diagrammatic representation is provided above and the raw GraphJSON representation is provided below.
+// TODO _xref to Faunus-specific variation on the Blueprints GraphSON format_
+
+These examples use the same <<getting-started,Graph of the Gods>> toy dataset described earlier in the manual, except now we'll manipulate it with Titan-Hadoop and MapReduce. This graph has 12 vertices/17 edges and denotes people, places, monsters and their various types of relationships to one another. A diagrammatic representation is provided above and the raw GraphJSON representation is provided below.
 
 [source,javascript]
 {"name":"saturn","type":"titan","_id":0,"_inE":[{"_label":"father","_id":12,"_outV":1}]}
@@ -79,30 +53,11 @@ These examples use the same <<getting-started,Graph of the Gods>> toy dataset de
 {"name":"hydra","type":"monster","_id":10,"_inE":[{"time":2,"_label":"battled","_id":27,"_outV":7}]}
 {"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
 
-To make use of this sample graph for the examples to follow, it must be first placed into http://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html[HDFS]. Note that all graph sources do not necessarily originate from HDFS (e.g. <<titan-io-format>> and <<rexster-io-format>> graphs). However, file-based sources typically originate from HDFS. To store the GraphSON file in HDFS, the Gremlin REPL *or* the standard Hadoop http://en.wikipedia.org/wiki/Command-line_interface[CLI] can be used.
-
-*Gremlin REPL*
-
-[source,gremlin]
-gremlin> hdfs.copyFromLocal('data/graph-of-the-gods.json','graph-of-the-gods.json')
-==>null
-gremlin> hdfs.ls()          
-==>rw-r--r-- marko supergroup 2028 graph-of-the-gods.json
-gremlin> 
-
-*Hadoop CLI*
-
-[source,bourne]
-faunus$ hadoop fs -put data/graph-of-the-gods.json graph-of-the-gods.json
-faunus$ hadoop fs -ls
-Found 1 item
--rw-r--r--   1 marko supergroup       2028 2012-07-26 11:55 /user/marko/graph-of-the-gods.json
-
 
 A Graph Statistic and a Graph Derivation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With _The Graph of the Gods_ stored in HDFS, a reference is made to it in `bin/titan-hadoop.properties`.  Titan already has all the properties configured to point to `graph-of-the-gods.json` so it is possible to simply run desired Gremlin traversals without having to initially understand Titan'sconfiguration options.
+Titan's zip archive comes with a Titan-Hadoop configuration file named `conf/hadoop/titan-graphson.properties`.  This file tells Titan-Hadoop to read `example-data/graph-of-the-gods.json` from the default filesystem as input.  This file is also part of the zip archive.  Start `gremlin.sh` and create a Titan-Hadoop graph using this config file:
 
 [source,gremlin]
 ----
@@ -111,7 +66,7 @@ $ bin/gremlin.sh
          \,,,/
          (o o)
 -----oOOo-(_)-oOOo-----
-gremlin> g = HadoopFactory.open('bin/titan-hadoop.properties')
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
 ==>titangraph[graphsoninputformat->graphsonoutputformat]
 ----
 
@@ -147,56 +102,51 @@ Lets examine the traversal more closely.
 g.V.type.groupCount
 
 
-* `g`: the graph pointed to by `bin/titan-hadoop.properties`
+* `g`: the graph pointed to by `conf/hadoop/titan-graphson.properties`
 * `V`: for all the vertices in the graph
 * `type`: get the _type_ property value of those vertices
 * `groupCount`: count the number of times each unique type is seen 
 
-When the Titan-Hadoop job completes (which could be many MapReduce jobs), the results are outputted to the terminal and are also available in the `output` directory (set in `bin/titan-hadoop.properties`).
+When the Titan-Hadoop job completes (which could be many MapReduce jobs), the results are outputted to the terminal and are also available in the `jobs` directory by default (set in `titan-graphson.properties`).
 
 [source,gremlin]
-gremlin> hdfs.ls()
-==>rw-r--r-- marko supergroup 2028 graph-of-the-gods.json
-==>rwxr-xr-x marko supergroup 0 (D) output
-gremlin> hdfs.ls('output')
-==>rwxr-xr-x marko supergroup 0 (D) job-0
-gremlin> hdfs.ls('output/job-0')
-==>rw-r--r-- marko supergroup 0 _SUCCESS
-==>rwxr-xr-x marko supergroup 0 (D) _logs
-==>rw-r--r-- marko supergroup 435 graph-m-00000
-==>rw-r--r-- marko supergroup 80 sideeffect-m-00000
-gremlin> hdfs.head('output/job-0/sideeffect*')
-==>demigod	1
-==>god	3
-==>human	1
-==>location	3
-==>monster	3
-==>titan	1
+gremlin> hdfs.ls('jobs')
+==>rwxrwxr-x dalaro dalaro 141 (D) job-0
+gremlin> hdfs.ls('jobs/job-0')
+==>rw-r--r-- dalaro dalaro 0 _SUCCESS
+==>rw-r--r-- dalaro dalaro 2096 graph-m-00000
+==>rw-r--r-- dalaro dalaro 53 sideeffect-r-00000
+gremlin> hdfs.head('jobs/job-0/sideeffect-r-00000')
+==>demigod      1
+==>god  3
+==>human        1
+==>location     3
+==>monster      3
+==>titan        1
 gremlin>
 
 
 Inference using Paths (Derivation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A "derivation":http://en.wikipedia.org/wiki/Graph_rewriting is some mutation of the graph whether that mutation is as simple as removing vertices/edges or as complex as inferring new edges from explicit edges in the graph. With _The Graph of the Gods_, _grandfather_ edges can be derived from _father_ edges. This type of derivation is known as an "inference":http://en.wikipedia.org/wiki/Inference.
+A http://en.wikipedia.org/wiki/Graph_rewriting[derivation] is some mutation of the graph whether that mutation is as simple as removing vertices/edges or as complex as inferring new edges from explicit edges in the graph. With _The Graph of the Gods_, _grandfather_ edges can be derived from _father_ edges. This type of derivation is known as an http://en.wikipedia.org/wiki/Inference[inference].
 
 From the Gremlin REPL, enter the following traversal.
 
-```text
+[source,gremlin]
 g.V.as('x').out('father').out('father').linkIn('grandfather','x')
-```
 
-  * `g`: the graph pointed to by `bin/titan-hadoop.properties`
-  * `V`: for all the vertices in the graph
-  * `as('x')`: name the current elements "x"
-  * `out('father')`: traverse out over _father_ edges
-  * `out('father')`: traverse out over _father_ edges
-  * `linkIn('grandfather','x')`: create incoming _grandfather_ edges from remaining vertices at step "x" 
+* `g`: the graph pointed to by `conf/hadoop/titan-graphson.properties`
+* `V`: for all the vertices in the graph
+* `as('x')`: name the current elements "x"
+* `out('father')`: traverse out over _father_ edges
+* `out('father')`: traverse out over _father_ edges
+* `linkIn('grandfather','x')`: create incoming _grandfather_ edges from remaining vertices at step "x" 
 
-The derived graph can be pulled to local disk or analyzed in HDFS. Realize that because the same `output` directory is used, the previous `output` was deleted. Again, this can all be configured in `bin/titan-hadoop.properties`.
+The derived graph is written according to the value of the `titan.hadoop.output.format` setting in the configuration file.  The value of this setting is the package and classname of a Hadoop `OutputFormat<NullWritable, HadoopVertex>` implementation.  In the case of `titan-graphson.properties`, `output.format` is set to `GraphSONOutputFormat`, so the derived graph is written to GraphSON files in the default filesystem.  `GraphSONOutputFormat` uses the same `jobs` directory where the sideeffect data reside, as shown above.  By default, the contents of that directory are deleted between each Titan-Hadoop job, though this can also be overridden through the configuration passed to `HadoopFactory`.  See <<hadoop-config-ref>> for more information about these configuration settings.
 
 [source,gremlin]
-gremlin> hdfs.head('output')
+gremlin> hdfs.head('jobs')
 ==>{"name":"saturn","type":"titan","_id":0,"_inE":[{"_label":"grandfather","_id":-1,"_outV":7},{"_label":"father","_id":12,"_outV":1}]}
 ==>{"name":"jupiter","type":"god","_id":1,"_outE":[{"_label":"lives","_id":13,"_inV":4},{"_label":"brother","_id":16,"_inV":3},{"_label":"brother","_id":14,"_inV":2},{"_label":"father","_id":12,"_inV":0}],"_inE":[{"_label":"brother","_id":17,"_outV":3},{"_label":"brother","_id":15,"_outV":2},{"_label":"father","_id":24,"_outV":7}]}
 ==>{"name":"neptune","type":"god","_id":2,"_outE":[{"_label":"lives","_id":20,"_inV":5},{"_label":"brother","_id":19,"_inV":3},{"_label":"brother","_id":15,"_inV":1}],"_inE":[{"_label":"brother","_id":18,"_outV":3},{"_label":"brother","_id":14,"_outV":1}]}
@@ -210,7 +160,7 @@ gremlin> hdfs.head('output')
 ==>{"name":"hydra","type":"monster","_id":10,"_inE":[{"time":2,"_label":"battled","_id":27,"_outV":7}]}
 ==>{"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
 
-To conclude, the _grandfather_ derived graph can be further computed on using `g.getNextGraph()`. This method returns a new graph that points to the output of the previous `g` graph (with inputs/outputs and HDFS directories handled accordingly).
+To conclude, the _grandfather_ derived graph can be further computed on using `g.getNextGraph()`. This method returns a new graph that points to the output of the previous `g` graph.
 
 [source,gremlin]
 gremlin> g                                                 
@@ -230,11 +180,11 @@ The traversal above removes all edges except _grandfather_ edges and then counts
 [source,gremlin]
 h.E.has('label','grandfather').keep.count()
 
-  * `h`: the graph pointing to the output of `g`
-  * `E`: for all the vertices in the graph
-  * `has('label','grandfather')`: traverse to _grandfather_ edges
-  * `keep`: keep the edges at the current step and delete all others
-  * `count`: count the number of elements current at the current step
+* `h`: the graph pointing to the output of `g`
+* `E`: for all the vertices in the graph
+* `has('label','grandfather')`: traverse to _grandfather_ edges
+* `keep`: keep the edges at the current step and delete all others
+* `count`: count the number of elements current at the current step
 
 [source,gremlin]
 gremlin> hdfs.head('output_/*/graph*')    
@@ -250,3 +200,70 @@ gremlin> hdfs.head('output_/*/graph*')
 ==>{"name":"nemean","type":"monster","_id":9}
 ==>{"name":"hydra","type":"monster","_id":10}
 ==>{"name":"cerberus","type":"monster","_id":11}
+
+
+Pseudo-cluster Setup
+--------------------
+
+// TODO this probably belongs in a separate file
+
+Starting Hadoop
+~~~~~~~~~~~~~~~
+
+image:hadoop-logo.jpg[]
+
+This section summarizes the steps to start a so-called Hadoop pseudo-cluster.  Since the steps differ substantially between Hadoop 1 and Hadoop 2, each major version is covered in a separate subsection.
+
+Starting Hadoop 1
+^^^^^^^^^^^^^^^^^
+
+If a Hadoop cluster already available, then Titan can be configured to use it. If no Hadoop cluster is at hand, then the provided http://whirr.apache.org/[Whirr] recipe can streamline deployment to http://aws.amazon.com/ec2/[Amazon EC2] (see <<faunus-on-ec2>>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[tutorial]). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop. For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (`$HADOOP_CONF_DIR`).
+
+
+ single machine, a Hadoop pseudo-cluster can be used. Instructions to set up a http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[pseudo-cluster] are provided in the Hadoop documentation. Once the pseudo-cluster has been set up, it can be started by running the start script `$HADOOP_PREFIX/bin/start-all.sh`.
+
+[source,bourne]
+$ start-all.sh
+starting namenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-namenode-markolaptop.local.out
+localhost: starting datanode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-datanode-markolaptop.local.out
+localhost: starting secondarynamenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-secondarynamenode-markolaptop.local.out
+starting jobtracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-jobtracker-markolaptop.local.out
+localhost: starting tasktracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-tasktracker-markolaptop.local.out
+
+image:hdfs-logo.jpg[]
+
+To ensure that the installation is running properly, do an `ls` on Hadoop's distributed file system, http://hadoop.apache.org/hdfs/[HDFS]. This should *not* return a view of the local filesystem, but instead a view of HDFS.
+
+[source,bourne]
+$ hadoop fs -ls /
+Found 2 items
+drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /tmp
+drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /user
+
+Copying files
+~~~~~~~~~~~~~
+
+
+To make use of this sample graph for the examples to follow, it must be first placed into http://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html[HDFS]. Note that all graph sources do not necessarily originate from HDFS (e.g. <<titan-io-format>> and <<rexster-io-format>> graphs). However, file-based sources typically originate from HDFS. To store the GraphSON file in HDFS, the Gremlin REPL *or* the standard Hadoop http://en.wikipedia.org/wiki/Command-line_interface[CLI] can be used.
+
+*Gremlin REPL*
+
+[source,gremlin]
+gremlin> hdfs.copyFromLocal('example-data/graph-of-the-gods.json','example-data/graph-of-the-gods.json')
+==>null
+gremlin> hdfs.ls()
+==>rw-r--r-- marko supergroup 2028 graph-of-the-gods.json
+gremlin> 
+
+*Hadoop CLI*
+
+[source,bourne]
+faunus$ hadoop fs -put data/graph-of-the-gods.json graph-of-the-gods.json
+faunus$ hadoop fs -ls
+Found 1 item
+-rw-r--r--   1 marko supergroup       2028 2012-07-26 11:55 /user/marko/graph-of-the-gods.json
+
+Remote Hadoop Cluster Setup
+---------------------------
+
+// TODO this belongs in a separate file, probably just a link farm anyway

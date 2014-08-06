@@ -64,14 +64,14 @@ mgmt.commit()
 When modifying an edge whose label is configured to FORK the edge is a deleted and the modified edge is added as a new one. Hence, if two concurrent transactions modify the same edge, two modified copies of the edge will exist upon commit which can be resolved during querying traversals if needed.
 
 [NOTE]
-Edge forking only applies to MULTI edges. Edge labels with a multiplicity constraint cannot use this strategy since a constraint is build into the edge label definition that requires an explicit lock or use the conflict resolution mechanism of the underlying storage backend.
+Edge forking only applies to MULTI edges. Edge labels with a multiplicity constraint cannot use this strategy since a constraint is built into the edge label definition that requires an explicit lock or use the conflict resolution mechanism of the underlying storage backend.
 
 Multi-Properties
 ++++++++++++++++
 
 Modifying single valued properties on vertices concurrently can result in a conflict. Similarly to edges, one can allow an arbitrary number of properties on a vertex for a particular property key defined with cardinality LIST and FORK on modification. Hence, instead of conflict one reads multiple properties. Since Titan allows properties on properties, provenance information like `author` can be added to the properties to facilitate resolution at read time.
 
-Read more about multi-properties _(REF)_ to learn how to define those.
+See <<property-cardinality,multi-properties>> to learn how to define those.
 
 Data Inconsistency
 ~~~~~~~~~~~~~~~~~~
@@ -107,7 +107,7 @@ significantly decrease performance.  Note, that this does not fix the
 inconsistencies but hides some of them from the user.
 
 *Regular Clean-ups*:: Run regular batch-jobs to repair inconsistencies
-in the graph using <<hadoop,Faunus>>.  This is the only strategy that
+in the graph using <<hadoop,Titan-Hadoop>>.  This is the only strategy that
 can address all inconsistencies and effectively repair them. We will
 provide increasing support for such repairs in future versions of
 Faunus.

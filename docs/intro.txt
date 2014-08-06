@@ -104,11 +104,11 @@ Titan's modular architecture supports third-party adapters.
 Broadly speaking, applications can interact with Titan in two ways:
 
 * Method calls to Titan's Java-language APIs, which include
-** Titan's native <<blueprints,Blueprints API>> implementation
+** Titan's native http://blueprints.tinkerpop.com/[Blueprints API] implementation
 ** A superset of Blueprints functionality called TitanGraph, which provides some Titan features that aren't part of the vendor-neutral Blueprints spec
 * TinkerPop stack utilities built atop Blueprints, such as
-** The <<gremlin,Gremlin query language>>
-** The <<rexster,Rexster graph server>>
+** The http://gremlin.tinkerpop.com/[Gremlin query language]
+** The https://github.com/tinkerpop/rexster[Rexster graph server]
 
 .High-level Titan Architecture and Context
 image::titan-architecture-layer-diagram.svg[]

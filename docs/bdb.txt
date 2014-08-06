@@ -33,7 +33,7 @@ In the Gremlin shell, you can not define the type of the variables `conf` and `g
 BerkeleyDB Specific Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Refer to the configuration reference _(REF)_ for a complete listing of all BerkeleyDB specific configuration options in addition to the general Titan configuration options.
+Refer to <<titan-config-ref>> for a complete listing of all BerkeleyDB specific configuration options in addition to the general Titan configuration options.
 
 When configuring BerkeleyDB it is recommended to consider the following BerkeleyDB specific configuration options:
 

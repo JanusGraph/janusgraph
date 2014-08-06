@@ -6,9 +6,7 @@ Appendices
 API Documentation (JavaDoc)
 ---------------------------
 
-Refer to the Titan API documentation _(REF)_ for a complete documentation of all core APIs exposed by Titan.
-
-
+Refer to the Titan http://thinkaurelius.github.io/titan/javadoc/current/[API documentation] for a complete documentation of all core APIs exposed by Titan.
 
 
 //---------------------------

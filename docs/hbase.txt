@@ -43,12 +43,12 @@ image:titan-modes-distributed.png[]
 
 When the graph needs to scale beyond the confines of a single machine, then HBase and Titan are logically separated into different machines. In this model, the HBase cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the HBase cluster. The end-user application can directly interact with Titan within the same JVM as Titan.
 
-For example, suppose we have a running HBase cluster with two machines at IP address 77.77.77.77 and 77.77.77.78, then connecting Titan with the cluster is accomplished as follows:
+For example, suppose we have a running HBase cluster with a ZooKeeper quorum composed of three machines at IP address 77.77.77.77, 77.77.77.78, and 77.77.77.79, then connecting Titan with the cluster is accomplished as follows:
 
 [source,java]
 TitanGraph g = TitanFactory.build()
 	.set("storage.backend","hbase")
-	.set("storage.hostname","77.77.77.77,77.77.77.78")
+	.set("storage.hostname","77.77.77.77,77.77.77.78,77.77.77.79")
 	.open()
 
 `storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
@@ -65,7 +65,7 @@ http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<rexster>> for a complete example.
+In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<server>> for a complete example.
 
 [source,xml]
 <graph>
@@ -74,8 +74,8 @@ In this case, each Rexster server would be configured to connect to the HBase cl
   <graph-location></graph-location>
   <graph-read-only>false</graph-read-only>
   <properties>
-        <storage.backend>hbase</storage.backend>
-        <storage.hostname>77.77.77.77,77.77.77.78</storage.hostname>
+    <storage.backend>hbase</storage.backend>
+    <storage.hostname>77.77.77.77,77.77.77.78,77.77.77.79</storage.hostname>
   </properties>
   <extensions>
     <allows>
@@ -87,7 +87,7 @@ In this case, each Rexster server would be configured to connect to the HBase cl
 HBase Specific Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Refer to the configuration reference _(REF)_ for a complete listing of all HBase specific configuration options in addition to the general Titan configuration options.
+Refer to <<titan-config-ref>> for a complete listing of all HBase specific configuration options in addition to the general Titan configuration options.
 
 When configuring HBase it is recommended to consider the following HBase specific configuration options:
 
@@ -217,40 +217,3 @@ sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop master
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start master
 
 Finally, if an HBase cluster has already been deployed and more memory is required of the master or region servers, simply edit the `$HBASE_HOME/conf/hbase-env.sh` files on the respective machines with requisite `-Xmx -Xms` parameters. Once edited, stop/start the master and/or region servers as described previous.
-
-Targeting Hadoop 2
-~~~~~~~~~~~~~~~~~~
-
-Titan's HBase storage backend depends on the Apache HBase 0.94 Maven artifact.  This in turn depends on Hadoop 1.0.  However, http://hbase.apache.org/book/configuration.html#hadoop[HBase supports multiple Hadoop versions and recommends Hadoop 2].
-
-Titan is supported with its released version of HBase and the associated default Hadoop version (see <<version-compat>>).  Due to the sheer number of interoperable HBase and Hadoop versions, Titan's HBase backend is not tested in every version combination.  However, Titan attempts to maintain as wide a version compatibility range as possible by using only a minimal set of core Hadoop and HBase API classes and methods.  Furthermore, since version 0.4.1, Titan includes Maven build options to make targeting Hadoop 2.0 or 2.2 easier.  It should be possible to target any recent Hadoop version and compatible HBase version without modifying Titan's source code, though targeting Hadoop versions besides 1.0, 2.0, or 2.2 may require tweaking dependency versions in <code>titan-hbase/pom.xml</code>.
-
-Broadly, targeting Titan for Hadoop 2 is a two step process:
-
-. Build the HBase Maven artifact with a newer Hadoop version and install it in the local Maven repository
-. Build the titan-hbase artifact using the HBase artifact from step #1
-
-These steps are described in the following two subsections.
-
-Rebuilding HBase with Hadoop 2
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In this subsection, we download an HBase 0.94.12 release tarball and compile it against Hadoop 2.2.0.
-
-. Download HBase 0.94.12 from the closest mirror on this page: http://www.apache.org/dyn/closer.cgi/hbase/hbase-0.94.12/hbase-0.94.12.tar.gz
-. Extract the tarball and change directory: <code>tar -xzf hbase-0.94.12.tar.gz && cd hbase-0.94.12</code>
-. Invoke <code>mvn clean install -Dhadoop.profile=2.0 -Dhadoop.version=2.2.0 -DskipTests=true</code>
-
-The last command builds HBase using Hadoop 2.2.0 and installs the resulting Maven artifact into the local repository, which is an elaborate way of saying it copies the HBase jar into <code>~/.m2/repository/</code>.  This is necessary for the next step to work.
-
-Rebuilding Titan-HBase
-^^^^^^^^^^^^^^^^^^^^^^
-
-In this subsection, we clone the Titan repository from GitHub and rebuild the titan-hbase artifact.  These commands should be run on the same machine as the commands in the "Rebuilding HBase with Hadoop 2" section preceding this one, or at least two machines that share a single <code>~/.m2/repository/</code> filesystem.
-
-. Clone the repo and change directory: <code>git clone https://github.com/thinkaurelius/titan.git && cd titan</code>
-. Optional: to build against a specific release, check out the associated tag.  For instance, to use 0.4.1, run <code>git checkout refs/tags/0.4.1</code>.  These instructions are only supported in Titan 0.4.1 and later.  Git checks out the master by default.  Titan's master branch usually corresponds to the latest release plus bugfixes and optimizations that have yet to be released.
-. Rebuild and locally install Titan; this creates artifacts needed by titan-hbase, including titan-core, titan-test, and titan-es (for testing): <code>mvn clean install -DskipTests=true</code>
-. Build and test Titan-HBase: <code>pushd titan-hbase; mvn clean install -Dhadoop.profile=2.0 -Dhadoop.version=2.2.0; popd</code>
-
-The final step writes a titan-hbase-$VERSION.jar file to <code>titan-hbase/target/</code> and installs it in the local Maven repository.

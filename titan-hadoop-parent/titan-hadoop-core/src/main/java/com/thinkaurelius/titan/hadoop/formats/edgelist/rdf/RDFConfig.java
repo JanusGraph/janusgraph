@@ -32,27 +32,27 @@ public class RDFConfig {
         }
     }
 
-    public static final ConfigNamespace RDF_ROOT = new ConfigNamespace(null, "rdf", "RDF MapReduce format options");
+    public static final ConfigNamespace ROOT_NS = new ConfigNamespace(null, "rdf", "RDF MapReduce format options");
 
     public static final ConfigOption<Syntax> RDF_FORMAT =
-            new ConfigOption<Syntax>(RDF_ROOT, "format",
+            new ConfigOption<Syntax>(ROOT_NS, "format",
             "The format/syntax/dialect of the RDF input file(s)",
             ConfigOption.Type.LOCAL, Syntax.class);
 
     public static final ConfigOption<Boolean> RDF_USE_LOCALNAME =
-            new ConfigOption<Boolean>(RDF_ROOT, "use-localname",
+            new ConfigOption<Boolean>(ROOT_NS, "use-localname",
             "Whether to tolerate fragments when parsing RDF input",
             ConfigOption.Type.LOCAL, false);
 
     public static final ConfigOption<Boolean> RDF_LITERAL_AS_PROPERTY =
-            new ConfigOption<Boolean>(RDF_ROOT, "literal-as-property",
+            new ConfigOption<Boolean>(ROOT_NS, "literal-as-property",
             "Whether to turn RDF triples where the object is a literal value into " +
             "properties on the subject, where the property name is the predicate and " +
             "the property value is the literal object.",
             ConfigOption.Type.LOCAL, false);
 
     public static final ConfigOption<String[]> RDF_AS_PROPERTIES =
-            new ConfigOption<String[]>(RDF_ROOT, "as-properties",
+            new ConfigOption<String[]>(ROOT_NS, "as-properties",
             "A comma-separated list of predicate URIs for which matching triples " +
             "will be converted into properties instead of edges",
             ConfigOption.Type.LOCAL, String[].class, new String[]{},
@@ -65,7 +65,7 @@ public class RDFConfig {
             });
 
     public static final ConfigOption<String> RDF_BASE_URI =
-            new ConfigOption<String>(RDF_ROOT, "base-uri",
+            new ConfigOption<String>(ROOT_NS, "base-uri",
             "The URI used to resolve any relative URI references encountered in the input",
             ConfigOption.Type.LOCAL, "http://thinkaurelius.com#");
 }

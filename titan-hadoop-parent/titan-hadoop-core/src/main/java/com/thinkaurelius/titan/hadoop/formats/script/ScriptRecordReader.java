@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.hadoop.formats.script;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
@@ -46,7 +45,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
         ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
         final FileSystem fs = FileSystem.get(configuration);
         try {
-            this.engine.eval(new InputStreamReader(fs.open(new Path(faunusConf.getInputConf(SCRIPT_ROOT).get(SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(faunusConf.getInputConf(ROOT_NS).get(SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

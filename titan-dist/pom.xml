@@ -192,6 +192,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <inherited>false</inherited>
                 <executions>
                     <!-- This started out as an exec:java execution instead of exec:exec,
                          but exec:java does something weird to the classpath that breaks
@@ -204,8 +205,7 @@
                          makes these classpath problems go away.
                     -->
                     <execution>
-                        <id>generate-config-key-listing</id>
-                        <inherited>false</inherited>
+                        <id>generate-titan-config-table</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>exec</goal>
@@ -216,7 +216,63 @@
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
-                                <argument>${asciidoc.output.dir}/listings/configtable.txt</argument>
+                                <argument>com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
+                                <argument>${asciidoc.output.dir}/listings/titan_cfg.txt</argument>
+                                <argument>true</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-faunus-config-table</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
+                                <argument>com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ROOT_NS</argument>
+                                <argument>${asciidoc.output.dir}/listings/faunus_cfg.txt</argument>
+                                <argument>false</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-faunus-rdf-config-table</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
+                                <argument>com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFConfig.ROOT_NS</argument>
+                                <argument>${asciidoc.output.dir}/listings/faunus_rdf_cfg.txt</argument>
+                                <argument>false</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-faunus-script-config-table</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
+                                <argument>com.thinkaurelius.titan.hadoop.formats.script.ScriptConfig.ROOT_NS</argument>
+                                <argument>${asciidoc.output.dir}/listings/faunus_script_cfg.txt</argument>
+                                <argument>false</argument>
                             </arguments>
                         </configuration>
                     </execution>

@@ -76,12 +76,12 @@ References
 
 The following articles provided insight into the various theoretical and technical issues encountered during Titan-Hadoop's design and development.  Note that Titan-Hadoop was called Faunus in its earlier versions.
 
- * Rodriguez M.A., Shinavier, J., "Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms,":http://arxiv.org/abs/0806.2274 Journal of Informetrics, 4(1), pp. 29--41, December 2009.
+ * Rodriguez M.A., Shinavier, J., http://arxiv.org/abs/0806.2274[Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms], Journal of Informetrics, 4(1), pp. 29--41, December 2009.
 
-* Lin, J., Dyer, C., "Data-Intensive Text Processing with MapReduce,":http://lintool.github.com/MapReduceAlgorithms/index.html Morgan & Claypool Publishers, 2010.
+* Lin, J., Dyer, C., http://lintool.github.com/MapReduceAlgorithms/index.html[Data-Intensive Text Processing with MapReduce], Morgan & Claypool Publishers, 2010.
 
-* Kepner, J., Gilbert, J., "Graph Algorithms in the Language of Linear Algebra,":http://www.amazon.com/Algorithms-Language-Algebra-Software-Environments/dp/0898719909 Society for Industrial & Applied Mathematics, 2011.
+* Kepner, J., Gilbert, J., http://www.amazon.com/Algorithms-Language-Algebra-Software-Environments/dp/0898719909[Graph Algorithms in the Language of Linear Algebra], Society for Industrial & Applied Mathematics, 2011.
 
-* White, T., "Hadoop: The Definitive Guide,":http://www.amazon.com/Hadoop-Definitive-Guide-Tom-White/dp/1449311520/ O'Reilly Media, 2012.
+* White, T., http://www.amazon.com/Hadoop-Definitive-Guide-Tom-White/dp/1449311520/[Hadoop: The Definitive Guide], O'Reilly Media, 2012.
 
-* Katsov, I., "MapReduce Patterns, Algorithms, and Use Cases,":http://highlyscalable.wordpress.com/2012/02/01/mapreduce-patterns/ Highly Scalable Blog, February 2012.
+* Katsov, I., http://highlyscalable.wordpress.com/2012/02/01/mapreduce-patterns/[MapReduce Patterns, Algorithms, and Use Cases], Highly Scalable Blog, February 2012.

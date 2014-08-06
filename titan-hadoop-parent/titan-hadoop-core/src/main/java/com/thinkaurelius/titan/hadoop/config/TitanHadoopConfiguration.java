@@ -14,10 +14,10 @@ public class TitanHadoopConfiguration {
             new ConfigNamespace(null, "faunus", "Faunus configuration root");
 
     public static final ConfigNamespace TRUNK_NS =
-            new ConfigNamespace(new ConfigNamespace(ROOT_NS, "titan", "titan-hadoop namespace"), "hadoop", "titan-hadoop namespace"); // TODO fix descriptions
+            new ConfigNamespace(new ConfigNamespace(ROOT_NS, "titan", "titan-hadoop namespace"), "hadoop", "Titan-Hadoop configuration parent");
 
     public static final ConfigNamespace INPUT_NS =
-            new ConfigNamespace(TRUNK_NS, "input", "Input format");
+            new ConfigNamespace(TRUNK_NS, "input", "Graph input format configuration");
 
     public static final ConfigOption<String> INPUT_FORMAT = new ConfigOption<String>(
             INPUT_NS, "format",
@@ -45,7 +45,7 @@ public class TitanHadoopConfiguration {
             ConfigOption.Type.LOCAL, "current");
 
     public static final ConfigNamespace OUTPUT_NS =
-            new ConfigNamespace(TRUNK_NS, "output", "MapReduce output configuration");
+            new ConfigNamespace(TRUNK_NS, "output", "Graph output format configuration");
 
     public static final ConfigOption<String> OUTPUT_FORMAT = new ConfigOption<String>(
             OUTPUT_NS, "format",
@@ -74,7 +74,7 @@ public class TitanHadoopConfiguration {
             new ConfigNamespace(OUTPUT_NS, "conf", "Settings for the output format class");
 
     public static final ConfigNamespace PIPELINE_NS =
-            new ConfigNamespace(TRUNK_NS, "pipeline", "Titan-Hadoop pipeline configuration");
+            new ConfigNamespace(TRUNK_NS, "pipeline", "MapReduce job cascading configuration");
 
     public static final ConfigOption<Boolean> PIPELINE_TRACK_STATE = new ConfigOption<Boolean>(
             PIPELINE_NS, "track-state",
@@ -92,7 +92,7 @@ public class TitanHadoopConfiguration {
             ConfigOption.Type.LOCAL, 500);
 
     public static final ConfigNamespace SIDE_EFFECT_NS =
-            new ConfigNamespace(TRUNK_NS, "sideeffect", "Titan-Hadoop side effect output configuration");
+            new ConfigNamespace(TRUNK_NS, "sideeffect", "Side-effect output format configuration");
 
     public static final ConfigOption<String> SIDE_EFFECT_FORMAT = new ConfigOption<String>(
             SIDE_EFFECT_NS, "format",
@@ -100,7 +100,7 @@ public class TitanHadoopConfiguration {
             ConfigOption.Type.LOCAL, String.class);
 
     public static final ConfigNamespace INDEX_NS =
-            new ConfigNamespace(TRUNK_NS, "reindex", "Titan-Hadoop index repair configuration");
+            new ConfigNamespace(TRUNK_NS, "reindex", "Index repair configuration");
 
     public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(
             INDEX_NS, "name",

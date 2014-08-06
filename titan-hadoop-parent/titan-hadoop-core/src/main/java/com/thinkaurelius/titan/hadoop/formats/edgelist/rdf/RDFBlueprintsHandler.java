@@ -81,7 +81,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         reservedFragments.add("id");
 
         ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
-        ModifiableConfiguration rdfConf = faunusConf.getInputConf(RDF_ROOT);
+        ModifiableConfiguration rdfConf = faunusConf.getInputConf(ROOT_NS);
 
         this.configuration = configuration;
         this.baseURI = rdfConf.get(RDF_BASE_URI);

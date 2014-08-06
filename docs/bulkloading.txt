@@ -38,7 +38,7 @@ Optimizing ID Allocation
 ID Block Size
 +++++++++++++
 
-Each newly added vertex or edge is assigned a unique id. Titan's id pool manager acquires ids in blocks for a particular Titan instance. The id block acquisition process is expensive because it needs carefully guarantee unique assignment of blocks. Increasing `ids.block-size` reduces the number of acquisitions but potentially leaves many ids unassigned and hence wasted. For transactional workloads the default block size is reasonable, but during bulk loading vertices and edges are added much more frequently and in rapid succession. Hence, it is generally advisable to increase the block size by a factor of 10 or more depending on the number of vertices to be added per machine.
+Each newly added vertex or edge is assigned a unique id. Titan's id pool manager acquires ids in blocks for a particular Titan instance. The id block acquisition process is expensive because it needs to guarantee globally unique assignment of blocks. Increasing `ids.block-size` reduces the number of acquisitions but potentially leaves many ids unassigned and hence wasted. For transactional workloads the default block size is reasonable, but during bulk loading vertices and edges are added much more frequently and in rapid succession. Hence, it is generally advisable to increase the block size by a factor of 10 or more depending on the number of vertices to be added per machine.
 
 *Rule of thumb*: Set `ids.block-size` to the number of vertices you expect to add per Titan instance per hour.
 

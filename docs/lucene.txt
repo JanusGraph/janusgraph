@@ -35,7 +35,7 @@ Feature Support
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
 
-Refer to the configuration reference _(REF)_ for a complete listing of all Lucene specific configuration options in addition to the general Titan configuration options. 
+Refer to <<titan-config-ref>> for a complete listing of all Lucene specific configuration options in addition to the general Titan configuration options. 
 
 Note, that each of the index backend options needs to be prefixed with `index.[INDEX-NAME].` where `[INDEX-NAME]` stands for the name of the index backend. For instance, if the index backend is named _search_ then these configuration options need to be prefixed with `index.search.`.
 To configure an index backend named _search_ to use Lucene as the index system, set the following configuration option:

@@ -1,6 +1,110 @@
+[[reindex]]
 Reindexing Process
 ------------------
 
-to be written
+This section extends the discussion in <<graph-indexes>> and <<vertex-indexes>>.  This section describes steps required to construct an index over datatypes with associated data already present in Titan; in other words, what needs to be done when defining a new index on an old type.
 
-//reindex in Faunus
+Overview
+~~~~~~~~
+
+Titan can begin writing incremental index updates right after an index is defined.  However, before the index is complete and usable, Titan must also take a one-time read pass over all existing values associated with the newly indexed type(s).  Titan uses Hadoop MapReduce for this task.
+
+[NOTE]
+The steps in this section are only necessary for indices created after loading data.  Indices created before their covered data were loaded do not require a reindex process.
+
+Preparing to Reindex
+~~~~~~~~~~~~~~~~~~~~
+
+Reindexing large, horizontally-distributed databases generally proceeds most quickly on a Hadoop MapReduce cluster.  However, it's also possible to reindex from a single machine using Hadoop's "local" job runner.  Either method will work from a correctness standpoint.  The only differentiator is reindex throughput.
+
+Reindexing requires:
+
+* The name of the index (a string -- the user provides this to Titan when defining a new index)
+* The type of the index (a string -- the user provides this to Titan when defining a ne windex)
+* An TitanGraph configuration file (a file whose path can be passed to `TitanFactory.open`)
+
+Executing a Reindex Job
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The recommended way to generate and run a reindex job is through the `TitanIndexRepair` helper class.  It has a pair of helper methods to generate a MapReduce configuration, configure a MR Job with a `TitanIndexRepairMapper`, and then run the job using the default job runner.
+
+The two recommended entry points on the `TitanIndexRepair` helper class are these methods:
+
+* `cassandraRepair`
+* `hbaseRepair`
+
+Cassandra Helper
+^^^^^^^^^^^^^^^^
+
+The static helper method `TitanIndexRepair.cassandraRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, an index type, and the name of the Cassandra keyspace partitioner.  It generates a reindexing config file in memory and starts a job using the generated config.  See also TitanIndexRepair in the http://thinkaurelius.github.io/titan/javadoc/current/[API documentation].
+
+HBase Helper
+^^^^^^^^^^^^
+
+The static helper method `TitanIndexRepair.hbaseRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, and an index type.  Unlike its Cassandra counterpart, there is no need to pass a partitioner name to the HBase helper method.  It generates a reindexing config file in memory and starts a job using the generated config.  See also TitanIndexRepair in the http://thinkaurelius.github.io/titan/javadoc/current/[API documentation].
+
+Example on Cassandra
+~~~~~~~~~~~~~~~~~~~~
+
+The following Gremlin snippet outlines the reindex process using minimal dummy data.
+
+[source,gremlin]
+----
+// Open a graph
+graph = TitanFactory.open("conf/titan-cassandra-es.properties")
+
+// Define a property
+mgmt = graph.getManagementSystem()
+desc = mgmt.makePropertyKey("desc").dataType(String.class).make()
+mgmt.commit()
+
+// Insert some data
+v = graph.addVertex(null)
+v.desc = "foo bar"
+v = graph.addVertex(null)
+v.desc = "foo baz"
+graph.commit()
+
+// Define an index
+mgmt = graph.getManagementSystem()
+desc = mgmt.getPropertyKey("desc")
+mixedIndex = mgmt.buildIndex("mixedExample",Vertex.class).addKey(desc).buildMixedIndex("search")
+mgmt.commit()
+
+// Run a MapReduce job
+//
+// If Hadoop isn't configured, then this will use the "local"
+// in-process MR executor by default.
+TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "desc",
+   /* Replace with your actual partitioner when not using Murmur3 */
+   "org.apache.cassandra.dht.Murmur3Partitioner")
+
+// Index mixedExample is ready to query when job succeeds
+----
+
+Common Problems
+~~~~~~~~~~~~~~~
+
+Cassandra Reindex Mappers Fail with "Too many open files"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The end of the exception stacktrace may look like this:
+
+----
+java.net.SocketException: Too many open files
+        at java.net.Socket.createImpl(Socket.java:447)
+        at java.net.Socket.getImpl(Socket.java:510)
+        at java.net.Socket.setSoLinger(Socket.java:988)
+        at org.apache.thrift.transport.TSocket.initSocket(TSocket.java:118)
+        at org.apache.thrift.transport.TSocket.<init>(TSocket.java:109)
+----
+
+When running Cassandra with virtual nodes enabled, the number of virtual nodes seems to set a floor under the number of mappers.  Cassandra may generate more mappers than virtual nodes for clusters with lots of data, but it seems to generate at least as many mappers as there are virtual nodes even though the cluster might be empty or close to empty.  The default is 256 as of this writing.
+
+Each mapper opens and quickly closes several sockets to Cassandra.  The kernel on the client side of those closed sockets goes into asynchronous TIME_WAIT, since Thrift uses SO_LINGER.  Only a small number of sockets are open at any one time -- usually low single digits -- but potentially many lingering sockets can accumulate in TIME_WAIT.  This accumulation is most pronounced when running a reindex job locally (not on a distributed MapReduce cluster), since all of those client-side TIME_WAIT sockets are lingering on a single client machine instead of being spread out across many machines in a cluster.   Combined with the floor of 256 mappers, a reindex job can open thousands of sockets of the course of its execution.  When these sockets all linger in TIME_WAIT on the same client, they have the potential to reach the open-files ulimit, which also controls the number of open sockets.  The open-files ulimit is often set to 1024.
+
+Here are a few suggestions for dealing with the "Too many open files" problem during reindexing on a single machine:
+
+* Reduce the maximum size of the Cassandra connection pool.  For example, consider setting the cassandrathrift storage backend's `max-active` and `max-idle` options to 1 each, and setting `max-total` to -1.  See <<titan-config-ref>> for full listings of connection pool settings on the Cassandra storage backends.
+* Increase the `nofile` ulimit.  The ideal value depends on the size of the Cassandra dataset and the throughput of the reindex mappers; if starting at 1024, try an order of magnitude larger: 10000.  This is just necessary to sustain lingering TIME_WAIT sockets.  The reindex job won't try to open nearly that many sockets at once.
+* Run the reindex task on a multi-node MapReduce cluster to spread out the socket load.

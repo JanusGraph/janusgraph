@@ -4,7 +4,6 @@ Titan Documentation
 include::intro.txt[]
 
 include::titanbasics.txt[]
-//include::using.txt[]
 
 include::storagebackends.txt[]
 

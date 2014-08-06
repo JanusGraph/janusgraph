@@ -9,13 +9,13 @@ A Titan graph database cluster consists of one or multiple Titan instances. To o
 
 A Titan configuration specifies which components Titan should use, controls all operational aspects of a Titan deployment, and provides a number of tuning options to get maximum performance from a Titan cluster.
 
-At a minimum, a Titan configuration must define the persistence engine that Titan should use as a storage backend. The Storage backend overview _(todo:xref)_ lists all supported persistence engines and how to configure them respectively.
-If advanced graph query support (e.g full-text search, geo search, or range queries) is required an additional indexing backend _(todo:xref)_ must be configured. If query performance is a concern caching _(todo:xref)_ should be enabled and there are a number of subsequent chapters which elaborate on particular tuning options for better performance.
+At a minimum, a Titan configuration must define the persistence engine that Titan should use as a storage backend. <<storage-backends>> lists all supported persistence engines and how to configure them respectively.
+If advanced graph query support (e.g full-text search, geo search, or range queries) is required an additional indexing backend must be configured.  See <<index-backends>> for details. If query performance is a concern, then caching should be enabled.  Cache configuration and tuning is described in <<caching>>.
 
 Example Configurations
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Below are some example configuration files to demonstrate how to configure the most commonly used storage backends, indexing systems, and performance components. This covers only a tiny portion of the available configuration options. Refer to configuration overview _(todo:xref)_ for the complete list of all options.
+Below are some example configuration files to demonstrate how to configure the most commonly used storage backends, indexing systems, and performance components. This covers only a tiny portion of the available configuration options. Refer to <<titan-config-ref>> for the complete list of all options.
 
 Cassandra+Elasticsearch
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -27,9 +27,9 @@ Sets up Titan to use the Cassandra persistence engine running locally and a remo
 storage.backend=cassandra
 storage.hostname=localhost
 
-storage.index.search.backend=elasticsearch
-storage.index.search.hostname=100.100.101.1,100.100.101.2
-storage.index.search.client-only=true
+index.search.backend=elasticsearch
+index.search.hostname=100.100.101.1,100.100.101.2
+index.search.elasticsearch.client-only=true
 ----
 
 HBase+Caching
@@ -60,13 +60,13 @@ Sets up Titan to use BerkeleyDB as an embedded persistence engine with ElasticSe
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
 
-storage.index.search.backend=elasticsearch
-storage.index.search.directory=/tmp/searchindex
-storage.index.search.client-only=false
-storage.index.search.local-mode=true
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
 ----
 
-The graph configuration overview _(todo:xref)_ describes all of these configuration options in detail. The +conf+ directory of the Titan distribution contains additional configuration examples.
+<<titan-config-ref>>_ describes all of these configuration options in detail. The +conf+ directory of the Titan distribution contains additional configuration examples.
 
 Further Examples
 ^^^^^^^^^^^^^^^^
@@ -98,13 +98,13 @@ The Titan distribution contains a command line REPL which makes it easy to get s
 
 [source,gremlin]
 ----
-g = TitanFactory.open(‘path/tp/configuration.properties’)
+g = TitanFactory.open(‘path/to/configuration.properties’)
 ----
 
 Titan Embedded
 ++++++++++++++
 
-TitanFactory can also be used to open an embedded Titan graph instance from within a JVM-based user application. In that case, Titan is part of the user application and the application can call upon Titan directly through its public API _(todo:xref javadoc)_.
+TitanFactory can also be used to open an embedded Titan graph instance from within a JVM-based user application. In that case, Titan is part of the user application and the application can call upon Titan directly through its public http://thinkaurelius.github.io/titan/javadoc/current/[API documentation].
 
 Short Codes
 +++++++++++
@@ -138,11 +138,11 @@ The Titan specific configuration options are added under the  `graphs` section i
     <graph>
       <graph-name>titanexample</graph-name>
       <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
-      <graph-location>/tmp/titan</graph-location>
       <graph-read-only>false</graph-read-only>
       <properties>
-            <storage.backend>local</storage.backend>
-            <storage.buffer-size>100</storage.buffer-size>
+        <storage.backend>berkeleyje</storage.backend>
+        <storage.directory>/tmp/titan</storage.directory>
+        <storage.buffer-size>100</storage.buffer-size>
       </properties>
       <extensions>
         <allows>
@@ -154,14 +154,14 @@ The Titan specific configuration options are added under the  `graphs` section i
 </rexster>
 ----
 
-Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the <<graph-config,Titan configurations>> can be used here.
+Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the options in <<titan-config-ref>> can be used here.
 
-Learn more about using and connecting to Titan server in subsequent chapters _(todo:xref)_.
+Learn more about using and connecting to Titan server in <<server>>.
 
 Server Distribution
 +++++++++++++++++++
 
-The Titan Server distribution _(todo:xref download)_ contains a quick start server component that is feature constrained but makes it easier to get started with Rexster and Titan. Invoke `bin/titan.sh` with an (optional) `-c` flag followed by the path to the Rexster configuration file.
+The Titan zipfile contains a quick start server component that is feature constrained but makes it easier to get started with Rexster and Titan. Invoke `bin/titan.sh` with an (optional) `-c` flag followed by the path to the Rexster configuration file.
 
 [[configuration-global]]
 Global Configuration
@@ -205,7 +205,7 @@ To change _GLOBAL_OFFLINE_ options follow these steps:
 * Call commit which will automatically shut down the graph instance
 * Restart all instances
 
-Refer to the full list of configuration options _(todo:xref)_ for more information including the configuration scope of each option.
+Refer to the full list of configuration options in <<titan-config-ref>> for more information including the configuration scope of each option.
 
 
 [[schema]]
@@ -216,7 +216,7 @@ Each Titan graph has a schema comprised of the edge labels, property keys, and v
 
 The schema type - i.e. edge label, property key, or vertex label - is assigned to elements in the graph - i.e. edge, properties or vertices respectively - when they are first created. The assigned schema type cannot be changed for a particular element. This ensures a stable type system that is easy to reason about.
 
-Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in the Titan Advanced section _(todo:xref)_.
+Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in <<advanced-schema>>.
 
 Defining Edge Labels
 ~~~~~~~~~~~~~~~~~~~~
@@ -279,6 +279,7 @@ Titan natively supports the following data types.
 |=====
 
 
+[[property-cardinality]]
 Property Key Cardinality
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -294,15 +295,22 @@ Note, that property keys used on edges and properties have cardinality SINGLE. A
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
-birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(SINGLE).make()
-name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(SET).make()
-birthDate = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(LIST).make()
+birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
+name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
+sensorReading = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(Cardinality.LIST).make()
 mgmt.commit()
 
 Relation Types
 ~~~~~~~~~~~~~~
 
 Edge labels and property keys are jointly referred to as *relation types*. Names of relation types must be unique in the graph which means that property keys and edge labels cannot have the same name. There are methods in the Titan API to query for the existence or retrieve relation types which encompasses both property keys and edge labels.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
+name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
+sensorReading = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(Cardinality.LIST).make()
+mgmt.commit()
 
 Defining Vertex Labels
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -368,8 +376,7 @@ See the http://gremlin.tinkerpop.com[Gremlin Manual] for a complete documentatio
 Introductory Traversals
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset discussed
-in the introduction (ref).
+A Gremlin query is a chain of operations/functions that are evaluated from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset discussed in <<getting-started>>.
 
 [source,gremlin]
 gremlin> g.V.has('name','hercules').out('father').out('father').name
@@ -491,7 +498,7 @@ image::rexster-dog-house-gremlin.png[]
 The following is a list of the https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster[benefits of using Rexster].
 
 * https://github.com/tinkerpop/rexster/wiki/Mapping-a-URI-to-JSON[JSON-based REST interface] ensures language agnostic connectivity to Titan.
-** See http://bulbflow.com/[Bulbs] or https://pypi.python.org/pypi/mogwai[Mogwai] for a Python connector.
+** See http://bulbflow.com/[Bulbs] or Python's https://pypi.python.org/pypi/mogwai[Mogwai] (formerly known as Thunderdome) for a Python connector.
 * HTML/JavaScript https://github.com/tinkerpop/rexster/wiki/The-Dog-House[graphical user interface] for graph administration and visualization.
 * Extend with more RESTful endpoints by adding https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension[Kibbles] to Rexster.
 ** See https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Rexster-Kibbles] provided by TinkerPop.
@@ -503,18 +510,17 @@ Downloading and Starting Rexster with Titan
 
 There are two ways to download and install Rexster with Titan.
 
-To get started with Rexster and Titan quickly, consider the titan-server zip distribution.  This contains Rexster, Titan, Cassandra, and Elasticsearch in a single download, preconfigured to work together.  It also contains the convenience script `bin/titan.sh` to start and stop the Cassandra and Rexster services (ES runs embedded in the Titan + Rexster VM and doesn't use a separate process).
-
-To use Titan backends besides Cassandra and ES, or to run graph engines besides Titan within a shared Rexster server, download Rexster and Titan separately and then install Titan as a Rexster extension.
+. Titan's zip downloads come with Rexster, Titan, Cassandra, and Elasticsearch in preconfigured to work together.  It also contains the convenience script `bin/titan.sh` to start and stop ES, Cassandra, and Titan with Rexster in separate processes.
+. Download Rexster and Titan separately, then install Titan as an extension to Rexster.
 
 Each of these approaches is described below.
 
-Getting started quickly with titan-server.zip
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Getting started quickly with titan.sh
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* Download a copy of the current `titan-server-$VERSION.zip` file from the _TODO xref to downloads_ page.
-* Unzip it and enter the `titan-server-$VERSION` directory
-* Run `bin/titan.sh start` to start a Rexster server with Titan + Cassandra, or run `bin/titan.sh -c cassandra-es start` to start a Rexster server with Titan + Cassandra + Elasticsearch.
+* Download a copy of the current `titan-$VERSION.zip` file from the _TODO xref to downloads_ page.
+* Unzip it and enter the `titan-$VERSION` directory
+* Run `bin/titan.sh start`.  This forks a Cassandra process and an ES process, waits for them to become responsive, then starts a process hosting Rexster with Titan and waits for it to become responsive.  It then returns.
 * Connect to Rexster using `bin/rexster-console.sh`, the REST API, or an application using RexsterClient (each method is described below in the "Connecting to Rexster" section)
 * Run `bin/titan.sh status` to check on the forked processes and `bin/titan.sh stop` to kill them
 
@@ -562,11 +568,11 @@ Edit the `REXSTER_HOME/rexster.xml` and include the Titan configuration portion 
     <graph>
       <graph-name>titanexample</graph-name>
       <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
-      <graph-location>/tmp/titan</graph-location>
       <graph-read-only>false</graph-read-only>
       <properties>
-            <storage.backend>local</storage.backend>
-            <storage.buffer-size>100</storage.buffer-size>
+        <storage.backend>berkeleyje</storage.backend>
+        <storage.directory>/tmp/titan</storage.directory>
+        <storage.buffer-size>100</storage.buffer-size>
       </properties>
       <extensions>
         <allows>
@@ -580,7 +586,7 @@ Edit the `REXSTER_HOME/rexster.xml` and include the Titan configuration portion 
 
 // [[https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-character-2.png|align=right|float|width=100px]]
 
-Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the <<graph-config,Titan configurations>> can be used here.
+Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the options in <<titan-config-ref>> can be used here.
 
 Rexster needs to have Titan and its related library dependencies made available to it.  Rexster has an `ext` directory where https://github.com/tinkerpop/rexster/wiki/Extensions[extensions] and other related libraries can be put on Rexster's path for https://github.com/tinkerpop/rexster/wiki/Deploying-an-Extension[deployment].  All files in the root of that directory and sub-directories will be added to Rexster's classpath.
 
@@ -589,12 +595,7 @@ To add Titan to Rexster, first make a directory as in:
 [source,text]
 mkdir REXSTER_HOME/ext/titan
 
-Then, if building Titan from source:
-
-[source,text]
-cp TITAN_HOME/target/titan-x.y.z-standalone/lib/*.* REXSTER_HOME/ext/titan
-
-or, if using the Titan zipped distribution download (use the titan-server distribution -- it contains necessary classes for Titan-Rexster integration):
+Then, copy Titan's jars and the jars of its dependencies to Rexster's extensions directory:
 
 [source,text]
 cp TITAN_HOME/lib/*.* REXSTER_HOME/ext/titan
@@ -611,9 +612,6 @@ http://localhost:8182/graphs/titanexample
 
 [NOTE]
 For those using ElasticSearch, Rexster includes lucene-core-3.5.0.jar (a neo4j dependency).  Assuming Neo4j is not being utilized in the Rexster instance, simply delete that file from the rexster `lib` directory.  Removing it will eliminate a conflict with Titan and allow ElasticSearch to start.  
-
-[NOTE]
-It is important to ensure that the `titan-rexster.jar` is in the `ext` directory as it is not available in all Titan distributions.  
 
 Connecting to Rexster
 ~~~~~~~~~~~~~~~~~~~~~
@@ -717,7 +715,7 @@ The first query asks for all vertices with the name `hercules`. The second asks 
 Titan distinguishes between two types of graph indexes: *composite* and *mixed* indexes. Composite indexes are very fast and efficient but limited to equality lookups for a particular, previously-defined combination of property keys. Mixed indexes can be used for lookups on any combination of indexed keys and support multiple condition predicates in addition to equality depending on the backing index store.
 
 Both types of indexes are created through the Titan management system and the index builder returned by `TitanManagement.buildIndex(String,Class)` where the first argument defines the name of the index and the second argument specifies the type of element to be indexed (e.g. `Vertex.class`). The name of a graph index must be unique.
-Graph indexes build against newly defined property keys, i.e. property keys that are defined in the same management transaction as the index, are immediately available. Graph indexes build against property keys that are already in use require the execution of a *reindex procedure* _(REF)_ to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the index will not be available. It is encouraged to define graph indexes in the same transaction as the initial schema.
+Graph indexes built against newly defined property keys, i.e. property keys that are defined in the same management transaction as the index, are immediately available. Graph indexes built against property keys that are already in use require the execution of a <<reindex,reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the index will not be available. It is encouraged to define graph indexes in the same transaction as the initial schema.
 
 [NOTE]
 In the absence of an index, Titan will default to a full graph scan in order to retrieve the desired list of vertices. While this produces the correct result set, the graph scan can be very inefficient and lead to poor overall system performance in a production environment. Enable the `force-index` configuration option in production deployments of Titan to prohibit graph scans.
@@ -758,6 +756,7 @@ g.V.has('name','hercules').interval('age',20,50)
 
 Composite indexes do not require configuration of an external indexing backend and are supported through the primary storage backend. Hence, composite index modifications are persisted through the same transaction as graph modifications which means that those changes are atomic and/or consistent if the underlying storage backend supports atomicity and/or consistency.
 
+[[index-unique]]
 Index Uniqueness
 ++++++++++++++++
 
@@ -771,7 +770,7 @@ mgmt.buildIndex('byName',Vertex.class).addKey(name).unique().buildCompositeIndex
 mgmt.commit()
 
 [NOTE]
-To enforce uniqueness against an eventually consistent storage backend, the consistency _(REF)_ of the index must be explicitly set to enabling locking.
+To enforce uniqueness against an eventually consistent storage backend, the <<eventual-consistency,consistency>> of the index must be explicitly set to enabling locking.
 
 Mixed Index
 ^^^^^^^^^^^
@@ -779,7 +778,7 @@ Mixed Index
 Mixed indexes retrieve vertices or edges by any combination of previously added property keys.
 Mixed indexes provide more flexibility than composite indexes and support additional condition predicates beyond equality. On the other hand, mixed indexes are slower for most equality queries than composite indexes.
 
-Unlike composite indexes, mixed indexes require the configuration of an indexing backend _(REF)_ and use that indexing backend to execute lookup operations. Titan can support multiple indexing backends in a single installation. Each indexing backend must be uniquely identified by name in the Titan configuration which is called the *indexing backend name*.
+Unlike composite indexes, mixed indexes require the configuration of an <<index-backends,indexing backend>> and use that indexing backend to execute lookup operations. Titan can support multiple indexing backends in a single installation. Each indexing backend must be uniquely identified by name in the Titan configuration which is called the *indexing backend name*.
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
@@ -796,7 +795,7 @@ g.V.has('name',CONTAINS,'hercules').interval('age',20,50)
 g.V.has('name',CONTAINS,'hercules')
 g.V.has('age',LESS_THAN,50)
 
-Mixed indexes support full-text search, range search, geo search and others. Refer to the search predicate overview _(REF)_ for a list of predicates supported by a particular indexing backend.
+Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
 
 [NOTE]
 Unlike composite indexes, mixed indexes do not support uniqueness.
@@ -815,12 +814,12 @@ mgmt.commit()
 
 To add a newly defined key, we first retrieve the existing index from the management transaction by its name and then invoke the `addIndexKey` method to add the key to this index.
 
-If the added key is defined in the same management transaction, it will be immediately available for querying. If the property key has already been in use, adding the key requires the execution of a *reindex procedure* _(REF)_ to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the key will not be available in the mixed index.
+If the added key is defined in the same management transaction, it will be immediately available for querying. If the property key has already been in use, adding the key requires the execution of a <<reindex,reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the key will not be available in the mixed index.
 
 Mapping Parameters
 ++++++++++++++++++
 
-When adding a property key to a mixed index - either through the index builder or the `addIndexKey` method - a list of parameters can be optionally specified to adjust how the property value is mapped into the indexing backend. Refer to the mapping parameters overview _(REF)_ for a complete list of parameter types supported by each indexing backend.
+When adding a property key to a mixed index - either through the index builder or the `addIndexKey` method - a list of parameters can be optionally specified to adjust how the property value is mapped into the indexing backend. Refer to the <<text-search,mapping parameters overview>> for a complete list of parameter types supported by each indexing backend.
 
 Ordering
 ^^^^^^^^
@@ -864,9 +863,9 @@ Composite vs Mixed Index
 Vertex-centric Index
 ~~~~~~~~~~~~~~~~~~~~
 
-Vertex-centric indexes are local index structures build individually per vertex. In large graphs vertices can have thousands of incident edges. Traversing through those vertices can be very slow because a large subset of the incident edges has to be retrieved and then filtered in memory to match the conditions of the traversal. Vertex-centric indexes can speed up such traversals by using localized index structures to retrieve only those edges that need to be traversed.
+Vertex-centric indexes are local index structures built individually per vertex. In large graphs vertices can have thousands of incident edges. Traversing through those vertices can be very slow because a large subset of the incident edges has to be retrieved and then filtered in memory to match the conditions of the traversal. Vertex-centric indexes can speed up such traversals by using localized index structures to retrieve only those edges that need to be traversed.
 
-Suppose that Hercules battled hundreds of monsters in addition to the three captured in the introductory Graph of the Gods _(REF)_. Without a vertex-centric index, a query asking for those monsters battled between time point `10` and `20` would require retrieving all `battled` edges even though there are only a handful of matching edges.
+Suppose that Hercules battled hundreds of monsters in addition to the three captured in the introductory <<getting-started,Graph of the Gods>>. Without a vertex-centric index, a query asking for those monsters battled between time point `10` and `20` would require retrieving all `battled` edges even though there are only a handful of matching edges.
 
 [source,gremlin]
 h = g.V.has('name','hercules').next()
@@ -900,12 +899,12 @@ h.outE('battled').interval('time',10,50).inV
 
 Hence, the `battlesByLocationAndTime` index can speed up the first two but not the third query.
 
-Multiple vertex-centric indexes can be build for the same edge label in order to support different constraint traversals. Titan's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
+Multiple vertex-centric indexes can be built for the same edge label in order to support different constraint traversals. Titan's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
 
 [NOTE]
 The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order. If the data type are floating point numbers, Titan's custom `Decimal` or `Precision` data types must be used which have a fixed number of decimals.
 
-If the vertex-centric index is build against an edge label that is defined in the same management transaction, the index will be immediately available for querying. If the edge label has already been in use, building a vertex-centric index against it requires the execution of a *reindex procedure* _(REF)_ to ensure that the index contains all previously added edges. Until the reindex procedure has completed, the index will not be available.
+If the vertex-centric index is built against an edge label that is defined in the same management transaction, the index will be immediately available for querying. If the edge label has already been in use, building a vertex-centric index against it requires the execution of a <<reindex,reindex procedure>> to ensure that the index contains all previously added edges. Until the reindex procedure has completed, the index will not be available.
 
 [NOTE]
 Titan automatically builds vertex-centric indexes per edge label and property key. That means, even with thousands of incident `battled` edges, queries like `h.out('mother')` or `h.age` are efficiently answered by the local index.
@@ -946,13 +945,13 @@ Every graph operation in Titan occurs within the context of a transaction. Accor
 
 [source,java]
 ----
-TitanGraph g = TitanFactory.open("/tmp/titan");
+TitanGraph g = TitanFactory.open("berkeleyje:/tmp/titan");
 Vertex juno = g.addVertex(null); //Automatically opens a new transaction
 juno.setProperty("name", "juno");
 g.commit(); //Commits transaction
 ----
 
-In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database `shutdown()` which commits all currently running transactions. Note, that both read and write operations occur within the context of a transaction.
+In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined, but in practice they will usually be effectively rolled back. Note, that both read and write operations occur within the context of a transaction.
 
 Transactional Scope
 ~~~~~~~~~~~~~~~~~~~
@@ -960,7 +959,7 @@ Transactional Scope
 All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under Blueprint's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, Titan will automatically transition vertices and types into the new transactional scope as shown in this example::
 
 [source,java]
-TitanGraph g = TitanFactory.open("/tmp/titan");
+TitanGraph g = TitanFactory.open("berkeleyje:/tmp/titan");
 Vertex juno = g.addVertex(null); //Automatically opens a new transaction
 g.commit(); //Ends transaction
 juno.setProperty("name", "juno"); //Vertex is automatically transitioned
@@ -993,7 +992,7 @@ The example above demonstrates a simplified user signup implementation where `na
 
 If the transaction fails, a `TitanException` is thrown. There are a variety of reasons why a transaction may fail. Titan differentiates between _potentially temporary_ and _permanent_ failures. 
 
-Potentially temporary failures are those related to resource unavailability and IO hickups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay can be configured through the _TODO: xref to Graph Configuration_.
+Potentially temporary failures are those related to resource unavailability and IO hickups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<titan-config-ref>>).
 
 Permanent failures can be caused by complete connection loss, hardware failure or lock contention. To understand the cause of lock contention, consider the signup example above and suppose a user tries to signup with username "juno". That username may still be available at the beginning of the transaction but by the time the transaction is committed, another user might have concurrently registered with "juno" as well and that transaction holds the lock on the username therefore causing the other transaction to fail. Depending on the transaction semantics one can recover from a lock contention failure by re-running the entire transaction.
 
@@ -1020,7 +1019,7 @@ for (int i=0;i<threads.length;i++) {
 for (int i=0;i<threads.length;i++) threads[i].join();
 tx.commit();
 
-The `newTransaction()` method returns a new `TransactionalGraph` object that represents this newly opened transaction. The graph object `tx` supports all of the method that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all do-something in the same transaction and finally commit the transaction when all threads have completed their work.
+The `newTransaction()` method returns a new `TransactionalGraph` object that represents this newly opened transaction. The graph object `tx` supports all of the methods that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all work concurrently in the same transaction and one of which finally commits the transaction when all threads have completed their work.
 
 Titan relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
 
@@ -1034,7 +1033,7 @@ Nested Transactions
 
 Another use case for thread independent transactions is nested transactions that ought to be independent from the surrounding transaction.
 
-For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see <<type-definition> for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
+For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see <<eventual-consistency>> for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
 
 [source,java]
 Vertex v1 = g.addVertex(null);
@@ -1043,7 +1042,7 @@ Vertex v2 = g.addVertex(null);
 v2.setProperty("uniqueName","foo");
 g.addEdge(null,v1,v2,"related");
 //Do many other things
-g.commit(); // Likely to fail due to lock congestion
+g.commit(); // This long-running tx might fail due to contention on its uniqueName lock
 
 One way around this is to create the vertex in a short, nested thread-independent transaction as demonstrated by the following pseudo code::
 
@@ -1053,10 +1052,10 @@ Vertex v1 = g.addVertex(null);
 TransactionalGraph tx = g.newTransaction();
 Vertex v2 = tx.addVertex(null);
 v2.setProperty("uniqueName","foo");
-tx.commit();
-g.addEdge(null,v1,g.getVertex(v2),"related"); //Need to load v2 into outer transaction
+tx.commit(); // Any lock contention will be detected here
+g.addEdge(null,v1,g.getVertex(v2),"related"); // Need to load v2 into outer transaction
 //Do many other things
-g.commit(); // Likely to fail due to lock congestion
+g.commit(); // Can't fail due to uniqueName write lock contention involving v2
 
 
 Common Transaction Handling Problems
@@ -1108,7 +1107,6 @@ Once, the desired configuration options have been specified, the new transaction
 Titan Cache
 -----------
 
-[[caching]]
 Caching
 ~~~~~~~
 
@@ -1121,7 +1119,7 @@ Transaction-Level Caching
 Within an open transaction, Titan maintains two caches:
 
 * Vertex Cache: Caches accessed vertices and their adjacency list (or subsets thereof) so that subsequent access is significantly faster within the same transaction. Hence, this cache speeds up iterative traversals.
-* Index Cache: Caches the results for index queries so that subsequent index calls can be served from the cache and do not requires invoking the indexing backend.
+* Index Cache: Caches the results for index queries so that subsequent index calls can be served from memory instead of calling the index backend and (usually) waiting for one or more network round trips.
 
 The size of both of those is determined by the _transaction cache size_. The transaction cache size can be configured via `cache.tx-cache-size` or on a per transaction basis by opening a transaction via the transaction builder `graph.buildTransction()` and using the `setVertexCacheSize(int)` method.
 
@@ -1130,7 +1128,7 @@ Vertex Cache
 
 The vertex cache contains vertices and the subset of their adjacency list that has been retrieved in a particular transaction. The maximum number of vertices maintained in this cache is equal to the transaction cache size. If the transaction workload is an iterative traversal, the vertex cache will significantly speed it up. If the same vertex is not accessed again in the transaction, the transaction level cache will make no difference.
 
-Note, that the size of the vertex cache on heap is not only determined by the number of vertices it may hold but also by the size of their adjacency list. In other words, vertices will large adjacency lists (i.e. many incident edges) will consume more space in this cache than those with smaller lists.
+Note, that the size of the vertex cache on heap is not only determined by the number of vertices it may hold but also by the size of their adjacency list. In other words, vertices with large adjacency lists (i.e. many incident edges) will consume more space in this cache than those with smaller lists.
 
 Furthermore note, that modified vertices are _pinned_ in the cache, which means they cannot be evicted since that would entail loosing their changes. Therefore, transaction which contain a lot of modifications may end up with a larger than configured vertex cache.
 
@@ -1145,9 +1143,9 @@ Each entry in the index cache is given a weight equal to `2 + result set size` a
 Database Level Caching
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Caches retrieved adjacency lists (or subsets thereof) across multiple transactions and beyond the duration of a single transaction. The database level cache is shared by all transactions across a database. It is more space efficient than the transaction level caches but also slightly slower to access. In contrast to the transaction level caches, the database level caches do not expire immediately after closing a transaction. Hence, the database level cache significantly speeds up graph traversals for read heavy workloads across transactions.
+The database level cache retains adjacency lists (or subsets thereof) across multiple transactions and beyond the duration of a single transaction. The database level cache is shared by all transactions across a database. It is more space efficient than the transaction level caches but also slightly slower to access. In contrast to the transaction level caches, the database level caches do not expire immediately after closing a transaction. Hence, the database level cache significantly speeds up graph traversals for read heavy workloads across transactions.
 
-The <<graph-config,Graph Configuration>> page lists all of the configuration options that pertain to Titan's database level cache. This page attempts to explain their usage.
+<<titan-config-ref>> lists all of the configuration options that pertain to Titan's database level cache. This page attempts to explain their usage.
 
 Most importantly, the database level cache is disabled by default in the current release version of Titan. To enable it, set `cache.db-cache=true`. 
 
@@ -1183,7 +1181,7 @@ If Titan runs locally or against a storage backend that guarantees immediate vis
 Storage Backend Caching
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Each storage backend maintains its own data caching layer. These caches benefit from compression, data compactness, coordinated expiration and are often maintained off heap which means that large caches can be used without running in garbage collection issues. While these caches can be significantly larger than the database level cache, they are also slower to access.
+Each storage backend maintains its own data caching layer. These caches benefit from compression, data compactness, coordinated expiration and are often maintained off heap which means that large caches can be used without running into garbage collection issues. While these caches can be significantly larger than the database level cache, they are also slower to access.
 
 The exact type of caching and its properties depends on the particular <<storage-backends,storage backend>>. Please refer to the respective documentation for more information about the caching infrastructure and how to optimize it.
 
@@ -1237,12 +1235,12 @@ userlogs.addLogProcessor("addedPerson")
         })
         .build();
 
-In this example, a *log processor* is build for the user transaction log named `addedPerson` to process the changes made in transactions which used the `addedPerson` log identifier. Two *change processors* are added to this log processor. The first processor counts the number of humans added and the second counts the number of gods added to the graph. 
+In this example, a *log processor* is built for the user transaction log named `addedPerson` to process the changes made in transactions which used the `addedPerson` log identifier. Two *change processors* are added to this log processor. The first processor counts the number of humans added and the second counts the number of gods added to the graph. 
 
-When a log processor is build against a particular log, such as the `addedPerson` log in the example above, it will start reading transactional change records from the log immediately upon successful construction and initialization up to the head of the log. The start time specified in the builder marks the time point in the log where the log processor will start reading records. Optionally, one can specify an identifier for the log processor in the builder. The log processor will use the identifier to regularly persist its state of processing, i.e. it will maintain a marker on the last read log record. If the log processor is later restarted with the same identifier, it will continue reading from the last read record. This is particularly useful when the log processor is supposed to run for long periods of time and is therefore likely to fail. In such failure situations, the log processor can simply be restarted with the same identifier.
+When a log processor is built against a particular log, such as the `addedPerson` log in the example above, it will start reading transactional change records from the log immediately upon successful construction and initialization up to the head of the log. The start time specified in the builder marks the time point in the log where the log processor will start reading records. Optionally, one can specify an identifier for the log processor in the builder. The log processor will use the identifier to regularly persist its state of processing, i.e. it will maintain a marker on the last read log record. If the log processor is later restarted with the same identifier, it will continue reading from the last read record. This is particularly useful when the log processor is supposed to run for long periods of time and is therefore likely to fail. In such failure situations, the log processor can simply be restarted with the same identifier.
 It must be ensured that log processor identifiers are unique in a Titan cluster in order to avoid conflicts on the persisted read markers.
 
-A change processor must implement the `ChangeProcessor` interface. It's `process()` method is invoked for each change record read from the log with a `TitanTransaction` handle, the id of the transaction that caused the change, and a `ChangeState` container which holds the transactional changes. The change state container can be queried to retrieve individual elements that were part of the change state. In the example, all added vertices are retrieved. Refer to the API documentation _(REF)_ for a description of all the query methods on `ChangeState`. The provided transaction id can be used to investigate the origin of the transaction which is uniquely identified by the combination of the id of the Titan instance that executed the transaction (`txId.getInstanceId()`) and the instance specific transaction id (`txId.getTransactionId()`). In addition, the time of the transaction is available through `txId.getTransactionTime()`.
+A change processor must implement the `ChangeProcessor` interface. It's `process()` method is invoked for each change record read from the log with a `TitanTransaction` handle, the id of the transaction that caused the change, and a `ChangeState` container which holds the transactional changes. The change state container can be queried to retrieve individual elements that were part of the change state. In the example, all added vertices are retrieved. Refer to the http://thinkaurelius.github.io/titan/javadoc/current/[API documentation] for a description of all the query methods on `ChangeState`. The provided transaction id can be used to investigate the origin of the transaction which is uniquely identified by the combination of the id of the Titan instance that executed the transaction (`txId.getInstanceId()`) and the instance specific transaction id (`txId.getTransactionId()`). In addition, the time of the transaction is available through `txId.getTransactionTime()`.
  
 Change processors are executed individually and in multiple threads. If a change processor accesses global state it must be ensured that such state allows concurrent access. While the log processor reads log records sequentially, the changes are processed in multiple threads so it cannot be guaranteed that the log order is preserved in the change processors. 
 
@@ -1273,9 +1271,9 @@ Transaction Log Use Cases
 Record of Change
 ^^^^^^^^^^^^^^^^
 
-The user transaction log can be used to keep a record of all changes made against the graph. By using separate log identifiers, so changes can be recorded in different logs to distinguish separate transaction types.
+The user transaction log can be used to keep a record of all changes made against the graph. By using separate log identifiers, changes can be recorded in different logs to distinguish separate transaction types.
 
-At any time, a log processor can be build which can processes all recorded changes starting from the desired start time. This can be used for forensic analysis, to replay changes against a different graph, or to compute an aggregate.
+At any time, a log processor can be built which can processes all recorded changes starting from the desired start time. This can be used for forensic analysis, to replay changes against a different graph, or to compute an aggregate.
 
 Downstream Updates
 ^^^^^^^^^^^^^^^^^^
@@ -1290,7 +1288,7 @@ The user transaction log provides the basic infrastructure to implement triggers
 Log Configuration
 ~~~~~~~~~~~~~~~~~
 
-There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options _(REF)_ for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL). 
+There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<titan-config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL). 
 
 include::configref.txt[]
 
@@ -1301,7 +1299,7 @@ Common Questions
 Accidental type creation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Titan will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly <<type-definition,define types>> and disable automatic type creation by setting the _TODO: xref to Graph-Configuration_ option `schema.default = none`.
+By default, Titan will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly schemata as documented in <<schema>> before loading any data and disable automatic type creation by setting the option `schema.default = none`.
 
 Custom Class Datatype
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1316,9 +1314,9 @@ Edges should not be accessed outside the scope in which they were originally cre
 Locking Exceptions
 ~~~~~~~~~~~~~~~~~~
 
-When defining unique <<type-definition,Titan types>> with locking enabled (i.e. requesting that Titan ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
+When defining unique types with <<eventual-consistency,locking enabled>> (i.e. requesting that Titan ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
 
-Such exceptions are to be expected, since Titan cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. It most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
+Such exceptions are to be expected, since Titan cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. In most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
 
 Floating point numbers in Vertex-centric Indices
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1328,19 +1326,25 @@ Titan does not allow property keys with `Double` or `Float` data type to be part
 Ghost Vertices
 ~~~~~~~~~~~~~~
 
-When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key <<type-definition,out-uniqueness>>_ but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals, for instance using https://github.com/StartTheShift/titan-tools[Titan tools].
+When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key <<index-unique,uniqueness>> but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals, for instance using https://github.com/StartTheShift/titan-tools[Titan tools].
 
 Another option is to detect them at read-time using the option `checkInternalVertexExistence()` documented in <<tx-config>>.
 
-Snappy 1.4 does not work with Java 1.7
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Snappy 1.0.4.1 Compatibility Problems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cassandra 1.2.x makes use of Snappy 1.4. Titan will not be able to connect to Cassandra if the server is running Java 1.7 and Cassandra 1.2.x (with Snappy 1.4). Be sure to remove the Snappy 1.4 jar in the `cassandra/lib` directory and replace with a http://code.google.com/p/snappy-java/downloads/list[Snappy 1.5 jar version].
+Cassandra 1.2.5 and earlier 1.2.x releases use Snappy 1.0.4.1.  This version of Snappy had compatibility problems with Mac OSX and Java 1.7.  Upgrading to Snappy 1.0.5 fixes the bug.  Cassandra 1.2.6 and later ship with Snappy 1.0.5.  Any users still affected by this bug are strongly urged to upgrade both their client and server Cassandra installs to a newer Cassandra version carrying a newer Snappy library unaffected by the bug.
+
+Historical issue links:
+
+* https://issues.apache.org/jira/browse/CASSANDRA-4958
+* https://github.com/xerial/snappy-java/issues/6
+* https://github.com/ptaoussanis/carmine/issues/5
 
 Debug-level Logging Slows Execution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When the log level is set to `debug` Titan produces *a lot* of logging output which is useful to understand how particular queries get compiled, optimized, and executed. However, the output is so large that it will impact the query performance noticeably. Hence, you `info` or above for production systems or benchmarking.
+When the log level is set to `DEBUG` Titan produces *a lot* of logging output which is useful to understand how particular queries get compiled, optimized, and executed. However, the output is so large that it will impact the query performance noticeably. Hence, use `INFO` severity or higher for production systems or benchmarking.
 
 Titan OutOfMemoryException or excessive Garbage Collection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1354,7 +1358,7 @@ When launching Titan with embedded Cassandra, the following warnings may be disp
 
 `958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
 
-Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`). Rather than modifying `titan.sh` and adding the javaagent parameter, I prefer to set the `JAVA_OPTIONS` environment variable with the proper javaagent setting:
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Rexster:
 
 [source,bash]
 export JAVA_OPTIONS=-javaagent:$TITAN_HOME/lib/jamm-0.2.5.jar
@@ -1424,7 +1428,7 @@ Once a graph or vertex-centric index has been created it cannot be removed from 
 Batch Loading Speed
 ^^^^^^^^^^^^^^^^^^^
 
-Titan provides a batch loading mode that can be enabled through the _TODO: xref to Graph Configuration_. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in Titan.
+Titan provides a batch loading mode that can be enabled through the <<titan-config-ref,graph configuration>>. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in Titan.
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
 

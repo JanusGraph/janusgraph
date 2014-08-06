@@ -8,7 +8,7 @@ http://blueprints.tinkerpop.com[Blueprints] maintains the notion of a `VertexQue
 
 // [[https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-character-3.png|align=right|float|width=100px]]
 
-In Faunus, the same `VertexQuery` construct exists. However, in the context of Faunus, it is used to filter the input graph to a subset of the full graph prior to pulling the data into Hadoop. For those graph sources that support _push down predicates_, this allows the graph source to only return the edges of the vertices that satisfy the contraints of the query. The <<faunus-config,configuration>> that specifies the vertex query constraint is `faunus.graph.input.vertex-query-filter`. A few examples are itemized below.
+In Faunus, the same `VertexQuery` construct exists. However, in the context of Faunus, it is used to filter the input graph to a subset of the full graph prior to pulling the data into Hadoop. For those graph sources that support _push down predicates_, this allows the graph source to only return the edges of the vertices that satisfy the contraints of the query. The <<hadoop-config-ref,configuration>> that specifies the vertex query constraint is `vertex-query-filter`. A few examples are itemized below.
 
 * Only vertices and their properties (no edges): `v.query().limit(0)`
 * Only edges with a weight greater than 0.5: `v.query().has('weight',Compare.GREATER_THAN,0.5)`

@@ -24,7 +24,7 @@ public class ScriptRecordWriterTest extends BaseTest {
         DataOutputStream stream = new DataOutputStream(new PrintStream(baos));
         Configuration conf = new Configuration();
         ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(conf);
-        faunusConf.getOutputConf(SCRIPT_ROOT).set(SCRIPT_FILE, ScriptRecordWriterTest.class.getResource("ScriptOutput.groovy").getFile());
+        faunusConf.getOutputConf(ROOT_NS).set(SCRIPT_FILE, ScriptRecordWriterTest.class.getResource("ScriptOutput.groovy").getFile());
         ScriptRecordWriter writer = new ScriptRecordWriter(stream, conf);
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
         for (FaunusVertex vertex : graph.values()) {

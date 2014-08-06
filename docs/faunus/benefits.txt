@@ -16,3 +16,4 @@ Titan-Hadoop is http://en.wikipedia.org/wiki/MapReduce[Hadoop MapReduce]-based g
 * Process graphs represented in various http://www.w3.org/RDF/[RDF] formats. Simply store the text-representation in HDFS.
 * Output graphs as an edge list to easily interoperate with other graph analysis packages (e.g. http://www.r-project.org/[R] or http://igraph.sourceforge.net/[igraph]).
 * Custom input and output format scripts can be provided for general purpose data import/export.
+* Integrate with either Hadoop 1.x or 2.x.  Both are supported.

@@ -1,3 +1,4 @@
+[[search-predicates]]
 Search Predicates
 -----------------
 

@@ -1,7 +1,8 @@
+[[advanced-schema]]
 Advanced Schema
 ---------------
 
-This page describes some of the advanced schema definition options that Titan provides. For general information on Titan's schema and how to define it, refer to the previous section _(REF)_.
+This page describes some of the advanced schema definition options that Titan provides. For general information on Titan's schema and how to define it, refer to <<schema>>.
 
 
 Static Vertices
@@ -55,7 +56,7 @@ Note, that the TTL of a vertex label can be modified but it might take some time
 Multi-Properties
 ~~~~~~~~~~~~~~~~
 
-As dicussed in the introductory schema Section _(REF)_ Titan supports property keys with SET and LIST cardinality. Hence, Titan supports multiple properties with the same key on a single vertex. Furthermore, Titan treats properties similarly to edges in that single-valued property annotations are allowed on properties as shown in the following example.
+As dicussed in <<schema>>, Titan supports property keys with SET and LIST cardinality. Hence, Titan supports multiple properties with the same key on a single vertex. Furthermore, Titan treats properties similarly to edges in that single-valued property annotations are allowed on properties as shown in the following example.
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
@@ -72,7 +73,7 @@ v.getProperties('name')
 
 These features are useful in a number of applications such as those where attaching provenance information (e.g. who added a property, when and from where?) to properties is necessary. Support for higher cardinality properties and property annotations on properties is also useful in high-concurrency, scale-out design patterns _(REF TO eventual consistency section)_
 
-Vertex-centric indexes and global graph indexes are supported for properties in the same manner as they are supported for edges. Refer to the indexing documentation _(REF)_ for information on defining these indexes for edges and use the corresponding API methods to define the same indexes for properties.
+Vertex-centric indexes and global graph indexes are supported for properties in the same manner as they are supported for edges. Refer to <<indexes>> for information on defining these indexes for edges and use the corresponding API methods to define the same indexes for properties.
 
 Unidirected Edges
 ~~~~~~~~~~~~~~~~~

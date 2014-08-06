@@ -22,8 +22,8 @@ To run Elasticsearch embedded, add the following configuration options to the gr
 [source,properties]
 index.search.backend=elasticsearch
 index.search.directory=/tmp/searchindex
-index.search.client-only=false
-index.search.local-mode=true
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
 
 Note, that Elasticsearch will not be accessible from outside of this particular Titan instance, i.e., remote connections will not be possible. Also, it might be advisable to run Elasticsearch in a separate jvm even for single machine deployments to achieve more predictable GC behavior.
 
@@ -39,7 +39,7 @@ To connect Titan to an external Elasticsearch cluster, add the following configu
 [source,properties]
 index.search.backend=elasticsearch
 index.search.hostname=100.100.101.1,100.100.101.2
-index.search.client-only=true
+index.search.elasticsearch.client-only=true
 
 Make sure that the Elasticsearch cluster is running prior to starting a Titan instance attempting to connect to it. Also ensure that the machine running Titan can connect to the Elasticsearch instances over the network if the machines are physically separated. This might require setting additional configuration options which are summarized below.
 
@@ -57,7 +57,7 @@ Feature Support
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~
 
-Refer to the configuration reference _(REF)_ for a complete listing of all Elasticsearch specific configuration options in addition to the general Titan configuration options. 
+Refer to <<titan-config-ref>> for a complete listing of all Elasticsearch specific configuration options in addition to the general Titan configuration options. 
 
 Note, that each of the index backend options needs to be prefixed with `index.[INDEX-NAME].` where `[INDEX-NAME]` stands for the name of the index backend. For instance, if the index backend is named _search_ then these configuration options need to be prefixed with `index.search.`.
 To configure an index backend named _search_ to use Elasticsearch as the index system, set the following configuration option:

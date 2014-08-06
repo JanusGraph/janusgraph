@@ -18,7 +18,7 @@ public class RDFRecordReaderTest extends BaseTest {
     public void testRecordReader() throws Exception {
         Configuration conf = new Configuration();
         ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(conf);
-        faunusConf.getInputConf(RDFConfig.RDF_ROOT).set(RDFConfig.RDF_FORMAT, RDFConfig.Syntax.N_TRIPLES);
+        faunusConf.getInputConf(RDFConfig.ROOT_NS).set(RDFConfig.RDF_FORMAT, RDFConfig.Syntax.N_TRIPLES);
         RDFRecordReader reader = new RDFRecordReader(conf);
         reader.initialize(new FileSplit(new Path(RDFRecordReaderTest.class.getResource("graph-example-1.ntriple").toURI()), 0, Long.MAX_VALUE, new String[]{}),
                 HadoopCompatLoader.getCompat().newTask(conf, new TaskAttemptID()));

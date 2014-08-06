@@ -19,14 +19,14 @@ However, this can create inconsistencies with the indexes and logs. To automatic
 tx.log-tx = true
 tx.max-commit-time = 10000
 
-The max-commit-time property is used to determine when a transaction has failed. If the persistence stage of the transaction takes longer than this time, Titan will attempt to recover it if necessary. Hence, this time out should be configured as a generous upper bound on the maximum duration of persistence. Note, that this does not include the time spend before commit.
+The max-commit-time property is used to determine when a transaction has failed. If the persistence stage of the transaction takes longer than this time, Titan will attempt to recover it if necessary. Hence, this time out should be configured as a generous upper bound on the maximum duration of persistence. Note, that this does not include the time spent before commit.
 
-In addition, a separate process must be setup that reads the log to identify partially failed transaction and reapri any inconsistencies caused. It is suggested to run the transaction repair process on a separate machine connected to the cluster to isolate failures. Configure a separately controlled process to run the following where the start time specifies the time since epoch where the recovery process should start reading from the write-ahead log.
+In addition, a separate process must be setup that reads the log to identify partially failed transaction and repair any inconsistencies caused. It is suggested to run the transaction repair process on a separate machine connected to the cluster to isolate failures. Configure a separately controlled process to run the following where the start time specifies the time since epoch where the recovery process should start reading from the write-ahead log.
 
 [source,gremlin]
 recovery = TitanFactory.startTransactionRecovery(graph,startTime,TimeUnit.MILLISECONDS);
 
-Enabling the transaction write-ahead log causes an additional write operation for mutating transactions which increases the latency. Also note, that additional space is required to store the log. The transaction write-ahead log has a configurable time-to-live of 2 days which means that log entries expire after that time to keep the storage overhead small. Refer to the configuration reference _(REF)_ for a complete list of all log related configuration options to fine tune logging behavior.
+Enabling the transaction write-ahead log causes an additional write operation for mutating transactions which increases the latency. Also note, that additional space is required to store the log. The transaction write-ahead log has a configurable time-to-live of 2 days which means that log entries expire after that time to keep the storage overhead small. Refer to <<titan-config-ref>> for a complete list of all log related configuration options to fine tune logging behavior.
 
 
 
@@ -35,7 +35,7 @@ Titan Instance Failure
 
 Titan is robust against individual instance failure in that other instances of the Titan cluster are not impacted by such failure and can continue processing transactions without loss of performance while the failed instance is restarted.
 
-However, some schema related operations - such as installing indexes - require the coordination of all Titan instances. For this reason, Titan maintains a record of all unning instances. If an instance fails, i.e. is not properly shut down, Titan considers it to be active and expects its participation in cluster-wide operations which subsequently fail because this instances did not participate in or did not acknowledge the operation.
+However, some schema related operations - such as installing indexes - require the coordination of all Titan instances. For this reason, Titan maintains a record of all running instances. If an instance fails, i.e. is not properly shut down, Titan considers it to be active and expects its participation in cluster-wide operations which subsequently fail because this instances did not participate in or did not acknowledge the operation.
 
 In this case, the user must manually remove the failed instance record from the cluster and then retry the operation.
 To remove the failed instance, open a management transaction against any of the running Titan instances,inspect the list of running instances to identify the failed one, and finally remove it.

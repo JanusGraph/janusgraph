@@ -68,7 +68,7 @@ http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Rexster server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<rexster>> for a complete example.
+In this case, each Rexster server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<server>> for a complete example.
 
 [source,xml]
 <graph>
@@ -94,7 +94,7 @@ image:titan-modes-embedded.png[]
 
 Finally, Cassandra can be embedded in Titan, which means, that Titan and Cassandra run in the same JVM and communicate via in process calls rather than over the network. This removes the (de)serialization and network protocol overhead and can therefore lead to considerable performance improvements. In this deployment mode, Titan internally starts a cassandra daemon and Titan no longer connects to an existing cluster but is its own cluster.
 
-To use Titan in embedded mode, simply configure `embeddedcassandra` as the storage backend. The configuration options listed below also apply to embedded Cassandra. In creating a Titan cluster, ensure that the individual nodes can discover each other via the Gossip protocol, so setup a Titan-with-Cassandra-embedded cluster much like you would a stand alone Cassandra cluster. When running Titan in embedded mode, the Cassandra yaml file is configured using the additional configuration option `storage.cassandra-config-dir`, which specifies the yaml file as a full url, e.g. `storage.cassandra-config-dir = file:///home/cassandra.yaml`.
+To use Titan in embedded mode, simply configure `embeddedcassandra` as the storage backend. The configuration options listed below also apply to embedded Cassandra. In creating a Titan cluster, ensure that the individual nodes can discover each other via the Gossip protocol, so setup a Titan-with-Cassandra-embedded cluster much like you would a stand alone Cassandra cluster. When running Titan in embedded mode, the Cassandra yaml file is configured using the additional configuration option `storage.conf-file`, which specifies the yaml file as a full url, e.g. `storage.conf-file = file:///home/cassandra.yaml`.
 
 When running a cluster with Titan and Cassandra embedded, it is advisable to expose Titan through the Rexster server so that applications can remotely connect to the Titan graph database and execute queries.
 
@@ -103,7 +103,7 @@ Note, that running Titan with Cassandra embedded requires GC tuning. While embed
 Cassandra Specific Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Refer to the configuration reference _(REF)_ for a complete listing of all Cassandra specific configuration options in addition to the general Titan configuration options.
+Refer to <<titan-config-ref>> for a complete listing of all Cassandra specific configuration options in addition to the general Titan configuration options.
 
 When configuring Cassandra it is recommended to consider the following Cassandra specific configuration options:
 
@@ -204,7 +204,7 @@ Example Titan Instance on Amazon Linux AMI
       storage.backend = cassandra
       storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 
-You may add additional configuration options found on this page or under _TODO: xref to Graph Configuration_.
+You may add additional configuration options found on this page or in <<titan-config-ref>>.
 
 * Start the gremlin shell again and type the following::
 

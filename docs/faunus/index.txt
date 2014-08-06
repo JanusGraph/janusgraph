@@ -1,3 +1,4 @@
+[[hadoop]]
 Hadoop
 ======
 
@@ -12,6 +13,8 @@ include::concepts_intro.txt[]
 include::getting_started.txt[]
 
 include::hadoop_graph.txt[]
+
+include::configref.txt[]
 
 include::gremlin_steps.txt[]
 
