@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
@@ -12,9 +11,6 @@ import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement.MicroElement;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 
 import org.apache.commons.lang3.StringUtils;
@@ -39,7 +35,7 @@ import java.util.Map;
  */
 public class FaunusSerializer {
 
-    private final Serializer serializer;
+    private static final Serializer STANDARD_SERIALIZER = new StandardSerializer(true);
     private final FaunusTypeManager types;
     private final boolean trackState;
     private final boolean trackPaths;
@@ -50,7 +46,6 @@ public class FaunusSerializer {
 
     public FaunusSerializer(final Configuration configuration) {
         Preconditions.checkNotNull(configuration);
-        this.serializer = new StandardSerializer(true);
         this.types = FaunusTypeManager.getTypeManager(configuration);
         this.configuration = configuration;
         this.trackState = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
@@ -153,7 +148,7 @@ public class FaunusSerializer {
 
 
     private void serializeObject(final DataOutput out, Object value) throws IOException {
-        final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = serializer.getDataOutput(40);
+        final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = STANDARD_SERIALIZER.getDataOutput(40);
         o.writeClassAndObject(value);
         final StaticBuffer buffer = o.getStaticBuffer();
         WritableUtils.writeVInt(out, buffer.length());
@@ -165,7 +160,7 @@ public class FaunusSerializer {
         byte[] bytes = new byte[byteLength];
         in.readFully(bytes);
         final ReadBuffer buffer = new ReadArrayBuffer(bytes);
-        return serializer.readClassAndObject(buffer);
+        return STANDARD_SERIALIZER.readClassAndObject(buffer);
     }
 
     private <T extends FaunusRelation> Iterable<T> filterDeletedRelations(Iterable<T> elements) {
