@@ -36,6 +36,7 @@ import static com.tinkerpop.blueprints.Direction.*;
 public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     private FaunusVertexLabel vertexLabel = FaunusVertexLabel.DEFAULT_VERTEXLABEL;
+    private FaunusSerializer serializer;
 
     private static final Logger log =
             LoggerFactory.getLogger(FaunusVertex.class);
@@ -55,6 +56,11 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     public FaunusVertex(final Configuration configuration, final DataInput in) throws IOException {
         super(configuration, NO_ID);
         this.readFields(in);
+    }
+
+    public FaunusVertex(final Configuration configuration, final long id, FaunusSerializer faunusSerializer) {
+        super(configuration, id);
+        this.serializer = faunusSerializer;
     }
 
     public void addAll(final FaunusVertex vertex) {
@@ -319,11 +325,18 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     //##################################
 
     public void write(final DataOutput out) throws IOException {
-        new FaunusSerializer(this.getConf()).writeVertex(this, out);
+        getFaunusSerializer().writeVertex(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        new FaunusSerializer(this.getConf()).readVertex(this, in);
+        getFaunusSerializer().readVertex(this, in);
+    }
+
+    private FaunusSerializer getFaunusSerializer() {
+        if (null == serializer) {
+            serializer = new FaunusSerializer(this.getConf());
+        }
+        return serializer;
     }
 
     //##################################

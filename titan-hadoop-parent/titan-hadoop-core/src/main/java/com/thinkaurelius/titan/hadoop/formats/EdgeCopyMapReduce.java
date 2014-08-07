@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.hadoop.formats;
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.hadoop.FaunusSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
@@ -45,21 +46,24 @@ public class EdgeCopyMapReduce {
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
         private Direction direction = Direction.OUT;
+        private FaunusSerializer faunusSerializer;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = context.getConfiguration().getEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
+            this.faunusSerializer = new FaunusSerializer(context.getConfiguration());
         }
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
             long edgesInverted = 0;
+
             for (final Edge edge : value.getEdges(this.direction)) {
                 final long id = (Long) edge.getVertex(this.direction.opposite()).getId();
+                final FaunusVertex shellVertex = new FaunusVertex(context.getConfiguration(), id, faunusSerializer);
                 this.longWritable.set(id);
-                final FaunusVertex shellVertex = new FaunusVertex(context.getConfiguration(), id);
                 shellVertex.addEdge(this.direction.opposite(), (StandardFaunusEdge) edge);
                 context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 edgesInverted++;
@@ -74,6 +78,7 @@ public class EdgeCopyMapReduce {
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         private Direction direction = Direction.OUT;
+        private FaunusSerializer faunusSerializer;
 
         private static final Logger log =
                 LoggerFactory.getLogger(Reduce.class);
@@ -83,12 +88,13 @@ public class EdgeCopyMapReduce {
             this.direction = context.getConfiguration().getEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
+            this.faunusSerializer = new FaunusSerializer(context.getConfiguration());
         }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long edgesAggregated = 0;
-            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get(), faunusSerializer);
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
                     edgesAggregated = edgesAggregated + Iterables.size(holder.get().getEdges(direction.opposite()));
