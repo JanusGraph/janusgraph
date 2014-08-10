@@ -153,7 +153,7 @@ start() {
         return 1
     }
     disown
-    echo "Run $BIN/rexster-console.sh to connect." >&2
+    echo "Run rexster-console.sh to connect." >&2
 }
 
 stop() {
