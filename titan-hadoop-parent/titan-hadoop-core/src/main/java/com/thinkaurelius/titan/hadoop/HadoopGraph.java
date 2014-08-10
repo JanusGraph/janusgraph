@@ -97,9 +97,6 @@ public class HadoopGraph extends HybridConfigured {
     // JOB AND FILESYSTEM
 
     public Path getJobDir() {
-        if (!getTitanConf().has(JOBDIR_LOCATION))
-            return null;
-
         return new Path(getTitanConf().get(JOBDIR_LOCATION));
     }
 
