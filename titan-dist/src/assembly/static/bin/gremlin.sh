@@ -3,9 +3,22 @@
 set -e
 set -u
 
-CP=`dirname $0`/../conf
-CP=$CP:$(find -L `dirname $0`/../lib/ -name '*.jar' | tr '\n' ':')
-CP=$CP:$(find -L `dirname $0`/../ext/ -name '*.jar' | tr '\n' ':')
+# Returns the absolute path of this script regardless of symlinks
+abs_path() {
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+CP=`abs_path`/../conf
+CP=$CP:$(find -L `abs_path`/../lib/ -name '*.jar' | tr '\n' ':')
+CP=$CP:$(find -L `abs_path`/../ext/ -name '*.jar' | tr '\n' ':')
 
 # Check some Hadoop-related environment variables
 if [ -n "${HADOOP_PREFIX:-}" ]; then

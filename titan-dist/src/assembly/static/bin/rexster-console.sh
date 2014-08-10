@@ -1,7 +1,15 @@
 #!/bin/bash
 
 set_unix_paths() {
-    BIN="$(dirname $0)"
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
     CP="$(echo $BIN/../conf $BIN/../lib/*.jar . | tr ' ' ':')"
     CP="$CP:$(find -L $BIN/../ext/ -name "*.jar" | tr '\n' ':')"
 }
