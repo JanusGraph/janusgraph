@@ -3,6 +3,66 @@
 Release Notes
 -------------
 
+
+Version 0.5.0 (August 15, 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.5.0</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Integration of Titan-Hadoop (formerly Faunus) into Titan's codebase. Refactoring of Titan-Hadoop to exactly match Titan's data model. Extension of Titan-Hadoop's automated test harness to cover integration testing
+* Separating schema definitions from index building thus supporting index building after definition, global re-indexing, and multiple indexes for one schema element
+* Support for a transaction write-ahead log and transaction recovery process to detect and fix inconsistencies due to system failure
+* Global graph configuration system to coordinate graph-wide configuration options
+* Better consistency checking and completeness checking of configuration options
+* Support for transaction logging and a log processing framework to implement triggers and downstream system updates
+* Support for vertex labels
+* Better support for global graph partitioning through edge cut minimization
+* Support for vertex cut partitioning to enable graph partitioning on graphs with very skewed degree distributions
+* Support for multi-properties with SET cardinality
+* Support for indexing of multi-properties
+* Support for time-to-live (TTL) on edges and vertices
+* Dedicated serialization engine that can detect byte order requirements and chooses the most efficient serializer and only uses Kryo for backup where needed.
+* Support for Blueprints 2.5.0
+* Introduction of Decimal and Precision data types
+* Compressed string serialization by default
+* More efficient memory footprint of Titan transactions
+* More robust error handling and transation processing
+* Changed Titan's data layout to support adjacency queries and faster edge queries
+* Consolidated time handling across the entire Titan codebase
+* Using faster hash functions and centralized hash function library
+* Using upsert methods for ES mutations to improve performance
+* Support for additional configuration options in Cassandra connector
+* Support for configuring the isolation level in BerkeleyDB
+
+*Bugfixes:*
+
+* Fixed potential inconsistency issue in the locking protocol due to usage of non-key consistent storage transactions.
+* Fixed name collision in index backends
+* Fixed error in ES mutate logic
+* Support for Blueprints wrappers on Titan transactions
+* Fixed shutdown hook
+* Improved robustness of the id allocation process
+* Data balance issues with Hbase
+* See all GitHub issues associated with Milestone 0.5.0
+
+
 Version 0.4.4 (April 22, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
