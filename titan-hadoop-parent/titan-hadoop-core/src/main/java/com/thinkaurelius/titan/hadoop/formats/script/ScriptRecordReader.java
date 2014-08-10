@@ -51,10 +51,12 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
         }
     }
 
+    @Override
     public void initialize(final InputSplit genericSplit, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader.initialize(genericSplit, context);
     }
 
+    @Override
     public boolean nextKeyValue() throws IOException {
         while (true) {
             if (!this.lineRecordReader.nextKeyValue())
@@ -85,10 +87,12 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
         return this.vertex;
     }
 
+    @Override
     public float getProgress() throws IOException {
         return this.lineRecordReader.getProgress();
     }
 
+    @Override
     public synchronized void close() throws IOException {
         this.lineRecordReader.close();
     }
