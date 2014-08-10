@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop.config;
 
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Preconditions;
@@ -43,6 +44,12 @@ public class TitanHadoopConfiguration {
             INPUT_NS, "db-version",
             "The version of the Titan database being read",
             ConfigOption.Type.LOCAL, "current");
+
+    public static final ConfigOption<Direction> INPUT_EDGE_COPY_DIR = new ConfigOption<Direction>(
+            INPUT_NS, "edge-copy-dir",
+            "The edge direction to read and mirror in the opposing direction. " +
+            "OUT creates IN edges.  IN creates out EDGES.  BOTH is not supported.",
+            ConfigOption.Type.LOCAL, Direction.class, Direction.OUT);
 
     public static final ConfigNamespace OUTPUT_NS =
             new ConfigNamespace(TRUNK_NS, "output", "Graph output format configuration");

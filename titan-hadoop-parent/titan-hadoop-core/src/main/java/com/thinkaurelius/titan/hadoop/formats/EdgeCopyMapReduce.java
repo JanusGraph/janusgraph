@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR;
 
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.hadoop.FaunusSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -28,8 +30,6 @@ import java.io.IOException;
  */
 public class EdgeCopyMapReduce {
 
-    public static final String TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION = "titan.hadoop.input.edge-copy.direction";
-
     public enum Counters {
         EDGES_COPIED,
         EDGES_ADDED
@@ -37,7 +37,7 @@ public class EdgeCopyMapReduce {
 
     public static Configuration createConfiguration(final Direction direction) {
         final Configuration configuration = new EmptyConfiguration();
-        configuration.setEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, direction);
+        ModifiableHadoopConfiguration.of(configuration).set(INPUT_EDGE_COPY_DIR, direction);
         return configuration;
     }
 
@@ -49,7 +49,8 @@ public class EdgeCopyMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
+            ModifiableHadoopConfiguration cfg = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            this.direction = cfg.get(INPUT_EDGE_COPY_DIR);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }
@@ -82,7 +83,8 @@ public class EdgeCopyMapReduce {
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
+            ModifiableHadoopConfiguration cfg = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            this.direction = cfg.get(INPUT_EDGE_COPY_DIR);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.EdgeCopyMapReduce;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.mapreduce.IdentityMap;
@@ -215,7 +216,10 @@ public class HadoopPipeline {
             }
         }
 
-        if (null != this.graph.getConf().get(EdgeCopyMapReduce.TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
+
+
+        if (graph.getTitanConf().has(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR)) {
+            Direction ecDir = graph.getTitanConf().get(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR);
             this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
                     null,
                     EdgeCopyMapReduce.Reduce.class,
@@ -224,7 +228,7 @@ public class HadoopPipeline {
                     Holder.class,
                     NullWritable.class,
                     FaunusVertex.class,
-                    EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
+                    EdgeCopyMapReduce.createConfiguration(ecDir));
         }
     }
 
