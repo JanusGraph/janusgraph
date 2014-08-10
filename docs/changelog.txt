@@ -26,7 +26,6 @@ Version 0.5.0 (August 15, 2014)
 
 *Features:*
 
-* Integration of Titan-Hadoop (formerly Faunus) into Titan's codebase. Refactoring of Titan-Hadoop to exactly match Titan's data model. Extension of Titan-Hadoop's automated test harness to cover integration testing
 * Separating schema definitions from index building thus supporting index building after definition, global re-indexing, and multiple indexes for one schema element
 * Support for a transaction write-ahead log and transaction recovery process to detect and fix inconsistencies due to system failure
 * Global graph configuration system to coordinate graph-wide configuration options
@@ -50,6 +49,25 @@ Version 0.5.0 (August 15, 2014)
 * Using upsert methods for ES mutations to improve performance
 * Support for additional configuration options in Cassandra connector
 * Support for configuring the isolation level in BerkeleyDB
+* Removed FullDouble and FullFloat: Double and Float are now serialized as full precision floating points. Introduced Decimal and Precision with a fixed number of decimals and order preserving binary representation
+* Migrated Faunus to a new package in Titan named Titan/Hadoop
+  * Isolated HadoopElement serialization into HadoopSerializer
+  * All HadoopVertex and HadoopEdge construction leverages Hadoop Configuration for deserialization rules
+  * Removed pathEnabled boolean from element serialization (now part of Configuration as trackPaths)
+  * Added state tracking for loaded, new, and deleted elements/properties (in Configuration via trackState)
+  * HadoopCompiler updates HadoopGraph configurations with global pipeline requirements
+  * Removed HadoopVertex.reuse() in support of short-lived HadoopVertex objects
+  * Updated ScriptInputFormat to use HadoopVertex.setId(long) to "reuse" vertices
+  * PropertyMapMap now includes Edge.getLabel() in the returned property map (via _label)
+  * Added TitanGraphOutputMapReduce@ to support Titan-specific features (e.g. multi-properties on vertices)
+  * TitanGraphOutputMapReduce respects state tracking and get/create/delete in outputting TitanGraph
+  * Added JUnit test support for executing local (non-pseudo-cluster) MapReduce jobs
+  * Provided MapReduce-based integration testing between Titan and Titan/Hadoop
+  * Provided MapReduce-based integration testing around HadoopPipeline
+  * Added error handling for invalid RDF parameters
+  * Added support for incremental edge loading with BlueprintsGraphOutputMapReduce
+
+
 
 *Bugfixes:*
 
@@ -59,8 +77,11 @@ Version 0.5.0 (August 15, 2014)
 * Support for Blueprints wrappers on Titan transactions
 * Fixed shutdown hook
 * Improved robustness of the id allocation process
-* Data balance issues with Hbase
+* Fixed data balance issues with Hbase
+* Changed serialization order for Date.class - the byte serialization now matches Comparable
+* Fixed a SideEffectMap bug around edge processing (only out edges were being processed)
 * See all GitHub issues associated with Milestone 0.5.0
+
 
 
 Version 0.4.4 (April 22, 2014)
