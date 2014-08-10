@@ -28,7 +28,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         super(config);
         tx = t;
         lm = lockMode;
-        Preconditions.checkNotNull(tx);
+        // tx may be null
         Preconditions.checkNotNull(lm);
     }
 
@@ -87,7 +87,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + tx.toString();
+        return getClass().getSimpleName() + (null == tx ? "nulltx" : tx.toString());
     }
 
     private static class TransactionClose extends Exception {
