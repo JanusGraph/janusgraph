@@ -4,9 +4,9 @@ EdgeList IO Format
 
 //[[http://www.adventurequilter.com/e-Learning/Articles/Images/Horizontal-parallel-lines.jpg|width=200px]]
 
-* *OutputFormat*:{nbsp}`com.thinkaurelius.faunus.formats.edgelist.EdgeListOutputFormat`
+* *OutputFormat*:{nbsp}`com.thinkaurelius.titan.hadoop.formats.edgelist.EdgeListOutputFormat`
 
-There are two standard types of serialized graph representations: adjacency list and edge list. The adjacency list is the standard Faunus format --- a  vertex and all of its incident edges. An edge list, on the other hand, is simply a list of all the edges. The edge list format does not support element properties. The format is `outVertexId\tinVertexId\tedgeLabel\n`.
+There are two standard types of serialized graph representations: adjacency list and edge list. The adjacency list is the standard Titan-Hadoop format --- a  vertex and all of its incident edges. An edge list, on the other hand, is simply a list of all the edges. The edge list format does not support element properties. The format is `outVertexId\tinVertexId\tedgeLabel\n`.
 
 The _Graph of the Gods_ data set, when represented as an edge list, looks as as follows.
 

@@ -1,29 +1,35 @@
-[[faunus-vertex-query-graph-filters]]
+[[hadoop-vertex-query-graph-filters]]
 Vertex Query Graph Filters
 --------------------------
 
 // [[images/vertex-query-filter.png|width=365px|align=left|float]]
 
-http://blueprints.tinkerpop.com[Blueprints] maintains the notion of a `VertexQuery` (see https://github.com/tinkerpop/blueprints/wiki/Vertex-Query[details]). In Blueprints, and the graph databases that provide a native implementation (e.g. http://titan.thinkaurelius.com[Titan]), a vertex's edges can be filtered at the database level prior to being pulled into memory. If data is organized on disk in a manner that respects edge indices/sorts, then this technique can drastically reduce traversal times by intelligently limiting the search space of a traverser (e.g. http://gremlin.tinkerpop.com[Gremlin]).
+Titan-Hadoop supports http://blueprints.tinkerpop.com[Blueprints]'s https://github.com/tinkerpop/blueprints/wiki/Vertex-Query[`VertexQuery`] abstraction.  When the `vertex-query-filter` config option is set to a Gremlin fragment in the Titan-Hadoop configuration, Titan-Hadoop narrows its processing to relations matched by the query.  Here are a few examples of settings for `vertex-query-filter` and their effects on Titan-Hadoop processing:
 
-// [[https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-character-3.png|align=right|float|width=100px]]
-
-In Faunus, the same `VertexQuery` construct exists. However, in the context of Faunus, it is used to filter the input graph to a subset of the full graph prior to pulling the data into Hadoop. For those graph sources that support _push down predicates_, this allows the graph source to only return the edges of the vertices that satisfy the contraints of the query. The <<hadoop-config-ref,configuration>> that specifies the vertex query constraint is `vertex-query-filter`. A few examples are itemized below.
-
-* Only vertices and their properties (no edges): `v.query().limit(0)`
-* Only edges with a weight greater than 0.5: `v.query().has('weight',Compare.GREATER_THAN,0.5)`
-* Only edges with label `knows`: `v.query().labels('knows')`
-* Only outgoing edges: `v.query().direction(OUT)`
+* Only process vertices and their properties (no edges): `v.query().limit(0)`
+* Only process edges with a weight greater than 0.5: `v.query().has('weight',Compare.GREATER_THAN,0.5)`
+* Only process edges with label `knows`: `v.query().labels('knows')`
+* Only process outgoing edges: `v.query().direction(OUT)`
 * Combinations of the above as specified by the `VertexQuery` API.
 
-For those graph sources that do not support database level filtering, Faunus will process the vertex (dropping edges as specified by the `VertexQuery`) before inserting them into the `<NullWritable,FaunusVertex>` Faunus stream.
+/////
+
+The <<titan-io-format,Cassandra and HBase Titan-Hadoop InputFormats>> 
+
+In Titan-Hadoop, the same `VertexQuery` construct exists. However, in the context of Titan-Hadoop, it is used to filter the input graph to a subset of the full graph prior to pulling the data into Hadoop. For those graph sources that support _push down predicates_, this allows the graph source to only return the edges of the vertices that satisfy the contraints of the query. The <<hadoop-config-ref,configuration>> that specifies the vertex query constraint is `vertex-query-filter`. A few examples are itemized below.
+
+/////
+
+Titan-Hadoop iterates over rows in Titan's edgestore.  Each row corresponds to a vertex and contains potentially many column-value pairs representing relations on that vertex.  When provided with a `VertexQuery` string, <<titan-io-format,Cassandra and HBase Titan-Hadoop InputFormats>> attempt to retrieve only the columns that could potentially affect matches.  This can make Titan-Hadoop more efficient by skipping reads on data that couldn't satisfy the `vertex-query-filter`.
+
+For those graph sources that do not support database level filtering, Titan-Hadoop will process the vertex (dropping edges as specified by the `VertexQuery`) before inserting them into the `<NullWritable,FaunusVertex>` input stream.
 
 [source,gremlin]
 ----
-gremlin> g = FaunusFactory.open('bin/titan-hbase-input.properties')
-==>faunusgraph[titanhbaseinputformat->graphsonoutputformat]
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-hbase-input.properties')
+==>titangraph[titanhbaseinputformat->graphsonoutputformat]
 gremlin> // no edges -- only vertices (their ids and properties)
-gremlin> g.getConf().set('faunus.graph.input.vertex-query-filter','v.query().limit(0)')
+gremlin> g.getConf().set('titan.hadoop.input.vertex-query-filter','v.query().limit(0)')
 ==>null
 gremlin> g._
 ...

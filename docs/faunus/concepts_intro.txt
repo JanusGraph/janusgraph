@@ -1,7 +1,8 @@
-// Ported from the wikipage named "Faunus and Hadoop"
-
+[[hadoop-concepts]]
 Concept Overview
 ----------------
+
+// Ported from the wikipage named "Faunus and Hadoop"
 
 //image::faunus-elephants.png[]
 
@@ -71,10 +72,17 @@ image:graph-derivation.png[]
 
 image:graph-statistic.png[]
 
+Nomenclature: Titan-Hadoop vs Faunus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The software currently called Titan-Hadoop was originally conceived and developed as Faunus.  It was also a standalone project until merging with Titan in the 0.5.0 release of Titan.
+
+The word Faunus remains in some parts of Titan-Hadoop's internals and public-facing API.  For instance, Titan-Hadoop's input and output formats are parameterized in the type `FaunusVertex`.  For most intents and purposes, Titan-Hadoop and Faunus are currently the same system, though the names may evolve again as Titan grows to accomodate other bulk-synchronous parallel computing frameworks.
+
 References
 ~~~~~~~~~~
 
-The following articles provided insight into the various theoretical and technical issues encountered during Titan-Hadoop's design and development.  Note that Titan-Hadoop was called Faunus in its earlier versions.
+The following articles provided insight into the various theoretical and technical issues encountered during Titan-Hadoop's design and development.
 
  * Rodriguez M.A., Shinavier, J., http://arxiv.org/abs/0806.2274[Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms], Journal of Informetrics, 4(1), pp. 29--41, December 2009.
 

@@ -4,16 +4,16 @@ GraphSON IO Format
 
 //!http://www.json.org/img/json160.gif!
 
-* *InputFormat*: `com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat`
-* *OutputFormat*: `com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat`
+* *InputFormat*: `com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat`
+* *OutputFormat*: `com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat`
 
-https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library[GraphSON] is a http://www.json.org/[JSON] based graph format developed by http://tinkerpop.com[TinkerPop] with readers and writers provided by https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library[Blueprints]. Faunus makes use of a slight variation of the typical form that is:
+https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library[GraphSON] is a http://www.json.org/[JSON] based graph format developed by http://tinkerpop.com[TinkerPop] with readers and writers provided by https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library[Blueprints]. Titan makes use of a slight variation of the typical form that is:
 
-* *vertex-centric*: a row in a Faunus GraphSON file is a vertex, its properties, and its incident edges (and their respective properties).
-* *long id based*: vertex and edge ids must be longs as Faunus uses the long address space for all its graph computing operations.
+* *vertex-centric*: a row in a Titan-Hadoop GraphSON file is a vertex, its properties, and its incident edges (and their respective properties).
+* *long id based*: vertex and edge ids must be longs as Titan-Hadoop uses the long address space for all its graph computing operations.
 * *less verbose*: a row does not include `_type` information nor are both `_inV` and `_outV` long ids required to be represented by an edge as one of the ids can be inferred from the incident vertex.
 
-_The Graph of the Gods_ dataset deployed with all Aurelius products is represented below in Faunus GraphSON.
+_The Graph of the Gods_ dataset deployed with all Aurelius products is represented below in Titan-Hadoop GraphSON.
 
 [source,javascript]
 ----
@@ -31,4 +31,4 @@ _The Graph of the Gods_ dataset deployed with all Aurelius products is represent
 {"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
 ----
 
-GraphSON is a space-expensive graph format in that it is a text-based http://en.wikipedia.org/wiki/Markup_language[markup language]. However, it is convenient for many developers to work with as its structure is simple (easy to create and parse). Note that Faunus only uses GraphSON as one of its supported formats for reading and writing a graph. Within a larger http://en.wikipedia.org/wiki/MapReduce[MapReduce] job chain, Faunus makes use of a Hadoop's binary <<sequencefile-io-format,SequenceFile Format>>.
+GraphSON is a space-expensive graph format in that it is a text-based http://en.wikipedia.org/wiki/Markup_language[markup language]. However, it is convenient for many developers to work with as its structure is simple (easy to create and parse). Note that Titan-Hadoop only uses GraphSON as one of its supported formats for reading and writing a graph. Within a larger http://en.wikipedia.org/wiki/MapReduce[MapReduce] job chain, Titan makes use of a Hadoop's binary <<sequencefile-io-format,SequenceFile Format>>.

@@ -2,10 +2,7 @@
 Configuration and Shell Usage
 -----------------------------
 
-//[.tss-floatleft]
-//image:graph-globe.png[]
-
-The source of any Faunus job is a `HadoopGraph`. `HadoopGraph` is simply a wrapper to a collection of Hadoop- and Faunus-specific configurations. Most importantly, it captures the location and type of the input graph and output graph. A `HadoopGraph` is typically created using one of the `HadoopFactory.open()` methods.
+The source of any Titan-Hadoop job is a `HadoopGraph`. `HadoopGraph` is simply a wrapper around a collection of Hadoop-specific configuration. Most importantly, it captures the location and type of the input graph and output graph. A `HadoopGraph` is typically created using one of the `HadoopFactory.open()` methods.
 
 HadoopGraph Construction
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,8 +13,7 @@ A Titan-Hadoop configuration file is used to construct a `HadoopGraph`. Assume a
 ----
 # input graph parameters
 titan.hadoop.input.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat
-titan.hadoop.input.location=example-data/graph-of-the-gods.json
-# titan.hadoop.graph.input.vertex-query-filter=v.query().limit(0)
+titan.hadoop.input.location=examples/graph-of-the-gods.json
 
 # output data parameters
 titan.hadoop.output.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat
@@ -32,26 +28,24 @@ With `HadoopFactory`, a configuration file is turned in a `HadoopGraph`. The `to
 gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
 ==>hadoopgraph[graphsoninputformat->graphsonoutputformat]
 
-Hadoop-Specific Configurations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+HadoopGraph Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A `HadoopGraph` is loaded with Hadoop specific configuration information that is percolated from the master cluster configuration (e.g. set up during cluster construction) to various job level configurations.
+A `HadoopGraph` encapsulates an `org.apache.hadoop.conf.Configuration` instance.  This `Configuration` contains a mix of Hadoop and Titan configuration data.  This `Configuration` is instantiated with default resource loading enabled.  In other words, the it includes settings from `core-default.xml`, `mapred-default.xml`, `core-site.xml`, `mapred-site.xml`, etc., so long as those files are somewhere on the `CLASSPATH`.  It will also include any settings in the file provided to `HadoopFactory.open`.  Titan-Hadoop's configuration keys all start with "titan.hadoop" to mitigate the risk of collision with other keys sharing the `Configuration`.
+
+The following snippet lists some typical `Configuration` keys, showing a mix of native Hadoop config keys and Titan-Hadoop config keys. 
 
 [source,gremlin]
-gremlin> g.getConf()    
-==>keep.failed.task.files=false
-==>io.seqfile.compress.blocksize=1000000
-==>dfs.df.interval=60000
-==>dfs.datanode.failed.volumes.tolerated=0
-==>mapreduce.reduce.input.limit=-1
-==>mapred.task.tracker.http.address=0.0.0.0:50060
-==>mapred.userlog.retain.hours=24
-==>dfs.max.objects=0
-==>dfs.https.client.keystore.resource=ssl-client.xml
-==>mapred.local.dir.minspacestart=0
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
+==>titangraph[hadoop:graphsoninputformat->graphsonoutputformat]
+gremlin> g.getConf()
+==>dfs.datanode.data.dir=file://${hadoop.tmp.dir}/dfs/data
+==>dfs.namenode.checkpoint.txns=1000000
+==>s3.replication=3
+==>titan.hadoop.input.location=examples/graph-of-the-gods.json
 ...
 
-Note, it is possible to provide a prefix to look for in `HadoopGraph.getConf(String prefix)`.
+It's possible to retrieve a read-only view of a subset of the configuration by calling `HadoopGraph.getConf(String prefix)`:
 
 [source,gremlin]
 gremlin> g.getConf('mapred')
@@ -63,94 +57,46 @@ gremlin> g.getConf('mapred')
 ==>mapred.reduce.parallel.copies=5
 ...
 
-The prefix for Titan-Hadoop's configuration keys is "titan.hadoop". These properties can be extracted from HadoopGraph's internal Hadoop Configuration instance by `HadoopGraph.getConf('titan.hadoop')`:
-
 [source,gremlin]
-gremlin> g.getConf('faunus')        
-==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
-==>faunus.input.location=graph-of-the-gods.json
-==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
-==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
-==>faunus.output.location=output
-==>faunus.output.location.overwrite=true
+gremlin> g.getConf('titan.hadoop')
+==>titan.hadoop.input.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat
+==>titan.hadoop.input.location=examples/graph-of-the-gods.json
+==>titan.hadoop.output.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat
+==>titan.hadoop.sideeffect.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+gremlin>
 
+See <<hadoop-config-ref>> for a list of Titan-specific configuration keys (i.e. keys that start with "titan.hadoop").
 
 Titan-Hadoop Properties
 ^^^^^^^^^^^^^^^^^^^^^^^
  
-Moreover, `HadoopGraph` provides getters/setters for mutating the most commonly used properties. 
+`HadoopGraph` provides getters/setters for mutating some commonly used properties. 
 
 [source,gremlin]
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
+==>titangraph[hadoop:graphsoninputformat->graphsonoutputformat]
+gremlin> g.getGraphOutputFormat()
+==>class com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat
 gremlin> g.setGraphOutputFormat(NoOpOutputFormat.class)
 ==>null
 gremlin> g
-==>faunusgraph[graphsoninputformat->noopoutputformat]
+==>titangraph[hadoop:graphsoninputformat->noopoutputformat]
 gremlin> g.getGraphOutputFormat()
-==>class com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
-gremlin> g.getProperties()       
-==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
-==>faunus.input.location=graph-of-the-gods.json
-==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
-==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
-==>faunus.output.location=output
-==>faunus.output.location.overwrite=true
+==>class com.thinkaurelius.titan.hadoop.formats.noop.NoOpOutputFormat
 
 Chaining Graphs
 ^^^^^^^^^^^^^^^
 
-To conclude, a useful `HadoopGraph` method is `getNextGraph()`. This method generates a new `HadoopGraph` that is the "inverse" of the current with the input formats and output locations reconfigured to support easy graph chaining.
+`HadoopGraph` provides a `getNextGraph()` method. This generates a new `HadoopGraph` that is the "inverse" of the current with the input formats and output locations reconfigured to support easy graph chaining.
 
 [source,gremlin]
-gremlin> g = HadoopFactory.open('bin/faunus.properties')
-==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
+==>titangraph[hadoop:graphsoninputformat->graphsonoutputformat]
 gremlin> h = g.getNextGraph()
-==>faunusgraph[graphsoninputformat->graphsonoutputformat]
-gremlin> h.getConf('faunus')
-==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
-==>faunus.input.location=output/job-1
-==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
-==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
-==>faunus.output.location=output_
-==>faunus.output.location.overwrite=true
-
-Configuration Key Reference
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// [.tss-floatleft]
-// image:faunus-seated.png[]
-
-This section describes the various configuration parameters in Faunus. Each `InputFormat`/`OutputFormat` as well as the numerous `MapReduce` steps have specific configurations that are described in their respective sections of the documentation. Note that all configurations go into the global `Configuration` that is used throughout Hadoop. Therefore, Hadoop specific configurations can be provided in the Faunus configuration files. These configurations can be retrieved via `FaunusGraph.getConf()` or `FaunusGraph.getConf(String prefix)`. Finally, they can be set via `FaunusGraph.getConf().set(...)`.
-
-Input Configuration
-^^^^^^^^^^^^^^^^^^^
-
-[options="header",width="100%"]
-|=================
-| Option | Description | Value | Default
-| `faunus.graph.input.format` | the format of the input graph data | `class` | none
-| `faunus.input.location` | the location to read the graph data if in HDFS | `string` | none
-| `faunus.graph.input.vertex-query-filter` | the vertex-query filter to use on input graph | `string` | none
-| `faunus.graph.input.edge-copy.direction` | copy direction edges to opposite direction | `direction` | none
-|=================
-
-Output Configuration
-^^^^^^^^^^^^^^^^^^^^
-
-[options="header",width="100%"]
-|=================
-| Option | Description | Value | Default
-| `faunus.graph.output.format` | the format of the output graph data | `class` | none
-| `faunus.sideeffect.output.format` | the format of the output side-effect data | `class` | none
-| `faunus.output.location` | the location to write of the graph and side-effect data  | `string` | none
-| `faunus.output.location.overwrite` | whether to override the output location data | `boolean` | false
-|=================
-
-Global Configuration
-^^^^^^^^^^^^^^^^^^^^
-
-[options="header",width="100%"]
-|=================
-| Option | Description | Value | Default
-| `faunus.pipeline.map-spill-over` | The size of in-memory mapper combiners before writing to output | `int` | 500
-| `mapred.jar` | The job Java jar -- native `faunus-x-job.jar` or developer jar w/ Faunus dependencies | `string` | `faunus-x-job.jar`
-|=================
+==>titangraph[hadoop:graphsoninputformat->graphsonoutputformat]
+gremlin> h.getConf('titan.hadoop')
+==>titan.hadoop.input.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat
+==>titan.hadoop.jobdir.location=jobs_
+==>titan.hadoop.input.location=jobs
+==>titan.hadoop.output.format=com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat
+==>titan.hadoop.sideeffect.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat

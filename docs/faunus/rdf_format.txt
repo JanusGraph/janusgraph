@@ -4,7 +4,7 @@ RDF IO Format
 
 //!http://www.w3.org/RDF/icons/rdf_w3c_icon.128!
 
-*InputFormat*:{nbsp}`com.thinkaurelius.faunus.formats.edgelist.rdf.RDFInputFormat`
+*InputFormat*:{nbsp}`com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFInputFormat`
 
 The http://en.wikipedia.org/wiki/Semantic_Web[Semantic Web] community is one of the original promoters of the graph as an approach to data modeling. Their efforts have led to the development of the http://www.w3.org/RDF/[RDF] data model. While there are many serialization formats for RDF, an http://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-rdf-graph[RDF graph] is composed of RDF triples, in which a subject is connected to an object by a predicate. For instance:
 
@@ -12,7 +12,7 @@ The http://en.wikipedia.org/wiki/Semantic_Web[Semantic Web] community is one of 
 <http://thinkaurelius.com#hercules> <http://thinkaurelius.com#father> <http://thinkaurelius.com#jupiter> .
 ```
 
-In this way, RDF is an edge list data model. Faunus, on the other hand, makes use of an http://en.wikipedia.org/wiki/Adjacency_list[adjacency list] in its representation. Therefore, for these two formats to interoperate, the `RDFInputFormat` provided by Faunus contains a MapReduce job that converts an edge list into a adjacency list.
+In this way, RDF is an edge list data model. Titan-Hadoop, on the other hand, makes use of an http://en.wikipedia.org/wiki/Adjacency_list[adjacency list] in its representation. Therefore, for these two formats to interoperate, the `RDFInputFormat` provided by Titan-Hadoop contains a MapReduce job that converts an edge list into a adjacency list.
 
 Conversion Parameters
 ~~~~~~~~~~~~~~~~~~~~~
@@ -20,9 +20,9 @@ Conversion Parameters
 RDF Format
 ^^^^^^^^^^
 
-`faunus.graph.input.rdf.format`
+`titan.hadoop.input.conf.format`
 
-There are numerous RDF serialization formats. Faunus currently supports the following formats:
+There are numerous RDF serialization formats. Titan-Hadoop currently supports the following formats:
 
 * rdf-xml (http://www.w3.org/TR/rdf-syntax-grammar/[RDF/XML])
 * n-triples (http://www.w3.org/2001/sw/RDFCore/ntriples/[N-Triples])
@@ -31,12 +31,12 @@ There are numerous RDF serialization formats. Faunus currently supports the foll
 * trix (http://sw.nokia.com/trix/[TriX])
 * trig (http://wifo5-03.informatik.uni-mannheim.de/bizer/trig/[TriG])
 
-*NOTE*: Faunus makes use of `LineRecordReader` to read statements from an RDF file. If a line (`\n`) does not contain a complete legal RDF fragment, then an exception is thrown by the RDF parser.
+*NOTE*: Titan-Hadoop makes use of `LineRecordReader` to read statements from an RDF file. If a line (`\n`) does not contain a complete legal RDF fragment, then an exception is thrown by the RDF parser.
 
 Literal as Property
 ^^^^^^^^^^^^^^^^^^^
 
-`faunus.graph.input.rdf.literal-as-property`
+`titan.hadoop.input.conf.literal-as-property`
 
 There are two types of triples to be aware of -- one in which the object is a URI or blank node, and one in which the object is a literal value. The two types of triples are exemplified below.
 
@@ -44,12 +44,12 @@ There are two types of triples to be aware of -- one in which the object is a UR
 <http://thinkaurelius.com#hercules> <http://thinkaurelius.com#father> <http://thinkaurelius.com#jupiter> .
 <http://thinkaurelius.com#hercules> <http://thinkaurelius.com#age> "32"^^<http://www.w3.org/2001/XMLSchema#int> .
 
-If the above Faunus property is set to `true`, then the Hercules vertex has an age property with an integer value of 32.
+If the above Titan-Hadoop config property is set to `true`, then the Hercules vertex has an age property with an integer value of 32.
 
 Use Local Name
 ^^^^^^^^^^^^^^
 
-`faunus.graph.input.rdf.use-localname`
+`titan.hadoop.input.conf.use-localname`
 
 The theoretically infinite RDF graph is embedded with the infinite address space of URIs. In many situations, the full URI is not desired and as such, if the above property is set to `true`, then
 
@@ -61,7 +61,7 @@ Generates vertices with name `hercules` and `jupiter` connected by a `father` ed
 As Properties
 ^^^^^^^^^^^^^
 
-`faunus.graph.input.rdf.as-properties`
+`titan.hadoop.input.conf.as-properties`
 
 RDF is a triple data model -- there are no properties, only vertices and edges. In some situations, an object URI should be treated as a property of the vertex. For instance, when `http://www.w3.org/1999/02/22-rdf-syntax-ns#type` is specified in the `String` list of the property above, then the triple
 
@@ -71,4 +71,4 @@ RDF is a triple data model -- there are no properties, only vertices and edges. 
 yields a Hercules vertex with type-property demigod. A typical setting for this property is below.
 
 [source,text]
-faunus.input.format.rdf.as-properties=http://www.w3.org/1999/02/22-rdf-syntax-ns#type,http://www.w3.org/2000/01/rdf-schema#label
+titan.hadoop.input.conf.as-properties=http://www.w3.org/1999/02/22-rdf-syntax-ns#type,http://www.w3.org/2000/01/rdf-schema#label
