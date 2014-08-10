@@ -78,7 +78,7 @@
         <dependencySet>
             <unpack>true</unpack>
             <!-- Dump into /javadocs instead of /docs/javadocs for milestone release -->
-            <outputDirectory>/example-data</outputDirectory>
+            <outputDirectory>/examples</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
                 <include>${project.groupId}:titan-hadoop-core:zip:example-data:${project.version}</include>
