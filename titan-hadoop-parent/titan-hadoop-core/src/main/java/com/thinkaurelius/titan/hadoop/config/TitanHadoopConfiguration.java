@@ -63,7 +63,7 @@ public class TitanHadoopConfiguration {
     public static final ConfigOption<String> JOBDIR_LOCATION = new ConfigOption<String>(
             JOBDIR_NS, "location",
             "An HDFS path used to store temporary SequenceFiles in between executions of MR jobs chained together by Titan-Hadoop",
-            ConfigOption.Type.LOCAL, String.class);
+            ConfigOption.Type.LOCAL, "jobs");
 
     public static final ConfigOption<Boolean> JOBDIR_OVERWRITE = new ConfigOption<Boolean>(
             JOBDIR_NS, "overwrite",
