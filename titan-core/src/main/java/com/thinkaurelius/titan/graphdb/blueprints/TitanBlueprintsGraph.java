@@ -1,9 +1,6 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
@@ -192,7 +189,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public TitanVertex addVertex(VertexLabel vertexLabel) {
-        return getAutoStartTx().addVertex(vertexLabel);
+        return getAutoStartTx().addVertexWithLabel(vertexLabel);
     }
 
     @Override

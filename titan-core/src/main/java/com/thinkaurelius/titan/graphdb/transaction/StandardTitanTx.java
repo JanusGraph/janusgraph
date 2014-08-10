@@ -451,16 +451,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public TitanVertex addVertex() {
-        return addVertex(BaseVertexLabel.DEFAULT_VERTEXLABEL);
+        return addVertexWithLabel(BaseVertexLabel.DEFAULT_VERTEXLABEL);
     }
 
     @Override
-    public TitanVertex addVertex(String vertexLabel) {
-        return addVertex(getVertexLabel(vertexLabel));
+    public TitanVertex addVertexWithLabel(String vertexLabel) {
+        return addVertexWithLabel(getVertexLabel(vertexLabel));
     }
 
     @Override
-    public TitanVertex addVertex(VertexLabel vertexLabel) {
+    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel) {
         return addVertex(null,vertexLabel);
     }
 

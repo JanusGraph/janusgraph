@@ -446,7 +446,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assert numV%(modulo*strs.length*2)==0;
 
         for (int i=0;i<numV;i++) {
-            TitanVertex v = tx.addVertex(i%2==0?person:org);
+            TitanVertex v = tx.addVertexWithLabel(i % 2 == 0 ? person : org);
             v.addProperty(name,strs[i%strs.length]);
             v.addProperty(text,strs[i%strs.length]);
             v.addProperty(weight,(i%modulo)+0.5);
@@ -1008,12 +1008,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
         finishSchema();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         v1.setProperty("name", "first event");
         v1.setProperty("text", "this text will help to identify the first event");
         long time1 = System.currentTimeMillis();
         v1.setProperty("time", time1);
-        Vertex v2 = tx.addVertex("event");
+        Vertex v2 = tx.addVertexWithLabel("event");
         v2.setProperty("name", "second event");
         v2.setProperty("text", "this text won't match");
         long time2 = time1 + 1;

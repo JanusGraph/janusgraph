@@ -160,7 +160,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         metricsPrefix = "add"+cache;
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        TitanVertex v = tx.addVertex(), u = tx.addVertex("person");
+        TitanVertex v = tx.addVertex(), u = tx.addVertexWithLabel("person");
         v.setProperty("uid",1);
         u.setProperty("name","juju");
         TitanEdge e = v.addEdge("knows",u);

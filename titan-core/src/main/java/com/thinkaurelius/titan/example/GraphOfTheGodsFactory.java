@@ -74,41 +74,41 @@ public class GraphOfTheGodsFactory {
         TitanTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertex("titan");
+        Vertex saturn = tx.addVertexWithLabel("titan");
         saturn.setProperty("name", "saturn");
         saturn.setProperty("age", 10000);
 
-        Vertex sky = tx.addVertex("location");
+        Vertex sky = tx.addVertexWithLabel("location");
         ElementHelper.setProperties(sky, "name", "sky");
 
-        Vertex sea = tx.addVertex("location");
+        Vertex sea = tx.addVertexWithLabel("location");
         ElementHelper.setProperties(sea, "name", "sea");
 
-        Vertex jupiter = tx.addVertex("god");
+        Vertex jupiter = tx.addVertexWithLabel("god");
         ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000);
 
-        Vertex neptune = tx.addVertex("god");
+        Vertex neptune = tx.addVertexWithLabel("god");
         ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500);
 
-        Vertex hercules = tx.addVertex("demigod");
+        Vertex hercules = tx.addVertexWithLabel("demigod");
         ElementHelper.setProperties(hercules, "name", "hercules", "age", 30);
 
-        Vertex alcmene = tx.addVertex("human");
+        Vertex alcmene = tx.addVertexWithLabel("human");
         ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45);
 
-        Vertex pluto = tx.addVertex("god");
+        Vertex pluto = tx.addVertexWithLabel("god");
         ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000);
 
-        Vertex nemean = tx.addVertex("monster");
+        Vertex nemean = tx.addVertexWithLabel("monster");
         ElementHelper.setProperties(nemean, "name", "nemean");
 
-        Vertex hydra = tx.addVertex("monster");
+        Vertex hydra = tx.addVertexWithLabel("monster");
         ElementHelper.setProperties(hydra, "name", "hydra");
 
-        Vertex cerberus = tx.addVertex("monster");
+        Vertex cerberus = tx.addVertexWithLabel("monster");
         ElementHelper.setProperties(cerberus, "name", "cerberus");
 
-        Vertex tartarus = tx.addVertex("location");
+        Vertex tartarus = tx.addVertexWithLabel("location");
         ElementHelper.setProperties(tartarus, "name", "tartarus");
 
         // edges

@@ -48,14 +48,14 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      *
      * @return New vertex in the graph created in the context of this transaction.
      */
-    public TitanVertex addVertex(String vertexLabel);
+    public TitanVertex addVertexWithLabel(String vertexLabel);
 
     /**
      * Creates a new vertex in the graph with the given vertex label.
      *
      * @return New vertex in the graph created in the context of this transaction.
      */
-    public TitanVertex addVertex(VertexLabel vertexLabel);
+    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel);
 
 
     /**

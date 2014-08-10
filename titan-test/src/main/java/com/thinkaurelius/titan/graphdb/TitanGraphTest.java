@@ -758,7 +758,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         p = v.addProperty(value,11); //same values are supported for list-properties
         p.setProperty(weight,22);
         //test edges
-        TitanVertex v12 = tx.addVertex(person), v13 = tx.addVertex(person);
+        TitanVertex v12 = tx.addVertexWithLabel(person), v13 = tx.addVertexWithLabel(person);
         v12.setProperty(id, "v12");
         v13.setProperty(id, "v13");
         v12.addEdge(parent, v).setProperty(weight, 4.5);
@@ -772,7 +772,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         edge.setProperty(id,"e1");
         edge.setProperty(link,v);
         v.addEdge(link,v13);
-        TitanVertex v2 = tx.addVertex(tweet);
+        TitanVertex v2 = tx.addVertexWithLabel(tweet);
         v2.addEdge(link,v13);
         v12.addEdge(connect,v2);
 
@@ -1218,7 +1218,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(tx.containsRelationType("value"));
         PropertyKey value = tx.getPropertyKey("value");
         assertTrue(tx.containsRelationType("value"));
-        TitanVertex v = tx.addVertex("person");
+        TitanVertex v = tx.addVertexWithLabel("person");
         assertTrue(tx.containsVertexLabel("person"));
         assertEquals("person",v.getLabel());
         assertFalse(tx.containsRelationType("knows"));
@@ -1235,7 +1235,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //Cannot create new labels
         try {
-            tx.addVertex("org");
+            tx.addVertexWithLabel("org");
             fail();
         } catch (IllegalArgumentException ex) {}
         try {
@@ -1258,7 +1258,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
         //CREATE SMALL GRAPH
-        TitanVertex v = tx.addVertex("people");
+        TitanVertex v = tx.addVertexWithLabel("people");
         v.setProperty("time",5);
         v.addEdge("knows",v).setProperty("time",11);
 
@@ -3533,7 +3533,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         String[] strs = {"aaa","bbb","ccc","ddd"};
 
         for (int i=0;i<numV;i++) {
-            ns[i]=tx.addVertex(i%2==0?person:org);
+            ns[i]=tx.addVertexWithLabel(i % 2 == 0 ? person : org);
             TitanProperty p1 = ns[i].addProperty(name,"v"+i);
             TitanProperty p2 = ns[i].addProperty(name,"u"+(i%5));
 
@@ -3679,7 +3679,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         ns = new TitanVertex[numV*3/2];
         for (int i=numV;i<numV*3/2;i++) {
-            ns[i]=tx.addVertex(i%2==0?person:org);
+            ns[i]=tx.addVertexWithLabel(i % 2 == 0 ? person : org);
             TitanProperty p1 = ns[i].addProperty(name,"v"+i);
             TitanProperty p2 = ns[i].addProperty(name,"u"+(i%5));
 
@@ -3772,7 +3772,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
         //Check that index enforces uniqueness on vertices with the right label...
         try {
-            TitanVertex v1 = tx.addVertex(tx.getVertexLabel(person.getName()));
+            TitanVertex v1 = tx.addVertexWithLabel(tx.getVertexLabel(person.getName()));
             v1.setProperty(time.getName(),numV/2);
             tx.commit();
             fail();
@@ -3782,7 +3782,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         newTx();
         //...but not if we use a different one
-        TitanVertex v1 = tx.addVertex(tx.getVertexLabel(org.getName()));
+        TitanVertex v1 = tx.addVertexWithLabel(tx.getVertexLabel(org.getName()));
         v1.setProperty(time.getName(),numV/2);
     }
 
@@ -4321,7 +4321,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         v1.setProperty("name", "some event");
         v1.setProperty("place", "somewhere");
 
@@ -4369,7 +4369,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         v1.setProperty("name", "some event");
         v1.setProperty("time", System.currentTimeMillis());
         tx.commit();
@@ -4411,7 +4411,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("person");
+        Vertex v1 = tx.addVertexWithLabel("person");
         Vertex v2 = tx.addVertex();
         Edge v1LikesV2 = tx.addEdge(null, v1, v2, "likes");
         Edge v1DislikesV2 = tx.addEdge(null, v1, v2, "dislikes");
@@ -4580,7 +4580,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         Vertex v2 = tx.addVertex();
         tx.commit();
 

@@ -43,7 +43,7 @@ public class SerializerGraphConfiguration {
         mgmt.commit();
 
         TitanTransaction tx = graph.newTransaction();
-        TitanVertex v = tx.addVertex("person");
+        TitanVertex v = tx.addVertexWithLabel("person");
         v.setProperty("time",5);
         v.setProperty("any",new Precision(5.0));
         tx.commit();
@@ -54,7 +54,7 @@ public class SerializerGraphConfiguration {
         tx.rollback();
 
         tx = graph.newTransaction();
-        v = tx.addVertex("person");
+        v = tx.addVertexWithLabel("person");
         v.setProperty("any",TestEnum.One); //Should not be allowed
         try {
             tx.commit();

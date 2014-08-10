@@ -88,7 +88,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         final long[] gids = new long[numG];
 
         for (int i = 0; i < numG; i++) {
-            TitanVertex g = tx.addVertex("group");
+            TitanVertex g = tx.addVertexWithLabel("group");
             g.setProperty("gid", i);
             g.setProperty("sig",0);
             for (String n : names) {
@@ -166,7 +166,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertNotNull(g1);
             TitanVertex[] vs = new TitanVertex[vPerTx];
             for (int vi=0;vi<vPerTx;vi++) {
-                vs[vi] = tx.addVertex("person");
+                vs[vi] = tx.addVertexWithLabel("person");
                 vs[vi].setProperty("sig", t);
                 TitanEdge e = vs[vi].addEdge("knows",g1);
                 e.setProperty("sig",t);
