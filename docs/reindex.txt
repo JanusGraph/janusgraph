@@ -20,7 +20,7 @@ Reindexing large, horizontally-distributed databases generally proceeds most qui
 Reindexing requires:
 
 * The name of the index (a string -- the user provides this to Titan when defining a new index)
-* The type of the index (a string -- the user provides this to Titan when defining a ne windex)
+* The type of the index (a string -- the user provides this to Titan when defining a new index)
 * An TitanGraph configuration file (a file whose path can be passed to `TitanFactory.open`)
 
 Executing a Reindex Job
