@@ -49,8 +49,8 @@ public class ReflectiveConfigOptionLoader {
         Iterator<URL> i = scanUrls.iterator();
         while (i.hasNext()) {
             File f = new File(i.next().getPath());
-            if (!f.exists() || f.isDirectory()) {
-                log.trace("Skipping classpath element {}", f);
+            if (!f.exists() || !f.canRead()) {
+                log.trace("Skipping nonexistent or unreadable classpath element {}", f);
                 i.remove();
             }
             log.trace("Retaining classpath element {}", f);
