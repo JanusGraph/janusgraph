@@ -118,7 +118,7 @@ For more information on Cassandra consistency levels and acceptable values, plea
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use Titan-Hadoop _(REF)_ to iterate over all vertices or edges in large graphs effectively.
+Titan over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop,Titan-Hadoop>> to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
 ~~~~~~~~~~~~~~~~~~~~~~~

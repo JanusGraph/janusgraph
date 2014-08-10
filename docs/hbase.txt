@@ -98,7 +98,7 @@ Please refer to the http://hbase.apache.org/book/config.files.html[HBase configu
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use Titan-Hadoop _(REF)_ to iterate over all vertices or edges in large graphs effectively.
+Titan over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop,Titan-Hadoop>> to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
 ~~~~~~~~~~~~~~~~~~~~~~~
