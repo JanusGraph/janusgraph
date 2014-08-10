@@ -22,7 +22,7 @@ In a management transaction, edge labels and property keys are created with the 
 
 Note, that schema type definition and index building have been separated in Titan 0.5.0. In older versions, one would call `sortKey` to build a vertex-centric index for an edge label and `indexed` to build a global graph index for property keys. These methods have disappeared from the builder and indexes are build separately using the management system. Refer to the relevant sections of the documentation to learn more about building indexes.
 
-[Note]
+[NOTE]
 It is still possible to define types in an expicit `TitanTransaction`, however, it is strongly encouraged to use this method only for those use cases where schema type creation is part of normal user transactions. In all other cases Titan's management system should be used.
 
 Titan 0.5.0 introduces vertex labels as first class schema types. Many applications build on Titan have developed their own vertex labeling / typing system through vertex properties or some other means. It is highly recommended to transition to the native vertex labels supported in Titan 0.5.0.
