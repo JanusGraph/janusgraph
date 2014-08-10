@@ -1,3 +1,4 @@
+[[titan-advanced]]
 Advanced Topics
 ===============
 

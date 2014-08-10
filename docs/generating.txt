@@ -1,3 +1,4 @@
+[[synthetic-graphs]]
 Generating Artificial Natural Graphs
 ------------------------------------
 

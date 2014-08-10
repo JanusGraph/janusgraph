@@ -1,3 +1,4 @@
+[[failure-recovery]]
 Failure & Recovery
 ------------------
 
