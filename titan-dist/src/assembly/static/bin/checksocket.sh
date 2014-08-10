@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Returns the absolute path of this script regardless of symlinks
 abs_path() {
