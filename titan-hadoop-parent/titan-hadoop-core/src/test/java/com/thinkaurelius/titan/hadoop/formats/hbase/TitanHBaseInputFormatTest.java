@@ -1,6 +1,5 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
+package com.thinkaurelius.titan.hadoop.formats.hbase;
 
-import com.thinkaurelius.titan.hadoop.formats.titan.hbase.TitanHBaseInputFormat;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 
 import junit.framework.TestCase;

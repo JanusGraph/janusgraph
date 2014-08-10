@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.input;
+package com.thinkaurelius.titan.hadoop.formats.util.input;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 

@@ -1,10 +1,9 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.input;
+package com.thinkaurelius.titan.hadoop.formats.util.input;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

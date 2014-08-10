@@ -4,10 +4,10 @@ import com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONOutputFormat;
 import com.thinkaurelius.titan.hadoop.formats.script.ScriptInputFormat;
 import com.thinkaurelius.titan.hadoop.formats.script.ScriptOutputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraInputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.hbase.TitanHBaseInputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.hbase.TitanHBaseOutputFormat;
+import com.thinkaurelius.titan.hadoop.formats.cassandra.TitanCassandraInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.cassandra.TitanCassandraOutputFormat;
+import com.thinkaurelius.titan.hadoop.formats.hbase.TitanHBaseInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.hbase.TitanHBaseOutputFormat;
 
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.OutputFormat;

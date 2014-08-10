@@ -1,6 +1,5 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraInputFormat;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 
 import junit.framework.TestCase;

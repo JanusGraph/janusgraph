@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 

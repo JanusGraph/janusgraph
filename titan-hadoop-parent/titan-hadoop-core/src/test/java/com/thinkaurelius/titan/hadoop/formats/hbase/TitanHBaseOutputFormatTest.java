@@ -1,19 +1,12 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
+package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.TitanOutputFormatTest;
-import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan;
+package com.thinkaurelius.titan.hadoop.formats.util;
 
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_PATHS;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.TITAN_INPUT_VERSION;
@@ -12,7 +12,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
+import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 
 /**
@@ -21,7 +21,7 @@ import com.thinkaurelius.titan.util.system.ConfigurationUtil;
  */
 public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
 
-    private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.titan.input.";
+    private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.util.input.";
     private static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
 
     protected FaunusVertexQueryFilter vertexQuery;

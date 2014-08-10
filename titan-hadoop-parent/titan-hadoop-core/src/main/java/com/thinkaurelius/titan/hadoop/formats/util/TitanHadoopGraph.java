@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan;
+package com.thinkaurelius.titan.hadoop.formats.util;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
@@ -11,9 +11,9 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.hadoop.*;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
+import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
+import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
+import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 

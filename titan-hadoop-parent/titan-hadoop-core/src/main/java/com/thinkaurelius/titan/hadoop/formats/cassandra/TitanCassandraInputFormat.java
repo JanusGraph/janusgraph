@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanInputFormat;
 
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;

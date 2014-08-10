@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan;
+package com.thinkaurelius.titan.hadoop.formats.util;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.OUTPUT_FORMAT;

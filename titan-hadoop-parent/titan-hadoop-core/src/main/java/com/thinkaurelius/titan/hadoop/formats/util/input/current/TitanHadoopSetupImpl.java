@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.input.current;
+package com.thinkaurelius.titan.hadoop.formats.util.input.current;
 
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
@@ -19,9 +19,9 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetupCommon;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
+import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
+import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon;
+import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -46,8 +46,10 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
             for (TitanVertex k : tx.getVertices(BaseKey.SchemaCategory, sc)) {
                 assert k instanceof TitanSchemaVertex;
                 TitanSchemaVertex s = (TitanSchemaVertex)k;
-                String name = s.getName();
-                Preconditions.checkNotNull(name);
+                if (sc.hasName()) {
+                    String name = s.getName();
+                    Preconditions.checkNotNull(name);
+                }
                 TypeDefinitionMap dm = s.getDefinition();
                 Preconditions.checkNotNull(dm);
                 s.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT);

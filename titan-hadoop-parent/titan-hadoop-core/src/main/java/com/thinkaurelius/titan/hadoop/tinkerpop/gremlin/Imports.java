@@ -42,9 +42,9 @@ public class Imports {
         imports.add("com.thinkaurelius.titan.hadoop.formats.noop.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.rexster.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.script.*");
-        imports.add("com.thinkaurelius.titan.hadoop.formats.titan.*");
-        imports.add("com.thinkaurelius.titan.hadoop.formats.titan.hbase.*");
-        imports.add("com.thinkaurelius.titan.hadoop.formats.titan.cassandra.*");
+        imports.add("com.thinkaurelius.titan.hadoop.formats.util.*");
+        imports.add("com.thinkaurelius.titan.hadoop.formats.hbase.*");
+        imports.add("com.thinkaurelius.titan.hadoop.formats.cassandra.*");
         imports.add("com.thinkaurelius.titan.hadoop.hdfs.*");
         imports.add("com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.*");
         imports.add("com.tinkerpop.gremlin.Tokens.T");

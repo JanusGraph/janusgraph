@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;

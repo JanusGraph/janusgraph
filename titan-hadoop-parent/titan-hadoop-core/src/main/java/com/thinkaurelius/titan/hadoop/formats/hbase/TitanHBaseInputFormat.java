@@ -1,11 +1,10 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
+package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanInputFormat;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 
 import org.apache.hadoop.conf.Configuration;

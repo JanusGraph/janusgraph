@@ -1,6 +1,5 @@
-package com.thinkaurelius.titan.hadoop.formats.titan;
+package com.thinkaurelius.titan.hadoop.formats.util;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;

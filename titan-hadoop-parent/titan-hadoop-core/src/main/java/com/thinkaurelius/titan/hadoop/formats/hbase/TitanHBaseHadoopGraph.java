@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
+package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanHadoopGraph;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanHadoopGraph;
+import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 
 import org.apache.hadoop.conf.Configuration;
 

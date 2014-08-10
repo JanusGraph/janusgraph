@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager.*;
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 import java.io.FileInputStream;
@@ -8,7 +7,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.titan.hbase.TitanHBaseInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.hbase.TitanHBaseInputFormat;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.cassandra.TitanCassandraInputFormat;
 
 public class TitanIndexRepair {
 

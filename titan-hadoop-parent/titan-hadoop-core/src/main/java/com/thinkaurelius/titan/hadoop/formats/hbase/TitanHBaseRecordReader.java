@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
+package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanOutputFormat;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

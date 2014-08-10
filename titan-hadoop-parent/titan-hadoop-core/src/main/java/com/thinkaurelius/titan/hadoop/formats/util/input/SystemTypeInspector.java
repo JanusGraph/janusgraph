@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.titan.input;
+package com.thinkaurelius.titan.hadoop.formats.util.input;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
