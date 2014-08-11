@@ -85,7 +85,7 @@ mgmt = g.getManagementSystem()
 rindex = mgmt.getRelationIndex(mgmt.getRelationType("battled"),"battlesByTime")
 mgmt.updateIndex(rindex, SchemaAction.ENABLE_INDEX);
 gindex = mgmt.getGraphIndex("byName")
-mgmt.updateIndex(, SchemaAction.ENABLE_INDEX);
+mgmt.updateIndex(gindex, SchemaAction.ENABLE_INDEX);
 mgmt.commit()
 
 
@@ -111,25 +111,56 @@ v = g.addVertex(null)
 v.desc = "foo baz"
 g.commit()
 
-// Define an index
+// Run a query -- note the planner warning recommending the use of an index
+g.V.has("desc", com.thinkaurelius.titan.core.attribute.Text.CONTAINS, "baz").map
+
+// Create an index
 mgmt = g.getManagementSystem()
 desc = mgmt.getPropertyKey("desc")
 mixedIndex = mgmt.buildIndex("mixedExample",Vertex.class).addKey(desc).buildMixedIndex("search")
 mgmt.commit()
 
-// Run a MapReduce job
-//
-// If Hadoop isn't configured, then this will use the "local"
-// in-process MR executor by default.
-TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "",
-   /* Replace with your actual partitioner when not using Murmur3 */
-   "org.apache.cassandra.dht.Murmur3Partitioner")
-// Index mixedExample is fully populated
+// Rollback or commit transactions on the graph which predate the index definition
+g.rollback()
 
-mgmt = g.getManagmenetSystem()
+// Block until the SchemaStatus transitions from INSTALLED to REGISTERED
+registered = false
+before = System.currentTimeMillis()
+while (!registered) {
+    Thread.sleep(500L)
+    mgmt = g.getManagementSystem()
+    idx  = mgmt.getGraphIndex("mixedExample")
+    registered = true
+    for (k in idx.getFieldKeys()) {
+        s = idx.getIndexStatus(k)
+        registered &= s.equals(SchemaStatus.REGISTERED)
+    }
+    mgmt.rollback()
+}
+println("Index REGISTERED in " + (System.currentTimeMillis() - before) + " ms")
+
+// Run a Titan-Hadoop job to reindex
+TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "", "org.apache.cassandra.dht.Murmur3Partitioner")
+
+// Enable the index
+mgmt = g.getManagementSystem()
 mgmt.updateIndex(mgmt.getGraphIndex("mixedExample"), SchemaAction.ENABLE_INDEX);
 mgmt.commit()
-// Index mixedExample is enabled and can be used
+
+// Check the status -- should be ENABLED
+mgmt = g.getManagementSystem()
+desc = mgmt.getPropertyKey("desc")
+mgmt.getGraphIndex("mixedExample").getIndexStatus(desc)
+mgmt.rollback()
+
+// Run a query -- Titan will use the new index, no planner warning
+g.V.has("desc", com.thinkaurelius.titan.core.attribute.Text.CONTAINS, "baz").map
+
+// Concerned that Titan could have read cache in that last query, instead of relying on the index?
+// Start a new instance to rule out cache hits.  Now we're definitely using the index.
+g.shutdown()
+g = TitanFactory.open("conf/titan-cassandra-es.properties")
+g.V.has("desc", com.thinkaurelius.titan.core.attribute.Text.CONTAINS, "baz").map
 ----
 
 Common Problems
@@ -138,10 +169,13 @@ Common Problems
 IllegalArgumentException when starting job
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When a reindexing job is started shortly after a the index has been built, the job might fail with the following exception.
+When a reindexing job is started shortly after a the index has been built, the job might fail with an exception like one of the following:
 
 [source,txt]
-The index [NAME] is in an invalid state and cannot be indexed
+The index mixedExample is in an invalid state and cannot be indexed. The following index keys have invalid status: desc has status INSTALLED (status must be one of [REGISTERED, ENABLED])
+
+[source,txt]
+The index mixedExample is in an invalid state and cannot be indexed. The index has status INSTALLED, but one of [REGISTERED, ENABLED] is required
 
 When an index is built, its existence is broadcast to all other Titan instances in the cluster. Those must acknowledge the existence of the index before the reindexing process can be started. The acknowledgements can take a while to come in depending on the size of the cluster and the connection speed. Hence, one should wait a few minutes after building the index and before starting the reindex process.
 
@@ -152,7 +186,7 @@ mgmt = g.getManagementSystem()
 rindex = mgmt.getRelationIndex(mgmt.getRelationType("battled"),"battlesByTime")
 mgmt.updateIndex(rindex, SchemaAction.REGISTER_INDEX);
 gindex = mgmt.getGraphIndex("byName")
-mgmt.updateIndex(, SchemaAction.REGISTER_INDEX);
+mgmt.updateIndex(gindex, SchemaAction.REGISTER_INDEX);
 mgmt.commit()
 
 After waiting a few minutes for the acknowledgement to arrive the reindex job should start successfully.
@@ -160,7 +194,7 @@ After waiting a few minutes for the acknowledgement to arrive the reindex job sh
 Could not find index
 ^^^^^^^^^^^^^^^^^^^^
 
-This exception in the reindexing job indicates that an index with the given name does not exist or that the name has not been specified correctly. When reindexing a global graph index, only the name of the index as defined when building the index should be specified. When reindexing a global graph index, the name of the index must be given in addition to the name of the edge label or property key on which the vertex-centric index is defined. 
+This exception in the reindexing job indicates that an index with the given name does not exist or that the name has not been specified correctly. When reindexing a global graph index, only the name of the index as defined when building the index should be specified. When reindexing a global graph index, the name of the index must be given in addition to the name of the edge label or property key on which the vertex-centric index is defined.
 
 Cassandra Reindex Mappers Fail with "Too many open files"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
