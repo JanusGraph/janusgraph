@@ -650,6 +650,9 @@ public class ManagementSystem implements TitanManagement {
 
     private static class UpdateStatusTrigger implements Callable<Boolean> {
 
+        private static final Logger log =
+                LoggerFactory.getLogger(UpdateStatusTrigger.class);
+
         private final StandardTitanGraph graph;
         private final long schemaVertexId;
         private final SchemaStatus newStatus;
@@ -681,6 +684,24 @@ public class ManagementSystem implements TitanManagement {
                 mgmt.setStatus(schemaVertex,newStatus,keys);
                 mgmt.updatedTypes.addAll(keys);
                 mgmt.updatedTypes.add(schemaVertex);
+                if (log.isInfoEnabled()) {
+                    Set<String> propNames = Sets.newHashSet();
+                    for (PropertyKeyVertex v : keys) {
+                        try {
+                            propNames.add(v.getName());
+                        } catch (Throwable t) {
+                            log.warn("Failed to get name for property key with id {}", v.getLongId(), t);
+                            propNames.add("(ID#" + v.getLongId() + ")");
+                        }
+                    }
+                    String schemaName = "(ID#" + schemaVertexId + ")";
+                    try {
+                        schemaName = schemaVertex.getName();
+                    } catch (Throwable t) {
+                        log.warn("Failed to get name for schema vertex with id {}", schemaVertexId, t);
+                    }
+                    log.info("Set status {} on schema element {} with property keys {}", newStatus, schemaName, propNames);
+                }
                 mgmt.commit();
                 return true;
             } catch (RuntimeException e) {
