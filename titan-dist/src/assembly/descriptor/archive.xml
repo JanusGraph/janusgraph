@@ -31,7 +31,7 @@
 
     <files>
         <file>
-            <source>${assembly.txtfile.dir}/CHANGELOG.textile</source>
+            <source>${assembly.txtfile.dir}/CHANGELOG.asc</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
@@ -43,7 +43,7 @@
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>${assembly.txtfile.dir}/UPGRADE.textile</source>
+            <source>${assembly.txtfile.dir}/UPGRADE.asc</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

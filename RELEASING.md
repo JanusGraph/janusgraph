@@ -51,9 +51,9 @@ Documentation pages:
 
 Files in the main repo:
 
-* CHANGELOG.textile
+* CHANGELOG.asc
 * NOTICE.txt
-* UPGRADE.textile
+* UPGRADE.asc
 * titan-site/src/site-resources/index.html
   (this template generates a new http://thinkaurelius.github.io/titan/)
 
