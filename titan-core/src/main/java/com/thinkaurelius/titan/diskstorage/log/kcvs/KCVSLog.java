@@ -674,7 +674,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
                 if (0 >  messageTimeStart.compareTo(messageTimeEnd)) {
                     // nextTimepoint is strictly earlier than timeWindowEnd
-                    log.debug("MessagePuller time window: [{}, {})", messageTimeStart, messageTimeEnd);
+                    log.trace("MessagePuller time window: [{}, {})", messageTimeStart, messageTimeEnd);
                 } else {
                     /*
                      * nextTimepoint is equal to or later than timeWindowEnd. We
@@ -704,7 +704,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
                 KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(messageTimeStart.getNativeTimestamp()), BufferUtil.getLongBuffer(messageTimeEnd.getNativeTimestamp()));
                 query.setLimit(maxReadMsg);
-                log.debug("Converted MessagePuller time window to {}", query);
+                log.trace("Converted MessagePuller time window to {}", query);
 
                 List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                 prepareMessageProcessing(entries);

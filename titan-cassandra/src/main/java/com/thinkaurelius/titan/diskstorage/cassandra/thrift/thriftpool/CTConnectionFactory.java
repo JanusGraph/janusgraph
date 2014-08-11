@@ -113,9 +113,9 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         boolean isSameConfig = c.getConfig().equals(curCfg);
         if (log.isDebugEnabled()) {
             if (isSameConfig) {
-                log.debug("Validated Thrift connection {}", c);
+                log.trace("Validated {} by configuration {}", c, curCfg);
             } else {
-                log.debug("Rejected Thrift connection {}; current config is {}; connection config is {}",
+                log.trace("Rejected {}; current config is {}; rejected connection config is {}",
                           c, curCfg, c.getConfig());
             }
         }
