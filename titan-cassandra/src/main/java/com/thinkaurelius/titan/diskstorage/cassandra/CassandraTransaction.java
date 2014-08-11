@@ -15,20 +15,22 @@ public class CassandraTransaction extends AbstractStoreTransaction {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraTransaction.class);
 
+    private final CLevel read;
+    private final CLevel write;
+
     public CassandraTransaction(BaseTransactionConfig c) {
         super(c);
+        read =  CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_WRITE_CONSISTENCY));
+        write = CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_WRITE_CONSISTENCY));
+        log.debug("Created {}", this.toString());
     }
 
     public CLevel getReadConsistencyLevel() {
-        CLevel lev = CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_READ_CONSISTENCY));
-        log.debug("Read consistency level for tx {} is {}", this, lev);
-        return lev;
+        return read;
     }
 
     public CLevel getWriteConsistencyLevel() {
-        CLevel lev = CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_WRITE_CONSISTENCY));
-        log.debug("Write consistency level for tx {} is {}", this, lev);
-        return lev;
+        return write;
     }
 
     public static CassandraTransaction getTx(StoreTransaction txh) {
