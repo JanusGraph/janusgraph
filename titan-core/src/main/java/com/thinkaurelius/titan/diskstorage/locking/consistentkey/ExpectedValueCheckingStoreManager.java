@@ -57,10 +57,10 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
         boolean hasAtLeastOneLock = etx.prepareForMutations();
         if (hasAtLeastOneLock) {
             // Force all mutations on this transaction to use strong consistency
-            log.debug("Mutations on transaction {} using consistent store transaction {} due to held locks", etx, etx.getConsistentTx());
+            log.debug("Transaction {} holds one or more locks: writing using consistent transaction {} due to held locks", etx, etx.getConsistentTx());
             manager.mutateMany(mutations, etx.getConsistentTx());
         } else {
-            log.debug("Mutations on transaction {} using possibly-inconsistent store transaction {} due to no held locks", etx, etx.getInconsistentTx());
+            log.debug("Transaction {} holds no locks: writing mutations using store transaction {}", etx, etx.getInconsistentTx());
             manager.mutateMany(mutations, etx.getInconsistentTx());
         }
     }
