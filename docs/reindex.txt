@@ -139,8 +139,9 @@ while (!registered) {
 }
 println("Index REGISTERED in " + (System.currentTimeMillis() - before) + " ms")
 
-// Run a Titan-Hadoop job to reindex
-TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "", "org.apache.cassandra.dht.Murmur3Partitioner")
+// Run a Titan-Hadoop job to reindex (replace Murmur3 with your actual partitioner)
+pt = "org.apache.cassandra.dht.Murmur3Partitioner" // The default
+TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "", pt)
 
 // Enable the index
 mgmt = g.getManagementSystem()
@@ -172,10 +173,13 @@ IllegalArgumentException when starting job
 When a reindexing job is started shortly after a the index has been built, the job might fail with an exception like one of the following:
 
 [source,txt]
-The index mixedExample is in an invalid state and cannot be indexed. The following index keys have invalid status: desc has status INSTALLED (status must be one of [REGISTERED, ENABLED])
+The index mixedExample is in an invalid state and cannot be indexed.
+The following index keys have invalid status: desc has status INSTALLED
+(status must be one of [REGISTERED, ENABLED])
 
 [source,txt]
-The index mixedExample is in an invalid state and cannot be indexed. The index has status INSTALLED, but one of [REGISTERED, ENABLED] is required
+The index mixedExample is in an invalid state and cannot be indexed.
+The index has status INSTALLED, but one of [REGISTERED, ENABLED] is required
 
 When an index is built, its existence is broadcast to all other Titan instances in the cluster. Those must acknowledge the existence of the index before the reindexing process can be started. The acknowledgements can take a while to come in depending on the size of the cluster and the connection speed. Hence, one should wait a few minutes after building the index and before starting the reindex process.
 
