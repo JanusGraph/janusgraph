@@ -22,13 +22,25 @@ CP=$CP:$(find -L `abs_path`/../ext/ -name '*.jar' | tr '\n' ':')
 
 # Check some Hadoop-related environment variables
 if [ -n "${HADOOP_PREFIX:-}" ]; then
-    CP="$CP:$HADOOP_PREFIX"/conf
+    # Check Hadoop 2 first
+    if [ -d "$HADOOP_PREFIX"/etc/hadoop ]; then
+        CP="$CP:$HADOOP_PREFIX"/etc/hadoop
+    elif [ -d "$HADOOP_PREFIX"/conf ]; then
+        # Then try Hadoop 1
+        CP="$CP:$HADOOP_PREFIX"/conf
+    fi
 elif [ -n "${HADOOP_CONF_DIR:-}" ]; then
     CP="$CP:$HADOOP_CONF_DIR"
 elif [ -n "${HADOOP_CONF:-}" ]; then
     CP="$CP:$HADOOP_CONF"
 elif [ -n "${HADOOP_HOME:-}" ]; then
-    CP="$CP:$HADOOP_HOME"/conf
+    # Check Hadoop 2 first
+    if [ -d "$HADOOP_HOME"/etc/hadoop ]; then
+        CP="$CP:$HADOOP_HOME"/etc/hadoop
+    elif [ -d "$HADOOP_HOME"/conf ]; then
+        # Then try Hadoop 1
+        CP="$CP:$HADOOP_HOME"/conf
+    fi
 fi
 
 # Convert from *NIX to Windows path convention if needed
