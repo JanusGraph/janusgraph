@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -256,23 +258,34 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
         Preconditions.checkArgument(index!=null,"Could not find index: %s",indexName);
         log.info("Found index {}", indexName);
         TitanSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        Set<SchemaStatus> acceptableStatuses = SchemaAction.REINDEX.getApplicableStatus();
         boolean isValidIndex = true;
+        String invalidIndexHint;
         if (index instanceof RelationTypeIndex ||
                 (index instanceof TitanGraphIndex && ((TitanGraphIndex)index).isCompositeIndex()) ) {
-            isValidIndex = SchemaAction.REINDEX.getApplicableStatus().contains(schemaVertex.getStatus());
+            SchemaStatus actualStatus = schemaVertex.getStatus();
+            isValidIndex = acceptableStatuses.contains(actualStatus);
+            invalidIndexHint = String.format(
+                    "The index has status %s, but one of %s is required",
+                    actualStatus, acceptableStatuses);
         } else {
             Preconditions.checkArgument(index instanceof TitanGraphIndex,"Unexpected index: %s",index);
             TitanGraphIndex gindex = (TitanGraphIndex)index;
             Preconditions.checkArgument(gindex.isMixedIndex());
+            Map<String, SchemaStatus> invalidKeyStatuses = Maps.newHashMap();
             for (PropertyKey key : gindex.getFieldKeys()) {
                 SchemaStatus status = gindex.getIndexStatus(key);
-                if (status!=SchemaStatus.DISABLED && !SchemaAction.REINDEX.getApplicableStatus().contains(status)) {
+                if (status!=SchemaStatus.DISABLED && !acceptableStatuses.contains(status)) {
                     isValidIndex=false;
+                    invalidKeyStatuses.put(key.getName(), status);
                     log.warn("Index {} has key {} in an invalid status {}",index,key,status);
                 }
             }
+            invalidIndexHint = String.format(
+                    "The following index keys have invalid status: %s (status must be one of %s)",
+                    Joiner.on(",").withKeyValueSeparator(" has status ").join(invalidKeyStatuses), acceptableStatuses);
         }
-        Preconditions.checkArgument(isValidIndex, "The index [%s] is in an invalid state and cannot be indexed");
+        Preconditions.checkArgument(isValidIndex, "The index %s is in an invalid state and cannot be indexed. %s", indexName, invalidIndexHint);
         // TODO consider retrieving the current Job object and calling killJob() if !isValidIndex -- would be more efficient than throwing an exception on the first pair processed by each mapper
         log.debug("Index {} is valid for re-indexing");
     }
