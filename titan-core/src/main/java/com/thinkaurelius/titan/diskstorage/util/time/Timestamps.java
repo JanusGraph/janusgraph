@@ -141,8 +141,8 @@ public enum Timestamps implements TimestampProvider {
              * of the argument, if applicable, and passes both milliseconds and
              * nanoseconds parts into Thread#sleep(long, long)
              */
-            if (log.isDebugEnabled()) {
-                log.debug("Sleeping: now={} targettime={} delta={} {}",
+            if (log.isTraceEnabled()) {
+                log.trace("Sleeping: now={} targettime={} delta={} {}",
                         new Object[] { now, futureTime, delta, unit });
             }
             unit.sleep(delta);
