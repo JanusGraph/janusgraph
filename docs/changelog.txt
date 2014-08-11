@@ -19,7 +19,7 @@ Version 0.5.0 (August 15, 2014)
 * Cassandra 2.0.8
 * HBase 0.94.21, 0.96.1.1-hadoop2, 0.98.3-hadoop2
 * BerkeleyJE 5.0.73
-* Elasticsearch 0.90.5
+* Elasticsearch 1.2.1
 * Lucene 4.8.1
 * Java 1.7 (partially compatible with Java 1.6)
 
