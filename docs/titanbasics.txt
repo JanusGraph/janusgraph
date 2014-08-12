@@ -316,14 +316,26 @@ mgmt.commit()
 Defining Vertex Labels
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Like edges, vertices have labels. Unlike edges, labels are optional for vertices. If no label is provided when calling `addVertex()` the default label is automatically assigned to the created vertex. Vertex labels are useful to distinguish different types of vertices, e.g. _user_ vertices and _product_ vertices.
+Like edges, vertices have labels. Unlike edge labels, vertex labels are optional.  Vertex labels are useful to distinguish different types of vertices, e.g. _user_ vertices and _product_ vertices.
 
-To define a vertex label, call `makeVertexLabel(String).make()` on an open graph or management transaction and provide the name of the vertex label as the argument. Vertex label names must be unique in the graph.
+For compatibility with Blueprints, Titan provides differently-named methods for adding labeled and unlabeled vertices:
+
+* `addVertexWithLabel`
+* `addVertex`
+
+Although labels are optional at the conceptual and data model level, Titan assigns all vertices a label as an internal implementation detail.  Vertices created by the `addVertex` methods use Titan's default label.
+
+To create a label, call `makeVertexLabel(String).make()` on an open graph or management transaction and provide the name of the vertex label as the argument.  Vertex label names must be unique in the graph.
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
 person = mgmt.makeVertexLabel('person').make();
 mgmt.commit()
+// Create a labeled vertex
+person = g.addVertexWithLabel('person')
+// Create an unlabeled vertex
+v = g.addVertex(null)
+g.commit()
 
 Automatic Schema Maker
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -445,7 +457,7 @@ Each _step_ (denoted by a separating `.`) is a function that operates on the obj
 Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
 
 [source,gremlin]
-gremlin> theseus = g.addVertex('human')
+gremlin> theseus = g.addVertexWithLabel('human')
 ==>v[302]
 gremlin> theseus.setProperty('name','theseus')
 ==>null
@@ -1194,7 +1206,7 @@ Titan can automatically log transactional changes for additional processing or a
 
 [source,gremlin]
 tx = g.buildTransaction().setLogIdentifier('addedPerson').start()
-u = tx.addVertex('human')
+u = tx.addVertexWithLabel('human')
 u.setProperty('name','proteros')
 u.setProperty('age',36)
 tx.commit()
@@ -1204,7 +1216,7 @@ Upon commit, any changes made during the transaction are logged to the user logg
 [source,gremlin]
 tx = g.buildTransaction().setLogIdentifier('battle').start()
 h = tx.V.has('name','hercules').next()
-m = tx.addVertex('monster')
+m = tx.addVertexWithLabel('monster')
 m.setProperty('name','phylatax')
 h.addEdge('battled',m).setProperty('time',22)
 tx.commit()

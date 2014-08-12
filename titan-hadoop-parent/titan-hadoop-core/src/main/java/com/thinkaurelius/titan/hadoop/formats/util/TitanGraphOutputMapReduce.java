@@ -163,7 +163,7 @@ public class TitanGraphOutputMapReduce {
                     VertexLabel titanLabel = BaseVertexLabel.DEFAULT_VERTEXLABEL;
                     FaunusVertexLabel faunusLabel = faunusVertex.getVertexLabel();
                     if (!faunusLabel.isDefault()) titanLabel = graph.getVertexLabel(faunusLabel.getName());
-                    titanVertex = graph.addVertex(titanLabel);
+                    titanVertex = graph.addVertexWithLabel(titanLabel);
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_ADDED, 1L);
                 } else {
                     titanVertex = (TitanVertex) graph.getVertex(faunusVertex.getLongId());

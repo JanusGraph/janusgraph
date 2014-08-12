@@ -60,9 +60,9 @@ As dicussed in <<schema>>, Titan supports property keys with SET and LIST cardin
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
-mgmt.makePropertyKey('name').dataType(String.class).cardinality(LIST).make()
+mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.LIST).make()
 mgmt.commit()
-v = g.addVertex([uid:'x521'])
+v = g.addVertex()
 p1 = v.addProperty('name','Dan LaRocque')
 p1.setProperty('source','web')
 p2 = v.addProperty('name','dalaro')

@@ -188,7 +188,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public TitanVertex addVertex(VertexLabel vertexLabel) {
+    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel) {
+        return getAutoStartTx().addVertexWithLabel(vertexLabel);
+    }
+
+    @Override
+    public TitanVertex addVertexWithLabel(String vertexLabel) {
         return getAutoStartTx().addVertexWithLabel(vertexLabel);
     }
 
