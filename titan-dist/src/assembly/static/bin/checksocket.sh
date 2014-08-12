@@ -13,7 +13,7 @@ abs_path() {
     echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 }
 
-cd "abs_path"/..
+cd "`abs_path`"/..
 
 if [ -n "$JAVA_HOME" ]; then
     JAVA="$JAVA_HOME"/bin/java
