@@ -61,7 +61,7 @@ public class TitanGraphConfiguration implements GraphConfiguration {
 
             final Configuration rewriteConfig = new BaseConfiguration();
             final String location = properties.getString(Tokens.REXSTER_GRAPH_LOCATION, "");
-            if (titanConfig.getString("storage.backend").equals("local") && location.trim().length() > 0) {
+            if (titanConfig.getString("storage.backend").equals("berkeleyje") && location.trim().length() > 0) {
                 final File directory = new File(properties.getString(Tokens.REXSTER_GRAPH_LOCATION));
                 if (!directory.isDirectory()) {
                     if (!directory.mkdirs()) {
