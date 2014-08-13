@@ -540,7 +540,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
             log.debug("Created keyspace {}", keySpaceName);
         } catch (ConnectionException e) {
-            log.debug("Failed to create keyspace {}, keySpaceName");
+            log.debug("Failed to create keyspace {}", keySpaceName);
             throw new TemporaryBackendException(e);
         }
     }
