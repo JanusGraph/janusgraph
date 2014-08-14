@@ -1211,7 +1211,7 @@ u.setProperty('name','proteros')
 u.setProperty('age',36)
 tx.commit()
 
-Upon commit, any changes made during the transaction are logged to the user logging system into a log named `addedPerson`. The log identifier specified during the start of the transaction identifies the log in which the changes are recorded thereby allowing different types of changes to be recorded in separate logs for individual processing.
+Upon commit, any changes made during the transaction are logged to the user logging system into a log named `addedPerson`. The *user logging system* is a configurable logging backend with a Titan compatible log interface. By default, the log is written to a separate store in the primary storage backend which can be configured as described below. The log identifier specified during the start of the transaction identifies the log in which the changes are recorded thereby allowing different types of changes to be recorded in separate logs for individual processing.
 
 [source,gremlin]
 tx = g.buildTransaction().setLogIdentifier('battle').start()
@@ -1227,7 +1227,7 @@ Titan provides a user transaction log processor framework to process the recorde
 LogProcessorFramework logProcessor = TitanFactory.openTransactionLog(g);
 final AtomicInteger totalHumansAdded = new AtomicInteger(0);
 final AtomicInteger totalGodsAdded = new AtomicInteger(0);
-userlogs.addLogProcessor("addedPerson")
+logProcessor.addLogProcessor("addedPerson")
         .setProcessorIdentifier("addedPersonCounter")
         .setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
         .addProcessor(new ChangeProcessor() {
@@ -1258,7 +1258,7 @@ A change processor must implement the `ChangeProcessor` interface. It's `process
 Change processors are executed individually and in multiple threads. If a change processor accesses global state it must be ensured that such state allows concurrent access. While the log processor reads log records sequentially, the changes are processed in multiple threads so it cannot be guaranteed that the log order is preserved in the change processors. 
 
 Note, that log processors run each registered change processor at least once for each record in the log which means that a single transactional change record may be processed multiple times under certain failure conditions. 
-One cannot add or remove change processor from a running log processor. In other words, a log processor is immutable after it is built. To change log processing, start a new log processor or shut down an existing one.
+One cannot add or remove change processor from a running log processor. In other words, a log processor is immutable after it is built. To change log processing, start a new log processor and shut down an existing one.
 
 [source,java]
 userlogs.addLogProcessor("battle")
