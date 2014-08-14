@@ -24,6 +24,9 @@ table th,.project-content .project-info h4,
 font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
 }
 
+table.blockquote {
+    width: auto !important;
+}
 
 .footer-area  h3,#slidingbar-area  h3{
 font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
