@@ -82,6 +82,10 @@ Version 0.5.0 (August 15, 2014)
 * See all GitHub issues associated with Milestone 0.5.0
 
 
+*Acknowledgements:*
+
+* http://fortytwo.net/[Joshua Shinavier] significantly contributed to the TTL implementation
+
 
 Version 0.4.4 (April 22, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

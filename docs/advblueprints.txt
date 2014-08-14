@@ -9,22 +9,28 @@ http://blueprints.tinkerpop.com/[Blueprints] provides a set of common property g
 Using IdGraph
 ~~~~~~~~~~~~~
 
-It is possible to use Blueprints' https://github.com/tinkerpop/blueprints/wiki/Id-Implementation[IdGraph] with Titan. However, it is best to prepare Titan for IdGraph by declaring the `__id` index using `TitanGraph.makeType()`, and furthermore, it is _necessary_ if you intend to use IdGraph for user-specified ids on _both_ vertices and edges.  Use the appropriate data type (e.g. `String.class`) for the ids you intend to use:
+It is possible to use Blueprints' https://github.com/tinkerpop/blueprints/wiki/Id-Implementation[IdGraph] with Titan. IdGraph requires a property named `__id` that maps arbitrary user-provided identifiers to Titan's internally-assigned long identifiers.  This property name is also available programmatically as the public static string `IdGraph.ID`.
+
+[IMPORTANT]
+The `__id` property key must be created and covered by a unique index in Titan prior to using `IdGraph` with Titan.
+
+To prepare Titan for IdGraph, first create the `__id` property key.  Set the `dataType` of the property key to match the custom IDs that you intend to use.  Second, build a unique composite index on the `__id` property key.  The following example shows how to define and index the `__id` property key to support IdGraph with string vertex IDs.
 
 [source,gremlin]
 g = TitanFactory.open("berkeleyje:/tmp/test")
+// Define a property key and index for IdGraph-managed vertex IDs
 mgmt = g.getManagementSystem();
-id = mgmt.makeKey(IdGraph.ID).dataType(String.class).make()
+id = mgmt.makePropertyKey(IdGraph.ID).dataType(String.class).make()
 mgmt.buildIndex("byvid",Vertex.class).addKey(id).unique().buildCompositeIndex()
-mgmt.buildIndex("byeid",Edge.class).addKey(id).unique().buildCompositeIndex()
 mgmt.commit()
-ig = new IdGraph(g)
+// Create an IdGraph that manages vertex IDs but not edge IDs
+ig = new IdGraph(g, true, false)
+// Insert example vertex with custom identifier
 hercules = ig.addVertex("hercules")
 g.v("hercules")
 zeus = ig.addVertex("zeus")
-ig.addEdge("hercules-father", hercules, zeus, "father");
 
-If only user defined ids on vertices (or edges) is needed, then use one of the overloaded `IdGraph` constructors.  It is still helpful, although not strictly necessary, to define an index:
-
-[source,gremlin]
-ig = new IdGraph(g, true, false)  // true for vertices, false for edges
+// If only user defined ids on vertices (or edges) is needed, then use one of the overloaded `IdGraph` constructors.  It is still helpful, although not strictly necessary, to define an index:
+//
+//[source,gremlin]
+//ig = new IdGraph(g, true, false)  // true for vertices, false for edges

@@ -90,8 +90,9 @@ vertices or edges. Similarly, a vertex or edge appears in the graph but is not y
 which might lead to the edge not being or incorrectly being retrieved.
 
 [NOTE]
-In order to avoid that write failures result in permanent inconsistencies in the graph it is recommended to use storage backends that support batch write atomicity and to ensure that write atomicity is enabled. Also, it needs to be ensured that the number modifications made in a single transaction is smaller than the configured `buffer-size` _(REF to graph config)_. The buffer size defines the maximum number of modifications that Titan will persist in a single batch. If a transaction has more modifications, the persistence will be split into multiple batches which are persisted individually which is useful for batch loading but invalidates write atomicity.
+In order to avoid that write failures result in permanent inconsistencies in the graph it is recommended to use storage backends that support batch write atomicity and to ensure that write atomicity is enabled. Also, it needs to be ensured that the number modifications made in a single transaction is smaller than the configured `buffer-size` <<titan-config-ref>>. The buffer size defines the maximum number of modifications that Titan will persist in a single batch. If a transaction has more modifications, the persistence will be split into multiple batches which are persisted individually which is useful for batch loading but invalidates write atomicity.
 
+[[ghost-vertices]]
 Ghost Vertices
 ^^^^^^^^^^^^^^
 

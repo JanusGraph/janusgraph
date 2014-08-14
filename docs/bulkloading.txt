@@ -82,10 +82,7 @@ Tools
 Titan-Hadoop
 ^^^^^^^^^^^^
 
-[.tss-floatright.tss-width-125]
-image:https://raw.github.com/wiki/thinkaurelius/faunus/images/faunus-character.png[]
-
-For very large graphs the best option to load data efficiently is Titan's Hadoop adapter using one of the supported input format and specifying Titan as the output format.
+For very large graphs the best option to load data efficiently is <<hadoop,Titan-Hadoop>> using one of the supported input format and specifying Titan as the output format.
 
 BatchGraph
 ^^^^^^^^^^
@@ -100,9 +97,9 @@ Strategies
 Parallelizing the Load
 ^^^^^^^^^^^^^^^^^^^^^^
 
-By parallelizing the bulk loading across multiple machines, the load time can be greatly reduced if Titan's storage backend cluster is large enough to serve the additional requests. This is the approach http://thinkaurelius.github.io/faunus/[Faunus] takes to bulk loading data into Titan using Hadoop parallelization mechanisms. 
+By parallelizing the bulk loading across multiple machines, the load time can be greatly reduced if Titan's storage backend cluster is large enough to serve the additional requests. This is essentially the approach <<hadoop>> takes to bulk loading data into Titan using MapReduce.
 
-If Faunus cannot be used for parallelizing the bulk loading process, here are some high level guidelines for effectively parallelizing the loading process:
+If Hadoop cannot be used for parallelizing the bulk loading process, here are some high level guidelines for effectively parallelizing the loading process:
 
 * In some cases, the graph data can be decomposed into multiple disconnected subgraphs. Those subgraphs can be loaded independently in parallel across multiple machines (for instance, using BatchGraph as described above).
 * If the graph cannot be decomposed, it is often beneficial to load in multiple steps where the last two steps can be parallelized across multiple machines:

@@ -35,5 +35,4 @@ Please note:
 
 * `TitanMultiVertexQuery` is most effective when running Titan against a distributed storage backend since it greatly improves query performance by bundling inter-cluster communication and reducing message load. On a simple deployment scenario we observed an order magnitude performance improvement when combining 50 individual vertex queries into one multi-query.
 * `limit()` applies to each individual result set and not to the entire result set of a multi-query. In other words, the semantics of limit() are identical to `VertexQuery`.
-* `TitanMultiVertexQuery` is an experimental feature introduced with Titan 0.4.0. Please use with care and benchmark against your particular use case to determine its suitability for your application.
-* `TitanMultiVertexQuery` is an experimental feature of Titan and not (yet) part of Blueprints and therefore not supported by Gremlin. We plan to make a case for multi-query in Blueprints after demonstrating its performance gains on a range of applications.
+* `TitanMultiVertexQuery` is a Titan feature and not (yet) part of Blueprints and therefore not supported by Gremlin. We plan to make a case for multi-query in Blueprints after demonstrating its performance gains on a range of applications.

@@ -16,6 +16,7 @@ People
 . http://markorodriguez.com[Marko A. Rodriguez]: TinkerPop support, testing, and documentation.
 . https://github.com/xedin[Pavel Yaskevich]: Developer with major contributions to Titan's Cassandra and HBase backend adapters.
 . http://stephen.genoprime.com/[Stephen Mallette]: TinkerPop support, testing, and documentation.
+. https://github.com/dkuppitz[Daniel Kuppitz]: Titan testing and general feedback.
 . http://www.ketrinayim.com/[Ketrina Yim]: Created the Titan logo.
 
 Organizations
@@ -23,3 +24,5 @@ Organizations
 
 . http://thinkaurelius.com[Aurelius]: Provides development team and maintains the Titan codebase.
 . http://www.pearson.com/[Pearson]: Use case development, customer feedback, and early adopter.
+. http://www.intel.com/[Intel]: Individual feature development
+. http://www.digitalreasoning.com/[Digital Reasoning]: Individual feature development and use case testing

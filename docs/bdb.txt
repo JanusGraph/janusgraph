@@ -2,8 +2,8 @@
 BerkeleyDB
 ----------
 
-[.tss-center.tss-width-250]
-image:http://download.oracle.com/berkeley-db/docs/je/3.2.76/images/Oracle_BerkeleyDB_clr.bmp[link="http://www.oracle.com/technetwork/products/berkeleydb"]
+//[.tss-center.tss-width-250]
+//image:http://download.oracle.com/berkeley-db/docs/je/3.2.76/images/Oracle_BerkeleyDB_clr.bmp[link="http://www.oracle.com/technetwork/products/berkeleydb"]
 
 [quote,'http://www.oracle.com/technetwork/products/berkeleydb[BerkeleyDB Homepage]']
 Berkeley DB enables the development of custom data management

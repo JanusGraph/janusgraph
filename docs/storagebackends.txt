@@ -12,8 +12,6 @@ standard storage backends.
 This section only addresses configuration of the stock storage
 backends that come with Titan.
 
-// For information about writing a new storage backend for Titan, see _TODO: xref to StoreManager/KCVS overview_.
-
 include::cassandra.txt[]
 
 include::hbase.txt[]

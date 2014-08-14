@@ -308,9 +308,9 @@ Edge labels and property keys are jointly referred to as *relation types*. Names
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
-birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
-name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
-sensorReading = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(Cardinality.LIST).make()
+if (mgmt.containsRelationType('name'))
+    name = mgmt.getPropertyKey('name')
+mgmt.getRelationTypes(EdgeLabel.class)
 mgmt.commit()
 
 Defining Vertex Labels
@@ -495,7 +495,9 @@ image:https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.pn
 
 Titan uses the http://rexster.tinkerpop.com[Rexster] engine as the server component to process and answer client queries. 
 
-Rexster exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.  Rexster and Titan can be separately downloaded and configured to work together, or they can be downloaded together through the `titan-server` distribution on the _TODO xref to downloads_ page.
+Rexster exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers. 
+
+The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes preconfigured with a script, `titan.sh`, which starts Cassandra, Elasticsearch, and Titan with Rexster.  Alternatively, Rexster one can https://github.com/tinkerpop/rexster/wiki/Downloads[Download Rexster] separately and then install Titan as a Rexster extension.
 
 Rexster, like Gremlin, is part of the http://www.tinkerpop.com[TinkerPop] open source graph stack which consists of a number of products that simplify graph application development. Titan supports the entire TinkerPop stack.
 
@@ -531,7 +533,7 @@ Each of these approaches is described below.
 Getting started quickly with titan.sh
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* Download a copy of the current `titan-$VERSION.zip` file from the _TODO xref to downloads_ page.
+* Download a copy of the current `titan-$VERSION.zip` file from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads page]
 * Unzip it and enter the `titan-$VERSION` directory
 * Run `bin/titan.sh start`.  This forks a Cassandra process and an ES process, waits for them to become responsive, then starts a process hosting Rexster with Titan and waits for it to become responsive.  It then returns.
 * Connect to Rexster using `bin/rexster-console.sh`, the REST API, or an application using RexsterClient (each method is described below in the "Connecting to Rexster" section)
@@ -1386,6 +1388,11 @@ ElasticSearch OutOfMemoryException
 
 When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
 
+Blueprints Index Creation
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Indexes in Titan must be created through Titan's management system as documented in <<indexes>> and cannot be created through the Blueprints API.
+
 [[limitations]]
 Technical Limitations
 ---------------------
@@ -1425,7 +1432,7 @@ This also applies to index retrievals for edges via a standard or external index
 Type Definitions cannot be changed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The definition of an edge label, property key, or vertex label cannot be changed once it has been committed to the graph. However, type can be renamed and new types can be created at runtime to accommodate an evolving schema.
+The definition of an edge label, property key, or vertex label cannot be changed once it has been committed to the graph. However, a type can be renamed and new types can be created at runtime to accommodate an evolving schema.
 
 Temporary Limitations
 ~~~~~~~~~~~~~~~~~~~~~
