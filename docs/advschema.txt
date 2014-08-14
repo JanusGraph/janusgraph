@@ -71,7 +71,7 @@ g.commit()
 v.getProperties('name')
 ==> Iterable over all name properties
 
-These features are useful in a number of applications such as those where attaching provenance information (e.g. who added a property, when and from where?) to properties is necessary. Support for higher cardinality properties and property annotations on properties is also useful in high-concurrency, scale-out design patterns _(REF TO eventual consistency section)_
+These features are useful in a number of applications such as those where attaching provenance information (e.g. who added a property, when and from where?) to properties is necessary. Support for higher cardinality properties and property annotations on properties is also useful in high-concurrency, scale-out design patterns as described in <<eventual-consistency>>._
 
 Vertex-centric indexes and global graph indexes are supported for properties in the same manner as they are supported for edges. Refer to <<indexes>> for information on defining these indexes for edges and use the corresponding API methods to define the same indexes for properties.
 
@@ -95,3 +95,5 @@ user = g.v(4)
 u = g.v(8)
 v = g.v(16)
 v.addEdge('knows',u).setProperty('author',user)
+
+Note, that unidirected edges do not get automatically deleted when their in-vertices are deleted. The user must ensure that such inconsistencies do not arise or resolve them at query time by explicitly checking vertex existence in a transaction. See the discussion in <<ghost-vertices>> for more information.

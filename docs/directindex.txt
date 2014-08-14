@@ -8,12 +8,12 @@ Some indexing backends additionally support fuzzy search queries. For those quer
 
 Since fuzzy search implementations and scoring algorithms differ significantly between indexing backends, Titan does not support fuzzy search natively. However, Titan provides a _direct index query_ mechanism that allows search queries to be directly send to the indexing backend for evaluation (for those backends that support it).
 
-Use `Graph.indexQuery()` to compose a query that is executed directly against an indexing backend. This query constructor expects two parameters:
+Use `Graph.indexQuery()` to compose a query that is executed directly against an indexing backend. This query builder expects two parameters:
 
 . The name of the indexing backend to query. This must be the name configured in Titan's configuration and used in the property key indexing definitions
 . The query string
 
-The constructor allows to configure the maximal number of elements to be returned via its `limit(int)` method. To retrieve all vertex or edges matching the given query in the specified indexing backend, invoke `vertices()` or `edges()`, respectively. It is not possible to query for both vertices and edges at the same time.
+The builder allows configuration of the maximum number of elements to be returned via its `limit(int)` method.  The builder's `offset(int)` controls number of initial matches in the result set to skip. To retrieve all vertex or edges matching the given query in the specified indexing backend, invoke `vertices()` or `edges()`, respectively. It is not possible to query for both vertices and edges at the same time.
 These methods return an `Iterable` over `Result` objects. A result object contains the matched handle, retrievable via `getElement()`, and the associated score - `getScore()`.
 
 Consider the following example:
@@ -49,3 +49,4 @@ When you have property keys that contain non-alphabetic characters, you have to 
 [source,java]
 graph.indexQuery("vertexByText","v.\"first_name\":john").vertices()
 
+Note, that field names used in direct queries should not start with "v.", "e." or "p.".

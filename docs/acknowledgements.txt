@@ -23,3 +23,5 @@ Organizations
 
 . http://thinkaurelius.com[Aurelius]: Provides development team and maintains the Titan codebase.
 . http://www.pearson.com/[Pearson]: Use case development, customer feedback, and early adopter.
+. http://www.intel.com/[Intel]: Individual feature development
+. http://www.digitalreasoning.com/[Digital Reasoning]: Individual feature development and use case testing

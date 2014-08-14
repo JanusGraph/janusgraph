@@ -33,8 +33,8 @@ Hadoop Tuning
 
 There are too many Hadoop-specific performance settings to exhaustively catalog here.  This list is just a starting point.
 
-* "http://wiki.apache.org/hadoop/HowManyMapsAndReduces":http://wiki.apache.org/hadoop/HowManyMapsAndReduces
-* "http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/":http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/
-* "http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html":http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html
-* "http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/":http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/
-* "http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of":http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of
+* http://wiki.apache.org/hadoop/HowManyMapsAndReduces
+* http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/
+* http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html
+* http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/
+* http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of
