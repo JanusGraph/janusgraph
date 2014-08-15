@@ -73,7 +73,7 @@ TitanIndexRepair.hbaseRepair("conf/titan-hbase-es.properties", "byName", "")
 The following starts the reindexing process for the vertex-centric index `battlesByTime` build over `battled` edges as defined in <<vertex-indexes>>:
 
 [source,gremlin]
-TitanIndexRepair.hbaseRepair("conf/titan-cassandra-es.properties", "battlesByTime", "battled")
+TitanIndexRepair.hbaseRepair("conf/titan-hbase-es.properties", "battlesByTime", "battled")
 
 Enabling Index
 ~~~~~~~~~~~~~~
