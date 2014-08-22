@@ -60,6 +60,6 @@ public abstract class WritableConfigurationTest {
         assertTrue(Arrays.equals(new String[]{"x", "y"},config.get("storage.duba",String[].class)));
         assertEquals(Thread.State.RUNNABLE, config.get("enum", Thread.State.class));
         assertEquals(new StandardDuration(60, TimeUnit.MINUTES), config.get("times.60m", Duration.class));
-        assertTrue(config.get("obj", Object.class).getClass().equals(Object.class));
+        assertTrue(Object.class.isAssignableFrom(config.get("obj", Object.class).getClass()));
     }
 }
