@@ -96,8 +96,17 @@ public class CommonsConfiguration implements WriteConfiguration {
                 }
                 return (O) new StandardDuration(Long.valueOf(comps[0]), unit);
             }
-        } else if (List.class.isAssignableFrom(datatype)) {
-            return (O) config.getProperty(key);
+        // Lists are deliberately not supported.  List's generic parameter
+        // is subject to erasure and can't be checked at runtime.  Someone
+        // could create a ConfigOption<List<Number>>; we would instead return
+        // a List<String> like we always do at runtime, and it wouldn't break
+        // until the client tried to use the contents of the list.
+        //
+        // We could theoretically get around this by adding a type token to
+        // every declaration of a List-typed ConfigOption, but it's just
+        // not worth doing since we only actually use String[] anyway.
+//        } else if (List.class.isAssignableFrom(datatype)) {
+//            return (O) config.getProperty(key);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 
