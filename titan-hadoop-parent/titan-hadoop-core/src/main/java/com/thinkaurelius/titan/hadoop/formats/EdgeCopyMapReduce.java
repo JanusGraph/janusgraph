@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION;
 
 import com.google.common.collect.Iterables;
@@ -49,9 +48,7 @@ public class EdgeCopyMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             ModifiableHadoopConfiguration cfg = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
-            this.direction = cfg.get(INPUT_EDGE_COPY_DIR);
-            if (cfg.has(INPUT_EDGE_COPY_DIRECTION))
-                this.direction = cfg.get(INPUT_EDGE_COPY_DIRECTION);
+            this.direction = cfg.getEdgeCopyDirection();
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }
@@ -85,9 +82,7 @@ public class EdgeCopyMapReduce {
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             ModifiableHadoopConfiguration cfg = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
-            this.direction = cfg.get(INPUT_EDGE_COPY_DIR);
-            if (cfg.has(INPUT_EDGE_COPY_DIRECTION))
-                this.direction = cfg.get(INPUT_EDGE_COPY_DIRECTION);
+            this.direction = cfg.getEdgeCopyDirection();
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }

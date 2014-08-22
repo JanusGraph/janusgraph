@@ -97,16 +97,7 @@ public class HadoopGraph extends HybridConfigured {
     }
 
     public Direction getEdgeCopyDirection() {
-        ModifiableConfiguration mc = getTitanConf();
-
-        if (mc.has(INPUT_EDGE_COPY_DIRECTION)) {
-            return mc.get(INPUT_EDGE_COPY_DIRECTION);
-        }
-        if (mc.has(INPUT_EDGE_COPY_DIR)) {
-            return mc.get(INPUT_EDGE_COPY_DIR);
-        }
-
-        return INPUT_EDGE_COPY_DIRECTION.getDefaultValue();
+        return getTitanConf().getEdgeCopyDirection();
     }
 
     // JOB AND FILESYSTEM

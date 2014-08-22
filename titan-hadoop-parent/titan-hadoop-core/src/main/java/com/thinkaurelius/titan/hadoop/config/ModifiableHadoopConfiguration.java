@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.Map;
@@ -76,5 +77,15 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
 
     public ModifiableConfiguration getOutputConf() {
         return getOutputConf(GraphDatabaseConfiguration.ROOT_NS);
+    }
+
+    // Hack to support deprecation of the old edge copy dir option
+    public Direction getEdgeCopyDirection() {
+        if (has(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION))
+            return get(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION);
+        if (has(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR))
+            return get(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR);
+
+        return TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION.getDefaultValue();
     }
 }
