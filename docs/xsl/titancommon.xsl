@@ -40,6 +40,9 @@
   <xsl:param name="admon.graphics" select="1"/>
   <xsl:param name="admon.graphics.path">images/icons/</xsl:param>
 
+  <!-- Misc style -->
+  <xsl:param name="phrase.propagates.style" select="1"/>
+
   <!-- Titan-themed output templates -->
   <xsl:template name="titan.head">
     <script type='text/javascript' src='js/jquery/jquery-1.11.0.js'></script>

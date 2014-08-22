@@ -170,6 +170,14 @@ div#main {
     overflow: auto;
 }
 
+.line-through {
+    text-decoration: line-through;
+}
+
+.deprecation-warning {
+    color: #E10707;
+}
+
 html {
     background-color: #000000;
 }

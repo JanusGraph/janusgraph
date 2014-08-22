@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -46,6 +47,7 @@ public class ConfigOption<O> extends ConfigElement {
     private final O defaultValue;
     private final Predicate<O> verificationFct;
     private boolean isHidden = false;
+    private ConfigOption<?> supersededBy;
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, O defaultValue) {
         this(parent,name,description,type,defaultValue, disallowEmpty((Class<O>) defaultValue.getClass()));
@@ -68,6 +70,10 @@ public class ConfigOption<O> extends ConfigElement {
     }
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct) {
+        this(parent, name, description, type, datatype, defaultValue, verificationFct, null);
+    }
+
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(datatype);
@@ -76,6 +82,7 @@ public class ConfigOption<O> extends ConfigElement {
         this.datatype = datatype;
         this.defaultValue = defaultValue;
         this.verificationFct = verificationFct;
+        this.supersededBy = supersededBy;
     }
 
     public ConfigOption<O> hide() {
@@ -109,6 +116,14 @@ public class ConfigOption<O> extends ConfigElement {
 
     public boolean isLocal() {
         return type==Type.MASKABLE || type==Type.LOCAL;
+    }
+
+    public boolean isDeprecated() {
+        return null != supersededBy;
+    }
+
+    public ConfigOption<?> getDeprecationReplacement() {
+        return supersededBy;
     }
 
     @Override
