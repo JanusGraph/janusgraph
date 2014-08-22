@@ -20,8 +20,12 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
 
     private final KryoSerializer backupSerializer;
 
+    public StandardSerializer(boolean allowCustomSerialization, int maxOutputSize) {
+        backupSerializer = new KryoSerializer(getDefaultRegistrations(), !allowCustomSerialization, maxOutputSize);
+    }
+
     public StandardSerializer(boolean allowCustomSerialization) {
-        backupSerializer = new KryoSerializer(getDefaultRegistrations(),!allowCustomSerialization);
+        backupSerializer = new KryoSerializer(getDefaultRegistrations(), !allowCustomSerialization);
     }
 
     public StandardSerializer() {

@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement.MicroElement;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
@@ -30,12 +31,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.KRYO_MAX_OUTPUT_SIZE;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class FaunusSerializer {
 
-    private static final Serializer STANDARD_SERIALIZER = new StandardSerializer(true);
+    // This is volatile to support double-checked locking
+    private static volatile Serializer standardSerializer;
+
     private final FaunusTypeManager types;
     private final boolean trackState;
     private final boolean trackPaths;
@@ -148,7 +153,7 @@ public class FaunusSerializer {
 
 
     private void serializeObject(final DataOutput out, Object value) throws IOException {
-        final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = STANDARD_SERIALIZER.getDataOutput(40);
+        final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = getStandardSerializer().getDataOutput(40);
         o.writeClassAndObject(value);
         final StaticBuffer buffer = o.getStaticBuffer();
         WritableUtils.writeVInt(out, buffer.length());
@@ -160,7 +165,28 @@ public class FaunusSerializer {
         byte[] bytes = new byte[byteLength];
         in.readFully(bytes);
         final ReadBuffer buffer = new ReadArrayBuffer(bytes);
-        return STANDARD_SERIALIZER.readClassAndObject(buffer);
+        return getStandardSerializer().readClassAndObject(buffer);
+    }
+
+    /**
+     * Return the StandardSerializer singleton shared between all instances of FaunusSerializer.
+     *
+     * If it has not yet been initialized, then the singleton is created using the maximum
+     * Kryo buffer size configured in the calling FaunusSerializer.
+     *
+     * @return
+     */
+    private Serializer getStandardSerializer() {
+        if (null == standardSerializer) { // N.B. standardSerializer is volatile
+            synchronized (FaunusSerializer.class) {
+                if (null == standardSerializer) {
+                    int maxOutputBufSize = ModifiableHadoopConfiguration.of(configuration).get(KRYO_MAX_OUTPUT_SIZE);
+                    standardSerializer = new StandardSerializer(true, maxOutputBufSize);
+                }
+            }
+        }
+        // TODO consider checking whether actual output buffer size matches config, create new StandardSerializer if mismatched?  Might not be worth it
+        return standardSerializer;
     }
 
     private <T extends FaunusRelation> Iterable<T> filterDeletedRelations(Iterable<T> elements) {

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop.config;
 
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
+import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 
@@ -124,7 +125,7 @@ public class TitanHadoopConfiguration {
             "Attempts to serialize objects with larger serialized representations will generate an " +
             "exception.  This should be set large enough to accommodate any single sane datum written " +
             "by Kryo, and serves as a last-resort sanity check to avoid erroneously serializing reference cycles.",
-            ConfigOption.Type.LOCAL, Integer.class);
+            ConfigOption.Type.LOCAL, Integer.class, KryoSerializer.DEFAULT_MAX_OUTPUT_SIZE);
 
     public static final ConfigNamespace INDEX_NS =
             new ConfigNamespace(TRUNK_NS, "reindex", "Index repair configuration");
