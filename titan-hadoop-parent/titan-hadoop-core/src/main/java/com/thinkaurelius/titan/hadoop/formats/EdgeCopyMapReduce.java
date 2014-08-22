@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.hadoop.formats;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR;
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.hadoop.FaunusSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
@@ -19,7 +19,6 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.elasticsearch.common.collect.Iterators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +36,7 @@ public class EdgeCopyMapReduce {
 
     public static Configuration createConfiguration(final Direction direction) {
         final Configuration configuration = new EmptyConfiguration();
-        ModifiableHadoopConfiguration.of(configuration).set(INPUT_EDGE_COPY_DIR, direction);
+        ModifiableHadoopConfiguration.of(configuration).set(INPUT_EDGE_COPY_DIRECTION, direction);
         return configuration;
     }
 
@@ -51,6 +50,8 @@ public class EdgeCopyMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             ModifiableHadoopConfiguration cfg = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
             this.direction = cfg.get(INPUT_EDGE_COPY_DIR);
+            if (cfg.has(INPUT_EDGE_COPY_DIRECTION))
+                this.direction = cfg.get(INPUT_EDGE_COPY_DIRECTION);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }
@@ -85,6 +86,8 @@ public class EdgeCopyMapReduce {
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
             ModifiableHadoopConfiguration cfg = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
             this.direction = cfg.get(INPUT_EDGE_COPY_DIR);
+            if (cfg.has(INPUT_EDGE_COPY_DIRECTION))
+                this.direction = cfg.get(INPUT_EDGE_COPY_DIRECTION);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }

@@ -45,11 +45,20 @@ public class TitanHadoopConfiguration {
             "The version of the Titan database being read",
             ConfigOption.Type.LOCAL, "current");
 
+
+    public static final ConfigOption<Direction> INPUT_EDGE_COPY_DIRECTION = new ConfigOption<Direction>(
+            INPUT_NS, "edge-copy-direction",
+            "The edge direction to read and mirror in the opposing direction. " +
+            "OUT creates IN edges.  IN creates out EDGES.  BOTH is not supported. ",
+            ConfigOption.Type.LOCAL, Direction.class, Direction.OUT);
+
+    @Deprecated // use INPUT_EDGE_COPY_DIRECTION instead
     public static final ConfigOption<Direction> INPUT_EDGE_COPY_DIR = new ConfigOption<Direction>(
             INPUT_NS, "edge-copy-dir",
             "The edge direction to read and mirror in the opposing direction. " +
             "OUT creates IN edges.  IN creates out EDGES.  BOTH is not supported.",
-            ConfigOption.Type.LOCAL, Direction.class, Direction.OUT);
+            ConfigOption.Type.LOCAL, Direction.class, Direction.OUT,
+            ConfigOption.disallowEmpty(Direction.class), INPUT_EDGE_COPY_DIRECTION);
 
     public static final ConfigNamespace OUTPUT_NS =
             new ConfigNamespace(TRUNK_NS, "output", "Graph output format configuration");
@@ -105,6 +114,17 @@ public class TitanHadoopConfiguration {
             SIDE_EFFECT_NS, "format",
             "Package and classname of the output format to use for computation side effects.  This must implement the Hadoop OutputFormat interface.",
             ConfigOption.Type.LOCAL, String.class);
+
+    public static final ConfigNamespace SERIALIZER_NS =
+            new ConfigNamespace(TRUNK_NS, "serializer", "Serializer configuration");
+
+    public static final ConfigOption<Integer> KRYO_MAX_OUTPUT_SIZE = new ConfigOption<Integer>(
+            SERIALIZER_NS, "max-output-buffer-size",
+            "The maximum size, in bytes, of any single object serialized by Kryo.  " +
+            "Attempts to serialize objects with larger serialized representations will generate an " +
+            "exception.  This should be set large enough to accommodate any single sane datum written " +
+            "by Kryo, and serves as a last-resort sanity check to avoid erroneously serializing reference cycles.",
+            ConfigOption.Type.LOCAL, Integer.class);
 
     public static final ConfigNamespace INDEX_NS =
             new ConfigNamespace(TRUNK_NS, "reindex", "Index repair configuration");
