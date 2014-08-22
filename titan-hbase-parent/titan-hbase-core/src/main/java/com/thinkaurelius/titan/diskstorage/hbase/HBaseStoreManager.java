@@ -959,7 +959,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
         if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
-                    GraphDatabaseConfiguration.STORAGE_PORT, HBASE_CONFIGURATION_NAMESPACE);
+                    ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_PORT), ConfigElement.getPath(HBASE_CONFIGURATION_NAMESPACE));
         }
     }
 
