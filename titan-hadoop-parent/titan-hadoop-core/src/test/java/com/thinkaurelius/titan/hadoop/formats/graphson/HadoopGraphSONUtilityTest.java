@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
 
@@ -22,13 +24,15 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class HadoopGraphSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
-        FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1}");
+        HadoopGraphSONUtility util = new HadoopGraphSONUtility(new ModifiableHadoopConfiguration());
+        FaunusVertex vertex = util.fromJSON("{\"_id\":1}");
         assertEquals(vertex.getLongId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
     }
 
     public void testParser2() throws IOException {
-        FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1, \"name\":\"marko\",\"age\":32}");
+        HadoopGraphSONUtility util = new HadoopGraphSONUtility(new ModifiableHadoopConfiguration());
+        FaunusVertex vertex = util.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32}");
         assertEquals(vertex.getLongId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -38,7 +42,8 @@ public class HadoopGraphSONUtilityTest extends TestCase {
     }
 
     public void testParser3() throws IOException {
-        FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
+        HadoopGraphSONUtility util = new HadoopGraphSONUtility(new ModifiableHadoopConfiguration());
+        FaunusVertex vertex = util.fromJSON("{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
         assertEquals(vertex.getLongId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -53,7 +58,8 @@ public class HadoopGraphSONUtilityTest extends TestCase {
     }
 
     public void testParser4() throws IOException {
-        FaunusVertex vertex = HadoopGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
+        HadoopGraphSONUtility util = new HadoopGraphSONUtility(new ModifiableHadoopConfiguration());
+        FaunusVertex vertex = util.fromJSON("{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
         assertEquals(vertex.getLongId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertTrue(vertex.getEdges(IN).iterator().hasNext());
@@ -74,18 +80,19 @@ public class HadoopGraphSONUtilityTest extends TestCase {
     }
 
     public void testWriter1() throws Exception {
-        FaunusVertex marko = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
+        FaunusVertex marko = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
         marko.setProperty("name", "marko");
-        FaunusVertex stephen = new FaunusVertex(EmptyConfiguration.immutable(), 2l);
+        FaunusVertex stephen = new FaunusVertex(new ModifiableHadoopConfiguration(), 2l);
         stephen.setProperty("name", "stephen");
-        FaunusVertex vadas = new FaunusVertex(EmptyConfiguration.immutable(), 3l);
+        FaunusVertex vadas = new FaunusVertex(new ModifiableHadoopConfiguration(), 3l);
         vadas.setProperty("name", "vadas");
 
-        marko.addEdge(OUT, new StandardFaunusEdge(EmptyConfiguration.immutable(), marko.getLongId(), stephen.getLongId(), "knows")).setProperty("weight", 2);
-        marko.addEdge(IN, new StandardFaunusEdge(EmptyConfiguration.immutable(), vadas.getLongId(), marko.getLongId(), "knows")).setProperty("weight", 1);
+        marko.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), marko.getLongId(), stephen.getLongId(), "knows")).setProperty("weight", 2);
+        marko.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vadas.getLongId(), marko.getLongId(), "knows")).setProperty("weight", 1);
 
-        JSONObject m = HadoopGraphSONUtility.toJSON(marko);
-        JSONObject s = HadoopGraphSONUtility.toJSON(stephen);
+        HadoopGraphSONUtility util = new HadoopGraphSONUtility(new ModifiableHadoopConfiguration());
+        JSONObject m = util.toJSON(marko);
+        JSONObject s = util.toJSON(stephen);
 
         assertEquals(m.getString("name"), "marko");
         assertEquals(m.getLong("_id"), 1l);

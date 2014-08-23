@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.noop.NoOpOutputFormat;
 
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -32,7 +33,7 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                     FaunusVertex.class,
                     NullWritable.class,
                     FaunusVertex.class,
-                    SchemaInferencerMapReduce.createConfiguration());
+                    new EmptyConfiguration());
         }
 
         Configuration outputConf = compiler.getConf();

@@ -103,7 +103,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             log.info("Read index information: name={} type={}", indexName, indexType);
             graph = (StandardTitanGraph)TitanFactory.open(titanConf);
             SchemaContainer schema = new SchemaContainer(graph);
-            FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(hadoopConf);
+            FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(titanConf);
             typeManager.setSchemaProvider(schema);
             log.info("Opened graph {}", graph);
             mgmt = (ManagementSystem) graph.getManagementSystem();

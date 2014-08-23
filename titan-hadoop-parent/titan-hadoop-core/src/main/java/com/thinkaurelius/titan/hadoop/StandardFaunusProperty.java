@@ -4,12 +4,12 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
             LoggerFactory.getLogger(StandardFaunusProperty.class);
 
     public StandardFaunusProperty() {
-        this(EmptyConfiguration.immutable());
+        this(ModifiableHadoopConfiguration.immutableWithResources());
     }
 
     public StandardFaunusProperty(final Configuration configuration) {
@@ -50,12 +50,11 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     }
 
     public StandardFaunusProperty(long id, FaunusVertex vertex, FaunusPropertyKey type, Object value) {
-        this(vertex.getConf(),id,vertex.getLongId(),type,value);
+        this(vertex.getFaunusConf(),id,vertex.getLongId(),type,value);
     }
 
     public StandardFaunusProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
         super(config, id, type);
-        setConf(config);
         Preconditions.checkArgument(vertex>=0, "Vertex id %d", vertex);
         Preconditions.checkNotNull(value, "property value must be non-null");
         Preconditions.checkArgument(!type.isImplicit(),"Cannot set implicit properties: " + type);
@@ -83,7 +82,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     @Override
     public TitanVertex getVertex(int pos) {
         Preconditions.checkArgument(pos==0,"Invalid position: %s",pos);
-        return new FaunusVertex(getConf(), vertexid);
+        return new FaunusVertex(getFaunusConf(), vertexid);
     }
 
     final void setKey(FaunusPropertyKey key) {
@@ -98,12 +97,12 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
 
     @Override
     public void write(final DataOutput out) throws IOException {
-        new FaunusSerializer(this.getConf()).writeProperty(this, out);
+        new FaunusSerializer(getFaunusConf()).writeProperty(this, out);
     }
 
     @Override
     public void readFields(final DataInput in) throws IOException {
-        new FaunusSerializer(this.getConf()).readProperty(this, in);
+        new FaunusSerializer(getFaunusConf()).readProperty(this, in);
 
     }
 

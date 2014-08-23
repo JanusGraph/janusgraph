@@ -6,7 +6,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -14,7 +16,6 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,17 +43,25 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
             LoggerFactory.getLogger(FaunusVertex.class);
 
     public FaunusVertex() {
-        super(EmptyConfiguration.immutable(), NO_ID);
+        this(ModifiableHadoopConfiguration.immutableWithResources());
     }
 
     public FaunusVertex(final Configuration configuration) {
-        super(configuration, NO_ID);
+        this(configuration, NO_ID);
     }
 
     public FaunusVertex(final Configuration configuration, final long id) {
         super(configuration, id);
     }
 
+    /**
+     * Special constructor for deserialization.  Sets the vertex ID to NO_ID and reads
+     * the serialized vertex information provided by {@code in}
+     *
+     * @param configuration vertex config
+     * @param in data input containing vertex data
+     * @throws IOException on deserialization failure
+     */
     public FaunusVertex(final Configuration configuration, final DataInput in) throws IOException {
         super(configuration, NO_ID);
         this.readFields(in);
@@ -155,7 +164,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     public <T> Iterable<T> getPropertyValues(final String key) {
         FaunusPropertyKey type = getTypeManager().getPropertyKey(key);
-        return Iterables.transform(query().type(type).properties(),new Function<TitanProperty, T>() {
+        return Iterables.transform(query().type(type).properties(), new Function<TitanProperty, T>() {
             @Nullable
             @Override
             public T apply(@Nullable TitanProperty prop) {
@@ -205,11 +214,11 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public Set<FaunusEdgeLabel> getEdgeLabels(final Direction direction) {
-        return Sets.newHashSet(Iterables.transform(query().titanEdges(),new Function<TitanEdge, FaunusEdgeLabel>() {
+        return Sets.newHashSet(Iterables.transform(query().titanEdges(), new Function<TitanEdge, FaunusEdgeLabel>() {
             @Nullable
             @Override
             public FaunusEdgeLabel apply(@Nullable TitanEdge edge) {
-                return (FaunusEdgeLabel)edge.getType();
+                return (FaunusEdgeLabel) edge.getType();
             }
         }));
     }
@@ -253,16 +262,16 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     public FaunusEdge addEdge(final Direction direction, final String label, final long otherVertexId) {
         if (direction == OUT)
-            return this.addEdge(new StandardFaunusEdge(getConf(), getLongId(), otherVertexId, label));
+            return this.addEdge(new StandardFaunusEdge(this.configuration, getLongId(), otherVertexId, label));
         else if (direction == Direction.IN)
-            return this.addEdge(new StandardFaunusEdge(getConf(), otherVertexId, getLongId(), label));
+            return this.addEdge(new StandardFaunusEdge(this.configuration, otherVertexId, getLongId(), label));
         else
             throw ExceptionFactory.bothIsNotSupported();
     }
 
     @Override
     public FaunusEdge addEdge(EdgeLabel label, TitanVertex vertex) {
-        return addEdge(new StandardFaunusEdge(getConf(),getLongId(),vertex.getLongId(),(FaunusEdgeLabel)label));
+        return addEdge(new StandardFaunusEdge(this.configuration,getLongId(),vertex.getLongId(),(FaunusEdgeLabel)label));
     }
 
     @Override
@@ -320,11 +329,11 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     //##################################
 
     public void write(final DataOutput out) throws IOException {
-        new FaunusSerializer(this.getConf()).writeVertex(this, out);
+        new FaunusSerializer(this.configuration).writeVertex(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        new FaunusSerializer(this.getConf()).readVertex(this, in);
+        new FaunusSerializer(this.configuration).readVertex(this, in);
     }
 
     //##################################

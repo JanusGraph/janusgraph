@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
@@ -11,7 +12,6 @@ import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Statement;
@@ -42,7 +42,8 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
     private static final Logger logger = Logger.getLogger(RDFBlueprintsHandler.class);
 
     private final boolean useFragments;
-    private final Configuration configuration;
+    private final ModifiableHadoopConfiguration faunusConf;
+    private final Configuration rdfConf;
     private final Set<String> asProperties = new HashSet<String>();
     private final boolean literalAsProperty;
     private final RDFParser parser;
@@ -71,7 +72,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         dataTypeToClass = b.build();
     }
 
-    public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
+    public RDFBlueprintsHandler(final ModifiableHadoopConfiguration configuration) throws IOException {
 
 
         // exclude fragments which are most likely to interfere in a Titan/Faunus pipeline
@@ -80,10 +81,9 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         //reservedFragments.add("type");
         reservedFragments.add("id");
 
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
-        ModifiableConfiguration rdfConf = faunusConf.getInputConf(ROOT_NS);
+        faunusConf = configuration;
+        rdfConf = faunusConf.getInputConf(ROOT_NS);
 
-        this.configuration = configuration;
         this.baseURI = rdfConf.get(RDF_BASE_URI);
         this.useFragments = rdfConf.get(RDF_USE_LOCALNAME);
         this.literalAsProperty = rdfConf.get(RDF_LITERAL_AS_PROPERTY);
@@ -173,14 +173,14 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     public void handleStatement(final Statement s) throws RDFHandlerException {
         if (this.asProperties.contains(s.getPredicate().toString())) {
-            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final FaunusVertex subject = new FaunusVertex(faunusConf, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
             subject.setProperty(URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
-            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final FaunusVertex subject = new FaunusVertex(faunusConf, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             subject.setProperty(URI, s.getSubject().stringValue());
             if (this.useFragments)
@@ -188,20 +188,20 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             this.queue.add(subject);
         } else {
             long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
-            final FaunusVertex subject = new FaunusVertex(this.configuration, subjectId);
+            final FaunusVertex subject = new FaunusVertex(faunusConf, subjectId);
             subject.setProperty(URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
 
             long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
-            final FaunusVertex object = new FaunusVertex(this.configuration, objectId);
+            final FaunusVertex object = new FaunusVertex(faunusConf, objectId);
             object.setProperty(URI, s.getObject().stringValue());
             if (this.useFragments)
                 object.setProperty(NAME, createFragment(s.getObject()));
             this.queue.add(object);
 
-            final StandardFaunusEdge predicate = new StandardFaunusEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
+            final StandardFaunusEdge predicate = new StandardFaunusEdge(faunusConf, -1, subjectId, objectId, postProcess(s.getPredicate()));
             predicate.setProperty(URI, s.getPredicate().stringValue());
             if (null != s.getContext())
                 predicate.setProperty(CONTEXT, s.getContext().stringValue());

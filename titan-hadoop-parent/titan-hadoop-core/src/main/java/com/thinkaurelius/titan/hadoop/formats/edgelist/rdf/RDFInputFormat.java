@@ -3,9 +3,11 @@ package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.edgelist.EdgeListInputMapReduce;
 
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -27,7 +29,7 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
 
     @Override
     public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
-        return new RDFRecordReader(DEFAULT_COMPAT.getContextConfiguration(context));
+        return new RDFRecordReader(ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context)));
     }
 
     @Override
@@ -44,6 +46,6 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
                 FaunusVertex.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                EdgeListInputMapReduce.createConfiguration());
+                new EmptyConfiguration());
     }
 }

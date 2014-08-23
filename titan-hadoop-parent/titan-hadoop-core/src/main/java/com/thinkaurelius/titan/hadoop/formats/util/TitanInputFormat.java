@@ -28,15 +28,15 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     protected boolean trackPaths;
     protected TitanHadoopSetup titanSetup;
     protected ModifiableHadoopConfiguration faunusConf;
-    protected ModifiableConfiguration titanInputConf;
+    protected ModifiableConfiguration inputConf;
 
+    // TODO why does this class even implement setConf?  It doesn't save any overhead.  Might as well make all the state final, delete setConf, and construct instances instead
     @Override
     public void setConf(final Configuration config) {
 
-        this.vertexQuery = FaunusVertexQueryFilter.create(config);
-
         this.faunusConf = ModifiableHadoopConfiguration.of(config);
-        this.titanInputConf = faunusConf.getInputConf();
+        this.vertexQuery = FaunusVertexQueryFilter.create(faunusConf);
+        this.inputConf = faunusConf.getInputConf();
         final String titanVersion = faunusConf.get(TITAN_INPUT_VERSION);
         this.trackPaths = faunusConf.get(PIPELINE_TRACK_PATHS);
         final String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;

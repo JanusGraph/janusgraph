@@ -5,17 +5,18 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement.MicroElement;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
@@ -53,8 +54,8 @@ public class FaunusSerializer {
         Preconditions.checkNotNull(configuration);
         this.types = FaunusTypeManager.getTypeManager(configuration);
         this.configuration = configuration;
-        this.trackState = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
-        this.trackPaths = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
+        this.trackState = configuration.get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
+        this.trackPaths = configuration.get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
     }
 
     public void writeVertex(final FaunusVertex vertex, final DataOutput out) throws IOException {
@@ -180,7 +181,7 @@ public class FaunusSerializer {
         if (null == standardSerializer) { // N.B. standardSerializer is volatile
             synchronized (FaunusSerializer.class) {
                 if (null == standardSerializer) {
-                    int maxOutputBufSize = ModifiableHadoopConfiguration.of(configuration).get(KRYO_MAX_OUTPUT_SIZE);
+                    int maxOutputBufSize = configuration.get(KRYO_MAX_OUTPUT_SIZE);
                     standardSerializer = new StandardSerializer(true, maxOutputBufSize);
                 }
             }

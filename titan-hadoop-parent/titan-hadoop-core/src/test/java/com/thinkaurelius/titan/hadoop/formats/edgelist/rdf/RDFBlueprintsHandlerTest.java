@@ -45,11 +45,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testUseFragments() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
-        Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
         faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
         handler.next();
@@ -81,12 +80,11 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testAsProperties() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
-        Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
         faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(ROOT_NS).set(RDF_AS_PROPERTIES, new String[] { "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" });
         faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
         assertTrue(handler.hasNext());
@@ -107,12 +105,11 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testLiteralProperties() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
-        Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
         faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(ROOT_NS).set(RDF_LITERAL_AS_PROPERTY, true);
         faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
         FaunusElement subject = handler.next();
@@ -154,12 +151,11 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
     public void testMultiLineParse() throws Exception {
         FaunusTypeManager.getTypeManager(null).clear();
-        Configuration config = new Configuration();
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
         faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
         faunusConf.getInputConf(ROOT_NS).set(RDF_LITERAL_AS_PROPERTY, true);
         faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#knows> <http://tinkerpop.com#marko> .");

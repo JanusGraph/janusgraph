@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
@@ -14,7 +15,6 @@ import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -33,21 +33,19 @@ public class SchemaInferencerMapReduce {
         PROPERTY_KEYS_CREATED
     }
 
-    private static final long funnyLong = Long.MAX_VALUE;
+    private static final long funnyLong = Long.MAX_VALUE; // TODO delete this, move it out-of-band
     private static final LongWritable funnyKey = new LongWritable(funnyLong);
-
-    public static Configuration createConfiguration() {
-        return new EmptyConfiguration();
-    }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex> {
 
         private FaunusVertex funnyVertex;
+        private Configuration faunusConf;
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.funnyVertex = new FaunusVertex(context.getConfiguration(), funnyLong);
+            faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            this.funnyVertex = new FaunusVertex(faunusConf, funnyLong);
         }
 
         @Override
@@ -86,12 +84,13 @@ public class SchemaInferencerMapReduce {
     public static class Reduce extends org.apache.hadoop.mapreduce.Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private TitanGraph graph;
+        private ModifiableHadoopConfiguration faunusConf;
         private TitanTransaction tx;
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            graph = TitanGraphOutputMapReduce.generateGraph(ModifiableHadoopConfiguration.of(c));
+            faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            graph = TitanGraphOutputMapReduce.generateGraph(faunusConf);
             tx = graph.buildTransaction().disableBatchLoading().start();
         }
 

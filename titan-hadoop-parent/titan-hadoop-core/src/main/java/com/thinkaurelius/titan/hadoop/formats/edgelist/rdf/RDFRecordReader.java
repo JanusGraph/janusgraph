@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
 import com.thinkaurelius.titan.hadoop.FaunusElement;
 
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -21,7 +22,7 @@ public class RDFRecordReader extends RecordReader<NullWritable, FaunusElement> {
 
     private FaunusElement element;
 
-    public RDFRecordReader(final Configuration configuration) throws IOException {
+    public RDFRecordReader(final ModifiableHadoopConfiguration configuration) throws IOException {
         this.lineRecordReader = new LineRecordReader();
         this.handler = new RDFBlueprintsHandler(configuration);
     }

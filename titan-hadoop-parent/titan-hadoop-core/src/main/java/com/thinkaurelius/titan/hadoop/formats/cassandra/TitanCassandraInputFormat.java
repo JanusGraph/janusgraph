@@ -55,18 +55,18 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         this.graph = new TitanCassandraHadoopGraph(titanSetup);
 
         // Copy some Titan configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
-        ConfigHelper.setInputInitialAddress(config, titanInputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
-        if (titanInputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
-            ConfigHelper.setInputRpcPort(config, String.valueOf(titanInputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
-        if (titanInputConf.has(GraphDatabaseConfiguration.AUTH_USERNAME))
-            ConfigHelper.setInputKeyspaceUserName(config, titanInputConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
-        if (titanInputConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
-            ConfigHelper.setInputKeyspacePassword(config, titanInputConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
+        ConfigHelper.setInputInitialAddress(config, inputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        if (inputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            ConfigHelper.setInputRpcPort(config, String.valueOf(inputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (inputConf.has(GraphDatabaseConfiguration.AUTH_USERNAME))
+            ConfigHelper.setInputKeyspaceUserName(config, inputConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
+        if (inputConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
+            ConfigHelper.setInputKeyspacePassword(config, inputConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
 
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         final boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
-        ConfigHelper.setInputColumnFamily(config, titanInputConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), Backend.EDGESTORE_NAME, wideRows);
+        ConfigHelper.setInputColumnFamily(config, inputConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), Backend.EDGESTORE_NAME, wideRows);
 
         // Set the column slice bounds via Faunus's vertex query filter
         final SlicePredicate predicate = new SlicePredicate();

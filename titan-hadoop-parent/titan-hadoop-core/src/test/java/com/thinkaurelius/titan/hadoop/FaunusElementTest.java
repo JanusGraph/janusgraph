@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 
 import junit.framework.TestCase;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableUtils;
 
 import java.io.ByteArrayInputStream;
@@ -17,14 +17,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_PATHS;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class FaunusElementTest extends TestCase {
 
     public void testBasicSerialization() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
-        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
+        FaunusVertex vertex1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 10);
+        FaunusVertex vertex2 = new FaunusVertex(new ModifiableHadoopConfiguration(), Long.MAX_VALUE);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
@@ -46,10 +48,10 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testElementComparator() throws IOException {
-        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 10);
-        FaunusVertex b = new FaunusVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
-        FaunusVertex c = new FaunusVertex(EmptyConfiguration.immutable(), 10);
-        FaunusVertex d = new FaunusVertex(EmptyConfiguration.immutable(), 12);
+        FaunusVertex a = new FaunusVertex(new ModifiableHadoopConfiguration(), 10);
+        FaunusVertex b = new FaunusVertex(new ModifiableHadoopConfiguration(), Long.MAX_VALUE);
+        FaunusVertex c = new FaunusVertex(new ModifiableHadoopConfiguration(), 10);
+        FaunusVertex d = new FaunusVertex(new ModifiableHadoopConfiguration(), 12);
 
         assertEquals(a.compareTo(a), 0);
         assertEquals(a.compareTo(b), -1);
@@ -106,7 +108,7 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testSettingIdPropertyException() {
-        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
+        FaunusVertex a = new FaunusVertex(new ModifiableHadoopConfiguration(), 10l);
         try {
             a.setProperty(Tokens.ID, 11l);
             assertFalse(true);
@@ -114,7 +116,7 @@ public class FaunusElementTest extends TestCase {
             assertTrue(true);
         }
 
-        StandardFaunusEdge b = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1l, 2l, 13l, "self");
+        StandardFaunusEdge b = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1l, 2l, 13l, "self");
         try {
             b.setProperty(Tokens.ID, 10);
             assertFalse(true);
@@ -132,9 +134,9 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testPathIteratorRemove() {
-        Configuration configuration = new EmptyConfiguration();
-        configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
-        FaunusVertex vertex1 = new FaunusVertex(configuration, 10);
+        ModifiableHadoopConfiguration mc = ModifiableHadoopConfiguration.withoutResources();
+        mc.set(PIPELINE_TRACK_PATHS, true);
+        FaunusVertex vertex1 = new FaunusVertex(mc, 10);
         assertEquals(vertex1.pathCount(), 0);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);

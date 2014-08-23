@@ -35,6 +35,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
     private final ScriptEngine engine = new FaunusGremlinScriptEngine();
     private final VertexQueryFilter vertexQuery;
     private final Configuration configuration;
+    private final ModifiableHadoopConfiguration faunusConf;
     private final LineRecordReader lineRecordReader;
     private FaunusVertex vertex = new FaunusVertex();
 
@@ -42,7 +43,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
         this.lineRecordReader = new LineRecordReader();
         this.vertexQuery = vertexQuery;
         this.configuration = DEFAULT_COMPAT.getContextConfiguration(context);
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
+        this.faunusConf = ModifiableHadoopConfiguration.of(configuration);
         final FileSystem fs = FileSystem.get(configuration);
         try {
             this.engine.eval(new InputStreamReader(fs.open(new Path(faunusConf.getInputConf(ROOT_NS).get(SCRIPT_FILE)))));
@@ -64,7 +65,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
             else {
                 try {
                     this.engine.put(LINE, this.lineRecordReader.getCurrentValue().toString());
-                    this.vertex = new FaunusVertex(this.configuration);
+                    this.vertex = new FaunusVertex(faunusConf);
                     this.engine.put(VERTEX, this.vertex);
                     if ((Boolean) engine.eval(READ_CALL)) {
                         this.vertexQuery.defaultFilter(this.vertex);

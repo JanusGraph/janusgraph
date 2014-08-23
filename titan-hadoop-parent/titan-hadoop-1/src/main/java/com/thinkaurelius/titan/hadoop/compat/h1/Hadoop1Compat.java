@@ -73,4 +73,9 @@ public class Hadoop1Compat implements HadoopCompat {
     public Configuration getJobContextConfiguration(JobContext context) {
         return context.getConfiguration();
     }
+
+    @Override
+    public Configuration newImmutableConfiguration(Configuration base) {
+        return new ImmutableConfiguration(base);
+    }
 }

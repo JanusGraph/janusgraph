@@ -21,7 +21,7 @@ public class Tokens {
     public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
     public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
 
-    public enum Action {DROP, KEEP}
+    public enum Action {DROP, KEEP} // TODO check whether this really belongs here
 
     private static final String NAMESPACE = "titan.hadoop.mapreduce";
 

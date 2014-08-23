@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 
-import org.apache.hadoop.conf.Configuration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
@@ -22,18 +23,21 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
  */
 public abstract class HadoopFileOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
+    protected Configuration faunusConf;
+
     public DataOutputStream getDataOuputStream(final TaskAttemptContext job) throws IOException, InterruptedException {
-        final Configuration conf = DEFAULT_COMPAT.getContextConfiguration(job);
+        org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(job);
+        this.faunusConf = ModifiableHadoopConfiguration.of(hadoopConf);
         boolean isCompressed = getCompressOutput(job);
         CompressionCodec codec = null;
         String extension = "";
         if (isCompressed) {
             final Class<? extends CompressionCodec> codecClass = getOutputCompressorClass(job, DefaultCodec.class);
-            codec = ReflectionUtils.newInstance(codecClass, conf);
+            codec = ReflectionUtils.newInstance(codecClass, hadoopConf);
             extension = codec.getDefaultExtension();
         }
         final Path file = super.getDefaultWorkFile(job, extension);
-        final FileSystem fs = file.getFileSystem(conf);
+        final FileSystem fs = file.getFileSystem(hadoopConf);
         if (!isCompressed) {
             return new DataOutputStream(fs.create(file, false));
         } else {

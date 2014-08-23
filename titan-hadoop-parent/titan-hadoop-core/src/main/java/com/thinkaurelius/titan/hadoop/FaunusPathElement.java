@@ -3,16 +3,10 @@ package com.thinkaurelius.titan.hadoop;
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_PATHS;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
-import com.thinkaurelius.titan.hadoop.config.HadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 
 import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +15,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Abstract base class for Faunus vertices and relations.
+ *
+ * This class must implement Hadoop's Configurable even if no code calls setConf or getConf directly.
+ * The reason to implement Configurable is interoperability with Hadoop's
+ * WritableSerialization.WritableDeserializer class.  The deserializer calls ReflectionUtils.newInstance, which in
+ * turn calls {@code x instanceof Configurable} and then calls {@code setConf} when true.  IOW, implementing
+ * Configurable is important because that's how path elements get their configuration after being reflectively
+ * instantiated with the no-arg constructor.
+ *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -29,32 +32,36 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     private static final Logger log =
             LoggerFactory.getLogger(FaunusPathElement.class);
 
-    public static final Configuration EMPTY_CONFIG = EmptyConfiguration.immutable();
     static final Tracker DEFAULT_TRACK = new Tracker();
 
-    protected Tracker tracker = DEFAULT_TRACK;
+    protected Tracker tracker;
     protected long pathCounter = 0;
-    protected Configuration configuration = EMPTY_CONFIG;
-
-    // This isn't final because it mirrors configuration, and configuration is not final
-    private BasicConfiguration titanConf;
+    protected Configuration configuration;
+    private org.apache.hadoop.conf.Configuration hadoopConf;
 
     public FaunusPathElement(final long id) {
-        this(new Configuration(), id);
+        this(ModifiableHadoopConfiguration.immutableWithResources(), id);
     }
 
     public FaunusPathElement(final Configuration configuration, final long id) {
         super(id);
-        this.setConf(configuration);
+        this.configuration = configuration;
+        if (this.configuration.get(PIPELINE_TRACK_PATHS)) {
+            tracker = new Tracker((this instanceof FaunusVertex) ?
+                    new FaunusVertex.MicroVertex(this.id) :
+                    new StandardFaunusEdge.MicroEdge(this.id));
+        } else {
+            tracker = DEFAULT_TRACK;
+        }
     }
 
-    public void setConf(Configuration configuration) {
-        this.configuration = configuration;
-        Preconditions.checkNotNull(configuration);
-        WriteConfiguration rc = new HadoopConfiguration(getConf());
-        titanConf = new ModifiableConfiguration(TitanHadoopConfiguration.ROOT_NS, rc, Restriction.NONE);
+    // Supports configuration after Hadoop deserializes instances of this class
+    @Override
+    public void setConf(org.apache.hadoop.conf.Configuration hadoopConf) {
+        this.hadoopConf = hadoopConf;
+        this.configuration = ModifiableHadoopConfiguration.of(hadoopConf);
 
-        boolean trackPaths = titanConf.get(PIPELINE_TRACK_PATHS);
+        boolean trackPaths = this.configuration.get(PIPELINE_TRACK_PATHS);
         if (trackPaths) {
             this.tracker = new Tracker((this instanceof FaunusVertex) ?
                     new FaunusVertex.MicroVertex(this.id) :
@@ -62,8 +69,13 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
         }
     }
 
-    public Configuration getConf() {
-        return this.configuration;
+    @Override
+    public org.apache.hadoop.conf.Configuration getConf() {
+        return hadoopConf;
+    }
+
+    public Configuration getFaunusConf() {
+        return configuration;
     }
 
     @Override

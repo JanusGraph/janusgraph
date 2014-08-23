@@ -27,7 +27,7 @@ public class VertexQueryFilterTest extends BaseTest {
         assertEquals(query.hasContainers.size(), 0);
         assertEquals(query.direction, Direction.BOTH);
         assertEquals(query.labels.length, 0);
-        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1);
+        FaunusVertex vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 1);
         vertex.setProperty("name", "marko");
         vertex.addEdge("knows", vertex).setProperty("time", 1);
         query.defaultFilter(vertex);

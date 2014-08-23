@@ -58,7 +58,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
 
     @Override
     protected TitanVertex getVertex(long vertexid) {
-        return new FaunusVertex(baseElement.getConf(), vertexid);
+        return new FaunusVertex(baseElement.getFaunusConf(), vertexid);
     }
 
     /* ################################################

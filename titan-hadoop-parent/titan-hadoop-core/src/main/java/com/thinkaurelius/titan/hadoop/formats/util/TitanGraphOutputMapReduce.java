@@ -8,13 +8,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.*;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -54,6 +54,8 @@ public class TitanGraphOutputMapReduce {
     }
 
     public static final Logger LOGGER = Logger.getLogger(TitanGraphOutputMapReduce.class);
+
+    // TODO move this out-of-band
     // some random property that will 'never' be used by anyone
     public static final String TITAN_ID = "_bId0192834";
     public static final String ID_MAP_KEY = "_iDMaPKeY";
@@ -90,18 +92,18 @@ public class TitanGraphOutputMapReduce {
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES
     public static class VertexMap extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
-        public TitanGraph graph;
-        boolean trackState;
+        private TitanGraph graph;
+        private boolean trackState;
+        private ModifiableHadoopConfiguration faunusConf;
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            this.graph = TitanGraphOutputMapReduce.generateGraph(ModifiableHadoopConfiguration.of(c));
-            this.trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
-            LOGGER.setLevel(Level.INFO);
+            faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            graph = TitanGraphOutputMapReduce.generateGraph(faunusConf);
+            trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
         }
 
         @Override
@@ -110,7 +112,7 @@ public class TitanGraphOutputMapReduce {
                 final TitanVertex titanVertex = this.getCreateOrDeleteVertex(value, context);
                 if (null != titanVertex) { // the vertex was state != deleted (if it was we know incident edges are deleted too)
                     // Propagate shell vertices with Titan ids
-                    final FaunusVertex shellVertex = new FaunusVertex(context.getConfiguration(), value.getLongId());
+                    final FaunusVertex shellVertex = new FaunusVertex(faunusConf, value.getLongId());
                     shellVertex.setProperty(TITAN_ID, titanVertex.getLongId());
                     for (final TitanEdge edge : value.query().direction(OUT).titanEdges()) {
                         if (!trackState || edge.isNew()) { //Only need to propagate ids for new edges
@@ -306,15 +308,15 @@ public class TitanGraphOutputMapReduce {
     // WRITE ALL THE EDGES CONNECTING THE VERTICES
     public static class EdgeMap extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
-        TitanGraph graph;
-        boolean trackState;
+        private TitanGraph graph;
+        private boolean trackState;
+        private ModifiableHadoopConfiguration faunusConf;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            Configuration c = DEFAULT_COMPAT.getContextConfiguration(context);
-            this.graph = TitanGraphOutputMapReduce.generateGraph(ModifiableHadoopConfiguration.of(c));
-            this.trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
-            LOGGER.setLevel(Level.INFO);
+            faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            graph = TitanGraphOutputMapReduce.generateGraph(faunusConf);
+            trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
         }
 
         @Override

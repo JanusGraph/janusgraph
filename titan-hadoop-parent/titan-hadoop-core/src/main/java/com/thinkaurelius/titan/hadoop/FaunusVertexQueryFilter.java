@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
@@ -16,12 +17,8 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.util.DefaultQuery;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
-import org.apache.hadoop.conf.Configuration;
 
-import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -48,12 +45,11 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
     }
 
     public static FaunusVertexQueryFilter create(final Configuration configuration) {
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(configuration);
         engine.put("v", new DummyVertex(FaunusTypeManager.getTypeManager(configuration)));
         try {
             // Can't default to v.query().relations() -- this causes a class cast exception when attempting to convert the Iterable return value of relations() to a FaunusVertexQueryFilter
-            FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(faunusConf.get(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER));
-            if (faunusConf.has(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER)) {
+            FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(configuration.get(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER));
+            if (configuration.has(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER)) {
                 query.setDoesFilter(true);
             }
             // Move relations() call down here for the side effect (sets the resultType)
