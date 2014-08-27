@@ -94,6 +94,7 @@ public abstract class DaemonRunner<S> {
         }
 
         if (null != killerHook) {
+            Runtime.getRuntime().removeShutdownHook(killerHook);
             killerHook = null;
             log.debug("Unregistered killer hook: {}", killerHook);
         }
