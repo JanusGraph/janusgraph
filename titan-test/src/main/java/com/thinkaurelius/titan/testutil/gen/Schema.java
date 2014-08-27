@@ -239,12 +239,12 @@ public class Schema {
         for (int i = 0; i < vertexPropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
             mgmt.setConsistency(key, ConsistencyModifier.LOCK);
-            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildCompositeIndex();
+            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).addKey(key).buildCompositeIndex();
         }
         for (int i = 0; i < edgePropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
             mgmt.setConsistency(key, ConsistencyModifier.LOCK);
-            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildCompositeIndex();
+            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).addKey(key).buildCompositeIndex();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
@@ -254,7 +254,7 @@ public class Schema {
         }
 
         PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildCompositeIndex();
+        mgmt.buildIndex("v-uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
         mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
         mgmt.commit();
         log.debug("Committed types");

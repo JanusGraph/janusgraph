@@ -38,7 +38,7 @@ public class ResultHookClosure extends Closure {
                 final HadoopPipeline pipeline = (HadoopPipeline) result;
                 pipeline.submit();
                 final FileSystem hdfs = FileSystem.get(pipeline.getGraph().getConf());
-                final Path output = HDFSTools.getOutputsFinalJob(hdfs, pipeline.getGraph().getOutputLocation().toString());
+                final Path output = HDFSTools.getOutputsFinalJob(hdfs, pipeline.getGraph().getJobDir().toString());
                 itty = new TextFileLineIterator(hdfs, hdfs.globStatus(new Path(output.toString() + "/" + Tokens.SIDEEFFECT + "*")), LINES);
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage(), e);

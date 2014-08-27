@@ -13,7 +13,6 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
@@ -34,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRIGGER_LOG;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -54,13 +53,17 @@ public abstract class TitanGraphBaseTest {
 
     public abstract WriteConfiguration getConfiguration();
 
+    public Configuration getConfig() {
+        return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+    }
+
     @Before
     public void setUp() throws Exception {
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
         ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
-        configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+        configuration.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
         configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);
@@ -83,8 +86,8 @@ public abstract class TitanGraphBaseTest {
     }
 
     public void finishSchema() {
-        assert mgmt!=null;
-        mgmt.commit();
+        if (mgmt!=null && mgmt.isOpen())
+            mgmt.commit();
         mgmt=graph.getManagementSystem();
         newTx();
         graph.commit();
@@ -185,8 +188,8 @@ public abstract class TitanGraphBaseTest {
         }
     }
 
-    public Log openTriggerLog(String identifier) {
-        return openLog(TRIGGER_LOG, Backend.USER_LOG_PREFIX +identifier);
+    public Log openUserLog(String identifier) {
+        return openLog(USER_LOG, GraphDatabaseConfiguration.USER_LOG_PREFIX +identifier);
     }
 
     public Log openTxLog() {
@@ -224,13 +227,13 @@ public abstract class TitanGraphBaseTest {
 
     public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
         PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(name,Vertex.class).indexKey(key).buildCompositeIndex();
+        mgmt.buildIndex(name,Vertex.class).addKey(key).buildCompositeIndex();
         return key;
     }
 
     public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
         PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(name,Vertex.class).indexKey(key).unique().buildCompositeIndex();
+        mgmt.buildIndex(name,Vertex.class).addKey(key).unique().buildCompositeIndex();
         return key;
     }
 

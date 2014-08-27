@@ -1,11 +1,13 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.HadoopElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusElement;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.edgelist.EdgeListInputMapReduce;
 
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -18,23 +20,16 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import java.io.IOException;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement> implements MapReduceFormat {
-
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT = "titan.hadoop.input.rdf.format";
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME = "titan.hadoop.input.rdf.use-localname";
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES = "titan.hadoop.input.rdf.as-properties";
-    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY = "titan.hadoop.input.rdf.literal-as-property";
-
-    public static final String URI = "uri";
-    public static final String CONTEXT = "context";
-    public static final String NAME = "name";
+public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement> implements MapReduceFormat {
 
     @Override
-    public RecordReader<NullWritable, HadoopElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
-        return new RDFRecordReader(context.getConfiguration());
+    public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
+        return new RDFRecordReader(ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context)));
     }
 
     @Override
@@ -48,9 +43,9 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement>
                 EdgeListInputMapReduce.Combiner.class,
                 EdgeListInputMapReduce.Reduce.class,
                 LongWritable.class,
-                HadoopVertex.class,
+                FaunusVertex.class,
                 NullWritable.class,
-                HadoopVertex.class,
-                EdgeListInputMapReduce.createConfiguration());
+                FaunusVertex.class,
+                new EmptyConfiguration());
     }
 }

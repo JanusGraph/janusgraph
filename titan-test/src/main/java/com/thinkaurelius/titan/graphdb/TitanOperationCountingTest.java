@@ -160,7 +160,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         metricsPrefix = "add"+cache;
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        TitanVertex v = tx.addVertex(), u = tx.addVertex("person");
+        TitanVertex v = tx.addVertex(), u = tx.addVertexWithLabel("person");
         v.setProperty("uid",1);
         u.setProperty("name","juju");
         TitanEdge e = v.addEdge("knows",u);
@@ -169,7 +169,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1l, M_ACQUIRE_LOCK, 1l));
 
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 20; i++) {
             metricsPrefix = "op"+i+cache;
             tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
             v = (TitanVertex)Iterables.getOnlyElement(tx.query().has("uid",1).vertices());
@@ -182,7 +182,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             if (!cache || i==0) {
                 verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4l));
                 verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1l));
-            } else if (cache && i>5) { //Needs a couple of iterations for cache to be cleaned
+            } else if (cache && i>10) { //Needs a couple of iterations for cache to be cleaned
                 verifyStoreMetrics(EDGESTORE_NAME);
                 verifyStoreMetrics(INDEXSTORE_NAME);
             }
@@ -220,7 +220,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         //Check type name & definition caching
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         assertEquals(2,Iterables.size(v.getProperties()));
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 4l)); //1 verify vertex existence, 1 for query, 1 for each of the 2 types (Definition)
         verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
@@ -230,7 +230,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         tx.commit();
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         assertEquals(2, Iterables.size(v.getProperties()));
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 6l));
         verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
@@ -241,7 +241,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         //Check type index lookup caching
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         assertNotNull(v.getProperty("age"));
         assertNotNull(v.getProperty("name"));
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 11l));
@@ -252,7 +252,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         tx.commit();
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         assertEquals(1,Iterables.size(v.getEdges(Direction.BOTH)));
         assertEquals(2, Iterables.size(v.getProperties()));
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 15l));
@@ -288,7 +288,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         //3 cache misses when doing the index lookup for the type names (since they are not yet defined)
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        assertEquals(3,Iterables.size(tx.getVertex(parentVertex.getID()).getProperties()));
+        assertEquals(3,Iterables.size(tx.getVertex(parentVertex.getLongId()).getProperties()));
         tx.commit();
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 5l));
         verifyStoreMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
@@ -298,7 +298,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         //all other stats remain unchanged
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        assertEquals(3,Iterables.size(tx.getVertex(parentVertex.getID()).getProperties()));
+        assertEquals(3,Iterables.size(tx.getVertex(parentVertex.getLongId()).getProperties()));
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 7l));
         verifyStoreMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
         verifyTypeCacheMetrics(3, 3, 6, 3);
@@ -323,7 +323,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
         PropertyKey uid = makeKey("uid",String.class);
-        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildCompositeIndex();
+        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
         mgmt.setConsistency(index, ConsistencyModifier.LOCK);
         finishSchema();
 
@@ -341,7 +341,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyTypeCacheMetrics(0, 0, 0, 0);
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         v.setProperty("age",35);
         v.setProperty("name","johnny");
         tx.commit();
@@ -356,7 +356,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             verifyTypeCacheMetrics(6, 2, 4, 4);
 
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         v.setProperty("age",45);
         v.setProperty("name","johnnie");
         tx.commit();
@@ -373,7 +373,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         //Check no further locks on read all
         tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         for (TitanProperty p : v.getProperties()) {
             assertNotNull(p.getValue());
             assertNotNull(p.getPropertyKey());
@@ -456,7 +456,8 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
-        graph.makePropertyKey(prop).dataType(Integer.class).make();
+        makeKey(prop,Integer.class);
+        finishSchema();
 
         final int numV = 100;
         final long[] vids = new long[numV];
@@ -464,7 +465,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             TitanVertex v = graph.addVertex(null);
             v.setProperty(prop,0);
             graph.commit();
-            vids[i]=v.getID();
+            vids[i]=v.getLongId();
         }
         clopen(newConfig);
         resetEdgeCacheCounts();
@@ -539,117 +540,6 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         assertTrue("Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]",minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses());
     }
 
-
-//
-//    @Test
-//    @Ignore //TODO: Ignore for now until everything is stable - then do the counting
-//    public void testCacheExpirationTimeOut() throws InterruptedException {
-//        testCacheExpiration(4000,6000);
-//    }
-//
-//    @Test
-//    @Ignore //TODO: Ignore for now until everything is stable - then do the counting
-//    public void testCacheExpirationNoTimeOut() throws InterruptedException {
-//        testCacheExpiration(0,5000);
-//    }
-//
-//
-//    public void testCacheExpiration(final int timeOutTime, final int waitTime) throws InterruptedException {
-//        Preconditions.checkArgument(timeOutTime == 0 || timeOutTime < waitTime);
-//        metricsPrefix="evgt2";
-//        final int cleanTime = 400;
-//        final int numV = 10;
-//        final int edgePerV = 10;
-//        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-//                option(GraphDatabaseConfiguration.DB_CACHE_TIME),timeOutTime,
-//                option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),cleanTime,
-//                option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-//                option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
-//                option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
-//        clopen(newConfig);
-//        long[] vs = new long[numV];
-//        for (int i=0;i<numV;i++) {
-//            TitanVertex v = graph.addVertex(null);
-//            v.setProperty("name", "v" + i);
-//            for (int t=0;t<edgePerV;t++) {
-//                TitanEdge e = v.addEdge("knows",v);
-//                e.setProperty("time",t);
-//            }
-//            graph.commit();
-//            vs[i]=v.getID();
-//        }
-//        clopen(newConfig);
-//        resetEdgeCacheCounts();
-//        int labelcalls = 1; //getting "knows" definition
-//        int calls = numV*2; // numV * (vertex existence + loading edges)
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls+labelcalls, calls+labelcalls);
-//        graph.commit();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls * 2+labelcalls, calls+labelcalls);
-//        //Nothing changes without commit => hitting transactional caches
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls * 2+labelcalls, calls+labelcalls);
-//
-//        clopen(newConfig);
-//        resetEdgeCacheCounts();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls+labelcalls, calls+labelcalls); //after data base re-open and reset, everything pulled from disk
-//        for (int i=0;i<numV;i++) {
-//            graph.getVertex(vs[i]).addEdge("knows",graph.getVertex(vs[i]));
-//        }
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls+labelcalls, calls+labelcalls); //Everything served out of tx cache
-//        graph.commit();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(2*calls + labelcalls, 2* calls+labelcalls); //Due to invalid cache, only edge label is served from it
-//        graph.commit();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(3*calls + labelcalls, 3*calls + labelcalls); //Things are still invalid....
-//        graph.commit();
-//        Thread.sleep(cleanTime*2); //until we wait for the expiration threshold, now the next lookup should trigger a clean
-//        verifyEdgeCache(3*calls + labelcalls, 3*calls + labelcalls);
-//        resetEdgeCacheCounts();
-//
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        graph.commit();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        assertTrue(getEdgeCacheRetrievals()>=calls-1); //Things are somewhat non-deterministic here due to the parallel cleanup thread
-//        assertTrue(getEdgeCacheMisses()>=calls);
-//        graph.commit();
-//        resetEdgeCacheCounts();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls, 0);
-//
-//
-//        //Same as above - verify reset after shutdown
-//        clopen(newConfig);
-//        resetEdgeCacheCounts();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls+labelcalls, calls+labelcalls);
-//        graph.commit();
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls*2 + labelcalls, calls+labelcalls);
-//        //Nothing changes without commit => hitting transactional caches
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        verifyEdgeCache(calls*2 + labelcalls, calls+labelcalls);
-//        graph.commit();
-//
-//        //Time the cache out
-//        Thread.sleep(waitTime);
-//        for (int i=0;i<numV;i++) Assert.assertEquals(edgePerV + 1, Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT, "knows")));
-//        if (timeOutTime==0)
-//            verifyEdgeCache(calls*3 + labelcalls, calls + labelcalls);
-//        else
-//            verifyEdgeCache(calls*3 + labelcalls, calls*2 + labelcalls);
-//    }
-
-//    private void verifyEdgeCache(int total, int misses) {
-//        assert metricsPrefix!=null;
-//        Assert.assertEquals(total, getEdgeCacheRetrievals());
-//        Assert.assertEquals(misses, getEdgeCacheMisses());
-//    }
-
     private long getEdgeCacheRetrievals() {
         return MetricManager.INSTANCE.getCounter(metricsPrefix, "edgeStore" + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.RETRIEVAL.getName()).getCount();
     }
@@ -689,7 +579,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             previous = v;
         }
         graph.commit();
-        long vertexId = previous.getID();
+        long vertexId = previous.getLongId();
         assertEquals(numV, Iterables.size(graph.getVertices()));
 
         clopen(newConfig);

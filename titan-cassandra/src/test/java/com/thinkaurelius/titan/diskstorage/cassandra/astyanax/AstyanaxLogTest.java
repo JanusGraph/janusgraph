@@ -14,7 +14,7 @@ public class AstyanaxLogTest extends KCVSLogTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override

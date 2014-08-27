@@ -21,7 +21,7 @@ public class ModifiableConfiguration extends BasicConfiguration {
 
     public<O> ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
         verifyOption(option);
-        Preconditions.checkArgument(!option.isFixed() || !isFrozen, "Cannot change configuration option: %s", option);
+        Preconditions.checkArgument(!option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
         String key = super.getPath(option,umbrellaElements);
         value = option.verify(value);
         config.set(key,value);
@@ -37,14 +37,14 @@ public class ModifiableConfiguration extends BasicConfiguration {
 
     public<O> void remove(ConfigOption<O> option, String... umbrellaElements) {
         verifyOption(option);
-        Preconditions.checkArgument(!option.isFixed() || !isFrozen, "Cannot change configuration option: %s", option);
+        Preconditions.checkArgument(!option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
         String key = super.getPath(option,umbrellaElements);
         config.remove(key);
     }
 
     public void freezeConfiguration() {
-        if (!isFrozen) config.set(FROZEN_KEY,Boolean.TRUE);
-        isFrozen = true;
+        config.set(FROZEN_KEY, Boolean.TRUE);
+        if (!isFrozen()) setFrozen();
     }
 
     @Override

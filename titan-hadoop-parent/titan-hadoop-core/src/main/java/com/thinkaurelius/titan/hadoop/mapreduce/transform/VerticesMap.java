@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -32,7 +33,7 @@ public class VerticesMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private boolean processEdges;
 
@@ -42,21 +43,19 @@ public class VerticesMap {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             value.startPath();
             long edgesProcessed = 0;
             if (this.processEdges) {
                 for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                    ((HadoopEdge) edge).clearPaths();
+                    ((StandardFaunusEdge) edge).clearPaths();
                     edgesProcessed++;
                 }
 
             }
 
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_PROCESSED, edgesProcessed);
-//            context.getCounter(Counters.EDGES_PROCESSED).increment(edgesProcessed);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
-//            context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_PROCESSED, edgesProcessed);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
             context.write(NullWritable.get(), value);
 
         }

@@ -20,6 +20,9 @@ public class Imports {
         // titan
         imports.add("com.thinkaurelius.titan.core.*");
         imports.add("com.thinkaurelius.titan.core.attribute.*");
+        imports.add("com.thinkaurelius.titan.core.log.*");
+        imports.add("com.thinkaurelius.titan.core.olap.*");
+        imports.add("com.thinkaurelius.titan.core.schema.*");
         imports.add("com.thinkaurelius.titan.core.util.*");
         imports.add("com.thinkaurelius.titan.example.*");
         imports.add("org.apache.commons.configuration.*");

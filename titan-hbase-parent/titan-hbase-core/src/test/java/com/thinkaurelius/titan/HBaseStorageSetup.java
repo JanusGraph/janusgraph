@@ -3,6 +3,7 @@ package com.thinkaurelius.titan;
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
@@ -11,32 +12,72 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.HBaseStatus;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HBaseStorageSetup {
 
     private static final Logger log = LoggerFactory.getLogger(HBaseStorageSetup.class);
 
     // hbase config for testing
-    private static final String HBASE_CONFIG_DIR = "./conf";
 
-    private static final String HBASE_PID_FILE = "/tmp/titan-hbase-test-daemon.pid";
+    public static final String HBASE_PARENT_DIR_PROP = "test.hbase.parentdir";
+
+    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^0\\.(9[468])\\..*");
+
+    private static final String HBASE_PARENT_DIR;
 
     private static final String HBASE_TARGET_VERSION = VersionInfo.getVersion();
 
+    static {
+        String parentDir = "..";
+        String tmp = System.getProperty(HBASE_PARENT_DIR_PROP);
+        if (null != tmp) {
+            parentDir = tmp;
+        }
+        HBASE_PARENT_DIR = parentDir;
+    }
+
+    private static final String HBASE_STAT_FILE = "/tmp/titan-hbase-test-daemon.stat";
+
     private volatile static HBaseStatus HBASE = null;
+
+    public static String getScriptDirForHBaseVersion(String hv) {
+        return getDirForHBaseVersion(hv, "bin");
+    }
+
+    public static String getConfDirForHBaseVersion(String hv) {
+        return getDirForHBaseVersion(hv, "conf");
+    }
+
+    public static String getDirForHBaseVersion(String hv, String lastSubdir) {
+        Matcher m = HBASE_SUPPORTED_VERSION_PATTERN.matcher(hv);
+        if (m.matches()) {
+            String minor = m.group(1);
+            String result = String.format("%s%stitan-hbase-0%s/%s/", HBASE_PARENT_DIR, File.separator, minor, lastSubdir);
+            log.debug("Built {} path for HBase version {}: {}", lastSubdir, hv, result);
+            return result;
+        } else {
+            throw new RuntimeException("Unsupported HBase test version " + hv + " does not match pattern " + HBASE_SUPPORTED_VERSION_PATTERN);
+        }
+    }
+
 
     public static ModifiableConfiguration getHBaseConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, true);
+        config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
+//        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
+//                    ".hbase.zookeeper.quorum","localhost");
+//        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
+//                "hbase.zookeeper.property.clientPort",2181);
         return config;
     }
 
@@ -53,7 +94,7 @@ public class HBaseStorageSetup {
      * @throws RuntimeException
      *             if starting HBase fails for any other reason
      */
-    public static HBaseStatus startHBase() throws IOException {
+    public synchronized static HBaseStatus startHBase() throws IOException {
         if (HBASE != null) {
             log.info("HBase already started");
             return HBASE;
@@ -64,10 +105,10 @@ public class HBaseStorageSetup {
         deleteData();
 
         log.info("Starting HBase");
-        String scriptPath = HBaseStatus.getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
-        runCommand(scriptPath, "--config", HBASE_CONFIG_DIR, "start", "master");
+        String scriptPath = getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
+        runCommand(scriptPath, "--config", getConfDirForHBaseVersion(HBASE_TARGET_VERSION), "start", "master");
 
-        HBASE = HBaseStatus.write(HBASE_PID_FILE, HBASE_TARGET_VERSION);
+        HBASE = HBaseStatus.write(HBASE_STAT_FILE, HBASE_TARGET_VERSION);
 
         registerKillerHook(HBASE);
 
@@ -75,11 +116,11 @@ public class HBaseStorageSetup {
     }
 
     /**
-     * Check whether {@link #HBASE_PID_FILE} describes an HBase daemon. If so,
+     * Check whether {@link #HBASE_STAT_FILE} describes an HBase daemon. If so,
      * kill it. Otherwise, do nothing.
      */
-    private static void killIfRunning() {
-        HBaseStatus stat = HBaseStatus.read(HBASE_PID_FILE);
+    public synchronized static void killIfRunning() {
+        HBaseStatus stat = HBaseStatus.read(HBASE_STAT_FILE);
 
         if (null == stat) {
             log.info("HBase is not running");
@@ -92,7 +133,7 @@ public class HBaseStorageSetup {
     /**
      * Delete HBase data under the current working directory.
      */
-    private static void deleteData() {
+    private synchronized static void deleteData() {
         try {
             // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
             File hbaseRoot = new File("./target/hbase-root");
@@ -135,18 +176,20 @@ public class HBaseStorageSetup {
      * @param stat
      *            the running HBase daemon to stop
      */
-    private static void shutdownHBase(HBaseStatus stat) {
+    private synchronized static void shutdownHBase(HBaseStatus stat) {
 
         log.info("Shutting down HBase...");
 
         // First try graceful shutdown through the script...
-        runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master");
+        runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", stat.getConfDir(), "stop", "master");
 
         log.info("Shutdown HBase");
 
         stat.getFile().delete();
 
         log.info("Deleted {}", stat.getFile());
+
+        HBASE = null;
     }
 
     /**

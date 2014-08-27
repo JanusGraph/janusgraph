@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
@@ -38,7 +37,7 @@ public class CacheProperty extends AbstractProperty {
 
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
-            final long id = super.getID();
+            final long id = super.getLongId();
             it = Iterables.getOnlyElement(startVertex.getAddedRelations(new Predicate<InternalRelation>() {
                 @Override
                 public boolean apply(@Nullable InternalRelation internalRelation) {
@@ -57,21 +56,21 @@ public class CacheProperty extends AbstractProperty {
     }
 
     private synchronized InternalRelation update() {
-        StandardProperty copy = new StandardProperty(super.getID(), getPropertyKey(), getVertex(0), getValue(), ElementLifeCycle.Loaded);
+        StandardProperty copy = new StandardProperty(super.getLongId(), getPropertyKey(), getVertex(0), getValue(), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
         StandardProperty u = (StandardProperty) tx().addProperty(getVertex(0), getPropertyKey(), getValue());
-        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setID(super.getID());
-        u.setPreviousID(super.getID());
+        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(super.getLongId());
+        u.setPreviousID(super.getLongId());
         copyProperties(u);
         return u;
     }
 
     @Override
-    public long getID() {
+    public long getLongId() {
         InternalRelation it = it();
-        return (it == this) ? super.getID() : it.getID();
+        return (it == this) ? super.getLongId() : it.getLongId();
     }
 
     private RelationCache getPropertyMap() {
@@ -84,7 +83,7 @@ public class CacheProperty extends AbstractProperty {
 
     @Override
     public <O> O getPropertyDirect(RelationType type) {
-        return getPropertyMap().get(type.getID());
+        return getPropertyMap().get(type.getLongId());
     }
 
     @Override
@@ -110,14 +109,14 @@ public class CacheProperty extends AbstractProperty {
 
     @Override
     public byte getLifeCycle() {
-        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getID()))
+        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getLongId()))
             return ElementLifeCycle.Removed;
         else return ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.getID())) {
+        if (!tx().isRemovedRelation(super.getLongId())) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }

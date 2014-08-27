@@ -1,10 +1,17 @@
+[[index-parameters]]
+Index Parameters and Full-Text Search
+-------------------------------------
+
+When defining a mixed index, a list of parameters can be optionally specified for each property key added to the index. These parameters control how the particular key is to be indexed. Titan recognizes the following index parameters. Whether these are supported depends on the configured index backend. A particular index backend might also support custom parameters in addition to the ones listed here.
+
+
 [[text-search]]
 Full-Text Search
 ~~~~~~~~~~~~~~~~
 
-When indexing string values, that is property keys with `String.class` data type, one has the choice to either index those as text or character strings.
+When indexing string values, that is property keys with `String.class` data type, one has the choice to either index those as text or character strings which is controlled by the `mapping` parameter type.
 
-When the value is indexed as text, the string is tokenized into a bag of words which allows the user to efficiently query for all matches that contain one or multiple words. This is commonly referred to as *full-text search*.<br />
+When the value is indexed as text, the string is tokenized into a bag of words which allows the user to efficiently query for all matches that contain one or multiple words. This is commonly referred to as *full-text search*.
 When the value is indexed as a character string, the string is index "as-is" without any further analysis or tokenization. This facilitates queries looking for an exact character sequence match. This is commonly referred to as *string search*.
 
 Full-Text Search
@@ -12,13 +19,13 @@ Full-Text Search
 
 By default, strings are indexed as text. To make this indexing option explicit, one can define a mapping when indexing a property key as text.
 
-[source,java]
-graph.makeKey("booksummary")
-     .dataType(String.class)
-     .indexed("search",Vertex.class,Parameter.of(Mapping.MAPPING_PREFIX,Mapping.TEXT))
-     .make()
+[source,gremlin]
+mgmt = g.getManagementSystem()
+summary = mgmt.makePropertyKey('booksummary').dataType(String.class).make()
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(summary,com.thinkaurelius.titan.core.Parameter.of("mapping",Mapping.TEXT)).buildMixedIndex("search")
+mgmt.commit()
 
-This is identical to a standard property key index definition with the only addition of an extra parameter that specifies the mapping in the index - in this case `Mapping.TEXT`.
+This is identical to a standard mixed index definition with the only addition of an extra parameter that specifies the mapping in the index - in this case `Mapping.TEXT`.
 
 When a string property is indexed as text, the string value is tokenized into a bag of tokens. The exact tokenization depends on the indexing backend and its configuration. Titan's default tokenization splits the string on non-alphanumeric characters and removes any tokens with less than 2 characters. The tokenization used by an indexing backend may differ (e.g. stop words are removed) which can lead to minor differences in how full-text search queries are handled for modifications inside a transaction and committed data in the indexing backend.
 
@@ -35,11 +42,11 @@ String Search
 
 To index string properties as character sequences without any analysis or tokenization, specify the mapping as `Mapping.STRING`:
 
-[source,java]
-graph.makeKey("bookname")
-     .dataType(String.class)
-     .indexed("search",Vertex.class,Parameter.of(Mapping.MAPPING_PREFIX,Mapping.STRING))
-     .make()
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.Parameter.of('mapping',Mapping.STRING)).buildMixedIndex("search")
+mgmt.commit()
 
 When a string mapping is configured, the string value is indexed and can be queried "as-is" - including stop words and non-letter characters. However, in this case the query must match the entire string value. Hence, the string mapping is useful when indexing short character sequences that are considered to be one token.
 
@@ -51,3 +58,19 @@ When a string property is indexed as string, only the following predicates are s
 * Text.REGEX: if the string value matches the given regular expression in its entirety
 
 Full-text search predicates may be used in queries, but those require filtering in memory which can be very costly.
+
+Field Mapping
+~~~~~~~~~~~~~
+
+By default, Titan will encode property keys to generate a unique field name for the property key in the mixed index. If one wants to query the mixed index directly in the external index backend can be difficult to deal with and are illegible. For this use case, the field name can be explicitly specified through a parameter.
+
+[source,gremlin]
+mgmt = g.getManagementSystem()
+name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.Parameter.of('mapped-name','bookname')).buildMixedIndex("search")
+mgmt.commit()
+
+With this field mapping defined as a parameter, Titan will use the same name for the field in the `booksBySummary` index created in the external index system as for the property key. Note, that it must be ensured that the given field name is unique in the index.
+
+
+

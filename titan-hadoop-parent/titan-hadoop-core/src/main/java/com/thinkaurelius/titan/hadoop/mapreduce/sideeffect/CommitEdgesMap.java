@@ -1,19 +1,20 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 
-import java.io.IOException;
-import java.util.Iterator;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -36,7 +37,7 @@ public class CommitEdgesMap {
     }
 
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private boolean drop;
 
@@ -46,29 +47,27 @@ public class CommitEdgesMap {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             Iterator<Edge> itty = value.getEdges(Direction.IN).iterator();
             long edgesKept = 0;
             long edgesDropped = 0;
             while (itty.hasNext()) {
                 if (this.drop) {
-                    if ((((HadoopEdge) itty.next()).hasPaths())) {
+                    if ((((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
                         edgesKept++;
                 } else {
-                    if (!(((HadoopEdge) itty.next()).hasPaths())) {
+                    if (!(((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
                         edgesKept++;
                 }
             }
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_DROPPED, edgesDropped);
-//            context.getCounter(Counters.IN_EDGES_DROPPED).increment(edgesDropped);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_KEPT, edgesKept);
-//            context.getCounter(Counters.IN_EDGES_KEPT).increment(edgesKept);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_DROPPED, edgesDropped);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_KEPT, edgesKept);
 
             ///////////////////
 
@@ -77,23 +76,21 @@ public class CommitEdgesMap {
             edgesDropped = 0;
             while (itty.hasNext()) {
                 if (this.drop) {
-                    if ((((HadoopEdge) itty.next()).hasPaths())) {
+                    if ((((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
                         edgesKept++;
                 } else {
-                    if (!(((HadoopEdge) itty.next()).hasPaths())) {
+                    if (!(((StandardFaunusEdge) itty.next()).hasPaths())) {
                         itty.remove();
                         edgesDropped++;
                     } else
                         edgesKept++;
                 }
             }
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_DROPPED, edgesDropped);
-//            context.getCounter(Counters.OUT_EDGES_DROPPED).increment(edgesDropped);
-            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_KEPT, edgesKept);
-//            context.getCounter(Counters.OUT_EDGES_KEPT).increment(edgesKept);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_DROPPED, edgesDropped);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_KEPT, edgesKept);
 
             context.write(NullWritable.get(), value);
         }

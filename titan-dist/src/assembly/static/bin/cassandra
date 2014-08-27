@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -36,7 +36,20 @@
 # NB: Developers should be aware that this script should remain compatible with
 # POSIX sh and Solaris sh. This means, in particular, no $(( )) and no $( ).
 
-export CASSANDRA_INCLUDE="`dirname $0`/cassandra.in.sh"
+# Returns the absolute path of this script regardless of symlinks
+abs_path() {
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+export CASSANDRA_INCLUDE="`abs_path`/cassandra.in.sh"
 . "$CASSANDRA_INCLUDE"
 
 # Use JAVA_HOME if set, otherwise look for java in PATH

@@ -1,33 +1,33 @@
 package com.thinkaurelius.titan.pkgtest;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.After;
+import com.thinkaurelius.titan.diskstorage.es.ElasticsearchRunner;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.io.File;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 
-public class CassandraThriftESAssemblyIT extends AssemblyITSupport {
+import com.thinkaurelius.titan.CassandraStorageSetup;
+
+public class CassandraThriftESAssemblyIT extends AbstractTitanAssemblyIT {
+
+    public static final String ES_HOME = "../../titan-es";
 
     @BeforeClass
     public static void startCassandra() {
-        String cassyaml = BUILD_DIR + File.separator + "cassandra" + File.separator + "conf" +
-                File.separator + "localhost-rp" + File.separator + "cassandra.yaml";
-        CassandraStorageSetup.startCleanEmbedded("file://" + cassyaml);
+        CassandraStorageSetup.startCleanEmbedded();
     }
-    
-    @After
-    public void clearData() throws Exception {
-        ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
-        CassandraThriftStoreManager m = new CassandraThriftStoreManager(c);
-        m.clearStorage();
+
+    @BeforeClass
+    public static void startES() {
+        new ElasticsearchRunner(ES_HOME).start();
     }
 
     @Test
     public void testCassandraGettingStarted() throws Exception {
         testGettingStartedGremlinSession("conf/titan-cassandra-es.properties", "cassandrathrift");
+    }
+
+    @AfterClass
+    public static void stopES() {
+        new ElasticsearchRunner(ES_HOME).stop();
     }
 }

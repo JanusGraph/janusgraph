@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
+import com.thinkaurelius.titan.hadoop.formats.cassandra.TitanCassandraOutputFormat;
 import com.tinkerpop.pipes.transform.TransformPipe;
 
 /**

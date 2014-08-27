@@ -1,10 +1,8 @@
-[[faunus-distributed-computing]]
+[[hadoop-distributed-computing]]
 Distributed Graph Computing with Gremlin
 ----------------------------------------
 
-// [[images/faunus-distributed-gremlin.png|width=450px]]
-
-The `script`-step in Faunus' Gremlin allows for the arbitrary execution of a Gremlin script against all vertices in the Faunus graph. This simple idea has interesting ramifications for Gremlin-based distributed graph computing. For instance, it is possible evaluate a Gremlin script on every vertex in the source graph (e.g. Titan) in parallel while maintaining data/process locality. This section will discuss the following two use cases.
+The `script`-step in <<hadoop-gremlin-steps,Gremlin/Hadoop>> allows for the parallel execution of an arbitrary Gremlin script against all vertices in the graph. This simple idea has interesting ramifications for Gremlin-based distributed graph computing. For instance, it is possible evaluate a Gremlin script on every vertex in the source graph (e.g. Titan) in with a high degree of concurrency while maintaining data/process locality. This section will discuss the following two use cases.
 
 * *Global graph mutations*: parallel update vertices/edges in a Titan cluster given some arbitrary computation.
 * *Global graph algorithms*: propagate information to arbitrary depths in a Titan cluster in order to compute some algorithm in a parallel fashion.
@@ -15,16 +13,31 @@ The `script`-step requires that a Gremlin script exist in HDFS and has the follo
 * `map(FaunusVertex v, String... args)`: called for each key/value of `Map.map()` with `v` being a `FaunusVertex`
 * `cleanup(String... args)`: called once per mapper during `Map.cleanup()`
 
-Note that `script` makes use of `FaunusGremlinScriptEngine` which has `hdfs` and `local` as predefined variables to allow for respective file system access from the script. Finally, the `script`-step has a method signature of: `FaunusPipeline.script(String scriptUri, String... args)`.
+Note that `script` makes use of `FaunusGremlinScriptEngine` which has `hdfs` and `local` as predefined variables to allow for respective file system access from the script. Finally, the `script`-step has a method signature of: `HadoopPipeline.script(String scriptUri, String... args)`.
 
 Global Graph Mutations
 ~~~~~~~~~~~~~~~~~~~~~~
 
 // [[images/graph-globe.png|width=115px|align=left|float]]
 
-One way to do global graph mutations with Faunus is to leverage an `InputFormat` that reads a graph from a graph database (e.g. https://github.com/thinkaurelius/faunus/wiki/Titan-Format[Titan] and/or https://github.com/thinkaurelius/faunus/wiki/Rexster-Format[Rexster]) and then mutate the Faunus representation of that graph in HDFS over various Gremlin/Faunus steps. Finally, delete the original graph in the database and bulk load the new mutated Faunus graph using a respective `OutputFormat`. The problem with this method is that it requires the graph database to be cleared and re-loaded which, for production 24x7 systems, is not a reasonable requirement.
+Broadly speaking, Titan-Hadoop supports two distinct global graph mutation workflows.
 
-Another way to parallel update the graph is to use the `script`-step in order to allow for real-time, distributed bulk updates of the original graph in the graph database itself. A simple example explains the idea. Assume the _Graph of the Gods_ dataset (see https://github.com/thinkaurelius/titan/wiki/Getting-Started[visualization]) in Titan/Cassandra (or Titan/HBase) co-located with Hadoop data nodes and task trackers. Next, assume the following Gremlin/Groovy script called `FathersNames.groovy` (distributed with Faunus at `data/FathersNames.groovy`). This script will add a new property to each vertex called `fathersName`. This property's value is the name of the vertex's father (if the vertex has a `father`). As a Faunus side-effect, a `String` specifying the added father's names is returned.
+ETL Workflow
+^^^^^^^^^^^^
+
+This workflow assumes an existing Titan graph.  One would configure Titan-Hadoop to read from the existing graph as documented in <<titan-io-format>>, and then mutate that graph through a sequence of Gremlin/Hadoop steps.  Each step compiles to a job, and these jobs run in series.  Each intermediate job stores its intermediate output as `SequenceFile` data in HDFS, and its successor job reads the same.  The final job in the series writes data using Titan-Hadoop's configured `OutputFormat`.  In this workflow, the `OutputFormat` would be GraphSON or some other parser-friendly graph format.  To complete the workflow, one would delete the original Titan graph and bulk load the new, mutated graph from HDFS. The disadvantage of this workflow is that it requires the graph database to be cleared and re-loaded which, for production 24x7 systems, is not a reasonable requirement.
+
+Live Update Workflow
+^^^^^^^^^^^^^^^^^^^^
+
+Another way to do global graph mutations graph is to use the Gremlin/Hadoop `script` step to execute incremental, distributed bulk updates of the original graph.  In this workflow, a `script` step calls `TitanFactory.open` and writes updates through the returned `TitanGraph` instance, bypassing Titan-Hadoop/MapReduce's ordinary `OutputFormat` mechanism.
+
+Live Update Example
++++++++++++++++++++
+
+The following example will illustrate the Live Update workflow pattern.  This example loads the _Graph of the Gods_ dataset into Cassandra and Elasticsearch.  It then defines a Gremlin fragment suitable for use with a `script` step and executes it on the _Graph of the Gods_.  The script opens a `TitanGraph`, performsa simple traversal over edges of type "father", then writes a vertex property based on the traversal as a side-effect.
+
+First, here a look at the `script` step implementation the example will use, `FathersName.groovy`:
 
 [source,groovy]
 ----
@@ -40,9 +53,10 @@ def setup(args) {
     g = com.thinkaurelius.titan.core.TitanFactory.open(conf)
 }
 
-// process each Faunus vertex
-//  - find the corresponding Titan vertex as it shares the same id with the Faunus vertex
-//  - update the Titan vertex given some Gremlin traversal over Titan
+// process each FaunusVertex
+//  - lookup the vertex in the TitanGraph using the FaunusVertex's numeric ID
+//  - traverse out the edge labeled 'father' using the TitanGraph
+//  - write the father's name to a property on the vertex that we started with
 def map(v, args) {
     u = g.v(v.id) // the Faunus vertex id is the same as the original Titan vertex id
     pipe = u.out('father').name
@@ -52,79 +66,83 @@ def map(v, args) {
 
 // close the Titan database connection
 def cleanup(args) {
+    g.commit()
     g.shutdown()
 }
 ----
 
-Place this `FathersName.groovy` file into HDFS using Gremlin.
+Continuing the example, the following Gremlin shell excerpt loads the _Graph of the Gods_ into what is assumed to be an empty Cassandra and ES backend, copies `FathersName.groovy` into HDFS, and runs it via a `script` step.  Since the `script` step writes mutations as a side-effect outside of the MapReduce system, the `OutputFormat` can be set to `NoOp`.
 
-[source,gremlin]
-gremlin> hdfs.copyFromLocal('data/FathersNames.groovy', 'FathersNames.groovy')
-==>null
-
-With this file in HDFS, it is possible to execute the following Gremlin/Faunus traversal. For all demigod and god vertices in the graph, add the vertex's father's name to the vertex if it exists.
-
-[source,groovy]
-g.V.has('type','demigod','god').script('FathersName.groovy','cassandrathrift')
-
-The _Graph of the Gods_ in Titan serves as the input to the Faunus job. `NoOpOutputFormat` is used as there no need to write the graph as the original Titan representation of the graph is being mutated.
 
 [source,gremlin]
 ----
-gremlin> g = FaunusFactory.open('bin/titan-cassandra-input.properties')                
-==>faunusgraph[titancassandrainputformat->graphsonoutputformat]
-gremlin> g.setGraphOutputFormat(NoOpOutputFormat.class)                                
+gremlin> g = TitanFactory.open('conf/titan-cassandra-es.properties')
+==>titangraph[cassandrathrift:[127.0.0.1]]
+gremlin> GraphOfTheGodsFactory.load(g)
 ==>null
-gremlin> g.V.has('type','demigod','god').script('FathersName.groovy','cassandrathrift')
-13/03/06 18:21:43 INFO mapreduce.FaunusCompiler: Compiled to 1 MapReduce job(s)
-13/03/06 18:21:43 INFO mapreduce.FaunusCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap.Map, com.thinkaurelius.faunus.mapreduce.util.ScriptMap.Map]
-13/03/06 18:21:43 INFO mapreduce.FaunusCompiler: Job data location: output/job-0
-13/03/06 18:21:43 WARN mapred.JobClient: Use GenericOptionsParser for parsing the arguments. Applications should implement Tool for the same.
-13/03/06 18:21:44 INFO mapred.JobClient: Running job: job_201303061253_0077
-13/03/06 18:21:45 INFO mapred.JobClient:  map 0% reduce 0%
-13/03/06 18:21:53 INFO mapred.JobClient:  map 50% reduce 0%
+gremlin> g.V.map
+==>{name=nemean}
+==>{name=jupiter, age=5000}
+==>{name=pluto, age=4000}
+==>{name=hydra}
+==>{name=sky}
+==>{name=tartarus}
+==>{name=hercules, age=30}
+==>{name=alcmene, age=45}
+==>{name=cerberus}
+==>{name=neptune, age=4500}
+==>{name=saturn, age=10000}
+==>{name=sea}
+// This copyFromLocal is only necessary when using HDFS (can skip when using LocalFileSystem)
+gremlin> hdfs.copyFromLocal('examples/FathersName.groovy', 'examples/FathersName.groovy')
+==>null
+// Open a Titan-Hadoop graph that reads from Cassandra
+gremlin> h = HadoopFactory.open('conf/hadoop/titan-cassandra-input.properties')
+==>titangraph[hadoop:titancassandrainputformat->graphsonoutputformat]
+// Disable Titan-Hadoop output; the script step will write as a side-effect
+gremlin> h.setGraphOutputFormat(NoOpOutputFormat.class)
+==>null
+// Execute the script step on all vertices
+gremlin> h.V.script('examples/FathersName.groovy','cassandrathrift')
 ...
+INFO  org.apache.hadoop.mapreduce.Job  - Job job_local1793069710_0001 completed successfully
+...
+==>hydra's father's name is null
+==>sky's father's name is null
+==>tartarus's father's name is null
 ==>hercules's father's name is jupiter
-==>pluto's father's name is null
-==>jupiter's father's name is saturn
+==>alcmene's father's name is null
+==>cerberus's father's name is null
 ==>neptune's father's name is null
+==>saturn's father's name is null
+==>sea's father's name is null
+==>nemean's father's name is null
+==>jupiter's father's name is saturn
+==>pluto's father's name is null
+// fathersName is now visible in the TitanGraph on applicable vertices
+gremlin> g.V.map
+==>{name=nemean}
+==>{name=jupiter, age=5000, fathersName=saturn}
+==>{name=pluto, age=4000}
+==>{name=hydra}
+==>{name=sky}
+==>{name=tartarus}
+==>{name=hercules, age=30, fathersName=jupiter}
+==>{name=alcmene, age=45}
+==>{name=cerberus}
+==>{name=neptune, age=4500}
+==>{name=saturn, age=10000}
+==>{name=sea}
 ----
 
-Looking at the original graph in Titan, those vertices that have fathers, have a new `fathersName` property.
-
-[source,gremlin]
-----
-gremlin> g.V.transform("{it.name + ' ' + it.fathersName}")             
-...
-13/03/06 18:25:40 INFO mapred.JobClient: Running job: job_201303061253_0078
-13/03/06 18:25:41 INFO mapred.JobClient:  map 0% reduce 0%
-...
-==>tartarus null
-==>alcmene null
-==>sea null
-==>hydra null
-==>hercules jupiter
-==>cerberus null
-==>pluto null
-==>saturn null
-==>sky null
-==>jupiter saturn
-==>neptune null
-==>nemean null
-----
-
-// [[images/gremlin-elephant.png|width=100px|float]]
-
-In the example above, Faunus serves the role of filtering the vertices to be processed down to demigods and gods and then provides the script the id of the Titan vertex to ultimately compute on. One of the important ideas to take away from this example is that while Faunus is vertex-bound (a step can only operate on the vertex and its incident edges), with `script` and a Titan connection it is possible to do arbitrary walks of arbitrary depths at a single step and thus, allows for more expressive bulk/global computations over Titan.
+One of the important ideas to take away from this example is that although Titan-Hadoop is vertex-oriented (a step can only operate on the vertex and its incident edges), with `script` steps and a `TitanGraph`, it is possible to do arbitrary walks of arbitrary depths at a single step.  This allows for more expressive and finely-customizable bulk/global computations over Titan in some cases than would be possible with Gremlin/Hadoop.  However, while this approach is powerful and flexible, it can also be resource-intensive.  The cost involved will tend to increase with the depth of the `TitanGraph` traversals and the volume of writes against the `TitanGraph`.
 
 Typical bulk mutation use cases are outlined below:
 
 * "We need to convert all the `String` dates to `Long` dates."
 * "For all people vertices, lets add a new edge called `grandfather` that is computed from `father` * `father` edges."
 * "We need to delete all users and all their respective data (uploads, folders, friendships, etc.) that haven't logged into the system in the last 2 years."
-* "We need to calculate a centrality score with Faunus and then write the scores back to the original Titan cluster vertices."
-
-Finally, note that `localhost` is used as the `storage.hostname` for Titan. If the Hadoop cluster is colocated with the Cassandra (or HBase) cluster, then `localhost` is the location of both the `FaunusVertex` and the `TitanVertex`. Thus, the computation exists along side the data within the cluster.
+* "We need to calculate a centrality score with Titan-Hadoop and then write the scores back to the original Titan cluster vertices."
 
 ////
 

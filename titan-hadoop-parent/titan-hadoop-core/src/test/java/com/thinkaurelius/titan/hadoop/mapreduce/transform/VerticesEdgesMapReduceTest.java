@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.*;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -22,10 +20,10 @@ import java.util.Map;
  */
 public class VerticesEdgesMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new VerticesEdgesMapReduce.Map());
         mapReduceDriver.setReducer(new VerticesEdgesMapReduce.Reduce());
     }
@@ -36,7 +34,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -46,32 +44,31 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
 
             for (Edge edge : vertex.getEdges(Direction.BOTH, "knows")) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 0);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 0);
             }
             for (Edge edge : vertex.getEdges(Direction.OUT, "created")) {
                 //System.out.println(vertex + " " + edge);
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 2);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(edge + " path count", ((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
 
             for (Edge edge : vertex.getEdges(Direction.IN, "created")) {
                 //System.out.println(vertex + " " + edge);
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 2);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
         }
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 4);
     }
 
     public void testOutAllTraversalWithPaths() throws Exception {
@@ -80,7 +77,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -90,26 +87,25 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).size(), 2);
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
-                assertEquals(((HadoopEdge) edge).getPaths().get(0).get(1).getId(), edge.getId());
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).size(), 2);
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(0).getId(), edge.getVertex(Direction.OUT).getId());
+                assertEquals(((StandardFaunusEdge) edge).getPaths().get(0).get(1).getId(), ((StandardFaunusEdge) edge).getLongId());
             }
         }
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
     }
 
     public void testOutAllTraversal() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -119,11 +115,11 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 1);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 1);
                 try {
-                    ((HadoopEdge) edge).getPaths();
+                    ((StandardFaunusEdge) edge).getPaths();
                     assertTrue(false);
                 } catch (IllegalStateException e) {
                     assertTrue(true);
@@ -133,15 +129,14 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 6);
     }
 
     public void testBothCreatedTraversal() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.BOTH, "created");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -151,15 +146,14 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
-                assertEquals(((HadoopEdge) edge).pathCount(), 2);
+                assertEquals(((StandardFaunusEdge) edge).pathCount(), 2);
             }
         }
 
         noPaths(graph, Vertex.class);
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED).getValue(), 8);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 8);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VerticesEdgesMapReduce.Counters.EDGES_TRAVERSED), 8);
     }
 }

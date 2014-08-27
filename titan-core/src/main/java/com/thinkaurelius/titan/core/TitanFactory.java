@@ -43,8 +43,6 @@ public class TitanFactory {
     private static final Logger log =
             LoggerFactory.getLogger(TitanFactory.class);
 
-    private static boolean preloadedConfigOptions = false;
-
     /**
      * Opens a {@link TitanGraph} database.
      * <p/>
@@ -112,6 +110,7 @@ public class TitanFactory {
 
         private Builder() {
             super(GraphDatabaseConfiguration.buildConfiguration());
+            ReflectiveConfigOptionLoader.loadOnce();
         }
 
         /**
@@ -237,14 +236,16 @@ public class TitanFactory {
             Preconditions.checkNotNull(configParent);
             Preconditions.checkArgument(configParent.isDirectory());
 
-            final Pattern p = Pattern.compile(
+            // TODO this mangling logic is a relic from the hardcoded string days; it should be deleted and rewritten as a setting on ConfigOption
+            final Pattern p = Pattern.compile("(" +
                     Pattern.quote(STORAGE_NS.getName()) + "\\..*" +
-                            "(" +
-                            Pattern.quote(STORAGE_DIRECTORY.getName()) + "|" +
-                            Pattern.quote(STORAGE_CONF_FILE.getName()) + "|" +
-                            Pattern.quote(INDEX_DIRECTORY.getName()) + "|" +
-                            Pattern.quote(INDEX_CONF_FILE.getName()) +
-                            ")");
+                            "(" + Pattern.quote(STORAGE_DIRECTORY.getName()) + "|" +
+                                  Pattern.quote(STORAGE_CONF_FILE.getName()) + ")"
+                    + "|" +
+                    Pattern.quote(INDEX_NS.getName()) + "\\..*" +
+                            "(" + Pattern.quote(INDEX_DIRECTORY.getName()) + "|" +
+                                  Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
+            + ")");
 
             final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                 @Override

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -28,6 +28,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -71,7 +73,7 @@ public class OrderMapReduce {
         return comparatorClass;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, WritableComparable, Text> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, WritableComparable, Text> {
 
         private String key;
         private boolean isVertex;
@@ -93,7 +95,7 @@ public class OrderMapReduce {
         private WritableComparable writable;
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     this.text.set(ElementPicker.getPropertyAsString(value, this.elementKey));
@@ -110,12 +112,12 @@ public class OrderMapReduce {
                             context.write(this.writable, this.text);
                         }
                     }
-                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
                 }
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         this.text.set(ElementPicker.getPropertyAsString(edge, this.elementKey));
                         final Object temp = ElementPicker.getProperty(edge, this.key);
@@ -134,14 +136,14 @@ public class OrderMapReduce {
                         edgesProcessed++;
                     }
                 }
-                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, Text>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

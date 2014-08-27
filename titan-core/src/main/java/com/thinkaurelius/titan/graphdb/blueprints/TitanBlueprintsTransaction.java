@@ -30,6 +30,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsTransaction.class);
 
+    /**
+     * Returns the graph that this transaction is based on
+     * @return
+     */
+    protected abstract TitanGraph getGraph();
 
     @Override
     public void stopTransaction(Conclusion conclusion) {
@@ -47,7 +52,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Features getFeatures() {
-        throw new UnsupportedOperationException("Not supported threaded transaction graph. Call on parent graph");
+        return getGraph().getFeatures();
     }
 
     /**
@@ -65,14 +70,16 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public TitanVertex addVertex(Object id) {
         if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
+            log.trace("tx {}: addVertex(Object) detected numeric argument {}", this, id);
             return addVertex(((Number) id).longValue(),null);
         } else if (id instanceof VertexLabel) {
-            return addVertex((VertexLabel)id);
+            log.trace("tx {}: addVertex(Object) detected VertexLabel argument {}", this, id);
+            return addVertexWithLabel((VertexLabel) id);
         } else {
-//            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
+            if (null != id)
+                log.trace("tx {}: addVertex(Object) ignored argument {}", this, id);
             return addVertex(null,null);
         }
-
     }
 
     @Override

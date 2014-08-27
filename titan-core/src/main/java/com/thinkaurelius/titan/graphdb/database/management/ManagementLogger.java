@@ -101,7 +101,7 @@ public class ManagementLogger implements MessageReader {
         VariableLong.writePositive(out,updatedTypes.size());
         for (TitanSchemaVertex type : updatedTypes) {
             assert type.hasId();
-            VariableLong.writePositive(out,type.getID());
+            VariableLong.writePositive(out,type.getLongId());
         }
         sysLog.add(out.getStaticBuffer());
     }
@@ -123,6 +123,8 @@ public class ManagementLogger implements MessageReader {
         void receivedAcknowledgement(String senderId) {
             if (openInstances.contains(senderId)) {
                 int countdown = ackCounter.decrementAndGet();
+                log.debug("Received acknowledgement for eviction [{}] from senderID={} ({} more acks still outstanding)",
+                        evictionId, senderId, countdown);
                 if (countdown==0) { //Trigger actions
                     for (Callable<Boolean> trigger : updatedTypeTriggers) {
                         try {
@@ -172,6 +174,7 @@ public class ManagementLogger implements MessageReader {
                     out.writeObjectNotNull(originId);
                     VariableLong.writePositive(out,evictionId);
                     sysLog.add(out.getStaticBuffer());
+                    log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, originId, evictionId);
                     break;
                 }
                 if (MAX_WAIT_TIME.compareTo(t.elapsed()) < 0) {

@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -21,10 +22,10 @@ import java.util.Map;
  */
 public class GroupCountMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, Text, LongWritable, Text, LongWritable> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, Text, LongWritable, Text, LongWritable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, Text, LongWritable, Text, LongWritable>();
         mapReduceDriver.setMapper(new GroupCountMapReduce.Map());
         mapReduceDriver.setCombiner(new GroupCountMapReduce.Combiner());
         mapReduceDriver.setReducer(new GroupCountMapReduce.Reduce());
@@ -33,7 +34,7 @@ public class GroupCountMapReduceTest extends BaseTest {
     public void testOutDegreeDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Vertex.class, "{ it -> it.outE.count() }", null);
         this.mapReduceDriver.withConfiguration(config);
-        final Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 5);
@@ -54,16 +55,14 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
-        assertEquals(12, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
+        assertEquals(12, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
     }
 
     public void testEdgePropertySizeDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Edge.class, "{ it -> it.map.next().size() }", "{ it -> 2}");
         this.mapReduceDriver.withConfiguration(config);
-        final Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 2);
@@ -78,16 +77,14 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
     }
 
     public void testVertexDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Vertex.class, null, "{ it -> 3.2}");
         this.mapReduceDriver.withConfiguration(config);
-        final Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 12);
@@ -97,17 +94,15 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(12, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(12, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
+        assertEquals(12, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
 
     }
 
     public void testEdgeDistribution() throws Exception {
         Configuration config = GroupCountMapReduce.createConfiguration(Edge.class, null, null);
         this.mapReduceDriver.withConfiguration(config);
-        final Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
+        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.GRAPH_OF_THE_GODS, config);
         final List<Pair<Text, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
         //System.out.println(results);
         assertEquals(results.size(), 17);
@@ -117,10 +112,8 @@ public class GroupCountMapReduceTest extends BaseTest {
         }
 
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(0, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
-//        assertEquals(0, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.VERTICES_PROCESSED).getValue());
-        assertEquals(17, HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
-//        assertEquals(17, this.mapReduceDriver.getCounters().findCounter(GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED).getValue());
+        assertEquals(0, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.VERTICES_PROCESSED));
+        assertEquals(17, DEFAULT_COMPAT.getCounter(mapReduceDriver, GroupCountMapReduce.Counters.OUT_EDGES_PROCESSED));
 
     }
 }

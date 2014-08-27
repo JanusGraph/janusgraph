@@ -3,19 +3,44 @@
 set -e
 set -u
 
-CP=`dirname $0`/../conf
-CP=$CP:$(find -L `dirname $0`/../lib/ -name '*.jar' | tr '\n' ':')
-CP=$CP:$(find -L `dirname $0`/../ext/ -name '*.jar' | tr '\n' ':')
+# Returns the absolute path of this script regardless of symlinks
+abs_path() {
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+CP=`abs_path`/../conf
+CP=$CP:$(find -L `abs_path`/../lib/ -name '*.jar' | tr '\n' ':')
+CP=$CP:$(find -L `abs_path`/../ext/ -name '*.jar' | tr '\n' ':')
 
 # Check some Hadoop-related environment variables
 if [ -n "${HADOOP_PREFIX:-}" ]; then
-    CP="$CP:$HADOOP_PREFIX"/conf
+    # Check Hadoop 2 first
+    if [ -d "$HADOOP_PREFIX"/etc/hadoop ]; then
+        CP="$CP:$HADOOP_PREFIX"/etc/hadoop
+    elif [ -d "$HADOOP_PREFIX"/conf ]; then
+        # Then try Hadoop 1
+        CP="$CP:$HADOOP_PREFIX"/conf
+    fi
 elif [ -n "${HADOOP_CONF_DIR:-}" ]; then
     CP="$CP:$HADOOP_CONF_DIR"
 elif [ -n "${HADOOP_CONF:-}" ]; then
     CP="$CP:$HADOOP_CONF"
 elif [ -n "${HADOOP_HOME:-}" ]; then
-    CP="$CP:$HADOOP_HOME"/conf
+    # Check Hadoop 2 first
+    if [ -d "$HADOOP_HOME"/etc/hadoop ]; then
+        CP="$CP:$HADOOP_HOME"/etc/hadoop
+    elif [ -d "$HADOOP_HOME"/conf ]; then
+        # Then try Hadoop 1
+        CP="$CP:$HADOOP_HOME"/conf
+    fi
 fi
 
 # Convert from *NIX to Windows path convention if needed
@@ -33,9 +58,9 @@ else
 fi
 
 # Set default message threshold for Log4j Gremlin's console appender
-if [ -z "${GREMLIN_LOG_LEVEL:-}" -o "${GREMLIN_HADOOP_LOG_LEVEL:-}" ]; then
+if [ -z "${GREMLIN_LOG_LEVEL:-}" -o "${GREMLIN_MR_LOG_LEVEL:-}" ]; then
     GREMLIN_LOG_LEVEL=WARN
-    GREMLIN_HADOOP_LOG_LEVEL=INFO
+    GREMLIN_MR_LOG_LEVEL=INFO
 fi
 
 # Script debugging is disabled by default, but can be enabled with -l
@@ -64,7 +89,7 @@ while getopts "eilv" opt; do
        shift $(( $OPTIND - 1 ))
        break;;
     l) eval GREMLIN_LOG_LEVEL=\$$OPTIND
-       GREMLIN_HADOOP_LOG_LEVEL="$GREMLIN_LOG_LEVEL"
+       GREMLIN_MR_LOG_LEVEL="$GREMLIN_LOG_LEVEL"
        OPTIND="$(( $OPTIND + 1 ))"
        if [ "$GREMLIN_LOG_LEVEL" = "TRACE" -o \
             "$GREMLIN_LOG_LEVEL" = "DEBUG" ]; then
@@ -78,7 +103,7 @@ done
 if [ -z "${JAVA_OPTIONS:-}" ]; then
     JAVA_OPTIONS="-Dlog4j.configuration=log4j-gremlin.properties"
     JAVA_OPTIONS="$JAVA_OPTIONS -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL"
-    JAVA_OPTIONS="$JAVA_OPTIONS -Dgremlin.hadoop.log4j.level=$GREMLIN_HADOOP_LOG_LEVEL"
+    JAVA_OPTIONS="$JAVA_OPTIONS -Dgremlin.mr.log4j.level=$GREMLIN_MR_LOG_LEVEL"
 fi
 
 if [ -n "$SCRIPT_DEBUG" ]; then

@@ -45,40 +45,40 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     private boolean isMutationStarted;
 
     /**
-     * Transaction on the store holding information. This is only used for
-     * locking-related metadata. No client data are read or written through this
-     * transaction.
+     * Transaction for reading and writing locking-related metadata. Also used
+     * for reading expected values provided as arguments to
+     * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      */
-    private final StoreTransaction lockTx;
+    private final StoreTransaction strongConsistentTx;
 
     /**
-     * Transaction for reading and writing client data.
+     * Transaction for reading and writing client data. No guarantees about
+     * consistency strength.
      */
-    private final StoreTransaction dataTx;
+    private final StoreTransaction inconsistentTx;
     private final Duration maxReadTime;
 
     private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore =
             new HashMap<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>>();
 
-    public ExpectedValueCheckingTransaction(StoreTransaction dataTx, StoreTransaction lockTx, Duration maxReadTime) {
-        //Preconditions.checkArgument(consistentTx.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT);
-        this.dataTx = dataTx;
-        this.lockTx = lockTx;
+    public ExpectedValueCheckingTransaction(StoreTransaction inconsistentTx, StoreTransaction strongConsistentTx, Duration maxReadTime) {
+        this.inconsistentTx = inconsistentTx;
+        this.strongConsistentTx = strongConsistentTx;
         this.maxReadTime = maxReadTime;
     }
 
     @Override
     public void rollback() throws BackendException {
         deleteAllLocks();
-        dataTx.rollback();
-        lockTx.rollback();
+        inconsistentTx.rollback();
+        strongConsistentTx.rollback();
     }
 
     @Override
     public void commit() throws BackendException {
-        dataTx.commit();
+        inconsistentTx.commit();
         deleteAllLocks();
-        lockTx.commit();
+        strongConsistentTx.commit();
     }
 
     /**
@@ -99,15 +99,15 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
     @Override
     public BaseTransactionConfig getConfiguration() {
-        return dataTx.getConfiguration();
+        return inconsistentTx.getConfiguration();
     }
 
-    public StoreTransaction getDataTransaction() {
-        return dataTx;
+    public StoreTransaction getInconsistentTx() {
+        return inconsistentTx;
     }
 
-    public StoreTransaction getLockTransaction() {
-        return lockTx;
+    public StoreTransaction getConsistentTx() {
+        return strongConsistentTx;
     }
 
     void storeExpectedValue(ExpectedValueCheckingStore store, KeyColumn lockID, StaticBuffer value) {
@@ -133,13 +133,17 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * If {@link #isMutationStarted()}, this does nothing.
      *
      * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     *
+     * @return true if this transaction holds at least one lock, false if the
+     *         transaction holds no locks
      */
-    void prepareForMutations() throws BackendException {
+    boolean prepareForMutations() throws BackendException {
         if (!isMutationStarted()) {
             checkAllLocks();
             checkAllExpectedValues();
             mutationStarted();
         }
+        return !expectedValuesByStore.isEmpty();
     }
 
     /**
@@ -150,7 +154,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     void checkAllLocks() throws BackendException {
-        StoreTransaction lt = getLockTransaction();
+        StoreTransaction lt = getConsistentTx();
         for (ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
             Locker locker = store.getLocker();
             // Ignore locks on stores without a locker
@@ -219,7 +223,8 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
                                                 final StaticBuffer ev, final ExpectedValueCheckingStore store) throws BackendException {
         final StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
         KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
-        Iterable<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
+        // Call getSlice on the wrapped store using the quorum+ consistency tx
+        Iterable<Entry> actualEntries = store.getBackingStore().getSlice(ksq, strongConsistentTx);
 
         if (null == actualEntries)
             actualEntries = ImmutableList.<Entry>of();

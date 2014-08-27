@@ -4,7 +4,6 @@ import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.tinkerpop.blueprints.Direction;

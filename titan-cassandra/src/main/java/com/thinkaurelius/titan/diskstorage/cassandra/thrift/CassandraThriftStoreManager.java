@@ -13,8 +13,12 @@ import java.util.concurrent.TimeUnit;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
@@ -46,12 +50,110 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
+@PreInitializeConfigOptions
 public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
+
+    public enum PoolExhaustedAction {
+        BLOCK(GenericKeyedObjectPool.WHEN_EXHAUSTED_BLOCK),
+        FAIL(GenericKeyedObjectPool.WHEN_EXHAUSTED_FAIL),
+        GROW(GenericKeyedObjectPool.WHEN_EXHAUSTED_GROW);
+
+        private final byte b;
+
+        PoolExhaustedAction(byte b) {
+            this.b = b;
+        }
+
+        public byte getByte() {
+            return b;
+        }
+    }
+
     private static final Logger log = LoggerFactory.getLogger(CassandraThriftStoreManager.class);
+
+    public static final ConfigNamespace THRIFT_NS =
+            new ConfigNamespace(AbstractCassandraStoreManager.CASSANDRA_NS, "thrift",
+                    "Options for Titan's own Thrift Cassandra backend");
+    /**
+     * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
+     * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
+     * <p/>
+     * HEADS UP: setting max message size proved itself hazardous to be set on the client, only server needs that
+     * kind of protection.
+     * <p/>
+     * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
+     */
+    public static final ConfigOption<Integer> THRIFT_FRAME_SIZE =
+            new ConfigOption<Integer>(THRIFT_NS, "frame-size",
+            "The thrift frame size in mega bytes", ConfigOption.Type.MASKABLE, 15);
+
+
+    public static final ConfigNamespace CPOOL_NS =
+            new ConfigNamespace(THRIFT_NS, "cpool", "Options for the Apache commons-pool connection manager");
+
+    public static final ConfigOption<PoolExhaustedAction> CPOOL_WHEN_EXHAUSTED =
+            new ConfigOption<PoolExhaustedAction>(CPOOL_NS, "when-exhausted",
+            "What to do when clients concurrently request more active connections than are allowed " +
+            "by the pool.  The value must be one of BLOCK, FAIL, or GROW.",
+            ConfigOption.Type.MASKABLE, PoolExhaustedAction.class, PoolExhaustedAction.BLOCK);
+
+    public static final ConfigOption<Integer> CPOOL_MAX_TOTAL =
+            new ConfigOption<Integer>(CPOOL_NS, "max-total",
+            "Max number of allowed Thrift connections, idle or active (-1 to leave undefined)",
+            ConfigOption.Type.MASKABLE, 32);
+
+    public static final ConfigOption<Integer> CPOOL_MAX_ACTIVE =
+            new ConfigOption<Integer>(CPOOL_NS, "max-active",
+            "Maximum number of concurrently in-use connections (-1 to leave undefined)",
+            ConfigOption.Type.MASKABLE, -1);
+
+    public static final ConfigOption<Integer> CPOOL_MAX_IDLE =
+            new ConfigOption<Integer>(CPOOL_NS, "max-idle",
+            "Maximum number of concurrently idle connections (-1 to leave undefined)",
+            ConfigOption.Type.MASKABLE, -1);
+
+    public static final ConfigOption<Integer> CPOOL_MIN_IDLE =
+            new ConfigOption<Integer>(CPOOL_NS, "min-idle",
+            "Minimum number of idle connections the pool attempts to maintain",
+            ConfigOption.Type.MASKABLE, 0);
+
+    // Wart: allowing -1 like commons-pool's convention precludes using StandardDuration
+    public static final ConfigOption<Long> CPOOL_MAX_WAIT =
+            new ConfigOption<Long>(CPOOL_NS, "max-wait",
+            "Maximum number of milliseconds to block when " + ConfigElement.getPath(CPOOL_WHEN_EXHAUSTED) +
+            " is set to BLOCK.  Has no effect when set to actions besides BLOCK.  Set to -1 to wait indefinitely.",
+            ConfigOption.Type.MASKABLE, -1L);
+
+    // Wart: allowing -1 like commons-pool's convention precludes using StandardDuration
+    public static final ConfigOption<Long> CPOOL_EVICTOR_PERIOD =
+            new ConfigOption<Long>(CPOOL_NS, "evictor-period",
+            "Approximate number of milliseconds between runs of the idle connection evictor.  " +
+            "Set to -1 to never run the idle connection evictor.",
+            ConfigOption.Type.MASKABLE, 30L * 1000L);
+
+    // Wart: allowing -1 like commons-pool's convention precludes using StandardDuration
+    public static final ConfigOption<Long> CPOOL_MIN_EVICTABLE_IDLE_TIME =
+            new ConfigOption<Long>(CPOOL_NS, "min-evictable-idle-time",
+            "Minimum number of milliseconds a connection must be idle before it is eligible for " +
+            "eviction.  See also " + ConfigElement.getPath(CPOOL_EVICTOR_PERIOD) + ".  Set to -1 to never evict " +
+            "idle connections.", ConfigOption.Type.MASKABLE, 60L * 1000L);
+
+    public static final ConfigOption<Boolean> CPOOL_IDLE_TESTS =
+            new ConfigOption<Boolean>(CPOOL_NS, "idle-test",
+            "Whether the idle connection evictor validates idle connections and drops those that fail to validate",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Integer> CPOOL_IDLE_TESTS_PER_EVICTION_RUN =
+            new ConfigOption<Integer>(CPOOL_NS, "idle-tests-per-eviction-run",
+            "When the value is negative, e.g. -n, roughly one nth of the idle connections are tested per run.  " +
+            "When the value is positive, e.g. n, the min(idle-count, n) connections are tested per run.",
+            ConfigOption.Type.MASKABLE, 0);
+
 
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
     private final CTConnectionPool pool;
     private final Deployment deployment;
+    private final int thriftFrameSizeBytes;
 
     public CassandraThriftStoreManager(Configuration config) throws BackendException {
         super(config);
@@ -62,11 +164,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
          */
         int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).getLength(TimeUnit.MILLISECONDS);
 
-        int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
+        thriftFrameSizeBytes = config.get(THRIFT_FRAME_SIZE) * 1024 * 1024;
 
         CTConnectionFactory.Config factoryConfig = new CTConnectionFactory.Config(hostnames, port, username, password)
                                                                             .setTimeoutMS(thriftTimeoutMS)
-                                                                            .setFrameSize(thriftFrameSize);
+                                                                            .setFrameSize(thriftFrameSizeBytes);
 
         if (config.get(SSL_ENABLED)) {
             factoryConfig.setSSLTruststoreLocation(config.get(SSL_TRUSTSTORE_LOCATION));
@@ -76,14 +178,16 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         CTConnectionPool p = new CTConnectionPool(factoryConfig.build());
         p.setTestOnBorrow(true);
         p.setTestOnReturn(true);
-        p.setTestWhileIdle(false);
-        p.setWhenExhaustedAction(GenericKeyedObjectPool.WHEN_EXHAUSTED_BLOCK);
-        p.setMaxActive(-1); // "A negative value indicates no limit"
-        p.setMaxTotal(maxTotalConnections); // maxTotal limits active + idle
-        p.setMinIdle(0); // prevent evictor from eagerly creating unused connections
-        p.setMinEvictableIdleTimeMillis(60 * 1000L);
-        p.setTimeBetweenEvictionRunsMillis(30 * 1000L);
-
+        p.setTestWhileIdle(config.get(CPOOL_IDLE_TESTS));
+        p.setNumTestsPerEvictionRun(config.get(CPOOL_IDLE_TESTS_PER_EVICTION_RUN));
+        p.setWhenExhaustedAction(config.get(CPOOL_WHEN_EXHAUSTED).getByte());
+        p.setMaxActive(config.get(CPOOL_MAX_ACTIVE));
+        p.setMaxTotal(config.get(CPOOL_MAX_TOTAL)); // maxTotal limits active + idle
+        p.setMaxIdle(config.get(CPOOL_MAX_IDLE));
+        p.setMinIdle(config.get(CPOOL_MIN_IDLE));
+        p.setMaxWait(config.get(CPOOL_MAX_WAIT));
+        p.setTimeBetweenEvictionRunsMillis(config.get(CPOOL_EVICTOR_PERIOD));
+        p.setMinEvictableIdleTimeMillis(config.get(CPOOL_MIN_EVICTABLE_IDLE_TIME));
         this.pool = p;
 
         this.openStores = new HashMap<String, CassandraThriftKeyColumnValueStore>();
@@ -139,15 +243,13 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation
         int size = 0;
-        for (Map<StaticBuffer, KCVMutation> mutation : mutations.values())
-            size += mutation.size();
+        for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
+        Map<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>> batch =
+                new HashMap<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>>(size);
 
-        Map<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>> batch = new HashMap<ByteBuffer, Map<String, List<org.apache.cassandra.thrift.Mutation>>>(size);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> keyMutation : mutations.entrySet()) {
             String columnFamily = keyMutation.getKey();
-            int globalTTL = openStores.get(columnFamily).getTTL();
-
             for (Map.Entry<StaticBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
                 ByteBuffer keyBB = mutEntry.getKey().asByteBuffer();
 
@@ -184,11 +286,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         column.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
 
                         Integer ttl = (Integer) ent.getMetaData().get(EntryMetaData.TTL);
-                        if (ttl == null || ttl <= 0)
-                            ttl = globalTTL;
-
-                        if (ttl > 0)
+                        if (null != ttl && ttl > 0) {
                             column.setTtl(ttl);
+                        }
 
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
@@ -219,19 +319,14 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         sleepAfterWrite(txh, commitTime);
     }
 
-    @Override
-    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name) throws BackendException {
-        return openDatabase(name, -1);
-    }
-
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
-    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name, int ttlInSeconds) throws BackendException {
+    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 
         ensureColumnFamilyExists(keySpaceName, name);
 
-        CassandraThriftKeyColumnValueStore store = new CassandraThriftKeyColumnValueStore(keySpaceName, name, this, pool, ttlInSeconds);
+        CassandraThriftKeyColumnValueStore store = new CassandraThriftKeyColumnValueStore(keySpaceName, name, this, pool);
         openStores.put(name, store);
         return store;
     }

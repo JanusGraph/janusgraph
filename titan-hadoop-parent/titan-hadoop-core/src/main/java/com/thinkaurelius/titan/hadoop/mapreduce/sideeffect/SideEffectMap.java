@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -44,7 +45,7 @@ public class SideEffectMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private Closure closure;
         private boolean isVertex;
@@ -60,19 +61,18 @@ public class SideEffectMap {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     //for (int i = 0; i < value.pathCount(); i++) {
                     this.closure.call(value);
                     //}
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
-//                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
                 }
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.IN)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         edgesProcessed++;
                         //for (int i = 0; i < edge.pathCount(); i++) {
@@ -80,12 +80,11 @@ public class SideEffectMap {
                         //}
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.IN_EDGES_PROCESSED, edgesProcessed);
-//                context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.IN_EDGES_PROCESSED, edgesProcessed);
 
                 edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         edgesProcessed++;
                         //for (int i = 0; i < edge.pathCount(); i++) {
@@ -93,8 +92,7 @@ public class SideEffectMap {
                         //}
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
-//                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
 
             context.write(NullWritable.get(), value);

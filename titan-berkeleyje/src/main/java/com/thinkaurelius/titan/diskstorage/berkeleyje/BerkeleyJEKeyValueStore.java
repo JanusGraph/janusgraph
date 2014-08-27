@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
@@ -105,11 +107,13 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     }
 
     @Override
-    public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd,
-                                                  KeySelector selector, StoreTransaction txh) throws BackendException {
+    public RecordIterator<KeyValueEntry> getSlice(KVQuery query, StoreTransaction txh) throws BackendException {
         log.trace("beginning db={}, op=getSlice, tx={}", name, txh);
         Transaction tx = getTransaction(txh);
         Cursor cursor = null;
+        final StaticBuffer keyStart = query.getStart();
+        final StaticBuffer keyEnd = query.getEnd();
+        final KeySelector selector = query.getKeySelector();
         final List<KeyValueEntry> result = new ArrayList<KeyValueEntry>();
         try {
             DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
@@ -167,6 +171,11 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 throw new PermanentBackendException(e);
             }
         }
+    }
+
+    @Override
+    public Map<KVQuery,RecordIterator<KeyValueEntry>> getSlices(List<KVQuery> queries, StoreTransaction txh) throws BackendException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

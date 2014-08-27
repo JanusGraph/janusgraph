@@ -2,13 +2,17 @@ package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
@@ -27,22 +31,25 @@ import java.util.*;
 
 public class StandardAttributeHandling implements AttributeHandling {
 
-    public static final List<Class<? extends Object>> DEFAULT_REGISTRATIONS =
+    private static final List<Class> DEFAULT_REGISTRATIONS =
             ImmutableList.of(
                     //General
-                    ArrayList.class, HashMap.class, Object.class,
+                    (Class)ArrayList.class, HashMap.class, Object.class, Class.class,
                     //Titan specific
                     TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanSchemaCategory.class,
-                    Parameter.class, Parameter[].class, ParameterType.class,
+                    Parameter.class, Parameter[].class, ParameterType.class, RelationCategory.class,
                     Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
                     ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
-                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class
+                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class, StandardTimestamp.class
             );
 
     private final Map<Class,AttributeHandler> handlers;
+    private final List<Class> defaultRegistrations;
+    private boolean initialized = false;
 
     public StandardAttributeHandling() {
         handlers = new HashMap<Class, AttributeHandler>(60);
+        defaultRegistrations = Lists.newArrayList(DEFAULT_REGISTRATIONS);
 
         //Sort key data types
         registerClass(Byte.class, new ByteSerializer());
@@ -71,6 +78,12 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(char[].class, new CharArraySerializer());
         registerClass(boolean[].class, new BooleanArraySerializer());
         registerClass(String[].class, new StringArraySerializer());
+
+        initialized = true;
+    }
+
+    public List<Class> getDefaultRegistrations() {
+        return defaultRegistrations;
     }
 
     @Override
@@ -78,6 +91,10 @@ public class StandardAttributeHandling implements AttributeHandling {
         Preconditions.checkNotNull(datatype);
         Preconditions.checkNotNull(handler);
         Preconditions.checkArgument(!handlers.containsKey(datatype),"DataType has already been registered: %s",datatype);
+        if (!initialized) {
+            Preconditions.checkArgument(!defaultRegistrations.contains(datatype));
+            defaultRegistrations.add(datatype);
+        }
         handlers.put(datatype,handler);
     }
 

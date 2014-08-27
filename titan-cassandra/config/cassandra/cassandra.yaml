@@ -25,6 +25,8 @@ cluster_name: 'Cassandra testing instance'
 # a random token, which will lead to hot spots.
 initial_token: ${cassandra.token}
 
+${cassandra.num.tokens}
+
 # See http://wiki.apache.org/cassandra/HintedHandoff
 hinted_handoff_enabled: true
 # this defines the maximum amount of time a dead host will have hints

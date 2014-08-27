@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -22,10 +22,10 @@ import java.util.Map;
  */
 public class BackFilterMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new BackFilterMapReduce.Map());
         mapReduceDriver.setCombiner(new BackFilterMapReduce.Combiner());
         mapReduceDriver.setReducer(new BackFilterMapReduce.Reduce());
@@ -35,7 +35,7 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 0);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -52,13 +52,13 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 0);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(1l)), false);
-        graph.get(2l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);
-        graph.get(3l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(3l)), false);
-        graph.get(4l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(3l), new HadoopVertex.MicroVertex(4l)), false);
-        graph.get(5l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(3l), new HadoopVertex.MicroVertex(5l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(1l)), false);
+        graph.get(2l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new FaunusVertex.MicroVertex(3l)), false);
+        graph.get(4l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(3l), new FaunusVertex.MicroVertex(4l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(3l), new FaunusVertex.MicroVertex(5l)), false);
 
         graph = runWithGraph(graph, mapReduceDriver);
 
@@ -77,13 +77,13 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = BackFilterMapReduce.createConfiguration(Vertex.class, 1);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
-        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopEdge.MicroEdge(1l)), false);
-        graph.get(2l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopEdge.MicroEdge(2l)), false);
-        graph.get(3l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopEdge.MicroEdge(3l)), false);
-        graph.get(4l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(3l), new HadoopEdge.MicroEdge(4l)), false);
-        graph.get(5l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(3l), new HadoopEdge.MicroEdge(5l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new StandardFaunusEdge.MicroEdge(1l)), false);
+        graph.get(2l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new StandardFaunusEdge.MicroEdge(2l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new StandardFaunusEdge.MicroEdge(3l)), false);
+        graph.get(4l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(3l), new StandardFaunusEdge.MicroEdge(4l)), false);
+        graph.get(5l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(3l), new StandardFaunusEdge.MicroEdge(5l)), false);
 
         try {
             graph = runWithGraph(graph, mapReduceDriver);
@@ -97,12 +97,12 @@ public class BackFilterMapReduceTest extends BaseTest {
         Configuration config = BackFilterMapReduce.createConfiguration(Edge.class, 0);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
-        ((HadoopEdge) graph.get(1l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopEdge.MicroEdge(2l)), false);
-        ((HadoopEdge) graph.get(6l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(6l), new HadoopEdge.MicroEdge(2l)), false);
-        ((HadoopEdge) graph.get(6l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopEdge.MicroEdge(2l)), false);
-        ((HadoopEdge) graph.get(6l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopEdge.MicroEdge(2l)), false);
+        ((StandardFaunusEdge) graph.get(1l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new StandardFaunusEdge.MicroEdge(2l)), false);
+        ((StandardFaunusEdge) graph.get(6l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(6l), new StandardFaunusEdge.MicroEdge(2l)), false);
+        ((StandardFaunusEdge) graph.get(6l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new StandardFaunusEdge.MicroEdge(2l)), false);
+        ((StandardFaunusEdge) graph.get(6l).getEdges(Direction.OUT, "created").iterator().next()).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new StandardFaunusEdge.MicroEdge(2l)), false);
 
 
         graph = runWithGraph(graph, mapReduceDriver);
@@ -117,7 +117,7 @@ public class BackFilterMapReduceTest extends BaseTest {
 
         for (Vertex vertex : graph.values()) {
             for (Edge e : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((HadoopEdge) e).pathCount(), 0);
+                assertEquals(((StandardFaunusEdge) e).pathCount(), 0);
             }
         }
 

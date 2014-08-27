@@ -34,7 +34,7 @@ class HadoopGremlin {
     }
 
     public static String version() {
-        return "titan-hadoop-" + com.thinkaurelius.titan.hadoop.Tokens.VERSION + ":gremlin-" + com.tinkerpop.gremlin.Tokens.VERSION;
+        return "titan-hadoop-" + com.thinkaurelius.titan.graphdb.configuration.TitanConstants.VERSION + ":gremlin-" + com.tinkerpop.gremlin.Tokens.VERSION;
     }
 
     public static String language() {

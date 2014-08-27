@@ -80,7 +80,6 @@ public class Backend implements LockerProvider {
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
     public static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
-    public static final String USER_LOG_PREFIX = "ulog_";
 
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
@@ -104,6 +103,7 @@ public class Backend implements LockerProvider {
     private KCVSCache txLogStore;
     private IDAuthority idAuthority;
     private KCVSConfiguration systemConfig;
+    private boolean hasAttemptedClose;
 
     private final KCVSLogManager mgmtLogManager;
     private final KCVSLogManager txLogManager;
@@ -117,7 +117,6 @@ public class Backend implements LockerProvider {
     private final Duration maxReadTime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
-
 
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers =
@@ -134,7 +133,7 @@ public class Backend implements LockerProvider {
 
         mgmtLogManager = getKCVSLogManager(MANAGEMENT_LOG);
         txLogManager = getKCVSLogManager(TRANSACTION_LOG);
-        userLogManager = getLogManager(TRIGGER_LOG);
+        userLogManager = getLogManager(USER_LOG);
 
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
@@ -296,6 +295,10 @@ public class Backend implements LockerProvider {
         copy.putAll(indexes);
         return copy.build();
     }
+//
+//    public IndexProvider getIndexProvider(String name) {
+//        return indexes.get(name);
+//    }
 
     public KCVSLog getSystemTxLog() {
         try {
@@ -352,7 +355,7 @@ public class Backend implements LockerProvider {
             return new KCVSLogManager(sm,logConfig);
         } else {
             Preconditions.checkArgument(config!=null);
-            LogManager lm = getImplementationClass(config,config.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
+            LogManager lm = getImplementationClass(logConfig,logConfig.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
             Preconditions.checkNotNull(lm);
             return lm;
         }
@@ -479,21 +482,26 @@ public class Backend implements LockerProvider {
                 maxReadTime, indexTx, threadPool);
     }
 
-    public void close() throws BackendException {
-        mgmtLogManager.close();
-        txLogManager.close();
-        userLogManager.close();
+    public synchronized void close() throws BackendException {
+        if (!hasAttemptedClose) {
+            hasAttemptedClose = true;
+            mgmtLogManager.close();
+            txLogManager.close();
+            userLogManager.close();
 
-        edgeStore.close();
-        indexStore.close();
-        idAuthority.close();
-        systemConfig.close();
-        storeManager.close();
-        if(threadPool != null) {
-        	threadPool.shutdown();
+            edgeStore.close();
+            indexStore.close();
+            idAuthority.close();
+            systemConfig.close();
+            storeManager.close();
+            if(threadPool != null) {
+            	threadPool.shutdown();
+            }
+            //Indexes
+            for (IndexProvider index : indexes.values()) index.close();
+        } else {
+            log.debug("Backend {} has already been closed or cleared", this);
         }
-        //Indexes
-        for (IndexProvider index : indexes.values()) index.close();
     }
 
     /**
@@ -503,18 +511,27 @@ public class Backend implements LockerProvider {
      *
      * @throws BackendException
      */
-    public void clearStorage() throws BackendException {
-        mgmtLogManager.close();
-        txLogManager.close();
-        userLogManager.close();
+    public synchronized void clearStorage() throws BackendException {
+        if (!hasAttemptedClose) {
+            hasAttemptedClose = true;
+            mgmtLogManager.close();
+            txLogManager.close();
+            userLogManager.close();
 
-        edgeStore.close();
-        indexStore.close();
-        idAuthority.close();
-        systemConfig.close();
-        storeManager.clearStorage();
-        //Indexes
-        for (IndexProvider index : indexes.values()) index.clearStorage();
+            edgeStore.close();
+            indexStore.close();
+            idAuthority.close();
+            systemConfig.close();
+            storeManager.clearStorage();
+            storeManager.close();
+            //Indexes
+            for (IndexProvider index : indexes.values()) {
+                index.clearStorage();
+                index.close();
+            }
+        } else {
+            log.debug("Backend {} has already been closed or cleared", this);
+        }
     }
 
     //############ Registered Storage Managers ##############
@@ -543,14 +560,14 @@ public class Backend implements LockerProvider {
         put("inmemory", null);
     }};
 
-    private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
+    public static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
         put("lucene", "com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
         put("elasticsearch", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
         put("es", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
         put("solr", "com.thinkaurelius.titan.diskstorage.solr.SolrIndex");
     }};
 
-    private static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
+    public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
         put("default","com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager");
     }};
 

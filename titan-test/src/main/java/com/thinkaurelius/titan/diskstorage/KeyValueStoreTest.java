@@ -2,8 +2,14 @@ package com.thinkaurelius.titan.diskstorage;
 
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,12 +17,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVUtil;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 public abstract class KeyValueStoreTest extends AbstractKCVSTest {
@@ -33,7 +35,9 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
     @Before
     public void setUp() throws Exception {
-        openStorageManager().clearStorage();
+        StoreManager m = openStorageManager();
+        m.clearStorage();
+        m.close();
         open();
     }
 
@@ -106,12 +110,36 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     public void checkValues(String[] values, Set<Integer> removed) throws BackendException {
+        //1. Check one-by-one
         for (int i = 0; i < numKeys; i++) {
             StaticBuffer result = store.get(KeyValueStoreUtil.getBuffer(i), tx);
             if (removed.contains(i)) {
                 Assert.assertNull(result);
             } else {
                 Assert.assertEquals(values[i], KeyValueStoreUtil.getString(result));
+            }
+        }
+        //2. Check all at once (if supported)
+        if (manager.getFeatures().hasMultiQuery()) {
+            List<KVQuery> queries = Lists.newArrayList();
+            for (int i = 0; i < numKeys; i++) {
+                StaticBuffer key = KeyValueStoreUtil.getBuffer(i);
+                queries.add(new KVQuery(key, BufferUtil.nextBiggerBuffer(key),2));
+            }
+            Map<KVQuery,RecordIterator<KeyValueEntry>> results = store.getSlices(queries,tx);
+            for (int i = 0; i < numKeys; i++) {
+                RecordIterator<KeyValueEntry> result = results.get(queries.get(i));
+                Assert.assertNotNull(result);
+                StaticBuffer value;
+                if (result.hasNext()) {
+                    value = result.next().getValue();
+                    Assert.assertFalse(result.hasNext());
+                } else value=null;
+                if (removed.contains(i)) {
+                    Assert.assertNull(value);
+                } else {
+                    Assert.assertEquals(values[i], KeyValueStoreUtil.getString(value));
+                }
             }
         }
     }
@@ -184,7 +212,7 @@ public abstract class KeyValueStoreTest extends AbstractKCVSTest {
     }
 
     private RecordIterator<KeyValueEntry> getAllData(StoreTransaction tx) throws BackendException {
-        return store.getSlice(BackendTransaction.EDGESTORE_MIN_KEY, BackendTransaction.EDGESTORE_MAX_KEY, KeySelector.SelectAll, tx);
+        return store.getSlice(new KVQuery(BackendTransaction.EDGESTORE_MIN_KEY, BackendTransaction.EDGESTORE_MAX_KEY), tx);
     }
 
 

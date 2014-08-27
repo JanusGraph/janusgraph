@@ -1,4 +1,4 @@
-[[faunus-gremlin-steps]]
+[[hadoop-gremlin-steps]]
 Gremlin Steps
 -------------
 
@@ -8,19 +8,21 @@ Gremlin Steps
 // [.tss-floatright]
 // image:faunus-head.png[]
 
-http://gremlin.tinkerpop.com[Gremlin] is a graph traversal language developed by http://tinkerpop.com[TinkerPop]. Titan-Hadoop Gremlin steps are implemented in http://hadoop.apache.org/mapreduce/[MapReduce]. For sake of clarity, the Gremlin that compiles down to http://pipes.tinkerpop.com[Pipes] and is used for real-time traversals against a graph database is denoted Gremlin/Pipes. The Gremlin that is distributed with Titan-Hadoop and compiles down to MapReduce is denoted Gremlin/Faunus.
+http://gremlin.tinkerpop.com[Gremlin] is a graph traversal language developed by http://tinkerpop.com[TinkerPop].
 
-There are major conceptual differences between Gremlin/Pipes and Gremlin/Faunus. These differences are itemized below.
+Titan contains two implementations of Gremlin. In this document, the Gremlin implementation that compiles down to http://pipes.tinkerpop.com[Pipes] and is used for real-time traversals that run in a single process is denoted Gremlin/Pipes.  The Gremlin implementation that compiles down to Hadoop MapReduce jobs that potentially run on a many-node cluster is denoted Gremlin/Hadoop.  Gremlin/Pipes is what a graph created with `TitanFactory.open` uses.  Gremlin/Hadoop is what a graph created with `HadoopFactory.open` uses.
 
-* Gremlin/Faunus is http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first]. Gremlin/Pipes is http://en.wikipedia.org/wiki/Depth-first_search[depth-first].
-* Gremlin/Faunus processes rows of an adjacency matrix (vertex-centric). Gremlin/Pipes processes elements in a linked-list (element-centric).
-* Gremlin/Faunus is inherently parallel with each vertex being operated on simultaneously. Gremlin/Pipes is inherently serial with one element at a time being pushed through the pipeline.
+Beyond implementation details, Gremlin/Pipes and Gremlin/Hadoop have major conceptual differences:. These differences are itemized below.
 
-The table below presents the steps provided with Gremlin/Faunus.
+* Gremlin/Hadoop is http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first]. Gremlin/Pipes is http://en.wikipedia.org/wiki/Depth-first_search[depth-first].
+* Gremlin/Hadoop processes rows of an adjacency matrix (vertex-centric). Gremlin/Pipes processes elements in a linked-list (element-centric).
+* Gremlin/Hadoop is inherently parallel with each vertex being operated on simultaneously. Gremlin/Pipes is inherently serial with one element at a time being pushed through the pipeline.
+
+The table below presents the Gremlin steps implemented in Gremlin/Hadoop.
 
 [options="header",width="100%"]
 |==============================
-| Gremlin/Faunus step | Description | Reduce?
+| Gremlin/Hadoop step | Description | Reduce?
 | *transforms* | |
 | `_` | the identity step that simply updates Hadoop counters | false
 | `transform(closure)` | evaluate the closure on current elements | false
@@ -77,7 +79,7 @@ When paths are turned on, Titan-Hadoop provides a `WARN` message.
 [source,gremlin]
 ----
 gremlin> g.V.out.path
-12/09/17 09:00:25 WARN mapreduce.HadoopCompiler: Path calculations are enabled for this Titan-Hadoop job (space and time expensive)
+WARN mapreduce.HadoopCompiler: Path calculations are enabled for this Titan-Hadoop job (space and time expensive)
 ...
 ----
 

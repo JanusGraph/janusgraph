@@ -201,14 +201,14 @@ public class SerializerTest extends SerializerTestCommon {
         try {
             out.writeClassAndObject(dc);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
 
         }
         TestTransientClass d = new TestTransientClass(101);
         try {
             out.writeClassAndObject(d);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
 
         }
         out.writeObject(null, TestClass.class);

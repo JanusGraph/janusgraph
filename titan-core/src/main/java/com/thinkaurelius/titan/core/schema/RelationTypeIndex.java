@@ -7,9 +7,9 @@ import com.tinkerpop.blueprints.Direction;
 /**
  * A RelationTypeIndex is an index installed on a {@link RelationType} to speed up vertex-centric indexes for that type.
  * A RelationTypeIndex is created via
- * {@link TitanManagement#createEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
+ * {@link TitanManagement#buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
  * for edge labels and
- * {@link TitanManagement#createPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
+ * {@link TitanManagement#buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
  * for property keys.
  * <p/>
  * This interface allows the inspection of already defined RelationTypeIndex'es. An existing index on a RelationType

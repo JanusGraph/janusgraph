@@ -1,13 +1,29 @@
-
 titan-dist
 ==========
 
-Building zip/tar.bz2 archives
+Building zip archives
 -----------------------------
 
-Run `mvn clean install -Paurelius-release -Dgpg.skip=true`.  Archives
-files will be written to the `target` subdir.  Append
-`-DskipTests=true` to the `mvn` invocation if desired.
+Run `mvn clean install -Paurelius-release -Dgpg.skip=true
+-DskipTests=true`.  This command can be run from either the root of
+the Titan repository (the parent of the titan-dist directory) or the
+titan-dist directory.  Running from the root of the repository is
+recommended.  Running from titan-dist requries that Titan's jars be
+available on either Sonatype, Maven Central, or your local Maven
+repository (~/.m2/repository/) depending on whether you're building a
+SNAPSHOT or a release tag.
+
+This command writes two archives:
+
+* titan-dist/titan-dist-hadoop-1/target/titan-$VERSION-hadoop1.zip
+* titan-dist/titan-dist-hadoop-2/target/titan-$VERSION-hadoop2.zip
+
+It's also possible to leave off the `-DskipTests=true`.  However, in
+the absence of `-DskipTests=true`, the -Paurelius-release argument
+causes titan-dist to run several automated integration tests of the
+zipfiles and the script files they contain.  These tests require unzip
+and expect, and they'll start and stop Cassandra, ES, and HBase in the
+course of their execution.
 
 Building documentation
 ----------------------

@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
@@ -35,19 +36,24 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
-    public static final ConfigOption<Integer> JVM_CACHE = new ConfigOption<Integer>(GraphDatabaseConfiguration.STORAGE_NS,"cache-percentage",
+    public static final ConfigNamespace BERKELEY_NS =
+            new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "berkeleydb", "BerkeleyDB configuration options");
+
+    public static final ConfigOption<Integer> JVM_CACHE =
+            new ConfigOption<Integer>(BERKELEY_NS,"cache-percentage",
             "Percentage of JVM heap reserved for BerkeleyJE's cache",
             ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
-//    public static final String CACHE_KEY = "cache-percentage";
-//    public static final int CACHE_DEFAULT = 65;
 
-    public static final ConfigOption<LockMode> LOCK_MODE = new ConfigOption<LockMode>(GraphDatabaseConfiguration.STORAGE_NS, "lock-mode",
+    public static final ConfigOption<LockMode> LOCK_MODE =
+            new ConfigOption<LockMode>(BERKELEY_NS, "lock-mode",
             "The BDB record lock mode used for read operations",
             ConfigOption.Type.MASKABLE, LockMode.class, LockMode.DEFAULT, disallowEmpty(LockMode.class));
 
-    public static final ConfigOption<IsolationLevel> ISOLATION_LEVEL = new ConfigOption<IsolationLevel>(GraphDatabaseConfiguration.STORAGE_NS, "isolation-level",
+    public static final ConfigOption<IsolationLevel> ISOLATION_LEVEL =
+            new ConfigOption<IsolationLevel>(BERKELEY_NS, "isolation-level",
             "The isolation level used by transactions",
-            ConfigOption.Type.MASKABLE,  IsolationLevel.class, IsolationLevel.REPEATABLE_READ, disallowEmpty(IsolationLevel.class));
+            ConfigOption.Type.MASKABLE,  IsolationLevel.class,
+            IsolationLevel.REPEATABLE_READ, disallowEmpty(IsolationLevel.class));
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 

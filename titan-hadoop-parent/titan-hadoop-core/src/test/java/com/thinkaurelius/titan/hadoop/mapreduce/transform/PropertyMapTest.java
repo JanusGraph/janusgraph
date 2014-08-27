@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.conf.Configuration;
@@ -22,10 +23,10 @@ import java.util.Map;
  */
 public class PropertyMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, WritableComparable, NullWritable, WritableComparable> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, WritableComparable, NullWritable, WritableComparable> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, WritableComparable, NullWritable, WritableComparable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, WritableComparable, NullWritable, WritableComparable>();
         mapReduceDriver.setMapper(new PropertyMap.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, WritableComparable, NullWritable, WritableComparable>());
     }
@@ -34,7 +35,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -53,10 +54,8 @@ public class PropertyMapTest extends BaseTest {
         assertEquals(results.get(4).getSecond().toString(), "ripple");
         assertEquals(results.get(5).getSecond().toString(), "peter");
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -65,7 +64,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -84,11 +83,8 @@ public class PropertyMapTest extends BaseTest {
         assertEquals(results.get(4).getSecond().get(), Integer.MIN_VALUE);
         assertEquals(results.get(5).getSecond().get(), 35);
 
-
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -97,7 +93,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 2);
@@ -115,11 +111,8 @@ public class PropertyMapTest extends BaseTest {
         assertEquals(results.get(3).getSecond().toString(), "lop");
         assertEquals(results.get(4).getSecond().toString(), "josh");
 
-
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }
@@ -128,7 +121,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 2);
@@ -146,11 +139,8 @@ public class PropertyMapTest extends BaseTest {
         assertEquals(results.get(3).getSecond().get(), Integer.MIN_VALUE);
         assertEquals(results.get(4).getSecond().get(), 32);
 
-
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.VERTICES_PROCESSED).getValue(), 4);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 4);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(PropertyMap.Counters.OUT_EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.VERTICES_PROCESSED), 4);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, PropertyMap.Counters.OUT_EDGES_PROCESSED), 0);
 
         identicalStructure(graph, BaseTest.ExampleGraph.TINKERGRAPH);
     }

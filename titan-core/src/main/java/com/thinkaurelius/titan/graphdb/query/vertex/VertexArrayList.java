@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.query.vertex;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
@@ -22,7 +21,7 @@ public class VertexArrayList implements VertexListInternal {
     public static final Comparator<TitanVertex> VERTEX_ID_COMPARATOR = new Comparator<TitanVertex>() {
         @Override
         public int compare(TitanVertex o1, TitanVertex o2) {
-            return Long.compare(o1.getID(),o2.getID());
+            return Long.compare(o1.getLongId(),o2.getLongId());
         }
     };
 
@@ -47,13 +46,13 @@ public class VertexArrayList implements VertexListInternal {
 
     @Override
     public void add(TitanVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size()-1).getID()<=n.getID());
+        if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size()-1).getLongId()<=n.getLongId());
         vertices.add(n);
     }
 
     @Override
     public long getID(int pos) {
-        return vertices.get(pos).getID();
+        return vertices.get(pos).getLongId();
     }
 
     @Override
@@ -121,7 +120,7 @@ public class VertexArrayList implements VertexListInternal {
     private static final LongArrayList toLongList(List<TitanVertex> vertices) {
         LongArrayList result = new LongArrayList(vertices.size());
         for (TitanVertex n : vertices) {
-            result.add(n.getID());
+            result.add(n.getLongId());
         }
         return result;
     }

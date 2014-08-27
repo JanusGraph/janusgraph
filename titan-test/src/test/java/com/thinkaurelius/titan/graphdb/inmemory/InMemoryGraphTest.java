@@ -70,6 +70,15 @@ public class InMemoryGraphTest extends TitanGraphTest {
     public void simpleLogTest() {}
 
     @Override
+    public void simpleLogTestWithFailure() {}
+
+    @Override
+    public void testIndexUpdatesWithoutReindex() {}
+
+    @Override
+    public void testIndexUpdateSyncWithMultipleInstances() {}
+
+    @Override
     protected boolean isLockingOptimistic() {
         return true;
     }

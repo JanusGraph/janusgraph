@@ -22,7 +22,7 @@ public class FaunusGremlinScriptEngine extends GremlinGroovyScriptEngine {
         HadoopGremlin.load();
         final CompilerConfiguration conf = new CompilerConfiguration();
         conf.addCompilationCustomizers(FaunusGremlinScriptEngine.getImportCustomizer());
-        this.loader = new GroovyClassLoader(getParentLoader(), conf);
+        this.loader = new GroovyClassLoader(this.getParentLoader(), conf);
         try {
             this.setBindings(Imports.getEvaluateBindings(), ScriptContext.GLOBAL_SCOPE);
         } catch (IOException e) {

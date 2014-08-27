@@ -36,28 +36,28 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     * ---------------------------------------------------------------
     */
 
-
     /**
-     * Creates a new vertex in the graph.
+     * Creates a new vertex in the graph with the default vertex label.
      *
      * @return New vertex in the graph created in the context of this transaction.
      */
     public TitanVertex addVertex();
 
     /**
-     * Creates a new vertex in the graph with the given vertex label name.
+     * Creates a new vertex in the graph with the vertex label named by the argument.
      *
-     * @return New vertex in the graph created in the context of this transaction.
+     * @param vertexLabel the name of the vertex label to use
+     * @return a new vertex in the graph created in the context of this transaction
      */
-    public TitanVertex addVertex(String vertexLabel);
+    public TitanVertex addVertexWithLabel(String vertexLabel);
 
     /**
      * Creates a new vertex in the graph with the given vertex label.
      *
-     * @return New vertex in the graph created in the context of this transaction.
+     * @param vertexLabel the vertex label which will apply to the new vertex
+     * @return a new vertex in the graph created in the context of this transaction
      */
-    public TitanVertex addVertex(VertexLabel vertexLabel);
-
+    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel);
 
     /**
      * Creates a new vertex in the graph with the given vertex id and the given vertex label.
@@ -229,7 +229,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public RelationType getRelationType(String name);
 
     /**
-     * Returns the property key with the given name.
+     * Returns the property key with the given name. If automatic type making is enabled, it will make the property key
+     * using the configured default type maker if a key with the given name does not exist.
      *
      * @param name name of the property key to return
      * @return the property key with the given name
@@ -240,7 +241,8 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public PropertyKey getPropertyKey(String name);
 
     /**
-     * Returns the edge label with the given name.
+     * Returns the edge label with the given name. If automatic type making is enabled, it will make the edge label
+     * using the configured default type maker if a label with the given name does not exist.
      *
      * @param name name of the edge label to return
      * @return the edge label with the given name

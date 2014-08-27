@@ -1,3 +1,4 @@
+[[hdfs-utils]]
 HDFS Handling
 -------------
 
@@ -15,7 +16,7 @@ Gremlin provides methods to easily interact with both the local file system and 
 | Method | Description
 | `ls()` | list all the contents in the home directory
 | `ls(pattern)` | list all the contents that match the pattern
-| `result(path)` | display the directory of the final result of a Faunus job
+| `result(path)` | display the directory of the final result of a job
 | `exists(path)` | return true or false on whether path exists
 | `rm(pattern)` | remove all paths that match the pattern
 | `rmr(pattern)` | recursively remove all paths that match the pattern

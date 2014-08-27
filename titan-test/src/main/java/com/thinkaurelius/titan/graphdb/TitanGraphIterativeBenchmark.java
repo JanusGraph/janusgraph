@@ -75,10 +75,10 @@ public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
 
 
     public void loadData(final int numVertices, final int numThreads) throws Exception {
-        graph.makePropertyKey("w").dataType(Integer.class).make();
-        PropertyKey time = graph.makePropertyKey("t").dataType(Long.class).make();
-        ((StandardEdgeLabelMaker)graph.makeEdgeLabel("l")).sortKey(time).make();
-        graph.commit();
+        makeKey("w",Integer.class);
+        PropertyKey time = makeKey("t",Long.class);
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("l")).sortKey(time).make();
+        finishSchema();
 
         final int maxQueue = 1000;
         final int verticesPerTask = 1000;

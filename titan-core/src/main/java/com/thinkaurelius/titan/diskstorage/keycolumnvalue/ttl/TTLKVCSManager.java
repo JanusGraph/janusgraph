@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TTLKVCSManager extends KCVSManagerProxy {
+public class TTLKVCSManager extends KCVSManagerProxy implements CustomizeStoreKCVSManager {
 
     private final StoreFeatures features;
     private final Map<String,Integer> ttlEnabledStores;
@@ -60,13 +60,17 @@ public class TTLKVCSManager extends KCVSManagerProxy {
 
     @Override
     public KeyColumnValueStore openDatabase(String name) throws BackendException {
-        int ttl = getTTL(name);
+        return openDatabase(name,getTTL(name));
+    }
+
+    @Override
+    public KeyColumnValueStore openDatabase(String name, int ttlInSeconds) throws BackendException {
         if (manager.getFeatures().hasStoreTTL()) {
-            return ((CustomizeStoreKCVSManager)manager).openDatabase(name,ttl);
+            return ((CustomizeStoreKCVSManager)manager).openDatabase(name,ttlInSeconds);
         } else {
             assert manager.getFeatures().hasCellTTL();
             KeyColumnValueStore store = manager.openDatabase(name);
-            return new TTLKCVS(store,ttl);
+            return new TTLKCVS(store,ttlInSeconds);
         }
     }
 
@@ -98,5 +102,6 @@ public class TTLKVCSManager extends KCVSManagerProxy {
             ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL,ttl);
         }
     }
+
 
 }

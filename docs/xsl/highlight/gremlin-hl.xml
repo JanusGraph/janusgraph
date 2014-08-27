@@ -29,7 +29,7 @@
 		<style>repl-result</style>
 	</highlighter>
         <highlighter type="regex">
-	        <pattern>(E|V||both|bothE|bothV|cap|gather|id|in|inE|inV|key|label|linkBoth|linkIn|LinkOut|map|memoize|order|orderMap|out|outE|outV|path|scatter|select|shuffle|transform|and|back|dedup|except|filter|has|hasNot|interval|or|random|retain|simplePath|aggregate|as|groupBy|groupCount|optional|sideEffect|store|table|tree|copySplit|exhaustMerge|fairMerge|ifThenElse|loop|addEdge|addVertex|removeEdge|removeVertex|fill|iterate|next)(\(| |\n|$)</pattern>
+	        <pattern>(E|V||both|bothE|bothV|cap|gather|id|in|inE|inV|key|label|linkBoth|linkIn|LinkOut|map|memoize|order|orderMap|out|outE|outV|path|scatter|select|shuffle|transform|and|back|dedup|except|filter|has|hasNot|interval|or|random|retain|simplePath|aggregate|as|groupBy|groupCount|optional|sideEffect|store|table|tree|copySplit|exhaustMerge|fairMerge|ifThenElse|loop|addEdge|addVertex|addVertexWithLabel|removeEdge|removeVertex|fill|iterate|next)(\(| |\n|$)</pattern>
                 <style>gremlin-func</style>
         </highlighter>
         <highlighter type="regex">

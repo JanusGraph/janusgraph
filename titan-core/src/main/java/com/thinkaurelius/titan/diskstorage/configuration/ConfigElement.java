@@ -136,7 +136,7 @@ public abstract class ConfigElement {
         while (!element.isRoot() && !element.getNamespace().isRoot()) {
             ConfigNamespace parent = element.getNamespace();
             if (parent.isUmbrella()) {
-                Preconditions.checkArgument(umbrellaPos>=0,"Missing umbrella element path");
+                Preconditions.checkArgument(umbrellaPos>=0,"Missing umbrella element path for element: %s",element);
                 String umbrellaName = umbrellaElements[umbrellaPos];
                 Preconditions.checkArgument(!StringUtils.containsAny(umbrellaName,ILLEGAL_CHARS),"Invalid umbrella name provided: %s. Contains illegal chars",umbrellaName);
                 path = umbrellaName + SEPARATOR + path;

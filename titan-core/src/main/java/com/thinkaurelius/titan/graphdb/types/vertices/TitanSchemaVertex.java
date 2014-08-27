@@ -37,12 +37,12 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getSchemaRelations(getID(), BaseKey.SchemaName, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getSchemaRelations(getLongId(), BaseKey.SchemaName, Direction.OUT, tx()),
                         tx), null);
             } else {
                 p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
             }
-            Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
+            Preconditions.checkState(p!=null,"Could not find type for id: %s", getLongId());
             name = p.getValue();
         }
         assert name != null;
@@ -65,7 +65,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getSchemaRelations(getID(), BaseKey.SchemaDefinitionProperty, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getSchemaRelations(getLongId(), BaseKey.SchemaDefinitionProperty, Direction.OUT, tx()),
                         tx);
             } else {
                 ps = query().type(BaseKey.SchemaDefinitionProperty).properties();
@@ -96,7 +96,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 edges = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getSchemaRelations(getID(), BaseLabel.SchemaDefinitionEdge, dir, tx()),
+                        tx.getGraph().getSchemaCache().getSchemaRelations(getLongId(), BaseLabel.SchemaDefinitionEdge, dir, tx()),
                         tx);
             } else {
                 edges = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir).titanEdges();
@@ -159,7 +159,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
 
     @Override
     public IndexType asIndexType() {
-        Preconditions.checkArgument(getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX),"Schema vertex is not a type vertex: [%s,%s]",getID(),getName());
+        Preconditions.checkArgument(getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX),"Schema vertex is not a type vertex: [%s,%s]", getLongId(),getName());
         if (getDefinition().getValue(TypeDefinitionCategory.INTERNAL_INDEX)) {
             return new CompositeIndexTypeWrapper(this);
         } else {

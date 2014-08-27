@@ -1,37 +1,29 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.Inverter;
-import com.thinkaurelius.titan.hadoop.hdfs.HDFSTools;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 
-import org.apache.hadoop.conf.Configurable;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.OutputFormat;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
+import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.formats.Inverter;
+import com.thinkaurelius.titan.hadoop.hdfs.HDFSTools;
+import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class HadoopGraph extends HybridConfigured {
-
-    public static final String TITAN_HADOOP_GRAPH_INPUT_FORMAT = "titan.hadoop.input.format";
-    public static final String TITAN_HADOOP_INPUT_LOCATION = "titan.hadoop.input.location";
-
-    public static final String TITAN_HADOOP_GRAPH_OUTPUT_FORMAT = "titan.hadoop.output.format";
-    public static final String TITAN_HADOOP_SIDEEFFECT_OUTPUT_FORMAT = "titan.hadoop.sideeffect.output.format";
-    public static final String TITAN_HADOOP_OUTPUT_LOCATION = "titan.hadoop.output.location";
-    public static final String TITAN_HADOOP_OUTPUT_LOCATION_OVERWRITE = "titan.hadoop.output.location.overwrite";
-
-//    private Configuration configuration;
 
     public HadoopGraph() {
         super();
@@ -55,92 +47,106 @@ public class HadoopGraph extends HybridConfigured {
     // GRAPH INPUT AND OUTPUT FORMATS
 
     public Class<? extends InputFormat> getGraphInputFormat() {
-        return getConf().getClass(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_FORMAT), InputFormat.class, InputFormat.class);
+        return titanConf.getClass(INPUT_FORMAT, InputFormat.class, InputFormat.class);
     }
 
     public void setGraphInputFormat(final Class<? extends InputFormat> format) {
-        setConfClass(TitanHadoopConfiguration.INPUT_FORMAT, format, InputFormat.class);
+        titanConf.setClass(INPUT_FORMAT, format, InputFormat.class);
     }
 
     public Class<? extends OutputFormat> getGraphOutputFormat() {
-        Class<? extends OutputFormat> cls = getConf().getClass(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_FORMAT), OutputFormat.class, OutputFormat.class);
-        return cls;
+        return titanConf.getClass(OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
-    public void setGraphOutputFormat(final Class<? extends OutputFormat> format) {
-        setConfClass(TitanHadoopConfiguration.OUTPUT_FORMAT, format, OutputFormat.class);
+    public void setGraphOutputFormat(final Class<? extends OutputFormat<?,?>> format) {
+        titanConf.setClass(OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // SIDE-EFFECT OUTPUT FORMAT
 
     public Class<? extends OutputFormat> getSideEffectOutputFormat() {
-        return getConf().getClass(ConfigElement.getPath(TitanHadoopConfiguration.SIDE_EFFECT_FORMAT), OutputFormat.class, OutputFormat.class);
+        return titanConf.getClass(SIDE_EFFECT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
-    public void setSideEffectOutputFormat(final Class<? extends OutputFormat> format) {
-        setConfClass(TitanHadoopConfiguration.SIDE_EFFECT_FORMAT, format, OutputFormat.class);
+    public void setSideEffectOutputFormat(final Class<? extends OutputFormat<?,?>> format) {
+        titanConf.setClass(SIDE_EFFECT_FORMAT, format, OutputFormat.class);
     }
 
     // INPUT AND OUTPUT LOCATIONS
 
     public Path getInputLocation() {
-        if (!getTitanConf().has(TitanHadoopConfiguration.INPUT_LOCATION))
+        if (!getTitanConf().has(INPUT_LOCATION))
             return null;
-        return new Path(getTitanConf().get(TitanHadoopConfiguration.INPUT_LOCATION));
+
+        return new Path(getTitanConf().get(INPUT_LOCATION));
     }
 
     public void setInputLocation(final Path path) {
-        getConf().set(ConfigElement.getPath(TitanHadoopConfiguration.INPUT_LOCATION), path.toString());
+        getTitanConf().set(INPUT_LOCATION, path.toString());
     }
 
     public void setInputLocation(final String path) {
         this.setInputLocation(new Path(path));
     }
 
-    public Path getOutputLocation() {
-        if (!getTitanConf().has(TitanHadoopConfiguration.OUTPUT_LOCATION))
-            throw new IllegalStateException("Please set " + TitanHadoopConfiguration.OUTPUT_LOCATION + " configuration option.");
+    // Edge copy
 
-        return new Path(getTitanConf().get(TitanHadoopConfiguration.OUTPUT_LOCATION));
+    public boolean hasEdgeCopyDirection() {
+        ModifiableConfiguration mc = getTitanConf();
+        return mc.has(INPUT_EDGE_COPY_DIR) || mc.has(INPUT_EDGE_COPY_DIRECTION);
     }
 
-    public void setOutputLocation(final Path path) {
-        getConf().set(ConfigElement.getPath(TitanHadoopConfiguration.OUTPUT_LOCATION), path.toString());
+    public Direction getEdgeCopyDirection() {
+        return getTitanConf().getEdgeCopyDirection();
     }
 
-    public void setOutputLocation(final String path) {
-        this.setOutputLocation(new Path(path));
+    // JOB AND FILESYSTEM
+
+    public Path getJobDir() {
+        return new Path(getTitanConf().get(JOBDIR_LOCATION));
     }
 
-    public boolean getOutputLocationOverwrite() {
-        return getTitanConf().get(TitanHadoopConfiguration.OUTPUT_OVERWRITE);
+    public void setJobDir(final Path path) {
+        getTitanConf().set(JOBDIR_LOCATION, path.toString());
+    }
+
+    public void setJobDir(final String path) {
+        setJobDir(new Path(path));
+    }
+
+    public boolean getJobDirOverwrite() {
+        return getTitanConf().get(JOBDIR_OVERWRITE);
+    }
+
+    public FileSystem getFileSystem() throws IOException {
+        return FileSystem.get(getConf());
     }
 
     public boolean getTrackPaths() {
-        return getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
+        return getTitanConf().get(PIPELINE_TRACK_PATHS);
     }
 
     public boolean getTrackState() {
-        return getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
+        return getTitanConf().get(PIPELINE_TRACK_STATE);
     }
 
     public void shutdown() {
-        getConf().clear();
+        clearConfiguration();
     }
 
     public String toString() {
         return String.format("titangraph[hadoop:%s->%s]",
-            getConfClass(TitanHadoopConfiguration.INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase(),
-            getConfClass(TitanHadoopConfiguration.OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase());
+            titanConf.getClass(TitanHadoopConfiguration.INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase(),
+            titanConf.getClass(TitanHadoopConfiguration.OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase());
     }
 
     public HadoopGraph getNextGraph() throws IOException {
         HadoopGraph graph = new HadoopGraph(this.getConf());
         if (null != getGraphOutputFormat())
             graph.setGraphInputFormat(Inverter.invertOutputFormat(getGraphOutputFormat()));
-        if (null != getOutputLocation()) {
-            graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(getConf()), getOutputLocation().toString()));
-            graph.setOutputLocation(new Path(getOutputLocation().toString() + "_"));
+        if (null != getJobDir()) {
+            graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(getConf()), getJobDir().toString()));
+            graph.setJobDir(new Path(getJobDir().toString() + "_"));
         }
         return graph;
     }

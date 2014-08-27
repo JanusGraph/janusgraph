@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,13 +15,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Returns the absolute path of this script regardless of symlinks
+abs_path() {
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
 if [ "`basename "$0"`" = 'nodeprobe' ]; then
     echo "***************************************************************" >&2
-    echo "WARNING: $0 is obsolete, use `dirname "$0"`/nodetool instead" >&2
+    echo "WARNING: $0 is obsolete, use `abs_path`/nodetool instead" >&2
     echo "***************************************************************" >&2
 fi
 
-export CASSANDRA_INCLUDE="`dirname $0`/cassandra.in.sh"
+export CASSANDRA_INCLUDE="`abs_path`/cassandra.in.sh"
 . "$CASSANDRA_INCLUDE"
 
 # Use JAVA_HOME if set, otherwise look for java in PATH

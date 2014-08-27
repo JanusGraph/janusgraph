@@ -2,7 +2,7 @@
 Example Graph Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This page illustrates a number of common graph configurations. Please refer to the <<graph-config,Graph Configuration>> documentation and the pages of the respective <<storage-backends,storage backend>>  <<index-backends,index backend>> for more information.
+This page illustrates a number of common graph configurations. Please refer to <<titan-config-ref>> and the pages of the respective <<storage-backends,storage backend>>  <<index-backends,index backend>> for more information.
 
 Also, note that the Titan distribution includes local configuration files in the `conf/` directory.
 
@@ -14,10 +14,10 @@ BerkeleyDB
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
 
-storage.index.search.backend=elasticsearch
-storage.index.search.directory=/tmp/searchindex
-storage.index.search.client-only=false
-storage.index.search.local-mode=true
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
 ----
 
 This configuration file configures Titan to use <<bdb,BerkeleyDB>> as an embedded storage backend, meaning, Titan will start BerkeleyDB internally. The primary data will be stored in the directory `/tmp/graph`.
@@ -35,9 +35,9 @@ Cassandra Remote
 storage.backend=cassandra
 storage.hostname=100.100.100.1,100.100.100.2
 
-storage.index.search.backend=elasticsearch
-storage.index.search.hostname=100.100.101.1,100.100.101.2
-storage.index.search.client-only=true
+index.search.backend=elasticsearch
+index.search.hostname=100.100.101.1,100.100.101.2
+index.search.elasticsearch.client-only=true
 ----
 
 This configuration file configures Titan to use <<cassandra,Cassandra>> as a remote storage backend. It assumes that a Cassandra cluster is running and accessible at the given IP addresses. If Cassandra is running locally, use the IP address `127.0.0.1`.
@@ -50,12 +50,12 @@ Embedded Cassandra
 [source,properties]
 ----
 storage.backend=embeddedcassandra
-storage.cassandra-config-dir=config/cassandra.yaml
+storage.conf-file=config/cassandra.yaml
 
-storage.index.search.backend=elasticsearch
-storage.index.search.directory=/tmp/searchindex
-storage.index.search.client-only=false
-storage.index.search.local-mode=true
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
 ----
 
 This configuration file configures Titan to start <<cassandra,Cassandra>> internally embedded in Titan and specifies the yaml configuration file for Cassandra. Cassandra is still accessible externally and can connect to other available Cassandra nodes to form a cluster as configured in the yaml file.
@@ -71,9 +71,9 @@ storage.backend=hbase
 storage.hostname=127.0.0.1
 storage.port=2181
 
-storage.index.search.backend=elasticsearch
-storage.index.search.hostname=127.0.0.1
-storage.index.search.client-only=true
+index.search.backend=elasticsearch
+index.search.hostname=127.0.0.1
+index.search.elasticsearch.client-only=true
 ----
 
 This configuration file configures Titan to use <<hbase,HBase>> as a remote storage backend. It assumes that an HBase cluster is running and accessible at the given IP addresses through the configured port. If HBase is running locally, use the IP address `127.0.0.1`.

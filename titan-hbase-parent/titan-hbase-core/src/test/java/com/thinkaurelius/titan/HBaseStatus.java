@@ -19,22 +19,16 @@ public class HBaseStatus {
 
     private final File file;
     private final String version;
-    private final int pid;
 
-    private HBaseStatus(File file, String version, int pid) {
+    private HBaseStatus(File file, String version) {
         Preconditions.checkNotNull(file);
         Preconditions.checkNotNull(version);
         this.file = file;
         this.version = version;
-        this.pid = pid;
     }
 
     public String getVersion() {
         return version;
-    }
-
-    public int getPid() {
-        return pid;
     }
 
     public File getFile() {
@@ -42,20 +36,12 @@ public class HBaseStatus {
     }
 
     public String getScriptDir() {
-        return getScriptDirForHBaseVersion(version);
+        return HBaseStorageSetup.getScriptDirForHBaseVersion(version);
     }
 
-    public static String getScriptDirForHBaseVersion(String hv) {
-        if (hv.startsWith("0.94."))
-            return "../titan-hbase-094/bin/";
-        if (hv.startsWith("0.96."))
-            return "../titan-hbase-096/bin/";
-        if (hv.startsWith("0.98."))
-            return "../titan-hbase-098/bin/";
-
-        throw new RuntimeException("Unsupported HBase test version " + hv);
+    public String getConfDir() {
+        return HBaseStorageSetup.getConfDirForHBaseVersion(version);
     }
-
 
     public static HBaseStatus read(String path) {
 
@@ -83,57 +69,30 @@ public class HBaseStatus {
         return null;
     }
 
-    public static HBaseStatus write(String path, String version) {
+    public static HBaseStatus write(String path, String hbaseVersion) {
         File f = new File(path);
 
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(path);
-            fos.write(String.format("%s %d", version, 0).getBytes());
+            fos.write(String.format("%s", hbaseVersion).getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             IOUtils.closeQuietly(fos);
         }
 
-        return new HBaseStatus(f, version, 0);
-    }
-
-    public void toFile(String path) {
-
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(path);
-            fos.write(String.format("%s %d", version, pid).getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            IOUtils.closeQuietly(fos);
-        }
+        return new HBaseStatus(f, hbaseVersion);
     }
 
     private static HBaseStatus parsePidFile(File f, BufferedReader br) throws HBasePidfileParseException, IOException {
         String l = br.readLine();
 
-        if (null == l) {
+        if (null == l || "".equals(l.trim())) {
             throw new HBasePidfileParseException("Empty HBase statusfile " + f);
         }
 
-        String tokens[] = l.split(" ");
-
-        if (2 != tokens.length) {
-            throw new HBasePidfileParseException("Unable to parse HBase statusfile " + f + ": " + l);
-        }
-
-        String version = tokens[0];
-        Integer processId;
-        try {
-             processId = Integer.valueOf(tokens[1]);
-        } catch (NumberFormatException nfe) {
-            throw new HBasePidfileParseException("Illegal HBase process ID in statusfile " + f + ": \"" + tokens[1] + "\" (expected an integer)");
-        }
-
-        HBaseStatus stat = new HBaseStatus(f, version, processId);
+        HBaseStatus stat = new HBaseStatus(f, l.trim());
         return stat;
     }
 

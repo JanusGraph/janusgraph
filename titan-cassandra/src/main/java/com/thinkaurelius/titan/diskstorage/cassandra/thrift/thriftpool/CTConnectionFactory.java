@@ -39,8 +39,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     public void destroyObject(String key, CTConnection c) throws Exception {
         TTransport t = c.getTransport();
 
-        if (t.isOpen())
+        if (t.isOpen()) {
             t.close();
+            log.trace("Closed transport {}", t);
+        } else {
+            log.trace("Not closing transport {} (already closed)", t);
+        }
     }
 
     @Override
@@ -64,9 +68,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         String hostname = cfg.getRandomHost();
 
-        if (log.isDebugEnabled())
-            log.debug("Creating TSocket({}, {}, {}, {}, {})", hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
-
+        log.debug("Creating TSocket({}, {}, {}, {}, {})", hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
 
         TSocket socket;
         if (null != cfg.sslTruststoreLocation && !cfg.sslTruststoreLocation.isEmpty()) {
@@ -79,6 +81,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         }
 
         TTransport transport = new TFramedTransport(socket, cfg.frameSize);
+        log.trace("Created transport {}", transport);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
         transport.open();
@@ -110,9 +113,9 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         boolean isSameConfig = c.getConfig().equals(curCfg);
         if (log.isDebugEnabled()) {
             if (isSameConfig) {
-                log.debug("Validated Thrift connection {}", c);
+                log.trace("Validated {} by configuration {}", c, curCfg);
             } else {
-                log.debug("Rejected Thrift connection {}; current config is {}; connection config is {}",
+                log.trace("Rejected {}; current config is {}; rejected connection config is {}",
                           c, curCfg, c.getConfig());
             }
         }

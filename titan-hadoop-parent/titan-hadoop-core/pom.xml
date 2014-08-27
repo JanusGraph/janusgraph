@@ -3,11 +3,11 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-hadoop-parent</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
+        <version>0.5.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-core</artifactId>
-    <name>Titan-Hadoop-Core</name>
+    <name>Titan-Hadoop: Version-independent Core</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
@@ -28,6 +28,26 @@
             <classifier>hadoop2</classifier>
             <optional>true</optional>
             <!-- <scope>test</scope> -->
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+            <!-- TODO this should be scoped test -->
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <!-- TODO this should be scoped test -->
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-es</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
         </dependency>
 
         <!-- Need this for compile-time imports on
@@ -132,4 +152,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Redeclare gpg-plugin at the bottom to ensure it runs after all the other packaging goals -->
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

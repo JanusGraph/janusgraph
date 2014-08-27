@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
@@ -21,6 +22,15 @@ public enum ElementCategory {
             case VERTEX: return TitanVertex.class;
             case EDGE: return TitanEdge.class;
             case PROPERTY: return TitanProperty.class;
+            default: throw new IllegalArgumentException();
+        }
+    }
+
+    public boolean isRelation() {
+        switch(this) {
+            case VERTEX: return false;
+            case EDGE:
+            case PROPERTY: return true;
             default: throw new IllegalArgumentException();
         }
     }
@@ -58,6 +68,22 @@ public enum ElementCategory {
 
     public String getName() {
         return toString().toLowerCase();
+    }
+
+    public TitanElement retrieve(Object elementId, TitanTransaction tx) {
+        Preconditions.checkArgument(elementId!=null,"Must provide elementId");
+        switch (this) {
+            case VERTEX:
+                Preconditions.checkArgument(elementId instanceof Long);
+                return tx.getVertex(((Long) elementId).longValue());
+            case EDGE:
+                Preconditions.checkArgument(elementId instanceof RelationIdentifier);
+                return ((RelationIdentifier)elementId).findEdge(tx);
+            case PROPERTY:
+                Preconditions.checkArgument(elementId instanceof RelationIdentifier);
+                return ((RelationIdentifier)elementId).findProperty(tx);
+            default: throw new IllegalArgumentException();
+        }
     }
 
     public static final ElementCategory getByClazz(Class<? extends Element> clazz) {

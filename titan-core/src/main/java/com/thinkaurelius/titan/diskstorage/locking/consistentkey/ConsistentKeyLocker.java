@@ -182,8 +182,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         public Builder fromConfig(Configuration config) {
             rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID).getBytes()));
 
-            final String llmPrefix = config.get(
-                    ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX);
+            final String llmPrefix = config.get(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP);
 
             times(config.get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER));
 

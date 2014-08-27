@@ -14,15 +14,7 @@ public class HadoopCompatLoader {
     private static final Logger log =
             LoggerFactory.getLogger(HadoopCompatLoader.class);
 
-    private static volatile HadoopCompat defaultCompat;
-
-    public static HadoopCompat getDefaultCompat() {
-        // Volatile semantics are enough -- it's OK if we create and return more than one
-        if (null == defaultCompat) {
-            defaultCompat = getCompat();
-        }
-        return defaultCompat;
-    }
+    public static final HadoopCompat DEFAULT_COMPAT = getCompat();
 
     // TODO add a string argument that allows specifying a class instead of relying heuristics around VersionInfo.getVersion()
     // TODO add threadsafe caching that is aware of the string argument and instantiates a compat for each argument at most once (assuming the instantiation succeeds)
@@ -35,12 +27,12 @@ public class HadoopCompatLoader {
         final String className;
 
         if (ver.startsWith("1.")) {
-            className = pkgName + ".Hadoop1Compat";
+            className = pkgName + ".h1.Hadoop1Compat";
         } else {
-            className = pkgName + ".Hadoop2Compat";
+            className = pkgName + ".h2.Hadoop2Compat";
         }
 
-        log.debug("Attempting to load class {} with a nullary constructor", className);
+        log.debug("Attempting to load class {} and instantiate with nullary constructor", className);
         try {
             Constructor<?> ctor = Class.forName(className).getConstructor();
             log.debug("Invoking constructor {}", ctor);

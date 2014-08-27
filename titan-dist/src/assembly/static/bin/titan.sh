@@ -1,6 +1,19 @@
 #!/bin/bash
 
-BIN="`dirname $0`"
+# Returns the absolute path of this script regardless of symlinks
+abs_path() {
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+BIN=`abs_path`
 REXSTER_CONFIG_TAG=cassandra-es
 : ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
 : ${CASSANDRA_SHUTDOWN_TIMEOUT_S:=60}
@@ -140,7 +153,7 @@ start() {
         return 1
     }
     disown
-    echo "Run $BIN/rexster-console.sh to connect." >&2
+    echo "Run rexster-console.sh to connect." >&2
 }
 
 stop() {

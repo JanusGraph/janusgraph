@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -u
-cd "${project.basedir}"
 
 echo "Reading current HEAD..."
 OLD_HEAD="`git symbolic-ref --short HEAD 2>/dev/null`"

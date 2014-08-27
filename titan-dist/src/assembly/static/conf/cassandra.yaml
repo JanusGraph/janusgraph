@@ -21,7 +21,15 @@ cluster_name: 'Titan Cassandra Cluster'
 #
 # If you already have a cluster with 1 token per node, and wish to migrate to 
 # multiple tokens per node, see http://wiki.apache.org/cassandra/Operations
-num_tokens: 256
+#
+# The default value that ships with Titan is smaller than the default value
+# that ships with Apache Cassandra.  Fewer tokens means faster Faunus run
+# times on small datasets.  That's convenient when testing Titan(-Hadoop) on
+# toy data.  However, increasing num_tokens is strongly recommended for
+# production Titan instances backed by Cassandra.  This low value is just
+# for development and testing.
+#num_tokens: 256 
+num_tokens: 4
 
 # initial_token allows you to specify tokens manually.  While you can use # it with
 # vnodes (num_tokens > 1, above) -- in which case you should provide a 

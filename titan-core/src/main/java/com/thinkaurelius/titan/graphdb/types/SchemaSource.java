@@ -9,7 +9,7 @@ import com.tinkerpop.blueprints.Direction;
  */
 public interface SchemaSource {
 
-    public long getID();
+    public long getLongId();
 
     public String getName();
 

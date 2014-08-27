@@ -7,7 +7,7 @@
     </parent>
     <groupId>com.thinkaurelius.titan</groupId>
     <artifactId>titan</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.5.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
@@ -58,7 +58,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <titan.compatible.versions>0.5.0-SNAPSHOT</titan.compatible.versions>
+        <titan.compatible.versions />
         <tinkerpop.version>2.5.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
@@ -71,7 +71,14 @@
         <hadoop1.version>1.2.1</hadoop1.version>
         <hadoop2.version>2.2.0</hadoop2.version>
         <jackson1.version>1.9.2</jackson1.version>
-        <jackson2.version>2.1.2</jackson2.version>
+        <jackson2.version>2.2.3</jackson2.version>
+        <!-- ES depends on Lucene.  This ES dependency can affect the
+             version used by the titan-lucene module.  When updating
+             the ES version, also consider the version of Lucene, and
+             vice-versa. -->
+        <lucene.version>4.8.1</lucene.version>
+        <elasticsearch.version>1.2.1</elasticsearch.version>
+        <elasticsearch.mr.version>2.0.0</elasticsearch.mr.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <asm3.version>3.1</asm3.version>
         <asm4.version>4.0</asm4.version>
@@ -375,7 +382,7 @@
                 <version>${jackson2.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-json-org</artifactId>
                 <version>${jackson2.version}</version>
             </dependency>
@@ -494,6 +501,11 @@
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>jetty</artifactId>
                 <version>6.1.26</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-grizzly2</artifactId>
+                <version>1.17</version>
             </dependency>
 	    <!-- Sesame -->
             <dependency>

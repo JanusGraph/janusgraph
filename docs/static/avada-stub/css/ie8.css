@@ -1,0 +1,76 @@
+body .post-content .products-slider li{width:auto !important;}
+
+.search-page-search-form .seach-form { text-align:left !important;margin-left: 0 !important;}
+.search-page-search-form input[type="submit"] { float: none !important; }
+
+.full-boxed-pricing.columns-1,
+.full-boxed-pricing.columns-2,
+.full-boxed-pricing.columns-3,
+.full-boxed-pricing.columns-4,
+.full-boxed-pricing.columns-5,
+.full-width .full-boxed-pricing.columns-1,
+.full-width .full-boxed-pricing.columns-2,
+.full-width .full-boxed-pricing.columns-3,
+.full-width .full-boxed-pricing.columns-4,
+.full-width .full-boxed-pricing.columns-5{    
+	width: 98%
+}
+
+.sep-boxed-pricing.columns-1{width:100%;}
+.sep-boxed-pricing.columns-1 .column,.sep-boxed-pricing.columns-1 .column ul{width:100%;}
+.sep-boxed-pricing.columns-1 .column li{width:98%;}
+
+.sep-boxed-pricing.columns-2{width:100%;}
+.sep-boxed-pricing.columns-2 .column{width:46.1% !important;}
+.sep-boxed-pricing.columns-2 .column ul{width:100%;}
+.sep-boxed-pricing.columns-2 .column li{width:100%;}
+
+.sep-boxed-pricing.columns-3{width:100%;}
+.sep-boxed-pricing.columns-3 .column{width:29.1% !important;}
+.sep-boxed-pricing.columns-3 .column ul{width:100%;}
+.sep-boxed-pricing.columns-3 .column li{width:100%;}
+
+.sep-boxed-pricing.columns-4{width:100%;}
+.sep-boxed-pricing.columns-4 .column{width:20.6% !important;}
+.sep-boxed-pricing.columns-4 .column ul{width:100%;}
+.sep-boxed-pricing.columns-4 .column li{width:100%;}
+
+
+.full-width .sep-boxed-pricing.columns-1{width:100%;}
+.full-width .sep-boxed-pricing.columns-1 .column,.sep-boxed-pricing.columns-1 .column ul{width:100%;}
+.full-width .sep-boxed-pricing.columns-1 .column li{width:98% !important;}
+
+.full-width .sep-boxed-pricing.columns-2{width:100%;}
+.full-width .sep-boxed-pricing.columns-2 .column{width:47% !important;}
+.full-width .sep-boxed-pricing.columns-2 .column ul{width:100%;}
+.full-width .sep-boxed-pricing.columns-2 .column li{width:100%;}
+
+.full-width .sep-boxed-pricing.columns-3{width:100%;}
+.full-width .sep-boxed-pricing.columns-3 .column{width:30% !important;}
+.full-width .sep-boxed-pricing.columns-3 .column ul{width:100%;}
+.full-width .sep-boxed-pricing.columns-3 .column li{width:100%;}
+
+.full-width .sep-boxed-pricing.columns-4{width:100%;}
+.full-width .sep-boxed-pricing.columns-4 .column{width:21.5% !important;}
+.full-width .sep-boxed-pricing.columns-4 .column ul{width:100%;}
+.full-width .sep-boxed-pricing.columns-4 .column li{width:100%;}
+
+.products-4 li{float:left;width:23.8%!important;margin-right:0.9%!important;margin-bottom:11px;}
+.products-4 li:nth-child(4n){margin-right:0;}
+.products-4 li:nth-child(4n+1){clear:both;}
+
+.products-3 li{float:left;width:32% !important;margin-right:1% !important;margin-bottom:11px;}
+.products-3 li:nth-child(3n){margin-right:0;}
+.products-3 li:nth-child(3n+1){clear:both;}
+
+.quantity .qty { line-height: 31px; }
+
+.bbp-arrow { 
+	left: -11px !important; 
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.7071067811865476, M12=-0.7071067811865475, M21=0.7071067811865475, M22=0.7071067811865476,sizingMethod='auto expand')";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=-0.70710678, M21=0.70710678, M22=0.70710678,sizingMethod='auto expand');	
+}
+
+.columns-2 .col:first-child + .col {
+ 	margin-right: 0 !important;
+ }

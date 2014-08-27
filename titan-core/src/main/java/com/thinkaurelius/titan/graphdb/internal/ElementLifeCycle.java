@@ -9,7 +9,7 @@ import com.google.common.base.Preconditions;
  */
 public class ElementLifeCycle {
 
-    public enum Event {REMOVED, REMOVED_RELATION, ADDED_RELATION }
+    public enum Event {REMOVED, REMOVED_RELATION, ADDED_RELATION, UPDATE }
 
     /**
      * The entity has been newly created and not yet persisted.
@@ -68,11 +68,12 @@ public class ElementLifeCycle {
         return lifecycle== Removed;
     }
 
-
-
+    public static boolean isValid(byte lifecycle) {
+        return lifecycle>=New && lifecycle<=Removed;
+    }
 
     public static final byte update(final byte lifecycle, final Event event) {
-        Preconditions.checkArgument(lifecycle>=New && lifecycle<=Removed,"Invalid element state: " + lifecycle);
+        Preconditions.checkArgument(isValid(lifecycle),"Invalid element state: " + lifecycle);
         if (event==Event.REMOVED) return Removed;
         else if (lifecycle==New || lifecycle==Modified) {
             return lifecycle;
@@ -88,6 +89,8 @@ public class ElementLifeCycle {
             else if (lifecycle== RemovedRelations) return Modified;
             else if (lifecycle==AddedRelations) return AddedRelations;
             else throw new IllegalStateException("Unexpected state: " + lifecycle + " - " + event);
+        } else if (event==Event.UPDATE) {
+            return Modified;
         } else throw new IllegalStateException("Unexpected state event: " + lifecycle + " - " + event);
     }
 

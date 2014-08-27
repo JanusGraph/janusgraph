@@ -11,11 +11,7 @@ import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.log.*;
 import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
@@ -35,6 +31,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
@@ -48,12 +45,15 @@ import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
 
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
-import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
+import com.thinkaurelius.titan.graphdb.schema.PropertyKeyDefinition;
+import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
+import com.thinkaurelius.titan.graphdb.schema.VertexLabelDefinition;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
@@ -64,12 +64,14 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
 
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -110,10 +112,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         uid = tx.getPropertyKey("name");
         n1.addProperty(uid.getName(), "abcd");
         clopen();
-        long nid = n1.getID();
+        long nid = n1.getLongId();
         uid = tx.getPropertyKey("name");
         assertTrue(tx.containsVertex(nid));
-        assertTrue(tx.containsVertex(uid.getID()));
+        assertTrue(tx.containsVertex(uid.getLongId()));
         assertFalse(tx.containsVertex(nid + 64));
         uid = tx.getPropertyKey(uid.getName());
         n1 = tx.getVertex(nid);
@@ -395,10 +397,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx = null;
         Set[] nodeEdgeIds = new Set[noNodes];
         for (int i = 0; i < noNodes; i++) {
-            nodeIds[i] = nodes[i].getID();
+            nodeIds[i] = nodes[i].getLongId();
             nodeEdgeIds[i] = new HashSet(10);
             for (Object r : nodeEdges[i]) {
-                nodeEdgeIds[i].add(((TitanEdge) r).getID());
+                nodeEdgeIds[i].add(((TitanEdge) r).getLongId());
             }
         }
         clopen();
@@ -414,7 +416,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertEquals(n, getVertex(name, names[i]));
             assertEquals(names[i], n.getProperty(name));
             nodes[i] = n;
-            assertEquals(nodeIds[i], n.getID());
+            assertEquals(nodeIds[i], n.getLongId());
         }
         EdgeLabel knows = tx.getEdgeLabel("knows");
         for (int i = 0; i < noNodes; i++) {
@@ -436,7 +438,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
             Set edgeIds = new HashSet(10);
             for (TitanEdge r : n.getTitanEdges(OUT)) {
-                edgeIds.add(r.getID());
+                edgeIds.add(r.getLongId());
             }
             assertTrue(edgeIds.equals(nodeEdgeIds[i]));
         }
@@ -501,7 +503,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(Decimal.class,weight.getDataType());
         sig = ((InternalRelationType)value).getSignature();
         assertEquals(1,sig.length);
-        assertEquals(weight.getID(),sig[0]);
+        assertEquals(weight.getLongId(),sig[0]);
         assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
         assertFalse(mgmt.getGraphIndex(someid.getName()).isUnique());
 
@@ -522,8 +524,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,((InternalRelationType) friend).getSignature().length);
         sig = ((InternalRelationType)connect).getSignature();
         assertEquals(2,sig.length);
-        assertEquals(id.getID(),sig[0]);
-        assertEquals(link.getID(),sig[1]);
+        assertEquals(id.getLongId(),sig[0]);
+        assertEquals(link.getLongId(),sig[1]);
         assertEquals(0,((InternalRelationType) friend).getSortKey().length);
         assertEquals(Order.DEFAULT,((InternalRelationType) friend).getSortOrder());
         assertEquals(SchemaStatus.ENABLED,((InternalRelationType)friend).getStatus());
@@ -628,7 +630,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(Decimal.class,weight.getDataType());
         sig = ((InternalRelationType)value).getSignature();
         assertEquals(1,sig.length);
-        assertEquals(weight.getID(),sig[0]);
+        assertEquals(weight.getLongId(),sig[0]);
         assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
         assertFalse(mgmt.getGraphIndex(someid.getName()).isUnique());
 
@@ -649,8 +651,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,((InternalRelationType) friend).getSignature().length);
         sig = ((InternalRelationType)connect).getSignature();
         assertEquals(2,sig.length);
-        assertEquals(id.getID(),sig[0]);
-        assertEquals(link.getID(),sig[1]);
+        assertEquals(id.getLongId(),sig[0]);
+        assertEquals(link.getLongId(),sig[1]);
         assertEquals(0,((InternalRelationType) friend).getSortKey().length);
         assertEquals(Order.DEFAULT,((InternalRelationType) friend).getSortOrder());
         assertEquals(SchemaStatus.ENABLED,((InternalRelationType)friend).getStatus());
@@ -756,7 +758,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         p = v.addProperty(value,11); //same values are supported for list-properties
         p.setProperty(weight,22);
         //test edges
-        TitanVertex v12 = tx.addVertex(person), v13 = tx.addVertex(person);
+        TitanVertex v12 = tx.addVertexWithLabel(person), v13 = tx.addVertexWithLabel(person);
         v12.setProperty(id, "v12");
         v13.setProperty(id, "v13");
         v12.addEdge(parent, v).setProperty(weight, 4.5);
@@ -770,7 +772,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         edge.setProperty(id,"e1");
         edge.setProperty(link,v);
         v.addEdge(link,v13);
-        TitanVertex v2 = tx.addVertex(tweet);
+        TitanVertex v2 = tx.addVertexWithLabel(tweet);
         v2.addEdge(link,v13);
         v12.addEdge(connect,v2);
 
@@ -1016,6 +1018,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx.getVertex(v13).remove();
         assertEquals(1,Iterables.size(v.query().types(link).direction(BOTH).edges()));
 
+        //Finally, test the schema container
+        SchemaContainer schemaContainer = new SchemaContainer(graph);
+        assertTrue(schemaContainer.containsRelationType("weight"));
+        assertTrue(schemaContainer.containsRelationType("friend"));
+        assertTrue(schemaContainer.containsVertexLabel("person"));
+        VertexLabelDefinition vld = schemaContainer.getVertexLabel("tag");
+        assertTrue(vld.isPartitioned());
+        assertFalse(vld.isStatic());
+        PropertyKeyDefinition pkd = schemaContainer.getPropertyKey("name");
+        assertEquals(Cardinality.SET,pkd.getCardinality());
+        assertEquals(String.class,pkd.getDataType());
+        EdgeLabelDefinition eld = schemaContainer.getEdgeLabel("child");
+        assertEquals("child",eld.getName());
+        assertEquals(child.getLongId(),eld.getLongId());
+        assertEquals(Multiplicity.ONE2MANY,eld.getMultiplicity());
+        assertFalse(eld.isUnidirected());
     }
 
     /**
@@ -1200,7 +1218,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(tx.containsRelationType("value"));
         PropertyKey value = tx.getPropertyKey("value");
         assertTrue(tx.containsRelationType("value"));
-        TitanVertex v = tx.addVertex("person");
+        TitanVertex v = tx.addVertexWithLabel("person");
         assertTrue(tx.containsVertexLabel("person"));
         assertEquals("person",v.getLabel());
         assertFalse(tx.containsRelationType("knows"));
@@ -1213,11 +1231,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(tx.containsRelationType("value"));
         assertTrue(tx.containsVertexLabel("person"));
         assertTrue(tx.containsRelationType("knows"));
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
 
         //Cannot create new labels
         try {
-            tx.addVertex("org");
+            tx.addVertexWithLabel("org");
             fail();
         } catch (IllegalArgumentException ex) {}
         try {
@@ -1228,6 +1246,270 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v.addEdge("blub",v);
             fail();
         } catch (IllegalArgumentException ex) {}
+    }
+
+    @Test
+    public void testSchemaNameChange() {
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
+        mgmt.buildEdgeIndex(knows, "byTime", Direction.BOTH, time);
+        mgmt.buildIndex("timeIndex",Vertex.class).addKey(time).buildCompositeIndex();
+        mgmt.makeVertexLabel("people").make();
+        finishSchema();
+
+        //CREATE SMALL GRAPH
+        TitanVertex v = tx.addVertexWithLabel("people");
+        v.setProperty("time",5);
+        v.addEdge("knows",v).setProperty("time",11);
+
+        newTx();
+        v = (TitanVertex)Iterables.getOnlyElement(tx.query().has("time",5).vertices());
+        assertNotNull(v);
+        assertEquals("people",v.getLabel());
+        assertEquals(5,v.getProperty("time"));
+        assertEquals(1,Iterables.size(v.getEdges(IN,"knows")));
+        assertEquals(1,v.query().labels("knows").direction(OUT).has("time",11).count());
+        newTx();
+
+        //UPDATE SCHEMA NAMES
+
+        assertTrue(mgmt.containsRelationType("knows"));
+        knows = mgmt.getEdgeLabel("knows");
+        mgmt.changeName(knows,"know");
+        assertEquals("know",knows.getName());
+
+        assertTrue(mgmt.containsRelationIndex(knows,"byTime"));
+        RelationTypeIndex rindex = mgmt.getRelationIndex(knows,"byTime");
+        assertEquals("byTime",rindex.getName());
+        mgmt.changeName(rindex,"overTime");
+        assertEquals("overTime",rindex.getName());
+
+        assertTrue(mgmt.containsVertexLabel("people"));
+        VertexLabel vl = mgmt.getVertexLabel("people");
+        mgmt.changeName(vl,"person");
+        assertEquals("person",vl.getName());
+
+        assertTrue(mgmt.containsGraphIndex("timeIndex"));
+        TitanGraphIndex gindex = mgmt.getGraphIndex("timeIndex");
+        mgmt.changeName(gindex,"byTime");
+        assertEquals("byTime",gindex.getName());
+
+        finishSchema();
+
+        //VERIFY UPDATES IN MGMT SYSTEM
+
+        assertTrue(mgmt.containsRelationType("know"));
+        assertFalse(mgmt.containsRelationType("knows"));
+        knows = mgmt.getEdgeLabel("know");
+
+        assertTrue(mgmt.containsRelationIndex(knows,"overTime"));
+        assertFalse(mgmt.containsRelationIndex(knows,"byTime"));
+
+        assertTrue(mgmt.containsVertexLabel("person"));
+        assertFalse(mgmt.containsVertexLabel("people"));
+
+        assertTrue(mgmt.containsGraphIndex("byTime"));
+        assertFalse(mgmt.containsGraphIndex("timeIndex"));
+
+        //VERIFY UPDATES IN TRANSACTION
+        newTx();
+        v = (TitanVertex)Iterables.getOnlyElement(tx.query().has("time",5).vertices());
+        assertNotNull(v);
+        assertEquals("person",v.getLabel());
+        assertEquals(5,v.getProperty("time"));
+        assertEquals(1,Iterables.size(v.getEdges(Direction.IN,"know")));
+        assertEquals(0,Iterables.size(v.getEdges(Direction.IN,"knows")));
+        assertEquals(1,v.query().labels("know").direction(OUT).has("time",11).count());
+
+    }
+
+    @Test
+    public void testIndexUpdatesWithoutReindex() throws InterruptedException {
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        );
+        //Types without index
+        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
+        PropertyKey sensor = mgmt.makePropertyKey("sensor").dataType(Double.class).cardinality(Cardinality.LIST).make();
+        finishSchema();
+
+        //Add some sensor & friend data
+        TitanVertex v = tx.addVertex();
+        for (int i=0;i<10;i++) {
+            v.addProperty("sensor",i).setProperty("time",i);
+            v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
+        }
+        newTx();
+        //Indexes should not yet be in use
+        v = tx.getVertex(v.getLongId());
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time",Order.DESC),
+                PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
+                PROPERTY,0,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,0,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(tx.query().has("name","v5"),
+                ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx.query().has("name","v105"),
+                ElementCategory.VERTEX,0,new boolean[]{false,true});
+        newTx();
+
+        //Create indexes after the fact
+        finishSchema();
+        sensor = mgmt.getPropertyKey("sensor");
+        time = mgmt.getPropertyKey("time");
+        name = mgmt.getPropertyKey("name");
+        friend = mgmt.getEdgeLabel("friend");
+        mgmt.buildPropertyIndex(sensor, "byTime", Order.DESC, time);
+        mgmt.buildEdgeIndex(friend, "byTime", Direction.OUT, Order.DESC, time);
+        mgmt.buildIndex("bySensorReading",Vertex.class).addKey(name).buildCompositeIndex();
+        finishSchema();
+        newTx();
+        //Add some sensor & friend data that should already be indexed even though index is not yet enabled
+        v = tx.getVertex(v.getLongId());
+        for (int i=100;i<110;i++) {
+            v.addProperty("sensor",i).setProperty("time",i);
+            v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
+        }
+        tx.commit();
+        //Should not yet be able to enable since not yet registered
+        try {
+            mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.REGISTER_INDEX);
+        mgmt.commit();
+
+
+        Thread.sleep(2000);
+        finishSchema();
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
+        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
+        mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        //Add some more sensor & friend data
+        newTx();
+        v = tx.getVertex(v.getLongId());
+        for (int i=200;i<210;i++) {
+            v.addProperty("sensor",i).setProperty("time",i);
+            v.addProperty("name","v"+i);
+            TitanVertex o = tx.addVertex();
+            v.addEdge("friend",o).setProperty("time",i);
+        }
+        newTx();
+        //Use indexes now but only see new data
+        v = tx.getVertex(v.getLongId());
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time",Order.DESC),
+                PROPERTY,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
+                PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time",Order.DESC),
+                PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time",Order.DESC),
+                EDGE,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time",Order.DESC),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(tx.query().has("name","v5"),
+                ElementCategory.VERTEX,0,new boolean[]{true,true},"bySensorReading");
+        evaluateQuery(tx.query().has("name","v105"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
+        evaluateQuery(tx.query().has("name","v205"),
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
+
+    }
+
+    @Test
+    public void testIndexUpdateSyncWithMultipleInstances() throws InterruptedException {
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        );
+
+        StandardTitanGraph graph2 = (StandardTitanGraph) TitanFactory.open(config);
+        TitanTransaction tx2;
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        finishSchema();
+
+        ElementHelper.setProperties(tx.addVertex(),"name","v1");
+        newTx();
+        evaluateQuery(tx.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
+        tx2 = graph2.newTransaction();
+        evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
+        //Leave tx2 open to delay acknowledgement
+
+        mgmt.buildIndex("theIndex",Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
+        mgmt.commit();
+
+        TitanTransaction tx3 = graph2.newTransaction();
+        ElementHelper.setProperties(tx3.addVertex(),"name","v2");
+        tx3.commit();
+        newTx();
+        ElementHelper.setProperties(tx.addVertex(),"name","v3");
+        tx.commit();
+
+        Thread.sleep(2000); //Wait for the index to register in graph2
+        finishSchema();
+        try {
+            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+            fail(); //Open tx2 should not make this possible
+        } catch (IllegalArgumentException e) {}
+        finishSchema();
+        tx2.commit(); //Release transaction and wait a little for registration which should make enabling possible
+        Thread.sleep(500);
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        finishSchema();
+
+        tx2 = graph2.newTransaction();
+        ElementHelper.setProperties(tx2.addVertex(),"name","v4"); //Should be added to index but index not yet enabled
+        tx2.commit();
+
+        newTx();
+        evaluateQuery(tx.query().has("name","v1"),ElementCategory.VERTEX,0,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name","v2"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+
+        Thread.sleep(2000);
+        tx2 = graph2.newTransaction();
+        evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,0,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name","v2"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        tx2.commit();
+
+        //Finally test retrieving and closing open instances
+
+        Set<String> openInstances = mgmt.getOpenInstances();
+        assertEquals(2,openInstances.size());
+        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId()));
+        assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
+        mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
+
+        graph2.shutdown();
+
     }
 
    /* ==================================================================================
@@ -1256,8 +1538,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,v.query().labels("knows").direction(BOTH).has("id",RelationIdentifier.get(new long[]{4,5,6,7})).count());
         assertEquals(1,v.query().labels("knows").direction(BOTH).has("$titanid",eid.getRelationId()).count());
         assertEquals(0,v.query().labels("knows").direction(BOTH).has("$titanid",110111).count());
-        assertEquals(1,v.query().has("$adjacent",u.getID()).count());
-        assertEquals(1,v.query().has("$adjacent",(int)u.getID()).count());
+        assertEquals(1,v.query().has("$adjacent",u.getLongId()).count());
+        assertEquals(1,v.query().has("$adjacent",(int)u.getLongId()).count());
         try {
             //Not a valid vertex
              assertEquals(0,v.query().has("$adjacent",110111).count());
@@ -1295,7 +1577,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
-        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildCompositeIndex();
+        mgmt.buildIndex("etype",Edge.class).addKey(t).buildCompositeIndex();
         ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
         finishSchema();
 
@@ -1418,23 +1700,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //Test unidirected edge with and without internal existence check
         newTx();
-        v21 = tx.getVertex(v21.getID());
+        v21 = tx.getVertex(v21.getLongId());
         tx.makeEdgeLabel("link").unidirected().make();
         TitanVertex v3 = tx.addVertex();
         v21.addEdge("link", v3);
         newTx();
-        v21 = tx.getVertex(v21.getID());
+        v21 = tx.getVertex(v21.getLongId());
         v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
         assertFalse(v3.isRemoved());
         v3.remove();
         newTx();
-        v21 = tx.getVertex(v21.getID());
+        v21 = tx.getVertex(v21.getLongId());
         v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
         assertFalse(v3.isRemoved());
         newTx();
 
         TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence().start();
-        v21 = tx3.getVertex(v21.getID());
+        v21 = tx3.getVertex(v21.getLongId());
         v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
         assertTrue(v3.isRemoved());
         tx3.commit();
@@ -1464,9 +1746,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Create property with name pname and a vertex
         PropertyKey w = makeKey(weight,Integer.class);
         PropertyKey f = ((StandardPropertyKeyMaker)mgmt.makePropertyKey(foo)).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
-        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildCompositeIndex();
+        mgmt.buildIndex(foo,Vertex.class).addKey(f).buildCompositeIndex();
         PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
-        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildCompositeIndex();
+        mgmt.buildIndex(bar,Vertex.class).addKey(b).buildCompositeIndex();
         finishSchema();
 
         TitanVertex v = tx.addVertex();
@@ -1521,7 +1803,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
 
         // Retrieve and check our test vertex
-        v = tx.getVertex(v.getID());
+        v = tx.getVertex(v.getLongId());
         Iterable<TitanProperty> iter = v.getProperties(foo);
         assertFalse("Failed to durably remove multivalued property",
                 iter.iterator().hasNext());
@@ -1731,18 +2013,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         name = tx.getPropertyKey("name");
         connect = tx.getEdgeLabel("connect");
         related = tx.getEdgeLabel("related");
-        v1 = tx.getVertex(v1.getID());
+        v1 = tx.getVertex(v1.getLongId());
         /*
          ==== check fork, no fork behavior
          */
-        long e1id = e1.getID();
-        long e2id = e2.getID();
+        long e1id = e1.getLongId();
+        long e2id = e2.getLongId();
         e1 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,connect.getName()));
         assertEquals("e1",e1.getProperty(name.getName()));
-        assertEquals(e1id,e1.getID());
+        assertEquals(e1id,e1.getLongId());
         e2 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,related.getName()));
         assertEquals("e2",e2.getProperty(name.getName()));
-        assertEquals(e2id,e2.getID());
+        assertEquals(e2id,e2.getLongId());
         //Update edges - one should simply update, the other fork
         e1.setProperty(name.getName(),"e1.2");
         e2.setProperty(name.getName(),"e2.2");
@@ -1751,14 +2033,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         name = tx.getPropertyKey("name");
         connect = tx.getEdgeLabel("connect");
         related = tx.getEdgeLabel("related");
-        v1 = tx.getVertex(v1.getID());
+        v1 = tx.getVertex(v1.getLongId());
 
         e1 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,connect.getName()));
         assertEquals("e1.2",e1.getProperty(name.getName()));
-        assertEquals(e1id,e1.getID()); //should have same id
+        assertEquals(e1id,e1.getLongId()); //should have same id
         e2 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,related.getName()));
         assertEquals("e2.2",e2.getProperty(name.getName()));
-        assertNotEquals(e2id,e2.getID()); //should have different id since forked
+        assertNotEquals(e2id,e2.getLongId()); //should have different id since forked
 
         clopen();
 
@@ -1766,7 +2048,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
          === check cross transaction
          */
         final Random random = new Random();
-        final long vids[] = {v1.getID(),v2.getID(),v3.getID()};
+        final long vids[] = {v1.getLongId(),v2.getLongId(),v3.getLongId()};
         //1) Index uniqueness
         executeLockConflictingTransactionJobs(graph,new TransactionJob() {
             private int pos = 0;
@@ -1873,6 +2155,112 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
     }
 
+    @Test
+    public void testConcurrentConsistencyEnforcement() throws Exception {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        TitanGraphIndex nameIndex = mgmt.buildIndex("name", Vertex.class)
+                .addKey(name).unique().buildCompositeIndex();
+        mgmt.setConsistency(nameIndex, ConsistencyModifier.LOCK);
+        EdgeLabel married = mgmt.makeEdgeLabel("married").multiplicity(Multiplicity.ONE2ONE).make();
+        mgmt.setConsistency(married,ConsistencyModifier.LOCK);
+        EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
+        finishSchema();
+
+        TitanVertex baseV = tx.addVertex();
+        baseV.setProperty("name","base");
+        newTx();
+        final long baseVid = baseV.getLongId();
+        final String nameA = "a", nameB = "b";
+        final int parallelThreads = 4;
+        final AtomicInteger totalExe = new AtomicInteger();
+
+        int numSuccess = executeParallelTransactions(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                TitanVertex a = tx.addVertex();
+                TitanVertex base = tx.getVertex(baseVid);
+                base.addEdge("married",a);
+            }
+        },parallelThreads);
+
+        assertTrue("At most 1 tx should succeed: " + numSuccess,numSuccess<=1);
+
+        numSuccess = executeParallelTransactions(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex a = tx.addVertex();
+                a.setProperty("name",nameA);
+                Vertex b = tx.addVertex();
+                b.setProperty("name",nameB);
+                b.addEdge("friend",b);
+            }
+        },parallelThreads);
+
+        newTx();
+        int numA = Iterables.size(tx.query().has("name",nameA).vertices());
+        int numB = Iterables.size(tx.query().has("name",nameB).vertices());
+//        System.out.println(numA + " - " + numB);
+        assertTrue("At most 1 tx should succeed: " + numSuccess,numSuccess<=1);
+        assertTrue(numA<=1);
+        assertTrue(numB<=1);
+    }
+
+    private int executeSerialTransaction(final TransactionJob job, int number) {
+        final AtomicInteger txSuccess = new AtomicInteger(0);
+        for (int i = 0; i < number; i++) {
+            TitanTransaction tx = graph.newTransaction();
+            try {
+                job.run(tx);
+                tx.commit();
+                txSuccess.incrementAndGet();
+            } catch (Exception ex) {
+                tx.rollback();
+                ex.printStackTrace();
+            }
+        }
+        return txSuccess.get();
+    }
+
+    private int executeParallelTransactions(final TransactionJob job, int number) {
+        final CountDownLatch startLatch = new CountDownLatch(number);
+        final CountDownLatch finishLatch = new CountDownLatch(number);
+        final AtomicInteger txSuccess = new AtomicInteger(0);
+        for (int i = 0; i < number; i++) {
+            new Thread() {
+                public void run() {
+                    awaitAllThreadsReady();
+                    TitanTransaction tx = graph.newTransaction();
+                    try {
+                        job.run(tx);
+                        tx.commit();
+                        txSuccess.incrementAndGet();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        if (tx.isOpen()) tx.rollback();
+                    } finally {
+                        finishLatch.countDown();
+                    }
+                }
+
+                private void awaitAllThreadsReady() {
+                    startLatch.countDown();
+                    try {
+                        startLatch.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+        }
+
+        try {
+            finishLatch.await(10000,TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return txSuccess.get();
+    }
+
    /* ==================================================================================
                             VERTEX CENTRIC QUERIES
      ==================================================================================*/
@@ -1933,16 +2321,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        clopen();
 
        long[] vidsubset = new long[31 - 3];
-       for (int i = 0; i < vidsubset.length; i++) vidsubset[i] = vs[i + 3].getID();
+       for (int i = 0; i < vidsubset.length; i++) vidsubset[i] = vs[i + 3].getLongId();
        Arrays.sort(vidsubset);
 
        //##################################################
        //Queries from Cache
        //##################################################
        clopen();
-       for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
-       v = tx.getVertex(v.getID());
-       u = tx.getVertex(u.getID());
+       for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getLongId());
+       v = tx.getVertex(v.getLongId());
+       u = tx.getVertex(u.getLongId());
        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
 
        //To trigger queries from cache (don't copy!!!)
@@ -2052,9 +2440,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        //Same queries as above but without memory loading (i.e. omitting the first query)
        //##################################################
        clopen();
-       for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
-       v = tx.getVertex(v.getID());
-       u = tx.getVertex(u.getID());
+       for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getLongId());
+       v = tx.getVertex(v.getLongId());
+       u = tx.getVertex(u.getLongId());
        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
 
        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
@@ -2179,7 +2567,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        //Test partially new vertex queries
        TitanVertex[] qvs2 = new TitanVertex[qvs.length+2];
        qvs2[0]=tx.addVertex();
-       for (int i=0;i<qvs.length;i++) qvs2[i+1]=tx.getVertex(qvs[i].getID());
+       for (int i=0;i<qvs.length;i++) qvs2[i+1]=tx.getVertex(qvs[i].getLongId());
        qvs2[qvs2.length-1]=tx.addVertex();
        qvs2[0].addEdge("connect",qvs2[qvs2.length-1]);
        qvs2[qvs2.length-1].addEdge("connect", qvs2[0]);
@@ -2198,15 +2586,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
         EdgeLabel link = mgmt.makeEdgeLabel("link").unidirected().make();
 
-        RelationTypeIndex name1 = mgmt.createPropertyIndex(name,"weightDesc",weight);
+        RelationTypeIndex name1 = mgmt.buildPropertyIndex(name, "weightDesc", weight);
 
-        RelationTypeIndex connect1 = mgmt.createEdgeIndex(connect,"weightAsc",Direction.BOTH,Order.ASC,weight);
-        RelationTypeIndex connect2 = mgmt.createEdgeIndex(connect,"weightDesc",Direction.OUT,Order.DESC,weight);
-        RelationTypeIndex connect3 = mgmt.createEdgeIndex(connect,"time+weight",Direction.OUT,Order.DESC,time,weight);
+        RelationTypeIndex connect1 = mgmt.buildEdgeIndex(connect, "weightAsc", Direction.BOTH, Order.ASC, weight);
+        RelationTypeIndex connect2 = mgmt.buildEdgeIndex(connect, "weightDesc", Direction.OUT, Order.DESC, weight);
+        RelationTypeIndex connect3 = mgmt.buildEdgeIndex(connect, "time+weight", Direction.OUT, Order.DESC, time, weight);
 
-        RelationTypeIndex child1 = mgmt.createEdgeIndex(child,"time",Direction.OUT,time);
+        RelationTypeIndex child1 = mgmt.buildEdgeIndex(child, "time", Direction.OUT, time);
 
-        RelationTypeIndex link1 = mgmt.createEdgeIndex(link,"time",Direction.OUT,time);
+        RelationTypeIndex link1 = mgmt.buildEdgeIndex(link, "time", Direction.OUT, time);
 
         final String name1n = name1.getName(), connect1n = connect1.getName(), connect2n = connect2.getName(),
                 connect3n = connect3.getName(), child1n = child1.getName(), link1n = link1.getName();
@@ -2224,7 +2612,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(mgmt.getRelationIndexes(weight)));
         try {
            //Name already exists
-           mgmt.createEdgeIndex(connect,"weightAsc",Direction.OUT,time);
+           mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
            fail();
         } catch (IllegalArgumentException e) {}
 //        try {
@@ -2234,12 +2622,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //        } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to multiplicity constraint
-           mgmt.createEdgeIndex(child,"blablub",Direction.IN,time);
+           mgmt.buildEdgeIndex(child, "blablub", Direction.IN, time);
            fail();
         } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to unidirectionality
-           mgmt.createEdgeIndex(link,"blablub",Direction.BOTH,time);
+           mgmt.buildEdgeIndex(link, "blablub", Direction.BOTH, time);
            fail();
         } catch (IllegalArgumentException e) {}
 
@@ -2268,7 +2656,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(mgmt.getRelationIndexes(weight)));
         try {
            //Name already exists
-           mgmt.createEdgeIndex(connect,"weightAsc",Direction.OUT,time);
+           mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
            fail();
         } catch (IllegalArgumentException e) {}
 //        try {
@@ -2278,12 +2666,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //        } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to multiplicity constraint
-           mgmt.createEdgeIndex(child,"blablub",Direction.IN,time);
+           mgmt.buildEdgeIndex(child, "blablub", Direction.IN, time);
            fail();
         } catch (IllegalArgumentException e) {}
         try {
            //Not valid in this direction due to unidirectionality
-           mgmt.createEdgeIndex(link,"blablub",Direction.BOTH,time);
+           mgmt.buildEdgeIndex(link, "blablub", Direction.BOTH, time);
            fail();
         } catch (IllegalArgumentException e) {}
 
@@ -2612,7 +3000,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         switch(resultType) {
             case PROPERTY: qd = query.describeForProperties(); break;
             case EDGE: qd = query.describeForEdges(); break;
-            case RELATION: qd = ((AbstractVertexCentricQueryBuilder)query).describeForRelations(); break;
+            case RELATION: qd = ((BasicVertexCentricQueryBuilder)query).describeForRelations(); break;
             default: throw new AssertionError();
         }
         assertEquals(1,qd.getNoCombinedQueries());
@@ -2689,16 +3077,27 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void simpleLogTest() throws InterruptedException {
-        final String triggerName = "test";
+        simpleLogTest(false);
+    }
+
+    @Test
+    public void simpleLogTestWithFailure() throws InterruptedException {
+        simpleLogTest(true);
+    }
+
+    public void simpleLogTest(final boolean withLogFailure) throws InterruptedException {
+        final String userlogName = "test";
         final Serializer serializer = graph.getDataSerializer();
         final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
         final TimeUnit unit = times.getUnit();
         final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
         clopen( option(SYSTEM_LOG_TRANSACTIONS), true,
-                option(KCVSLog.LOG_READ_LAG_TIME,TRIGGER_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,TRIGGER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
-                option(LOG_SEND_DELAY,TRIGGER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
+                option(LOG_BACKEND, USER_LOG),(withLogFailure?TestMockLog.class.getName():LOG_BACKEND.getDefaultValue()),
+                option(TestMockLog.LOG_MOCK_FAILADD, USER_LOG),withLogFailure,
+                option(KCVSLog.LOG_READ_LAG_TIME, USER_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL, USER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
+                option(LOG_SEND_DELAY, USER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
                 option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
@@ -2711,25 +3110,43 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         n1.addProperty(weight, 10.5);
         newTx();
 
-        //Transaction with custom triggerName
-        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        final Timepoint txTimes[] = new Timepoint[4];
+        //Transaction with custom userlog name
+        txTimes[0] = times.getTime();
+        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         TitanVertex v1 = tx2.addVertex();
         v1.setProperty("weight", 111.1);
         v1.addEdge("knows", v1);
         tx2.commit();
-        final Timepoint middleTime = times.getTime();
-        final long v1id = v1.getID();
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        final long v1id = v1.getLongId();
+        txTimes[1] = times.getTime();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         TitanVertex v2 = tx2.addVertex();
         v2.setProperty("weight",222.2);
         v2.addEdge("knows",tx2.getVertex(v1id));
         tx2.commit();
-        final long v2id = v2.getID();
+        final long v2id = v2.getLongId();
         //Only read tx
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
         v1 = tx2.getVertex(v1id);
         assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
         assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
+        tx2.commit();
+        //Deleting transaction
+        txTimes[2] = times.getTime();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
+        v2 = tx2.getVertex(v2id);
+        assertEquals(222.2,v2.<Decimal>getProperty("weight").doubleValue(),0.0);
+        v2.remove();
+        tx2.commit();
+        //Edge modifying transaction
+        txTimes[3] = times.getTime();
+        tx2 = graph.buildTransaction().setLogIdentifier(userlogName).start();
+        v1 = tx2.getVertex(v1id);
+        assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
+        Edge e = Iterables.getOnlyElement(v1.getEdges(Direction.OUT,"knows"));
+        assertNull(e.getProperty("weight"));
+        e.setProperty("weight",44.4);
         tx2.commit();
         close();
         final long endTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
@@ -2737,10 +3154,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final ReadMarker startMarker = ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS);
 
         Log txlog = openTxLog();
-        Log triggerLog = openTriggerLog(triggerName);
+        Log userLog = openUserLog(userlogName);
         final EnumMap<LogTxStatus,AtomicInteger> txMsgCounter = new EnumMap<LogTxStatus,AtomicInteger>(LogTxStatus.class);
         for (LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status,new AtomicInteger(0));
-        final AtomicInteger triggerMeta = new AtomicInteger(0);
+        final AtomicInteger userlogMeta = new AtomicInteger(0);
         txlog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
@@ -2754,60 +3171,83 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
                 assertNotNull(txEntry.getMetadata());
                 assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
-                if (!txEntry.hasContent()) {
-                    assertTrue(txEntry.getStatus().isSuccess());
-                } else {
-                    assertTrue(txEntry.getStatus()==LogTxStatus.PRECOMMIT);
+                LogTxStatus status = txEntry.getStatus();
+                if (status==LogTxStatus.PRECOMMIT) {
+                    assertTrue(txEntry.hasContent());
                     Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
                     if (logid!=null) {
                         assertTrue(logid instanceof String);
-                        assertEquals(triggerName,logid);
-                        triggerMeta.incrementAndGet();
+                        assertEquals(userlogName,logid);
+                        userlogMeta.incrementAndGet();
                     }
+                } else if (withLogFailure) {
+                    assertTrue(status.isPrimarySuccess() || status==LogTxStatus.SECONDARY_FAILURE);
+                    if (status==LogTxStatus.SECONDARY_FAILURE) {
+                        TransactionLogHeader.SecondaryFailures secFail = txEntry.getContentAsSecondaryFailures(serializer);
+                        assertTrue(secFail.failedIndexes.isEmpty());
+                        assertTrue(secFail.userLogFailure);
+                    }
+                } else {
+                    assertFalse(txEntry.hasContent());
+                    assertTrue(status.isSuccess());
                 }
                 txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
             }
         });
-        final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
-        triggerLog.registerReader(startMarker,new MessageReader() {
+        final EnumMap<Change,AtomicInteger> userChangeCounter = new EnumMap<Change,AtomicInteger>(Change.class);
+        for (Change change : Change.values()) userChangeCounter.put(change,new AtomicInteger(0));
+        final AtomicInteger userLogMsgCounter = new AtomicInteger(0);
+        userLog.registerReader(startMarker, new MessageReader() {
             @Override
             public void read(Message message) {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(msgTime>=startTime);
+                assertTrue(msgTime >= startTime);
                 assertNotNull(message.getSenderId());
                 StaticBuffer content = message.getContent();
-                assertTrue(content!=null && content.length()>0);
+                assertTrue(content != null && content.length() > 0);
                 TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
 
                 long txTime = txentry.getHeader().getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(txTime<=msgTime);
-                assertTrue(txTime>=startTime);
+                assertTrue(txTime <= msgTime);
+                assertTrue(txTime >= startTime);
                 long txid = txentry.getHeader().getId();
-                assertTrue(txid>0);
-                int count=0;
+                assertTrue(txid > 0);
                 for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
-                    count++;
-                    assertEquals(Change.ADDED,modification.state);
+                    assertTrue(modification.state == Change.ADDED || modification.state == Change.REMOVED);
+                    userChangeCounter.get(modification.state).incrementAndGet();
                 }
-                assertEquals(3,count);
-                triggerMsgCounter.incrementAndGet();
+                userLogMsgCounter.incrementAndGet();
             }
         });
         Thread.sleep(4000);
-        assertEquals(3,txMsgCounter.get(LogTxStatus.PRECOMMIT).get());
-        assertEquals(2,txMsgCounter.get(LogTxStatus.PRIMARY_SUCCESS).get());
+        assertEquals(5,txMsgCounter.get(LogTxStatus.PRECOMMIT).get());
+        assertEquals(4,txMsgCounter.get(LogTxStatus.PRIMARY_SUCCESS).get());
         assertEquals(1,txMsgCounter.get(LogTxStatus.COMPLETE_SUCCESS).get());
-        assertEquals(2,txMsgCounter.get(LogTxStatus.SECONDARY_SUCCESS).get());
-        assertEquals(2,triggerMsgCounter.get());
-        assertEquals(2,triggerMeta.get());
+        assertEquals(4, userlogMeta.get());
+        if (withLogFailure) assertEquals(4,txMsgCounter.get(LogTxStatus.SECONDARY_FAILURE).get());
+        else assertEquals(4,txMsgCounter.get(LogTxStatus.SECONDARY_SUCCESS).get());
+        //User-Log
+        if (withLogFailure) {
+            assertEquals(0, userLogMsgCounter.get());
+        } else {
+            assertEquals(4, userLogMsgCounter.get());
+            assertEquals(7, userChangeCounter.get(Change.ADDED).get());
+            assertEquals(4,userChangeCounter.get(Change.REMOVED).get());
+        }
 
         clopen();
         /*
-        Use trigger framework
+        Transaction Recovery
          */
-        final AtomicInteger triggerCount = new AtomicInteger(0);
-        LogProcessorFramework triggers = TitanFactory.openTransactionLog(TitanFactory.open(config));
-        triggers.addLogProcessor(triggerName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
+        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph,startTime,TimeUnit.MILLISECONDS);
+
+
+        /*
+        Use user log processing framework
+         */
+        final AtomicInteger userLogCount = new AtomicInteger(0);
+        LogProcessorFramework userlogs = TitanFactory.openTransactionLog(graph);
+        userlogs.addLogProcessor(userlogName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
         .addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
@@ -2819,54 +3259,121 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                         txTime>=startTime && txTime<=endTime); //Times should be within a second
 
                 assertTrue(tx.containsRelationType("knows"));
-                assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
-                assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
-                assertEquals(2,Iterables.size(changes.getRelations(Change.ADDED)));
-                assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, tx.getEdgeLabel("knows"))));
-                assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED,tx.getEdgeLabel("knows"))));
-                assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
-                assertEquals(0,Iterables.size(changes.getRelations(Change.REMOVED)));
+                assertTrue(tx.containsRelationType("weight"));
+                EdgeLabel knows = tx.getEdgeLabel("knows");
+                PropertyKey weight = tx.getPropertyKey("weight");
 
-                long vid; double weight;
-                if (txId.getTransactionTime().sinceEpoch(TimeUnit.MICROSECONDS)<middleTime.getTimestamp(TimeUnit.MICROSECONDS)) {
-                    //1st transaction
-                    vid=v1id;
-                    weight=111.1;
+                long txTimeMicro = txId.getTransactionTime().sinceEpoch(TimeUnit.MICROSECONDS);
+
+                int txNo;
+                if (txTimeMicro<txTimes[1].getTimestamp(TimeUnit.MICROSECONDS)) {
+                    txNo=1;
+                    //v1 addition transaction
+                    assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
+                    assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
                     assertEquals(1,Iterables.size(changes.getVertices(Change.ANY)));
-                } else {
-                    //2nd transaction
-                    vid=v2id;
-                    weight=222.2;
-                    assertEquals(2,Iterables.size(changes.getVertices(Change.ANY)));
-                }
-                assertEquals(vid,Iterables.getOnlyElement(changes.getVertices(Change.ADDED)).getID());
-                TitanVertex v = tx.getVertex(vid);
-                assertTrue(v.isLoaded());
-                TitanProperty p = Iterables.getOnlyElement(changes.getProperties(v,Change.ADDED,"weight"));
-                assertEquals(weight,p.<Decimal>getValue().doubleValue(),0.0001);
-                assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
-                assertEquals(1,Iterables.size(changes.getEdges(v,Change.ADDED,BOTH)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, knows)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, weight)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+                    assertEquals(0,Iterables.size(changes.getRelations(Change.REMOVED)));
 
-                triggerCount.incrementAndGet();
+                    TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ADDED));
+                    assertEquals(v1id,v.getLongId());
+                    TitanProperty p = Iterables.getOnlyElement(changes.getProperties(v,Change.ADDED,"weight"));
+                    assertEquals(111.1,p.<Decimal>getValue().doubleValue(),0.0001);
+                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
+                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
+                } else if (txTimeMicro<txTimes[2].getTimestamp(TimeUnit.MICROSECONDS)) {
+                    txNo=2;
+                    //v2 addition transaction
+                    assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
+                    assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
+                    assertEquals(2,Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, knows)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, weight)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+                    assertEquals(0,Iterables.size(changes.getRelations(Change.REMOVED)));
+
+                    TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ADDED));
+                    assertEquals(v2id,v.getLongId());
+                    TitanProperty p = Iterables.getOnlyElement(changes.getProperties(v,Change.ADDED,"weight"));
+                    assertEquals(222.2,p.<Decimal>getValue().doubleValue(),0.0001);
+                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
+                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
+                } else if (txTimeMicro<txTimes[3].getTimestamp(TimeUnit.MICROSECONDS)) {
+                    txNo=3;
+                    //v2 deletion transaction
+                    assertEquals(0, Iterables.size(changes.getVertices(Change.ADDED)));
+                    assertEquals(1, Iterables.size(changes.getVertices(Change.REMOVED)));
+                    assertEquals(2,Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(0,Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.REMOVED)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED, knows)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED, weight)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+
+                    TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.REMOVED));
+                    assertEquals(v2id,v.getLongId());
+                    TitanProperty p = Iterables.getOnlyElement(changes.getProperties(v,Change.REMOVED,"weight"));
+                    assertEquals(222.2,p.<Decimal>getValue().doubleValue(),0.0001);
+                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.REMOVED, OUT)));
+                    assertEquals(0,Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
+                } else {
+                    txNo=4;
+                    //v1 edge modification
+                    assertEquals(0, Iterables.size(changes.getVertices(Change.ADDED)));
+                    assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
+                    assertEquals(1,Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED)));
+                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED, knows)));
+                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+
+                    TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ANY));
+                    assertEquals(v1id,v.getLongId());
+                    TitanEdge e = Iterables.getOnlyElement(changes.getEdges(v,Change.REMOVED,Direction.OUT,"knows"));
+                    assertNull(e.getProperty("weight"));
+                    assertEquals(v,e.getVertex(Direction.IN));
+                    e = Iterables.getOnlyElement(changes.getEdges(v,Change.ADDED,Direction.OUT,"knows"));
+                    assertEquals(44.4,e.<Decimal>getProperty("weight").doubleValue(),0.0);
+                    assertEquals(v,e.getVertex(Direction.IN));
+                }
+
+                //See only current state of graph in transaction
+                TitanVertex v1 = tx.getVertex(v1id);
+                assertNotNull(v1);
+                assertTrue(v1.isLoaded());
+                TitanVertex v2 = tx.getVertex(v2id);
+                if (txNo!=2) {
+                    //In the transaction that adds v2, v2 will be considered "loaded"
+                    assertTrue(txNo+ " - " + v2,v2==null || v2.isRemoved());
+                }
+                assertEquals(111.1,v1.<Decimal>getProperty(weight).doubleValue(),0.0);
+                assertEquals(1,Iterables.size(v1.getEdges(Direction.OUT)));
+
+                userLogCount.incrementAndGet();
             }
         }).build();
-
-        /*
-        Transaction Recovery
-         */
-        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(TitanFactory.open(config),startTime,TimeUnit.MILLISECONDS);
 
         //wait
         Thread.sleep(22000L);
 
-
-        triggers.removeLogProcessor(triggerName);
-        triggers.shutdown();
         recovery.shutdown();
-        assertEquals(2, triggerCount.get());
         long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
-        assertEquals(3,recoveryStats[0]);
-        assertEquals(0,recoveryStats[1]);
+        if (withLogFailure) {
+            assertEquals(1,recoveryStats[0]);
+            assertEquals(4,recoveryStats[1]);
+        } else {
+            assertEquals(5,recoveryStats[0]);
+            assertEquals(0,recoveryStats[1]);
+
+        }
+
+        userlogs.removeLogProcessor(userlogName);
+        userlogs.shutdown();
+        assertEquals(4, userLogCount.get());
     }
 
 
@@ -2891,16 +3398,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         VertexLabel org = mgmt.makeVertexLabel("organization").make();
 
-        TitanGraphIndex edge1 = mgmt.buildIndex("edge1",Edge.class).indexKey(time).indexKey(weight).buildCompositeIndex();
-        TitanGraphIndex edge2 = mgmt.buildIndex("edge2",Edge.class).indexOnly(connect).indexKey(text).buildCompositeIndex();
+        TitanGraphIndex edge1 = mgmt.buildIndex("edge1",Edge.class).addKey(time).addKey(weight).buildCompositeIndex();
+        TitanGraphIndex edge2 = mgmt.buildIndex("edge2",Edge.class).indexOnly(connect).addKey(text).buildCompositeIndex();
 
-        TitanGraphIndex prop1 = mgmt.buildIndex("prop1",TitanProperty.class).indexKey(time).buildCompositeIndex();
-        TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).indexKey(weight).indexKey(text).buildCompositeIndex();
+        TitanGraphIndex prop1 = mgmt.buildIndex("prop1",TitanProperty.class).addKey(time).buildCompositeIndex();
+        TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).addKey(weight).addKey(text).buildCompositeIndex();
 
-        TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).indexKey(time).indexOnly(person).unique().buildCompositeIndex();
-        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).indexKey(text).indexOnly(person).buildCompositeIndex();
-        TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).indexKey(time).indexKey(name).indexOnly(org).buildCompositeIndex();
-        TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).indexKey(name).buildCompositeIndex();
+        TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).addKey(time).indexOnly(person).unique().buildCompositeIndex();
+        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).addKey(text).indexOnly(person).buildCompositeIndex();
+        TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).addKey(time).addKey(name).indexOnly(org).buildCompositeIndex();
+        TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).addKey(name).buildCompositeIndex();
 
 
         // ########### INSPECTION & FAILURE ##############
@@ -2932,22 +3439,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         try {
             //Parameters not supported
-            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildCompositeIndex();
+            mgmt.buildIndex("blablub",Vertex.class).addKey(text, Mapping.TEXT.getParameter()).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Name already in use
-            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildCompositeIndex();
+            mgmt.buildIndex("edge1",Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //ImplicitKeys not allowed
-            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildCompositeIndex();
+            mgmt.buildIndex("jupdup",Vertex.class).addKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Unique is only allowed for vertex
-            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildCompositeIndex();
+            mgmt.buildIndex("edgexyz",Edge.class).addKey(time).unique().buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -2988,22 +3495,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         try {
             //Parameters not supported
-            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildCompositeIndex();
+            mgmt.buildIndex("blablub",Vertex.class).addKey(text, Mapping.TEXT.getParameter()).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Name already in use
-            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildCompositeIndex();
+            mgmt.buildIndex("edge1",Vertex.class).addKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //ImplicitKeys not allowed
-            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildCompositeIndex();
+            mgmt.buildIndex("jupdup",Vertex.class).addKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Unique is only allowed for vertex
-            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildCompositeIndex();
+            mgmt.buildIndex("edgexyz",Edge.class).addKey(time).unique().buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -3026,7 +3533,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         String[] strs = {"aaa","bbb","ccc","ddd"};
 
         for (int i=0;i<numV;i++) {
-            ns[i]=tx.addVertex(i%2==0?person:org);
+            ns[i]=tx.addVertexWithLabel(i % 2 == 0 ? person : org);
             TitanProperty p1 = ns[i].addProperty(name,"v"+i);
             TitanProperty p2 = ns[i].addProperty(name,"u"+(i%5));
 
@@ -3167,12 +3674,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //Update in transaction
         for (int i=0;i<numV/2;i++) {
-            TitanVertex v = tx.getVertex(ns[i].getID());
+            TitanVertex v = tx.getVertex(ns[i].getLongId());
             v.remove();
         }
         ns = new TitanVertex[numV*3/2];
         for (int i=numV;i<numV*3/2;i++) {
-            ns[i]=tx.addVertex(i%2==0?person:org);
+            ns[i]=tx.addVertexWithLabel(i % 2 == 0 ? person : org);
             TitanProperty p1 = ns[i].addProperty(name,"v"+i);
             TitanProperty p2 = ns[i].addProperty(name,"u"+(i%5));
 
@@ -3265,7 +3772,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
         //Check that index enforces uniqueness on vertices with the right label...
         try {
-            TitanVertex v1 = tx.addVertex(tx.getVertexLabel(person.getName()));
+            TitanVertex v1 = tx.addVertexWithLabel(tx.getVertexLabel(person.getName()));
             v1.setProperty(time.getName(),numV/2);
             tx.commit();
             fail();
@@ -3275,7 +3782,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         newTx();
         //...but not if we use a different one
-        TitanVertex v1 = tx.addVertex(tx.getVertexLabel(org.getName()));
+        TitanVertex v1 = tx.addVertexWithLabel(tx.getVertexLabel(org.getName()));
         v1.setProperty(time.getName(),numV/2);
     }
 
@@ -3354,7 +3861,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testForceIndexUsage() {
         PropertyKey age = makeKey("age",Integer.class);
         PropertyKey time = makeKey("time",Long.class);
-        mgmt.buildIndex("time",Vertex.class).indexKey(time).buildCompositeIndex();
+        mgmt.buildIndex("time",Vertex.class).addKey(time).buildCompositeIndex();
         finishSchema();
 
         for (int i=1;i<=10;i++) {
@@ -3391,8 +3898,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         clopen();
 
-        alice = tx.getVertex(alice.getID());
-        bob = tx.getVertex(bob.getID());
+        alice = tx.getVertex(alice.getLongId());
+        bob = tx.getVertex(bob.getLongId());
 
         assertEquals(sharedValue, alice.getProperty(propName));
         assertEquals(null, bob.getProperty(propName));
@@ -3445,12 +3952,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testIndexRetrieval() {
         PropertyKey id = mgmt.makePropertyKey("uid").dataType(Integer.class).make();
-        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildCompositeIndex();
-        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildCompositeIndex();
+        mgmt.buildIndex("vuid",Vertex.class).unique().addKey(id).buildCompositeIndex();
+        mgmt.buildIndex("euid",Edge.class).addKey(id).buildCompositeIndex();
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildCompositeIndex();
-        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildCompositeIndex();
+        mgmt.buildIndex("vname",Vertex.class).addKey(name).buildCompositeIndex();
+        mgmt.buildIndex("ename",Edge.class).addKey(name).buildCompositeIndex();
         mgmt.makeEdgeLabel("connect").signature(id, name).make();
         finishSchema();
 
@@ -3545,9 +4052,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testWithoutIndex() {
-        PropertyKey kid = graph.makePropertyKey("kid").dataType(Long.class).make();
-        graph.makePropertyKey("name").dataType(String.class).make();
-        graph.makeEdgeLabel("knows").signature(kid).make();
+        PropertyKey kid = mgmt.makePropertyKey("kid").dataType(Long.class).make();
+        mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.makeEdgeLabel("knows").signature(kid).make();
+        finishSchema();
+
         Random random = new Random();
         int numV = 1000;
         TitanVertex previous = null;
@@ -3599,7 +4108,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(111, e.getProperty(id));
         graph.commit();
 
-        n3 = graph.getVertex(n3.getID());
+        n3 = graph.getVertex(n3.getLongId());
         assertEquals(445, n3.getProperty("uid"));
         e = (TitanEdge) Iterables.getOnlyElement(n3.getEdges(OUT, "knows"));
         assertEquals(111, e.getProperty("uid"));
@@ -3622,7 +4131,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         clopen();
 
-        n3 = graph.getVertex(n3.getID());
+        n3 = graph.getVertex(n3.getLongId());
         assertEquals(353, n3.getProperty("uid"));
 
         e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
@@ -3734,7 +4243,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int ttl = 1; // artificially low TTL for test
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
-        mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
+        mgmt.buildEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
         mgmt.setTTL(wavedAt, ttl, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
         assertEquals(ttl, mgmt.getTTL(wavedAt).getLength(TimeUnit.SECONDS));
@@ -3767,7 +4276,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
-        mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName).buildCompositeIndex();
+        mgmt.buildIndex("edge-name", Edge.class).addKey(edgeName).buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label, 1, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(edgeName).getLength(TimeUnit.SECONDS));
@@ -3803,8 +4312,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         PropertyKey place = mgmt.makePropertyKey("place").dataType(String.class).make();
         mgmt.setTTL(name, 42, TimeUnit.SECONDS);
         mgmt.setTTL(place, 1, TimeUnit.SECONDS);
-        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
-        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(place).buildCompositeIndex();
+        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).addKey(name).buildCompositeIndex();
+        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).addKey(name).addKey(place).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
         assertEquals(42, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
@@ -3812,7 +4321,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         v1.setProperty("name", "some event");
         v1.setProperty("place", "somewhere");
 
@@ -3851,8 +4360,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Long.class).make();
-        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).indexKey(name).buildCompositeIndex();
-        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(time).buildCompositeIndex();
+        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).addKey(name).buildCompositeIndex();
+        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).addKey(name).addKey(time).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
@@ -3860,7 +4369,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         v1.setProperty("name", "some event");
         v1.setProperty("time", System.currentTimeMillis());
         tx.commit();
@@ -3902,7 +4411,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("person");
+        Vertex v1 = tx.addVertexWithLabel("person");
         Vertex v2 = tx.addVertex();
         Edge v1LikesV2 = tx.addEdge(null, v1, v2, "likes");
         Edge v1DislikesV2 = tx.addEdge(null, v1, v2, "dislikes");
@@ -4071,7 +4580,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
+        Vertex v1 = tx.addVertexWithLabel("event");
         Vertex v2 = tx.addVertex();
         tx.commit();
 

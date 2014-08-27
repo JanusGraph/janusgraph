@@ -17,6 +17,6 @@ public class ThriftWritePerformanceTest extends TitanWritePerformanceTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 }

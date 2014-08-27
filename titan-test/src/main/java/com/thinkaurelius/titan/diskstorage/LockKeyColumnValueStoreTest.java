@@ -73,7 +73,14 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Before
     public void setUp() throws Exception {
-        openStorageManager(0).clearStorage();
+
+        StoreManager tmp = null;
+        try {
+            tmp = openStorageManager(0);
+            tmp.clearStorage();
+        } finally {
+            tmp.close();
+        }
 
         for (int i = 0; i < CONCURRENCY; i++) {
             LocalLockMediators.INSTANCE.clear(concreteClassName + i);
@@ -104,7 +111,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             }
 
             ModifiableConfiguration sc = GraphDatabaseConfiguration.buildConfiguration();
-            sc.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX,concreteClassName + i);
+            sc.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP,concreteClassName + i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
             sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new StandardDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
@@ -368,11 +375,11 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         expect(mockLockerProvider.getLocker(anyObject(String.class))).andReturn(mockLocker).times(numStores);
 
         // acquireLock calls writeLock, and we do it 2/3 * numStores times
-        mockLocker.writeLock(eq(new KeyColumn(key, col)), eq(tx.getLockTransaction()));
+        mockLocker.writeLock(eq(new KeyColumn(key, col)), eq(tx.getConsistentTx()));
         expectLastCall().times(numStores / 3 * 2);
 
         // mutateMany calls checkLocks, and we do it 2/3 * numStores times
-        mockLocker.checkLocks(tx.getLockTransaction());
+        mockLocker.checkLocks(tx.getConsistentTx());
         expectLastCall().times(numStores / 3 * 2);
 
         replay(mockLockerProvider);

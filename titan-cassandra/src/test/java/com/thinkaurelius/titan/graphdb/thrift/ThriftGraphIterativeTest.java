@@ -25,6 +25,6 @@ public class ThriftGraphIterativeTest extends TitanGraphIterativeBenchmark {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 }

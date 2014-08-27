@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -43,7 +44,7 @@ public class FilterMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private boolean isVertex;
         private Closure<Boolean> closure;
@@ -59,25 +60,23 @@ public class FilterMap {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
                 if (value.hasPaths() && !this.closure.call(value)) {
                     value.clearPaths();
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_FILTERED, 1L);
-                    //context.getCounter(Counters.VERTICES_FILTERED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_FILTERED, 1L);
                 }
             } else {
                 long counter = 0;
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths() && !this.closure.call(edge)) {
                         edge.clearPaths();
                         counter++;
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_FILTERED, counter);
-                //context.getCounter(Counters.EDGES_FILTERED).increment(counter);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_FILTERED, counter);
             }
 
             context.write(NullWritable.get(), value);

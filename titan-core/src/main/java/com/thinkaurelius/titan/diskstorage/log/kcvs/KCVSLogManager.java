@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
@@ -31,6 +32,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@PreInitializeConfigOptions
 public class KCVSLogManager implements LogManager {
 
     private static final Logger log =

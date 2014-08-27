@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVS;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
@@ -18,7 +17,6 @@ import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
@@ -76,92 +74,25 @@ public class GraphDatabaseConfiguration {
 
     public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Titan Graph Database");
 
-    // ################ GENERAL #######################
+    // ########## Graph-level Config Options ##########
     // ################################################
 
-    /**
-     * Configures the {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
-     * is disabled.
-     */
-    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",
-            "Configures the DefaultTypeMaker to be used by this graph. If set to 'none', automatic creation of types is disabled.",
-            ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String s) {
-            return s!=null && preregisteredAutoType.containsKey(s);
-        }
-    });
-//    public static final String AUTO_TYPE_KEY = "autotype";
-//    public static final String AUTO_TYPE_DEFAULT = "blueprints";
+    public static final ConfigNamespace GRAPH_NS = new ConfigNamespace(ROOT_NS,"graph",
+            "Configuration options for transaction handling");
 
-    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
-        put("none", DisableDefaultSchemaMaker.INSTANCE);
-        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
-    }};
 
-    /**
-     * If this option is enabled, a transaction will retrieval all of a vertex's properties when asking for any property.
-     * This will significantly speed up subsequent property lookups on the same vertex, hence this option is enabled by default.
-     * Disable this option when the graph contains vertices with very many properties such that retrieving all of them substantially
-     * increases latencies compared to a single property retrieval.
-     */
-    public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(ROOT_NS,"fast-property",
-            "Whether to pre-fetch all properties on first vertex property access. This can eliminate backend calls on subsequent" +
-                    "property access for the same vertex at the expense of retrieving all properties at once.",
-            ConfigOption.Type.MASKABLE, Boolean.class);
-//    public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
-
-    /**
-     * When enabled, Titan will accept user provided vertex ids as long as they are valid Titan vertex ids - see
-     * {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)}. When enabled, Titan will now longer allocate and assign
-     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(Long)}.
-     * <p/>
-     * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
-     * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
-     */
-    public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(ROOT_NS,"set-vertex-id",
+    public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(GRAPH_NS,"set-vertex-id",
             "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled. " +
                 "Useful when operating Titan in concert with another storage system that assigns long ids but disables some" +
-                    "of Titan's advanced features. EXPERT FEATURE - USE WITH GREAT CARE.",
+                    "of Titan's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
 
-    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(ROOT_NS,"force-index",
-            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
-                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided.",
-            ConfigOption.Type.MASKABLE, false);
+    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(GRAPH_NS, "timestamps",
+            "The timestamp resolution to use when writing to storage and indices. Sets the time source for the entire graph cluster. " +
+                    "To avoid potential inaccuracies the configured time resolution should match those of the backend systems",
+            ConfigOption.Type.FIXED, Timestamps.class, Timestamps.MICRO);
 
-    public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<Duration>(ROOT_NS,"max-commit-time",
-            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
-                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
-                    "Must be longer than the maximum allowed write time.",
-            ConfigOption.Type.GLOBAL, new StandardDuration(10, TimeUnit.SECONDS));
-//
-//    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
-//    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
-
-
-    /**
-     * When true, Titan will ignore unknown index key fields in queries.
-     */
-    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(ROOT_NS, "ignore-unknown-index-key",
-            "Whether to ignore undefined types encountered in user-provided index queries",
-            ConfigOption.Type.MASKABLE, false);
-//    public static final String IGNORE_UNKNOWN_INDEX_FIELD_KEY = "ignore-unknown-index-key";
-//    public static final boolean IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT = false;
-
-    public static final String UKNOWN_FIELD_NAME = "unknown_key";
-
-
-    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(ROOT_NS, "timestamps",
-            "The timestamp resolution to use when writing to storage and indices",
-            ConfigOption.Type.FIXED, Timestamps.MICRO);
-
-
-    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(ROOT_NS,"log-tx",
-            "Whether transaction mutations should be logged to Titan's system log",
-            ConfigOption.Type.GLOBAL, false);
-
-    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
+    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(GRAPH_NS,"unique-instance-id",
             "Unique identifier for this Titan instance.  This must be unique among all instances " +
             "concurrently accessing the same stores or indexes.  It's automatically generated by " +
             "concatenating the hostname, process id, and a static (process-wide) counter. " +
@@ -169,43 +100,103 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.LOCAL, String.class);
 
 
-    public static final ConfigOption<Short> UNIQUE_INSTANCE_ID_SUFFIX = new ConfigOption<Short>(ROOT_NS,"unique-instance-id-suffix",
+    public static final ConfigOption<Short> UNIQUE_INSTANCE_ID_SUFFIX = new ConfigOption<Short>(GRAPH_NS,"unique-instance-id-suffix",
             "When this is set and " + UNIQUE_INSTANCE_ID.getName() + " is not, this Titan " +
             "instance's unique identifier is generated by concatenating the hostname to the " +
             "provided number.  This is a legacy option which is currently only useful if the JVM's " +
             "ManagementFactory.getRuntimeMXBean().getName() is not unique between processes.",
             ConfigOption.Type.LOCAL, Short.class);
 
-    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
-            "The version of Titan with which this database was created.  Don't manually set this property.",
-            ConfigOption.Type.FIXED, String.class);
+    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(GRAPH_NS,"titan-version",
+            "The version of Titan with which this database was created. Automatically set on first start. Don't manually set this property.",
+            ConfigOption.Type.FIXED, String.class).hide();
 
-    // ################ INSTANCE REGISTRATION #######################
+    // ################ INSTANCE REGISTRATION (system) #######################
     // ##############################################################
 
     public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS,"system-registration",
             "This is used internally to keep track of open instances.",true);
 
     public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
-            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class);
+            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class).hide();
+
+
+    // ################ Transaction #######################
+    // ################################################
+
+    public static final ConfigNamespace TRANSACTION_NS = new ConfigNamespace(ROOT_NS,"tx",
+            "Configuration options for transaction handling");
+
+    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(TRANSACTION_NS,"log-tx",
+            "Whether transaction mutations should be logged to Titan's write-ahead transaction log which can be used for recovery of partially failed transactions",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<Duration>(TRANSACTION_NS,"max-commit-time",
+            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
+                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
+                    "Must be longer than the maximum allowed write time.",
+            ConfigOption.Type.GLOBAL, new StandardDuration(10, TimeUnit.SECONDS));
+
+
+    // ################ Query Processing #######################
+    // ################################################
+
+    public static final ConfigNamespace QUERY_NS = new ConfigNamespace(ROOT_NS,"query",
+            "Configuration options for query processing");
+
+    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(QUERY_NS, "ignore-unknown-index-key",
+            "Whether to ignore undefined types encountered in user-provided index queries",
+            ConfigOption.Type.MASKABLE, false);
+
+    public static final String UKNOWN_FIELD_NAME = "unknown_key";
+
+
+    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(QUERY_NS,"force-index",
+            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
+                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided " +
+                    "on large graphs. Recommended for production use of Titan.",
+            ConfigOption.Type.MASKABLE, false);
+
+
+    public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(QUERY_NS,"fast-property",
+            "Whether to pre-fetch all properties on first vertex property access. This can eliminate backend calls on subsequent" +
+                    "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
+                    "expensive for vertices with many properties",
+            ConfigOption.Type.MASKABLE, Boolean.class);
+
+    // ################ SCHEMA #######################
+    // ################################################
+
+    public static final ConfigNamespace SCHEMA_NS = new ConfigNamespace(ROOT_NS,"schema",
+            "Schema related configuration options");
+
+    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(SCHEMA_NS,"default",
+            "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
+                    "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
+            ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
+        @Override
+        public boolean apply(@Nullable String s) {
+            return s!=null && preregisteredAutoType.containsKey(s);
+        }
+    });
+
+    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
+        put("none", DisableDefaultSchemaMaker.INSTANCE);
+        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
+    }};
+
 
     // ################ CACHE #######################
     // ################################################
 
-//    public static final String CACHE_NAMESPACE = "cache";
     public static final ConfigNamespace CACHE_NS = new ConfigNamespace(ROOT_NS,"cache","Configuration options that modify Titan's caching behavior");
 
-    /**
-     * Whether this Titan instance should use a database level cache in front of the
-     * storage backend in order to speed up frequent queries across transactions
-     */
-//    public static final String DB_CACHE_KEY = "db-cache";
-//    public static final boolean DB_CACHE_DEFAULT = false;
+
     public static final ConfigOption<Boolean> DB_CACHE = new ConfigOption<Boolean>(CACHE_NS,"db-cache",
             "Whether to enable Titan's database-level cache, which is shared across all transactions. " +
             "Enabling this option speeds up traversals by holding hot graph elements in memory, " +
             "but also increases the likelihood of reading stale data.  Disabling it forces each " +
-            "transaction to indepedendently fetch graph elements from storage before reading/writing them.",
+            "transaction to independently fetch graph elements from storage before reading/writing them.",
             ConfigOption.Type.MASKABLE, false);
 
     /**
@@ -299,8 +290,6 @@ public class GraphDatabaseConfiguration {
 
 //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
-    public static final ConfigNamespace STORAGE_SSL_NS = new ConfigNamespace(STORAGE_NS, "ssl", "Configuration options for SSL");
-    public static final ConfigNamespace STORAGE_SSL_TRUSTSTORE = new ConfigNamespace(STORAGE_SSL_NS, "truststore", "Configuration options for SSL Truststore.");
 
     /**
      * Storage directory for those storage backends that require local storage
@@ -394,13 +383,12 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
             "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(100000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(100L, TimeUnit.SECONDS));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
-
+            ConfigOption.Type.MASKABLE, new StandardDuration(10L, TimeUnit.SECONDS));
 
     /**
      * If enabled, Titan attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
@@ -425,18 +413,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<String[]>(STORAGE_NS,"hostname",
             "Configuration key for the hostname or list of hostname of remote storage backend servers to connect to",
             ConfigOption.Type.LOCAL, new String[]{NetworkUtil.getLoopbackAddress()});
-    /**
-     * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
-     * <p/>
-     * Value = {@value}
-     */
-//    public static final String HOSTNAME_KEY = "hostname";
-    /**
-     * Default hostname at which to attempt connecting to remote storage backend
-     * <p/>
-     * Value = {@value}
-     */
-//    public static final String HOSTNAME_DEFAULT = NetworkUtil.getLoopbackAddress();
 
     /**
      * Configuration key for the port on which to connect to remote storage backend servers.
@@ -446,30 +422,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
             "Configuration key for the port on which to connect to remote storage backend servers",
             ConfigOption.Type.LOCAL, Integer.class);
-
-//    public static final String PORT_KEY = "port";
-
-    /**
-     * Whether the storage backend should compress the data when storing it on disk.
-     * Compression reduces the size on disk and speed up I/0 operations if the data is efficiently compressable.
-     */
-    public static final ConfigOption<Boolean> STORAGE_COMPRESSION = new ConfigOption<Boolean>(STORAGE_NS,"compression",
-            "Whether the storage backend should use compression when storing the data",
-            ConfigOption.Type.FIXED, true);
-
-    /**
-     * The size of blocks that are compressed individually in kilobyte
-     */
-    public static final ConfigOption<Integer> STORAGE_COMPRESSION_SIZE = new ConfigOption<Integer>(STORAGE_NS,"compression-block-size",
-            "The size of the compression blocks in kilobytes",
-            ConfigOption.Type.FIXED, 64);
-
-
-
-    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(STORAGE_NS,"replication-factor",
-            "The number of data replicas (including the original copy) that should be kept. " +
-            "This is only meaningful for storage backends that natively support data replication.",
-            ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     /**
      * Username and password keys to be used to specify an access credential that may be needed to connect
@@ -481,8 +433,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> AUTH_PASSWORD = new ConfigOption<String>(STORAGE_NS,"password",
             "Password to authenticate against backend",
             ConfigOption.Type.LOCAL, String.class);
-//    public static final String AUTH_USERNAME_KEY = "username";
-//    public static final String AUTH_PASSWORD_KEY = "password";
 
     /**
      * Default timeout when connecting to a remote database instance
@@ -510,17 +460,6 @@ public class GraphDatabaseConfiguration {
 //    public static final String SETUP_WAITTIME_KEY = "setup-wait";
 
     /**
-     * Default number of connections to pool when connecting to a remote database.
-     * <p/>
-     * Value = {@value}
-     */
-    public static final ConfigOption<Integer> CONNECTION_POOL_SIZE = new ConfigOption<Integer>(STORAGE_NS,"connection-pool-size",
-            "Default number of connections to pool when connecting to a remote database",
-            ConfigOption.Type.MASKABLE, 32);
-//    public static final int CONNECTION_POOL_SIZE_DEFAULT = 32;
-//    public static final String CONNECTION_POOL_SIZE_KEY = "connection-pool-size";
-
-    /**
      * Default number of results to pull over the wire when iterating over a distributed
      * storage backend.
      * This is batch size of results to pull when iterating a result set.
@@ -534,11 +473,13 @@ public class GraphDatabaseConfiguration {
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
 
+    public static final ConfigNamespace LOCK_NS =
+            new ConfigNamespace(STORAGE_NS, "lock", "Options for locking on eventually-consistent stores");
 
     /**
      * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
      */
-    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(STORAGE_NS,"lock-retries",
+    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(LOCK_NS, "retries",
             "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 3);
 //    public static final String LOCK_RETRY_COUNT = "lock-retries";
@@ -548,7 +489,7 @@ public class GraphDatabaseConfiguration {
      * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
      * This value should be a small multiple of the average consistent write time.
      */
-    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
+    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(LOCK_NS, "wait-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_WAIT_MS = "lock-wait-time";
@@ -560,7 +501,7 @@ public class GraphDatabaseConfiguration {
      * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
      * held applications are expired pre-maturely and as small as possible to avoid dead lock.
      */
-    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
+    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(LOCK_NS, "expiry-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
@@ -574,19 +515,30 @@ public class GraphDatabaseConfiguration {
      *
      * @see #LOCK_BACKEND
      */
-    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
+    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(LOCK_NS, "clean-expired",
             "Whether to delete expired locks from the storage backend",
             ConfigOption.Type.MASKABLE, false);
 
     /**
      * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
      */
-    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
+    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(LOCK_NS, "backend",
             "Locker type to use",
             ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
 //    public static final String LOCK_BACKEND = "lock-backend";
 //    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
 
+    /**
+     * Configuration setting key for the local lock mediator prefix
+     */
+    public static final ConfigOption<String> LOCK_LOCAL_MEDIATOR_GROUP =
+            new ConfigOption<String>(LOCK_NS, "local-mediator-group",
+            "This option determines the LocalLockMediator instance used for early detection of lock contention " +
+            "between concurrent Titan graph instances within the same process which are connected to the same " +
+            "storage backend.  Titan instances that have the same value for this variable will attempt to discover " +
+            "lock contention among themselves in memory before proceeding with the general-case distributed locking " +
+            "code.  Titan generates an appropriate default value for this option at startup.  Overridding " +
+            "the default is generally only useful in testing.", ConfigOption.Type.LOCAL, String.class);
 
 
     // ################ STORAGE - META #######################
@@ -616,16 +568,16 @@ public class GraphDatabaseConfiguration {
      * of de-congesting a single id pool in the database.
      */
     public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
-            "Whether the graph's element IDs should be randomly distributed across the space of available IDs " +
-            "(true) or allocated in increasing order (false). Unless explicitly set, this defaults false for  " +
-            "stores that hash keys and defaults true for stores that preserve key order (such as HBase and Cassandra " +
-            "with ByteOrderedPartitioner).",
+            "Whether the graph's element should be randomly distributed across the cluster " +
+            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
+            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
+            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
             ConfigOption.Type.FIXED, false);
-//    public static final String IDS_PARTITION_KEY = "partition";
-//    public static final boolean IDS_PARTITION_DEFAULT = false;
+
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
-            "The maximum number of ID partitions in the graph. Must be bigger than 1 and a power of 2.",
+            "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
+                    "in the Titan graph cluster. Must be bigger than 1 and a power of 2.",
             ConfigOption.Type.FIXED, 64, new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer integer) {
@@ -661,7 +613,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Boolean> IDS_FLUSH = new ConfigOption<Boolean>(IDS_NS,"flush",
             "When true, vertices and edges are assigned IDs immediately upon creation.  When false, " +
-            "IDs are assigned only when the transaction commits.",
+            "IDs are assigned only when the transaction commits. Must be disabled for graph partitioning to work.",
             ConfigOption.Type.MASKABLE, true);
 //    public static final String IDS_FLUSH_KEY = "flush";
 //    public static final boolean IDS_FLUSH_DEFAULT = true;
@@ -715,7 +667,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<ConflictAvoidanceMode> IDAUTHORITY_CONFLICT_AVOIDANCE = new ConfigOption<ConflictAvoidanceMode>(IDAUTHORITY_NS,"conflict-avoidance-mode",
             "This setting helps separate Titan instances sharing a single graph storage backend avoid contention when reserving ID blocks, " +
             "increasing overall throughput.",
-            ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.NONE);
+            ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
      * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
@@ -732,7 +684,7 @@ public class GraphDatabaseConfiguration {
      * is disabled.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
-            "Number of times the system attempts attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
+            "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 5);
 //    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
 //    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
@@ -804,9 +756,13 @@ public class GraphDatabaseConfiguration {
             "Configuration key for the port on which to connect to remote indexing backend servers",
             ConfigOption.Type.MASKABLE, Integer.class);
 
-    public static final ConfigOption<String> INDEX_CONF_FILE = new ConfigOption<String>(INDEX_NS,"conffile",
+    public static final ConfigOption<String> INDEX_CONF_FILE = new ConfigOption<String>(INDEX_NS,"conf-file",
             "Path to a configuration file for those indexing backends that require/support a separate config file",
             ConfigOption.Type.MASKABLE, String.class);
+
+    public static final ConfigOption<Integer> INDEX_MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS, "max-result-set-size",
+            "Maxium number of results to return if no limit is specified",
+            ConfigOption.Type.MASKABLE, 100000);
 
 
     // ############## Logging System ######################
@@ -816,7 +772,8 @@ public class GraphDatabaseConfiguration {
 
     public static final String MANAGEMENT_LOG = "titan";
     public static final String TRANSACTION_LOG = "tx";
-    public static final String TRIGGER_LOG = "trigger";
+    public static final String USER_LOG = "user";
+    public static final String USER_LOG_PREFIX = "ulog_";
 
     public static final StandardDuration TRANSACTION_LOG_DEFAULT_TTL = new StandardDuration(7,TimeUnit.DAYS);
 
@@ -863,12 +820,11 @@ public class GraphDatabaseConfiguration {
     // ############## Attributes ######################
     // ################################################
 
-    public static final String ATTRIBUTE_NAMESPACE = "attributes";
-
     public static final ConfigNamespace ATTRIBUTE_NS = new ConfigNamespace(ROOT_NS,"attributes","Configuration options for attribute handling");
 
     public static final ConfigOption<Boolean> ATTRIBUTE_ALLOW_ALL_SERIALIZABLE = new ConfigOption<Boolean>(ATTRIBUTE_NS,"allow-all",
-            "Enables Titan to store any kind of attribute value in the database",
+            "Enables Titan to persist any valid data type. Disabling this option restricts data types to native types and explicitly" +
+                    "registered ones.",
             ConfigOption.Type.GLOBAL_OFFLINE, true);
 //    public static final String ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY = "allow-all";
 //    public static final boolean ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT = true;
@@ -1257,8 +1213,8 @@ public class GraphDatabaseConfiguration {
         //Read out global configuration
         try {
             // If lock prefix is unspecified, specify it now
-            if (!localbc.has(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX)) {
-                overwrite.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, storeManager.getName());
+            if (!localbc.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
+                overwrite.set(LOCK_LOCAL_MEDIATOR_GROUP, storeManager.getName());
             }
 
             //Freeze global configuration if not already frozen!
@@ -1285,6 +1241,23 @@ public class GraphDatabaseConfiguration {
                     log.info("Enabled partitioning", part);
                 } else {
                     log.info("Disabled partitioning");
+                }
+
+                /* If the configuration does not explicitly set a timestamp provider and
+                 * the storage backend both supports timestamps and has a preference for
+                 * a specific timestamp provider, then apply the backend's preference.
+                 */
+                if (!localbc.has(TIMESTAMP_PROVIDER)) {
+                    StoreFeatures f = storeManager.getFeatures();
+                    Timestamps backendPreference = null;
+                    if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
+                        globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
+                        log.info("Set timestamps to {} according to storage backend preference", globalWrite.get(TIMESTAMP_PROVIDER));
+                    }
+                    globalWrite.set(TIMESTAMP_PROVIDER, TIMESTAMP_PROVIDER.getDefaultValue());
+                    log.info("Set default timestamp provider {}", globalWrite.get(TIMESTAMP_PROVIDER));
+                } else {
+                    log.info("Using configured timestamp provider {}", localbc.get(TIMESTAMP_PROVIDER));
                 }
 
                 globalWrite.freezeConfiguration();

@@ -95,7 +95,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public long getID() {
-            return BaseKey.this.getID();
+            return BaseKey.this.getLongId();
         }
 
         @Override

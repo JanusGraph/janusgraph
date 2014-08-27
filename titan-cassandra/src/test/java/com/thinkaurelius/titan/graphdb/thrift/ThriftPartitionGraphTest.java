@@ -10,7 +10,7 @@ public class ThriftPartitionGraphTest extends TitanPartitionGraphTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override

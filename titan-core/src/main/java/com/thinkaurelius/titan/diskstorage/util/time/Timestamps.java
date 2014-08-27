@@ -117,6 +117,21 @@ public enum Timestamps implements TimestampProvider {
 
         TimeUnit unit = getUnit();
 
+        /*
+         * Distributed storage managers that rely on timestamps play with the
+         * least significant bit in timestamp longs, turning it on or off to
+         * ensure that deletions are logically ordered before additions within a
+         * single batch mutation. This is not a problem at microsecond
+         * resolution because we pretendulate microsecond resolution by
+         * multiplying currentTimeMillis by 1000, so the LSB can vary freely.
+         * It's also not a problem with nanosecond resolution because the
+         * resolution is just too fine, relative to how long a mutation takes,
+         * for it to matter in practice. But it can lead to corruption at
+         * millisecond resolution (and does, in testing).
+         */
+        if (unit.equals(TimeUnit.MILLISECONDS))
+            futureTime = futureTime.add(new StandardDuration(1L, TimeUnit.MILLISECONDS));
+
         while ((now = getTime()).compareTo(futureTime) <= 0) {
             long delta = futureTime.getTimestamp(unit) - now.getTimestamp(unit);
             if (0L == delta)
@@ -126,8 +141,8 @@ public enum Timestamps implements TimestampProvider {
              * of the argument, if applicable, and passes both milliseconds and
              * nanoseconds parts into Thread#sleep(long, long)
              */
-            if (log.isDebugEnabled()) {
-                log.debug("Sleeping: now={} targettime={} delta={} {}",
+            if (log.isTraceEnabled()) {
+                log.trace("Sleeping: now={} targettime={} delta={} {}",
                         new Object[] { now, futureTime, delta, unit });
             }
             unit.sleep(delta);

@@ -1,19 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-import com.thinkaurelius.titan.hadoop.HadoopPipeline;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanOutputFormat;
-import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.titan.hadoop.mapreduce.transform.VerticesMap;
-import com.thinkaurelius.titan.hadoop.mapreduce.transform.VerticesVerticesMapReduce;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.CountMapReduce;
-
 import junit.framework.TestCase;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Reducer;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

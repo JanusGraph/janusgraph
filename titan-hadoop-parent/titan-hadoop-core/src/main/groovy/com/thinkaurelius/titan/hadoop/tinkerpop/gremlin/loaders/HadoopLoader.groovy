@@ -7,6 +7,8 @@ import com.thinkaurelius.titan.hadoop.hdfs.TextFileLineIterator
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.*
 import org.apache.hadoop.io.IOUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -15,6 +17,9 @@ class HadoopLoader {
 
     private static final String SPACE = " ";
     private static final String D_SPACE = "(D) ";
+
+    private static final Logger log =
+            LoggerFactory.getLogger(HadoopLoader.class);
 
     public static void load() {
 
@@ -51,12 +56,21 @@ class HadoopLoader {
             HDFSTools.globDelete((FileSystem) delegate, path, true);
         }
 
+        FileSystem.metaClass.mkdirs = { final String path ->
+            return ((FileSystem)delegate).mkdirs(new Path(path));
+        }
+
         FileSystem.metaClass.copyToLocal = { final String from, final String to ->
             return ((FileSystem) delegate).copyToLocalFile(new Path(from), new Path(to));
         }
 
         FileSystem.metaClass.copyFromLocal = { final String from, final String to ->
-            return ((FileSystem) delegate).copyFromLocalFile(new Path(from), new Path(to));
+            if (from.equals(to) && delegate.equals(FileSystem.getLocal(new Configuration()))) {
+                // Copying a local file to itself results in truncation, usually a surprise
+                log.info("Not copying local file {} to itself (would result in file truncation)", from);
+            } else {
+                ((FileSystem) delegate).copyFromLocalFile(new Path(from), new Path(to));
+            }
         }
 
         FileSystem.metaClass.mergeToLocal = { final String from, final String to ->

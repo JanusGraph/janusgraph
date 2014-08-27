@@ -1,13 +1,14 @@
-// Ported from the wikipage named "Faunus and Hadoop"
-
+[[hadoop-concepts]]
 Concept Overview
 ----------------
+
+// Ported from the wikipage named "Faunus and Hadoop"
 
 //image::faunus-elephants.png[]
 
 Titan-Hadoop is designed to support global graph traversals over massive-scale graphs. In particular, this typically leads to two particular use cases: graph derivations and graph statistics.
 
-* *Graph derivation*: Given an input graph, derive a new graph based upon the input graph's structure and semantics. Other terms include "graph rewriting":http://en.wikipedia.org/wiki/Graph_rewriting and graph transformations.
+* *Graph derivation*: Given an input graph, derive a new graph based upon the input graph's structure and semantics. Other terms include http://en.wikipedia.org/wiki/Graph_rewriting[graph rewriting] and graph transformations.
 ** deriving a _cousin_-graph from _father_ and _brother_ edges.
 ** deriving a youth _friend_-graph by removing all vertices with age greater than 30 and keeping only _friend_ edges.
 ** adding properties to the graph elements according to some traversal.
@@ -71,17 +72,24 @@ image:graph-derivation.png[]
 
 image:graph-statistic.png[]
 
+Nomenclature: Titan-Hadoop vs Faunus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The software currently called Titan-Hadoop was originally conceived and developed as Faunus.  It was also a standalone project until merging with Titan in the 0.5.0 release of Titan.
+
+The word Faunus remains in some parts of Titan-Hadoop's internals and public-facing API.  For instance, Titan-Hadoop's input and output formats are parameterized in the type `FaunusVertex`.  For most intents and purposes, Titan-Hadoop and Faunus are currently the same system, though the names may evolve again as Titan grows to accomodate other bulk-synchronous parallel computing frameworks.
+
 References
 ~~~~~~~~~~
 
-The following articles provided insight into the various theoretical and technical issues encountered during Titan-Hadoop's design and development.  Note that Titan-Hadoop was called Faunus in its earlier versions.
+The following articles provided insight into the various theoretical and technical issues encountered during Titan-Hadoop's design and development.
 
- * Rodriguez M.A., Shinavier, J., "Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms,":http://arxiv.org/abs/0806.2274 Journal of Informetrics, 4(1), pp. 29--41, December 2009.
+ * Rodriguez M.A., Shinavier, J., http://arxiv.org/abs/0806.2274[Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms], Journal of Informetrics, 4(1), pp. 29--41, December 2009.
 
-* Lin, J., Dyer, C., "Data-Intensive Text Processing with MapReduce,":http://lintool.github.com/MapReduceAlgorithms/index.html Morgan & Claypool Publishers, 2010.
+* Lin, J., Dyer, C., http://lintool.github.com/MapReduceAlgorithms/index.html[Data-Intensive Text Processing with MapReduce], Morgan & Claypool Publishers, 2010.
 
-* Kepner, J., Gilbert, J., "Graph Algorithms in the Language of Linear Algebra,":http://www.amazon.com/Algorithms-Language-Algebra-Software-Environments/dp/0898719909 Society for Industrial & Applied Mathematics, 2011.
+* Kepner, J., Gilbert, J., http://www.amazon.com/Algorithms-Language-Algebra-Software-Environments/dp/0898719909[Graph Algorithms in the Language of Linear Algebra], Society for Industrial & Applied Mathematics, 2011.
 
-* White, T., "Hadoop: The Definitive Guide,":http://www.amazon.com/Hadoop-Definitive-Guide-Tom-White/dp/1449311520/ O'Reilly Media, 2012.
+* White, T., http://www.amazon.com/Hadoop-Definitive-Guide-Tom-White/dp/1449311520/[Hadoop: The Definitive Guide], O'Reilly Media, 2012.
 
-* Katsov, I., "MapReduce Patterns, Algorithms, and Use Cases,":http://highlyscalable.wordpress.com/2012/02/01/mapreduce-patterns/ Highly Scalable Blog, February 2012.
+* Katsov, I., http://highlyscalable.wordpress.com/2012/02/01/mapreduce-patterns/[MapReduce Patterns, Algorithms, and Use Cases], Highly Scalable Blog, February 2012.

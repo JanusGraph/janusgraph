@@ -1,10 +1,10 @@
-[[faunus-on-ec2]]
-Running Faunus on Amazon EC2
-----------------------------
+[[hadoop-on-ec2]]
+Running Titan-Hadoop on Amazon EC2
+----------------------------------
 
 // !http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png!:http://aws.amazon.com/ec2/
 
-http://aws.amazon.com/ec2/[Amazon EC2] and http://whirr.apache.org/[Whirr] make it easy to set up a http://hadoop.apache.org/[Hadoop] compute cluster that can then be utilized by Faunus. This section of documentation will explain how to set up a Hadoop cluster on Amazon EC2 and execute Faunus scripts.
+http://aws.amazon.com/ec2/[Amazon EC2] and http://whirr.apache.org/[Whirr] make it easy to set up a http://hadoop.apache.org/[Hadoop] compute cluster that can then be utilized by Titan-Hadoop. This section of documentation will explain how to set up a Hadoop cluster on Amazon EC2 and execute Titan-Hadoop scripts.
 
 Setting Up Whirr
 ~~~~~~~~~~~~~~~~
@@ -16,7 +16,7 @@ Setting Up Whirr
 // Apache Whirr is a set of libraries for running cloud services. Whirr provides a cloud-neutral way to run services (you don't have to worry about the idiosyncrasies of each provider), a common service API (the details of provisioning are particular to the service), and smart defaults for services (you can get a properly configured system running quickly, while still being able to override settings as needed). You can also use Whirr as a command line tool for deploying clusters.
 // _____________________
 
-Faunus provides a Whirr recipe for loading up a Hadoop cluster that is properly versioned for the Hadoop currently used by Faunus. This recipe is reproduced below. Please see the http://whirr.apache.org/docs/0.8.1/quick-start-guide.html[Whirr Quick Start] for more information about the parameters and how to set up an Amazon EC2 account (e.g. `ssh-keygen -t rsa -P ''` and setting AWS keys as environmental variables).
+Titan provides a Whirr recipe for bootstrapping a Hadoop cluster on EC2. This recipe is reproduced below. Please see the http://whirr.apache.org/docs/0.8.1/quick-start-guide.html[Whirr Quick Start] for more information about the parameters and how to set up an Amazon EC2 account (e.g. `ssh-keygen -t rsa -P ''` and setting AWS keys as environmental variables).
 
 [source,properties]
 ----
@@ -27,14 +27,14 @@ whirr.identity=${env:AWS_ACCESS_KEY_ID}
 whirr.credential=${env:AWS_SECRET_ACCESS_KEY}
 whirr.private-key-file=${sys:user.home}/.ssh/id_rsa
 whirr.public-key-file=${sys:user.home}/.ssh/id_rsa.pub
-whirr.hadoop.version=1.1.1
+whirr.hadoop.version=1.2.1
 ----
 
 Once your Amazon EC2 keys and ssh key files have been properly set up, a Hadoop cluster can be launched. The recipe above creates a 4 node cluster.
 
 [source,text]
 ----
-faunus$ whirr launch-cluster --config bin/whirr.properties
+$ whirr launch-cluster --config conf/whirr.properties
 Bootstrapping cluster
 Configuring template
 Configuring template
@@ -48,15 +48,15 @@ image:ec2-screenshot.png[]
 When logging into the http://console.aws.amazon.com/ec2/[Amazon EC2 Console], the cluster machines are visible. After running the Hadoop proxy shell script (in another window), the Hadoop cluster is ready for job submissions.
 
 [source,text]
-faunus$. ~/.whirr/faunuscluster/hadoop-proxy.sh
+$. ~/.whirr/faunuscluster/hadoop-proxy.sh
 Running proxy to Hadoop cluster at ec2-23-20-32-211.compute-1.amazonaws.com. Use Ctrl-c to quit. 
 
 A simple check to ensure that the Hadoop cluster is working is to see if HDFS is available.
 
 [source,text]
 ----
-faunus$ export HADOOP_CONF_DIR=~/.whirr/faunuscluster
-faunus$ hadoop fs -ls /
+$ export HADOOP_CONF_DIR=~/.whirr/faunuscluster
+$ hadoop fs -ls /
 Found 3 items
 drwxr-xr-x   - hadoop supergroup          0 2012-07-20 19:13 /hadoop
 drwxrwxrwx   - hadoop supergroup          0 2012-07-20 19:13 /tmp
@@ -105,28 +105,25 @@ Finally, if Oracle's Java JVM is desired, newer version of Whirr support the fol
 [source,properties]
 whirr.java.install-function=install_oab_java
 
-Running a Faunus Script
-~~~~~~~~~~~~~~~~~~~~~~~
+Running a Titan-Hadoop Script
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // !images/faunus-elephants.png!
 
-Faunus can deploy jobs to the Amazon EC2 cluster. The first thing to do is to put a graph on HDFS. For this example, use the toy `data/graph-of-the-gods.json` file. Once the file is in HDFS, a `faunus.sh` derivation can be executed.
+Titan-Hadoops can deploy jobs to the Amazon EC2 cluster. The first thing to do is to put a graph on HDFS. For this example, use the toy `examples/graph-of-the-gods.json` file. 
 
 [source,gremlin]
 ----
-faunus$ bin/gremlin.sh
+$ bin/gremlin.sh
 
          \,,,/
          (o o)
 -----oOOo-(_)-oOOo-----
-gremlin> hdfs.copyFromLocal('data/graph-of-the-gods.json','graph-of-the-gods.json')
+gremlin> hdfs.copyFromLocal('examples/graph-of-the-gods.json','examples/graph-of-the-gods.json')
 ==>null
-gremlin> g = FaunusFactory.open('bin/faunus.properties')
-==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
+==>titangraph[graphsoninputformat->graphsonoutputformat]
 gremlin> g.V.out.type
-12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
-12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Executing job 1 out of 2: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce.Map, com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce.Reduce]
-12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Job data location: output/job-0
 ...
 ==>titan
 ==>god
@@ -144,7 +141,7 @@ gremlin> g.V.out.type
 ==>monster
 ==>monster
 ==>...
-gremlin> hdfs.ls('output/*') 
+gremlin> hdfs.ls('jobs/*') 
 ==>rw-r--r-- ubuntu supergroup 0 _SUCCESS
 ==>rwxr-xr-x ubuntu supergroup 0 (D) _logs
 ==>rw-r--r-- ubuntu supergroup 0 _SUCCESS
@@ -153,13 +150,11 @@ gremlin> hdfs.ls('output/*')
 ==>rw-r--r-- ubuntu supergroup 75 sideeffect-m-00000.bz2
 ----
 
-// !images/dead-elephants.png!
-
 When the cluster is no longer needed, Whirr can be used to shutdown the cluster.
 
 [source,text]
 ----
-faunus$ whirr destroy-cluster --config bin/whirr.properties 
+$ whirr destroy-cluster --config bin/whirr.properties 
 Starting to run scripts on cluster for phase destroyinstances: us-east-1/i-16376a6e, us-east-1/i-0c376a74, us-east-1/i-0a376a72
 Running destroy phase script on: us-east-1/i-16376a6e
 Running destroy phase script on: us-east-1/i-0c376a74
@@ -177,7 +172,7 @@ Successfully executed destroy script: [output=, error=, exitCode=0]
 Finished running destroy phase scripts on all cluster instances
 Destroying faunuscluster cluster
 Cluster faunuscluster destroyed
-faunus$
+$
 ----
 
 Using S3 
@@ -191,7 +186,7 @@ Using S3
 // _____________________
 
 
-HDFS implements the `FileSystem` API. There are other `FileSystem` implementations such as `LocalFileSystem`, `S3FileSystem` and `NativeS3FileSystem`. Faunus is able to leverage these file systems like another other file system in Hadoop.
+HDFS implements the `FileSystem` API. There are other `FileSystem` implementations such as `LocalFileSystem`, `S3FileSystem` and `NativeS3FileSystem`. Titan-Hadoop is able to leverage these file systems like another other file system in Hadoop.
 
 Interacting with S3 via the Gremlin REPL
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -220,7 +215,7 @@ gremlin> s3fs.ls('/friendster')._().count()
 ==>962
 ----
 
-At this point, `s3fs` is like any other file system and can be used to store and retrive data. In fact, it is possible to set up S3 as the source and sink of Faunus jobs (see http://wiki.apache.org/hadoop/AmazonS3[documentation] for more information). Given that Gremlin gives full access to the Java/Groovy API, connecting to arbitrary `FileSystem` implementations is relatively simple. 
+At this point, `s3fs` is like any other file system and can be used to store and retrive data. In fact, it is possible to set up S3 as the source and sink of Titan-Hadoop jobs (see http://wiki.apache.org/hadoop/AmazonS3[documentation] for more information). Given that Gremlin gives full access to the Java/Groovy API, connecting to arbitrary `FileSystem` implementations is relatively simple. 
 
 Parallel Uploading and Downloading of Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

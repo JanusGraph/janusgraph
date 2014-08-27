@@ -11,7 +11,7 @@ public class AstyanaxLockStoreTest extends LockKeyColumnValueStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override

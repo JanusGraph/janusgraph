@@ -3,16 +3,16 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
+        <version>0.5.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-parent</artifactId>
-    <name>Titan-Hadoop-Parent: Distributed Graph Processing</name>
+    <name>Titan-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <top.level.basedir>${basedir}/..</top.level.basedir>
+        <top.level.basedir>${project.parent.basedir}</top.level.basedir>
         <skipCassandra>${skipTests}</skipCassandra>
         <skipHBase>true</skipHBase>
         <skipPipeline>${skipTests}</skipPipeline>
@@ -22,6 +22,7 @@
         <module>titan-hadoop-core</module>
         <module>titan-hadoop-1</module>
         <module>titan-hadoop-2</module>
+        <module>titan-hadoop</module>
     </modules>
 
     <developers>
@@ -72,6 +73,7 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-cassandra</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -88,6 +90,21 @@
             <artifactId>titan-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hbase-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Elasticsearch MR -->
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch-hadoop-mr</artifactId>
+            <version>${elasticsearch.mr.version}</version>
         </dependency>
 
         <!-- RDF PARSING -->
@@ -181,15 +198,34 @@
                     <executions>
                         <execution>
                             <id>filter-shared-resources</id>
-                            <phase>process-resources</phase>
+                            <phase>process-test-resources</phase>
                             <goals>
                                 <goal>copy-resources</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
                                 <resources>
                                     <resource>
                                         <directory>${project.build.directory}/shared-resources</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>filter-cassandra-murmur-config</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                <filters>
+                                    <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                </filters>
+                                <resources>
+                                    <resource>
+                                        <directory>${top.level.basedir}/titan-cassandra/config/cassandra</directory>
                                         <filtering>true</filtering>
                                     </resource>
                                 </resources>
@@ -208,7 +244,7 @@
                                 <goal>single</goal>
                             </goals>
                             <configuration>
-                                <attach>true</attach>
+                                <attach>false</attach>
                                 <descriptors>
                                     <descriptor>${project.build.directory}/shared-resources/hadoop-job.xml</descriptor>
                                 </descriptors>
@@ -227,6 +263,7 @@
                                 <excludes>
                                     <exclude>**/*PipelineTest.java</exclude>
                                     <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                                    <exclude>**/*ReindexTest.java</exclude>
                                     <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
                                 </excludes>
                             </configuration>
@@ -257,8 +294,10 @@
                                 <goal>integration-test</goal>
                             </goals>
                             <configuration>
+                                <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
                                 <includes>
                                     <include>**/TitanCassandraOutputFormatTest.java</include>
+                                    <include>**/*ReindexTest.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
@@ -271,6 +310,7 @@
                                 <goal>integration-test</goal>
                             </goals>
                             <configuration>
+                                <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/titan-hbase-parent/</argLine>
                                 <includes>
                                     <include>**/TitanHBaseOutputFormatTest.java</include>
                                 </includes>

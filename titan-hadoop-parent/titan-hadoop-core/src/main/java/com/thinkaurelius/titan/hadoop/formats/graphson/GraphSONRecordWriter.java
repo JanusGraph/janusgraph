@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -16,10 +16,12 @@ import java.io.UnsupportedEncodingException;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class GraphSONRecordWriter extends RecordWriter<NullWritable, HadoopVertex> {
+public class GraphSONRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
+
     private static final String UTF8 = "UTF-8";
     private static final byte[] NEWLINE;
-    protected DataOutputStream out;
+    private final DataOutputStream out;
+    private final HadoopGraphSONUtility graphsonUtil;
 
     static {
         try {
@@ -30,14 +32,15 @@ public class GraphSONRecordWriter extends RecordWriter<NullWritable, HadoopVerte
     }
 
 
-    public GraphSONRecordWriter(final DataOutputStream out) {
+    public GraphSONRecordWriter(final HadoopGraphSONUtility graphsonUtil, final DataOutputStream out) {
+        this.graphsonUtil = graphsonUtil;
         this.out = out;
     }
 
     @Override
-    public void write(final NullWritable key, final HadoopVertex vertex) throws IOException {
+    public void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
         if (null != vertex) {
-            this.out.write(HadoopGraphSONUtility.toJSON(vertex).toString().getBytes(UTF8));
+            this.out.write(graphsonUtil.toJSON(vertex).toString().getBytes(UTF8));
             this.out.write(NEWLINE);
         }
     }

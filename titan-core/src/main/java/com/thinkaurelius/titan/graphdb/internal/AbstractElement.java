@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class AbstractElement implements InternalElement {
+public abstract class AbstractElement implements InternalElement, Comparable<TitanElement> {
 
     private long id;
 
@@ -26,11 +26,6 @@ public abstract class AbstractElement implements InternalElement {
     public static boolean isTemporaryId(long elementId) {
         return elementId < 0;
     }
-
-    public static boolean isImplicitId(long elementId) {
-        return elementId==0;
-    }
-
 
     @Override
     public int hashCode() {
@@ -48,7 +43,7 @@ public abstract class AbstractElement implements InternalElement {
         if (other instanceof AbstractElement) {
             if (getCompareId()!=((AbstractElement)other).getCompareId()) return false;
         } else if (other instanceof TitanElement) {
-            if (getCompareId()!=((TitanElement)other).getID()) return false;
+            if (getCompareId()!=((TitanElement)other).getLongId()) return false;
         } else return false;
 
         if (this instanceof TitanVertex && other instanceof TitanVertex)
@@ -63,7 +58,13 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public int compareTo(TitanElement other) {
-        return Longs.compare(getCompareId(),(other instanceof AbstractElement)?((AbstractElement)other).getCompareId():other.getID());
+        return compare(this,other);
+    }
+
+    public static int compare(TitanElement e1, TitanElement e2) {
+        long e1id = (e1 instanceof AbstractElement)?((AbstractElement)e1).getCompareId():e1.getLongId();
+        long e2id = (e2 instanceof AbstractElement)?((AbstractElement)e2).getCompareId():e2.getLongId();
+        return Longs.compare(e1id,e2id);
     }
 
     @Override
@@ -77,26 +78,26 @@ public abstract class AbstractElement implements InternalElement {
 	 */
 
     /**
-     * Long identifier used to compare elements. Often, this is the same as {@link #getID()}
+     * Long identifier used to compare elements. Often, this is the same as {@link #getLongId()}
      * but some instances of elements may be considered the same even if their ids differ. In that case,
      * this method should be overwritten to return an id that can be used for comparison.
      * @return
      */
     protected long getCompareId() {
-        return getID();
+        return getLongId();
     }
 
     @Override
-    public long getID() {
+    public long getLongId() {
         return id;
     }
 
     public boolean hasId() {
-        return !isTemporaryId(getID());
+        return !isTemporaryId(getLongId());
     }
 
     @Override
-    public void setID(long id) {
+    public void setId(long id) {
         assert id > 0;
         this.id=id;
     }

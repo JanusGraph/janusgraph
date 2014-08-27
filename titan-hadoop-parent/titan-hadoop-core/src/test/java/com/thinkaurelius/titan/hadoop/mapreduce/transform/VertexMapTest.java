@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -17,19 +18,19 @@ import java.util.Map;
  */
 public class VertexMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new VertexMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testVerticesWith() throws Exception {
         Configuration config = VertexMap.createConfiguration(1, 2, 2346);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
         assertTrue(graph.get(1l).hasPaths());
         assertTrue(graph.get(2l).hasPaths());
         assertFalse(graph.get(3l).hasPaths());
@@ -44,8 +45,7 @@ public class VertexMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0l);
         assertEquals(graph.get(6l).pathCount(), 0l);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VertexMap.Counters.VERTICES_PROCESSED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VertexMap.Counters.VERTICES_PROCESSED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VertexMap.Counters.VERTICES_PROCESSED), 2);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }
@@ -55,7 +55,7 @@ public class VertexMapTest extends BaseTest {
         config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
         assertTrue(graph.get(1l).hasPaths());
         assertTrue(graph.get(2l).hasPaths());
         assertFalse(graph.get(3l).hasPaths());
@@ -82,8 +82,7 @@ public class VertexMapTest extends BaseTest {
         assertEquals(graph.get(1l).getPaths().get(0).get(0).getId(), 1l);
         assertEquals(graph.get(2l).getPaths().get(0).get(0).getId(), 2l);
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(VertexMap.Counters.VERTICES_PROCESSED).getValue(), 2);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, VertexMap.Counters.VERTICES_PROCESSED), 2);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, VertexMap.Counters.VERTICES_PROCESSED), 2);
 
         identicalStructure(graph, ExampleGraph.TINKERGRAPH);
     }

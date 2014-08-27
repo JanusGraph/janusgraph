@@ -52,7 +52,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     protected final String[] hostnames;
     protected final int port;
     protected final Duration connectionTimeoutMS;
-    protected final int connectionPoolSize;
     protected final int pageSize;
 
     protected final String username;
@@ -67,7 +66,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         if (storageConfig.has(STORAGE_PORT)) this.port = storageConfig.get(STORAGE_PORT);
         else this.port = portDefault;
         this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT);
-        this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
         this.pageSize = storageConfig.get(PAGE_SIZE);
         this.times = storageConfig.get(TIMESTAMP_PROVIDER);
 

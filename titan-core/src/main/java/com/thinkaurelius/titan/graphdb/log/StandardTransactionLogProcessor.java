@@ -4,11 +4,17 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.cache.*;
+import com.google.common.collect.*;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
@@ -20,11 +26,25 @@ import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
+import com.thinkaurelius.titan.graphdb.types.SchemaSource;
+import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.util.system.BackgroundThread;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -48,6 +68,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private final TimestampProvider times;
     private final Log txLog;
     private final Duration persistenceTime;
+    private final Duration readTime = new StandardDuration(1,TimeUnit.SECONDS);
     private final AtomicLong txCounter = new AtomicLong(0);
     private final BackgroundCleaner cleaner;
 
@@ -103,8 +124,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     }
 
     public synchronized void shutdown() throws TitanException {
-        cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()), CLEAN_SLEEP_TIME.getNativeUnit());
-        graph.shutdown();
+        cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()),CLEAN_SLEEP_TIME.getNativeUnit());
     }
 
     private void fixSecondaryFailure(final StandardTransactionId txId, final TxEntry entry) {
@@ -115,7 +135,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
         boolean userLogFailure = true;
         boolean secIndexFailure = true;
-        Predicate<String> isFailedIndex = Predicates.alwaysTrue();
+        final Predicate<String> isFailedIndex;
         final TransactionLogHeader.Entry commitEntry = entry.entry;
         final TransactionLogHeader.SecondaryFailures secFail = entry.failures;
         if (secFail!=null) {
@@ -127,10 +147,83 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                     return secFail.failedIndexes.contains(s);
                 }
             };
+        } else {
+            isFailedIndex = Predicates.alwaysTrue();
         }
 
         if (secIndexFailure) {
-            //TODO
+            //1) Collect all elements (vertices and relations) and the indexes for which they need to be restored
+            final SetMultimap<String,IndexRestore> indexRestores = HashMultimap.create();
+            BackendOperation.execute(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    StandardTitanTx tx = (StandardTitanTx) graph.newTransaction();
+                    try {
+                        for (TransactionLogHeader.Modification modification : commitEntry.getContentAsModifications(serializer)) {
+                            InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
+                            //Collect affected vertex indexes
+                            for (MixedIndexType index : getMixedIndexes(rel.getType())) {
+                                if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.apply(index.getBackingIndexName())) {
+                                    assert rel.isProperty();
+                                    indexRestores.put(index.getBackingIndexName(),
+                                            new IndexRestore(rel.getVertex(0).getLongId(),ElementCategory.VERTEX,getIndexId(index)));
+                                }
+                            }
+                            //See if relation itself is affected
+                            for (RelationType relType : rel.getPropertyKeysDirect()) {
+                                for (MixedIndexType index : getMixedIndexes(relType)) {
+                                    if (index.getElement().isInstance(rel) && isFailedIndex.apply(index.getBackingIndexName())) {
+                                        assert rel.getId() instanceof RelationIdentifier;
+                                        indexRestores.put(index.getBackingIndexName(),
+                                                new IndexRestore(rel.getId(),ElementCategory.getByClazz(rel.getClass()),getIndexId(index)));
+                                    }
+                                }
+                            }
+                        }
+                    } finally {
+                        if (tx.isOpen()) tx.rollback();
+                    }
+                    return true;
+                }
+            },readTime);
+
+
+            //2) Restore elements per backing index
+            for (final String indexName : indexRestores.keySet()) {
+                final StandardTitanTx tx = (StandardTitanTx) graph.newTransaction();
+                try {
+                    BackendTransaction btx = tx.getTxHandle();
+                    final IndexTransaction indexTx = btx.getIndexTransaction(indexName);
+                    BackendOperation.execute(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            Map<String,Map<String,List<IndexEntry>>> restoredDocs = Maps.newHashMap();
+                            for (IndexRestore restore : indexRestores.get(indexName)) {
+                                TitanSchemaVertex indexV = (TitanSchemaVertex)tx.getVertex(restore.indexId);
+                                MixedIndexType index = (MixedIndexType)indexV.asIndexType();
+                                TitanElement element = restore.retrieve(tx);
+                                if (element!=null) {
+                                    graph.getIndexSerializer().reindexElement(element,index,restoredDocs);
+                                } else { //Element is deleted
+                                    graph.getIndexSerializer().removeElement(restore.elementId,index,restoredDocs);
+                                }
+                            }
+                            indexTx.restore(restoredDocs);
+                            indexTx.commit();
+                            return true;
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "IndexMutation";
+                        }
+                    }, persistenceTime);
+
+                } finally {
+                    if (tx.isOpen()) tx.rollback();
+                }
+            }
+
         }
 
         final String logTxIdentifier = (String)commitEntry.getMetadata().get(LogTxMeta.LOG_ID);
@@ -140,8 +233,8 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             BackendOperation.execute(new Callable<Boolean>(){
                 @Override
                 public Boolean call() throws Exception {
-                    final Log triggerLog = graph.getBackend().getUserLog(logTxIdentifier);
-                    Future<Message> env = triggerLog.add(userLogContent);
+                    final Log userLog = graph.getBackend().getUserLog(logTxIdentifier);
+                    Future<Message> env = userLog.add(userLogContent);
                     if (env.isDone()) {
                         env.get();
                     }
@@ -152,6 +245,55 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
 
     }
+
+    private static class IndexRestore {
+
+        private final Object elementId;
+        private final long indexId;
+        private final ElementCategory elementCategory;
+
+        private IndexRestore(Object elementId, ElementCategory category, long indexId) {
+            this.elementId = elementId;
+            this.indexId = indexId;
+            this.elementCategory = category;
+        }
+
+        public TitanElement retrieve(TitanTransaction tx) {
+            return elementCategory.retrieve(elementId,tx);
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder().append(elementId).append(indexId).toHashCode();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this==other) return true;
+            else if (other==null || !getClass().isInstance(other)) return false;
+            IndexRestore r = (IndexRestore)other;
+            return r.elementId.equals(elementId) && indexId==r.indexId;
+        }
+
+    }
+
+    private static long getIndexId(IndexType index) {
+        SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
+        assert base instanceof TitanSchemaVertex;
+        return base.getLongId();
+    }
+
+    private static Iterable<MixedIndexType> getMixedIndexes(RelationType type) {
+        if (!type.isPropertyKey()) return Collections.EMPTY_LIST;
+        return Iterables.filter(Iterables.filter(((InternalRelationType)type).getKeyIndexes(),MIXED_INDEX_FILTER),MixedIndexType.class);
+    }
+
+    private static final Predicate<IndexType> MIXED_INDEX_FILTER = new Predicate<IndexType>() {
+        @Override
+        public boolean apply(@Nullable IndexType indexType) {
+            return indexType.isMixedIndex();
+        }
+    };
 
 //    private void readRelations(TransactionLogHeader.Entry txentry,
 //                               StandardTitanTx tx, StandardChangeState changes) {

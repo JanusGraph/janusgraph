@@ -13,7 +13,7 @@ public class AstyanaxGraphConcurrentTest extends TitanGraphConcurrentTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
 

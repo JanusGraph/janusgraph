@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -21,10 +22,10 @@ import java.util.List;
  */
 public class TransformMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, Text, NullWritable, Text>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text>();
         mapReduceDriver.setMapper(new TransformMap.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, Text, NullWritable, Text>());
     }
@@ -38,10 +39,9 @@ public class TransformMapTest extends BaseTest {
         for (final Pair<NullWritable, Text> result : results) {
             assertEquals(result.getSecond().toString(), "2");
         }
-//        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, TransformMap.Counters.VERTICES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, TransformMap.Counters.EDGES_PROCESSED), 0);
+
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, TransformMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, TransformMap.Counters.EDGES_PROCESSED), 0);
     }
 
     public void testVerticesPropertyKeySizeWithPaths() throws Exception {
@@ -55,10 +55,9 @@ public class TransformMapTest extends BaseTest {
         for (final Pair<NullWritable, Text> result : results) {
             assertEquals(result.getSecond().toString(), "2");
         }
-//        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.VERTICES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, TransformMap.Counters.VERTICES_PROCESSED), 6);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, TransformMap.Counters.EDGES_PROCESSED), 0);
+
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, TransformMap.Counters.VERTICES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, TransformMap.Counters.EDGES_PROCESSED), 0);
     }
 
     public void testEdgesPropertyKeySize() throws Exception {
@@ -71,9 +70,7 @@ public class TransformMapTest extends BaseTest {
             assertEquals(result.getSecond().toString(), "1");
         }
 
-//        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.VERTICES_PROCESSED).getValue(), 0);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, TransformMap.Counters.VERTICES_PROCESSED), 0);
-//        assertEquals(mapReduceDriver.getCounters().findCounter(TransformMap.Counters.EDGES_PROCESSED).getValue(), 6);
-        assertEquals(HadoopCompatLoader.getDefaultCompat().getCounter(mapReduceDriver, TransformMap.Counters.EDGES_PROCESSED), 6);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, TransformMap.Counters.VERTICES_PROCESSED), 0);
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, TransformMap.Counters.EDGES_PROCESSED), 6);
     }
 }

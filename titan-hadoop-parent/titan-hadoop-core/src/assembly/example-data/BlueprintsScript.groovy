@@ -1,5 +1,8 @@
-import com.thinkaurelius.titan.hadoop.HadoopEdge
-import com.thinkaurelius.titan.hadoop.HadoopVertex
+import com.thinkaurelius.titan.hadoop.FaunusVertex
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge
+import com.thinkaurelius.titan.hadoop.FaunusVertex
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge
 import com.tinkerpop.blueprints.Edge
 import com.tinkerpop.blueprints.Graph
 import com.tinkerpop.blueprints.Vertex
@@ -18,7 +21,7 @@ import static com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapRed
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Daniel Kuppitz (daniel at thinkaurelius.com)
  */
-def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph, final Mapper.Context context) {
+def Vertex getOrCreateVertex(final FaunusVertex hadoopVertex, final Graph graph, final Mapper.Context context) {
     final String uniqueKey = "name";
     final Object uniqueValue = hadoopVertex.getProperty(uniqueKey);
     final Vertex blueprintsVertex;
@@ -33,7 +36,7 @@ def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph,
             LOGGER.error("The unique key is not unique as more than one vertex with the value: " + uniqueValue);
         }
     } else {
-        blueprintsVertex = graph.addVertex(hadoopVertex.getIdAsLong());
+        blueprintsVertex = graph.addVertex(hadoopVertex.getLongId());
         context.getCounter(VERTICES_WRITTEN).increment(1l);
     }
 
@@ -45,7 +48,7 @@ def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph,
     return blueprintsVertex;
 }
 
-def Edge getOrCreateEdge(final HadoopEdge hadoopEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
+def Edge getOrCreateEdge(final StandardFaunusEdge hadoopEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
     final String edgeLabel = hadoopEdge.getLabel();
     final GremlinPipeline blueprintsEdgePipe = blueprintsOutVertex.outE(edgeLabel).as("e").inV().retain([blueprintsInVertex]).range(0, 1).back("e")
     final Edge blueprintsEdge;

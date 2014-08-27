@@ -128,7 +128,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
             throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
         }
-        globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
+        globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);
@@ -211,7 +211,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public TitanManagement getManagementSystem() {
-        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger);
+        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger, schemaCache);
     }
 
     public Set<? extends TitanTransaction> getOpenTransactions() {
@@ -262,14 +262,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         @Override
         public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
+            tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once and cache eviction works!
             TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.SchemaName, typeName),null);
-            return v!=null?v.getID():null;
+            tx.getTxHandle().enableCache();
+            return v!=null?v.getLongId():null;
         }
 
         @Override
         public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
             SliceQuery query = queryCache.getQuery(type,dir);
-            return edgeQuery(schemaId, query, tx.getTxHandle());
+            tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once!
+            EntryList result = edgeQuery(schemaId, query, tx.getTxHandle());
+            tx.getTxHandle().enableCache();
+            return result;
         }
 
     };
@@ -375,7 +380,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public static int getTTL(InternalVertex v) {
         assert v.hasId();
-        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.getID())) {
+        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.getLongId())) {
             assert v.isNew() : "Should not be able to add relations to existing static vertices: " + v;
             return ((InternalVertexLabel)v.getVertexLabel()).getTTL();
         } else return 0;
@@ -409,11 +414,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalVertex vertex = del.getVertex(pos);
                 if (pos == 0 || !del.isLoop()) {
                     if (del.isProperty()) mutatedProperties.put(vertex,del);
-                    mutations.put(vertex.getID(), del);
+                    mutations.put(vertex.getLongId(), del);
                 }
                 if (acquireLock(del,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.getLongId()), entry);
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
@@ -427,11 +432,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalVertex vertex = add.getVertex(pos);
                 if (pos == 0 || !add.isLoop()) {
                     if (add.isProperty()) mutatedProperties.put(vertex,add);
-                    mutations.put(vertex.getID(), add);
+                    mutations.put(vertex.getLongId(), add);
                 }
                 if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(add, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry.getColumn());
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.getLongId()), entry.getColumn());
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
@@ -472,7 +477,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        if (edge.getVertex(pos).getID()==vertexid) {
+                        if (edge.getVertex(pos).getLongId()==vertexid) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
@@ -627,7 +632,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 if (hasSecondaryPersistence) {
                     LogTxStatus status = LogTxStatus.SECONDARY_SUCCESS;
                     Map<String,Throwable> indexFailures = ImmutableMap.of();
-                    boolean triggerSuccess = false;
+                    boolean userlogSuccess = true;
 
                     try {
                         //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
@@ -641,8 +646,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
                         if (logTxIdentifier!=null) {
                             try {
-                                final Log triggerLog = backend.getUserLog(logTxIdentifier);
-                                Future<Message> env = triggerLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
+                                userlogSuccess = false;
+                                final Log userLog = backend.getUserLog(logTxIdentifier);
+                                Future<Message> env = userLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {
                                     try {
                                         env.get();
@@ -650,7 +656,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                                         throw ex.getCause();
                                     }
                                 }
-                                triggerSuccess=true;
+                                userlogSuccess=true;
                             } catch (Throwable e) {
                                 status = LogTxStatus.SECONDARY_FAILURE;
                                 log.error("Could not user-log committed transaction ["+transactionId+"] to " + logTxIdentifier, e);
@@ -661,7 +667,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             //[FAILURE] An exception here will be logged and not escalated; tx considered success and
                             // needs to be cleaned up later
                             try {
-                                txLog.add(txLogHeader.serializeSecondary(serializer,status,indexFailures,triggerSuccess),txLogHeader.getLogKey());
+                                txLog.add(txLogHeader.serializeSecondary(serializer,status,indexFailures,userlogSuccess),txLogHeader.getLogKey());
                             } catch (Throwable e) {
                                 log.error("Could not tx-log secondary persistence status on transaction ["+transactionId+"]",e);
                             }

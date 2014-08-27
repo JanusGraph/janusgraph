@@ -1,10 +1,10 @@
-[[faunus-limitations]]
+[[hadoop-limitations]]
 Limitations
 -----------
 
 //!images/faunus-head.png!
 
-This section presents a list of outstanding issues and likely problems that users should be aware of. A _design limitation_ denotes a limitation that is inherent to the foundation of Faunus and as such, is not something that will not be rectified in future release. On the contrary, _temporary limitations_ are incurred by the current implementation and future versions should provide solutions.
+This section presents a list of outstanding issues and likely problems that users should be aware of. A _design limitation_ denotes a limitation that is inherent to the foundation of Titan-Hadoop and as such, is not something that will not be rectified in future release. On the contrary, _temporary limitations_ are incurred by the current implementation and future versions should provide solutions.
 
 Design Limitations
 ~~~~~~~~~~~~~~~~~~
@@ -12,12 +12,12 @@ Design Limitations
 Real-time graph processing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Faunus is built atop Hadoop. Hadoop is not a real-time processing framework. All Hadoop jobs require a costly setup (even for small input data) that takes around 15 seconds to initiate. For real-time graph processing, use http://thinkaurelius.github.com/titan/[Titan] (also see <<faunus-distributed-computing>>).
+Titan-Hadoop is built atop Hadoop MapReduce. MapReduce is not a real-time processing framework. All jobs require a costly setup (even for small input data) that takes around 15 seconds to initiate. For real-time graph processing, use `TitanGraph` instead (also see <<hadoop-distributed-computing>>).
 
 Only primitive element property values supported
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The http://blueprints.tinkerpop.com[Blueprints] API states that an element (vertex/edge) can have any `Object` as a property value (e.g. `Vertex.setProperty(String,Object)`). Faunus only supports integer, float, double, long, string, and boolean property values. 
+The http://blueprints.tinkerpop.com[Blueprints] API states that an element (vertex/edge) can have any `Object` as a property value (e.g. `Vertex.setProperty(String,Object)`). Titan-Hadoop only supports integer, float, double, long, string, and boolean property values. 
 
 RDF `rdfs:label` property can cause parsing problems with Titan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -29,28 +29,28 @@ Representational Limits
 
 //[[images/faunus-character.png|width=90px|float|align=left]]
 
-Faunus elements, vertices, and edges all implement Hadoop's `Writable` interface. Certain assumptions are made in order to ensure an efficient representation while at the same time supporting what is expected to be the most realistic use cases. This section outlines the representational assumptions/limits currently in Faunus.
+Titan-Hadoop elements, vertices, and edges all implement Hadoop's `Writable` interface. Certain assumptions are made in order to ensure an efficient representation while at the same time supporting what is expected to be the most realistic use cases. This section outlines the representational assumptions/limits currently in Ttian-Hadoop.
 
 Note that these limits are theoretical and that physical limits may be reached well before theoretical limits are hit. For instance, one important physical limitation to be wary of is the fact that a single vertex is represented in memory. A vertex is its id, properties, incident edges, and path information. Any MapReduce job making use of `FaunusVertex` must be able to hold the entire vertex in memory.
 
-Faunus Vertex
+Hadoop Vertex
 ^^^^^^^^^^^^^
 
-* *id*: a vertex id is a positive `long` value and therefore, a graph in Faunus can not have more than 9,223,372,036,854,775,807 vertices.
+* *id*: a vertex id is a positive `long` value and therefore, a graph in Titan-Hadoop can not have more than 9,223,372,036,854,775,807 vertices.
 * *properties*: the size of the properties map is denoted by a positive `short` and therefore there can not exist more than 32,767 properties per vertex.
 * *edges*:
 ** *unique labels*: edges are indexed by their label using a `short` and therefore, there can not be more than 32,767 unique labels for the incoming (or outgoing) edges of a vertex.
 ** *total edges*: the edge size for any one label is represented by an `int` and therefore, for any direction and any label, there can not be more than 2,147,483,647 edges.
 * *paths*: See note below.
 
-Faunus Edge
+Hadoop Edge
 ^^^^^^^^^^^
 
-* *id*: an edge id is a positive `long` value and therefore, a graph in Faunus can not have more than 9,223,372,036,854,775,807 edges.
+* *id*: an edge id is a positive `long` value and therefore, a graph in Titan-Hadoop can not have more than 9,223,372,036,854,775,807 edges.
 * *properties*: the size of the properties map is denoted by a positive `short` and therefore there can not exist more than 32,767 properties per edge. 
 * *paths*: See note below.
 
-*NOTE ON PATHS*: When traversing a graph, it is important to know how many traversers are at any one element (vertex or edge) at any step in the computation. For most computations, this is simply a count and in fact, Faunus represents the number of traversers at an element with a `long` value. However, there are some graph traversals that require not only how many traversers are at a particular element, but *for each traverser, what elements have they touched prior to the current element.* This representation can not be captured by a single `long`. Instead, a list of a list of `long` ids is used to represent such historic path information. For traversals that make use of path histories, it is very easy to run into space and time issues. There are few steps that incur this type of cost and they are articulated in <<faunus-gremlin-steps>>.
+*NOTE ON PATHS*: When traversing a graph, it is important to know how many traversers are at any one element (vertex or edge) at any step in the computation. For most computations, this is simply a count and in fact, Titan-Hadoop represents the number of traversers at an element with a `long` value. However, there are some graph traversals that require not only how many traversers are at a particular element, but *for each traverser, what elements have they touched prior to the current element.* This representation can not be captured by a single `long`. Instead, a list of a list of `long` ids is used to represent such historic path information. For traversals that make use of path histories, it is very easy to run into space and time issues. There are few steps that incur this type of cost and they are articulated in <<hadoop-gremlin-steps>>.
 
 Temporary Limitations
 ~~~~~~~~~~~~~~~~~~~~~
@@ -73,18 +73,23 @@ The current implementation of the <<graphson-io-format,GraphSON Format>> is exce
 Not a 1-to-1 mapping with Gremlin/Pipes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Gremlin implementation that is currently distributed with Faunus is not identical to Gremlin/Pipes. Besides not all steps being implemented, the general rule is that once "the graph is left" (e.g. traverse to data that is not vertices or edges), then the traversal ends. This ending is represented as a pipeline lock in the Gremlin/Faunus compiler.
+The Gremlin implementation that is currently distributed with Titan-Hadoop is not identical to Gremlin/Pipes. Besides not all steps being implemented, the general rule is that once "the graph is left" (e.g. traverse to data that is not vertices or edges), then the traversal ends. This ending is represented as a pipeline lock in the Gremlin/Hadoop compiler.
 
 `SequenceFile` IO formats contain computational state
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The binary sequence files supported by Hadoop are the primary means by which graph and traversal data is moved between MapReduce jobs in a Faunus chain. If a sequence file is saved to disk, be conscious of the traversal metadata it contains (e.g. path calculations).
+The binary sequence files supported by Hadoop are the primary means by which graph and traversal data is moved between MapReduce jobs in a Titan-Hadoop chain. If a sequence file is saved to disk, be conscious of the traversal metadata it contains (e.g. path calculations).
 
-[[faunus-limitations-rexster]]
+////////////////////////////////////
+
+// Rexster support has been deleted since a5f19496024a3850d5f66cdb569bde439b1affbe
+
+[[hadoop-limitations-rexster]]
 Rexster Operation
 ^^^^^^^^^^^^^^^^^
 
-Faunus is optimized to work best with Rexster 2.2.0+.  Faunus will work with Rexster 2.1.0, but has some limitations.  Due to some default and non-configurable settings in Rexster 2.1.0, it will only allow Faunus a maximum of four map tasks to connect to it.  If more are configured, then Faunus will throw a `SocketException` and fail.  
+Titan-Hadoop is optimized to work best with Rexster 2.2.0+.  It will work with Rexster 2.1.0, but has some limitations.  Due to some default and non-configurable settings in Rexster 2.1.0, it will only allow a maximum of four map tasks to connect to it.  If more are configured, then Titan-Hadoop will throw a `SocketException` and fail.
 
-To avoid such problems in Rexster 2.2.0+, the thread pool must be https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration[configured] to include enough threads such that there are enough threads to service each of the expected long-run requests from the mapper tasks.  Being able to strike a careful balance among the number of map tasks, Rexster memory availability, and Rexster thread pool size will greatly determine the speed at which Faunus will operate.  It will likely take some experimentation to achieve the most efficient configuration.
+To avoid such problems in Rexster 2.2.0+, the thread pool must be https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration[configured] to include enough threads such that there are enough threads to service each of the expected long-run requests from the mapper tasks.  Being able to strike a careful balance among the number of map tasks, Rexster memory availability, and Rexster thread pool size will greatly determine the speed at which Titan-Hadoop will operate.  It will likely take some experimentation to achieve the most efficient configuration.
 
+////////////////////////////////////

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.tinkerpop.blueprints.TransactionalGraphTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
@@ -20,15 +21,15 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         TitanBlueprintsGraph graph = (TitanBlueprintsGraph) graphTest.generateGraph();
         //Need to define types before hand to avoid deadlock in transactions
 
-        graph.makeEdgeLabel("friend").make();
-        graph.makePropertyKey("test").dataType(Long.class).make();
-        graph.makePropertyKey("blah").dataType(Float.class).make();
-        graph.makePropertyKey("bloop").dataType(Integer.class).make();
+        TitanManagement mgmt = graph.getManagementSystem();
+        mgmt.makeEdgeLabel("friend").make();
+        mgmt.makePropertyKey("test").dataType(Long.class).make();
+        mgmt.makePropertyKey("blah").dataType(Float.class).make();
+        mgmt.makePropertyKey("bloop").dataType(Integer.class).make();
 
 
-        graph.commit();
+        mgmt.commit();
         graph.shutdown();
         super.testCompetingThreads();
     }
-
 }

@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.SafeMapperOutputs;
@@ -43,7 +44,7 @@ public class PropertyMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, WritableComparable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable> {
 
         private String key;
         private boolean isVertex;
@@ -59,7 +60,7 @@ public class PropertyMap {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
 
@@ -69,13 +70,12 @@ public class PropertyMap {
                     for (int i = 0; i < value.pathCount(); i++) {
                         this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), writable);
                     }
-                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
-//                    context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
+                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
                 }
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         WritableComparable writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
                         for (int i = 0; i < edge.pathCount(); i++) {
@@ -84,13 +84,12 @@ public class PropertyMap {
                         edgesProcessed++;
                     }
                 }
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
-//                context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.OUT_EDGES_PROCESSED, edgesProcessed);
             }
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

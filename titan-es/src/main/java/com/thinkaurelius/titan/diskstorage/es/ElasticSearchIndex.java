@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -19,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
@@ -51,8 +54,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,27 +68,62 @@ import java.util.concurrent.TimeUnit;
 @PreInitializeConfigOptions
 public class ElasticSearchIndex implements IndexProvider {
 
-    private Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
-
-    private static final String[] DATA_SUBDIRS = {"data", "work", "logs"};
+    private static final Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
     private static final String TTL_FIELD = "_ttl";
 
-    public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS,"max-result-set-size",
-            "Maxium number of results to return if no limit is specified",
-            ConfigOption.Type.MASKABLE, 100000);
-    public static final ConfigOption<Boolean> CLIENT_ONLY = new ConfigOption<Boolean>(INDEX_NS,"client-only",
-            "Whether Titan connects to the indexing backend as a client",
-            ConfigOption.Type.GLOBAL_OFFLINE, true);
-    public static final ConfigOption<String> CLUSTER_NAME = new ConfigOption<String>(INDEX_NS,"cluster-name",
-            "The name of the indexing backend cluster",
-            ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
-    public static final ConfigOption<Boolean> LOCAL_MODE = new ConfigOption<Boolean>(INDEX_NS,"local-mode",
-            "Whether a full indexing instances is started embedded",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
-    public static final ConfigOption<Boolean> CLIENT_SNIFF = new ConfigOption<Boolean>(INDEX_NS,"sniff",
-            "Whether to enable cluster sniffing",
-            ConfigOption.Type.MASKABLE, true);
+    public static final ImmutableList<String> DATA_SUBDIRS = ImmutableList.of("data", "work", "logs");
+
+    public static final ConfigNamespace ELASTICSEARCH_NS =
+            new ConfigNamespace(INDEX_NS, "elasticsearch", "Elasticsearch index configuration");
+
+    public static final ConfigOption<Boolean> CLIENT_ONLY =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "client-only",
+            "Whether Titan connects to the indexing backend as a client", ConfigOption.Type.GLOBAL_OFFLINE, true);
+
+    public static final ConfigOption<String> CLUSTER_NAME =
+            new ConfigOption<String>(ELASTICSEARCH_NS, "cluster-name",
+            "The name of the indexing backend cluster", ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
+
+    public static final ConfigOption<Boolean> LOCAL_MODE =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "local-mode",
+            "Whether a full indexing instances is started embedded",  ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Boolean> CLIENT_SNIFF =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "sniff",
+            "Whether to enable cluster sniffing", ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<ElasticSearchSetup> INTERFACE =
+            new ConfigOption<ElasticSearchSetup>(ELASTICSEARCH_NS, "interface",
+            "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
+            "section of the ES manual for discussion of the difference)", ConfigOption.Type.MASKABLE,
+            ElasticSearchSetup.class, ElasticSearchSetup.TRANSPORT_CLIENT);
+
+    public static final ConfigOption<Boolean> IGNORE_CLUSTER_NAME =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "ignore-cluster-name",
+            "Whether to bypass validation of the cluster name of connected nodes", ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigOption<String> TTL_INTERVAL =
+            new ConfigOption<String>(ELASTICSEARCH_NS, "ttl-interval",
+            "The period of time between runs of ES's bulit-in expired document deleter.  " +
+            "This string will become the value of ES's indices.ttl.interval setting and should " +
+            "be formatted accordingly, e.g. 5s or 60s", ConfigOption.Type.MASKABLE, "5s");
+
+    public static final ConfigOption<String> HEALTH_REQUEST_TIMEOUT =
+            new ConfigOption<String>(ELASTICSEARCH_NS, "health-request-timeout",
+            "When Titan initializes its ES backend, Titan waits up to this duration for the " +
+            "ES cluster health to reach at least yellow status.  " +
+            "This string should be formatted as a natural number followed by the lowercase letter " +
+            "\"s\", e.g. 3s or 60s", ConfigOption.Type.MASKABLE, "30s");
+
+    public static final ConfigOption<Boolean> LOAD_DEFAULT_NODE_SETTINGS =
+            new ConfigOption<Boolean>(ELASTICSEARCH_NS, "load-default-node-settings",
+            "Whether ES's Node client will internally attempt to load default configuration settings " +
+            "from system properties/process environment variables.  Only meaningful when using the Node " +
+            "client (has no effect with TransportClient).", ConfigOption.Type.MASKABLE, true);
+
+    public static final ConfigNamespace ES_EXTRAS_NS =
+            new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
 //
@@ -121,6 +158,78 @@ public class ElasticSearchIndex implements IndexProvider {
 
         checkExpectedClientVersion();
 
+        final ElasticSearchSetup.Connection c;
+        if (!config.has(INTERFACE)) {
+            c = legacyConfiguration(config);
+        } else {
+            c = interfaceConfiguration(config);
+        }
+        node = c.getNode();
+        client = c.getClient();
+
+        maxResultsSize = config.get(INDEX_MAX_RESULT_SET_SIZE);
+        log.debug("Configured ES query result set max size to {}", maxResultsSize);
+
+        client.admin().cluster().prepareHealth().setTimeout(config.get(HEALTH_REQUEST_TIMEOUT))
+                .setWaitForYellowStatus().execute().actionGet();
+
+        //Create index if it does not already exist
+        IndicesExistsResponse response = client.admin().indices().exists(new IndicesExistsRequest(indexName)).actionGet();
+        if (!response.isExists()) {
+            CreateIndexResponse create = client.admin().indices().prepareCreate(indexName).execute().actionGet();
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                throw new TitanException("Interrupted while waiting for index to settle in", e);
+            }
+            if (!create.isAcknowledged()) throw new IllegalArgumentException("Could not create index: " + indexName);
+        }
+    }
+
+
+    /**
+     * Configure ElasticSearchIndex's ES client according to semantics introduced in
+     * 0.5.1.  Allows greater flexibility than the previous config semantics.  See
+     * {@link com.thinkaurelius.titan.diskstorage.es.ElasticSearchSetup} for more
+     * information.
+     * <p>
+     * This is activated by setting an explicit value for {@link #INTERFACE} in
+     * the Titan configuration.
+     *
+     * @see #legacyConfiguration(com.thinkaurelius.titan.diskstorage.configuration.Configuration)
+     * @param config a config passed to ElasticSearchIndex's constructor
+     * @return a node and client object open and ready for use
+     */
+    private ElasticSearchSetup.Connection interfaceConfiguration(Configuration config) {
+        ElasticSearchSetup clientMode = config.get(INTERFACE);
+
+        try {
+            return clientMode.connect(config);
+        } catch (IOException e) {
+            throw new TitanException(e);
+        }
+    }
+
+    /**
+     * Configure ElasticSearchIndex's ES client according to 0.4.x - 0.5.0 semantics.
+     * This checks local-mode first.  If local-mode is true, then it creates a Node that
+     * uses JVM local transport and can't talk over the network.  If local-mode is
+     * false, then it creates a TransportClient that can talk over the network and
+     * uses {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}
+     * as the server addresses.  Note that this configuration method
+     * does not allow creating a Node that talks over the network.
+     * <p>
+     * This is activated by <b>not</b> setting an explicit value for {@link #INTERFACE} in the
+     * Titan configuration.
+     *
+     * @see #interfaceConfiguration(com.thinkaurelius.titan.diskstorage.configuration.Configuration)
+     * @param config a config passed to ElasticSearchIndex's constructor
+     * @return a node and client object open and ready for use
+     */
+    private ElasticSearchSetup.Connection legacyConfiguration(Configuration config) {
+        Node node;
+        Client client;
+
         if (config.get(LOCAL_MODE)) {
 
             log.debug("Configuring ES for JVM local transport");
@@ -133,9 +242,18 @@ public class ElasticSearchIndex implements IndexProvider {
                     "Must either configure configuration file or base directory");
             if (config.has(INDEX_CONF_FILE)) {
                 String configFile = config.get(INDEX_CONF_FILE);
+                ImmutableSettings.Builder sb = ImmutableSettings.settingsBuilder();
                 log.debug("Configuring ES from YML file [{}]", configFile);
-                Settings settings = ImmutableSettings.settingsBuilder().loadFromSource(configFile).build();
-                builder.settings(settings);
+                FileInputStream fis = null;
+                try {
+                    fis = new FileInputStream(configFile);
+                    sb.loadFromStream(configFile, fis);
+                    builder.settings(sb.build());
+                } catch (FileNotFoundException e) {
+                    throw new TitanException(e);
+                } finally {
+                    IOUtils.closeQuietly(fis);
+                }
             } else {
                 String dataDirectory = config.get(INDEX_DIRECTORY);
                 log.debug("Configuring ES with data directory [{}]", dataDirectory);
@@ -188,23 +306,7 @@ public class ElasticSearchIndex implements IndexProvider {
             node = null;
         }
 
-        maxResultsSize = config.get(MAX_RESULT_SET_SIZE);
-        log.debug("Configured ES query result set max size to {}", maxResultsSize);
-
-        client.admin().cluster().prepareHealth()
-                .setWaitForYellowStatus().execute().actionGet();
-
-        //Create index if it does not already exist
-        IndicesExistsResponse response = client.admin().indices().exists(new IndicesExistsRequest(indexName)).actionGet();
-        if (!response.isExists()) {
-            CreateIndexResponse create = client.admin().indices().prepareCreate(indexName).execute().actionGet();
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                throw new TitanException("Interrupted while waiting for index to settle in", e);
-            }
-            if (!create.isAcknowledged()) throw new IllegalArgumentException("Could not create index: " + indexName);
-        }
+        return new ElasticSearchSetup.Connection(node, client);
     }
 
     private BackendException convert(Exception esException) {
@@ -638,6 +740,13 @@ public class ElasticSearchIndex implements IndexProvider {
         } finally {
             close();
         }
+    }
+
+    /**
+     * Exposed for testing
+     */
+    Node getNode() {
+        return node;
     }
 
     private void checkExpectedClientVersion() {

@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -12,7 +11,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.blueprints.Direction;
@@ -222,13 +220,13 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public long getID() {
+    public long getLongId() {
         throw new UnsupportedOperationException(errorName + " don't have an ID");
     }
 
     @Override
     public Object getId() {
-        return hasId() ? getID() : null;
+        return hasId() ? getLongId() : null;
     }
 
     @Override
@@ -242,7 +240,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public void setID(long id) {
+    public void setId(long id) {
         throw new UnsupportedOperationException(errorName + " don't have an id");
     }
 
@@ -286,8 +284,4 @@ public class EmptyVertex implements InternalVertex {
         throw new UnsupportedOperationException(errorName + " don't have an associated transaction");
     }
 
-    @Override
-    public int compareTo(TitanElement titanElement) {
-        return Longs.compare(getID(),titanElement.getID());
-    }
 }

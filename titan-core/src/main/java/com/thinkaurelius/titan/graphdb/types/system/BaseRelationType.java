@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import org.apache.commons.lang.StringUtils;
@@ -25,7 +24,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public long getID() {
+    public long getLongId() {
         return id;
     }
 
@@ -35,7 +34,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public void setID(long id) {
+    public void setId(long id) {
         throw new IllegalStateException("SystemType has already been assigned an id");
     }
 

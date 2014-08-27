@@ -2,11 +2,8 @@
   xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
     <fileSets>
         <fileSet>
-            <directory>src/assembly/static/conf</directory>
+            <directory>${assembly.static.dir}/conf</directory>
             <outputDirectory>/conf</outputDirectory>
-            <includes>
-                <include>titan-*</include>
-            </includes>
         </fileSet>
     </fileSets>
 </component>

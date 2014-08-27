@@ -2,6 +2,7 @@
 target/
 .idea/
 *.iml
+*.DS_Store
 /bin/
 /conf/
 /db/

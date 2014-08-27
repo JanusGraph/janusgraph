@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.HadoopFileOutputFormat;
 
 import org.apache.hadoop.io.NullWritable;
@@ -15,7 +15,7 @@ import java.io.IOException;
 public class GraphSONOutputFormat extends HadoopFileOutputFormat {
 
     @Override
-    public RecordWriter<NullWritable, HadoopVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
-        return new GraphSONRecordWriter(super.getDataOuputStream(job));
+    public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
+        return new GraphSONRecordWriter(new HadoopGraphSONUtility(faunusConf), super.getDataOuputStream(job));
     }
 }

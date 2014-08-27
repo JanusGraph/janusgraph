@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopElement;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusTypeManager;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
+import com.thinkaurelius.titan.hadoop.FaunusElement;
 
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import junit.framework.TestCase;
 
 import org.apache.hadoop.conf.Configuration;
@@ -14,6 +16,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFConfig.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -40,42 +44,47 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     }
 
     public void testUseFragments() throws Exception {
-        Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        FaunusTypeManager.getTypeManager(null).clear();
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
         handler.next();
         handler.next();
-        assertEquals(((HadoopEdge) handler.next()).getLabel(), "created");
+        assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "created");
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com/created> <http://tinkerpop.com#ripple> .");
         handler.next();
         handler.next();
-        assertEquals(((HadoopEdge) handler.next()).getLabel(), "created");
+        assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "created");
 
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
         assertEquals(handler.next().getProperty("name"), "Abraham_Lincoln");
         assertEquals(handler.next().getProperty("name"), "Person");
-        assertEquals(((HadoopEdge) handler.next()).getLabel(), "type");
+        FaunusElement faunusElement = handler.next();
+        assertNotNull(faunusElement);
+        assertTrue(faunusElement instanceof StandardFaunusEdge);
+        assertEquals("type", ((StandardFaunusEdge)faunusElement).getLabel());
         assertFalse(handler.hasNext());
 
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/2000/01/rdf-schema#label> \"Abraham Lincoln\" .");
-        HadoopVertex abe = (HadoopVertex) handler.next();
+        FaunusVertex abe = (FaunusVertex) handler.next();
         assertEquals(abe.getProperty("name"), "Abraham_Lincoln");
         assertEquals(handler.next().getProperty("name"), "Abraham Lincoln");
         // note "label_", not the reserved "label"
-        assertEquals(((HadoopEdge) handler.next()).getLabel(), "label_");
+        assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "label_");
         assertFalse(handler.hasNext());
     }
 
     public void testAsProperties() throws Exception {
-        Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        config.setStrings(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        FaunusTypeManager.getTypeManager(null).clear();
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(ROOT_NS).set(RDF_AS_PROPERTIES, new String[] { "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" });
+        faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
         assertTrue(handler.hasNext());
@@ -84,10 +93,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertTrue(handler.hasNext());
         handler.next();
         assertTrue(handler.hasNext());
-        assertEquals(((HadoopEdge) handler.next()).getLabel(), "created");
+        assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "created");
         assertFalse(handler.hasNext());
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
-        HadoopVertex subject = (HadoopVertex) handler.next();
+        FaunusVertex subject = (FaunusVertex) handler.next();
         assertEquals(subject.getProperty("name"), "Abraham_Lincoln");
         assertEquals(subject.getProperty("type"), "Person");
         assertFalse(handler.hasNext());
@@ -95,14 +104,15 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
 
     public void testLiteralProperties() throws Exception {
-        Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        FaunusTypeManager.getTypeManager(null).clear();
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(ROOT_NS).set(RDF_LITERAL_AS_PROPERTY, true);
+        faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
-        HadoopElement subject = handler.next();
+        FaunusElement subject = handler.next();
         assertEquals(subject.getProperty("name"), "josh");
         assertEquals(subject.getProperty("age"), 32);
         assertFalse(handler.hasNext());
@@ -140,26 +150,27 @@ public class RDFBlueprintsHandlerTest extends TestCase {
     }
 
     public void testMultiLineParse() throws Exception {
-        Configuration config = new Configuration();
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, true);
-        config.setBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, true);
-        config.set(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
-        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
+        FaunusTypeManager.getTypeManager(null).clear();
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        faunusConf.getInputConf(ROOT_NS).set(RDF_USE_LOCALNAME, true);
+        faunusConf.getInputConf(ROOT_NS).set(RDF_LITERAL_AS_PROPERTY, true);
+        faunusConf.getInputConf(ROOT_NS).set(RDF_FORMAT, Syntax.N_TRIPLES);
+        RDFBlueprintsHandler handler = new RDFBlueprintsHandler(faunusConf);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#knows> <http://tinkerpop.com#marko> .");
 
-        HadoopVertex josh = (HadoopVertex) handler.next();
+        FaunusVertex josh = (FaunusVertex) handler.next();
         assertEquals(josh.getProperty("age"), 32);
         assertEquals(josh.getProperty("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 3);
-        josh = (HadoopVertex) handler.next();
+        josh = (FaunusVertex) handler.next();
         assertEquals(josh.getProperty("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 2);
-        HadoopVertex marko = (HadoopVertex) handler.next();
+        FaunusVertex marko = (FaunusVertex) handler.next();
         assertEquals(marko.getProperty("name"), "marko");
         assertEquals(marko.getPropertyKeys().size(), 2);
-        HadoopEdge knows = (HadoopEdge) handler.next();
+        StandardFaunusEdge knows = (StandardFaunusEdge) handler.next();
         assertEquals(knows.getLabel(), "knows");
         assertEquals(knows.getPropertyKeys().size(), 1);
         assertFalse(handler.hasNext());

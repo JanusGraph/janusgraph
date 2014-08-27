@@ -1,9 +1,10 @@
+[[hadoop-gremlin-cli]]
 Command-Line Interface
 ----------------------
 
 image:gremlin-terminal.png[]
 
-There are three ways to use Gremlin/Faunus:
+There are three ways to use <<hadoop-gremlin-steps,Gremlin/Hadoop>> on the command-line:
 
 . Gremlin REPL: the interactive Gremlin shell.
 . Gremlin script: submitting a Gremlin traversal as a file.
@@ -12,57 +13,80 @@ There are three ways to use Gremlin/Faunus:
 Gremlin REPL
 ~~~~~~~~~~~~
 
-To start the Gremlin REPL, simply do:
+Titan-Hadoop can run interactively within the Gremlin shell.  Call `HadoopFactory.open` with a configuration file to get a `HadoopGraph` instance, then run Gremlin/Hadoop queries on the instance.  Here's an example that uses a stock configuration file setup to read the _Graph of the Gods_ example dataset.
 
 [source,gremlin]
 ----
-faunus$ bin/gremlin.sh 
+$ bin/gremlin.sh 
 
          \,,,/
          (o o)
 -----oOOo-(_)-oOOo-----
-gremlin> 
+gremlin> g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
+==>titangraph[hadoop:graphsoninputformat->graphsonoutputformat]
+gremlin> g.V.map()
+INFO  org.apache.hadoop.mapreduce.lib.input.FileInputFormat  - Total input paths to process : 1
+INFO  org.apache.hadoop.mapreduce.JobSubmitter  - number of splits:1
+INFO  org.apache.hadoop.mapreduce.JobSubmitter  - Submitting tokens for job: job_local381887690_0002
+...
+INFO  org.apache.hadoop.mapreduce.Job  - Job job_local381887690_0002 completed successfully
+...
+==>0    {_id=[0], name=[saturn], type=[titan]}
+==>1    {_id=[1], name=[jupiter], type=[god]}
+==>2    {_id=[2], name=[neptune], type=[god]}
+==>3    {_id=[3], name=[pluto], type=[god]}
+==>4    {_id=[4], name=[sky], type=[location]}
+==>5    {_id=[5], name=[sea], type=[location]}
+==>6    {_id=[6], name=[tartarus], type=[location]}
+==>7    {_id=[7], name=[hercules], type=[demigod]}
+==>8    {_id=[8], name=[alcmene], type=[human]}
+==>9    {_id=[9], name=[nemean], type=[monster]}
+==>10   {_id=[10], name=[hydra], type=[monster]}
+==>11   {_id=[11], name=[cerberus], type=[monster]}
 ----
 
 Gremlin Script
 ~~~~~~~~~~~~~~
 
-Assume a file as follows:
+Assume a file `test.groovy` with the following contents:
 
 [source,groovy]
-g = FaunusFactory.open('bin/faunus.properties')
+g = HadoopFactory.open('conf/hadoop/titan-graphson.properties')
 g.V.out('father').name.submit()
 
-Note that `FaunusPipeline.submit()` is required to ultimately submit the job to the Hadoop cluster. In the Gremlin REPL, this is handled for the user automatically.
+Each involved in query specification above -- `V`, `out`, and `name` -- returns a `HadoopPipeline`.  Calling `HadoopPipeline.submit` is required to ultimately submit the job to the Hadoop cluster.  Until `submit` is called, it's just an object in memory on the machine building the query. In the Gremlin REPL, `submit` is called automatically.  Outside of the interactive Gremlin shell, explicitly calling `submit` is required.
 
 [source,bourne]
-faunus$ bin/gremlin.sh -e test.groovy
-12/09/18 15:35:39 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+----
+$ bin/gremlin.sh -e test.groovy
+INFO  org.apache.hadoop.mapreduce.lib.input.FileInputFormat  - Total input paths to process : 1
+INFO  org.apache.hadoop.mapreduce.JobSubmitter  - number of splits:1
+INFO  org.apache.hadoop.mapreduce.JobSubmitter  - Submitting tokens for job: job_local1284373871_0001
 ...
+INFO  org.apache.hadoop.mapreduce.Job  - Job job_local1284373871_0001 completed successfully
+$ cat jobs/job-0/sideeffect-r-00000
+saturn
+jupiter
+----
 
 Gremlin Inline
 ~~~~~~~~~~~~~~
 
 The arguments are as follows:
 
-. The location of the properties file denoting the `FaunusGraph`.
-. The Gremlin/Faunus script in quotes.
-. A set of overriding property values prefixed with `-D` (optional), e.g. `-Dfaunus.input.location=agraph mapred.map.tasks=1`
+. The location of the properties file used to configure a `HadoopGraph`.
+. The Gremlin/Hadoop script in quotes.
+. A set of overriding property values prefixed with `-D` (optional), e.g. `-Dmapred.map.tasks=1`
 
 [source,text]
 ----
-faunus$ bin/gremlin.sh -i bin/faunus.properties "g.V.out('father').name"
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler: Faunus: Graph Analytics Engine
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:         ,
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     ,   |\ ,__
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     |\   \/   `\
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     \ `-.:.     `\
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:      `-.__ `\/\/\|
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:         / `'/ () \
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:       .'   /\     )
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:    .-'  .'| \  \__
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:  .'  __(  \  '`(()
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler: /_.'`  `.  |    )(
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:          \ |
-12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:           |/
+$ bin/gremlin.sh -i conf/hadoop/titan-graphson.properties "g.V.out('father').name"
+INFO  org.apache.hadoop.mapreduce.lib.input.FileInputFormat  - Total input paths to process : 1
+INFO  org.apache.hadoop.mapreduce.JobSubmitter  - number of splits:1
+INFO  org.apache.hadoop.mapreduce.JobSubmitter  - Submitting tokens for job: job_local431221064_0001
+...
+INFO  org.apache.hadoop.mapreduce.Job  - Job job_local431221064_0001 completed successfully
+$ cat jobs/job-0/sideeffect-r-00000
+saturn
+jupiter
 ----

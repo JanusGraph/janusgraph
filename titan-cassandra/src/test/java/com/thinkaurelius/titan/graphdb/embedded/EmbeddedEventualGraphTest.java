@@ -10,7 +10,7 @@ public class EmbeddedEventualGraphTest extends TitanEventualGraphTest {
 
     @BeforeClass
     public static void startEmbeddedCassandra() {
-        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded();
     }
 
     @Override

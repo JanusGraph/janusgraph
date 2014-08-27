@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.util.system;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * Recursively dump the root configuration namespace to either System.out or the
@@ -25,62 +25,96 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * the AsciiDoc documentation.
  */
 public class ConfigurationPrinter {
-    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",width=\"100%\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
+
+//    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",width=\"100%\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
     private static final String DELIM = "|";
     private static final String DELIM_PADDING = " ";
     private static final String TABLE_FOOTER_LINES = "|=====\n";
     private static boolean DELIM_AT_LINE_START = true;
     private static boolean DELIM_AT_LINE_END = false;
 
+    private final boolean showMutability;
     private final PrintStream stream;
 
-    public static void main(String args[]) throws FileNotFoundException {
+    public static void main(String args[]) throws FileNotFoundException, IllegalAccessException,
+            NoSuchFieldException, ClassNotFoundException {
 
         ReflectiveConfigOptionLoader.loadOnce();
 
-        final PrintStream stream;
-        if (args.length == 1) {
-            File f = new File(args[0]);
-            File dir = f.getParentFile();
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            stream = new PrintStream(f);
-        } else {
-            stream = System.out;
+        // Write to filename argument
+        if (3 != args.length) {
+            System.err.println("Usage: " + ConfigurationPrinter.class.getName() +
+                    " <package.class.fieldname of a ConfigNamespace root> <output filename> <display mutabilities>");
+            System.exit(-1);
         }
 
-        new ConfigurationPrinter(stream).write(GraphDatabaseConfiguration.ROOT_NS);
+        final ConfigNamespace root = stringToNamespace(args[0]);
+        final PrintStream stream = new PrintStream(new FileOutputStream(args[1]));
+        final boolean mutability = Boolean.valueOf(args[2]);
+
+        new ConfigurationPrinter(stream, mutability).write(root);
 
         stream.flush();
         stream.close();
     }
 
-    private ConfigurationPrinter(PrintStream stream) {
+    private ConfigurationPrinter(PrintStream stream, boolean showMutability) {
         this.stream = stream;
+        this.showMutability = showMutability;
     }
 
     private void write(ConfigNamespace root) {
         printNamespace(root, "");
     }
 
-    private void printNamespace(ConfigNamespace n, String prefix) {
+    private static ConfigNamespace stringToNamespace(String raw)
+            throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+        int i = raw.lastIndexOf(".");
 
-        stream.println(getNamespaceSectionHeader(n));
-        stream.println(TABLE_HEADER_LINES);
-        for (ConfigOption<?> o : getSortedChildOptions(n)) {
-            stream.println(getTableLineForOption(o, prefix));
+        String fullClassName = raw.substring(0, i);
+        String fieldName = raw.substring(i + 1);
+
+        return (ConfigNamespace)Class.forName(fullClassName).getField(fieldName).get(null);
+    }
+
+    private String getFullPath(ConfigOption<?> opt) {
+        StringBuilder sb = new StringBuilder(64);
+        sb.insert(0, opt.getName());
+        for (ConfigNamespace parent = opt.getNamespace();
+             null != parent && !parent.isRoot();
+             parent = parent.getNamespace()) {
+            if (parent.isUmbrella())
+                sb.insert(0, "[X].");
+            sb.insert(0, ".");
+            sb.insert(0, parent.getName());
         }
-        stream.println(TABLE_FOOTER_LINES);
+        return sb.toString();
+    }
+
+    private void printNamespace(ConfigNamespace n, String prefix) {
+        String newPrefix = prefix + n.getName() + ".";
+        if (n.isUmbrella()) newPrefix += "[X].";
+
+        if (n.isRoot()) newPrefix = ""; //Override for root namespace
+
+        //Only print namespace if it contains (visible) options
+        if (!Iterables.isEmpty(getSortedChildOptions(n))) {
+            stream.println(getNamespaceSectionHeader(n, prefix));
+            stream.println(getTableHeader());
+            for (ConfigOption<?> o : getSortedChildOptions(n)) {
+                stream.println(getTableLineForOption(o, newPrefix));
+            }
+            stream.println(TABLE_FOOTER_LINES);
+        }
 
         for (ConfigNamespace cn : getSortedChildNamespaces(n)) {
-            final String newPrefix = prefix + cn.getName() + ".";
             printNamespace(cn, newPrefix);
         }
     }
 
-    private String getNamespaceSectionHeader(ConfigNamespace n) {
-        String fullName = ConfigElement.getPath(n);
+    private String getNamespaceSectionHeader(ConfigNamespace n, String prefix) {
+        String fullName = prefix + n.getName();
+        if (n.isUmbrella()) fullName += " *";
         return "==== " + fullName + " ====\n[role=\"font16\"]\n" + n.getDescription() + "\n\n";
     }
 
@@ -88,7 +122,7 @@ public class ConfigurationPrinter {
         return getSortedChildren(n, new Function<ConfigElement, Boolean>() {
             @Override
             public Boolean apply(ConfigElement arg0) {
-                return arg0.isOption();
+                return arg0.isOption() && !((ConfigOption)arg0).isHidden();
             }
         });
     }
@@ -102,25 +136,51 @@ public class ConfigurationPrinter {
         });
     }
 
-        private String getTableLineForOption(ConfigOption o, String prefix) {
+    private String getTableLineForOption(ConfigOption o, String prefix) {
 
-            String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(
-                    prefix + o.getName(),
-                    removeDelim(o.getDescription()),
-                    o.getDatatype().getSimpleName(),
-                    removeDelim(getStringForDefaultValue(o)),
-                    o.getType());
-
-            if (DELIM_AT_LINE_START) {
-                line = DELIM + DELIM_PADDING + line;
+        List<String> colData = new ArrayList<String>(10);
+        String name = prefix + o.getName();
+        if (o.isDeprecated()) {
+            ConfigOption<?> successor = o.getDeprecationReplacement();
+            if (null == successor) {
+                name = "[deprecation-warning]*Deprecated* [line-through]#" + name + "#";
+            } else {
+                name = "[deprecation-warning]*Deprecated.  See " + getFullPath(successor) + "* [line-through]#" + name + "#";
             }
 
-            if (DELIM_AT_LINE_END) {
-                line = line + DELIM_PADDING + DELIM;
-            }
-
-            return line;
         }
+        colData.add(name);
+        colData.add(removeDelim(o.getDescription()));
+        colData.add(o.getDatatype().getSimpleName());
+        colData.add(removeDelim(getStringForDefaultValue(o)));
+
+        if (showMutability)
+            colData.add(o.getType().toString());
+
+        String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(colData);
+
+        if (DELIM_AT_LINE_START) {
+            line = DELIM + DELIM_PADDING + line;
+        }
+
+        if (DELIM_AT_LINE_END) {
+            line = line + DELIM_PADDING + DELIM;
+        }
+
+        return line;
+    }
+
+    private String getTableHeader() {
+        String colWidths = "2,3,1,1"; // Name, Desc, Datatype, Default
+        String colNames = "Name | Description | Datatype | Default Value";
+        if (showMutability) {
+            colWidths += ",1"; // Mutability level
+            colNames  += " | Mutability";
+        }
+        return "[role=\"tss-config-table\",cols=\"" + colWidths + "\",options=\"header\",width=\"100%\"]\n" +
+                "|=====\n" +
+                "| " + colNames; // no terminal newline reqd
+    }
 
     @SuppressWarnings("unchecked")
     private <E> List<E> getSortedChildren(ConfigNamespace n, Function<ConfigElement, Boolean> predicate) {
@@ -149,7 +209,7 @@ public class ConfigurationPrinter {
         Object o = c.getDefaultValue();
 
         if (null == o) {
-            return " ";
+            return "(no default value)";
         } else if (o instanceof Duration) {
             Duration d = (Duration)o;
             return d.getLength(TimeUnit.MILLISECONDS) + " ms";

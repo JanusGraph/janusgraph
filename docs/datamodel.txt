@@ -6,7 +6,7 @@ Titan stores graphs in http://en.wikipedia.org/wiki/Adjacency_list[adjacency lis
 
 By storing a graph in adjacency list format Titan ensures that all of a vertex's incident edges and properties are stored compactly in the storage backend which speeds up traversals. The downside is that each edge has to be stored twice - once for each end vertex of the edge.
 
-In addition, Titan maintains the adjacency list of each vertex in sort order with the order being defined by the <<type-definition,sort-key configurations>> of the edge labels. The sort order enables efficient retrievals of subsets of the adjacency list using <<vertex-centric-index,,vertex centric indices>>.
+In addition, Titan maintains the adjacency list of each vertex in sort order with the order being defined by the sort key and sort order the edge labels. The sort order enables efficient retrievals of subsets of the adjacency list using <<vertex-indexes,vertex centric indices>>.
 
 Titan stores the adjacency list representation of a graph in any <<storage-backends,storage backend>> that supports the BigTable data model.
 

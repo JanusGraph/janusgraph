@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.hadoop.HadoopEdge;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -36,7 +36,7 @@ public class CountMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable> {
+    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable> {
 
         private boolean isVertex;
         private final LongWritable longWritable = new LongWritable();
@@ -49,18 +49,17 @@ public class CountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 final long pathCount = value.pathCount();
                 this.longWritable.set(pathCount);
                 context.write(NullWritable.get(), this.longWritable);
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_COUNTED, pathCount > 0 ? 1 : 0);
-                //context.getCounter(Counters.VERTICES_COUNTED).increment(pathCount > 0 ? 1 : 0);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_COUNTED, pathCount > 0 ? 1 : 0);
             } else {
                 long edgesCounted = 0;
                 long pathCount = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final HadoopEdge edge = (HadoopEdge) e;
+                    final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
                         edgesCounted++;
                         pathCount = pathCount + edge.pathCount();
@@ -68,15 +67,14 @@ public class CountMapReduce {
                 }
                 this.longWritable.set(pathCount);
                 context.write(NullWritable.get(), this.longWritable);
-                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_COUNTED, edgesCounted);
-                //context.getCounter(Counters.EDGES_COUNTED).increment(edgesCounted);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_COUNTED, edgesCounted);
             }
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

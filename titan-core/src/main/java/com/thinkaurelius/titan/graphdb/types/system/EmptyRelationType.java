@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;

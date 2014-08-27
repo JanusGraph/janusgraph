@@ -43,21 +43,21 @@ public class GraphOfTheGodsFactory {
         //Create Schema
         TitanManagement mgmt = graph.getManagementSystem();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildCompositeIndex();
+        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).addKey(name).unique().buildCompositeIndex();
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildMixedIndex(INDEX_NAME);
+        mgmt.buildIndex("vertices",Vertex.class).addKey(age).buildMixedIndex(INDEX_NAME);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
         final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
         TitanGraphIndex eindex = mgmt.buildIndex("edges",Edge.class)
-                .indexKey(reason).indexKey(place).buildMixedIndex(INDEX_NAME);
+                .addKey(reason).addKey(place).buildMixedIndex(INDEX_NAME);
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
         EdgeLabel battled = mgmt.makeEdgeLabel("battled").signature(time).make();
-        mgmt.createEdgeIndex(battled,"timeindex", Direction.BOTH,Order.DESC,time);
+        mgmt.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.DESC, time);
         mgmt.makeEdgeLabel("lives").signature(reason).make();
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();
@@ -74,41 +74,41 @@ public class GraphOfTheGodsFactory {
         TitanTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertex("titan");
+        Vertex saturn = tx.addVertexWithLabel("titan");
         saturn.setProperty("name", "saturn");
         saturn.setProperty("age", 10000);
 
-        Vertex sky = tx.addVertex("location");
+        Vertex sky = tx.addVertexWithLabel("location");
         ElementHelper.setProperties(sky, "name", "sky");
 
-        Vertex sea = tx.addVertex("location");
+        Vertex sea = tx.addVertexWithLabel("location");
         ElementHelper.setProperties(sea, "name", "sea");
 
-        Vertex jupiter = tx.addVertex("god");
+        Vertex jupiter = tx.addVertexWithLabel("god");
         ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000);
 
-        Vertex neptune = tx.addVertex("god");
+        Vertex neptune = tx.addVertexWithLabel("god");
         ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500);
 
-        Vertex hercules = tx.addVertex("demigod");
+        Vertex hercules = tx.addVertexWithLabel("demigod");
         ElementHelper.setProperties(hercules, "name", "hercules", "age", 30);
 
-        Vertex alcmene = tx.addVertex("human");
+        Vertex alcmene = tx.addVertexWithLabel("human");
         ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45);
 
-        Vertex pluto = tx.addVertex("god");
+        Vertex pluto = tx.addVertexWithLabel("god");
         ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000);
 
-        Vertex nemean = tx.addVertex("monster");
+        Vertex nemean = tx.addVertexWithLabel("monster");
         ElementHelper.setProperties(nemean, "name", "nemean");
 
-        Vertex hydra = tx.addVertex("monster");
+        Vertex hydra = tx.addVertexWithLabel("monster");
         ElementHelper.setProperties(hydra, "name", "hydra");
 
-        Vertex cerberus = tx.addVertex("monster");
+        Vertex cerberus = tx.addVertexWithLabel("monster");
         ElementHelper.setProperties(cerberus, "name", "cerberus");
 
-        Vertex tartarus = tx.addVertex("location");
+        Vertex tartarus = tx.addVertexWithLabel("location");
         ElementHelper.setProperties(tartarus, "name", "tartarus");
 
         // edges

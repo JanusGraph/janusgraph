@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -20,71 +20,60 @@ import java.util.Map;
  */
 public class EdgeCopyMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex> mapReduceDriver;
-
-    private static final HadoopCompat COMPAT =
-            HadoopCompatLoader.getDefaultCompat();
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
         mapReduceDriver.setMapper(new EdgeCopyMapReduce.Map());
         mapReduceDriver.setReducer(new EdgeCopyMapReduce.Reduce());
     }
 
     public void testInversionWithTinkerGraphOutEdges() throws Exception {
         mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.OUT));
-        Map<Long, HadoopVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.TINKERGRAPH);
-        for (HadoopVertex vertex : halfGraph.values()) {
+        Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.TINKERGRAPH);
+        for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.IN);
         }
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
     public void testInversionWithTinkerGraphInEdges() throws Exception {
         mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.IN));
-        Map<Long, HadoopVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.TINKERGRAPH);
-        for (HadoopVertex vertex : halfGraph.values()) {
+        Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.TINKERGRAPH);
+        for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.OUT);
         }
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.TINKERGRAPH);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
     public void testInversionWithGraphOfTheGodsOutEdges() throws Exception {
         mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.OUT));
-        Map<Long, HadoopVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
-        for (HadoopVertex vertex : halfGraph.values()) {
+        Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
+        for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.IN);
         }
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
     public void testInversionWithGraphOfTheGodsInEdges() throws Exception {
         mapReduceDriver.setConfiguration(EdgeCopyMapReduce.createConfiguration(Direction.IN));
-        Map<Long, HadoopVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
-        for (HadoopVertex vertex : halfGraph.values()) {
+        Map<Long, FaunusVertex> halfGraph = BaseTest.generateGraph(ExampleGraph.GRAPH_OF_THE_GODS);
+        for (FaunusVertex vertex : halfGraph.values()) {
             vertex.removeEdges(Tokens.Action.DROP, Direction.OUT);
         }
-        Map<Long, HadoopVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
+        Map<Long, FaunusVertex> graph = runWithGraph(startPath(halfGraph, Vertex.class), mapReduceDriver);
         BaseTest.identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
-        assertEquals(COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
-                COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
-//        assertEquals(mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_COPIED).getValue(),
-//                mapReduceDriver.getCounters().findCounter(EdgeCopyMapReduce.Counters.EDGES_ADDED).getValue());
+        assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_COPIED),
+                DEFAULT_COMPAT.getCounter(mapReduceDriver, EdgeCopyMapReduce.Counters.EDGES_ADDED));
     }
 
 }

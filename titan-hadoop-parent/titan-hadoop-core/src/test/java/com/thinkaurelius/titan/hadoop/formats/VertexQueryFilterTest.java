@@ -1,7 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -24,7 +27,7 @@ public class VertexQueryFilterTest extends BaseTest {
         assertEquals(query.hasContainers.size(), 0);
         assertEquals(query.direction, Direction.BOTH);
         assertEquals(query.labels.length, 0);
-        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1);
+        FaunusVertex vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 1);
         vertex.setProperty("name", "marko");
         vertex.addEdge("knows", vertex).setProperty("time", 1);
         query.defaultFilter(vertex);
@@ -36,7 +39,8 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testVertexQueryConstruction() {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0).direction(IN).labels('knows')");
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        faunusConf.set(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0).direction(IN).labels('knows')");
         VertexQueryFilter query = VertexQueryFilter.create(config);
         assertTrue(query.doesFilter());
         assertEquals(query.limit, 0);
@@ -48,41 +52,44 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testDefaultFilterLimitZeroTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0)");
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        faunusConf.set(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
-        for (HadoopVertex vertex : graph.values()) {
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
+        for (FaunusVertex vertex : graph.values()) {
             query.defaultFilter(vertex);
-            assertEquals(((List) vertex.getEdges(Direction.IN)).size(), 0);
-            assertEquals(((List) vertex.getEdges(Direction.OUT)).size(), 0);
-            assertEquals(((List) vertex.getEdges(Direction.BOTH)).size(), 0);
+            assertEquals(Iterables.size(vertex.getEdges(Direction.IN)), 0);
+            assertEquals(Iterables.size(vertex.getEdges(Direction.OUT)), 0);
+            assertEquals(Iterables.size(vertex.getEdges(Direction.BOTH)), 0);
         }
     }
 
     public void testDefaultFilterLimitOneTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(1)");
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        faunusConf.set(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER, "v.query().limit(1)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
-        for (HadoopVertex vertex : graph.values()) {
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
+        for (FaunusVertex vertex : graph.values()) {
             query.defaultFilter(vertex);
-            assertEquals(((List) vertex.getEdges(Direction.BOTH)).size(), 1);
+            assertEquals(Iterables.size(vertex.getEdges(Direction.BOTH)), 1);
         }
     }
 
     public void testDefaultFilterHasTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().has('weight',Compare.LESS_THAN,0.5d).limit(5)");
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(config);
+        faunusConf.set(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER, "v.query().has('weight',Compare.LESS_THAN,0.5d).limit(5)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
-        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
+        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
 
         int counter = 0;
-        for (HadoopVertex vertex : graph.values()) {
+        for (FaunusVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 edge.setProperty("weight", ((Number) edge.getProperty("weight")).doubleValue());
             }
             query.defaultFilter(vertex);
-            assertTrue(((List) vertex.getEdges(Direction.BOTH)).size() <= 5);
+            assertTrue(Iterables.size(vertex.getEdges(Direction.BOTH)) <= 5);
 
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
                 counter++;

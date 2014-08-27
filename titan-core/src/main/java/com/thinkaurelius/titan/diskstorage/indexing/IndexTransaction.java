@@ -68,6 +68,12 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
         if (m==null) {
             m = new IndexMutation(isNew,isDeleted);
             storeMutations.put(docid, m);
+        } else {
+            //IndexMutation already exists => if we deleted and re-created it we need to remove the deleted flag
+            if (isNew && m.isDeleted()) {
+                m.resetDelete();
+                assert !m.isNew() && !m.isDeleted();
+            }
         }
         return m;
     }
@@ -83,6 +89,10 @@ public class IndexTransaction implements BaseTransaction, LoggableTransaction {
 
     public Iterable<RawQuery.Result<String>> query(RawQuery query) throws BackendException {
         return index.query(query,keyInformations,indexTx);
+    }
+
+    public void restore(Map<String, Map<String,List<IndexEntry>>> documents) throws BackendException {
+        index.restore(documents,keyInformations,indexTx);
     }
 
     @Override

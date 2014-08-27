@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -28,13 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@PreInitializeConfigOptions
 public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
 
     private static final Logger log =
             LoggerFactory.getLogger(SimpleBulkPlacementStrategy.class);
 
     public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<Integer>(GraphDatabaseConfiguration.IDS_NS,
-            "num-partitions","Number of partitions to allocate for placement", ConfigOption.Type.MASKABLE,10);
+            "num-partitions","Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE,10);
 
     public static final int PARTITION_FINDING_ATTEMPTS = 1000;
 

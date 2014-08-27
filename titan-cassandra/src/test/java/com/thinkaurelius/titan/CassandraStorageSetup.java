@@ -25,14 +25,18 @@ public class CassandraStorageSetup {
 
     public static final String CONFDIR_SYSPROP = "test.cassandra.confdir";
     public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
-    public static final String YAML_PATH;
-    public static final String DATA_PATH;
+
+    private static volatile Paths paths;
 
     private static final Logger log = LoggerFactory.getLogger(CassandraStorageSetup.class);
 
-    static {
-        YAML_PATH = "file://" + loadAbsoluteDirectoryPath("conf", CONFDIR_SYSPROP, true) + File.separator + "cassandra.yaml";
-        DATA_PATH = loadAbsoluteDirectoryPath("data", DATADIR_SYSPROP, false);
+    private static synchronized Paths getPaths() {
+        if (null == paths) {
+            String yamlPath = "file://" + loadAbsoluteDirectoryPath("conf", CONFDIR_SYSPROP, true) + File.separator + "cassandra.yaml";
+            String dataPath = loadAbsoluteDirectoryPath("data", DATADIR_SYSPROP, false);
+            paths = new Paths(yamlPath, dataPath);
+        }
+        return paths;
     }
 
     private static ModifiableConfiguration getGenericConfiguration(String ks, String backend) {
@@ -47,7 +51,7 @@ public class CassandraStorageSetup {
 
     public static ModifiableConfiguration getEmbeddedConfiguration(String ks) {
         ModifiableConfiguration config = getGenericConfiguration(ks, "embeddedcassandra");
-        config.set(STORAGE_CONF_FILE,YAML_PATH);
+        config.set(STORAGE_CONF_FILE, getPaths().yamlPath);
         return config;
     }
 
@@ -55,7 +59,6 @@ public class CassandraStorageSetup {
         ModifiableConfiguration config = getEmbeddedConfiguration(ks);
         config.set(CLUSTER_PARTITION, true);
         config.set(IDS_FLUSH,false);
-//        config.subset(GraphDatabaseConfiguration.METRICS_NAMESPACE).addProperty(GraphDatabaseConfiguration.METRICS_CONSOLE_INTERVAL, 3000L);
         return config;
     }
 
@@ -91,11 +94,23 @@ public class CassandraStorageSetup {
         return getCassandraThriftConfiguration(ks).getConfiguration();
     }
 
+    /**
+     * Load cassandra.yaml and data paths from the environment or from default
+     * values if nothing is set in the environment, then delete all existing
+     * data, and finally start Cassandra.
+     * <p>
+     * This method is idempotent. Calls after the first have no effect aside
+     * from logging statements.
+     */
+    public static void startCleanEmbedded() {
+        startCleanEmbedded(getPaths());
+    }
+
     /*
      * Cassandra only accepts keyspace names 48 characters long or shorter made
      * up of alphanumeric characters and underscores.
      */
-    private static String cleanKeyspaceName(String raw) {
+    public static String cleanKeyspaceName(String raw) {
         Preconditions.checkNotNull(raw);
         Preconditions.checkArgument(0 < raw.length());
 
@@ -106,16 +121,17 @@ public class CassandraStorageSetup {
         }
     }
 
-    public static synchronized void startCleanEmbedded(String cassandraYamlPath) {
+
+    private static void startCleanEmbedded(Paths p) {
         if (!CassandraDaemonWrapper.isStarted()) {
             try {
-                FileUtils.deleteDirectory(new File(CassandraStorageSetup.DATA_PATH));
+                FileUtils.deleteDirectory(new File(p.dataPath));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        CassandraDaemonWrapper.start(cassandraYamlPath);
+        CassandraDaemonWrapper.start(p.yamlPath);
     }
 
     private static String loadAbsoluteDirectoryPath(String name, String prop, boolean mustExistAndBeAbsolute) {
@@ -135,5 +151,15 @@ public class CassandraStorageSetup {
         }
 
         return s;
+    }
+
+    private static class Paths {
+        private final String yamlPath;
+        private final String dataPath;
+
+        public Paths(String yamlPath, String dataPath) {
+            this.yamlPath = yamlPath;
+            this.dataPath = dataPath;
+        }
     }
 }
