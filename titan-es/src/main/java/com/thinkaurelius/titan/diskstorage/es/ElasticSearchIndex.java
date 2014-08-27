@@ -21,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
@@ -241,9 +242,18 @@ public class ElasticSearchIndex implements IndexProvider {
                     "Must either configure configuration file or base directory");
             if (config.has(INDEX_CONF_FILE)) {
                 String configFile = config.get(INDEX_CONF_FILE);
+                ImmutableSettings.Builder sb = ImmutableSettings.settingsBuilder();
                 log.debug("Configuring ES from YML file [{}]", configFile);
-                Settings settings = ImmutableSettings.settingsBuilder().loadFromSource(configFile).build();
-                builder.settings(settings);
+                FileInputStream fis = null;
+                try {
+                    fis = new FileInputStream(configFile);
+                    sb.loadFromStream(configFile, fis);
+                    builder.settings(sb.build());
+                } catch (FileNotFoundException e) {
+                    throw new TitanException(e);
+                } finally {
+                    IOUtils.closeQuietly(fis);
+                }
             } else {
                 String dataDirectory = config.get(INDEX_DIRECTORY);
                 log.debug("Configuring ES with data directory [{}]", dataDirectory);
@@ -748,6 +758,13 @@ public class ElasticSearchIndex implements IndexProvider {
         } finally {
             close();
         }
+    }
+
+    /**
+     * Exposed for testing
+     */
+    Node getNode() {
+        return node;
     }
 
     private void checkExpectedClientVersion() {
