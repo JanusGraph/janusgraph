@@ -20,6 +20,10 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     public static final String ES_PID_FILE = "/tmp/titan-test-es.pid";
 
+    public ElasticsearchRunner() {
+        this.homedir = ".";
+    }
+
     public ElasticsearchRunner(String esHome) {
         this.homedir = esHome;
     }

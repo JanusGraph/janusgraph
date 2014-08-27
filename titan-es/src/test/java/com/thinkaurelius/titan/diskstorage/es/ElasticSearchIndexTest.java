@@ -39,6 +39,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(LOCAL_MODE, true, index);
         config.set(CLIENT_ONLY, false, index);
+        config.set(TTL_INTERVAL, "5s", index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         return config.restrictTo(index);
     }
