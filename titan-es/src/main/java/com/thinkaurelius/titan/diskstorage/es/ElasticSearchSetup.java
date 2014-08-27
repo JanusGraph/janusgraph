@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -154,9 +155,13 @@ public enum ElasticSearchSetup {
         if (config.has(INDEX_CONF_FILE)) {
             String confFile = config.get(INDEX_CONF_FILE);
             log.debug("Loading Elasticsearch TransportClient base settings as file {}", confFile);
-            InputStream confStream = new FileInputStream(confFile);
-            settings.loadFromStream(confFile, confStream);
-            confStream.close();
+            InputStream confStream = null;
+            try {
+                confStream = new FileInputStream(confFile);
+                settings.loadFromStream(confFile, confStream);
+            } finally {
+                IOUtils.closeQuietly(confStream);
+            }
         }
 
         // Apply ext.* overrides from Titan conf file
