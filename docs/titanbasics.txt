@@ -787,6 +787,7 @@ mgmt.commit()
 [NOTE]
 To enforce uniqueness against an eventually consistent storage backend, the <<eventual-consistency,consistency>> of the index must be explicitly set to enabling locking.
 
+[[index-mixed]]
 Mixed Index
 ^^^^^^^^^^^
 
