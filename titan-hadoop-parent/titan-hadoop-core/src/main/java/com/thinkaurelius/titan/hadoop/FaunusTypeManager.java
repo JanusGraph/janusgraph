@@ -1,15 +1,13 @@
 package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
 import com.thinkaurelius.titan.graphdb.schema.PropertyKeyDefinition;
 import com.thinkaurelius.titan.graphdb.schema.RelationTypeDefinition;
 import com.thinkaurelius.titan.graphdb.schema.SchemaProvider;
 import com.thinkaurelius.titan.graphdb.types.TypeSource;
-import org.apache.hadoop.conf.Configuration;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**

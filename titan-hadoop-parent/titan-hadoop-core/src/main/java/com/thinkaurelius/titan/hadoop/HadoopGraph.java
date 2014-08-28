@@ -1,18 +1,11 @@
 package com.thinkaurelius.titan.hadoop;
 
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_FORMAT;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.INPUT_LOCATION;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.OUTPUT_FORMAT;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_PATHS;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIPELINE_TRACK_STATE;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.SIDE_EFFECT_FORMAT;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.JOBDIR_LOCATION;
-import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.JOBDIR_OVERWRITE;
-
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -24,6 +17,8 @@ import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.Inverter;
 import com.thinkaurelius.titan.hadoop.hdfs.HDFSTools;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.*;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -92,6 +87,17 @@ public class HadoopGraph extends HybridConfigured {
 
     public void setInputLocation(final String path) {
         this.setInputLocation(new Path(path));
+    }
+
+    // Edge copy
+
+    public boolean hasEdgeCopyDirection() {
+        ModifiableConfiguration mc = getTitanConf();
+        return mc.has(INPUT_EDGE_COPY_DIR) || mc.has(INPUT_EDGE_COPY_DIRECTION);
+    }
+
+    public Direction getEdgeCopyDirection() {
+        return getTitanConf().getEdgeCopyDirection();
     }
 
     // JOB AND FILESYSTEM

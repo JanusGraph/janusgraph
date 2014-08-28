@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
+import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -12,7 +13,11 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
+import java.io.File;
+
 import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -39,6 +44,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(LOCAL_MODE, true, index);
         config.set(CLIENT_ONLY, false, index);
+        config.set(TTL_INTERVAL, "5s", index);
         config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
         return config.restrictTo(index);
     }
@@ -114,5 +120,33 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
             expectedException = re;
         }
         assertNotNull(expectedException);
+    }
+
+    @Test
+    public void testConfigurationFile() throws BackendException {
+        final String index = "es";
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(LOCAL_MODE, true, index);
+        config.set(CLIENT_ONLY, true, index);
+        config.set(INDEX_CONF_FILE, Joiner.on(File.separator).join("target", "test-classes", "es_nodename_foo.yml"), index);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
+        Configuration indexConfig = config.restrictTo(index);
+
+        ElasticSearchIndex idx = new ElasticSearchIndex(indexConfig); // Shouldn't throw exception
+        idx.close();
+
+        assertEquals("foo", idx.getNode().settings().get("node.name"));
+
+        config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(LOCAL_MODE, true, index);
+        config.set(CLIENT_ONLY, true, index);
+        config.set(INDEX_CONF_FILE, Joiner.on(File.separator).join("target", "test-classes", "es_nodename_bar.yml"), index);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
+        indexConfig = config.restrictTo(index);
+
+        idx = new ElasticSearchIndex(indexConfig); // Shouldn't throw exception
+        idx.close();
+
+        assertEquals("bar", idx.getNode().settings().get("node.name"));
     }
 }

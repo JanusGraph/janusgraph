@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.graphson.HadoopGraphSONUtility;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -62,59 +63,64 @@ public abstract class BaseTestNG {
 
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
         final List<FaunusVertex> vertices;
-        if (ExampleGraph.TINKERGRAPH.equals(example))
-            vertices = new HadoopGraphSONUtility().fromJSON(configuration, HadoopGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
-        else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example))
-            vertices = new HadoopGraphSONUtility().fromJSON(configuration, HadoopGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
-        else {
+
+        ModifiableHadoopConfiguration mc = ModifiableHadoopConfiguration.of(configuration);
+
+        if (ExampleGraph.TINKERGRAPH.equals(example)) {
+            HadoopGraphSONUtility util = new HadoopGraphSONUtility(mc);
+            vertices = util.fromJSON(HadoopGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
+        } else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example)) {
+            HadoopGraphSONUtility util = new HadoopGraphSONUtility(mc);
+            vertices = util.fromJSON(HadoopGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+        } else {
             vertices = new ArrayList<FaunusVertex>();
-            FaunusVertex saturn = new FaunusVertex(configuration, 4l);
+            FaunusVertex saturn = new FaunusVertex(mc, 4l);
             vertices.add(saturn);
             saturn.setProperty("name", "saturn");
             saturn.setProperty("age", 10000);
             saturn.setProperty("type", "titan");
 
-            FaunusVertex sky = new FaunusVertex(configuration, 8l);
+            FaunusVertex sky = new FaunusVertex(mc, 8l);
             vertices.add(sky);
             ElementHelper.setProperties(sky, "name", "sky", "type", "location");
 
-            FaunusVertex sea = new FaunusVertex(configuration, 12l);
+            FaunusVertex sea = new FaunusVertex(mc, 12l);
             vertices.add(sea);
             ElementHelper.setProperties(sea, "name", "sea", "type", "location");
 
-            FaunusVertex jupiter = new FaunusVertex(configuration, 16l);
+            FaunusVertex jupiter = new FaunusVertex(mc, 16l);
             vertices.add(jupiter);
             ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000, "type", "god");
 
-            FaunusVertex neptune = new FaunusVertex(configuration, 20l);
+            FaunusVertex neptune = new FaunusVertex(mc, 20l);
             vertices.add(neptune);
             ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500, "type", "god");
 
-            FaunusVertex hercules = new FaunusVertex(configuration, 24l);
+            FaunusVertex hercules = new FaunusVertex(mc, 24l);
             vertices.add(hercules);
             ElementHelper.setProperties(hercules, "name", "hercules", "age", 30, "type", "demigod");
 
-            FaunusVertex alcmene = new FaunusVertex(configuration, 28l);
+            FaunusVertex alcmene = new FaunusVertex(mc, 28l);
             vertices.add(alcmene);
             ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45, "type", "human");
 
-            FaunusVertex pluto = new FaunusVertex(configuration, 32l);
+            FaunusVertex pluto = new FaunusVertex(mc, 32l);
             vertices.add(pluto);
             ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000, "type", "god");
 
-            FaunusVertex nemean = new FaunusVertex(configuration, 36l);
+            FaunusVertex nemean = new FaunusVertex(mc, 36l);
             vertices.add(nemean);
             ElementHelper.setProperties(nemean, "name", "nemean", "type", "monster");
 
-            FaunusVertex hydra = new FaunusVertex(configuration, 40l);
+            FaunusVertex hydra = new FaunusVertex(mc, 40l);
             vertices.add(hydra);
             ElementHelper.setProperties(hydra, "name", "hydra", "type", "monster");
 
-            FaunusVertex cerberus = new FaunusVertex(configuration, 44l);
+            FaunusVertex cerberus = new FaunusVertex(mc, 44l);
             vertices.add(cerberus);
             ElementHelper.setProperties(cerberus, "name", "cerberus", "type", "monster");
 
-            FaunusVertex tartarus = new FaunusVertex(configuration, 48l);
+            FaunusVertex tartarus = new FaunusVertex(mc, 48l);
             vertices.add(tartarus);
             ElementHelper.setProperties(tartarus, "name", "tartarus", "type", "location");
 

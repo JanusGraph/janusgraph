@@ -218,8 +218,8 @@ public class HadoopPipeline {
 
 
 
-        if (graph.getTitanConf().has(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR)) {
-            Direction ecDir = graph.getTitanConf().get(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR);
+        if (graph.hasEdgeCopyDirection()) {
+            Direction ecDir = graph.getEdgeCopyDirection();
             this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
                     null,
                     EdgeCopyMapReduce.Reduce.class,

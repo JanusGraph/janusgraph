@@ -39,7 +39,7 @@ public class HybridConfigured extends Configured {
         titanConf = ModifiableHadoopConfiguration.of(conf);
     }
 
-    public ModifiableConfiguration getTitanConf() {
+    public ModifiableHadoopConfiguration getTitanConf() {
         return titanConf;
     }
 

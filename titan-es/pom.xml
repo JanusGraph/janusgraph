@@ -39,6 +39,13 @@
             </resource>
         </resources>
 
+        <testResources>
+            <testResource>
+                <directory>${basedir}/src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+
         <plugins>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>

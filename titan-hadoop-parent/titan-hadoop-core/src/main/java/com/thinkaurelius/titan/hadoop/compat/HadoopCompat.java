@@ -112,4 +112,14 @@ public interface HadoopCompat {
      * @return a configurer
      */
     public JobClasspathConfigurer newDistCacheConfigurer();
+
+    /**
+     * Construct a {@link org.apache.hadoop.conf.Configuration} instance which throws
+     * {@link java.lang.UnsupportedOperationException} on any attempt to modify its state,
+     * but which forwards to its parameter all method calls that don't mutate state (i.e. reads).
+     *
+     * @param base the configuration to encapsulate behind an immutable forwarder class
+     * @return an immutable forwarder class that encapsulates {@code base}
+     */
+    public Configuration newImmutableConfiguration(Configuration base);
 }

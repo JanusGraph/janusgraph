@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import java.util.*;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -85,12 +86,12 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             "The replication strategy to use for Titan keyspace",
             ConfigOption.Type.FIXED, "org.apache.cassandra.locator.SimpleStrategy");
 
-    public static final ConfigOption<List<String>> REPLICATION_OPTIONS =
-            new ConfigOption<List<String>>(CASSANDRA_NS, "replication-strategy-options",
+    public static final ConfigOption<String[]> REPLICATION_OPTIONS =
+            new ConfigOption<String[]>(CASSANDRA_NS, "replication-strategy-options",
             "Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a " +
             "map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set " +
             "here takes precedence over one set with " + ConfigElement.getPath(REPLICATION_FACTOR),
-            ConfigOption.Type.FIXED, new ArrayList<String>(0));
+            ConfigOption.Type.FIXED, String[].class);
 
     // Compression
     public static final ConfigOption<Boolean> CF_COMPRESSION =
@@ -166,14 +167,15 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             throw new IllegalArgumentException(SSL_TRUSTSTORE_LOCATION.getName() + " could not be empty when SSL is enabled.");
 
         if (config.has(REPLICATION_OPTIONS)) {
-            List<String> options = config.get(REPLICATION_OPTIONS);
-            if (options.size() % 2 != 0)
+            String[] options = config.get(REPLICATION_OPTIONS);
+
+            if (options.length % 2 != 0)
                 throw new IllegalArgumentException(REPLICATION_OPTIONS.getName() + " should have even number of elements.");
 
-            Map<String, String> converted = new HashMap<String, String>(options.size() / 2);
+            Map<String, String> converted = new HashMap<String, String>(options.length / 2);
 
-            for (int i = 0; i < options.size(); i += 2) {
-                converted.put(options.get(i), options.get(i + 1));
+            for (int i = 0; i < options.length; i += 2) {
+                converted.put(options[i], options[i + 1]);
             }
 
             this.strategyOptions = ImmutableMap.copyOf(converted);

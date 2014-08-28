@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -16,8 +17,6 @@ import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
-
-import org.apache.hadoop.conf.Configuration;
 
 /**
  * The backend agnostic Titan graph reader for pulling a graph of Titan and into Hadoop.

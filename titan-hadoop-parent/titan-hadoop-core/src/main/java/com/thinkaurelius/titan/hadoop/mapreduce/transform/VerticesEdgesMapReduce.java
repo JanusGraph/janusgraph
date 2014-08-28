@@ -2,12 +2,13 @@ package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.*;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -21,6 +22,8 @@ import java.util.List;
 
 import static com.tinkerpop.blueprints.Direction.*;
 
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.*;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -29,18 +32,18 @@ public class VerticesEdgesMapReduce {
     private static final Logger log =
             LoggerFactory.getLogger(VerticesEdgesMapReduce.class);
 
-    public static final String DIRECTION = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".direction";
-    public static final String LABELS = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".labels";
+//    public static final String DIRECTION = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".direction";
+//    public static final String LABELS = Tokens.makeNamespace(VerticesEdgesMapReduce.class) + ".labels";
 
     public enum Counters {
         EDGES_TRAVERSED
     }
 
-    public static Configuration createConfiguration(final Direction direction, final String... labels) {
-        final Configuration configuration = new EmptyConfiguration();
-        configuration.set(DIRECTION, direction.name());
-        configuration.setStrings(LABELS, labels);
-        return configuration;
+    public static org.apache.hadoop.conf.Configuration createConfiguration(final Direction direction, final String... labels) {
+        ModifiableHadoopConfiguration c = ModifiableHadoopConfiguration.withoutResources();
+        c.set(VERTICES_EDGES_DIRECTION, direction);
+        c.set(VERTICES_EDGES_LABELS, labels);
+        return c.getHadoopConfiguration();
     }
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
@@ -48,15 +51,17 @@ public class VerticesEdgesMapReduce {
         private Direction direction;
         private String[] labels;
         private boolean trackPaths;
+        private Configuration faunusConf;
 
         private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
-            this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
-            this.trackPaths = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
+            faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getJobContextConfiguration(context));
+            direction = faunusConf.get(VERTICES_EDGES_DIRECTION);
+            labels = faunusConf.get(VERTICES_EDGES_LABELS);
+            trackPaths = faunusConf.get(PIPELINE_TRACK_PATHS);
         }
 
         @Override
@@ -68,13 +73,13 @@ public class VerticesEdgesMapReduce {
             if (value.hasPaths()) {
                 long edgesTraversed = 0l;
 
-                if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
-                    for (final Edge e : value.getEdges(IN, this.labels)) {
+                if (direction.equals(IN) || direction.equals(BOTH)) {
+                    for (final Edge e : value.getEdges(IN, labels)) {
                         final StandardFaunusEdge edge = (StandardFaunusEdge) e;
-                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(context.getConfiguration(), edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(faunusConf, edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
 
-                        if (this.trackPaths) {
+                        if (trackPaths) {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
@@ -82,18 +87,18 @@ public class VerticesEdgesMapReduce {
                             edge.getPaths(value, false);
                             shellEdge.getPaths(value, false);
                         }
-                        this.longWritable.set(edge.getVertexId(OUT));
-                        context.write(this.longWritable, this.holder.set('p', shellEdge));
+                        longWritable.set(edge.getVertexId(OUT));
+                        context.write(longWritable, holder.set('p', shellEdge));
                         edgesTraversed++;
                     }
                 }
 
-                if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
-                    for (final Edge e : value.getEdges(OUT, this.labels)) {
+                if (direction.equals(OUT) || direction.equals(BOTH)) {
+                    for (final Edge e : value.getEdges(OUT, labels)) {
                         final StandardFaunusEdge edge = (StandardFaunusEdge) e;
-                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(context.getConfiguration(), edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(faunusConf, edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
-                        if (this.trackPaths) {
+                        if (trackPaths) {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
@@ -102,8 +107,8 @@ public class VerticesEdgesMapReduce {
                             edge.getPaths(value, false);
                             shellEdge.getPaths(value, false);
                         }
-                        this.longWritable.set(edge.getVertexId(IN));
-                        context.write(this.longWritable, this.holder.set('p', shellEdge));
+                        longWritable.set(edge.getVertexId(IN));
+                        context.write(longWritable, holder.set('p', shellEdge));
                         edgesTraversed++;
                     }
                 }
@@ -113,8 +118,8 @@ public class VerticesEdgesMapReduce {
             }
 
 
-            this.longWritable.set(value.getLongId());
-            context.write(this.longWritable, this.holder.set('v', value));
+            longWritable.set(value.getLongId());
+            context.write(longWritable, holder.set('v', value));
         }
 
         // TODO: this is horribly inefficient due to an efficiency of object reuse in path calculations
@@ -135,19 +140,22 @@ public class VerticesEdgesMapReduce {
 
         private Direction direction;
         private String[] labels;
+        private Configuration faunusConf;
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
-            if (!this.direction.equals(BOTH))
-                this.direction = this.direction.opposite();
+            faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
+            direction = faunusConf.get(VERTICES_EDGES_DIRECTION);
 
-            this.labels = context.getConfiguration().getStrings(LABELS);
+            if (!direction.equals(BOTH))
+                direction = direction.opposite();
+
+            labels = faunusConf.get(VERTICES_EDGES_LABELS);
         }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
+            final FaunusVertex vertex = new FaunusVertex(faunusConf, key.get());
             final List<StandardFaunusEdge> edges = new ArrayList<StandardFaunusEdge>();
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
@@ -158,7 +166,7 @@ public class VerticesEdgesMapReduce {
                 }
             }
 
-            for (final Edge e : vertex.getEdges(this.direction, this.labels)) {
+            for (final Edge e : vertex.getEdges(direction, labels)) {
                 StandardFaunusEdge fe = (StandardFaunusEdge)e;
                 for (final StandardFaunusEdge edge : edges) {
                     if (fe.getLongId()==edge.getLongId()) {

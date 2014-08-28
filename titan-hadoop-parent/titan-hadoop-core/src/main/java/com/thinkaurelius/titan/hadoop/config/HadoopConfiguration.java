@@ -64,8 +64,10 @@ public class HadoopConfiguration implements WriteConfiguration {
                 if (c.toString().equals(estr))
                     return c;
             throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
-//        } else if (datatype==Object.class) {
-//            return (O)config.getProperty(internalKey);
+        } else if (datatype==Object.class) {
+            // Return String when an Object is requested
+            // Object.class must be supported for the sake of AbstractConfiguration's getSubset impl
+            return (O)config.get(internalKey);
         } else if (Duration.class.isAssignableFrom(datatype)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String s = config.get(internalKey);
@@ -80,8 +82,6 @@ public class HadoopConfiguration implements WriteConfiguration {
                 throw new IllegalArgumentException("Cannot parse time duration from: " + s);
             }
             return (O) new StandardDuration(Long.valueOf(comps[0]), unit);
-//        } else if (List.class.isAssignableFrom(datatype)) {
-//            return (O) config.getProperty(internalKey);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 
@@ -148,14 +148,12 @@ public class HadoopConfiguration implements WriteConfiguration {
             config.setBoolean(internalKey, (Boolean)value);
         } else if (datatype.isEnum()) {
             config.set(internalKey, value.toString());
-//        } else if (datatype==Object.class) {
-//            return (O)config.getProperty(internalKey);
+        } else if (datatype==Object.class) {
+            config.set(internalKey, value.toString());
         } else if (Duration.class.isAssignableFrom(datatype)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String millis = String.valueOf(((Duration)value).getLength(TimeUnit.MILLISECONDS));
             config.set(internalKey, millis);
-//        } else if (List.class.isAssignableFrom(datatype)) {
-//            return (O) config.getProperty(internalKey);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 

@@ -25,7 +25,7 @@ public class BasicConfiguration extends AbstractConfiguration {
 
     private final ReadConfiguration config;
     private final Restriction restriction;
-    protected boolean isFrozen;
+    private Boolean isFrozen;
 
     public BasicConfiguration(ConfigNamespace root, ReadConfiguration config, Restriction restriction) {
         super(root);
@@ -33,9 +33,6 @@ public class BasicConfiguration extends AbstractConfiguration {
         Preconditions.checkNotNull(restriction);
         this.config = config;
         this.restriction = restriction;
-        Boolean frozen = config.get(FROZEN_KEY,Boolean.class);
-        if (frozen==null) this.isFrozen=false;
-        else this.isFrozen=frozen;
     }
 
     protected void verifyOption(ConfigOption option) {
@@ -92,7 +89,15 @@ public class BasicConfiguration extends AbstractConfiguration {
     }
 
     public boolean isFrozen() {
+        if (null == isFrozen) {
+            Boolean frozen = config.get(FROZEN_KEY, Boolean.class);
+            isFrozen = null == frozen ? false : frozen;
+        }
         return isFrozen;
+    }
+
+    protected void setFrozen() {
+        isFrozen = true;
     }
 
     public ReadConfiguration getConfiguration() {

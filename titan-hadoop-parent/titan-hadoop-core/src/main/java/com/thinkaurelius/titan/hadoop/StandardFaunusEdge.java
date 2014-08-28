@@ -4,14 +4,15 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,16 +35,11 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
             LoggerFactory.getLogger(StandardFaunusEdge.class);
 
     public StandardFaunusEdge() {
-        this(EmptyConfiguration.immutable());
+        this(ModifiableHadoopConfiguration.immutableWithResources());
     }
 
     public StandardFaunusEdge(final Configuration configuration) {
         super(configuration, FaunusElement.NO_ID, FaunusEdgeLabel.LINK);
-    }
-
-    public StandardFaunusEdge(final Configuration configuration, final DataInput in) throws IOException {
-        super(configuration, FaunusElement.NO_ID, FaunusEdgeLabel.LINK);
-        this.readFields(in);
     }
 
     public StandardFaunusEdge(final Configuration configuration, final long outVertex, final long inVertex, final String label) {
@@ -64,6 +60,11 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
         this.inVertex = inVertex;
     }
 
+    public StandardFaunusEdge(final Configuration configuration, final DataInput in) throws IOException {
+        super(configuration, FaunusElement.NO_ID, FaunusEdgeLabel.LINK);
+        this.readFields(in);
+    }
+
     @Override
     public EdgeLabel getEdgeLabel() {
         return (EdgeLabel)getType();
@@ -73,9 +74,9 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
     @Override
     public TitanVertex getVertex(int pos) {
         if (pos==0) {
-            return new FaunusVertex(this.configuration, this.outVertex);
+            return new FaunusVertex(configuration, outVertex);
         } else if (pos==1) {
-            return new FaunusVertex(this.configuration, this.inVertex);
+            return new FaunusVertex(configuration, inVertex);
         } else {
             throw ExceptionFactory.bothIsNotSupported();
         }
@@ -130,13 +131,13 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     @Override
     public void write(final DataOutput out) throws IOException {
-        new FaunusSerializer(this.getConf()).writeEdge(this, out);
+        new FaunusSerializer(this.configuration).writeEdge(this, out);
         //log.debug("Serialized   {} with {} paths", this, tracker.paths.size());
     }
 
     @Override
     public void readFields(final DataInput in) throws IOException {
-        new FaunusSerializer(this.getConf()).readEdge(this, in);
+        new FaunusSerializer(this.configuration).readEdge(this, in);
         //log.debug("Deserialized {} with paths {}", this, tracker.paths);
     }
 

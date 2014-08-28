@@ -2,11 +2,12 @@ package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -38,18 +39,18 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        this.reader.initialize(inputSplit, taskAttemptContext);
-        this.configuration = DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext);
+        reader.initialize(inputSplit, taskAttemptContext);
+        configuration = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext));
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        while (this.reader.nextKeyValue()) {
+        while (reader.nextKeyValue()) {
             // TODO titan05 integration -- the duplicate() call may be unnecessary
-            final FaunusVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().duplicate(), this.reader.getCurrentValue());
+            final FaunusVertex temp = graph.readHadoopVertex(configuration, reader.getCurrentKey().duplicate(), reader.getCurrentValue());
             if (null != temp) {
-                this.vertex = temp;
-                this.vertexQuery.filterRelationsOf(this.vertex);
+                vertex = temp;
+                vertexQuery.filterRelationsOf(vertex);
                 return true;
             }
         }
@@ -63,17 +64,17 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     @Override
     public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
-        return this.vertex;
+        return vertex;
     }
 
     @Override
     public void close() throws IOException {
-        this.graph.close();
-        this.reader.close();
+        graph.close();
+        reader.close();
     }
 
     @Override
     public float getProgress() {
-        return this.reader.getProgress();
+        return reader.getProgress();
     }
 }

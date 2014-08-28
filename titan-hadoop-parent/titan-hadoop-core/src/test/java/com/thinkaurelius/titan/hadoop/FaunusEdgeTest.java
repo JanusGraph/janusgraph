@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.hadoop;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 
@@ -22,7 +24,7 @@ public class FaunusEdgeTest extends TestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        typeManager = FaunusTypeManager.getTypeManager(EmptyConfiguration.immutable());
+        typeManager = FaunusTypeManager.getTypeManager(new ModifiableHadoopConfiguration());
         typeManager.setSchemaProvider(TestSchemaProvider.MULTIPLICITY_ID);
         typeManager.clear();
     }
@@ -36,7 +38,7 @@ public class FaunusEdgeTest extends TestCase {
 
     public void testSimpleSerialization() throws IOException {
 
-        StandardFaunusEdge edge1 = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows");
+        StandardFaunusEdge edge1 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "knows");
         assertEquals(edge1.getLabel(), "knows");
         assertEquals(edge1.getVertex(Direction.OUT).getLongId(), 1l);
         assertEquals(edge1.getVertex(Direction.IN).getLongId(), 2l);
@@ -49,7 +51,7 @@ public class FaunusEdgeTest extends TestCase {
         // 1 + 1 + 1 + 1 + 10 byte label = 13
 
 
-        StandardFaunusEdge edge2 = new StandardFaunusEdge(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        StandardFaunusEdge edge2 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(edge1, edge2);
         assertNull(edge2.getId());
         assertEquals(edge2.getLongId(), -1l);
@@ -60,7 +62,7 @@ public class FaunusEdgeTest extends TestCase {
     }
 
     public void testRelationIdentifier() {
-        StandardFaunusEdge edge1 = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 11, 12, "knows");
+        StandardFaunusEdge edge1 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 11, 12, "knows");
         RelationIdentifier eid = (RelationIdentifier) edge1.getId();
         assertNotNull(eid);
         long[] eidl = eid.getLongRepresentation();
@@ -74,7 +76,7 @@ public class FaunusEdgeTest extends TestCase {
 
     public void testSerializationWithProperties() throws IOException {
 
-        StandardFaunusEdge edge1 = new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows");
+        StandardFaunusEdge edge1 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "knows");
         edge1.setProperty("weight", 0.5f);
         edge1.setProperty("type", "coworker");
         edge1.setProperty("alive", true);
@@ -89,7 +91,7 @@ public class FaunusEdgeTest extends TestCase {
         DataOutputStream out = new DataOutputStream(bytes);
         edge1.write(out);
 
-        StandardFaunusEdge edge2 = new StandardFaunusEdge(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        StandardFaunusEdge edge2 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(edge1, edge2);
         assertEquals(edge2.getLongId(), -1l);

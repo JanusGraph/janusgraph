@@ -50,17 +50,17 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         this.graph = new TitanHBaseHadoopGraph(titanSetup);
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, titanInputConf.get(HBaseStoreManager.HBASE_TABLE));
+        config.set(TableInputFormat.INPUT_TABLE, inputConf.get(HBaseStoreManager.HBASE_TABLE));
         //config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, titanInputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        config.set(HConstants.ZOOKEEPER_QUORUM, inputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
 //        if (basicConf.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-        if (titanInputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(titanInputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (inputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(inputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();
         // TODO the mapping is private in HBaseStoreManager and leaks here -- replace String database/CF names with an enum where each value has both a short and long name
-        if (titanInputConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
+        if (inputConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
             scanner.addFamily("e".getBytes());
             edgestoreFamily = Bytes.toBytes("e");
         } else {

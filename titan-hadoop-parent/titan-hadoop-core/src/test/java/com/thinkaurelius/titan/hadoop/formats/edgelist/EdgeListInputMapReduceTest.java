@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 
@@ -29,9 +31,9 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testSimpleElementList() throws IOException {
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
-        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "knows"));
         Map<Long, FaunusVertex> results = BaseTest.run(mapReduceDriver);
         assertEquals(results.size(), 2);
         assertEquals(results.get(1l).getLongId(), 1);
@@ -43,12 +45,12 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testMultiVertexElementList() throws IOException {
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
-        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "knows"));
         Map<Long, FaunusVertex> results = BaseTest.run(mapReduceDriver);
         assertEquals(results.size(), 2);
         assertEquals(results.get(1l).getLongId(), 1);
@@ -60,14 +62,14 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testMultiVertexMultiEdgeElementList() throws IOException {
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 3));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 3));
-        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(EmptyConfiguration.immutable(), 1, 2, "likes"));
-        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(EmptyConfiguration.immutable(), 2, 3, "hates"));
-        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(EmptyConfiguration.immutable(), 3, 1, "likes"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 3));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(new ModifiableHadoopConfiguration(), 3));
+        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "likes"));
+        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 2, 3, "hates"));
+        mapReduceDriver.addInput(NullWritable.get(), new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 3, 1, "likes"));
         Map<Long, FaunusVertex> results = BaseTest.run(mapReduceDriver);
         assertEquals(results.size(), 3);
         assertEquals(results.get(1l).getLongId(), 1);
@@ -103,18 +105,18 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testElementProperties() throws IOException {
-        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 1);
+        FaunusVertex a = new FaunusVertex(new ModifiableHadoopConfiguration(), 1);
         a.setProperty("name", "marko");
         a.setProperty("age", 33);
 
-        FaunusVertex b = new FaunusVertex(EmptyConfiguration.immutable(), 2);
+        FaunusVertex b = new FaunusVertex(new ModifiableHadoopConfiguration(), 2);
         b.setProperty("name", "josh");
 
-        FaunusVertex c = new FaunusVertex(EmptyConfiguration.immutable(), 1);
+        FaunusVertex c = new FaunusVertex(new ModifiableHadoopConfiguration(), 1);
         c.setProperty("name", "marko");
         c.setProperty("ssn", "12345");
 
-        StandardFaunusEdge e = new StandardFaunusEdge(EmptyConfiguration.immutable(), a.getLongId(), b.getLongId(), "knows");
+        StandardFaunusEdge e = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), a.getLongId(), b.getLongId(), "knows");
         e.setProperty("weight", 1.2f);
 
         mapReduceDriver.addInput(NullWritable.get(), a);

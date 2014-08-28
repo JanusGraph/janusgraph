@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats.hbase;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 
-import org.apache.hadoop.conf.Configuration;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -37,17 +38,20 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
 
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        this.reader.initialize(inputSplit, taskAttemptContext);
-        this.configuration = DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext);
+        reader.initialize(inputSplit, taskAttemptContext);
+        configuration = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext));
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        while (this.reader.nextKeyValue()) {
-            final FaunusVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(edgestoreFamilyBytes));
+        while (reader.nextKeyValue()) {
+            final FaunusVertex temp = graph.readHadoopVertex(
+                    configuration,
+                    reader.getCurrentKey().copyBytes(),
+                    reader.getCurrentValue().getMap().get(edgestoreFamilyBytes));
             if (null != temp) {
-                this.vertex = temp;
-                this.vertexQuery.filterRelationsOf(this.vertex);
+                vertex = temp;
+                vertexQuery.filterRelationsOf(vertex);
                 return true;
             }
         }

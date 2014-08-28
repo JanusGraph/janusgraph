@@ -6,13 +6,26 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.Map;
 
+import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+
 public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
 
+    private static final ModifiableHadoopConfiguration IMMUTABLE_CFG_WITH_RESOURCES;
+
+    static {
+        Configuration immutable = DEFAULT_COMPAT.newImmutableConfiguration(new Configuration(true));
+        IMMUTABLE_CFG_WITH_RESOURCES = new ModifiableHadoopConfiguration(immutable);
+    }
+
     private final Configuration conf;
+
+    private volatile Boolean trackPaths;
+    private volatile Boolean trackState;
 
     public ModifiableHadoopConfiguration() {
         this(new Configuration());
@@ -23,6 +36,23 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         this.conf = c;
     }
 
+    /**
+     * Returns a ModifiableHadoopConfiguration backed by a an immutable Hadoop Configuration with
+     * default resources loaded (e.g. the contents of core-site.xml, core-default.xml, mapred-site.xml, ...).
+     *
+     * Immutability is guaranteed by encapsulating the Hadoop Configuration in a forwarder class that
+     * throws exceptions on data modification attempts.  Reads are supported though.
+     *
+     * @return
+     */
+    public static ModifiableHadoopConfiguration immutableWithResources() {
+        return IMMUTABLE_CFG_WITH_RESOURCES;
+    }
+
+    public static ModifiableHadoopConfiguration withoutResources() {
+        return new ModifiableHadoopConfiguration(new Configuration(false));
+    }
+
     public static ModifiableHadoopConfiguration of(Configuration c) {
         Preconditions.checkNotNull(c);
         return new ModifiableHadoopConfiguration(c);
@@ -31,6 +61,39 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
     public Configuration getHadoopConfiguration() {
         return conf;
     }
+
+    @Override
+    public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
+        if (TitanHadoopConfiguration.PIPELINE_TRACK_PATHS == option) {
+            // Double writing this from concurrent threads is fine, mutex is overkill
+            Boolean b = trackPaths;
+            if (null == b) {
+                b = (Boolean)super.get(option, umbrellaElements);
+                trackPaths = b;
+            }
+            return (O)b;
+        } else if (TitanHadoopConfiguration.PIPELINE_TRACK_STATE == option) {
+            Boolean b = trackState;
+            if (null == b) {
+                b = (Boolean) super.get(option, umbrellaElements);
+                trackState = b;
+            }
+            return (O) b;
+        } else {
+            return super.get(option, umbrellaElements);
+        }
+    }
+
+    @Override
+    public<O> ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
+        if (TitanHadoopConfiguration.PIPELINE_TRACK_PATHS == option) {
+            trackPaths = null;
+        } else if (TitanHadoopConfiguration.PIPELINE_TRACK_STATE == option) {
+            trackState = null;
+        }
+        return super.set(option, value, umbrellaElements);
+    }
+
 
     public void setAllOutput(Map<ConfigElement.PathIdentifier, Object> entries) {
         ModifiableConfiguration out = getOutputConf();
@@ -76,5 +139,15 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
 
     public ModifiableConfiguration getOutputConf() {
         return getOutputConf(GraphDatabaseConfiguration.ROOT_NS);
+    }
+
+    // Hack to support deprecation of the old edge copy dir option
+    public Direction getEdgeCopyDirection() {
+        if (has(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION))
+            return get(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION);
+        if (has(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR))
+            return get(TitanHadoopConfiguration.INPUT_EDGE_COPY_DIR);
+
+        return TitanHadoopConfiguration.INPUT_EDGE_COPY_DIRECTION.getDefaultValue();
     }
 }

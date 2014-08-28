@@ -16,6 +16,6 @@ public class GraphSONOutputFormat extends HadoopFileOutputFormat {
 
     @Override
     public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
-        return new GraphSONRecordWriter(super.getDataOuputStream(job));
+        return new GraphSONRecordWriter(new HadoopGraphSONUtility(faunusConf), super.getDataOuputStream(job));
     }
 }

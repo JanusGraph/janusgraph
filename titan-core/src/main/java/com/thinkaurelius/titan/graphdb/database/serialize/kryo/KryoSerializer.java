@@ -23,13 +23,13 @@ import java.util.*;
 
 public class KryoSerializer {
 
-    private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
-
+    public static final int DEFAULT_MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10 MB in bytes
     public static final int KRYO_ID_OFFSET = 50;
 
     private final boolean registerRequired;
     private final ThreadLocal<Kryo> kryos;
     private final Map<Integer,TypeRegistration> registrations;
+    private final int maxOutputSize;
 
     private static final StaticBuffer.Factory<Input> INPUT_FACTORY = new StaticBuffer.Factory<Input>() {
         @Override
@@ -41,11 +41,17 @@ public class KryoSerializer {
     };
 
     public KryoSerializer(final List<Class> defaultRegistrations) {
-        this(defaultRegistrations,false);
+        this(defaultRegistrations, false);
     }
 
+
     public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired) {
-        this.registerRequired=registrationRequired;
+        this(defaultRegistrations, registrationRequired, DEFAULT_MAX_OUTPUT_SIZE);
+    }
+
+    public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired, int maxOutputSize) {
+        this.maxOutputSize = maxOutputSize;
+        this.registerRequired = registrationRequired;
         this.registrations = new HashMap<Integer,TypeRegistration>();
 
         for (Class clazz : defaultRegistrations) {
@@ -96,7 +102,7 @@ public class KryoSerializer {
     }
 
     private Output getOutput(Object object) {
-        return new Output(128,MAX_OUTPUT_SIZE);
+        return new Output(128,maxOutputSize);
     }
 
     private void writeOutput(WriteBuffer out, Output output) {
@@ -139,7 +145,7 @@ public class KryoSerializer {
             else if (!isValidClass(o.getClass())) status=Boolean.FALSE;
             else {
                 try {
-                    Output out = new Output(128, MAX_OUTPUT_SIZE);
+                    Output out = new Output(128, maxOutputSize);
                     kryo.writeClassAndObject(out,o);
                     Input in = new Input(out.getBuffer(),0,out.position());
                     Object ocopy = kryo.readClassAndObject(in);
