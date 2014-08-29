@@ -8,26 +8,14 @@ Elasticsearch
 [quote,'http://elasticsearch.org/[Elasticsearch Homepage]']
 Elasticsearch is a flexible and powerful open source, distributed real-time search and analytics engine for the cloud. Elasticsearch allows you to start small, but will grow with your business. It is built to scale horizontally out of the box. As you need more capacity, just add more nodes, and let the cluster reorganize itself to take advantage of the extra hardware. Elasticsearch clusters are resilient – they will detect and remove failed nodes, and reorganize themselves to ensure that your data is safe and accessible.
 
-Titan supports http://elasticsearch.org[Elasticsearch] as an index backend.  Titan can connect to Elasticsearch using either of the official Java client interfaces.  Titan can talk to a remote Elasticsearch cluster or embed an Elasticsearch node in the same JVM used by Titan.
-
-The configuration sections of this chapter assume some familiarity with the difference between Elasticsearch's "Node client" and "Transport client".  For background on these two Elasticsearch clients and their comparative tradeoffs, see these links to the external Elasticsearch documentation:
-
-* http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/_talking_to_elasticsearch.html[Elasticsearch Docs: Talking to Elasticsearch]
-* http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html[Elasticsearch Docs: Java Clients]
-
-Feature Support and Requirements
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Titan supports http://elasticsearch.org[Elasticsearch] as an index backend.  Here are some of the Elasticsearch features supported by Titan:
 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
-
 * *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given circle. Only supports points for indexing and circles for querying.
-
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
-
-* *Flexible Configuration*: Supports both of the two official Elasticsearch Java client implementations and customization of arbitrary client settings.
+* *Flexible Configuration*: Supports embedded or remote operation, custom transport and discovery, and open-ended ES settings customization. 
 
 Please see <<version-compat>> for details on what versions of ES will work with Titan.
-
 
 [IMPORTANT]
 Titan currently requires that http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html#_enabling_dynamic_scripting[Elasticsearch's dynamic scripting] be enabled for at least the Groovy lang module.  This `script.disable_dynamic` setting must be `false` or `sandbox` on the Elasticsearch cluster.  This configuration requirement may be removed in future Titan versions.
@@ -70,11 +58,19 @@ index.search.backend=elasticsearch
 
 The `NODE` and `TRANSPORT_CLIENT` values tell Titan to use either the Node or Transport client.  One or the other must be specified to use this track.  Do not specify both in the same configuration.
 
+
+[TIP]
+This chapter assumes some familiarity with the difference between Elasticsearch's "Node client" and "Transport client".  For background on these two Elasticsearch clients and their comparative tradeoffs, see these links to the external Elasticsearch documentation:
++
+* http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/_talking_to_elasticsearch.html[Elasticsearch Docs: Talking to Elasticsearch]
+* http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html[Elasticsearch Docs: Java Clients]
+
+
 Configuration on the `interface` track proceeds through roughly the following steps:
 
 . If the Titan config option `index.[X].conf-file` is set, it's interpreted as the name of an Elasticsearch config file and its contents are copied into the ES transport or node configuration
 . Any Titan config options starting with `index.[X].elasticsearch.ext.` are copied verbatim to the ES transport or node configuration
-. Any other ES-related Titan config options listed in Titan's config file are copied into their respective ES transport or node configuration settings
+. Any other ES-related Titan config options listed in Titan's config file are copied into their respective ES transport or node configuration settings (<<titan-config-ref>> lists these options)
 . `script.disable_dynamic` is set to false
 
 After these steps, the Transport client will consult Titan's `index.[X].hostname` setting for a list of ES nodes to use as request endpoints.  This setting does not apply for the Node client.
@@ -307,7 +303,7 @@ In the above configuration, the index backend is named `search`. Replace `search
 Legacy Configuration Options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Refer to <<titan-config-ref>> for a complete listing of all Elasticsearch specific configuration options in addition to the general Titan configuration options.  This listing lists just options considered by the legacy configuration track.  All options listed below must start with a `index.[X].` prefix as described at the start of this chapter, but the prefix is omitted below for brevity.
+Refer to <<titan-config-ref>> for a complete listing of all options.  This section contains the subset of ES options that are effective on the legacy configuration track.  All options listed below must start with a `index.[X].` prefix as described at the start of this chapter, but the prefix is omitted below for brevity.
 
 * *elasticsearch.index-name*: Name of the index
 * *elasticsearch.cluster-name*: Name of the Elasticsearch cluster. If none is defined, the name will be ignored.
