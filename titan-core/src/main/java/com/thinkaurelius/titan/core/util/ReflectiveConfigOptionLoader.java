@@ -4,9 +4,14 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.util.time.Timer;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import org.reflections.Reflections;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
@@ -17,12 +22,265 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
-public class ReflectiveConfigOptionLoader {
+/**
+ * This class supports iteration over Titan's ConfigNamespaces at runtime.
+ *
+ * Titan's ConfigOptions and ConfigNamespaces are defined by public static final fields
+ * spread across more than ten classes in various titan modules/jars.  A ConfigOption
+ * effectively does not exist at runtime until the static initializer of the field in
+ * which it is defined is executed by the JVM.  This class contains utility methods
+ * internally called by Titan to preload ConfigOptions when performing lookups or
+ * iterations in which a ConfigOption might not necessarily be loaded yet (such as
+ * when iterating over the collection of ConfigOption children in a ConfigNamespace).
+ * Normally, only Titan internals should use this class.
+ */
+public enum ReflectiveConfigOptionLoader {
+    INSTANCE;
+
+    private static final String SYS_PROP_NAME = "titan.load.cfg.opts";
+    private static final String ENV_VAR_NAME  = "TITAN_LOAD_CFG_OPTS";
 
     private static final Logger log =
             LoggerFactory.getLogger(ReflectiveConfigOptionLoader.class);
 
-    private static boolean loaded = false;
+    private volatile LoaderConfiguration cfg = new LoaderConfiguration();
+
+    public ReflectiveConfigOptionLoader setUseThreadContextLoader(boolean b) {
+        cfg = cfg.setUseThreadContextLoader(b);
+        return this;
+    }
+
+    public ReflectiveConfigOptionLoader setUseCallerLoader(boolean b) {
+        cfg = cfg.setUseCallerLoader(b);
+        return this;
+    }
+
+    public ReflectiveConfigOptionLoader setPreferredClassLoaders(List<ClassLoader> loaders) {
+        cfg = cfg.setPreferredClassLoaders(ImmutableList.copyOf(loaders));
+        return this;
+    }
+
+    public ReflectiveConfigOptionLoader setEnabled(boolean enabled) {
+        cfg = cfg.setEnabled(enabled);
+        return this;
+    }
+
+    public ReflectiveConfigOptionLoader reset() {
+        cfg = new LoaderConfiguration();
+        return this;
+    }
+
+    /**
+     * Reflectively load types at most once over the life of this class. This
+     * method is synchronized and uses a static class field to ensure that it
+     * calls {@link #load()} only on the first invocation and does nothing
+     * thereafter. This is the right behavior as long as the classpath doesn't
+     * change in the middle of the enclosing JVM's lifetime.
+     */
+    public void loadAll() {
+
+        LoaderConfiguration cfg = this.cfg;
+
+        if (!cfg.enabled || cfg.allInit)
+            return;
+
+        load();
+
+        cfg.allInit = true;
+    }
+
+//    /**
+//     * This returned iterator is traversed only for its side effect.
+//     * It's a lame imitation of a coprocess.
+//     */
+//    public Iterator<Void> loadStandardIterator(final Class<?> caller) {
+//
+//        final LoaderConfiguration cfg = this.cfg;
+//
+//        if (!cfg.enabled || cfg.standardInit || cfg.allInit)
+//            Iterators.emptyIterator();
+//
+//        /*
+//         * Aside from the classes in titan-core, we can't guarantee the presence
+//         * of these classes at runtime.  That's why they're loaded reflectively.
+//         * We could probably hard-code the initialization of the titan-core classes,
+//         * but the benefit isn't substantial.
+//         */
+//        final List<String> classnames = ImmutableList.of(
+//                "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager",
+//                "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
+//                "com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager",
+//                "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
+//                "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex",
+//                "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog",
+//                "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager",
+//                "com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration",
+//                "com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
+//                "com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner",
+//                //"com.thinkaurelius.titan.graphdb.TestMockIndexProvider",
+//                //"com.thinkaurelius.titan.graphdb.TestMockLog",
+//                "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+//
+////        Timer t = new Timer(Timestamps.MILLI);
+////        t.start();
+//
+//        // Iterate over classloaders until the first successful load, then keep that
+//        // loader even if it fails to load classes further down the classnames list.
+//
+////        return Iterators.transform(classnames.iterator(), new Function<String, Void>() {
+//
+//        return new Iterator<Void>() {
+//
+//            private final List<ClassLoader> loaders = getClassLoaders(cfg, caller);
+//            private boolean foundLoader = false;
+//            private ClassLoader cl = null;
+//            private int loadedClasses = 0;
+//            private Iterator<String> classIterator = classnames.iterator();
+//
+//            @Override
+//            public boolean hasNext() {
+//                boolean hasNext = classIterator.hasNext();
+//                if (!hasNext) {
+//                    cfg.standardInit = true;
+//                }
+//                return hasNext;
+//            }
+//
+//            @Override
+//            public Void next() {
+//                String c = classIterator.next();
+//
+//                if (foundLoader) {
+//                    try {
+//                        Class.forName(c, true, cl);
+//                        loadedClasses++;
+//                        log.debug("Loaded class {} with selected loader {}", c, cl);
+//                    } catch (ClassNotFoundException e) {
+//                        log.debug("Unable to load class {} with selected loader {}", c, cl, e);
+//                    }
+//                } else {
+//                    for (ClassLoader candidate : loaders) {
+//                        cl = candidate;
+//                        try {
+//                            Class.forName(c, true, cl);
+//                            loadedClasses++;
+//                            log.debug("Loaded class {} with loader {}", c, cl);
+//                            log.debug("Located functioning classloader {}; using it for remaining classload attempts", cl);
+//                            foundLoader = true;
+//                            break;
+//                        } catch (ClassNotFoundException e) {
+//                            log.debug("Unable to load class {} with loader {}", c, cl, e);
+//                        }
+//                    }
+//                }
+//
+//                return null;
+//            }
+//
+//            @Override
+//            public void remove() {
+//                throw new UnsupportedOperationException("Remove is not supported");
+//            }
+//        };
+////        });
+//
+////        log.info("Loaded and initialized config classes: {} OK out of {} attempts in {}", loadedClasses, classnames.size(), t.elapsed());
+////        standardInit = true;
+//    }
+
+    public void loadStandard(Class<?> caller) {
+
+        LoaderConfiguration cfg = this.cfg;
+
+        if (!cfg.enabled || cfg.standardInit || cfg.allInit)
+            return;
+
+        /*
+         * Aside from the classes in titan-core, we can't guarantee the presence
+         * of these classes at runtime.  That's why they're loaded reflectively.
+         * We could probably hard-code the initialization of the titan-core classes,
+         * but the benefit isn't substantial.
+         */
+        List<String> classnames = ImmutableList.of(
+            "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager",
+            "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
+            "com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager",
+            "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
+            "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex",
+            "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog",
+            "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager",
+            "com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration",
+            "com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
+            "com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner",
+            //"com.thinkaurelius.titan.graphdb.TestMockIndexProvider",
+            //"com.thinkaurelius.titan.graphdb.TestMockLog",
+            "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+
+        Timer t = new Timer(Timestamps.MILLI);
+        t.start();
+
+        List<ClassLoader> loaders = getClassLoaders(cfg, caller);
+
+        // Iterate over classloaders until the first successful load, then keep that
+        // loader even if it fails to load classes further down the classnames list.
+
+        boolean foundLoader = false;
+        ClassLoader cl = null;
+        int loadedClasses = 0;
+
+        for (String c : classnames) {
+            if (foundLoader) {
+                try {
+                    Class.forName(c, true, cl);
+                    loadedClasses++;
+                    log.debug("Loaded class {} with selected loader {}", c, cl);
+                } catch (ClassNotFoundException e) {
+                    log.debug("Unable to load class {} with selected loader {}", c, cl, e);
+                }
+            } else {
+                for (ClassLoader candidate : loaders) {
+                    cl = candidate;
+                    try {
+                        Class.forName(c, true, cl);
+                        loadedClasses++;
+                        log.debug("Loaded class {} with loader {}", c, cl);
+                        log.debug("Located functioning classloader {}; using it for remaining classload attempts", cl);
+                        foundLoader = true;
+                        break;
+                    } catch (ClassNotFoundException e) {
+                        log.debug("Unable to load class {} with loader {}", c, cl, e);
+                    }
+                }
+            }
+        }
+
+        log.info("Loaded and initialized config classes: {} OK out of {} attempts in {}", loadedClasses, classnames.size(), t.elapsed());
+
+        cfg.standardInit = true;
+    }
+
+    private List<ClassLoader> getClassLoaders(LoaderConfiguration cfg, Class<?> caller) {
+
+        ImmutableList.Builder<ClassLoader> builder = ImmutableList.<ClassLoader>builder();
+
+        builder.addAll(cfg.preferredLoaders);
+        for (ClassLoader c : cfg.preferredLoaders)
+            log.debug("Added preferred classloader to config option loader chain: {}", c);
+
+        if (cfg.useThreadContextLoader) {
+            ClassLoader c = Thread.currentThread().getContextClassLoader();
+            builder.add(c);
+            log.debug("Added thread context classloader to config option loader chain: {}", c);
+        }
+
+        if (cfg.useCallerLoader) {
+            ClassLoader c = caller.getClassLoader();
+            builder.add(c);
+            log.debug("Added caller classloader to config option loader chain: {}", c);
+        }
+
+        return builder.build();
+    }
 
     /**
      * Use reflection to iterate over the classpath looking for
@@ -30,7 +288,7 @@ public class ReflectiveConfigOptionLoader {
      * annotated types found. This method's runtime is roughly proportional to
      * the number of elements in the classpath (and can be substantial).
      */
-    public static void load() {
+    private synchronized void load() {
         try {
             loadAllClassesUnsafe();
         } catch (Throwable t) {
@@ -41,7 +299,7 @@ public class ReflectiveConfigOptionLoader {
         }
     }
 
-    private static void loadAllClassesUnsafe() {
+    private void loadAllClassesUnsafe() {
         int loadCount = 0;
         int errorCount = 0;
 
@@ -75,10 +333,7 @@ public class ReflectiveConfigOptionLoader {
 
     }
 
-    /**
-     * Attempt to force all public stat
-     */
-    private static int loadSingleClassUnsafe(Class<?> c) {
+    private int loadSingleClassUnsafe(Class<?> c) {
         int loadCount = 0;
 
         log.trace("Looking for ConfigOption public static fields on class {}", c);
@@ -106,20 +361,64 @@ public class ReflectiveConfigOptionLoader {
         return loadCount;
     }
 
-    /**
-     * Reflectively load types at most once over the life of this class. This
-     * method is synchronized and uses a static class field to ensure that it
-     * calls {@link #load()} only on the first invocation and does nothing
-     * thereafter. This is the right behavior as long as the classpath doesn't
-     * change in the middle of the enclosing JVM's lifetime.
-     */
-    public synchronized static void loadOnce() {
+    private static class LoaderConfiguration {
 
-        if (loaded)
-            return;
+        private static final Logger log =
+                LoggerFactory.getLogger(LoaderConfiguration.class);
 
-        load();
+        private final boolean enabled;
+        private final List<ClassLoader> preferredLoaders;
+        private final boolean useCallerLoader;
+        private final boolean useThreadContextLoader;
+        private volatile boolean allInit = false;
+        private volatile boolean standardInit = false;
 
-        loaded = true;
+        private LoaderConfiguration(boolean enabled, List<ClassLoader> preferredLoaders,
+                                    boolean useCallerLoader, boolean useThreadContextLoader) {
+            this.enabled = enabled;
+            this.preferredLoaders = preferredLoaders;
+            this.useCallerLoader = useCallerLoader;
+            this.useThreadContextLoader = useThreadContextLoader;
+        }
+
+        private LoaderConfiguration() {
+            enabled = getEnabledByDefault();
+            preferredLoaders = ImmutableList.of(ReflectiveConfigOptionLoader.class.getClassLoader());
+            useCallerLoader = true;
+            useThreadContextLoader = true;
+        }
+
+        private boolean getEnabledByDefault() {
+            List<String> sources =
+                    Arrays.asList(System.getProperty(SYS_PROP_NAME), System.getenv(ENV_VAR_NAME));
+
+            for (String setting : sources) {
+                if (null != setting) {
+                    boolean enabled = setting.equalsIgnoreCase("true");
+                    log.debug("Option loading enabled={}", enabled);
+                    return enabled;
+                }
+            }
+
+            log.debug("Option loading enabled by default");
+
+            return true;
+        }
+
+        LoaderConfiguration setEnabled(boolean b) {
+            return new LoaderConfiguration(b, preferredLoaders, useCallerLoader, useThreadContextLoader);
+        }
+
+        LoaderConfiguration setPreferredClassLoaders(List<ClassLoader> cl) {
+            return new LoaderConfiguration(enabled, cl, useCallerLoader, useThreadContextLoader);
+        }
+
+        LoaderConfiguration setUseCallerLoader(boolean b) {
+            return new LoaderConfiguration(enabled, preferredLoaders, b, useThreadContextLoader);
+        }
+
+        LoaderConfiguration setUseThreadContextLoader(boolean b) {
+            return new LoaderConfiguration(enabled, preferredLoaders, useCallerLoader, b);
+        }
     }
 }

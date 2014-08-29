@@ -88,7 +88,6 @@ public class TitanFactory {
      * @return Titan graph database
      */
     public static TitanGraph open(ReadConfiguration configuration) {
-        ReflectiveConfigOptionLoader.loadOnce();
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
 
@@ -110,7 +109,6 @@ public class TitanFactory {
 
         private Builder() {
             super(GraphDatabaseConfiguration.buildConfiguration());
-            ReflectiveConfigOptionLoader.loadOnce();
         }
 
         /**

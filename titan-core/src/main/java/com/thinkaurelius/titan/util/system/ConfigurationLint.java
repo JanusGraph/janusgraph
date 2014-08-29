@@ -33,9 +33,6 @@ public class ConfigurationLint {
     }
 
     public static Status validate(String filename) throws IOException {
-
-        ReflectiveConfigOptionLoader.loadOnce();
-
         Properties p = new Properties();
         FileInputStream fis = new FileInputStream(filename);
         p.load(fis);

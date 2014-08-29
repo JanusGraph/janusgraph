@@ -48,11 +48,11 @@ public class UserModifiableConfiguration implements TitanConfiguration {
                 for (String sub : config.getContainedNamespaces(ns,pp.umbrellaElements)) {
                     s.append("+ ").append(sub).append("\n");
                 }
-            } else {
+            } /* else {
                 for (ConfigElement element : ns.getChildren()) {
                     s.append(ConfigElement.toStringSingle(element)).append("\n");
                 }
-            }
+            } */
             return s.toString();
         } else {
             Object value;
