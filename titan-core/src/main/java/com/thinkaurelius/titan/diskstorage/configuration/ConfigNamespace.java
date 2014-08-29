@@ -62,18 +62,6 @@ public class ConfigNamespace extends ConfigElement {
     public ConfigElement getChild(String name) {
 
         ConfigElement child = children.get(name);
-//        if (null == child) {
-//            Iterator<Void> loader = ReflectiveConfigOptionLoader.INSTANCE.loadStandardIterator(this.getClass());
-//            while (loader.hasNext() && null == child) {
-//                loader.next();
-//                child = children.get(name);
-//            }
-//
-//            if (null == child) {
-//                ReflectiveConfigOptionLoader.INSTANCE.loadAll();
-//                child = children.get(name);
-//            }
-//        }
 
         if (null == child) {
             // Attempt to load
