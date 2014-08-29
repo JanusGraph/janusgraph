@@ -68,7 +68,7 @@ public class ConfigNamespace extends ConfigElement {
             ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
             child = children.get(name);
             if (null == child) {
-                ReflectiveConfigOptionLoader.INSTANCE.loadAll();
+                ReflectiveConfigOptionLoader.INSTANCE.loadAll(this.getClass());
                 child = children.get(name);
             }
         }

@@ -77,14 +77,14 @@ public enum ReflectiveConfigOptionLoader {
      * thereafter. This is the right behavior as long as the classpath doesn't
      * change in the middle of the enclosing JVM's lifetime.
      */
-    public void loadAll() {
+    public void loadAll(Class<?> caller) {
 
         LoaderConfiguration cfg = this.cfg;
 
         if (!cfg.enabled || cfg.allInit)
             return;
 
-        load();
+        load(cfg, caller);
 
         cfg.allInit = true;
     }
@@ -189,9 +189,9 @@ public enum ReflectiveConfigOptionLoader {
      * annotated types found. This method's runtime is roughly proportional to
      * the number of elements in the classpath (and can be substantial).
      */
-    private synchronized void load() {
+    private synchronized void load(LoaderConfiguration cfg, Class<?> caller) {
         try {
-            loadAllClassesUnsafe();
+            loadAllClassesUnsafe(cfg, caller);
         } catch (Throwable t) {
             // We could probably narrow the caught exception type to Error or maybe even just LinkageError,
             // but in this case catching anything via Throwable seems appropriate.  RuntimeException is
@@ -200,11 +200,13 @@ public enum ReflectiveConfigOptionLoader {
         }
     }
 
-    private void loadAllClassesUnsafe() {
+    private void loadAllClassesUnsafe(LoaderConfiguration cfg, Class<?> caller) {
         int loadCount = 0;
         int errorCount = 0;
 
-        Collection<URL> scanUrls = ClasspathHelper.forJavaClassPath();
+        List<ClassLoader> loaderList = getClassLoaders(cfg, caller);
+
+        Collection<URL> scanUrls = ClasspathHelper.forClassLoader(loaderList.toArray(new ClassLoader[loaderList.size()]));
         Iterator<URL> i = scanUrls.iterator();
         while (i.hasNext()) {
             File f = new File(i.next().getPath());
