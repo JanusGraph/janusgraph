@@ -1,10 +1,15 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
+
+import javax.annotation.Nullable;
 
 import static org.junit.Assert.*;
 
@@ -125,9 +130,25 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void printTitanNS() {
-        System.out.println(ConfigElement.toString(GraphDatabaseConfiguration.ROOT_NS));
+    public void testDisableConfOptReflection() {
+        ReflectiveConfigOptionLoader.INSTANCE.setEnabled(false);
+        ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
+
+        assertFalse(Iterables.any(GraphDatabaseConfiguration.LOG_NS.getChildren(), new Predicate<ConfigElement>() {
+            @Override
+            public boolean apply(ConfigElement elem) {
+                return elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time");
+            }
+        }));
+
+        ReflectiveConfigOptionLoader.INSTANCE.setEnabled(true);
+        ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
+
+        assertTrue(Iterables.any(GraphDatabaseConfiguration.LOG_NS.getChildren(), new Predicate<ConfigElement>() {
+            @Override
+            public boolean apply(ConfigElement elem) {
+                return elem instanceof ConfigOption<?> && elem.getName().equals("max-write-time");
+            }
+        }));
     }
-
-
 }
