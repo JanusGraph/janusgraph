@@ -9,6 +9,33 @@
     min-width: 25%;
 }
 
+/* Header ch next/prev link styles */
+.sticky-chapter-link, .fixed-chapter-link {
+    font: 14px/16px 'MuseoSlab500Regular',arial,helvetica,sans-serif !important;
+    font-family: 'Open Sans',Arial,Helvetica,sans-serif !important;
+    font-size: 15px !important;
+}
+
+.sticky-chapter-link {
+    line-height: 69px !important;
+    height: 69px;
+}
+
+.fixed-chapter-link {
+    line-height: 89px !important;
+    height: 89px;
+}
+
+.fixed-prev-chapter-link, .sticky-prev-chapter-link {
+    float: left;
+    margin-right: 100px;
+}
+
+.fixed-next-chapter-link, .sticky-next-chapter-link {
+    float: right;
+    margin-left: 100px;
+}
+
 .navheader {
     background-color: #F0F0F0;
     padding: 6px 30px;

@@ -21,6 +21,8 @@
   
   <xsl:param name="base.dir">$MAVEN{htmlchunk.output.dir}</xsl:param>
   
+  <xsl:param name="titan.top.nav.links" select="1" />
+
   <xsl:param name="generate.toc">
   book         toc,title,table,figure
   book/part    toc,title
@@ -34,7 +36,7 @@
   <xsl:template match="informaltable[@role = 'tss-config-table']" mode="class.value">
     <xsl:value-of select="'tss-config-table'"/>
   </xsl:template>
-  
+
   <xsl:template name="chunk-element-content">
     <xsl:param name="prev"/>
     <xsl:param name="next"/>
@@ -42,14 +44,21 @@
     <xsl:param name="content">
       <xsl:apply-imports/>
     </xsl:param>
-    <xsl:param name="navheader">
+    <xsl:param name="navheader">  
+<!--
+        <xsl:call-template name="titan.header.navigation">
+          <xsl:with-param name="prev" select="$prev"/>
+          <xsl:with-param name="next" select="$next"/>
+          <xsl:with-param name="nav.context" select="$nav.context"/>
+        </xsl:call-template>
+
         <xsl:call-template name="user.header.navigation">
           <xsl:with-param name="prev" select="$prev"/>
           <xsl:with-param name="next" select="$next"/>
           <xsl:with-param name="nav.context" select="$nav.context"/>
         </xsl:call-template>
-  
-        <xsl:call-template name="header.navigation">
+-->
+        <xsl:call-template name="titan.header.navigation">
           <xsl:with-param name="prev" select="$prev"/>
           <xsl:with-param name="next" select="$next"/>
           <xsl:with-param name="nav.context" select="$nav.context"/>
@@ -73,13 +82,14 @@
   
     <html>
       <xsl:call-template name="root.attributes"/>
+
       <xsl:call-template name="html.head">
         <xsl:with-param name="prev" select="$prev"/>
         <xsl:with-param name="next" select="$next"/>
       </xsl:call-template>
   
       <xsl:call-template name="titan.body">
-        <!-- <xsl:with-param name="headercontent" select="$navheader"/> -->
+        <xsl:with-param name="headercontent" select="$navheader"/>
         <xsl:with-param name="maincontent"   select="$content"/>
         <xsl:with-param name="footercontent" select="$navfooter"/>
       </xsl:call-template>
