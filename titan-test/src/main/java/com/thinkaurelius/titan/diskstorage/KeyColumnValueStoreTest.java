@@ -77,8 +77,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     public void close() throws BackendException {
         if (tx != null) tx.commit();
-        store.close();
-        manager.close();
+        if (null != store) store.close();
+        if (null != manager) manager.close();
     }
 
     public void newTx() throws BackendException {

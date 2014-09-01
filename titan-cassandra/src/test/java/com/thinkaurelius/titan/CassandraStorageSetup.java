@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -74,6 +75,10 @@ public class CassandraStorageSetup {
         return getGenericConfiguration(ks, "astyanax");
     }
 
+    public static ModifiableConfiguration getAstyanaxSSLConfiguration(String ks) {
+        return enableSSL(getGenericConfiguration(ks, "astyanax"));
+    }
+
     public static WriteConfiguration getAstyanaxGraphConfiguration(String ks) {
         return getAstyanaxConfiguration(ks).getConfiguration();
     }
@@ -88,6 +93,10 @@ public class CassandraStorageSetup {
 
     public static ModifiableConfiguration getCassandraThriftConfiguration(String ks) {
         return getGenericConfiguration(ks, "cassandrathrift");
+    }
+
+    public static ModifiableConfiguration getCassandraThriftSSLConfiguration(String ks) {
+        return enableSSL(getGenericConfiguration(ks, "cassandrathrift"));
     }
 
     public static WriteConfiguration getCassandraThriftGraphConfiguration(String ks) {
@@ -121,6 +130,14 @@ public class CassandraStorageSetup {
         }
     }
 
+    private static ModifiableConfiguration enableSSL(ModifiableConfiguration mc) {
+        mc.set(AbstractCassandraStoreManager.SSL_ENABLED, true);
+        mc.set(STORAGE_HOSTS, new String[]{ "localhost" });
+        mc.set(AbstractCassandraStoreManager.SSL_TRUSTSTORE_LOCATION,
+                Joiner.on(File.separator).join("target", "cassandra", "conf", "localhost-murmur-ssl", "test.truststore"));
+        mc.set(AbstractCassandraStoreManager.SSL_TRUSTSTORE_PASSWORD, "cassandra");
+        return mc;
+    }
 
     private static void startCleanEmbedded(Paths p) {
         if (!CassandraDaemonWrapper.isStarted()) {

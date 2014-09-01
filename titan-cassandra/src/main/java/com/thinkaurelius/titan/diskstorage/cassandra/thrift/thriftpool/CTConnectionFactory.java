@@ -73,7 +73,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         TSocket socket;
         if (null != cfg.sslTruststoreLocation && !cfg.sslTruststoreLocation.isEmpty()) {
             TSSLTransportFactory.TSSLTransportParameters params = new TSSLTransportFactory.TSSLTransportParameters() {{
-               setKeyStore(cfg.sslTruststoreLocation, cfg.sslTruststorePassword);
+               setTrustStore(cfg.sslTruststoreLocation, cfg.sslTruststorePassword);
             }};
             socket = TSSLTransportFactory.getClientSocket(hostname, cfg.port, cfg.timeoutMS, params);
         } else {
@@ -84,7 +84,9 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         log.trace("Created transport {}", transport);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
-        transport.open();
+        if (!transport.isOpen()) {
+            transport.open();
+        }
 
         if (cfg.username != null) {
             Map<String, String> credentials = new HashMap<String, String>() {{

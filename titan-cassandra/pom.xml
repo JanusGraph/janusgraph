@@ -161,6 +161,42 @@
                             </resources>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>filter-cassandra-murmur-ssl-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur-ssl</outputDirectory>
+                            <filters>
+                                <filter>${basedir}/config/cassandra-filters/localhost-murmur-ssl.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/cassandra</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Need this to avoid corrupting the test keystore with nonsensical macro replacements -->
+                        <id>filter-cassandra-murmur-ssl-config-static</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur-ssl</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/static</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -207,7 +243,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                            <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.SerialTests</excludedGroups>
+                            <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
@@ -226,7 +262,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
-                            <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.SerialTests</excludedGroups>
+                            <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
@@ -235,6 +271,25 @@
                             <threadCount>2</threadCount>
                             <runOrder>random</runOrder>
                             <skip>${test.skip.unordered}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>ssl-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur-ssl -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur-ssl</argLine>
+                            <excludedGroups/>
+                            <groups>com.thinkaurelius.titan.testcategory.CassandraSSLTests</groups>
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <parallel>classes</parallel>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <threadCount>2</threadCount>
+                            <runOrder>random</runOrder>
+                            <skip>${test.skip.ssl}</skip>
                         </configuration>
                     </execution>
                     <execution>
