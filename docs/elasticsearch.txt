@@ -5,8 +5,8 @@ Elasticsearch
 //[.tss-center.tss-width-250]
 //image:titan-elasticsearch.png[]
 
-[quote,'http://elasticsearch.org/[Elasticsearch Homepage]']
-Elasticsearch is a flexible and powerful open source, distributed real-time search and analytics engine for the cloud. Elasticsearch allows you to start small, but will grow with your business. It is built to scale horizontally out of the box. As you need more capacity, just add more nodes, and let the cluster reorganize itself to take advantage of the extra hardware. Elasticsearch clusters are resilient – they will detect and remove failed nodes, and reorganize themselves to ensure that your data is safe and accessible.
+[quote,'http://www.elasticsearch.org/overview/[Elasticsearch Overview]']
+Elasticsearch is a flexible and powerful open source, distributed, real-time search and analytics engine. Architected from the ground up for use in distributed environments where reliability and scalability are must haves, Elasticsearch gives you the ability to move easily beyond simple full-text search.
 
 Titan supports http://elasticsearch.org[Elasticsearch] as an index backend.  Here are some of the Elasticsearch features supported by Titan:
 
