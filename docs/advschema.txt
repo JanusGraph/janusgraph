@@ -34,8 +34,8 @@ Edge TTL is defined on a per-edge label basis, meaning that all edges of that la
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
-tweet = mgmt.makeEdgeLabel('visits').make()
-mgmt.setTTL(tweet,7,TimeUnit.DAYS)
+visits = mgmt.makeEdgeLabel('visits').make()
+mgmt.setTTL(visits,7,TimeUnit.DAYS)
 mgmt.commit()
 
 Note, that modifying an edge resets the TTL for that edge. Also note, that the TTL of an edge label can be modified but it might take some time for this change to propagate to all running Titan instances which means that two different TTLs can be temporarily in use for the same label.
@@ -51,12 +51,12 @@ sensor = mgmt.makePropertyKey('sensor').cardinality(LIST).dataType(Double.class)
 mgmt.setTTL(sensor,21,TimeUnit.DAYS)
 mgmt.commit()
 
-As for edges, modifying an existing property resets the TTL for that property and modifying the TTL for a property key might not immediately take effect.
+As with edge TTL, modifying an existing property resets the TTL for that property and modifying the TTL for a property key might not immediately take effect.
 
 Vertex TTL
 ^^^^^^^^^^
 
-Vertex TTL is defined on a per-vertex label basis, meaning that all vertices of that label have the ame time-to-live. The configured TTL applies to the vertex, its properties, and all incident edges to ensure that the entire vertex is removed from the graph. For this reason, a vertex label must be defined as _static_ before a TTL can be set to rule out any modifications that would invalidate the vertex TTL. Vertex TTL only applies to static vertex labels.
+Vertex TTL is defined on a per-vertex label basis, meaning that all vertices of that label have the same time-to-live. The configured TTL applies to the vertex, its properties, and all incident edges to ensure that the entire vertex is removed from the graph. For this reason, a vertex label must be defined as _static_ before a TTL can be set to rule out any modifications that would invalidate the vertex TTL. Vertex TTL only applies to static vertex labels.
 
 [source,gremlin]
 mgmt = g.getManagementSystem()
