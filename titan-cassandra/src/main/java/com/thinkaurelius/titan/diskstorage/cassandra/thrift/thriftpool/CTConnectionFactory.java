@@ -73,7 +73,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         TSocket socket;
         if (null != cfg.sslTruststoreLocation && !cfg.sslTruststoreLocation.isEmpty()) {
             TSSLTransportFactory.TSSLTransportParameters params = new TSSLTransportFactory.TSSLTransportParameters() {{
-               setKeyStore(cfg.sslTruststoreLocation, cfg.sslTruststorePassword);
+               setTrustStore(cfg.sslTruststoreLocation, cfg.sslTruststorePassword);
             }};
             socket = TSSLTransportFactory.getClientSocket(hostname, cfg.port, cfg.timeoutMS, params);
         } else {
