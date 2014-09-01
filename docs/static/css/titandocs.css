@@ -36,6 +36,13 @@
     margin-left: 100px;
 }
 
+/* Static anchor offset to compensate for the height of the floating header */
+a[name] {
+    padding-top: 88px;
+    margin-top: -88px;
+    display: inline-block;
+}
+
 .navheader {
     background-color: #F0F0F0;
     padding: 6px 30px;
