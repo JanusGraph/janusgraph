@@ -79,7 +79,10 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Boolean> CLIENT_ONLY =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "client-only",
-            "Whether Titan connects to the indexing backend as a client", ConfigOption.Type.GLOBAL_OFFLINE, true);
+            "The Elasticsearch node.client option is set to this boolean value, and the Elasticsearch node.data " +
+            "option is set to the negation of this value.  True creates a thin client which holds no data.  False " +
+            "creates a regular Elasticsearch cluster node that may store data.",
+            ConfigOption.Type.GLOBAL_OFFLINE, true);
 
     public static final ConfigOption<String> CLUSTER_NAME =
             new ConfigOption<String>(ELASTICSEARCH_NS, "cluster-name",
@@ -87,7 +90,8 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<Boolean> LOCAL_MODE =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "local-mode",
-            "Whether a full indexing instances is started embedded",  ConfigOption.Type.GLOBAL_OFFLINE, false);
+            "Whether to use the JVM local transport and run an embedded Elasticsearch Node",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<Boolean> CLIENT_SNIFF =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "sniff",
