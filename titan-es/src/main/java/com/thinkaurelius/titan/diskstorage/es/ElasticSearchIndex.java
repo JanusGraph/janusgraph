@@ -86,39 +86,48 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<String> CLUSTER_NAME =
             new ConfigOption<String>(ELASTICSEARCH_NS, "cluster-name",
-            "The name of the indexing backend cluster", ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
+            "The name of the Elasticsearch cluster.  This should match the \"cluster.name\" setting " +
+            "in the Elasticsearch nodes' configuration.", ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
 
     public static final ConfigOption<Boolean> LOCAL_MODE =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "local-mode",
-            "Whether to use the JVM local transport and run an embedded Elasticsearch Node",
+            "On the legacy config track, this option chooses between starting a TransportClient (false) or " +
+            "a Node with JVM-local transport and local data (true).  On the interface config track, this option " +
+            "is considered by (but optional for) the Node client and ignored by the TransportClient.  See the manual " +
+            "for more information about ES config tracks.",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
 
     public static final ConfigOption<Boolean> CLIENT_SNIFF =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "sniff",
-            "Whether to enable cluster sniffing", ConfigOption.Type.MASKABLE, true);
+            "Whether to enable cluster sniffing.  This option only applies to the TransportClient.  " +
+            "Enabling this option makes the TransportClient attempt to discover other cluster nodes " +
+            "besides those in the initial host list provided at startup.", ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<ElasticSearchSetup> INTERFACE =
             new ConfigOption<ElasticSearchSetup>(ELASTICSEARCH_NS, "interface",
             "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
-            "section of the ES manual for discussion of the difference)", ConfigOption.Type.MASKABLE,
-            ElasticSearchSetup.class, ElasticSearchSetup.TRANSPORT_CLIENT);
+            "section of the ES manual for discussion of the difference).  Setting this option enables the " +
+            "interface config track (see manual for more information about ES config tracks).",
+            ConfigOption.Type.MASKABLE, ElasticSearchSetup.class, ElasticSearchSetup.TRANSPORT_CLIENT);
 
     public static final ConfigOption<Boolean> IGNORE_CLUSTER_NAME =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "ignore-cluster-name",
-            "Whether to bypass validation of the cluster name of connected nodes", ConfigOption.Type.MASKABLE, true);
+            "Whether to bypass validation of the cluster name of connected nodes.  " +
+            "This option is only used on the interface configuration track (see manual for " +
+            "information about ES config tracks).", ConfigOption.Type.MASKABLE, true);
 
     public static final ConfigOption<String> TTL_INTERVAL =
             new ConfigOption<String>(ELASTICSEARCH_NS, "ttl-interval",
             "The period of time between runs of ES's bulit-in expired document deleter.  " +
             "This string will become the value of ES's indices.ttl.interval setting and should " +
-            "be formatted accordingly, e.g. 5s or 60s", ConfigOption.Type.MASKABLE, "5s");
+            "be formatted accordingly, e.g. 5s or 60s.", ConfigOption.Type.MASKABLE, "5s");
 
     public static final ConfigOption<String> HEALTH_REQUEST_TIMEOUT =
             new ConfigOption<String>(ELASTICSEARCH_NS, "health-request-timeout",
             "When Titan initializes its ES backend, Titan waits up to this duration for the " +
             "ES cluster health to reach at least yellow status.  " +
             "This string should be formatted as a natural number followed by the lowercase letter " +
-            "\"s\", e.g. 3s or 60s", ConfigOption.Type.MASKABLE, "30s");
+            "\"s\", e.g. 3s or 60s.", ConfigOption.Type.MASKABLE, "30s");
 
     public static final ConfigOption<Boolean> LOAD_DEFAULT_NODE_SETTINGS =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "load-default-node-settings",
