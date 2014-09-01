@@ -84,7 +84,9 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         log.trace("Created transport {}", transport);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
-        transport.open();
+        if (!transport.isOpen()) {
+            transport.open();
+        }
 
         if (cfg.username != null) {
             Map<String, String> credentials = new HashMap<String, String>() {{
