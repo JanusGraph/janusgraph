@@ -70,9 +70,15 @@ public enum ElasticSearchSetup {
         public Connection connect(Configuration config) throws IOException {
             log.debug("Configuring TransportClient");
 
-            Settings settings = settingsBuilder(config).build();
+            ImmutableSettings.Builder settingsBuilder = settingsBuilder(config);
 
-            TransportClient tc = new TransportClient(settings);
+            if (config.has(ElasticSearchIndex.CLIENT_SNIFF)) {
+                String k = "client.transport.sniff";
+                settingsBuilder.put(k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
+                log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
+            }
+
+            TransportClient tc = new TransportClient(settingsBuilder.build());
             int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
             for (String host : config.get(INDEX_HOSTS)) {
                 String[] hostparts = host.split(":");
@@ -96,6 +102,12 @@ public enum ElasticSearchSetup {
             log.debug("Configuring Node Client");
 
             ImmutableSettings.Builder settingsBuilder = settingsBuilder(config);
+
+            if (config.has(ElasticSearchIndex.TTL_INTERVAL)) {
+                String k = "indices.ttl.interval";
+                settingsBuilder.put(k, config.get(ElasticSearchIndex.TTL_INTERVAL));
+                log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.TTL_INTERVAL));
+            }
 
             makeLocalDirsIfNecessary(settingsBuilder, config);
 
@@ -208,18 +220,6 @@ public enum ElasticSearchSetup {
             String k = "client.transport.ignore_cluster_name";
             settings.put(k, ignoreClusterName);
             log.debug("Set {}: {}", k, ignoreClusterName);
-        }
-
-        if (config.has(ElasticSearchIndex.CLIENT_SNIFF)) {
-            String k = "client.transport.sniff";
-            settings.put(k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
-            log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
-        }
-
-        if (config.has(ElasticSearchIndex.TTL_INTERVAL)) {
-            String k = "indices.ttl.interval";
-            settings.put(k, config.get(ElasticSearchIndex.TTL_INTERVAL));
-            log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.TTL_INTERVAL));
         }
 
         // Force-enable dynamic scripting.  This is probably only useful in Node mode.
