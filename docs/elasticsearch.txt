@@ -13,25 +13,25 @@ Titan supports http://elasticsearch.org[Elasticsearch] as an index backend.  Her
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
 * *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given circle. Only supports points for indexing and circles for querying.
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
-* *Flexible Configuration*: Supports embedded or remote operation, custom transport and discovery, and open-ended ES settings customization. 
+* *Flexible Configuration*: Supports embedded or remote operation, custom transport and discovery, and open-ended settings customization. 
 
 Please see <<version-compat>> for details on what versions of ES will work with Titan.
 
 [IMPORTANT]
-Titan currently requires that http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html#_enabling_dynamic_scripting[Elasticsearch's dynamic scripting] be enabled for at least the Groovy lang module.  This `script.disable_dynamic` setting must be `false` or `sandbox` on the Elasticsearch cluster.  This configuration requirement may be removed in future Titan versions.
+Titan currently requires http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-scripting.html#_enabling_dynamic_scripting[Elasticsearch's dynamic scripting feature].  The `script.disable_dynamic` setting must be `false` or `sandbox` on the Elasticsearch cluster.  This configuration requirement may be removed in future Titan versions.
 
 Elasticsearch Configuration Overview
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Titan supports two distinct configuration tracks for Elasticsearch.  "Track" in this chapter means a set of configuration options.
 
-. The new `interface` track
-. The legacy track
+. The new <<es-cfg-interface-track,`interface` track>>
+. The <<es-cfg-legacy-track,legacy track>>
 
-These tracks are mutually exclusive; a configuration uses only one or the other and not both simultaneously.  The `interface` track is recommended over the legacy track.  The `interface` track, introduced in 0.5.1, offers a superset of the legacy track's functionality.  The legacy track will be maintained through at least the end of the 0.5.x patch series.
+These tracks are mutually exclusive.  A configuration uses one track or the other, but not both simultaneously.  The `interface` track is recommended over the legacy track.  The `interface` track, introduced in 0.5.1, offers a superset of the legacy track's functionality.  The legacy track will be maintained through at least the end of the 0.5.x patch series.
 
 [NOTE]
-Elasticsearch options start with the string "`index.[X].`" where "`[X]`" is a user-defined name for the backend.  This name is passed to Titan's ManagementSystem interface when building a mixed index, as described in <<index-mixed>>.  The name tells Titan which backend to use, since there may be more than one.  Configuration snippets in this chapter use `search`, whereas prose discussion of options typically uses `[X]`.  The exact index name is not significant as long as it is used consistently in Titan's configuration and when administering indices.
+Titan's index options start with the string "`index.[X].`" where "`[X]`" is a user-defined name for the backend.  This user-defined name must be passed to Titan's ManagementSystem interface when building a mixed index, as described in <<index-mixed>>, so that Titan knows which of potentially multiple configured index backends to use.  Configuration snippets in this chapter use the name `search`, whereas prose discussion of options typically write `[X]` in the same position.  The exact index name is not significant as long as it is used consistently in Titan's configuration and when administering indices.
 
 [TIP]
 It's recommended that index names contain only alphanumeric lowercase characters and hyphens, and that they start with a lowercase letter.
@@ -56,15 +56,11 @@ index.search.elasticsearch.interface=TRANSPORT_CLIENT
 index.search.backend=elasticsearch
 ----
 
-The `NODE` and `TRANSPORT_CLIENT` values tell Titan to use either the Node or Transport client.  One or the other must be specified to use this track.  Do not specify both in the same configuration.
+The `NODE` and `TRANSPORT_CLIENT` values tell Titan to use either the Node or Transport client, respectively, and activates the `interface` configuration track.  One or the other must be specified to use this track.  Do not specify both in the same configuration.
 
 
 [TIP]
-This chapter assumes some familiarity with the difference between Elasticsearch's "Node client" and "Transport client".  For background on these two Elasticsearch clients and their comparative tradeoffs, see these links to the external Elasticsearch documentation:
-+
-* http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/_talking_to_elasticsearch.html[Elasticsearch Docs: Talking to Elasticsearch]
-* http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html[Elasticsearch Docs: Java Clients]
-
+This chapter assumes some familiarity with the difference between Elasticsearch's "Node client" and "Transport client".  For background on these two Elasticsearch clients and their comparative tradeoffs, see http://www.elasticsearch.org/guide/en/elasticsearch/guide/current/_talking_to_elasticsearch.html[Talking to Elasticsearch] and http://www.elasticsearch.org/guide/en/elasticsearch/client/java-api/current/client.html[Java Clients] in the official Elasticsearch documentation.
 
 Configuration on the `interface` track proceeds through roughly the following steps:
 
@@ -73,35 +69,35 @@ Configuration on the `interface` track proceeds through roughly the following st
 . Any other ES-related Titan config options listed in Titan's config file are copied into their respective ES transport or node configuration settings (<<titan-config-ref>> lists these options)
 . `script.disable_dynamic` is set to false
 
-After these steps, the Transport client will consult Titan's `index.[X].hostname` setting for a list of ES nodes to use as request endpoints.  This setting does not apply for the Node client.
-
 [[es-cfg-common-opts]]
 Common Options
 ^^^^^^^^^^^^^^
 
 Arbitrary Elasticsearch settings can be specified through one or both of the following mechanisms:
 
-* The `index.[X].conf-file` option, which is interpreted as a path to an Elasticsearch YAML/JSON/properties file
-+
-The value must be a path to a file.  If the path is relative, and the path appears in a Titan properties file on disk, then the path will be interpreted relative to the directory containing the Titan properties file in which it appears.  The file will be opened and loaded using Elasticsearch's `ImmutableSettings.Builder.loadFromStream` method.  This method will attempt to guess the file content's syntax by the filename extension; for this reason, it's recommended that the filename end in either ".json", ".yml", ".yaml", or ".properties", as appropriate, so that ES uses the correct parser.  Here's an example configuration fragment:
-+
+Specifying an external ES `conf-file`
++++++++++++++++++++++++++++++++++++++
+
+The `index.[X].conf-file` option is interpreted as a path to an Elasticsearch YAML/JSON/properties file.  The file must exist.  If the path is relative, and the path appears in a Titan properties file on disk, then the path will be interpreted relative to the directory containing the Titan properties file in which it appears.  The file will be opened and loaded using Elasticsearch's `ImmutableSettings.Builder.loadFromStream` method.  This method will attempt to guess the file content's syntax by the filename extension; for this reason, it's recommended that the filename end in either ".json", ".yml", ".yaml", or ".properties", as appropriate, so that ES uses the correct parser.  Here's an example configuration fragment:
+
 [source,properties]
 ----
 index.search.backend=elasticsearch
 index.search.elasticsearch.interface=NODE # or TRANSPORT_CLIENT
 index.search.conf-file=/home/titan/elasticsearch_client.yaml
 ----
-+
+
 [source,yaml]
 ----
 # /home/titan/elasticsearch_client.yaml
 node.name=alice
 ----
 
-* Options with the the `index.[X].elasticsearch.ext.` prefix in Titan's properties
-+
-Titan's iterates over all properties starting with `index.[X].elasticsearch.ext.`, where `[X]` is an index name such as `search`.  It strips the prefix from each property key.  The remainder of the stripped key will be interpreted as an Elasticsearch configuration key.  The string value is passed into the Elasticsearch configuration unchanged.  Here's an example configuration fragment showing how to specify the Elasticsearch `node.name` setting using the `ext` config mechanism:
-+
+Embedding ES settings with `ext`
+++++++++++++++++++++++++++++++++
+
+Titan iterates over all properties prefixed with `index.[X].elasticsearch.ext.`, where `[X]` is an index name such as `search`.  It strips the prefix from each property key.  The remainder of the stripped key will be interpreted as an Elasticsearch configuration key.  The value associated with the key is not modified.  The stripped key and unmodified value are passed into the Elasticsearch client configuration.  This allows embedding arbitrary Elasticsearch client configuration in Titan's config properties.  Here's an example configuration fragment showing how to specify the Elasticsearch `node.name` setting using the `ext` config mechanism:
+
 [source,properties]
 ----
 index.search.backend=elasticsearch
@@ -109,9 +105,16 @@ index.search.elasticsearch.interface=NODE # or TRANSPORT_CLIENT
 index.search.elasticsearch.ext.node.name=bob
 ----
 
+[TIP]
 The `conf-file` and `ext` mechanisms can be used together.  The `conf-file`, when present, is loaded first.  Any settings under `ext` are then applied.  Hence, if a key exists in both `ext` and `conf-file`, the value from `ext` will take precedence.
 
-Setting Elasticsearch configuration options through either a `conf-file` or `ext` is recommended.
+Titan `index.[X]` and `index.[X].elasticsearch` options
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+After processing `conf-file` and `ext`, Titan checks for the following common options.  On the `interface` config track, these options have no defaults.  If one is unset, then Titan will not set any default value for the associated key.  Elasticsearch's internal defaults, `conf-file`, and `ext` will determine the option's effective value when it is not present in Titan's config.
+
+* `index.[X].elasticsearch.cluster-name`
+* `index.[X].elasticsearch.ignore-cluster-name`
 
 [[es-cfg-transport-opts]]
 Transport Client Options
@@ -124,17 +127,25 @@ index.search.backend=elasticsearch
 index.search.elasticsearch.interface=TRANSPORT_CLIENT # or NODE
 index.search.hostname=10.0.0.10,10.0.0.20:7777
 
+Furthermore, the Transport client accepts the `index.[X].client-sniff` option.  This can be set just as effectively through the `conf-file` or `ext` mechanisms.  However, it can also be controlled through this Titan config option.  This option exists for continuity with the legacy config track.
+
 [[es-cfg-node-opts]]
 Node Client Options
 ^^^^^^^^^^^^^^^^^^^
 
-It's possible to configure the Node client using a configuration file or `ext` config keys as described in <<es-cfg-common-opts>>.  This is the recommended approach.
+In addition to common options described in <<es-cfg-common-opts>>, the Node client also respects the following Titan config options:
 
-Besides `conf-file` and `ext`, Titan also processes the following options when setting up a Node client:
+* `index.[X].directory`
+* `index.[X].elasticsearch.ttl-interval`
+* `index.[X].elasticsearch.client-only`
+* `index.[X].elasticsearch.local-mode`
+* `index.[X].elasticsearch.load-default-node-settings`
 
-`index.[X].elasticsearch.client-only`:: When set, call `NodeBuilder.data(!value).client(value)`.  This has the same effect as setting "node.data: !value" and "node.client: value" in the ES configuration (where "value" is true or false and !value is the negation).
-`index.[X].elasticsearch.local-mode`:: When set, call `NodeBuilder.local(value)`.  This has the same effect as setting "node.local: value" in the ES configuration (where "value" is true or false).
-`index.[X].elasticsearch.load-default-node-settings`:: This controls whether Elasticsearch will attempt to load configurations from ES's system properties or default file locations before applying any other configuration.  This is true by default in both Titan and in Elasticsearch.  Editing this setting is not normally required.
+Unlike the Transport client, the Node client can be completely configured through `conf-file` or `ext`.  If you provide a complete Node configuration via `conf-file` or `ext`, then none of the Titan options listed above are required, and it's fine to leave them unset in Titan's configuration.  The Titan options listed above are retained mainly for convenience and continuity with the legacy config track.
+
+However, there is one unique aspect to `index.[X].directory`.  When `index.[X].directory` is set for Elasticsearch, it is taken as the path to a directory which will contain the ES data, work, and logs directories.  These directories are created if they don't already exist.  Furthermore, when the `index.[X].directory` setting appears in a Titan properties file on disk and its value is a relative path, it will be interpreted relative to the directory containing that Titan properties file (similar to how relative `conf-file` paths are handled).  That's the difference between setting Titan's `index.[X].directory` versus setting Elasticsearch's `path.data`, `path.work`, and `path.logs` directories: relative paths for the former are based on the directory containing the Titan properties file, whereas relative paths for the latter are based on the Titan process's current working directory.
+
+Note that `index.[X].hostname` is not in the list above.  The recommended way to set a list of hostnames with the Node client is to use Elasticsearch's own config keys via `ext` or `conf-file`.  See the Elasticsearch documentation on the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-discovery-zen.html[`discovery` module] and the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-transport.html[`transport` module] for relevant ES config keys.  Also see <<es-cfg-unicast-zen>> for an example configuration using the Elasticsearch Zen discovery module and unicast addressing.
 
 [[es-cfg-jvmlocal-iface]]
 Node Example: JVM-local Discovery
@@ -175,6 +186,7 @@ index.search.elasticsearch.ext.node.client=false
 index.search.elasticsearch.ext.node.local=true
 ----
 
+[[es-cfg-unicast-zen]]
 Node Example: Connecting to a Remote Cluster
 ++++++++++++++++++++++++++++++++++++++++++++
 
@@ -258,26 +270,28 @@ The legacy configuration track allows running either a Transport client or a Nod
 
 This track is activated by omitting the `index.[X].elasticsearch.interface` option from Titan's configuration file.
 
-[NOTE]
-The legacy track is not recommended for new installations.  Consider using the newer <<es-cfg-interface-track,the `interface` track>> instead.
+[WARNING]
+The legacy track is not recommended for new deployments.  Consider using the newer <<es-cfg-interface-track,`interface` track>> instead.
 
 [[es-cfg-jvmlocal-legacy]]
 Embedded JVM-local Node Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For single machine deployments, Elasticsearch can run embedded with Titan.  In other words, Titan will start Elasticsearch internally and connect to it within the JVM.  This is similar to setting `node.local` 
+The legacy track supports starting an Elasticsearch Node with JVM-local transport.  Network transport and discovery are not supported on the legacy track.  Due to this limitation, it's only useful running a single-node embedded ES instance, such as in testing.
 
-To run Elasticsearch embedded, add the following configuration options to the graph configuration file where `/tmp/searchindex/` specifies the directory where Elasticsearch should store the index data:
+Here's an example Titan configuration that starts a JVM-local Node using the legacy config track:
 
 [source,properties]
 ----
 index.search.backend=elasticsearch
+# This will create /tmp/searchindex/work, /tmp/searchindex/logs, and
+# /tmp/searchindex/data
 index.search.directory=/tmp/searchindex
 index.search.elasticsearch.client-only=false
 index.search.elasticsearch.local-mode=true
 ----
 
-Note, that Elasticsearch will not be accessible from outside of this particular Titan instance, i.e., remote connections will not be possible. Also, it might be advisable to run Elasticsearch in a separate jvm even for single machine deployments to achieve more predictable GC behavior.
+Elasticsearch will not be accessible from outside of this particular Titan instance, i.e. remote connections will not be possible.
 
 In the above configuration, the index backend is named `search`. Replace `search` by a different name to change the name of the index.
 
@@ -285,9 +299,9 @@ In the above configuration, the index backend is named `search`. Replace `search
 Transport Client Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Titan can connect to an external Elasticsearch cluster running remote on a separate cluster of machines or locally on the same machine.  In either case it will use TCP sockets as opposed to JVM-local transport discovery.
+The legacy track supports the Transport client.  This can connect to Elasticsearch nodes running on the same machine or a cluster of remote machines.
 
-To connect Titan to an external Elasticsearch cluster, add the following configuration options to the graph configuration file where `hostname` lists the IP addresses of the instances in the Elasticsearch cluster:
+To use the Transport client on the legacy track, add the following Titan options to the graph configuration file, where `hostname` lists the IP addresses of the Elasticsearch cluster nodes:
 
 [source,properties]
 ----
@@ -312,13 +326,30 @@ Refer to <<titan-config-ref>> for a complete listing of all options.  This secti
 * *config-file*: Filename of the Elasticsearch yaml file used to configure this instance. _Only applicable when local-mode is true_
 * *directory*: Base directory which will contain the ES work, data, and logs subdirectories.  _Only applicable when local-mode is true_
 
+Secure Elasticsearch
+~~~~~~~~~~~~~~~~~~~~
+
+Elasticsearch does not perform authentication or authorization.  A client that can connect to ES is trusted by ES.
+
+Elasticsearch accepts client connections on two separate TCP ports, each of which runs a different protocol:
+
+* The HTTP REST API, usually on port 9200
+* The native "transport" protocol, usually on port 9300
+
+A client uses one protocol or the other, but not both.  Titan uses Elasticsearch's two official Java clients, each of which uses only the native "transport" protocol typically listening on port 9300.  There are a couple of ways to approach security on the native "transport" protocol port:
+
+Tunnel ES's native "transport" protocol::  This approach can be implemented with SSL/TLS tunneling (typically via https://www.stunnel.org/index.html[stunnel]), a VPN, or SSH port forwarding.  SSL/TLS tunnels require non-trivial setup and monitoring: one or both ends of the tunnel need a certificate, and the stunnel processes need to be configured and running continuously in order for Titan and Elasticsearch to communicate.  Some Elasticsearch service providers handle server-side tunnel management and provide a custom Elasticsearch `transport.type` to simplify the client setup.  Titan is compatible with these custom transports.  See <<es-cfg-common-opts>> for information on how to override the `transport.type` and provide arbitrary `transport.*` config keys to Titan's ES client.
+Add a firewall rule that allows only trusted clients to connect on Elasticsearch's native protocol port:: This is typically done at the host firewall level.  This doesn't require any configuration changes in Titan or Elasticsearch, nor does it require helper processes like stunnel.  Easy to configure, but weak security.
+
+Since Titan does not use Elasticsearch's HTTP REST API, security strategies specific to that interface are out of scope for the Titan documentation.
+
 Troubleshooting
 ~~~~~~~~~~~~~~~
 
 Connection Issues to remote Elasticsearch cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-First, make sure that you have Elasticsearch configured for remote usage: Set `client-only` to true and `local-mode` to false. Second, try if you can connect to Elasticsearch through the http interface from the given machine. Thirdly, try disabling `sniff`.
+Check that the Elasticsearch cluster nodes are reachable on the native "transport" protocol port from the Titan nodes.  Check the node listen port by examining the Elasticsearch node configuration logs or using a general diagnostic utility like `netstat`.  Check the Titan configuration; try the Transport client while troubleshoot connectivity issues, since it's easier to control which ES hosts the Transport client will use.  Disable sniffing to restrict the Transport client to just the configured host list.  Check that the client and server have the same major version: 0.90.x and 1.x are not compatible.
 
 Classpath or Field errors
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -342,4 +373,3 @@ Further Reading
 ^^^^^^^^^^^^^^^
 
 * Please refer to the http://elasticsearch.org[Elasticsearch homepage] and available documentation for more information on Elasticsearch and how to setup an Elasticsearch cluster.
-
