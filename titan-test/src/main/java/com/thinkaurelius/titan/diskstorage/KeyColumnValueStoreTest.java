@@ -7,10 +7,12 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
+import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
@@ -987,8 +989,10 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         assertTrue(storeManager.getFeatures().hasStoreTTL());
         assertTrue(storeManager instanceof CustomizeStoreKCVSManager);
 
-        // 5 seconds TTL on every column
-        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) storeManager).openDatabase("testStore_with_TTL", 3);
+        final TimeUnit sec = TimeUnit.SECONDS;
+        final int storeTTLSeconds = (int)TestGraphConfigs.getTTL(sec);
+        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) storeManager).
+                openDatabase("testStore_with_TTL", storeTTLSeconds);
 
         populateDBWith100Keys(storeWithTTL);
 
@@ -1003,7 +1007,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         EntryList results = storeWithTTL.getSlice(new KeySliceQuery(key, new SliceQuery(start, end)), tx);
         Assert.assertEquals(3, results.size());
 
-        Thread.sleep(4000); // let's sleep for 4 seconds
+        Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(storeTTLSeconds * 1.25), sec));
 
         tx.commit();
         tx = startTx();
