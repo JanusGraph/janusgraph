@@ -919,6 +919,7 @@
                             <executions>
                                 <execution>
                                     <id>integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -934,6 +935,7 @@
                                 </execution>
                                 <execution>
                                     <id>cassandra-murmur-integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -949,6 +951,7 @@
                                 </execution>
                                 <execution>
                                     <id>cassandra-bop-integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -964,6 +967,7 @@
                                 </execution>
                                 <execution>
                                     <id>cassandra-hbase-integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -978,6 +982,7 @@
                                 </execution>
                                 <execution>
                                     <id>verify</id>
+                                    <phase>verify</phase>
                                     <goals>
                                         <goal>verify</goal>
                                     </goals>
