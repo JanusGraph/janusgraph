@@ -1,5 +1,9 @@
 package com.thinkaurelius.titan.graphdb.berkeleyje;
 
+import com.google.common.base.Joiner;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
+import com.thinkaurelius.titan.graphdb.TitanIndexTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -14,6 +18,8 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
+
+import java.io.File;
 
 public class BerkeleyGraphTest extends TitanGraphTest {
 
@@ -39,6 +45,16 @@ public class BerkeleyGraphTest extends TitanGraphTest {
             log.debug("Using isolation level {} (null means adapter default) for test method {}", iso, methodName);
         }
         return mcfg.getConfiguration();
+    }
+
+    /**
+     * Test {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#create(String)}.
+     */
+    @Test
+    public void testGraphOfTheGodsFactoryCreate() {
+        String bdbtmp = Joiner.on(File.separator).join("target", "gotgfactory");
+        TitanGraph gotg = GraphOfTheGodsFactory.create(bdbtmp);
+        TitanIndexTest.assertGraphOfTheGods(gotg);
     }
 
     @Override
