@@ -27,12 +27,12 @@ public class GraphOfTheGodsFactory {
 
     public static TitanGraph create(final String directory) {
         TitanFactory.Builder config = TitanFactory.build();
-        config.set("storage.backend","berkeleyje");
-        config.set("storage.directory",directory);
+        config.set("storage.backend", "berkeleyje");
+        config.set("storage.directory", directory);
         config.set("index."+INDEX_NAME+".backend","elasticsearch");
-        config.set("index."+INDEX_NAME+".local-mode",true);
-        config.set("index."+INDEX_NAME+".client-only",false);
         config.set("index." + INDEX_NAME + ".directory", directory + File.separator + "es");
+        config.set("index."+INDEX_NAME+".elasticsearch.local-mode",true);
+        config.set("index."+INDEX_NAME+".elasticsearch.client-only",false);
 
         TitanGraph graph = config.open();
         GraphOfTheGodsFactory.load(graph);
