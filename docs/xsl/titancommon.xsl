@@ -102,35 +102,11 @@
       <div class="header-v1">
         <header id="header">
           <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
-            <xsl:if test="count($prev)>0 and 1 = $titan.top.nav.links">
-              <div class="fixed-chapter-link fixed-prev-chapter-link">
-                <a accesskey="p">
-                  <xsl:attribute name="href">
-                    <xsl:call-template name="href.target">
-                      <xsl:with-param name="object" select="$prev"/>
-                    </xsl:call-template>
-                  </xsl:attribute>
-                  &#x25C4; Prev
-                </a>
-              </div>
-            </xsl:if>
             <div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
               <a href="index.html">
                 <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" class="normal_logo" />
               </a>
             </div>
-            <xsl:if test="count($next)>0 and $titan.top.nav.links != 0">
-              <div class="fixed-chapter-link fixed-next-chapter-link">
-                <a accesskey="n">
-                  <xsl:attribute name="href">
-                    <xsl:call-template name="href.target">
-                      <xsl:with-param name="object" select="$next"/>
-                    </xsl:call-template>
-                  </xsl:attribute>
-                  Next &#x25BA;
-                </a>
-              </div>
-            </xsl:if>
             <nav id="nav" class="nav-holder">
               <ul class="navigation menu fusion-navbar-nav">
                 <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
@@ -148,35 +124,11 @@
     <header id="header-sticky" class="sticky-header">
       <div class="sticky-shadow">
         <div class="avada-row">
-          <xsl:if test="count($prev)>0 and 1 = $titan.top.nav.links">
-            <div class="sticky-chapter-link sticky-prev-chapter-link">
-              <a accesskey="p">
-                <xsl:attribute name="href">
-                  <xsl:call-template name="href.target">
-                    <xsl:with-param name="object" select="$prev"/>
-                  </xsl:call-template>
-                </xsl:attribute>
-                &#x25C4; Prev
-              </a>
-            </div>
-          </xsl:if>
           <div class="logo">
             <a href="index.html">
               <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" data-max-width="" class="normal_logo" />
             </a>
           </div>
-          <xsl:if test="count($next)>0 and $titan.top.nav.links != 0">
-            <div class="sticky-chapter-link sticky-next-chapter-link">
-              <a accesskey="n">
-                <xsl:attribute name="href">
-                  <xsl:call-template name="href.target">
-                    <xsl:with-param name="object" select="$next"/>
-                  </xsl:call-template>
-                </xsl:attribute>
-                Next &#x25BA;
-              </a>
-            </div>
-          </xsl:if>
           <nav id="sticky-nav" class="nav-holder">
             <ul class="navigation menu fusion-navbar-nav">
               <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
