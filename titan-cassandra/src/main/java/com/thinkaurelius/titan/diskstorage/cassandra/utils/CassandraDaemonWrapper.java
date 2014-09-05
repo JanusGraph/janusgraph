@@ -75,8 +75,6 @@ public class CassandraDaemonWrapper {
         CassandraDaemon.main(new String[0]);
 
         activeConfig = config;
-
-        new CassandraKiller(Thread.currentThread()).start();
     }
 
     public static synchronized boolean isStarted() {
@@ -85,95 +83,5 @@ public class CassandraDaemonWrapper {
 
     public static void stop() {
         // Do nothing
-    }
-
-    private static void terminatePeriodicCommitLogThread() {
-        ThreadGroup root = getRootThreadGroup();
-
-        if (null == root)
-            return; // Shouldn't happen, but give up if it does
-
-        int tc = 4096;
-        Thread[] threads = new Thread[tc];
-        int enumerated = root.enumerate(threads);
-        if (enumerated == tc)
-            return; // Wait it out, the perodic commit syncer will die eventually
-
-        for (int i = 0; i < enumerated; i++) {
-            final Thread t = threads[i];
-            if (t.getName().equals("PERIODIC-COMMIT-LOG-SYNCER")) {
-                installUncaughtInterruptSwallower(t);
-                t.interrupt();
-            }
-        }
-    }
-
-    private static ThreadGroup getRootThreadGroup() {
-        ThreadGroup g = Thread.currentThread().getThreadGroup();
-        if (null == g)
-            return null;
-
-        ThreadGroup next = g.getParent();
-        while (null != next) {
-            g = next;
-            next = next.getParent();
-        }
-
-        return g;
-    }
-
-    // this is not the greatest idea i've ever had
-    private static void installUncaughtInterruptSwallower(final Thread t) {
-
-        t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread actualThread, Throwable a) {
-                if (t.equals(actualThread) && a instanceof AssertionError) {
-                    Throwable cause = a.getCause();
-                    if (null != cause && cause instanceof InterruptedException)
-                        return;
-                }
-
-                log.error("Uncaught exception", a);
-            }
-        });
-
-        log.debug("Installed uncaught exception handler on {}", t);
-    }
-
-    private static class CassandraKiller extends Thread {
-
-        private final Thread protector;
-
-        public CassandraKiller(Thread protector) {
-            super();
-            this.protector = protector;
-            this.setDaemon(true);
-            this.setName(getClass().getSimpleName());
-        }
-
-        @Override
-        public void run() {
-
-            try {
-                log.info("Joining thread {}", protector.getName());
-                protector.join();
-            } catch (InterruptedException e) {
-                log.info("Cassandra killer aborting due to interrupt", e);
-                return;
-            }
-
-            log.info("Killing embedded Cassandra threads because {} died", protector);
-
-            CassandraDaemon.stop(null);
-            try {
-                CommitLog.instance.shutdownBlocking();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            CommitLog.instance.sync();
-            terminatePeriodicCommitLogThread();
-            MessagingService.instance().shutdown();
-        }
     }
 }

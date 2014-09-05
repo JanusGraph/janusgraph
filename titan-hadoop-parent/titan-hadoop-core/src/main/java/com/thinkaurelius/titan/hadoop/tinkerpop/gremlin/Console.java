@@ -62,6 +62,8 @@ public class Console {
         } catch (Error e) {
             //System.err.println(e.getMessage());
         }
+
+        System.exit(0);
     }
 
     public Console() {
@@ -72,4 +74,5 @@ public class Console {
     public static void main(final String[] args) {
         new Console();
     }
+
 }
