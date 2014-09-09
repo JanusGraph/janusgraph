@@ -36,7 +36,11 @@ public class SolrIndexTest extends IndexProviderTest {
 
     @BeforeClass
     public static void setUpMiniCluster() throws Exception {
-        String solrHome = Joiner.on(File.separator).join(System.getProperty("user.dir"), "titan-solr", "target", "test-classes", "solr");
+        String userDir = System.getProperty("user.dir");
+        String solrHome = userDir.contains("titan-solr")
+                            ? Joiner.on(File.separator).join(userDir, "target", "test-classes", "solr")
+                            : Joiner.on(File.separator).join(userDir, "titan-solr", "target", "test-classes", "solr");
+
         File solrXml = new File(solrHome, "solr.xml");
         miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml, null, null);
         for (String core : CORES) {
