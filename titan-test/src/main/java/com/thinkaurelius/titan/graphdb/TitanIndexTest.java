@@ -20,6 +20,7 @@ import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -85,10 +86,13 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testGraphOfTheGods() {
         GraphOfTheGodsFactory.load(graph);
+        assertGraphOfTheGods(graph);
+    }
 
-        assertEquals(12,Iterables.size(graph.getVertices()));
-        assertEquals(3,Iterables.size(graph.getVertices("label","god")));
-        Vertex h = Iterables.getOnlyElement(graph.getVertices("name","hercules"));
+    public static void assertGraphOfTheGods(TitanGraph gotg) {
+        assertEquals(12,Iterables.size(gotg.getVertices()));
+        assertEquals(3,Iterables.size(gotg.getVertices("label","god")));
+        Vertex h = Iterables.getOnlyElement(gotg.getVertices("name","hercules"));
         assertEquals(30,h.getProperty("age"));
         assertEquals("demigod",((TitanVertex)h).getLabel());
         assertEquals(5,Iterables.size(h.getEdges(Direction.BOTH)));
@@ -996,7 +1000,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey text = makeKey("text", String.class);
 
         VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(event, 2, TimeUnit.SECONDS);
+        final int eventTTLSeconds = (int)TestGraphConfigs.getTTL(TimeUnit.SECONDS);
+        mgmt.setTTL(event, eventTTLSeconds, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Vertex.class).
                 addKey(name, Mapping.STRING.getParameter()).addKey(time).buildMixedIndex(INDEX);
@@ -1005,7 +1010,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
-        assertEquals(2, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
+        assertEquals(eventTTLSeconds, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
         finishSchema();
 
         Vertex v1 = tx.addVertexWithLabel("event");
@@ -1042,7 +1047,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertNotNull(v1);
         assertNotNull(v2);
 
-        Thread.sleep(6000); // default ttl recycle interval is 5s
+        Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(eventTTLSeconds * 1.25), TimeUnit.SECONDS));
 
         clopen();
         time = tx.getPropertyKey("time");
@@ -1070,7 +1075,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey time = makeKey("time", Long.class);
 
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(label, 2, TimeUnit.SECONDS);
+        final int likesTTLSeconds = (int)TestGraphConfigs.getTTL(TimeUnit.SECONDS);
+        mgmt.setTTL(label, likesTTLSeconds, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Edge.class).
                 addKey(name, Mapping.STRING.getParameter()).addKey(time).buildMixedIndex(INDEX);
@@ -1078,7 +1084,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
-        assertEquals(2, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
+        assertEquals(likesTTLSeconds, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
         finishSchema();
 
         TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
@@ -1117,7 +1123,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertTrue(v2.getEdges(Direction.OUT).iterator().hasNext());
 
 
-        Thread.sleep(6000);
+        Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(likesTTLSeconds * 1.25), TimeUnit.SECONDS));
         clopen();
 
         time = tx.getPropertyKey("time");

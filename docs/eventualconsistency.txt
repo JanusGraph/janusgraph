@@ -30,7 +30,7 @@ This is a brief description of the locking protocol which leaves out optimizatio
 
 The actual lock application mechanism is abstracted such that Titan can use multiple implementations of a locking provider. Currently, two locking providers are supported in the Titan distribution:
 
-. A locking implementation based on key-consistent read and write operations that is agnostic to the underlying storage backend as long as it supports key-consistent operations (which includes Cassandra and HBase). This is the default implementation and uses timestamp based lock applications to determine which transaction holds the lock. For this implementation to work correctly, it is crucial to specify a unique machine-id in the [[graph configuration]] when running multiple Titan instance on the same machine.
+. A locking implementation based on key-consistent read and write operations that is agnostic to the underlying storage backend as long as it supports key-consistent operations (which includes Cassandra and HBase). This is the default implementation and uses timestamp based lock applications to determine which transaction holds the lock. For this implementation to work correctly, it is crucial to specify a unique machine-id in the <<titan-config-ref,graph configuration>> when running multiple Titan instances on the same machine.
 . A Cassandra specific locking implementation based on the Astyanax locking recipe.
 
 Both locking providers require that clocks are synchronized across all machines in the cluster.
@@ -38,7 +38,7 @@ Both locking providers require that clocks are synchronized across all machines 
 [WARNING]
 The locking implementation is not robust against all failure
 scenarios. For instance, when a Cassandra cluster drops below quorum,
-consistency is now longer ensured. Hence, it is suggested to use
+consistency is no longer ensured. Hence, it is suggested to use
 locking-based consistency constraints sparingly with eventually
 consistent storage backends.  For use cases that require strict and or
 frequent consistency constraint enforcement, it is suggested to use a
@@ -61,7 +61,7 @@ related = mgmt.makeEdgeLabel('related').make()
 mgmt.setConsistency(related,ConsistencyModifier.FORK)
 mgmt.commit()
 
-When modifying an edge whose label is configured to FORK the edge is a deleted and the modified edge is added as a new one. Hence, if two concurrent transactions modify the same edge, two modified copies of the edge will exist upon commit which can be resolved during querying traversals if needed.
+When modifying an edge whose label is configured to FORK the edge is deleted and the modified edge is added as a new one. Hence, if two concurrent transactions modify the same edge, two modified copies of the edge will exist upon commit which can be resolved during querying traversals if needed.
 
 [NOTE]
 Edge forking only applies to MULTI edges. Edge labels with a multiplicity constraint cannot use this strategy since a constraint is built into the edge label definition that requires an explicit lock or use the conflict resolution mechanism of the underlying storage backend.
@@ -90,7 +90,7 @@ vertices or edges. Similarly, a vertex or edge appears in the graph but is not y
 which might lead to the edge not being or incorrectly being retrieved.
 
 [NOTE]
-In order to avoid that write failures result in permanent inconsistencies in the graph it is recommended to use storage backends that support batch write atomicity and to ensure that write atomicity is enabled. Also, it needs to be ensured that the number modifications made in a single transaction is smaller than the configured `buffer-size` <<titan-config-ref>>. The buffer size defines the maximum number of modifications that Titan will persist in a single batch. If a transaction has more modifications, the persistence will be split into multiple batches which are persisted individually which is useful for batch loading but invalidates write atomicity.
+In order to avoid that write failures result in permanent inconsistencies in the graph it is recommended to use storage backends that support batch write atomicity and to ensure that write atomicity is enabled.  To get the benefit of write atomicity, the number modifications made in a single transaction must be smaller than the configured `buffer-size` option documented in <<titan-config-ref>>. The buffer size defines the maximum number of modifications that Titan will persist in a single batch. If a transaction has more modifications, the persistence will be split into multiple batches which are persisted individually which is useful for batch loading but invalidates write atomicity.
 
 [[ghost-vertices]]
 Ghost Vertices
@@ -113,4 +113,4 @@ can address all inconsistencies and effectively repair them. We will
 provide increasing support for such repairs in future versions of
 Faunus.
 
-*Soft Deletes*:: Instead of deleting vertices, they are marked as deleted which keeps them in the graph for future analysis and allows to hide them from user-facing transactions.
+*Soft Deletes*:: Instead of deleting vertices, they are marked as deleted which keeps them in the graph for future analysis but hides them from user-facing transactions.

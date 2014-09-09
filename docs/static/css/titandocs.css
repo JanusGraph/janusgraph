@@ -9,6 +9,13 @@
     min-width: 25%;
 }
 
+/* Static anchor offset to compensate for the height of the floating header */
+a[name] {
+    padding-top: 88px;
+    margin-top: -88px;
+    display: inline-block;
+}
+
 .navheader {
     background-color: #F0F0F0;
     padding: 6px 30px;
@@ -37,8 +44,10 @@ div#main > div.chapter > div.section .title {
     clear: none !important;
 }
 
-div.note {
-    margin: 25px 40px;
+div.note, div.tip, div.important, div.warning, div.caution {
+    margin: 12px 18px;
+    padding: 12px 18px;
+    border: 1px dotted #A4A4A4;
 }
 
 .breadcrumbs {
@@ -254,9 +263,9 @@ line-height: 22px;
 
 
 /* Make note font color grey */
-.note p, .note th {
+/* .note p, .note th {
     color: #747474 !important;
-}
+} */
 
 /* Make toc have background color and adjust padding */
 div#main > div.chapter > div.toc {

@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -58,7 +60,20 @@ public class ConfigNamespace extends ConfigElement {
     }
 
     public ConfigElement getChild(String name) {
-        return children.get(name);
+
+        ConfigElement child = children.get(name);
+
+        if (null == child) {
+            // Attempt to load
+            ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
+            child = children.get(name);
+            if (null == child) {
+                ReflectiveConfigOptionLoader.INSTANCE.loadAll(this.getClass());
+                child = children.get(name);
+            }
+        }
+
+        return child;
     }
 
 }

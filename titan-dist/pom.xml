@@ -201,28 +201,15 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <inherited>false</inherited>
                 <executions>
-                    <!-- This started out as an exec:java execution instead of exec:exec,
-                         but exec:java does something weird to the classpath that breaks
-                         reflections-based ConfigOption loading.  The classpath property
-                         in particular is just /usr/share/maven/boot/plexus-classworlds-2.x.jar
-                         on my system, and that seems to confuse reflections, at least in
-                         the way ReflectiveConfigOptionLoader uses it.
-
-                         Forking a separate JVM (which exec:exec does but exec:java cant do)
-                         makes these classpath problems go away.
-                    -->
                     <execution>
                         <id>generate-titan-config-table</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <executable>java</executable>
+                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
-                                <argument>-classpath</argument>
-                                <classpath />
-                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
                                 <argument>com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
                                 <argument>${asciidoc.output.dir}/listings/titan_cfg.txt</argument>
                                 <argument>true</argument>
@@ -233,14 +220,11 @@
                         <id>generate-faunus-config-table</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <executable>java</executable>
+                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
-                                <argument>-classpath</argument>
-                                <classpath />
-                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
                                 <argument>com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ROOT_NS</argument>
                                 <argument>${asciidoc.output.dir}/listings/faunus_cfg.txt</argument>
                                 <argument>false</argument>
@@ -251,14 +235,11 @@
                         <id>generate-faunus-rdf-config-table</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <executable>java</executable>
+                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
-                                <argument>-classpath</argument>
-                                <classpath />
-                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
                                 <argument>com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFConfig.ROOT_NS</argument>
                                 <argument>${asciidoc.output.dir}/listings/faunus_rdf_cfg.txt</argument>
                                 <argument>false</argument>
@@ -269,14 +250,11 @@
                         <id>generate-faunus-script-config-table</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <executable>java</executable>
+                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
-                                <argument>-classpath</argument>
-                                <classpath />
-                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
                                 <argument>com.thinkaurelius.titan.hadoop.formats.script.ScriptConfig.ROOT_NS</argument>
                                 <argument>${asciidoc.output.dir}/listings/faunus_script_cfg.txt</argument>
                                 <argument>false</argument>
@@ -482,6 +460,68 @@
                                 <files>
                                     <file>${project.build.directory}/imports.properties</file>
                                 </files>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!-- Delete bin, lib, conf, ... dirs in the root -->
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>clean-dev-dirs-hadoop</id>
+                            <phase>none</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                            <configuration>
+                                <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                <filesets>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/bin/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/conf/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/db/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/ext/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/lib/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/log/</directory>
+                                    </fileset>
+                                </filesets>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>install-dev-dirs-hadoop</id>
+                            <phase>none</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                            <configuration>
+                                <attach>false</attach>
+                                <outputDirectory>${top.level.basedir}</outputDirectory>
+                                <finalName>/</finalName>
+                                <appendAssemblyId>false</appendAssemblyId>
+                                <descriptors>
+                                    <descriptor>../src/assembly/descriptor/filesystem.xml</descriptor>
+                                </descriptors>
+                                <formats combine.self="override">
+                                    <format>dir</format>
+                                </formats>
                             </configuration>
                         </execution>
                     </executions>
@@ -879,6 +919,7 @@
                             <executions>
                                 <execution>
                                     <id>integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -894,6 +935,7 @@
                                 </execution>
                                 <execution>
                                     <id>cassandra-murmur-integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -909,6 +951,7 @@
                                 </execution>
                                 <execution>
                                     <id>cassandra-bop-integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -924,6 +967,7 @@
                                 </execution>
                                 <execution>
                                     <id>cassandra-hbase-integration-test</id>
+                                    <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
                                     </goals>
@@ -938,6 +982,7 @@
                                 </execution>
                                 <execution>
                                     <id>verify</id>
+                                    <phase>verify</phase>
                                     <goals>
                                         <goal>verify</goal>
                                     </goals>

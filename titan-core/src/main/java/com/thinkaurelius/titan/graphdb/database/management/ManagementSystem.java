@@ -1,22 +1,13 @@
 package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
@@ -42,6 +33,8 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfigurati
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timer;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
@@ -414,6 +407,61 @@ public class ManagementSystem implements TitanManagement {
                 return new TitanGraphIndexWrapper(indexType);
             }
         });
+    }
+
+    /**
+     * Do not use this method.  This may be removed or refactored in future Titan versions.
+     *
+     * Final API pending resolution of https://github.com/thinkaurelius/titan/issues/709.
+     *
+     */
+    public static boolean awaitGraphIndexStatus(TitanGraph g, String indexName, SchemaStatus status, long timeout, TimeUnit timeoutUnit) {
+        Preconditions.checkNotNull(g);
+        Preconditions.checkNotNull(indexName);
+        Preconditions.checkNotNull(status);
+        Preconditions.checkArgument(0L <= timeout);
+        Preconditions.checkNotNull(timeoutUnit);
+
+        Map<PropertyKey, SchemaStatus> notConverged = new HashMap<PropertyKey, SchemaStatus>();
+        Map<PropertyKey, SchemaStatus> converged = new HashMap<PropertyKey, SchemaStatus>();
+        TitanGraphIndex idx;
+
+        Timer t = new Timer(Timestamps.MILLI).start();
+        boolean timedOut;
+        while (true) {
+            TitanManagement mgmt = g.getManagementSystem();
+            idx  = mgmt.getGraphIndex(indexName);
+            for (PropertyKey pk : idx.getFieldKeys()) {
+                SchemaStatus s = idx.getIndexStatus(pk);
+                slf.debug("Key {} has status {}", pk, s);
+                if (!status.equals(s))
+                    notConverged.put(pk, s);
+                else
+                    converged.put(pk, s);
+            }
+            /* Rollback must follow the Joiner...(notConverged).  The Joiner calls toString on
+             * PropertyKeys, and the current implementation calls the getName method on the key,
+             * and this expects the attached transaction to be open and usable to read the name.
+             * Rolling back or committing the managementsystem before calling getName results
+             * in an IllegalStateException in the guts of Joiner calling toString on a key.
+             */
+            String waitingOn = Joiner.on(",").withKeyValueSeparator("=").join(notConverged);
+            mgmt.rollback();
+            if (!notConverged.isEmpty()) {
+                slf.info("Some key(s) on index {} do not currently have status {}: ", indexName, status, waitingOn);
+            } else {
+                slf.info("All {} key(s) on index {} have status {}", converged.size(), indexName, status);
+                return true;
+            }
+            timedOut = timeout <= t.elapsed().getLength(timeoutUnit);
+            if (timedOut) {
+                slf.info("Timed out ({} {}) while waiting for index {} to converge on status {}",
+                        timeout, timeoutUnit, indexName, status);
+                return false;
+            }
+            notConverged.clear();
+            converged.clear();
+        }
     }
 
     private void checkIndexName(String indexName) {

@@ -35,6 +35,7 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -58,6 +59,7 @@ import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -1400,7 +1402,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.commit();
 
 
-        Thread.sleep(2000);
+        Thread.sleep(10000L); // why is this necessary?
         finishSchema();
         mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
         mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
@@ -1478,7 +1480,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (IllegalArgumentException e) {}
         finishSchema();
         tx2.commit(); //Release transaction and wait a little for registration which should make enabling possible
-        Thread.sleep(500);
+        mgmt.rollback();
+        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex", SchemaStatus.REGISTERED,
+                TestGraphConfigs.getSchemaConvergenceTime(TimeUnit.SECONDS), TimeUnit.SECONDS);
+        finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
         finishSchema();
 

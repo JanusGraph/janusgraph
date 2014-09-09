@@ -1,8 +1,12 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+                xmlns:d="http://docbook.org/ns/docbook"
+                version="1.0">
 
   <!-- Navigation and section labels -->
   <xsl:param name="suppress.navigation" select="0"/>
-  <xsl:param name="navig.showtitles">1</xsl:param>
+  <xsl:param name="suppress.header.navigation" select="0"/>
+  <xsl:param name="suppress.footer.navigation" select="0"/>
+  <xsl:param name="navig.showtitles" select="1"/>
   <xsl:param name="section.autolabel.max.depth" select="5"/>
   <xsl:param name="section.autolabel" select="1"/>
   <xsl:param name="section.label.includes.component.label" select="1"/>
@@ -42,6 +46,8 @@
 
   <!-- Misc style -->
   <xsl:param name="phrase.propagates.style" select="1"/>
+
+  <xsl:param name="titan.top.nav.links" select="0" />
 
   <!-- Titan-themed output templates -->
   <xsl:template name="titan.head">
@@ -88,55 +94,64 @@
     </script>
   </xsl:template>
 
+  <xsl:template name="titan.header.navigation">
+    <xsl:param name="prev" select="/d:foo"/>
+    <xsl:param name="next" select="/d:foo"/>
+    <xsl:param name="nav.context"/>
+    <div class="header-wrapper">
+      <div class="header-v1">
+        <header id="header">
+          <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
+            <div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
+              <a href="index.html">
+                <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" class="normal_logo" />
+              </a>
+            </div>
+            <nav id="nav" class="nav-holder">
+              <ul class="navigation menu fusion-navbar-nav">
+                <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
+                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
+                <li id="menu-item-4711" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-3610 current_page_item menu-item-4711"><a    href="index.html">Documentation</a></li>
+                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="http://thinkaurelius.com/blog/">Blog &#038; Events</a></li>
+              </ul>
+            </nav>
+            <div class="mobile-nav-holder main-menu"></div>
+          </div>
+        </header>
+      </div>
+    <div class="init-sticky-header"></div>
+    </div>
+    <header id="header-sticky" class="sticky-header">
+      <div class="sticky-shadow">
+        <div class="avada-row">
+          <div class="logo">
+            <a href="index.html">
+              <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" data-max-width="" class="normal_logo" />
+            </a>
+          </div>
+          <nav id="sticky-nav" class="nav-holder">
+            <ul class="navigation menu fusion-navbar-nav">
+              <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
+              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
+              <li id="menu-item-4711" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-3610 current_page_item menu-item-4711"><a    href="index.html">Documentation</a></li>
+              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="http://thinkaurelius.com/blog/">Blog &#038; Events</a></li>
+            </ul>
+          </nav>
+          <div class="mobile-nav-holder"></div>
+        </div>
+      </div>
+    </header>
+  </xsl:template>
+
   <xsl:template name="titan.body">
+    <xsl:param name="prev"/>
+    <xsl:param name="next"/>
     <xsl:param name="maincontent"/>
     <xsl:param name="headercontent"/>
     <xsl:param name="footercontent"/>
     <body>
       <xsl:call-template name="body.attributes"/>
       <div id="wrapper" >
-	<div class="header-wrapper">
-	  <div class="header-v1">
-	    <header id="header">
-	      <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
-		<div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
-		  <a href="index.html">
-		    <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" class="normal_logo" />
-		  </a>
-		</div>
-		<nav id="nav" class="nav-holder">
-		  <ul class="navigation menu fusion-navbar-nav">
-		    <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
-		    <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
-		    <li id="menu-item-4711" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-3610 current_page_item menu-item-4711"><a    href="index.html">Documentation</a></li>
-		    <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="http://thinkaurelius.com/blog/">Blog &#038; Events</a></li>
-		  </ul>
-		</nav>
-		<div class="mobile-nav-holder main-menu"></div>
-	      </div>
-	    </header>
-	    </div>		<div class="init-sticky-header"></div>
-	</div>
-	<header id="header-sticky" class="sticky-header">
-	  <div class="sticky-shadow">
-	    <div class="avada-row">
-	      <div class="logo">
-		<a href="index.html">
-		  <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" data-max-width="" class="normal_logo" />
-		</a>
-	      </div>
-	      <nav id="sticky-nav" class="nav-holder">
-		<ul class="navigation menu fusion-navbar-nav">
-		  <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
-		  <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
-		  <li id="menu-item-4711" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-3610 current_page_item menu-item-4711"><a    href="index.html">Documentation</a></li>
-		  <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="http://thinkaurelius.com/blog/">Blog &#038; Events</a></li>
-		</ul>
-	      </nav>
-	      <div class="mobile-nav-holder"></div>
-	    </div>
-	  </div>
-	</header>
 
 	<xsl:copy-of select="$headercontent"/>
 

@@ -22,7 +22,7 @@ By default, strings are indexed as text. To make this indexing option explicit, 
 [source,gremlin]
 mgmt = g.getManagementSystem()
 summary = mgmt.makePropertyKey('booksummary').dataType(String.class).make()
-mgmt.buildIndex('booksBySummary',Vertex.class).addKey(summary,com.thinkaurelius.titan.core.Parameter.of("mapping",Mapping.TEXT)).buildMixedIndex("search")
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(summary,com.thinkaurelius.titan.core.schema.Parameter.of("mapping",Mapping.TEXT)).buildMixedIndex("search")
 mgmt.commit()
 
 This is identical to a standard mixed index definition with the only addition of an extra parameter that specifies the mapping in the index - in this case `Mapping.TEXT`.
@@ -45,7 +45,7 @@ To index string properties as character sequences without any analysis or tokeni
 [source,gremlin]
 mgmt = g.getManagementSystem()
 name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
-mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.Parameter.of('mapping',Mapping.STRING)).buildMixedIndex("search")
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.schema.Parameter.of('mapping',Mapping.STRING)).buildMixedIndex("search")
 mgmt.commit()
 
 When a string mapping is configured, the string value is indexed and can be queried "as-is" - including stop words and non-letter characters. However, in this case the query must match the entire string value. Hence, the string mapping is useful when indexing short character sequences that are considered to be one token.
@@ -67,7 +67,7 @@ By default, Titan will encode property keys to generate a unique field name for 
 [source,gremlin]
 mgmt = g.getManagementSystem()
 name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
-mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.Parameter.of('mapped-name','bookname')).buildMixedIndex("search")
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.schema.Parameter.of('mapped-name','bookname')).buildMixedIndex("search")
 mgmt.commit()
 
 With this field mapping defined as a parameter, Titan will use the same name for the field in the `booksBySummary` index created in the external index system as for the property key. Note, that it must be ensured that the given field name is unique in the index.

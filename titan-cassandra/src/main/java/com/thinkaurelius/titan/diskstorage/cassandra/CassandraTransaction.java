@@ -20,7 +20,7 @@ public class CassandraTransaction extends AbstractStoreTransaction {
 
     public CassandraTransaction(BaseTransactionConfig c) {
         super(c);
-        read =  CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_WRITE_CONSISTENCY));
+        read =  CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_READ_CONSISTENCY));
         write = CLevel.parse(getConfiguration().getCustomOption(CASSANDRA_WRITE_CONSISTENCY));
         log.debug("Created {}", this.toString());
     }

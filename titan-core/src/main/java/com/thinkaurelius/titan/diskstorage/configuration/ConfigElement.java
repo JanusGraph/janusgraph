@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -113,20 +114,21 @@ public abstract class ConfigElement {
     }
 
     public static String toString(ConfigElement element) {
-        return toStringRecursive(element,"");
+        //return toStringRecursive(element,"");
+        return toStringSingle(element, "");
     }
 
-    private static String toStringRecursive(ConfigElement element, String indent) {
-        String result = toStringSingle(element, indent) + "\n";
-        if (element.isNamespace()) {
-            ConfigNamespace ns = (ConfigNamespace)element;
-            indent += "\t";
-            for (ConfigElement child : ns.getChildren()) {
-                result += toStringRecursive(child,indent);
-            }
-        }
-        return result;
-    }
+//    private static String toStringRecursive(ConfigElement element, String indent) {
+//        String result = toStringSingle(element, indent) + "\n";
+//        if (element.isNamespace()) {
+//            ConfigNamespace ns = (ConfigNamespace)element;
+//            indent += "\t";
+//            for (ConfigElement child : ns.getChildren()) {
+//                result += toStringRecursive(child,indent);
+//            }
+//        }
+//        return result;
+//    }
 
     public static String getPath(ConfigElement element, String... umbrellaElements) {
         Preconditions.checkNotNull(element);

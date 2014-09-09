@@ -97,7 +97,7 @@
                 <storage.backend>cassandra</storage.backend>
                 <index.search.backend>elasticsearch</index.search.backend>
                 <index.search.hostname>127.0.0.1</index.search.hostname>
-                <index.search.client-only>true</index.search.client-only>
+                <index.search.elasticsearch.client-only>true</index.search.elasticsearch.client-only>
             </properties>
             <extensions>
               <allows>

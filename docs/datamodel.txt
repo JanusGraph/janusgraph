@@ -31,7 +31,7 @@ image:titanstoragelayout.png[]
 Titan stores each adjacency list as a row in the underlying storage backend. The (64 bit) vertex id (which Titan uniquely assigns to every vertex) is the key which points to the row containing the vertex's adjacency list. Each edge and property is stored as an individual cell in the row which allows for efficient insertions and deletions.
 The maximum number of cells allowed per row in a particular storage backend is therefore also the maximum degree of a vertex that Titan can support against this backend.
 
-If the storage backend supports key-order, the adjacency lists will be ordered by the id of their vertex and Titan's can assign vertex ids such that the graph is effectively partitioned. Ids are assigned such that vertices which are frequently co-accessed have ids with small absolute difference.
+If the storage backend supports key-order, the adjacency lists will be ordered by vertex id, and Titan can assign vertex ids such that the graph is effectively partitioned. Ids are assigned such that vertices which are frequently co-accessed have ids with small absolute difference.
 
 Individual Edge Layout
 ~~~~~~~~~~~~~~~~~~~~~~

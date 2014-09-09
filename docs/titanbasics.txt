@@ -787,6 +787,7 @@ mgmt.commit()
 [NOTE]
 To enforce uniqueness against an eventually consistent storage backend, the <<eventual-consistency,consistency>> of the index must be explicitly set to enabling locking.
 
+[[index-mixed]]
 Mixed Index
 ^^^^^^^^^^^
 
@@ -1376,7 +1377,7 @@ When launching Titan with embedded Cassandra, the following warnings may be disp
 Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Rexster:
 
 [source,bash]
-export JAVA_OPTIONS=-javaagent:$TITAN_HOME/lib/jamm-0.2.5.jar
+export TITAN_JAVA_OPTS=-javaagent:$TITAN_HOME/lib/jamm-0.2.5.jar
 
 Cassandra Connection Problem
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

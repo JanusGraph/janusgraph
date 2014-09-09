@@ -39,7 +39,7 @@ public class ConfigurationPrinter {
     public static void main(String args[]) throws FileNotFoundException, IllegalAccessException,
             NoSuchFieldException, ClassNotFoundException {
 
-        ReflectiveConfigOptionLoader.loadOnce();
+        ReflectiveConfigOptionLoader.INSTANCE.loadStandard(ConfigurationPrinter.class);
 
         // Write to filename argument
         if (3 != args.length) {

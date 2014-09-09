@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.util.system.IOUtils;
@@ -18,6 +19,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
+import java.util.List;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -67,9 +70,15 @@ public enum ElasticSearchSetup {
         public Connection connect(Configuration config) throws IOException {
             log.debug("Configuring TransportClient");
 
-            Settings settings = settingsBuilder(config).build();
+            ImmutableSettings.Builder settingsBuilder = settingsBuilder(config);
 
-            TransportClient tc = new TransportClient(settings);
+            if (config.has(ElasticSearchIndex.CLIENT_SNIFF)) {
+                String k = "client.transport.sniff";
+                settingsBuilder.put(k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
+                log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
+            }
+
+            TransportClient tc = new TransportClient(settingsBuilder.build());
             int defaultPort = config.has(INDEX_PORT) ? config.get(INDEX_PORT) : ElasticSearchIndex.HOST_PORT_DEFAULT;
             for (String host : config.get(INDEX_HOSTS)) {
                 String[] hostparts = host.split(":");
@@ -94,6 +103,12 @@ public enum ElasticSearchSetup {
 
             ImmutableSettings.Builder settingsBuilder = settingsBuilder(config);
 
+            if (config.has(ElasticSearchIndex.TTL_INTERVAL)) {
+                String k = "indices.ttl.interval";
+                settingsBuilder.put(k, config.get(ElasticSearchIndex.TTL_INTERVAL));
+                log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.TTL_INTERVAL));
+            }
+
             makeLocalDirsIfNecessary(settingsBuilder, config);
 
             NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder().settings(settingsBuilder.build());
@@ -106,9 +121,6 @@ public enum ElasticSearchSetup {
 
             if (config.has(ElasticSearchIndex.LOCAL_MODE))
                 nodeBuilder.local(config.get(ElasticSearchIndex.LOCAL_MODE));
-
-            if (config.has(ElasticSearchIndex.CLUSTER_NAME))
-                nodeBuilder.clusterName(config.get(ElasticSearchIndex.CLUSTER_NAME));
 
             if (config.has(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS))
                 nodeBuilder.loadConfigSettings(config.get(ElasticSearchIndex.LOAD_DEFAULT_NODE_SETTINGS));
@@ -168,9 +180,26 @@ public enum ElasticSearchSetup {
         int keysLoaded = 0;
         Map<String,Object> configSub = config.getSubset(ElasticSearchIndex.ES_EXTRAS_NS);
         for (Map.Entry<String,Object> entry : configSub.entrySet()) {
-            if (entry.getValue()==null) continue;
-            settings.put(entry.getKey(), entry.getValue().toString());
-            log.debug("[ES ext.* cfg] Set {}: {}", entry.getKey(), entry.getValue());
+            String key = entry.getKey();
+            Object val = entry.getValue();
+            if (null == val) continue;
+            if (List.class.isAssignableFrom(val.getClass())) {
+                // Pretty print lists using comma-separated values and no surrounding square braces for ES
+                List l = (List) val;
+                settings.put(key, Joiner.on(",").join(l));
+            } else if (val.getClass().isArray()) {
+                // As with Lists, but now for arrays
+                // The Object copy[] business lets us avoid repetitive primitive array type checking and casting
+                Object copy[] = new Object[Array.getLength(val)];
+                for (int i= 0; i < copy.length; i++) {
+                    copy[i] = Array.get(val, i);
+                }
+                settings.put(key, Joiner.on(",").join(copy));
+            } else {
+                // Copy anything else unmodified
+                settings.put(key, val.toString());
+            }
+            log.debug("[ES ext.* cfg] Set {}: {}", key, val);
             keysLoaded++;
         }
         log.debug("Loaded {} settings from the {} Titan config namespace",
@@ -193,18 +222,6 @@ public enum ElasticSearchSetup {
             log.debug("Set {}: {}", k, ignoreClusterName);
         }
 
-        if (config.has(ElasticSearchIndex.CLIENT_SNIFF)) {
-            String k = "client.transport.sniff";
-            settings.put(k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
-            log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.CLIENT_SNIFF));
-        }
-
-        if (config.has(ElasticSearchIndex.TTL_INTERVAL)) {
-            String k = "indices.ttl.interval";
-            settings.put(k, config.get(ElasticSearchIndex.TTL_INTERVAL));
-            log.debug("Set {}: {}", k, config.get(ElasticSearchIndex.TTL_INTERVAL));
-        }
-
         // Force-enable dynamic scripting.  This is probably only useful in Node mode.
         String disableScriptsKey = "script.disable_dynamic";
         String disableScriptsVal = settings.get(disableScriptsKey);
@@ -220,33 +237,22 @@ public enum ElasticSearchSetup {
     }
 
     private static void makeLocalDirsIfNecessary(ImmutableSettings.Builder settingsBuilder, Configuration config) {
-
-        boolean clientOnly = config.get(ElasticSearchIndex.CLIENT_ONLY);
-
-        // If this node has data, make sure the data dirs have been configured
-        if (!clientOnly) {
-            boolean pathsMissing = true;
-            for (String sub : ElasticSearchIndex.DATA_SUBDIRS) {
-                pathsMissing &= null == settingsBuilder.get("path." + sub);
+        if (config.has(INDEX_DIRECTORY)) {
+            String dataDirectory = config.get(INDEX_DIRECTORY);
+            File f = new File(dataDirectory);
+            if (!f.exists()) {
+                log.info("Creating ES directory prefix: {}", f);
+                f.mkdirs();
             }
-
-            if (pathsMissing) {
-                String dataDirectory = config.get(INDEX_DIRECTORY);
-                File f = new File(dataDirectory);
+            for (String sub : ElasticSearchIndex.DATA_SUBDIRS) {
+                String subdir = dataDirectory + File.separator + sub;
+                f = new File(subdir);
                 if (!f.exists()) {
-                    log.info("Creating ES directory prefix: {}", f);
+                    log.info("Creating ES {} directory: {}", sub, f);
                     f.mkdirs();
                 }
-                for (String sub : ElasticSearchIndex.DATA_SUBDIRS) {
-                    String subdir = dataDirectory + File.separator + sub;
-                    f = new File(subdir);
-                    if (!f.exists()) {
-                        log.info("Creating ES {} directory: {}", sub, f);
-                        f.mkdirs();
-                    }
-                    settingsBuilder.put("path." + sub, subdir);
-                    log.debug("Set ES {} directory: {}", sub, f);
-                }
+                settingsBuilder.put("path." + sub, subdir);
+                log.debug("Set ES {} directory: {}", sub, f);
             }
         }
     }

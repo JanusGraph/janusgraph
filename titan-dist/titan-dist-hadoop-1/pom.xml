@@ -139,39 +139,12 @@
 
             <build>
                 <plugins>
-
                     <plugin>
                         <artifactId>maven-clean-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>clean-dev-dirs-hadoop1</id>
+                                <id>clean-dev-dirs-hadoop</id>
                                 <phase>clean</phase>
-                                <goals>
-                                    <goal>clean</goal>
-                                </goals>
-                                <configuration>
-                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                                    <filesets>
-                                        <fileset>
-                                            <directory>${top.level.basedir}/bin/</directory>
-                                        </fileset>
-                                        <fileset>
-                                            <directory>${top.level.basedir}/conf/</directory>
-                                        </fileset>
-                                        <fileset>
-                                            <directory>${top.level.basedir}/db/</directory>
-                                        </fileset>
-                                        <fileset>
-                                            <directory>${top.level.basedir}/ext/</directory>
-                                        </fileset>
-                                        <fileset>
-                                            <directory>${top.level.basedir}/lib/</directory>
-                                        </fileset>
-                                        <fileset>
-                                            <directory>${top.level.basedir}/log/</directory>
-                                        </fileset>
-                                    </filesets>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -180,23 +153,8 @@
                         <artifactId>maven-assembly-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>install-dev-dirs-hadoop1</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <attach>false</attach>
-                                    <outputDirectory>${top.level.basedir}</outputDirectory>
-                                    <finalName>/</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                    <descriptors>
-                                        <descriptor>src/assembly/descriptor/filesystem.xml</descriptor>
-                                    </descriptors>
-                                    <formats combine.self="override">
-                                        <format>dir</format>
-                                    </formats>
-                                </configuration>
+                                <id>install-dev-dirs-hadoop</id>
+                                <phase>install</phase>
                             </execution>
                         </executions>
                     </plugin>
