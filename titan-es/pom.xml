@@ -32,6 +32,26 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-berkeleyje</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
@@ -82,6 +102,25 @@
                             <resources>
                                 <resource>
                                     <directory>${project.basedir}/src/test/config</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>filter-cassandra-murmur-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                            <filters>
+                                <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${top.level.basedir}/titan-cassandra/config/cassandra</directory>
                                     <filtering>true</filtering>
                                 </resource>
                             </resources>
@@ -151,6 +190,47 @@
                             </filesets>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                        </configuration>
+                    </execution>
+
+                    <!--
+                    <execution>
+                        <id>es-cassandra-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                            <includes>
+                                <include>**/ThriftElasticsearchTest.java</include>
+                            </includes>
+                            <reuseForks>false</reuseForks>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>default-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/ThriftElasticsearchTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    -->
                 </executions>
             </plugin>
         </plugins>
