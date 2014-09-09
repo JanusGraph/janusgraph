@@ -74,7 +74,7 @@ public class SolrIndex implements IndexProvider {
 
     public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(INDEX_NS,"zookeeper-url",
             "Http connection max connections per host",
-            ConfigOption.Type.GLOBAL_OFFLINE, "http://localhost:2181");
+            ConfigOption.Type.GLOBAL_OFFLINE, "localhost:2181");
 
     public static final ConfigOption<String[]> CORES = new ConfigOption<String[]>(INDEX_NS,"cores",
             "Solr cores that are going to be used.",

@@ -29,30 +29,14 @@ import static org.junit.Assert.assertEquals;
  */
 public class SolrIndexTest extends IndexProviderTest {
 
-    protected static final int NUM_SERVERS = 5;
-    protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge" };
-
-    private static MiniSolrCloudCluster miniSolrCloudCluster;
-
     @BeforeClass
     public static void setUpMiniCluster() throws Exception {
-        String userDir = System.getProperty("user.dir");
-        String solrHome = userDir.contains("titan-solr")
-                            ? Joiner.on(File.separator).join(userDir, "target", "test-classes", "solr")
-                            : Joiner.on(File.separator).join(userDir, "titan-solr", "target", "test-classes", "solr");
-
-        File solrXml = new File(solrHome, "solr.xml");
-        miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml, null, null);
-        for (String core : CORES) {
-            uploadConfigDirToZk(core, Joiner.on(File.separator).join(solrHome, core));
-        }
+        SolrRunner.start();
     }
 
     @AfterClass
     public static void tearDownMiniCluster() throws Exception {
-        System.clearProperty("solr.solrxml.location");
-        System.clearProperty("zkHost");
-        miniSolrCloudCluster.shutdown();
+        SolrRunner.stop();
     }
 
     @Override
@@ -69,8 +53,8 @@ public class SolrIndexTest extends IndexProviderTest {
         final String index = "solr";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
 
-        config.set(SolrIndex.ZOOKEEPER_URL, miniSolrCloudCluster.getZkServer().getZkAddress(), index);
-        config.set(SolrIndex.CORES, CORES, index);
+        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), index);
+        config.set(SolrIndex.CORES, SolrRunner.CORES, index);
         config.set(SolrIndex.KEY_FIELD_NAMES, new String[] {
                       "edge=document_id", "vertex=document_id",
                       "store1=document_id", "store2=document_id"
@@ -104,16 +88,5 @@ public class SolrIndexTest extends IndexProviderTest {
             assertEquals(3,result.size());
             assertEquals(ImmutableSet.of("doc1", "doc2", "doc3"), ImmutableSet.copyOf(result));
         }
-    }
-
-    private static ZkController getZkController() {
-        SolrDispatchFilter dispatchFilter =
-                (SolrDispatchFilter) miniSolrCloudCluster.getJettySolrRunners().get(0).getDispatchFilter().getFilter();
-        return dispatchFilter.getCores().getZkController();
-    }
-
-    protected static void uploadConfigDirToZk(String coreName, String collectionConfigDir) throws Exception {
-        ZkController zkController = getZkController();
-        zkController.uploadConfigDir(new File(collectionConfigDir), coreName);
     }
 }

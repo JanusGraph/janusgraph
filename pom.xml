@@ -80,6 +80,9 @@
         <elasticsearch.version>1.2.1</elasticsearch.version>
         <elasticsearch.mr.version>2.0.0</elasticsearch.mr.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
+        <joda.version>1.6.2</joda.version>
+        <concurrentlinkedhashmap.version>1.3</concurrentlinkedhashmap.version>
+        <antlr.version>3.5</antlr.version>
         <asm3.version>3.1</asm3.version>
         <asm4.version>4.0</asm4.version>
         <zookeeper.version>3.4.6</zookeeper.version>
@@ -390,6 +393,31 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${joda.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+                <artifactId>concurrentlinkedhashmap-lru</artifactId>
+                <version>${concurrentlinkedhashmap.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr-runtime</artifactId>
+                <version>${antlr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr</artifactId>
+                <version>${antlr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr-master</artifactId>
+                <version>${antlr.version}</version>
             </dependency>
             <!-- Jackson 1.x -->
             <dependency>
