@@ -33,12 +33,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-es</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
             <version>5.0.73</version>

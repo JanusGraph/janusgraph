@@ -28,6 +28,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-berkeleyje</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
             <version>${solr.version}</version>

@@ -56,10 +56,6 @@ public class SolrIndex implements IndexProvider {
 
     private static final String CORE_PARAM = "collection";
 
-    public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS,"max-result-set-size",
-            "Maxium number of results to return if no limit is specified",
-            ConfigOption.Type.MASKABLE, 100000);
-
     public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(INDEX_NS,"key-field-names",
             "Field name that uniquely identifies each document in Solr",
             ConfigOption.Type.GLOBAL_OFFLINE, new String[]{"docid"});
@@ -230,7 +226,7 @@ public class SolrIndex implements IndexProvider {
         }
 
         keyFieldIds = parseKeyFieldsForCores(config);
-        maxResults = config.get(MAX_RESULT_SET_SIZE);
+        maxResults = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
     }
 

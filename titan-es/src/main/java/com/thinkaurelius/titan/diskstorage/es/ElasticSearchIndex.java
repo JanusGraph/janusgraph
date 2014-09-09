@@ -139,26 +139,9 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
-//
-//    public static final String MAX_RESULT_SET_SIZE_KEY = "max-result-set-size";
-//    public static final int MAX_RESULT_SET_SIZE_DEFAULT = 100000;
 
-//    public static final String CLIENT_ONLY_KEY = "client-only";
-//    public static final boolean CLIENT_ONLY_DEFAULT = true;
-//    public static final String CLUSTER_NAME_KEY = "cluster-name";
-//    public static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
-//    public static final String INDEX_NAME_KEY = "index-name";
-//    public static final String INDEX_NAME_DEFAULT = "titan";
-
-//    public static final String LOCAL_MODE_KEY = "local-mode";
-//    public static final boolean LOCAL_MODE_DEFAULT = false;
-//    public static final String CLIENT_SNIFF_KEY = "sniff";
-//    public static final boolean CLIENT_SNIFF_DEFAULT = true;
-
-    //    public static final String HOST_NAMES_KEY = "hosts";
     public static final int HOST_PORT_DEFAULT = 9300;
 
-//    public static final String ES_YML_KEY = "config-file";
 
 
     private final Node node;

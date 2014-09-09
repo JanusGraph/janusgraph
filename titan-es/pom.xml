@@ -26,6 +26,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-berkeleyje</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
