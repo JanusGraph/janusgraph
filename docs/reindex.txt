@@ -43,7 +43,7 @@ The two recommended entry points on the `TitanIndexRepair` helper class are thes
 Cassandra Helper
 ^^^^^^^^^^^^^^^^
 
-The static helper method `TitanIndexRepair.cassandraRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, an (optional) index type, and the name of the Cassandra keyspace partitioner.  It generates a reindexing config file in memory and starts a job using the generated config.  See also TitanIndexRepair in the http://thinkaurelius.github.io/titan/javadoc/current/[API documentation].
+The static helper method `TitanIndexRepair.cassandraRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, an (optional) index type, and the name of the Cassandra keyspace partitioner.  It generates a reindexing config file in memory and starts a job using the generated config.
 
 The following starts the reindexing process for the global graph index `byName` defined in <<graph-indexes>>:
 
@@ -63,7 +63,7 @@ TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "battlesB
 HBase Helper
 ^^^^^^^^^^^^
 
-The static helper method `TitanIndexRepair.hbaseRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, and an (optional) index type.  Unlike its Cassandra counterpart, there is no need to pass a partitioner name to the HBase helper method.  It generates a reindexing config file in memory and starts a job using the generated config.  See also TitanIndexRepair in the http://thinkaurelius.github.io/titan/javadoc/current/[API documentation].
+The static helper method `TitanIndexRepair.hbaseRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, and an (optional) index type.  Unlike its Cassandra counterpart, there is no need to pass a partitioner name to the HBase helper method.  It generates a reindexing config file in memory and starts a job using the generated config.
 
 The following starts the reindexing process for the global graph index `byName` defined in <<graph-indexes>>:
 
