@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -12,6 +14,7 @@ import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Imports;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -323,8 +326,98 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
 //        typeManager.setSchemaProvider(DefaultSchemaProvider.INSTANCE);
     }
 
-    // TODO: Unidirectional edges test cases
     // TODO: Multi-properties
+
+    @Test
+    public void testIncrementalLoad() throws Exception {
+
+        bulkLoadGraphOfTheGods(f1);
+        clopen();
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "jupiter").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
+        assertEquals(1, Iterables.size(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
+
+        // Delete a vertex (jupiter), a property (type on cerberus), and an edge (where pluto lives)
+        // The deletions are orthogonal to one another
+        Iterables.getOnlyElement(g.getVertices("name", "jupiter")).remove();
+        Iterables.getOnlyElement(g.getVertices("name", "cerberus")).removeProperty("type");
+        Iterables.getOnlyElement(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")).remove();
+        g.commit();
+
+        assertEquals(11, new GremlinPipeline(g).V().count());
+        assertEquals(9, new GremlinPipeline(g).E().count());
+        assertEquals(0, new GremlinPipeline(g).V("name", "jupiter").count());
+        assertEquals(0, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
+        assertEquals(0, Iterables.size(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
+
+        // Incrementally load gotg to replace the deleted elements (without duplicating existing elements)
+        bulkLoadGraphOfTheGods(getIncrementalGraphSONToTitan());
+        clopen();
+
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "jupiter").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
+        assertEquals(1, Iterables.size(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
+
+        // Load non-incrementally as a control case.  This should result in two copies of the graph.
+        bulkLoadGraphOfTheGods(f1);
+        assertEquals(12 * 2, new GremlinPipeline(g).V().count());
+        assertEquals(17 * 2, new GremlinPipeline(g).E().count());
+    }
+
+    /*
+     * This is a contrived example of incremental vertex property loading.
+     *
+     * In this example, we create a couple of list-valued pkeys.  We then
+     * implement the following semantics in the incremental loader script:
+     * if a prop already has at least one value on a vertex, then don't
+     * add any values for that pkey; if a prop has no values on a vertex,
+     * then add whatever value is supplied.  This behavior isn't that
+     * useful, but it does help exercise the getOrCreateVertexProperty
+     * functionality.
+     */
+    @Test
+    public void testIncrementalVertexPropertyLoad() throws Exception {
+        TitanManagement mgmt = g.getManagementSystem();
+        mgmt.makePropertyKey("type").dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.makePropertyKey("heads").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        mgmt.commit();
+
+        // Reload schema from Titan into Faunus's Type Manager
+        FaunusTypeManager.getTypeManager(null).clear();
+        SchemaProvider titanSchemaProvider = new SchemaContainer(g);
+        FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(null); //argument is ignored
+        typeManager.setSchemaProvider(titanSchemaProvider);
+
+
+        bulkLoadGraphOfTheGods(f1);
+        clopen();
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "jupiter").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
+        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("type").iterator()));
+        assertEquals(0, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("heads").iterator()));
+
+        // Incrementally load a new Cerberus property by defining getOrCreateVertex and getOrCreateVertexProperty
+        bulkLoadGraphOfTheGods(getCustomIncrementalCerberusLoad());
+        clopen();
+
+        assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
+        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("type").iterator()));
+        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("heads").iterator()));
+
+        // Control case: define getOrCreateVertex, but omit getOrCreateVertexProperty
+        // This should lead to a single Cerberus vertex with two values for the type property
+        bulkLoadGraphOfTheGods(getNaiveIncrementalCerberusLoad());
+        clopen();
+        assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
+        assertEquals(2, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("type").iterator()));
+        assertEquals(2, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("heads").iterator()));
+    }
 
     private void close() {
         if (null != g && g.isOpen())
@@ -345,35 +438,80 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         new HadoopPipeline(f)._().submit();
     }
 
-    private HadoopGraph getGraphSONToTitan() {
-        ModifiableHadoopConfiguration faunusConf =
-                new ModifiableHadoopConfiguration();
+    // Configuration helper methods
+
+    private HadoopGraph getCustomIncrementalCerberusLoad() {
+        ModifiableHadoopConfiguration faunusConf = getTitanOutputConfig();
+
+        // Input
+        faunusConf.set(INPUT_FORMAT, GraphSONInputFormat.class.getCanonicalName());
+        faunusConf.set(INPUT_LOCATION, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/extra-cerberus.json");
+
+        // Output (incremental loading)
+        faunusConf.set(OUTPUT_LOADER_SCRIPT_FILE, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/incremental-custom-cerberus-load.groovy");
+
+        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+    }
+
+    private HadoopGraph getNaiveIncrementalCerberusLoad() {
+        ModifiableHadoopConfiguration faunusConf = getTitanOutputConfig();
+
+        // Input
+        faunusConf.set(INPUT_FORMAT, GraphSONInputFormat.class.getCanonicalName());
+        faunusConf.set(INPUT_LOCATION, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/extra-cerberus.json");
+
+        // Output (incremental loading)
+        faunusConf.set(OUTPUT_LOADER_SCRIPT_FILE, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/incremental-naive-cerberus-load.groovy");
+
+        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+    }
+
+    private HadoopGraph getIncrementalGraphSONToTitan() {
+        ModifiableHadoopConfiguration faunusConf = getTitanOutputConfig();
 
         // Input
         faunusConf.set(INPUT_FORMAT, GraphSONInputFormat.class.getCanonicalName());
         faunusConf.set(INPUT_LOCATION, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/graph-of-the-gods.json");
 
-        // Output
-        ModifiableConfiguration titanConf = getTitanConfiguration();
-        faunusConf.set(OUTPUT_FORMAT, getTitanOutputFormatClass().getCanonicalName());
-        faunusConf.setAllOutput(titanConf.getAll());
+        // Output (incremental loading)
+        faunusConf.set(OUTPUT_LOADER_SCRIPT_FILE, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/incremental-load.groovy");
 
-        setCommonFaunusOptions(faunusConf);
-        setCustomFaunusOptions(faunusConf);
+        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+    }
+
+    private HadoopGraph getGraphSONToTitan() {
+        ModifiableHadoopConfiguration faunusConf = getTitanOutputConfig();
+
+        // Input
+        faunusConf.set(INPUT_FORMAT, GraphSONInputFormat.class.getCanonicalName());
+        faunusConf.set(INPUT_LOCATION, "target/test-classes/com/thinkaurelius/titan/hadoop/formats/graphson/graph-of-the-gods.json");
 
         return new HadoopGraph(faunusConf.getHadoopConfiguration());
     }
 
     private HadoopGraph getTitanToTitan() {
-        ModifiableHadoopConfiguration faunusConf =
-                new ModifiableHadoopConfiguration();
-
+        ModifiableHadoopConfiguration faunusConf = getTitanOutputConfig();
         ModifiableConfiguration titanConf = getTitanConfiguration();
 
         // Input
         faunusConf.set(INPUT_FORMAT, getTitanInputFormatClass().getCanonicalName());
         faunusConf.setAllInput(titanConf.getAll());
 
+        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+    }
+
+    /**
+     * Return an unfinished configuration that writes to Titan and
+     * includes custom and common faunus options.  This config has
+     * no input settings (which should be added by the caller after
+     * this method returns).
+     *
+     * @return an incomplete configuration that outputs to titan
+     */
+    private ModifiableHadoopConfiguration getTitanOutputConfig() {
+        ModifiableHadoopConfiguration faunusConf = new ModifiableHadoopConfiguration();
+        ModifiableConfiguration titanConf = getTitanConfiguration();
+
         // Output
         faunusConf.set(OUTPUT_FORMAT, getTitanOutputFormatClass().getCanonicalName());
         faunusConf.setAllOutput(titanConf.getAll());
@@ -381,7 +519,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         setCommonFaunusOptions(faunusConf);
         setCustomFaunusOptions(faunusConf);
 
-        return new HadoopGraph(faunusConf.getHadoopConfiguration());
+        return faunusConf;
     }
 
     private void setCommonFaunusOptions(ModifiableHadoopConfiguration faunusConf) {

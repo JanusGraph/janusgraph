@@ -77,6 +77,12 @@ public class TitanHadoopConfiguration {
             "Whether to attempt to automatically create Titan property keys and labels before writing data",
             ConfigOption.Type.LOCAL, true);
 
+    public static final ConfigOption<String> OUTPUT_LOADER_SCRIPT_FILE = new ConfigOption<String>(
+            OUTPUT_NS, "loader-script-file",
+            "The path to a Titan vertex/edge/property loader script.  This option only has an effect when " +
+            "writing output using one of the Titan*OutputFormat format classes.",
+            ConfigOption.Type.LOCAL, String.class);
+
     public static final ConfigNamespace JOBDIR_NS =
             new ConfigNamespace(TRUNK_NS, "jobdir", "Temporary SequenceFile configuration");
 

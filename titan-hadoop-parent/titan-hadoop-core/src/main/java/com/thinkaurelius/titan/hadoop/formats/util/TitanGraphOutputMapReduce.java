@@ -8,20 +8,21 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.*;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.OUTPUT_LOADER_SCRIPT_FILE;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
@@ -50,10 +52,10 @@ public class TitanGraphOutputMapReduce {
         NULL_VERTICES_IGNORED,
         NULL_RELATIONS_IGNORED,
         SUCCESSFUL_TRANSACTIONS,
-        FAILED_TRANSACTIONS
+        FAILED_TRANSACTIONS,
     }
 
-    public static final Logger LOGGER = Logger.getLogger(TitanGraphOutputMapReduce.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(TitanGraphOutputMapReduce.class);
 
     // TODO move this out-of-band
     // some random property that will 'never' be used by anyone
@@ -95,6 +97,7 @@ public class TitanGraphOutputMapReduce {
         private TitanGraph graph;
         private boolean trackState;
         private ModifiableHadoopConfiguration faunusConf;
+        private LoaderScriptWrapper loaderScript;
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
@@ -104,6 +107,13 @@ public class TitanGraphOutputMapReduce {
             faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
             graph = TitanGraphOutputMapReduce.generateGraph(faunusConf);
             trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
+
+            // Check whether a script is defined in the config
+            if (faunusConf.has(OUTPUT_LOADER_SCRIPT_FILE)) {
+                Path scriptPath = new Path(faunusConf.get(OUTPUT_LOADER_SCRIPT_FILE));
+                FileSystem scriptFS = FileSystem.get(DEFAULT_COMPAT.getJobContextConfiguration(context));
+                loaderScript = new LoaderScriptWrapper(scriptFS, scriptPath);
+            }
         }
 
         @Override
@@ -162,11 +172,8 @@ public class TitanGraphOutputMapReduce {
             } else {
                 final TitanVertex titanVertex;
                 if (faunusVertex.isNew()) {
-                    VertexLabel titanLabel = BaseVertexLabel.DEFAULT_VERTEXLABEL;
-                    FaunusVertexLabel faunusLabel = faunusVertex.getVertexLabel();
-                    if (!faunusLabel.isDefault()) titanLabel = graph.getVertexLabel(faunusLabel.getName());
-                    titanVertex = graph.addVertexWithLabel(titanLabel);
-                    DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_ADDED, 1L);
+                    // Vertex is new to this faunus run, but might already exist in Titan
+                    titanVertex = getTitanVertex(faunusVertex, context);
                 } else {
                     titanVertex = (TitanVertex) graph.getVertex(faunusVertex.getLongId());
                     if (titanVertex==null) {
@@ -177,24 +184,42 @@ public class TitanGraphOutputMapReduce {
                 if (faunusVertex.isNew() || faunusVertex.isModified()) {
                     //Synchronize properties
                     for (final TitanProperty p : faunusVertex.query().queryAll().properties()) {
-                        getCreateOrDeleteRelation(graph,trackState,OUT,faunusVertex,titanVertex,
-                                (StandardFaunusProperty)p,context);
+                        if (null != loaderScript && loaderScript.hasPropMethod()) {
+                            loaderScript.getProp(p, titanVertex, graph, context);
+                        } else {
+                            getCreateOrDeleteRelation(graph, trackState, OUT, faunusVertex, titanVertex,
+                                    (StandardFaunusProperty) p, context);
+                        }
                     }
                 }
                 return titanVertex;
             }
         }
+
+        private TitanVertex getTitanVertex(FaunusVertex faunusVertex, Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) {
+            if (null != loaderScript && loaderScript.hasVertexMethod()) {
+                return loaderScript.getVertex(faunusVertex, graph, context);
+            } else {
+                VertexLabel titanLabel = BaseVertexLabel.DEFAULT_VERTEXLABEL;
+                FaunusVertexLabel faunusLabel = faunusVertex.getVertexLabel();
+                if (!faunusLabel.isDefault()) titanLabel = graph.getVertexLabel(faunusLabel.getName());
+                TitanVertex tv = graph.addVertexWithLabel(titanLabel);
+                DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_ADDED, 1L);
+                return tv;
+            }
+        }
+
     }
+
 
     private static TitanRelation getCreateOrDeleteRelation(final TitanGraph graph, final boolean trackState, final Direction dir,
                                              final FaunusVertex faunusVertex, final TitanVertex titanVertex,
                                              final StandardFaunusRelation faunusRelation, final Mapper.Context context) {
         assert dir==IN || dir==OUT;
-        Map<Long, Long> idMap = faunusVertex.getProperty(ID_MAP_KEY);
-        if (idMap==null) idMap = ImmutableMap.of();
 
         final TitanRelation titanRelation;
         if (trackState && (faunusRelation.isModified() || faunusRelation.isRemoved())) { //Modify existing
+            Map<Long, Long> idMap = getIdMap(faunusVertex);
             titanRelation = getIncidentRelation(graph, dir, titanVertex, faunusRelation,
                     faunusRelation.isEdge()?idMap.get(((FaunusEdge)faunusRelation).getVertexId(dir.opposite())):null);
             if (null == titanRelation) {
@@ -212,10 +237,7 @@ public class TitanGraphOutputMapReduce {
             assert faunusRelation.isNew();
             if (faunusRelation.isEdge()) {
                 StandardFaunusEdge faunusEdge = (StandardFaunusEdge)faunusRelation;
-                Long othervertexid = faunusEdge.getVertexId(dir.opposite());
-                if (idMap.containsKey(othervertexid)) othervertexid=idMap.get(othervertexid);
-                TitanVertex otherVertex = (TitanVertex)graph.getVertex(othervertexid);
-                //TODO: check that other vertex has valid id assignment for unidirected edges
+                TitanVertex otherVertex = getOtherTitanVertex(faunusVertex, faunusEdge, dir.opposite(), graph);
                 if (dir==IN) {
                     titanRelation = otherVertex.addEdge(faunusEdge.getLabel(), titanVertex);
                 } else {
@@ -230,6 +252,15 @@ public class TitanGraphOutputMapReduce {
             }
         }
 
+        synchronizeRelationProperties(graph, faunusRelation, titanRelation, context);
+
+        return titanRelation;
+    }
+
+    private static TitanRelation synchronizeRelationProperties(final TitanGraph graph,
+                                                               final StandardFaunusRelation faunusRelation,
+                                                               final TitanRelation titanRelation,
+                                                               final Mapper.Context context) {
         if (faunusRelation.isModified()  || faunusRelation.isNew()) { //Synchronize incident properties + unidirected edges
             for (TitanRelation faunusProp : faunusRelation.query().queryAll().relations()) {
                 if (faunusProp.isRemoved()) {
@@ -252,7 +283,25 @@ public class TitanGraphOutputMapReduce {
             }
 
         }
+
         return titanRelation;
+    }
+
+    private static TitanVertex getOtherTitanVertex(final FaunusVertex faunusVertex, final FaunusEdge faunusEdge, final Direction otherDir, final TitanGraph graph) {
+        Map<Long, Long> idMap = getIdMap(faunusVertex);
+        Long othervertexid = faunusEdge.getVertexId(otherDir);
+        if (null != idMap && idMap.containsKey(othervertexid))
+            othervertexid = idMap.get(othervertexid);
+        TitanVertex otherVertex = (TitanVertex)graph.getVertex(othervertexid);
+        //TODO: check that other vertex has valid id assignment for unidirected edges
+        return otherVertex;
+    }
+
+    private static Map<Long, Long> getIdMap(final FaunusVertex faunusVertex) {
+        Map<Long, Long> idMap = faunusVertex.getProperty(ID_MAP_KEY);
+        if (null == idMap)
+            idMap = ImmutableMap.of();
+        return idMap;
     }
 
     private static TitanRelation getIncidentRelation(final TitanGraph graph, final Direction dir,
@@ -311,12 +360,20 @@ public class TitanGraphOutputMapReduce {
         private TitanGraph graph;
         private boolean trackState;
         private ModifiableHadoopConfiguration faunusConf;
+        private LoaderScriptWrapper loaderScript;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
             graph = TitanGraphOutputMapReduce.generateGraph(faunusConf);
             trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
+
+            // Check whether a script is defined in the config
+            if (faunusConf.has(OUTPUT_LOADER_SCRIPT_FILE)) {
+                Path scriptPath = new Path(faunusConf.get(OUTPUT_LOADER_SCRIPT_FILE));
+                FileSystem scriptFS = FileSystem.get(DEFAULT_COMPAT.getJobContextConfiguration(context));
+                loaderScript = new LoaderScriptWrapper(scriptFS, scriptPath);
+            }
         }
 
         @Override
@@ -347,9 +404,17 @@ public class TitanGraphOutputMapReduce {
         }
 
         public TitanEdge getCreateOrDeleteEdge(final FaunusVertex faunusVertex, final StandardFaunusEdge faunusEdge, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws InterruptedException {
-            final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getProperty(TITAN_ID));
-            return (TitanEdge)getCreateOrDeleteRelation(graph,trackState,IN,faunusVertex,titanVertex,faunusEdge,context);
-        }
 
+            final Direction dir = IN;
+            final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getProperty(TITAN_ID));
+
+            if (null != loaderScript && loaderScript.hasEdgeMethod()) {
+                TitanEdge te = loaderScript.getEdge(faunusEdge, titanVertex, getOtherTitanVertex(faunusVertex, faunusEdge, dir.opposite(), graph), graph, context);
+                synchronizeRelationProperties(graph, faunusEdge, te, context);
+                return te;
+            } else {
+                return (TitanEdge) getCreateOrDeleteRelation(graph, trackState, dir, faunusVertex, titanVertex, faunusEdge, context);
+            }
+        }
     }
 }
