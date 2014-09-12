@@ -164,7 +164,7 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.copyOf(result), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "wOrLD")))));
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).size());
-            //assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow is the world"))).size());
+            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow is the world"))).size());
 
             //Ordering
             result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc));
@@ -197,7 +197,7 @@ public abstract class IndexProviderTest {
             for (TitanPredicate tp : new Text[]{Text.PREFIX, Text.REGEX}) {
                 try {
                     assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, tp, "world"))).size());
-                    //fail();
+                    fail();
                 } catch (IllegalArgumentException e) {}
             }
             //String
@@ -209,7 +209,7 @@ public abstract class IndexProviderTest {
             for (TitanPredicate tp : new Text[]{Text.CONTAINS,Text.CONTAINS_PREFIX, Text.CONTAINS_REGEX}) {
                 try {
                     assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, tp, "world"))).size());
-                    //fail();
+                    fail();
                 } catch (IllegalArgumentException e) {}
             }
             if (index.supports(new StandardKeyInformation(String.class), Text.REGEX)) {

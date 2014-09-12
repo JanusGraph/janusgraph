@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.graphdb.types.ParameterType;
  * {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}.
  * <p/>
  * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
- * ({@link #TEXT}) or indexed as a whole ({@link #STRING}).
+ * ({@link #TEXT}) or indexed as a whole ({@link #STRING}), or both ({@link #TEXTSTRING}).
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -17,7 +17,8 @@ public enum Mapping {
 
     DEFAULT,
     TEXT,
-    STRING;
+    STRING,
+    TEXTSTRING;
 
     /**
      * Returns the mapping as a parameter so that it can be passed to {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}
