@@ -24,7 +24,6 @@ public class GraphOfTheGodsFactory {
 
     public static final String INDEX_NAME = "search";
 
-
     public static TitanGraph create(final String directory) {
         TitanFactory.Builder config = TitanFactory.build();
         config.set("storage.backend", "berkeleyje");
@@ -137,5 +136,31 @@ public class GraphOfTheGodsFactory {
 
         // commit the transaction to disk
         tx.commit();
+    }
+
+    /**
+     * Calls {@link TitanFactory#open(String)}, passing the Titan configuration file path
+     * which must be the sole element in the {@code args} array, then calls
+     * {@link #load(com.thinkaurelius.titan.core.TitanGraph)} on the opened graph,
+     * then calls {@link com.thinkaurelius.titan.core.TitanGraph#shutdown()}
+     * and returns.
+     * <p>
+     * This method may call {@link System#exit(int)} if it encounters an error, such as
+     * failure to parse its arguments.  Only use this method when executing main from
+     * a command line.  Use one of the other methods on this class ({@link #create(String)}
+     * or {@link #load(com.thinkaurelius.titan.core.TitanGraph)}) when calling from
+     * an enclosing application.
+     *
+     * @param args a singleton array containing a path to a Titan config properties file
+     */
+    public static void main(String args[]) {
+        if (null == args || 1 != args.length) {
+            System.err.println("Usage: GraphOfTheGodsFactory <titan-config-file>");
+            System.exit(1);
+        }
+
+        TitanGraph g = TitanFactory.open(args[0]);
+        load(g);
+        g.shutdown();
     }
 }

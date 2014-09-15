@@ -799,7 +799,7 @@
                                     </goals>
                                     <configuration>
                                         <fromDir>${project.build.directory}</fromDir>
-                                        <includes>*.tar.bz2.asc,*.zip.asc,*.zip,*.tar.bz2</includes>
+                                        <includes>titan*.tar.bz2.asc,titan*.zip.asc,titan*.zip,titan*.tar.bz2</includes>
                                         <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
                                         <url>s3://s3.thinkaurelius.com/downloads/titan/</url>
                                     </configuration>
@@ -930,6 +930,7 @@
                                         <excludes>
                                             <exclude>**/*HBase*IT.java</exclude>
                                             <exclude>**/*Cassandra*IT.java</exclude>
+                                            <exclude>**/*CompatIT.java</exclude>
                                         </excludes>
                                     </configuration>
                                 </execution>
@@ -966,7 +967,7 @@
                                     </configuration>
                                 </execution>
                                 <execution>
-                                    <id>cassandra-hbase-integration-test</id>
+                                    <id>hbase-integration-test</id>
                                     <phase>integration-test</phase>
                                     <goals>
                                         <goal>integration-test</goal>
@@ -977,6 +978,21 @@
                                         <failIfNoTests>false</failIfNoTests>
                                         <includes>
                                             <include>**/*HBase*IT.java</include>
+                                        </includes>
+                                    </configuration>
+                                </execution>
+                                <execution>
+                                    <id>version-compat-integration-test</id>
+                                    <phase>integration-test</phase>
+                                    <goals>
+                                        <goal>integration-test</goal>
+                                    </goals>
+                                    <configuration>
+                                        <reportNameSuffix>compat</reportNameSuffix>
+                                        <failIfNoTests>false</failIfNoTests>
+                                        <skip>${skipCompatITs}</skip>
+                                        <includes>
+                                            <include>**/*CompatIT.java</include>
                                         </includes>
                                     </configuration>
                                 </execution>
