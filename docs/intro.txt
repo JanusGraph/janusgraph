@@ -196,7 +196,7 @@ Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Greml
 Loading the Graph of the Gods Into Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The example below will load _The Graph of the Gods_ dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), `TitanFactory` provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the `TitanFactory.open(String directory)` method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance <<cassandra,using Cassandra>> or <<hbase,using HBase>>. Refer to the <<storage-backends,storage backend overview>> on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above *Graph of the Gods* diagram.
+The example below will open a Titan graph instance and load _The Graph of the Gods_ dataset diagrammed above.  `TitanFactory` provides a set of static `open` methods, each of which takes a configuration as its argument and returns a graph instance.  This tutorial calls one of these `open` methods on a configuration that uses the <<bdb,BerkeleyDB>> storage backend and the <<elasticsearch,Elasticsearch>> index backend, then loads _The Graph of the Gods_ using the helper class `GraphOfTheGodsFactory`.  This section skips over the configuration details, but additional information about storage backends, index backends, and their configuration are available in <<storage-backends>>, <<index-backends>>, and <<titan-config-ref>>.
 
 [source,gremlin]
 gremlin> g = TitanFactory.open('conf/titan-berkeleydb-es.properties')
