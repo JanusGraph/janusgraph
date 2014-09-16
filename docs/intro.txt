@@ -171,7 +171,7 @@ Archive:  titan.zip
   creating: titan/
 ...
 $ cd titan
-$ bin/gremlin.sh 
+$ bin/gremlin.sh
 
          \,,,/
          (o o)
@@ -199,10 +199,12 @@ Loading the Graph of the Gods Into Titan
 The example below will load _The Graph of the Gods_ dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), `TitanFactory` provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the `TitanFactory.open(String directory)` method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance <<cassandra,using Cassandra>> or <<hbase,using HBase>>. Refer to the <<storage-backends,storage backend overview>> on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above *Graph of the Gods* diagram.
 
 [source,gremlin]
-gremlin> g = GraphOfTheGodsFactory.create('/tmp/titan')           
-==>titangraph[local:/tmp/titan]
+gremlin> g = TitanFactory.open('conf/titan-berkeleydb-es.properties')
+==>titangraph[berkeleyje:../db/berkeley]
+gremlin> GraphOfTheGodsFactory.load(g)
+==>null
 
-The `GraphOfTheGodsFactory.create()` method does the following to the newly constructed graph prior to returning it:
+The `TitanFactory.open() and GraphOfTheGodsFactory.load()` methods do the following to the newly constructed graph prior to returning it:
 
 . Creates a collection of global and vertex-centric indices on the graph.
 . Adds all the vertices to the graph along with their properties.
@@ -229,9 +231,7 @@ Given that there is a unique index on `name` property, the Saturn vertex can be 
 gremlin> saturn = g.V.has('name','saturn').next()
 ==>v[4]
 gremlin> saturn.map()
-==>name=saturn
-==>age=10000
-==>type=titan
+==>{name=saturn, age=10000}
 gremlin> saturn.in('father').in('father').name
 ==>hercules
 
@@ -242,7 +242,7 @@ gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
 ==>e[2T-o-2F0LaTPQBM][24-battled->40]
 ==>e[2R-o-2F0LaTPQBM][24-battled->36]
 gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect {
-   it.bothV.name.next(2) 
+   it.bothV.name.next(2)
 }
 ==>[hercules, hydra]
 ==>[hercules, nemean]
@@ -257,17 +257,17 @@ http://en.wikipedia.org/wiki/Hercules[Hercules], son of Jupiter and http://en.wi
 
 //.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Mosaico_Trabajos_H%C3%A9rcules_%28M.A.N._Madrid%29_01.jpg/301px-Mosaico_Trabajos_H%C3%A9rcules_%28M.A.N._Madrid%29_01.jpg
 //..    :align: right
-//.. 
+//..
 //..    Nemean
-//.. 
+//..
 //.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hercules_slaying_the_Hydra.jpg/320px-Hercules_slaying_the_Hydra.jpg
 //..   :align: right
 //..
 //..   Hydra
-//.. 
+//..
 //.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cerberus-Blake.jpeg/320px-Cerberus-Blake.jpeg
 //..    :align: right
-//.. 
+//..
 //..    Cerberus
 
 In the previous section, it was demonstrated that Saturn's grandchild was Hercules. This can be expressed using a `loop`. In essence, Hercules is the vertex that is 2-steps away from Saturn along the `in('father')` path.
@@ -318,7 +318,7 @@ More Complex Graph Traversal Examples
 [quote]
 In the depths of Tartarus lives Pluto. His relationship with Hercules was strained by the fact that Hercules battled his pet, Cerberus. However, Hercules is his nephew -- how should he make Hercules pay for his insolence?
 
-The Gremlin traversals below provide more examples over _The Graph of the Gods_. The explanation of each traversal is provided in the prior line as a `//` comment. 
+The Gremlin traversals below provide more examples over _The Graph of the Gods_. The explanation of each traversal is provided in the prior line as a `//` comment.
 
 //.. .. image:: http://upload.wikimedia.org/wikipedia/commons/9/93/Agostino_Carracci_01.jpg
 //..   :align: right
@@ -330,7 +330,7 @@ Cohabiters of Tartarus
 gremlin> pluto = g.V('name','pluto').next()
 ==>v[32]
 gremlin> // who are pluto's cohabitants?
-gremlin> pluto.out('lives').in('lives').name                
+gremlin> pluto.out('lives').in('lives').name
 ==>pluto
 ==>cerberus
 gremlin> // pluto can't be his own cohabitant
@@ -365,7 +365,7 @@ gremlin> g.query().has('reason',CONTAINS,'loves').edges()
 ==>e[2B-g-2F0LaTPQBU][16-lives->8]
 ==>e[2H-k-2F0LaTPQBU][20-lives->12]
 gremlin> g.query().has('reason',CONTAINS,'loves').edges().collect{
-  [it.outV.name.next(),it.reason,it.inV.name.next()] 
+  [it.outV.name.next(),it.reason,it.inV.name.next()]
 }
 ==>[jupiter, loves fresh breezes, sky]
 ==>[neptune, loves waves, sea]
