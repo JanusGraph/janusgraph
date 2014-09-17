@@ -45,7 +45,7 @@ To do this, call `TransactionBuilder.setMetricsPrefix(String)`:
 [source,java]
 TitanGraph graph = ...;
 TransactionBuilder tbuilder = graph.buildTransaction();
-TitanTransaction tx = tbuilder.setMetricsPrefix("foobar").start();
+TitanTransaction tx = tbuilder.setGroupName("foobar").start();
 
 Separating Metrics by Backend Store
 +++++++++++++++++++++++++++++++++++
