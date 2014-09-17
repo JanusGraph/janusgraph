@@ -184,8 +184,8 @@ public class TitanGraphOutputMapReduce {
                 if (faunusVertex.isNew() || faunusVertex.isModified()) {
                     //Synchronize properties
                     for (final TitanProperty p : faunusVertex.query().queryAll().properties()) {
-                        if (null != loaderScript && loaderScript.hasPropMethod()) {
-                            loaderScript.getProp(p, titanVertex, graph, context);
+                        if (null != loaderScript && loaderScript.hasVPropMethod()) {
+                            loaderScript.getVProp(p, titanVertex, graph, context);
                         } else {
                             getCreateOrDeleteRelation(graph, trackState, OUT, faunusVertex, titanVertex,
                                     (StandardFaunusProperty) p, context);

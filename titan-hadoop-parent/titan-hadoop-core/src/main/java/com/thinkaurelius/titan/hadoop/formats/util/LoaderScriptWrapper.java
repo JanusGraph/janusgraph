@@ -62,14 +62,18 @@ public class LoaderScriptWrapper {
         EDGE_LOADER_SCRIPT_CALLS,
         EDGE_LOADER_SCRIPT_EXCEPTIONS,
         EDGE_LOADER_SCRIPT_RETURNS,
-        PROP_LOADER_SCRIPT_CALLS,
-        PROP_LOADER_SCRIPT_EXCEPTIONS,
-        PROP_LOADER_SCRIPT_RETURNS,
+        VERTEX_PROP_LOADER_SCRIPT_CALLS,
+        VERTEX_PROP_LOADER_SCRIPT_EXCEPTIONS,
+        VERTEX_PROP_LOADER_SCRIPT_RETURNS,
     }
+
+    static final String EDGE_METHOD_NAME = "getOrCreateEdge";
+    static final String VERTEX_METHOD_NAME = "getOrCreateVertex";
+    static final String VERTEX_PROP_METHOD_NAME = "getOrCreateVertexProperty";
 
     private final GremlinGroovyScriptEngine loaderEngine;
     private final CompiledScript vertexMethod;
-    private final CompiledScript propMethod;
+    private final CompiledScript vpropMethod;
     private final CompiledScript edgeMethod;
 
     private static final ImmutableMap<String, Class<?>> vertexArguments = ImmutableMap.of(
@@ -79,7 +83,7 @@ public class LoaderScriptWrapper {
             "log", Logger.class
     );
 
-    private static final ImmutableMap<String, Class<?>> propArguments = ImmutableMap.of(
+    private static final ImmutableMap<String, Class<?>> vpropArguments = ImmutableMap.of(
             "faunusProperty", TitanProperty.class,
             "vertex", TitanVertex.class,
             "graph", TitanGraph.class,
@@ -101,22 +105,29 @@ public class LoaderScriptWrapper {
     }
 
     public LoaderScriptWrapper(FileSystem fs, Path scriptPath) throws IOException {
-        this(getScriptString(fs, scriptPath));
-    }
+        String scriptString = getScriptString(fs, scriptPath);
 
-    public LoaderScriptWrapper(String scriptString) throws IOException {
         loaderEngine = new GremlinGroovyScriptEngine(importCustomizer);
         vertexMethod = getVertexMethod(scriptString, loaderEngine);
-        propMethod = getPropMethod(scriptString, loaderEngine);
+        vpropMethod = getVPropMethod(scriptString, loaderEngine);
         edgeMethod = getEdgeMethod(scriptString, loaderEngine);
+
+        /* Configuring an incremental loading script that contains no usable
+         * methods probably indicates a syntax or compile error in the provided
+         * script.  Throw an exception.
+         */
+        if (null == vertexMethod && null == vpropMethod && null == edgeMethod) {
+            throw new RuntimeException("No methods could be compiled from the loader script " + scriptPath +
+                    ".  See Slf4j log output for debugging info.");
+        }
     }
 
     public boolean hasVertexMethod() {
         return null != vertexMethod;
     }
 
-    public boolean hasPropMethod() {
-        return null != propMethod;
+    public boolean hasVPropMethod() {
+        return null != vpropMethod;
     }
 
     public boolean hasEdgeMethod() {
@@ -141,20 +152,20 @@ public class LoaderScriptWrapper {
         }
     }
 
-    public void getProp(TitanProperty faunusProperty, TitanVertex vertex, TitanGraph graph, Mapper.Context context) {
+    public void getVProp(TitanProperty faunusProperty, TitanVertex vertex, TitanGraph graph, Mapper.Context context) {
         Bindings bindings = new SimpleBindings();
         bindings.put("faunusProperty", faunusProperty);
         bindings.put("vertex", vertex);
         bindings.put("graph", graph);
         bindings.put("context", context);
         bindings.put("log", LOGGER);
-        DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROP_LOADER_SCRIPT_CALLS, 1L);
+        DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_PROP_LOADER_SCRIPT_CALLS, 1L);
         try {
-            propMethod.eval(bindings);
+            vpropMethod.eval(bindings);
             LOGGER.debug("Compiled property loader method invoked");
-            DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROP_LOADER_SCRIPT_RETURNS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_PROP_LOADER_SCRIPT_RETURNS, 1L);
         } catch (ScriptException e) {
-            DEFAULT_COMPAT.incrementContextCounter(context, Counters.PROP_LOADER_SCRIPT_EXCEPTIONS, 1L);
+            DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_PROP_LOADER_SCRIPT_EXCEPTIONS, 1L);
             throw new RuntimeException(e);
         }
     }
@@ -193,17 +204,17 @@ public class LoaderScriptWrapper {
     }
 
     private static CompiledScript getVertexMethod(String script, GremlinGroovyScriptEngine loaderEngine) {
-        return getMethod(script, loaderEngine, "getOrCreateVertex", vertexArguments);
+        return getMethod(script, loaderEngine, VERTEX_METHOD_NAME, vertexArguments);
 
     }
 
-    private static CompiledScript getPropMethod(String script, GremlinGroovyScriptEngine loaderEngine) {
-        return getMethod(script, loaderEngine, "getOrCreateVertexProperty", propArguments);
+    private static CompiledScript getVPropMethod(String script, GremlinGroovyScriptEngine loaderEngine) {
+        return getMethod(script, loaderEngine, VERTEX_PROP_METHOD_NAME, vpropArguments);
 
     }
 
     private static CompiledScript getEdgeMethod(String script, GremlinGroovyScriptEngine loaderEngine) {
-        return getMethod(script, loaderEngine, "getOrCreateEdge", edgeArguments);
+        return getMethod(script, loaderEngine, EDGE_METHOD_NAME, edgeArguments);
     }
 
     private static CompiledScript getMethod(String script, GremlinGroovyScriptEngine loaderEngine, String methodName, Map<String, Class<?>> args) {
@@ -244,11 +255,11 @@ public class LoaderScriptWrapper {
                 // It is defined: compile a script that calls the method
                 compiled = loaderEngine.compile(callString.toString());
             }
-            LOGGER.debug("Tested whether script contained method {}: {}/{}", invocation, s, compiled);
+            LOGGER.info("Tested whether script contained method {}: {}/{}", invocation, s, compiled);
         } catch (RuntimeException e) {
-            LOGGER.debug("Custom loader script does not define {}", invocation, e);
+            LOGGER.info("Custom loader script does not define {}", invocation, e);
         } catch (ScriptException e) {
-            LOGGER.debug("Custom loader script does not define {}", invocation, e);
+            LOGGER.info("Custom loader script does not define {}", invocation, e);
         }
 
         return compiled;
