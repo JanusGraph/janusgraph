@@ -1220,13 +1220,13 @@ public class GraphDatabaseConfiguration {
             //Freeze global configuration if not already frozen!
             ModifiableConfiguration globalWrite = new ModifiableConfiguration(ROOT_NS,kcvsConfig, BasicConfiguration.Restriction.GLOBAL);
             if (!globalWrite.isFrozen()) {
-                //Copy over global configurations
+                //Copy local config to global
                 Map<ConfigElement.PathIdentifier,Object> allOptions = localbc.getAll();
                 globalWrite.setAll(Maps.filterEntries(allOptions,new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
                     @Override
                     public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
                         assert entry.getKey().element.isOption();
-                        return ((ConfigOption)entry.getKey().element).isGlobal();
+                        return ((ConfigOption)entry.getKey().element).isGlobal(); // omits ConfigOption.Type.LOCAL
                     }
                 }));
 
@@ -1238,9 +1238,10 @@ public class GraphDatabaseConfiguration {
                 if (!localbc.has(CLUSTER_PARTITION)) {
                     boolean part = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
                     globalWrite.set(CLUSTER_PARTITION, part);
-                    log.info("Enabled partitioning", part);
+                    log.info("Set {}={} from store features", ConfigElement.getPath(CLUSTER_PARTITION), part);
                 } else {
-                    log.info("Disabled partitioning");
+                    log.info("Set {}={} from local config", ConfigElement.getPath(CLUSTER_PARTITION), globalWrite.get(CLUSTER_PARTITION));
+                    Preconditions.checkState(globalWrite.get(CLUSTER_PARTITION).equals(localbc.get(CLUSTER_PARTITION)));
                 }
 
                 /* If the configuration does not explicitly set a timestamp provider and
@@ -1492,6 +1493,10 @@ public class GraphDatabaseConfiguration {
 
     public int getTxDirtyVertexSize() {
         return txDirtyVertexSize;
+    }
+
+    public boolean isClusterPartitioned() {
+        return configuration.get(CLUSTER_PARTITION);
     }
 
     public boolean isBatchLoading() {
