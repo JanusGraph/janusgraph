@@ -15,8 +15,10 @@ import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.log.*;
 import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
@@ -1850,6 +1852,80 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testFixedGraphConfig() {
         setIllegalGraphOption(INITIAL_TITAN_VERSION, ConfigOption.Type.FIXED, "foo");
+    }
+
+    @Test
+    public void testManagedOptionMasking() throws BackendException {
+        // Can't use clopen(...) for this test, because it's aware local vs global option types and
+        // uses ManagementSystem where necessary.  We want to simulate an erroneous attempt to
+        // override global options by tweaking the local config file (ignoring ManagementSystem),
+        // so we have to bypass clopen(...).
+        //clopen(
+        //    option(ALLOW_STALE_CONFIG), false,
+        //    option(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE), false);
+
+        // Check this test's assumptions about option default values
+
+        StandardDuration customCommitTime = new StandardDuration(456L, TimeUnit.MILLISECONDS);
+        Preconditions.checkState(true == ALLOW_STALE_CONFIG.getDefaultValue());
+        Preconditions.checkState(ALLOW_STALE_CONFIG.getType().equals(ConfigOption.Type.MASKABLE));
+        Preconditions.checkState(!customCommitTime.equals(MAX_COMMIT_TIME.getDefaultValue()));
+
+        // Disallow managed option masking and verify exception at graph startup
+        close();
+        WriteConfiguration wc = getConfiguration();
+        wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), false);
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        try {
+            graph = (StandardTitanGraph) TitanFactory.open(wc);
+            fail("Masking managed config options should be disabled in this configuration");
+        } catch (TitanConfigurationException e) {
+            // Exception should cite the problematic setting's full name
+            assertTrue(e.getMessage().contains(ConfigElement.getPath(MAX_COMMIT_TIME)));
+        }
+
+        // Allow managed option masking (default config again) and check that the local value is ignored and
+        // that no exception is thrown
+        close();
+        wc = getConfiguration();
+        wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), true);
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        graph = (StandardTitanGraph) TitanFactory.open(wc);
+        // Local value should be overridden by the default that already exists in the backend
+        assertEquals(MAX_COMMIT_TIME.getDefaultValue(), graph.getConfiguration().getMaxCommitTime());
+
+        // Wipe the storage backend
+        graph.getBackend().clearStorage();
+        try {
+            graph.shutdown();
+        } catch (Throwable t) {
+            log.debug("Swallowing throwable during shutdown after clearing backend storage", t);
+        }
+
+        // Bootstrap a new DB with managed option masking disabled
+        wc = getConfiguration();
+        wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), false);
+        graph = (StandardTitanGraph) TitanFactory.open(wc);
+        close();
+
+        // Check for expected exception
+        wc = getConfiguration();
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        try {
+            graph = (StandardTitanGraph) TitanFactory.open(wc);
+            fail("Masking managed config options should be disabled in this configuration");
+        } catch (TitanConfigurationException e) {
+            // Exception should cite the problematic setting's full name
+            assertTrue(e.getMessage().contains(ConfigElement.getPath(MAX_COMMIT_TIME)));
+        }
+
+        // Now check that ALLOW_STALE_CONFIG is actually MASKABLE -- enable it in the local config
+        wc = getConfiguration();
+        wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), true);
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        graph = (StandardTitanGraph) TitanFactory.open(wc);
+        // Local value should be overridden by the default that already exists in the backend
+        assertEquals(MAX_COMMIT_TIME.getDefaultValue(), graph.getConfiguration().getMaxCommitTime());
     }
 
     @Test

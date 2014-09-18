@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.EnumSet;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -41,6 +42,8 @@ public class ConfigOption<O> extends ConfigElement {
          */
         LOCAL;
     }
+
+    private static final EnumSet<Type> managedTypes = EnumSet.of(Type.FIXED, Type.GLOBAL_OFFLINE, Type.GLOBAL);
 
     private final Type type;
     private final Class<O> datatype;
@@ -112,6 +115,22 @@ public class ConfigOption<O> extends ConfigElement {
 
     public boolean isGlobal() {
         return type==Type.FIXED || type==Type.GLOBAL_OFFLINE || type==Type.GLOBAL || type==Type.MASKABLE;
+    }
+
+    /**
+     * Returns true on config options whose values are not local or maskable, that is,
+     * cluster-wide options that are either fixed or which can be changed only by using
+     * the {@link com.thinkaurelius.titan.graphdb.database.management.ManagementSystem}
+     * (and not by editing the local config).
+     *
+     * @return true for managed options, false otherwise
+     */
+    public boolean isManaged() {
+        return managedTypes.contains(type);
+    }
+
+    public static EnumSet<Type> getManagedTypes() {
+        return EnumSet.copyOf(managedTypes);
     }
 
     public boolean isLocal() {

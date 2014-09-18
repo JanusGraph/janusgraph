@@ -1,12 +1,15 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import com.thinkaurelius.titan.diskstorage.util.time.*;
@@ -110,6 +113,16 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(GRAPH_NS,"titan-version",
             "The version of Titan with which this database was created. Automatically set on first start. Don't manually set this property.",
             ConfigOption.Type.FIXED, String.class).hide();
+
+    public static final ConfigOption<Boolean> ALLOW_STALE_CONFIG = new ConfigOption<Boolean>(GRAPH_NS,"ignore-ineffective-local-options",
+            "Whether to allow the local and storage-backend-hosted copies of the configuration to contain conflicting values for " +
+            "options with any of the following types: " + Joiner.on(", ").join(ConfigOption.getManagedTypes()) + ".  " +
+            "These types are managed globally through the storage backend and cannot be overridden by changing the " +
+            "local configuration.  This type of conflict usually indicates misconfiguration.  When this option is true, " +
+            "Titan will log these option conflicts, but continue normal operation using the storage-backend-hosted value " +
+            "for each conflicted option.  When this option is false, Titan will log these option conflicts, but then it " +
+            "will throw an exception, refusing to start.",
+            ConfigOption.Type.MASKABLE, Boolean.class, true);
 
     // ################ INSTANCE REGISTRATION (system) #######################
     // ##############################################################
@@ -1221,14 +1234,7 @@ public class GraphDatabaseConfiguration {
             ModifiableConfiguration globalWrite = new ModifiableConfiguration(ROOT_NS,kcvsConfig, BasicConfiguration.Restriction.GLOBAL);
             if (!globalWrite.isFrozen()) {
                 //Copy over global configurations
-                Map<ConfigElement.PathIdentifier,Object> allOptions = localbc.getAll();
-                globalWrite.setAll(Maps.filterEntries(allOptions,new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
-                    @Override
-                    public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
-                        assert entry.getKey().element.isOption();
-                        return ((ConfigOption)entry.getKey().element).isGlobal();
-                    }
-                }));
+                globalWrite.setAll(getGlobalSubset(localbc.getAll()));
 
                 //Write Titan version
                 Preconditions.checkArgument(!globalWrite.has(INITIAL_TITAN_VERSION),"Database has already been initialized but not frozen");
@@ -1267,6 +1273,56 @@ public class GraphDatabaseConfiguration {
                 if (!TitanConstants.VERSION.equals(version) && !TitanConstants.COMPATIBLE_VERSIONS.contains(version)) {
                     throw new TitanException("StorageBackend version is incompatible with current Titan version: " + version + " vs. " + TitanConstants.VERSION);
                 }
+
+                final boolean managedOverridesAllowed;
+
+                if (localbc.has(ALLOW_STALE_CONFIG))
+                    managedOverridesAllowed = localbc.get(ALLOW_STALE_CONFIG);
+                else if (globalWrite.has(ALLOW_STALE_CONFIG))
+                    managedOverridesAllowed = globalWrite.get(ALLOW_STALE_CONFIG);
+                else
+                    managedOverridesAllowed = ALLOW_STALE_CONFIG.getDefaultValue();
+
+                // Check for disagreement between local and backend values for GLOBAL(_OFFLINE) and FIXED options
+                // The point of this check is to find edits to the local config which have no effect (and therefore likely indicate misconfiguration)
+                Set<String> optionsWithDiscrepancies = Sets.newHashSet();
+                for (Map.Entry<ConfigElement.PathIdentifier, Object> ent : getManagedSubset(localbc.getAll()).entrySet()) {
+                    ConfigElement.PathIdentifier pid = ent.getKey();
+                    assert pid.element.isOption();
+                    ConfigOption<?> opt = (ConfigOption<?>)pid.element;
+                    Object localValue = ent.getValue();
+
+                    // Get the storage backend's setting and compare with localValue
+                    Object storeValue = globalWrite.get(opt, pid.umbrellaElements);
+
+                    // Most validation predicate impls disallow null, but we can't assume that here
+                    final boolean match;
+                    if (null != localValue && null != storeValue) {
+                        match = localValue.equals(storeValue);
+                    } else if (null == localValue && null == storeValue) {
+                        match = true;
+                    } else {
+                        match = false;
+                    }
+
+                    // Log each option with value disagreement between local and backend configs
+                    if (!match) {
+                        String fullOptionName = ConfigElement.getPath(pid.element, pid.umbrellaElements);
+                        String template = "Local setting {}={} (Type: {}) is overridden by globally managed value ({}).  Use the {} interface instead of the local configuration to control this setting.";
+                        Object replacements[] = new Object[] { fullOptionName, localValue, opt.getType(), storeValue, ManagementSystem.class.getSimpleName() };
+                        if (managedOverridesAllowed) { // Lower log severity when this is enabled
+                            log.warn(template, replacements);
+                        } else {
+                            log.error(template, replacements);
+                        }
+                        optionsWithDiscrepancies.add(fullOptionName);
+                    }
+                }
+
+                if (0 < optionsWithDiscrepancies.size() && !managedOverridesAllowed) {
+                    String template = "Local settings present for one or more globally managed options: [%s].  These options are controlled through the %s interface; local settings have no effect.";
+                    throw new TitanConfigurationException(String.format(template, Joiner.on(", ").join(optionsWithDiscrepancies), ManagementSystem.class.getSimpleName()));
+                }
             }
 
             globalConfig = kcvsConfig.asReadConfiguration();
@@ -1304,6 +1360,26 @@ public class GraphDatabaseConfiguration {
 
         this.configuration = new MergedConfiguration(overwrite,combinedConfig);
         preLoadConfiguration();
+    }
+
+    private static Map<ConfigElement.PathIdentifier, Object> getGlobalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
+        return Maps.filterEntries(m, new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
+            @Override
+            public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
+                assert entry.getKey().element.isOption();
+                return ((ConfigOption)entry.getKey().element).isGlobal();
+            }
+        });
+    }
+
+    private static Map<ConfigElement.PathIdentifier, Object> getManagedSubset(Map<ConfigElement.PathIdentifier, Object> m) {
+        return Maps.filterEntries(m, new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
+            @Override
+            public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
+                assert entry.getKey().element.isOption();
+                return ((ConfigOption)entry.getKey().element).isManaged();
+            }
+        });
     }
 
     private static final AtomicLong INSTANCE_COUNTER = new AtomicLong(0);

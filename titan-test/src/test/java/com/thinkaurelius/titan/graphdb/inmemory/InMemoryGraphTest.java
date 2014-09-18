@@ -55,6 +55,9 @@ public class InMemoryGraphTest extends TitanGraphTest {
     public void testFixedGraphConfig() {}
 
     @Override
+    public void testManagedOptionMasking() {}
+
+    @Override
     public void testTransactionConfiguration() {}
 
     @Override
