@@ -1683,6 +1683,10 @@ public class GraphDatabaseConfiguration {
         return backend;
     }
 
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
     public StoreFeatures getStoreFeatures() {
         Preconditions.checkArgument(storeFeatures != null, "Cannot retrieve store features before the storage backend has been initialized");
         return storeFeatures;

@@ -20,6 +20,7 @@ public class MergedConfiguration implements Configuration {
     public boolean has(ConfigOption option, String... umbrellaElements) {
         return first.has(option, umbrellaElements) || second.has(option, umbrellaElements);
     }
+
     @Override
     public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
         if (first.has(option, umbrellaElements))

@@ -8,13 +8,9 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
+import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -66,7 +62,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final boolean forceIndexUsage;
 
-    private final UserModifiableConfiguration storageConfiguration;
+    private final ModifiableConfiguration writableCustomOptions;
+
+    private final Configuration customOptions;
 
     private final StandardTitanGraph graph;
 
@@ -85,7 +83,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
+        this.writableCustomOptions = GraphDatabaseConfiguration.buildConfiguration();
+        this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
         setVertexCacheSize(graphConfig.getTxVertexCacheSize());
         setDirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
@@ -173,7 +172,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public TransactionBuilder setCustomOption(String k, Object v) {
-        storageConfiguration.set(k, v);
+        writableCustomOptions.set((ConfigOption<Object>)ConfigElement.parse(ROOT_NS, k).element, v);
         return this;
     }
 
@@ -185,9 +184,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
-                defaultSchemaMaker, new BasicConfiguration(ROOT_NS,
-                        storageConfiguration.getConfiguration(),
-                        Restriction.NONE));
+                defaultSchemaMaker, customOptions);
         return graph.newTransaction(immutable);
     }
 
@@ -312,8 +309,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public Configuration getCustomOptions() {
-        return new BasicConfiguration(ROOT_NS,
-                storageConfiguration.getConfiguration(), Restriction.NONE);
+        return customOptions;
     }
 
     @Override
@@ -355,7 +351,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                 int[] restrictedPartitions,
                 String groupName, DefaultSchemaMaker defaultSchemaMaker,
-                Configuration storageConfiguration) {
+                Configuration customOptions) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
             this.hasAssignIDsImmediately = hasAssignIDsImmediately;
@@ -377,7 +373,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                     .commitTime(commitTime)
                     .timestampProvider(times)
                     .groupName(groupName)
-                    .customOptions(storageConfiguration).build();
+                    .customOptions(customOptions).build();
         }
 
         @Override
