@@ -114,7 +114,7 @@ public class GraphDatabaseConfiguration {
             "The version of Titan with which this database was created. Automatically set on first start. Don't manually set this property.",
             ConfigOption.Type.FIXED, String.class).hide();
 
-    public static final ConfigOption<Boolean> ALLOW_STALE_CONFIG = new ConfigOption<Boolean>(GRAPH_NS,"ignore-ineffective-local-options",
+    public static final ConfigOption<Boolean> ALLOW_STALE_CONFIG = new ConfigOption<Boolean>(GRAPH_NS,"allow-stale-config",
             "Whether to allow the local and storage-backend-hosted copies of the configuration to contain conflicting values for " +
             "options with any of the following types: " + Joiner.on(", ").join(ConfigOption.getManagedTypes()) + ".  " +
             "These types are managed globally through the storage backend and cannot be overridden by changing the " +
