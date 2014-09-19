@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.fulgora.FulgoraBuilder;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.olap.OLAPTest;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
+import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
 import com.tinkerpop.blueprints.Direction;
 import org.junit.Test;
@@ -32,7 +33,6 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-@Category({ OrderedKeyStoreTests.class })
 public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
     final static Random random = new Random();
@@ -49,7 +49,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     public WriteConfiguration getConfiguration() {
         WriteConfiguration config = getBaseConfiguration();
         ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
-        mconf.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
+        // Let GraphDatabaseConfiguration's config freezer set CLUSTER_PARTITION
+        //mconf.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
         mconf.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,numPartitions);
         //uses SimpleBulkPlacementStrategy by default
         mconf.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS,16);
@@ -57,6 +58,19 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
+    @Category({ OrderedKeyStoreTests.class })
+    public void testOrderedConfig() {
+        assertTrue(graph.getConfiguration().isClusterPartitioned());
+    }
+
+    @Test
+    @Category({ UnorderedKeyStoreTests.class })
+    public void testUnorderedConfig() {
+        assertFalse(graph.getConfiguration().isClusterPartitioned());
+    }
+
+    @Test
+    @Category({ OrderedKeyStoreTests.class })
     public void testSetup() {
         final IDManager idManager = graph.getIDManager();
         assertEquals(8, idManager.getPartitionBound());
@@ -67,6 +81,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
+    @Category({ OrderedKeyStoreTests.class })
     public void testVertexPartitioning() throws Exception {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH),false};
         clopen(options);
@@ -288,6 +303,19 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         }
     }
 
+    @Test
+    @Category({ UnorderedKeyStoreTests.class })
+    public void testVLabelOnUnorderedStorage() {
+        final String label = "pl";
+        mgmt.makeVertexLabel(label).partition().make();
+        mgmt.commit();
+        try {
+            graph.addVertexWithLabel(label);
+            fail("Partitioned label must be rejected on unordered key stores");
+        } catch (IllegalArgumentException e) {
+            // Swallow expected exception
+        }
+    }
 
     public static int getPartitionID(TitanVertex vertex, IDManager idManager) {
         long p = idManager.getPartitionId(vertex.getLongId());
