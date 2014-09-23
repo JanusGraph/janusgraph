@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -110,7 +111,8 @@ public class SolrIndex implements IndexProvider {
             "Maximum number of HTTP connections in total to all Solr servers.",
             ConfigOption.Type.GLOBAL_OFFLINE, 100);
 
-    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL().build();
+    private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
+            .setDefaultMapping(Mapping.TEXTSTRING).supportedMappings(Mapping.TEXTSTRING).build();
 
     /**
      * Builds a mapping between the core name and its respective Solr Server connection.

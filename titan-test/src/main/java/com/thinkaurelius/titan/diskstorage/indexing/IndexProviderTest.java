@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 
 import org.junit.After;
@@ -40,6 +41,7 @@ public abstract class IndexProviderTest {
     private static final Parameter[] NO_PARAS = new Parameter[0];
 
     protected IndexProvider index;
+    protected IndexFeatures indexFeatures;
     protected IndexTransaction tx;
 
     public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name";
@@ -89,6 +91,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws BackendException {
         index = openIndex();
+        indexFeatures = index.getFeatures();
         newTx();
     }
 
@@ -164,7 +167,9 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.copyOf(result), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "wOrLD")))));
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow is the world"))).size());
+            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow is the world"))).size());
+            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "WorLD HELLO"))).size());
+
 
             //Ordering
             result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc));
@@ -196,8 +201,8 @@ public abstract class IndexProviderTest {
             }
             for (TitanPredicate tp : new Text[]{Text.PREFIX, Text.REGEX}) {
                 try {
-                    assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, tp, "world"))).size());
-                    fail();
+                    assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, tp, "tzubull"))).size());
+                    if (indexFeatures.supportsStringMapping(Mapping.TEXT)) fail();
                 } catch (IllegalArgumentException e) {}
             }
             //String
@@ -208,8 +213,8 @@ public abstract class IndexProviderTest {
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "wor"))).size());
             for (TitanPredicate tp : new Text[]{Text.CONTAINS,Text.CONTAINS_PREFIX, Text.CONTAINS_REGEX}) {
                 try {
-                    assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, tp, "world"))).size());
-                    fail();
+                    assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, tp, "tzubull"))).size());
+                    if (indexFeatures.supportsStringMapping(Mapping.STRING)) fail();
                 } catch (IllegalArgumentException e) {}
             }
             if (index.supports(new StandardKeyInformation(String.class), Text.REGEX)) {
@@ -717,7 +722,16 @@ public abstract class IndexProviderTest {
 
     protected void initialize(String store) throws BackendException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
-            if (index.supports(info.getValue())) index.register(store,info.getKey(),info.getValue(),tx);
+            KeyInformation keyInfo = info.getValue();
+            Mapping map = ParameterType.MAPPING.findParameter(keyInfo.getParameters(),null);
+            if (map!=null) {
+                //Automatically upgrade mapping to TEXTSTRING is not supported
+                if (!indexFeatures.supportsStringMapping(map)
+                        && indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
+                    keyInfo = new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.TEXTSTRING));
+                }
+            }
+            if (index.supports(keyInfo)) index.register(store,info.getKey(),keyInfo,tx);
         }
     }
 
