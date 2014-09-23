@@ -30,7 +30,7 @@ In many bulk loading scenarios it is significantly cheaper to ensure data consis
 
 For example, consider the use case of bulk loading existing user profiles into Titan. Furthermore, assume that the username property key has a unique composite index defined on it, i.e. usernames must be unique across the entire graph. If the user profiles are imported from another database, username uniqueness might already guaranteed. If not, it is simple to sort the profiles by name and filter out duplicates or writing a Hadoop job that does such filtering. Now, we can enable `storage.batch-loading` which significantly reduces the bulk loading time because Titan does not have to check for every added user whether the name already exists in the database.
 
-*Important*: Enabling `storage.batch-loading` requires the user to ensure that the loaded data is internally consistent and consistent with any data already in the graph. In particular, concurrent type creation can lead to severe data integrity issues when batch loading is enabled. Hence, we *strongly* encourage disabling automatic type creation by setting `autotype = none` in the graph configuration.
+*Important*: Enabling `storage.batch-loading` requires the user to ensure that the loaded data is internally consistent and consistent with any data already in the graph. In particular, concurrent type creation can lead to severe data integrity issues when batch loading is enabled. Hence, we *strongly* encourage disabling automatic type creation by setting `schema.default = none` in the graph configuration.
 
 Optimizing ID Allocation
 ^^^^^^^^^^^^^^^^^^^^^^^^
