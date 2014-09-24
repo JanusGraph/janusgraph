@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
+import com.thinkaurelius.titan.core.InvalidIDException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -445,7 +446,9 @@ public class IDManager {
         if (VertexIDType.NormalVertex.is(vertexid)) type=VertexIDType.NormalVertex;
         else if (VertexIDType.PartitionedVertex.is(vertexid)) type=VertexIDType.PartitionedVertex;
         else if (VertexIDType.UnmodifiableVertex.is(vertexid)) type=VertexIDType.UnmodifiableVertex;
-        Preconditions.checkArgument(type!=null,"Vertex id has unrecognized type: %s",vertexid);
+        if (null == type) {
+            throw new InvalidIDException("Vertex ID " + vertexid + " has unrecognized type");
+        }
         return type;
     }
 

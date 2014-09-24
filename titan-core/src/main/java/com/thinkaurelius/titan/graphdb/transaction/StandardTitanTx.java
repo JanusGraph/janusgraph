@@ -357,8 +357,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
         }
 
-        InternalVertex v = vertexCache.get(vertexid, externalVertexRetriever);
-        return (v.isRemoved()) ? null : v;
+        InternalVertex v = null;
+        try {
+            v = vertexCache.get(vertexid, externalVertexRetriever);
+        } catch (InvalidIDException e) {
+            log.warn("Illegal vertex ID", e);
+        }
+        return (null == v || v.isRemoved()) ? null : v;
     }
 
     private InternalVertex getExistingVertex(long vertexid) {
