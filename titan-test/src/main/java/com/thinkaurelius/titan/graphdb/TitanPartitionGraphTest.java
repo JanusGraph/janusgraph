@@ -6,6 +6,7 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
 import com.thinkaurelius.titan.core.olap.OLAPResult;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -21,6 +22,8 @@ import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
 import com.tinkerpop.blueprints.Direction;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import java.util.*;
@@ -34,6 +37,9 @@ import static org.junit.Assert.assertEquals;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanPartitionGraphTest.class);
 
     final static Random random = new Random();
     final static int numPartitions = 8;
@@ -307,14 +313,25 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     @Category({ UnorderedKeyStoreTests.class })
     public void testVLabelOnUnorderedStorage() {
         final String label = "pl";
-        mgmt.makeVertexLabel(label).partition().make();
-        mgmt.commit();
+        VertexLabelMaker maker = mgmt.makeVertexLabel(label);
         try {
-            graph.addVertexWithLabel(label);
+            // Exception should be thrown in one of these two methods
+            maker.partition().make();
             fail("Partitioned label must be rejected on unordered key stores");
         } catch (IllegalArgumentException e) {
-            // Swallow expected exception
+            log.debug("Caught expected exception", e);
         }
+    }
+
+    @Test
+    @Category({ OrderedKeyStoreTests.class })
+    public void testVLabelOnOrderedStorage() {
+        final String label = "pl";
+        mgmt.makeVertexLabel(label).partition().make();
+        mgmt.commit();
+        graph.rollback();
+        graph.addVertexWithLabel(label);
+        graph.commit();
     }
 
     public static int getPartitionID(TitanVertex vertex, IDManager idManager) {

@@ -57,6 +57,11 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
     @Override
     public VertexLabel make() {
         Preconditions.checkArgument(!partitioned || !isStatic,"A vertex label cannot be partitioned and static at the same time");
+        // Explicitly paritioned vertex labels are only supported when cluster.partition is true.
+        // This check could be made slightly earlier in partition(), but it's safer to maintain
+        // state invariants when they're declared in close proximity to each other.
+        Preconditions.checkArgument(!partitioned || tx.getGraph().getConfiguration().isClusterPartitioned(),
+                "Explicit graph partitioning is required for partitioned vertex labels");
 
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(PARTITIONED, partitioned);
