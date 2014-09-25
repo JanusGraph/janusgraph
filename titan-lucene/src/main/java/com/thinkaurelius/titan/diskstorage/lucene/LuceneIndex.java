@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.pipes.util.structures.Pair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -142,51 +143,60 @@ public class LuceneIndex implements IndexProvider {
         writerLock.lock();
         try {
             for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
-                String storename = stores.getKey();
-                IndexWriter writer = getWriter(storename);
-                IndexReader reader = DirectoryReader.open(writer, true);
-                IndexSearcher searcher = new IndexSearcher(reader);
-                for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
-                    String docid = entry.getKey();
-                    IndexMutation mutation = entry.getValue();
-
-                    if (mutation.isDeleted()) {
-                        if (log.isTraceEnabled())
-                            log.trace("Deleted entire document [{}]", docid);
-
-                        writer.deleteDocuments(new Term(DOCID, docid));
-                        continue;
-                    }
-
-                    Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docid, searcher);
-                    Document doc = docAndGeo.getA();
-                    Map<String, Shape> geofields = docAndGeo.getB();
-
-                    Preconditions.checkNotNull(doc);
-                    for (IndexEntry del : mutation.getDeletions()) {
-                        Preconditions.checkArgument(!del.hasMetaData(),"Lucene index does not support indexing meta data: %s",del);
-                        String key = del.field;
-                        if (doc.getField(key) != null) {
-                            if (log.isTraceEnabled())
-                                log.trace("Removing field [{}] on document [{}]", key, docid);
-
-                            doc.removeFields(key);
-                            geofields.remove(key);
-                        }
-                    }
-
-                    addToDocument(storename, docid, doc, mutation.getAdditions(), geofields, informations);
-
-                    //write the old document to the index with the modifications
-                    writer.updateDocument(new Term(DOCID, docid), doc);
-                }
-                writer.commit();
+                mutateStores(stores, informations);
             }
             ltx.postCommit();
         } catch (IOException e) {
             throw new TemporaryBackendException("Could not update Lucene index", e);
         } finally {
             writerLock.unlock();
+        }
+    }
+
+    private void mutateStores(Map.Entry<String, Map<String, IndexMutation>> stores, KeyInformation.IndexRetriever informations) throws IOException, BackendException {
+        IndexReader reader = null;
+        try {
+            String storename = stores.getKey();
+            IndexWriter writer = getWriter(storename);
+            reader = DirectoryReader.open(writer, true);
+            IndexSearcher searcher = new IndexSearcher(reader);
+            for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
+                String docid = entry.getKey();
+                IndexMutation mutation = entry.getValue();
+
+                if (mutation.isDeleted()) {
+                    if (log.isTraceEnabled())
+                        log.trace("Deleted entire document [{}]", docid);
+
+                    writer.deleteDocuments(new Term(DOCID, docid));
+                    continue;
+                }
+
+                Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docid, searcher);
+                Document doc = docAndGeo.getA();
+                Map<String, Shape> geofields = docAndGeo.getB();
+
+                Preconditions.checkNotNull(doc);
+                for (IndexEntry del : mutation.getDeletions()) {
+                    Preconditions.checkArgument(!del.hasMetaData(), "Lucene index does not support indexing meta data: %s", del);
+                    String key = del.field;
+                    if (doc.getField(key) != null) {
+                        if (log.isTraceEnabled())
+                            log.trace("Removing field [{}] on document [{}]", key, docid);
+
+                        doc.removeFields(key);
+                        geofields.remove(key);
+                    }
+                }
+
+                addToDocument(storename, docid, doc, mutation.getAdditions(), geofields, informations);
+
+                //write the old document to the index with the modifications
+                writer.updateDocument(new Term(DOCID, docid), doc);
+            }
+            writer.commit();
+        } finally {
+            IOUtils.closeQuietly(reader);
         }
     }
 
