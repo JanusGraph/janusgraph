@@ -41,6 +41,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 public abstract class TitanGraphBaseTest {
 
     public WriteConfiguration config;
+    public ModifiableConfiguration adjustedConfig;
     public StandardTitanGraph graph;
     public StoreFeatures features;
     public TitanTransaction tx;
@@ -62,11 +63,11 @@ public abstract class TitanGraphBaseTest {
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
-        ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
-        configuration.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
-        configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
-        Backend backend = new Backend(configuration);
-        backend.initialize(configuration);
+        adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+        adjustedConfig.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
+        adjustedConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
+        Backend backend = new Backend(adjustedConfig);
+        backend.initialize(adjustedConfig);
         backend.clearStorage();
         open(config);
         logManagers = new HashMap<String,LogManager>();

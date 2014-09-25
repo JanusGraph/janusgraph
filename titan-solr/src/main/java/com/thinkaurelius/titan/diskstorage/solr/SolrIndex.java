@@ -112,7 +112,7 @@ public class SolrIndex implements IndexProvider {
             ConfigOption.Type.GLOBAL_OFFLINE, 100);
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultMapping(Mapping.TEXTSTRING).supportedMappings(Mapping.TEXTSTRING).build();
+            .setDefaultStringMapping(Mapping.TEXTSTRING).supportedStringMappings(Mapping.TEXTSTRING).build();
 
     /**
      * Builds a mapping between the core name and its respective Solr Server connection.
@@ -700,30 +700,33 @@ public class SolrIndex implements IndexProvider {
     @Override
     public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
         Class<?> dataType = information.getDataType();
+        Mapping mapping = Mapping.getMapping(information);
+        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
             return titanPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
-        } else {
-            return  dataType == String.class && (
-                    titanPredicate == Text.CONTAINS ||
+        } else if (AttributeUtil.isString(dataType)) {
+            if (mapping!=Mapping.DEFAULT && mapping!=Mapping.TEXTSTRING) return false;
+            return  titanPredicate == Text.CONTAINS ||
                     titanPredicate == Text.PREFIX ||
                     titanPredicate == Text.REGEX ||
                     titanPredicate == Text.CONTAINS_PREFIX ||
                     titanPredicate == Text.CONTAINS_REGEX ||
                     titanPredicate == Cmp.EQUAL ||
-                    titanPredicate == Cmp.NOT_EQUAL);
-        }
+                    titanPredicate == Cmp.NOT_EQUAL;
+        } else return false;
     }
 
     @Override
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
+        Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
-            return true;
+            if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
-            return true;
+            if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXTSTRING) return true;
         }
         return false;
     }

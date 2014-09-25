@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
@@ -167,7 +168,7 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.copyOf(result), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "wOrLD")))));
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).size());
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow is the world"))).size());
+            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow world"))).size());
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "WorLD HELLO"))).size());
 
 
@@ -248,6 +249,10 @@ public abstract class IndexProviderTest {
 
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(TEXT, Text.CONTAINS, "tomorrow"), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 200.00)))));
             assertEquals(ImmutableSet.of("doc2"), ImmutableSet.copyOf(result));
+
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("location", Geo.WITHIN, Geoshape.box(46.5, -0.5, 50.5, 10.5))));
+            assertEquals(3,result.size());
+            assertEquals(ImmutableSet.of("doc1", "doc2", "doc3"), ImmutableSet.copyOf(result));
 
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(TIME, Cmp.GREATER_THAN_EQUAL, -1000), PredicateCondition.of(TIME, Cmp.LESS_THAN, 1010), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00)))));
             assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
@@ -724,8 +729,8 @@ public abstract class IndexProviderTest {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
             KeyInformation keyInfo = info.getValue();
             Mapping map = ParameterType.MAPPING.findParameter(keyInfo.getParameters(),null);
-            if (map!=null) {
-                //Automatically upgrade mapping to TEXTSTRING is not supported
+            if (map!=null && AttributeUtil.isString(keyInfo.getDataType())) {
+                //Automatically upgrade mapping to TEXTSTRING if not supported
                 if (!indexFeatures.supportsStringMapping(map)
                         && indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
                     keyInfo = new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.TEXTSTRING));

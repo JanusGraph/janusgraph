@@ -38,7 +38,6 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -140,7 +139,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultMapping(Mapping.TEXT).supportedMappings(Mapping.TEXT,Mapping.TEXTSTRING,Mapping.STRING).build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).build();
 
     public static final int HOST_PORT_DEFAULT = 9300;
 
@@ -404,7 +403,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private static boolean hasDualStringMapping(KeyInformation information) {
-        return getStringMapping(information)==Mapping.TEXTSTRING;
+        return AttributeUtil.isString(information.getDataType()) && getStringMapping(information)==Mapping.TEXTSTRING;
     }
 
     public XContentBuilder getContent(final List<IndexEntry> additions, KeyInformation.StoreRetriever informations, int ttl) throws BackendException {
@@ -508,7 +507,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
                             brb.add(new IndexRequest(indexName, storename, docid)
-                                    .source(getContent(mutation.getAdditions(),informations.get(storename),ttl)));
+                                    .source(getContent(mutation.getAdditions(), informations.get(storename), ttl)));
                         } else {
                             Preconditions.checkArgument(ttl==0,"Elasticsearch only supports TTL on new documents [%s]",docid);
                             boolean needUpsert = !mutation.hasDeletions();

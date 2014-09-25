@@ -68,6 +68,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         this.supportsText = supportsText;
     }
 
+    private Parameter getStringMapping() {
+        if (indexFeatures.supportsStringMapping(Mapping.STRING)) return Mapping.STRING.getParameter();
+        else if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return Mapping.TEXTSTRING.getParameter();
+        throw new AssertionError("String mapping not supported");
+    }
+
+    private Parameter getTextMapping() {
+        if (indexFeatures.supportsStringMapping(Mapping.TEXT)) return Mapping.TEXT.getParameter();
+        else if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return Mapping.TEXTSTRING.getParameter();
+        throw new AssertionError("String mapping not supported");
+    }
+
     public abstract boolean supportsLuceneStyleQueries();
 
     @Override
@@ -345,11 +357,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         VertexLabel org = mgmt.makeVertexLabel("org").make();
 
         TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).
-                addKey(name, Mapping.STRING.getParameter()).buildMixedIndex(INDEX);
+                addKey(name, getStringMapping()).buildMixedIndex(INDEX);
         TitanGraphIndex index2 = mgmt.buildIndex("index2",Vertex.class).indexOnly(person).
-                addKey(text, Mapping.TEXT.getParameter()).addKey(weight).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
         TitanGraphIndex index3 = mgmt.buildIndex("index3",Vertex.class).indexOnly(org).
-                addKey(text, Mapping.TEXT.getParameter()).addKey(weight).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
 
         // ########### INSPECTION & FAILURE ##############
         assertTrue(mgmt.containsGraphIndex("index1"));
@@ -521,7 +533,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey flag = makeKey("flag",Boolean.class);
 
         TitanGraphIndex composite = mgmt.buildIndex("composite",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
-        TitanGraphIndex mixed = mgmt.buildIndex("mixed",Vertex.class).addKey(weight).addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+        TitanGraphIndex mixed = mgmt.buildIndex("mixed",Vertex.class).addKey(weight).addKey(text, getTextMapping()).buildMixedIndex(INDEX);
         mixed.getName(); composite.getName();
         finishSchema();
 
@@ -595,13 +607,13 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanGraphIndex pindex = getExternalIndex(TitanProperty.class,INDEX);
         PropertyKey name = makeKey("name",String.class);
 
-        mgmt.addIndexKey(vindex, name, Mapping.STRING.getParameter(), Parameter.of("mapped-name","vstr"));
-        mgmt.addIndexKey(eindex,name, Mapping.STRING.getParameter(), Parameter.of("mapped-name", "estr"));
-        mgmt.addIndexKey(pindex,name, Mapping.STRING.getParameter(), Parameter.of("mapped-name", "pstr"));
+        mgmt.addIndexKey(vindex, name, getStringMapping(), Parameter.of("mapped-name","vstr"));
+        mgmt.addIndexKey(eindex,name, getStringMapping(), Parameter.of("mapped-name", "estr"));
+        mgmt.addIndexKey(pindex,name, getStringMapping(), Parameter.of("mapped-name", "pstr"));
         PropertyKey text = makeKey("text",String.class);
-        mgmt.addIndexKey(vindex,text, Mapping.TEXT.getParameter(), Parameter.of("mapped-name","vtext"));
-        mgmt.addIndexKey(eindex,text, Mapping.TEXT.getParameter(), Parameter.of("mapped-name","etext"));
-        mgmt.addIndexKey(pindex,text, Mapping.TEXT.getParameter(), Parameter.of("mapped-name","ptext"));
+        mgmt.addIndexKey(vindex,text, getTextMapping(), Parameter.of("mapped-name","vtext"));
+        mgmt.addIndexKey(eindex,text, getTextMapping(), Parameter.of("mapped-name","etext"));
+        mgmt.addIndexKey(pindex,text, getTextMapping(), Parameter.of("mapped-name","ptext"));
         mgmt.makeEdgeLabel("knows").signature(name).make();
         mgmt.makePropertyKey("uid").dataType(String.class).signature(text).make();
         finishSchema();
@@ -786,6 +798,55 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"ptext:ducks").properties()));
     }
 
+    @Test
+    public void testDualMapping() {
+        if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
+
+        PropertyKey name = makeKey("name", String.class);
+        TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.getParameter()).buildMixedIndex(INDEX);
+        mixed.getName();
+        finishSchema();
+
+        TitanVertex v = tx.addVertex();
+        v.setProperty("name","Long John Don");
+        v = tx.addVertex();
+        v.setProperty("name","Long Little Lewis");
+
+        clopen();
+        name = tx.getPropertyKey("name");
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,"Long John Don"),ElementCategory.VERTEX,
+                1,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.CONTAINS,"Long"),ElementCategory.VERTEX,
+                2,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.CONTAINS,"Long Don"),ElementCategory.VERTEX,
+                1,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.CONTAINS_PREFIX,"Lon"),ElementCategory.VERTEX,
+                2,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.CONTAINS_REGEX,"Lit*le"),ElementCategory.VERTEX,
+                1,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.REGEX,"Long.*"),ElementCategory.VERTEX,
+                2,new boolean[]{true,true},"mixed");
+
+        for (Vertex u : tx.getVertices()) {
+            String n = u.<String>getProperty("name");
+            if (n.endsWith("Don")) {
+                u.remove();
+            } else if (n.endsWith("Lewis")) {
+                u.setProperty("name","Big Brother Bob");
+            }
+        }
+
+        clopen();
+        name = tx.getPropertyKey("name");
+
+        evaluateQuery(tx.query().has(name,Text.CONTAINS,"Long"),ElementCategory.VERTEX,
+                0,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.CONTAINS,"Big"),ElementCategory.VERTEX,
+                1,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has(name,Text.PREFIX,"Big"),ElementCategory.VERTEX,
+                1,new boolean[]{true,true},"mixed");
+    }
+
     private void addVertex(int time, String name, double height) {
         newTx();
         TitanVertex v = tx.addVertex();
@@ -804,14 +865,14 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ,option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
                 ,option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
                 ,option(STORAGE_WRITE_WAITTIME), new StandardDuration(300, TimeUnit.MILLISECONDS)
-                ,option(TestMockIndexProvider.INDEX_BACKEND_PROXY,INDEX), getConfig().get(INDEX_BACKEND,INDEX)
+                ,option(TestMockIndexProvider.INDEX_BACKEND_PROXY,INDEX), adjustedConfig.get(INDEX_BACKEND,INDEX)
                 ,option(INDEX_BACKEND,INDEX), TestMockIndexProvider.class.getName()
                 ,option(TestMockIndexProvider.INDEX_MOCK_FAILADD,INDEX), true
         );
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.buildIndex("mi",Vertex.class).addKey(name, Mapping.TEXT.getParameter()).addKey(age).buildMixedIndex(INDEX);
+        mgmt.buildIndex("mi",Vertex.class).addKey(name, getTextMapping()).addKey(age).buildMixedIndex(INDEX);
         finishSchema();
         TitanVertex vs[] = new TitanVertex[4];
 
@@ -889,7 +950,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey height = mgmt.makePropertyKey("height").dataType(Decimal.class).make();
         TitanGraphIndex index = mgmt.buildIndex("theIndex",Vertex.class)
-                .addKey(name, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+                .addKey(name, getTextMapping()).buildMixedIndex(INDEX);
         finishSchema();
 
         //Add initial data
@@ -1004,9 +1065,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.setTTL(event, eventTTLSeconds, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Vertex.class).
-                addKey(name, Mapping.STRING.getParameter()).addKey(time).buildMixedIndex(INDEX);
+                addKey(name, getStringMapping()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Vertex.class).indexOnly(event).
-                addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping()).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
@@ -1079,9 +1140,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.setTTL(label, likesTTLSeconds, TimeUnit.SECONDS);
 
         mgmt.buildIndex("index1",Edge.class).
-                addKey(name, Mapping.STRING.getParameter()).addKey(time).buildMixedIndex(INDEX);
+                addKey(name, getStringMapping()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Edge.class).indexOnly(label).
-                addKey(text, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping()).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(likesTTLSeconds, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));

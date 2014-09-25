@@ -2,8 +2,12 @@ package com.thinkaurelius.titan.diskstorage.solr;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.core.attribute.Text;
+import com.thinkaurelius.titan.core.schema.Mapping;
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -23,6 +27,8 @@ import java.io.File;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnologies.com)
@@ -65,28 +71,44 @@ public class SolrIndexTest extends IndexProviderTest {
     }
 
     @Test
-    public void storeWithBoundingBoxGeospatialSearch() throws BackendException {
-        String[] stores = new String[] { "vertex" };
+    public void testSupport() {
+        assertTrue(index.supports(of(String.class)));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING))));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING))));
 
-        Map<String,Object> doc1 = getDocument("Hello world",1001,5.2, Geoshape.point(48.0, 0.0));
-        Map<String,Object> doc2 = getDocument("Tomorrow is the world",1010,8.5,Geoshape.point(49.0,1.0));
-        Map<String,Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0));
+        assertTrue(index.supports(of(Double.class)));
+        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT))));
 
-        for (String store : stores) {
-            initialize(store);
+        assertTrue(index.supports(of(Long.class)));
+        assertTrue(index.supports(of(Long.class, new Parameter("mapping",Mapping.DEFAULT))));
+        assertTrue(index.supports(of(Integer.class)));
+        assertTrue(index.supports(of(Short.class)));
+        assertTrue(index.supports(of(Byte.class)));
+        assertTrue(index.supports(of(Float.class)));
+        assertTrue(index.supports(of(Geoshape.class)));
+        assertFalse(index.supports(of(Object.class)));
+        assertFalse(index.supports(of(Exception.class)));
 
-            add(store,"doc1",doc1,true);
-            add(store,"doc2",doc2,true);
-            add(store,"doc3",doc3,false);
-        }
+        assertTrue(index.supports(of(String.class), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.CONTAINS_PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING)), Text.CONTAINS_REGEX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING)), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.EQUAL));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
 
-        clopen();
+        assertTrue(index.supports(of(Double.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Double.class), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Double.class), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Double.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
+        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Geoshape.class), Geo.WITHIN));
 
-        for (String store : stores) {
-
-            List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of("location", Geo.WITHIN, Geoshape.box(46.5, -0.5, 50.5, 10.5))));
-            assertEquals(3,result.size());
-            assertEquals(ImmutableSet.of("doc1", "doc2", "doc3"), ImmutableSet.copyOf(result));
-        }
+        assertFalse(index.supports(of(Double.class), Geo.INTERSECT));
+        assertFalse(index.supports(of(Long.class), Text.CONTAINS));
+        assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
     }
+
 }

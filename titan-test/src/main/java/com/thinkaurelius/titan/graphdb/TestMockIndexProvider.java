@@ -23,7 +23,7 @@ public class TestMockIndexProvider implements IndexProvider {
 
     public static final ConfigOption<String> INDEX_BACKEND_PROXY = new ConfigOption<String>(INDEX_NS,"proxy-for",
             "Define the indexing backed to use for index support behind the mock proxy",
-            ConfigOption.Type.LOCAL, "elasticsearch").hide();
+            ConfigOption.Type.GLOBAL, INDEX_BACKEND.getDefaultValue()).hide();
 
     private final IndexProvider index;
     private final boolean failAdds;

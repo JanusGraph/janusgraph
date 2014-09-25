@@ -16,8 +16,8 @@ import java.util.Set;
 public class IndexFeatures {
 
     private final boolean supportsDocumentTTL;
-    private final Mapping defaultMapping;
-    private final ImmutableSet<Mapping> supportedMappings;
+    private final Mapping defaultStringMapping;
+    private final ImmutableSet<Mapping> supportedStringMappings;
 
     public IndexFeatures(boolean supportsDocumentTTL,
                          Mapping defaultMap,
@@ -26,8 +26,8 @@ public class IndexFeatures {
         Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
                                     && supportedMap.contains(defaultMap));
         this.supportsDocumentTTL = supportsDocumentTTL;
-        this.defaultMapping = defaultMap;
-        this.supportedMappings = supportedMap;
+        this.defaultStringMapping = defaultMap;
+        this.supportedStringMappings = supportedMap;
     }
 
     public boolean supportsDocumentTTL() {
@@ -35,17 +35,17 @@ public class IndexFeatures {
     }
 
     public Mapping getDefaultStringMapping() {
-        return defaultMapping;
+        return defaultStringMapping;
     }
 
     public boolean supportsStringMapping(Mapping map) {
-        return supportedMappings.contains(map);
+        return supportedStringMappings.contains(map);
     }
 
     public static class Builder {
 
         private boolean supportsDocumentTTL = false;
-        private Mapping defaultMapping = Mapping.TEXT;
+        private Mapping defaultStringMapping = Mapping.TEXT;
         private Set<Mapping> supportedMappings = Sets.newHashSet();
 
 
@@ -54,19 +54,19 @@ public class IndexFeatures {
             return this;
         }
 
-        public Builder setDefaultMapping(Mapping map) {
-            defaultMapping = map;
+        public Builder setDefaultStringMapping(Mapping map) {
+            defaultStringMapping = map;
             return this;
         }
 
-        public Builder supportedMappings(Mapping... maps) {
+        public Builder supportedStringMappings(Mapping... maps) {
             supportedMappings.addAll(Arrays.asList(maps));
             return this;
         }
 
 
         public IndexFeatures build() {
-            return new IndexFeatures(supportsDocumentTTL,defaultMapping,
+            return new IndexFeatures(supportsDocumentTTL, defaultStringMapping,
                     ImmutableSet.copyOf(supportedMappings));
         }
 
