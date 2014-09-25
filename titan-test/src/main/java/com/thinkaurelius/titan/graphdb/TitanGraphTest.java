@@ -486,7 +486,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // ---------- VERTEX LABELS ----------------
 
         VertexLabel person = mgmt.makeVertexLabel("person").make();
-        VertexLabel tag = mgmt.makeVertexLabel("tag").partition().make();
+        VertexLabel tag = mgmt.makeVertexLabel("tag").make();
         VertexLabel tweet = mgmt.makeVertexLabel("tweet").setStatic().make();
 
         long[] sig;
@@ -544,7 +544,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(mgmt.containsVertexLabel("bla"));
         assertFalse(person.isPartitioned());
         assertFalse(person.isStatic());
-        assertTrue(tag.isPartitioned());
+        assertFalse(tag.isPartitioned());
         assertTrue(tweet.isStatic());
 
         //------ TRY INVALID STUFF --------
@@ -671,7 +671,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(mgmt.containsVertexLabel("bla"));
         assertFalse(person.isPartitioned());
         assertFalse(person.isStatic());
-        assertTrue(tag.isPartitioned());
+        assertFalse(tag.isPartitioned());
         assertTrue(tweet.isStatic());
 
         //------ TRY INVALID STUFF --------
@@ -1028,7 +1028,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(schemaContainer.containsRelationType("friend"));
         assertTrue(schemaContainer.containsVertexLabel("person"));
         VertexLabelDefinition vld = schemaContainer.getVertexLabel("tag");
-        assertTrue(vld.isPartitioned());
+        assertFalse(vld.isPartitioned());
         assertFalse(vld.isStatic());
         PropertyKeyDefinition pkd = schemaContainer.getPropertyKey("name");
         assertEquals(Cardinality.SET,pkd.getCardinality());

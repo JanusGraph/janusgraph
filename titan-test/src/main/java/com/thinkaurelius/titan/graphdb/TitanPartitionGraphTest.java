@@ -332,6 +332,10 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         graph.rollback();
         graph.addVertexWithLabel(label);
         graph.commit();
+        mgmt = graph.getManagementSystem();
+        VertexLabel vl = mgmt.getVertexLabel(label);
+        assertTrue(vl.isPartitioned());
+        mgmt.rollback();
     }
 
     public static int getPartitionID(TitanVertex vertex, IDManager idManager) {
