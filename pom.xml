@@ -710,6 +710,13 @@
                 <version>${httpcomponents.version}</version>
             </dependency>
 
+
+            <dependency>
+                <groupId>com.googlecode.json-simple</groupId>
+                <artifactId>json-simple</artifactId>
+                <version>1.1</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-json</artifactId>
@@ -802,6 +809,11 @@
                 <groupId>com.carrotsearch</groupId>
                 <artifactId>junit-benchmarks</artifactId>
                 <version>0.7.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.carrotsearch</groupId>
+                <artifactId>hppc</artifactId>
+                <version>0.6.0</version>
             </dependency>
             <dependency>
                 <groupId>com.carrotsearch.randomizedtesting</groupId>
