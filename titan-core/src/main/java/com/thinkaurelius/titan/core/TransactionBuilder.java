@@ -57,13 +57,39 @@ public interface TransactionBuilder {
     public TransactionBuilder setDirtyVertexSize(int size);
 
     /**
-     * Enables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
+     * Enables/disables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
      * This might be useful to address common data degradation issues but has adverse impacts on performance due to
      * repeated existence checks.
+     * <p/>
+     * Note, that these checks apply to vertex retrievals inside the query execution engine and not to vertex ids provided
+     * by the user.
      *
+     * @param enabled
      * @return
      */
-    public TransactionBuilder checkInternalVertexExistence();
+    public TransactionBuilder checkInternalVertexExistence(boolean enabled);
+
+    /**
+     * Enables/disables checking whether the vertex with a user provided id indeed exists. If the user is absolutely sure
+     * that the vertices for the ids provided in this transaction exist in the underlying data store, then disabling the
+     * vertex existence check will improve performance because it eliminates a database call.
+     * However, if a provided vertex id does not exist in the database and checking is disabled, Titan will assume it
+     * exists which can lead to data and query inconsistencies.
+     *
+     * @param enabled
+     * @return
+     */
+    public TransactionBuilder checkExternalVertexExistence(boolean enabled);
+
+
+    /**
+     * Enables/disables consistency checking and locking for this transaction. Disabling consistency checks improves
+     * performance but requires that the user ensures consistency at the application level. Use with great care.
+     *
+     * @param enabled
+     * @return
+     */
+    public TransactionBuilder consistencyChecks(boolean enabled);
 
     /**
      * Sets the timestamp for this transaction. The transaction will be recorded
