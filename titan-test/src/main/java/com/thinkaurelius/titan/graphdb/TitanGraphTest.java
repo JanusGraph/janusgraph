@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
@@ -73,6 +74,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -1511,8 +1513,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         Set<String> openInstances = mgmt.getOpenInstances();
         assertEquals(2,openInstances.size());
-        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId()));
+        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId()+"(current)"));
         assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
+        try {
+            mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId());
+            fail(); //Cannot close current instance
+        } catch (IllegalArgumentException e) {}
         mgmt.forceCloseInstance(graph2.getConfiguration().getUniqueGraphId());
 
         graph2.shutdown();

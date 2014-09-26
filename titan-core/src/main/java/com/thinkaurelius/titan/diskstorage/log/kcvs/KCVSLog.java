@@ -396,7 +396,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      * @return
      */
     private Future<Message> add(StaticBuffer content, int partitionId, ExternalPersistor persistor) {
-        Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
+        Preconditions.checkArgument(isOpen,"Log [%s] has been closed",name);
         Preconditions.checkArgument(content!=null && content.length()>0,"Content is empty");
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth),"Invalid partition id: %s",partitionId);
         final Timepoint timestamp = times.getTime();
