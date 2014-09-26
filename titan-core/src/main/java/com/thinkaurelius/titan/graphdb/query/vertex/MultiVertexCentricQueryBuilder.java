@@ -46,7 +46,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     public TitanMultiVertexQuery addVertex(TitanVertex vertex) {
         assert vertex != null;
         assert vertex instanceof InternalVertex;
-        vertices.add((InternalVertex)vertex);
+        vertices.add(((InternalVertex)vertex).it());
         return this;
     }
 

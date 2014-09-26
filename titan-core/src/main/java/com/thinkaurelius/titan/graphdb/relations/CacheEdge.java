@@ -24,7 +24,7 @@ import java.util.List;
 public class CacheEdge extends AbstractEdge {
 
     public CacheEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end, Entry data) {
-        super(id, label, start, end);
+        super(id, label, start.it(), end.it());
         assert data != null;
 
         this.data = data;

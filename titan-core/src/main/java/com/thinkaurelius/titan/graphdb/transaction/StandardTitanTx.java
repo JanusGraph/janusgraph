@@ -1280,12 +1280,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
-    public boolean isOpen() {
+    public final boolean isOpen() {
         return isOpen;
     }
 
     @Override
-    public boolean isClosed() {
+    public final boolean isClosed() {
         return !isOpen;
     }
 

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
@@ -1650,6 +1651,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         graph.commit();
 
+        TitanProperty prop = ((TitanVertex)v1).getProperties().iterator().next();
+        assertTrue(prop.getLongId()>0);
+        prop = (TitanProperty) ((Iterable)graph.multiQuery((TitanVertex)v1).properties().values().iterator().next()).iterator().next();
+        assertTrue(prop.getLongId()>0);
+
         assertEquals(45, e3.getProperty("time"));
         assertEquals(5, e1.getProperty("time"));
 
@@ -1671,6 +1677,32 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v3 = graph.addVertex(null);
         Edge e = graph.addEdge(null, v1, v3, "knows");
         assertNull(e.getProperty("age"));
+    }
+
+    @Test
+    public void testStaleVertex() {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.buildIndex("byName", Vertex.class).addKey(name).unique().buildCompositeIndex();
+        finishSchema();
+
+
+        TitanVertex cartman = graph.addVertex(null);
+        ElementHelper.setProperties(cartman,"name","cartman", "age", 10);
+        TitanVertex stan = graph.addVertex(null);
+        ElementHelper.setProperties(stan,"name","stan","age",8);
+
+        graph.commit();
+
+        cartman = (TitanVertex)graph.getVertices("name", "cartman").iterator().next();
+
+        graph.commit();
+
+        //TitanProperty p = (TitanProperty) ((Iterable)graph.multiQuery(cartman).properties().values().iterator().next()).iterator().next();
+        TitanProperty p = cartman.getProperties().iterator().next();
+        System.out.println(p.getLongId());
+
+        graph.commit();
     }
 
     /**

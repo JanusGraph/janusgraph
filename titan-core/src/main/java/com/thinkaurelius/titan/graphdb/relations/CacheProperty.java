@@ -21,8 +21,9 @@ import java.util.List;
  */
 
 public class CacheProperty extends AbstractProperty {
+
     public CacheProperty(long id, PropertyKey key, InternalVertex start, Object value, Entry data) {
-        super(id, key, start, value);
+        super(id, key, start.it(), value);
         this.data = data;
     }
 
