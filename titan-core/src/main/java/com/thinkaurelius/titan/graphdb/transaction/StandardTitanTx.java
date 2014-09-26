@@ -361,7 +361,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         try {
             v = vertexCache.get(vertexid, externalVertexRetriever);
         } catch (InvalidIDException e) {
-            log.warn("Illegal vertex ID", e);
+            log.debug("Illegal vertex ID", e);
         }
         return (null == v || v.isRemoved()) ? null : v;
     }
