@@ -116,6 +116,13 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
         return prefix;
     }
 
+    @Override
+    public IndexQueryBuilder setElementIdentifier(String identifier) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(identifier),"Prefix may not be a blank string");
+        this.prefix=identifier;
+        return this;
+    }
+
     public String getUnknownKeyName() {
         return unkownKeyName;
     }
@@ -191,23 +198,23 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
 
     @Override
     public Iterable<Result<Vertex>> vertices() {
-        setPrefix(VERTEX_PREFIX);
+        setPrefixInternal(VERTEX_PREFIX);
         return (Iterable)execute(ElementCategory.VERTEX);
     }
 
     @Override
     public Iterable<Result<Edge>> edges() {
-        setPrefix(EDGE_PREFIX);
+        setPrefixInternal(EDGE_PREFIX);
         return (Iterable)execute(ElementCategory.EDGE);
     }
 
     @Override
     public Iterable<Result<TitanProperty>> properties() {
-        setPrefix(PROPERTY_PREFIX);
+        setPrefixInternal(PROPERTY_PREFIX);
         return (Iterable)execute(ElementCategory.PROPERTY);
     }
 
-    private void setPrefix(String prefix) {
+    private void setPrefixInternal(String prefix) {
         Preconditions.checkArgument(StringUtils.isNotBlank(prefix));
         if (this.prefix==null) this.prefix=prefix;
     }

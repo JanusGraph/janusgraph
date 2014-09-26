@@ -56,6 +56,18 @@ public interface TitanIndexQuery {
     public TitanIndexQuery addParameters(Parameter... paras);
 
     /**
+     * Sets the element identifier string that is used by this query builder as the token to identifier key references
+     * in the query string.
+     * <p/>
+     * For example, in the query 'v.name: Tom' the element identifier is 'v.'
+     *
+     *
+     * @param identifier The element identifier which must not be blank
+     * @return This query builder
+     */
+    public TitanIndexQuery setElementIdentifier(String identifier);
+
+    /**
      * Returns all vertices that match the query in the indexing backend.
      *
      * @return
