@@ -123,16 +123,17 @@ public abstract class TitanGraphBaseTest {
                 Preconditions.checkNotNull(settings[i+1],"Null setting at position [%s]",i+1);
                 options.put((TestConfigOption)settings[i],settings[i+1]);
             }
-            TitanManagement gconf = graph.getManagementSystem();
+            TitanManagement gconf = null;
             ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
                     lconf.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
                 } else {
+                    if (gconf==null) gconf = graph.getManagementSystem();
                     gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
                 }
             }
-            gconf.commit();
+            if (gconf!=null) gconf.commit();
             lconf.close();
         }
         if (null != graph && graph.isOpen())
