@@ -759,7 +759,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         //Test name mapping
         assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "vtext:ducks").vertices()));
         assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "etext:ducks").vertices()));
-
+        //Test custom element identifier
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "$v$text:ducks").setElementIdentifier("$v$").vertices()));
+        assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "v.text:ducks").setElementIdentifier("$v$").vertices()));
 
         //Same queries for edges
         assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "e.text:ducks").edges()));
@@ -784,6 +786,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties()));
         //Test name mapping
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"ptext:ducks").properties()));
+
     }
 
     private void addVertex(int time, String name, double height) {
