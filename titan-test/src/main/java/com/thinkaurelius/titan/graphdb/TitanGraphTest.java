@@ -3322,7 +3322,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertEquals(4,userChangeCounter.get(Change.REMOVED).get());
         }
 
-        clopen();
+        clopen( option(VERBOSE_TX_RECOVERY), true );
         /*
         Transaction Recovery
          */

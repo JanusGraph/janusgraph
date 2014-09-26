@@ -21,6 +21,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
@@ -71,6 +72,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private final Duration readTime = new StandardDuration(1,TimeUnit.SECONDS);
     private final AtomicLong txCounter = new AtomicLong(0);
     private final BackgroundCleaner cleaner;
+    private final boolean verboseLogging;
 
     private final AtomicLong successTxCounter = new AtomicLong(0);
     private final AtomicLong failureTxCounter = new AtomicLong(0);
@@ -91,6 +93,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         this.times = graph.getConfiguration().getTimestampProvider();
         this.txLog = graph.getBackend().getSystemTxLog();
         this.persistenceTime = graph.getConfiguration().getMaxWriteTime();
+        this.verboseLogging = graph.getConfiguration().getConfiguration().get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
         this.txCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(2)
                 .initialCapacity(100)
@@ -127,9 +130,18 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()),CLEAN_SLEEP_TIME.getNativeUnit());
     }
 
+    private void logRecoveryMsg(String message, Object... args) {
+        if (logger.isInfoEnabled() || verboseLogging) {
+            String msg = String.format(message,args);
+            logger.info(msg);
+            if (verboseLogging) System.out.println(msg);
+        }
+    }
+
     private void fixSecondaryFailure(final StandardTransactionId txId, final TxEntry entry) {
+        logRecoveryMsg("Attempting to repair partially failed transaction [%s]",txId);
         if (entry.entry==null) {
-            logger.info("Trying to repair expired or unpersisted transaction [{}] (Ignore in startup)",txId);
+            logRecoveryMsg("Trying to repair expired or unpersisted transaction [%s] (Ignore in startup)",txId);
             return;
         }
 
@@ -151,6 +163,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             isFailedIndex = Predicates.alwaysTrue();
         }
 
+        // I) Restore external indexes
         if (secIndexFailure) {
             //1) Collect all elements (vertices and relations) and the indexes for which they need to be restored
             final SetMultimap<String,IndexRestore> indexRestores = HashMultimap.create();
@@ -226,6 +239,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
         }
 
+        // II) Restore log messages
         final String logTxIdentifier = (String)commitEntry.getMetadata().get(LogTxMeta.LOG_ID);
         if (userLogFailure && logTxIdentifier!=null) {
             TransactionLogHeader txHeader = new TransactionLogHeader(txCounter.incrementAndGet(),times.getTime());
