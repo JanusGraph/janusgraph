@@ -41,7 +41,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
         this.baseElement = element;
     }
 
-    protected FaunusVertexQuery(FaunusTypeManager typeManager) {
+    protected FaunusVertexQuery(FaunusSchemaManager typeManager) {
         super(typeManager);
         this.baseElement = null;
     }
@@ -66,7 +66,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
      ################################################*/
 
     protected And<TitanRelation> getCondition(FaunusElement element, RelationCategory returnType) {
-        FaunusTypeManager typeManager = element.getTypeManager();
+        FaunusSchemaManager typeManager = element.getTypeManager();
         if (!(element instanceof FaunusVertex)) {
             Preconditions.checkArgument(dir!=Direction.IN,"Illegal direction for element: %s",dir);
             dir = Direction.OUT;
@@ -119,7 +119,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
     }
 
     protected Iterable<FaunusRelation> getRelations(FaunusElement element, RelationCategory returnType) {
-        FaunusTypeManager typeManager = element.getTypeManager();
+        FaunusSchemaManager typeManager = element.getTypeManager();
 
         final And<TitanRelation> condition = getCondition(element,returnType);
         if (condition==null) return Collections.EMPTY_LIST;

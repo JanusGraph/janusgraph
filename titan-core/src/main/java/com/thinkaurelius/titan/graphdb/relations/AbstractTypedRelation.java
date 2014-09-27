@@ -121,8 +121,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
             Preconditions.checkArgument(value instanceof TitanVertex,"Value must be a vertex");
             setProperty((EdgeLabel) type, (InternalVertex) value);
         } else if (type==null) {
-            if (value instanceof TitanVertex) setProperty(tx().getEdgeLabel(key),(TitanVertex)value);
-            setProperty(tx().getPropertyKey(key),value);
+            if (value instanceof TitanVertex) setProperty(tx().getOrCreateEdgeLabel(key),(TitanVertex)value);
+            setProperty(tx().getOrCreatePropertyKey(key),value);
         } else throw new IllegalArgumentException("Invalid key argument: " + key);
     }
 

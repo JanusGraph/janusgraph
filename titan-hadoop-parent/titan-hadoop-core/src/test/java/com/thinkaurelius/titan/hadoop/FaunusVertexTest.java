@@ -3,9 +3,7 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -31,12 +29,12 @@ import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIP
  */
 public class FaunusVertexTest extends BaseTest {
 
-    private FaunusTypeManager typeManager;
+    private FaunusSchemaManager typeManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        typeManager = FaunusTypeManager.getTypeManager(new ModifiableHadoopConfiguration());
+        typeManager = FaunusSchemaManager.getTypeManager(new ModifiableHadoopConfiguration());
         typeManager.setSchemaProvider(TestSchemaProvider.MULTIPLICITY);
         typeManager.clear();
     }

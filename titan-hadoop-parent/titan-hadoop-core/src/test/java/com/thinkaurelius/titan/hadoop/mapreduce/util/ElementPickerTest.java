@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.*;
 
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
@@ -13,12 +12,12 @@ import java.util.Collection;
  */
 public class ElementPickerTest extends TestCase {
 
-    private FaunusTypeManager typeManager;
+    private FaunusSchemaManager typeManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        typeManager = FaunusTypeManager.getTypeManager(new ModifiableHadoopConfiguration());
+        typeManager = FaunusSchemaManager.getTypeManager(new ModifiableHadoopConfiguration());
         typeManager.setSchemaProvider(TestSchemaProvider.MULTIPLICITY);
         typeManager.clear();
     }

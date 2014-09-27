@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 
 import junit.framework.TestCase;
@@ -19,12 +17,12 @@ import java.io.IOException;
  */
 public class FaunusEdgeTest extends TestCase {
 
-    private FaunusTypeManager typeManager;
+    private FaunusSchemaManager typeManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        typeManager = FaunusTypeManager.getTypeManager(new ModifiableHadoopConfiguration());
+        typeManager = FaunusSchemaManager.getTypeManager(new ModifiableHadoopConfiguration());
         typeManager.setSchemaProvider(TestSchemaProvider.MULTIPLICITY_ID);
         typeManager.clear();
     }

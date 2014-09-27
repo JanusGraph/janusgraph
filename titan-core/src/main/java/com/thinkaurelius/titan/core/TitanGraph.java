@@ -18,7 +18,7 @@ import java.util.Collection;
  * @see TitanFactory
  * @see TitanTransaction
  */
-public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactionalGraph {
+public interface TitanGraph extends TitanGraphTransaction, ThreadedTransactionalGraph {
 
    /* ---------------------------------------------------------------
     * Transactions and general admin
@@ -59,12 +59,19 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
     public TitanManagement getManagementSystem();
 
     /**
-     * Checks whether the graph is still open.
+     * Checks whether the graph is open.
      *
      * @return true, if the graph is open, else false.
      * @see #shutdown()
      */
     public boolean isOpen();
+
+    /**
+     * Checks whether the graph is closed.
+     *
+     * @return true, if the graph has been closed, else false
+     */
+    public boolean isClosed();
 
     /**
      * Closes the graph database.
@@ -77,108 +84,6 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      * @throws TitanException if closing the graph database caused errors in the storage backend
      */
     public void shutdown() throws TitanException;
-
-   /* ---------------------------------------------------------------
-    * Schema
-    * ---------------------------------------------------------------
-    */
-
-    /**
-     * Checks whether a type with the specified name exists.
-     *
-     * @param name name of the type
-     * @return true, if a type with the given name exists, else false
-     */
-    public boolean containsRelationType(String name);
-
-    /**
-     * Returns the {@link RelationType} uniquely identified by the given name, or NULL if such does not exist.
-     *
-     * @param name
-     * @return
-     */
-    public RelationType getRelationType(String name);
-
-    /**
-     * Whether a vertex label with the given name exists in the graph.
-     *
-     * @param name
-     * @return
-     */
-    public boolean containsVertexLabel(String name);
-
-    /**
-     * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
-     * automatically created through the registered {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker}.
-     * <p />
-     * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
-     *
-     * @param name
-     * @return
-     */
-    public VertexLabel getVertexLabel(String name);
-
-
-   /* ---------------------------------------------------------------
-    * Vertices and Querying
-    * ---------------------------------------------------------------
-    */
-
-    /**
-     * Creates a new vertex in the graph with the vertex label named by the argument.
-     *
-     * @param vertexLabel the name of the vertex label to use
-     * @return a new vertex in the graph created in the context of the current transaction
-     */
-    public TitanVertex addVertexWithLabel(String vertexLabel);
-
-    /**
-     * Creates a new vertex in the graph with the given vertex label.
-     *
-     * @param vertexLabel the vertex label which will apply to the new vertex
-     * @return a new vertex in the graph created in the context of the current transaction
-     */
-    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel);
-
-    /**
-     * Returns a {@link TitanGraphQuery} to query for vertices or edges in the graph by their properties.
-     *
-     * @return
-     */
-    public TitanGraphQuery<? extends TitanGraphQuery> query();
-
-    /**
-     * Returns a {@link TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
-     * the given query string. The query string is analyzed and answered by the underlying storage backend.
-     * <p/>
-     * Note, that using indexQuery may ignore modifications in the current transaction, i.e. the query is not transactionally
-     * bound.
-     *
-     * @param indexName Name of the indexing backend to query as configured
-     * @param query Query string
-     * @return TitanIndexQuery object to query the index directly
-     */
-    public TitanIndexQuery indexQuery(String indexName, String query);
-
-    /**
-     * Returns a {@link TitanMultiVertexQuery} to query for vertices or edges on multiple vertices simultaneously.
-     * This is similar to {@link com.thinkaurelius.titan.core.TitanVertex#query()} but for multiple vertices at once. Hence, this query method is often
-     * significantly faster when executing identical {@link TitanVertexQuery} on multiple vertices.
-     *
-     * @param vertices
-     * @return
-     */
-    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
-
-    /**
-     * Returns a {@link TitanMultiVertexQuery} to query for vertices or edges on multiple vertices simultaneously.
-     * This is similar to {@link com.thinkaurelius.titan.core.TitanVertex#query()} but for multiple vertices at once. Hence, this query method is often
-     * significantly faster when executing identical {@link TitanVertexQuery} on multiple vertices.
-     *
-     * @param vertices
-     * @return
-     */
-    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices);
 
 
 

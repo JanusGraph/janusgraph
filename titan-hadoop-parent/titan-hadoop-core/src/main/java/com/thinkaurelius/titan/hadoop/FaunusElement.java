@@ -55,7 +55,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
         this.id = id;
     }
 
-    public abstract FaunusTypeManager getTypeManager();
+    public abstract FaunusSchemaManager getTypeManager();
 
     @Override
     public InternalElement it() {
@@ -269,7 +269,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     @Override
     public void setProperty(final String key, final Object value) {
         FaunusRelationType rt = getTypeManager().getRelationType(key);
-        if (rt==null) rt = getTypeManager().getPropertyKey(key);
+        if (rt==null) rt = getTypeManager().getOrCreatePropertyKey(key);
         setProperty(rt,value);
     }
 

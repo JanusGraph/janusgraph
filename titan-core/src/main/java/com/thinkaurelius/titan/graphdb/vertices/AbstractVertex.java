@@ -236,7 +236,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public void setProperty(String key, Object value) {
-        setProperty(tx().getPropertyKey(key),value);
+        setProperty(tx().getOrCreatePropertyKey(key),value);
     }
 
     @Override

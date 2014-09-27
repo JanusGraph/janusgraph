@@ -138,7 +138,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public FaunusProperty addProperty(final String key, final Object value) {
-        FaunusPropertyKey type = getTypeManager().getPropertyKey(key);
+        FaunusPropertyKey type = getTypeManager().getOrCreatePropertyKey(key);
         return (FaunusProperty)addProperty(type,value);
     }
 
@@ -163,7 +163,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public <T> Iterable<T> getPropertyValues(final String key) {
-        FaunusPropertyKey type = getTypeManager().getPropertyKey(key);
+        FaunusPropertyKey type = getTypeManager().getOrCreatePropertyKey(key);
         return Iterables.transform(query().type(type).properties(), new Function<TitanProperty, T>() {
             @Nullable
             @Override
@@ -276,7 +276,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     @Override
     public FaunusEdge addEdge(String label, TitanVertex vertex) {
-        return addEdge(getTypeManager().getEdgeLabel(label),vertex);
+        return addEdge(getTypeManager().getOrCreateEdgeLabel(label),vertex);
     }
 
     //================Modifiying
@@ -301,7 +301,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     public void removeEdges(final Tokens.Action action, final Direction direction, final String... stringLabels) {
         FaunusEdgeLabel labels[] = new FaunusEdgeLabel[stringLabels.length];
         for (int i = 0; i < stringLabels.length; i++) {
-            labels[i]=getTypeManager().getEdgeLabel(stringLabels[i]);
+            labels[i]=getTypeManager().getOrCreateEdgeLabel(stringLabels[i]);
         }
 
         if (action.equals(Tokens.Action.KEEP)) {

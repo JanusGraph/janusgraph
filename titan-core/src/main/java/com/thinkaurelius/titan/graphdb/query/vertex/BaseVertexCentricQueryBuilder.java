@@ -1,31 +1,20 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.core.schema.SchemaInspector;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeSource;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -64,10 +53,10 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      */
     protected int limit = Query.NO_LIMIT;
 
-    private final TypeSource typeSource;
+    private final SchemaInspector schemaInspector;
 
-    protected BaseVertexCentricQueryBuilder(TypeSource typeSource) {
-        this.typeSource = typeSource;
+    protected BaseVertexCentricQueryBuilder(SchemaInspector schemaInspector) {
+        this.schemaInspector = schemaInspector;
     }
 
     protected abstract Q getThis();
@@ -206,12 +195,13 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     @Override
     public Q orderBy(String key, Order order) {
-        return orderBy(typeSource.getPropertyKey(key), order);
+        Preconditions.checkArgument(schemaInspector.containsPropertyKey(key),"Provided key does not exist: %s",key);
+        return orderBy(schemaInspector.getPropertyKey(key), order);
     }
 
     @Override
     public Q orderBy(PropertyKey key, Order order) {
-        Preconditions.checkArgument(key!=null,"Cannot order on undefined key");
+        Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
@@ -233,12 +223,12 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     protected final boolean hasSingleType() {
-        return types.length==1 && typeSource.getRelationType(types[0])!=null;
+        return types.length==1 && schemaInspector.getRelationType(types[0])!=null;
     }
 
     protected final RelationType getSingleType() {
         Preconditions.checkArgument(hasSingleType());
-        return typeSource.getRelationType(types[0]);
+        return schemaInspector.getRelationType(types[0]);
     }
 
     /**
@@ -252,7 +242,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
      */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
         if (returnType==RelationCategory.EDGE || types.length!=1 || !constraints.isEmpty()) return false;
-        return typeSource.getRelationType(types[0]) instanceof ImplicitKey;
+        return schemaInspector.getRelationType(types[0]) instanceof ImplicitKey;
     }
 
 

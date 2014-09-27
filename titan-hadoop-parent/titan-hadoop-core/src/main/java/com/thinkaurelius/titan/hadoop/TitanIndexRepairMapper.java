@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -103,7 +102,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             log.info("Read index information: name={} type={}", indexName, indexType);
             graph = (StandardTitanGraph)TitanFactory.open(titanConf);
             SchemaContainer schema = new SchemaContainer(graph);
-            FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(titanConf);
+            FaunusSchemaManager typeManager = FaunusSchemaManager.getTypeManager(titanConf);
             typeManager.setSchemaProvider(schema);
             log.info("Opened graph {}", graph);
             mgmt = (ManagementSystem) graph.getManagementSystem();
@@ -146,13 +145,13 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             InternalVertex start = tx.getInternalVertex(faunusEdge.getVertexId(Direction.OUT)),
                     end = tx.getInternalVertex(faunusEdge.getVertexId(Direction.IN));
             if (start==null || end==null) return null;
-            titanRelation = new StandardEdge(faunusRelation.getLongId(),tx.getEdgeLabel(indexType),start,end, ElementLifeCycle.Loaded);
+            titanRelation = new StandardEdge(faunusRelation.getLongId(),tx.getOrCreateEdgeLabel(indexType),start,end, ElementLifeCycle.Loaded);
         } else {
             assert faunusRelation.isProperty();
             StandardFaunusProperty faunusProperty = (StandardFaunusProperty)faunusRelation;
             InternalVertex v = tx.getInternalVertex(faunusProperty.getVertex().getLongId());
             if (v==null) return null;
-            titanRelation = new StandardProperty(faunusProperty.getLongId(),tx.getPropertyKey(indexType),v,faunusProperty.getValue(), ElementLifeCycle.Loaded);
+            titanRelation = new StandardProperty(faunusProperty.getLongId(),tx.getOrCreatePropertyKey(indexType),v,faunusProperty.getValue(), ElementLifeCycle.Loaded);
         }
         //Add properties
         for (TitanRelation rel : faunusRelation.query().relations()) {

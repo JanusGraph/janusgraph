@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanManagement extends TitanConfiguration {
+public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /*
     ##################### RELATION TYPE INDEX ##########################
@@ -301,59 +301,6 @@ public interface TitanManagement extends TitanConfiguration {
      */
     public void forceCloseInstance(String instanceId);
 
-
-    /*
-    ##################### PROXY FOR TITANTRANSACTION ##########################
-     */
-
-    /**
-     * Identical to {@link TitanTransaction#containsRelationType(String)}
-     *
-     * @param name
-     * @return
-     */
-    public boolean containsRelationType(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#getRelationType(String)}
-     *
-     * @param name
-     * @return
-     */
-    public RelationType getRelationType(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#getPropertyKey(String)}
-     *
-     * @param name
-     * @return
-     */
-    public PropertyKey getPropertyKey(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#getEdgeLabel(String)}
-     *
-     * @param name
-     * @return
-     */
-    public EdgeLabel getEdgeLabel(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#makePropertyKey(String)}
-     *
-     * @param name
-     * @return
-     */
-    public PropertyKeyMaker makePropertyKey(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#makeEdgeLabel(String)}
-     *
-     * @param name
-     * @return
-     */
-    public EdgeLabelMaker makeEdgeLabel(String name);
-
     /**
      * Returns an iterable over all defined types that have the given clazz (either {@link EdgeLabel} which returns all labels,
      * {@link PropertyKey} which returns all keys, or {@link RelationType} which returns all types).
@@ -363,30 +310,6 @@ public interface TitanManagement extends TitanConfiguration {
      * @return Iterable over all types for the given category (label, key, or both)
      */
     public <T extends RelationType> Iterable<T> getRelationTypes(Class<T> clazz);
-
-    /**
-     * Identical to {@link TitanTransaction#containsVertexLabel(String)}
-     *
-     * @param name
-     * @return
-     */
-    public boolean containsVertexLabel(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#getVertexLabel(String)}
-     *
-     * @param name
-     * @return
-     */
-    public VertexLabel getVertexLabel(String name);
-
-    /**
-     * Identical to {@link TitanTransaction#makeVertexLabel(String)}
-     *
-     * @param name
-     * @return
-     */
-    public VertexLabelMaker makeVertexLabel(String name);
 
     /**
      * Returns an {@link Iterable} over all defined {@link VertexLabel}s.

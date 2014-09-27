@@ -1,31 +1,32 @@
 package com.thinkaurelius.titan.hadoop;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import com.thinkaurelius.titan.core.schema.SchemaInspector;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
 import com.thinkaurelius.titan.graphdb.schema.PropertyKeyDefinition;
 import com.thinkaurelius.titan.graphdb.schema.RelationTypeDefinition;
 import com.thinkaurelius.titan.graphdb.schema.SchemaProvider;
-import com.thinkaurelius.titan.graphdb.types.TypeSource;
 
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FaunusTypeManager implements TypeSource {
+public class FaunusSchemaManager implements SchemaInspector {
 
-    private static final FaunusTypeManager DEFAULT_MANAGER = new FaunusTypeManager();
+    private static final FaunusSchemaManager DEFAULT_MANAGER = new FaunusSchemaManager();
 
     private final ConcurrentMap<String,FaunusVertexLabel> vertexLabels;
     private final ConcurrentMap<String,FaunusRelationType> relationTypes;
     private SchemaProvider schemaProvider;
 
-    private FaunusTypeManager() {
+    private FaunusSchemaManager() {
         this(DefaultSchemaProvider.INSTANCE);
     }
 
-    public FaunusTypeManager(SchemaProvider provider) {
+    public FaunusSchemaManager(SchemaProvider provider) {
         vertexLabels = Maps.newConcurrentMap();
         relationTypes = Maps.newConcurrentMap();
         setSchemaProvider(provider);
@@ -65,6 +66,12 @@ public class FaunusTypeManager implements TypeSource {
         return vl;
     }
 
+
+    @Override
+    public boolean containsVertexLabel(String name) {
+        return vertexLabels.containsKey(name) || schemaProvider.getVertexLabel(name)!=null;
+    }
+
     @Override
     public boolean containsRelationType(String name) {
         return relationTypes.containsKey(name) || schemaProvider.getRelationType(name)!=null;
@@ -85,7 +92,20 @@ public class FaunusTypeManager implements TypeSource {
         return rt;
     }
 
-    public FaunusPropertyKey getPropertyKey(String name) {
+    @Override
+    public boolean containsPropertyKey(String name) {
+        FaunusRelationType rt = getRelationType(name);
+        return rt!=null && rt.isPropertyKey();
+    }
+
+    @Override
+    public boolean containsEdgeLabel(String name) {
+        FaunusRelationType rt = getRelationType(name);
+        return rt!=null && rt.isEdgeLabel();
+    }
+
+    @Override
+    public FaunusPropertyKey getOrCreatePropertyKey(String name) {
         FaunusRelationType rt = relationTypes.get(name);
         if (rt==null) {
             relationTypes.putIfAbsent(name,new FaunusPropertyKey(schemaProvider.getPropertyKey(name),false));
@@ -96,7 +116,15 @@ public class FaunusTypeManager implements TypeSource {
         return (FaunusPropertyKey)rt;
     }
 
-    public FaunusEdgeLabel getEdgeLabel(String name) {
+    @Override
+    public FaunusPropertyKey getPropertyKey(String name) {
+        FaunusRelationType rt = relationTypes.get(name);
+        Preconditions.checkArgument(rt==null || rt.isPropertyKey(),"Name does not identify a property key: ",name);
+        return (FaunusPropertyKey)rt;
+    }
+
+    @Override
+    public FaunusEdgeLabel getOrCreateEdgeLabel(String name) {
         FaunusRelationType rt = relationTypes.get(name);
         if (rt==null) {
             relationTypes.putIfAbsent(name,new FaunusEdgeLabel(schemaProvider.getEdgeLabel(name),false));
@@ -107,8 +135,14 @@ public class FaunusTypeManager implements TypeSource {
         return (FaunusEdgeLabel)rt;
     }
 
+    @Override
+    public FaunusEdgeLabel getEdgeLabel(String name) {
+        FaunusRelationType rt = relationTypes.get(name);
+        Preconditions.checkArgument(rt==null || rt.isEdgeLabel(),"Name does not identify an edge label: ",name);
+        return (FaunusEdgeLabel)rt;
+    }
 
-    public static FaunusTypeManager getTypeManager(Configuration config) {
+    public static FaunusSchemaManager getTypeManager(Configuration config) {
         return DEFAULT_MANAGER;
     }
 

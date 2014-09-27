@@ -46,7 +46,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     }
 
     public StandardFaunusProperty(long id, FaunusVertex vertex, String type, Object value) {
-        this(id, vertex, vertex.getTypeManager().getPropertyKey(type), value);
+        this(id, vertex, vertex.getTypeManager().getOrCreatePropertyKey(type), value);
     }
 
     public StandardFaunusProperty(long id, FaunusVertex vertex, FaunusPropertyKey type, Object value) {

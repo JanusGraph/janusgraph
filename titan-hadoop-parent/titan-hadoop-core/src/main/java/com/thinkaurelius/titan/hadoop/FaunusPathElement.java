@@ -79,8 +79,8 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     @Override
-    public FaunusTypeManager getTypeManager() {
-        return FaunusTypeManager.getTypeManager(configuration);
+    public FaunusSchemaManager getTypeManager() {
+        return FaunusSchemaManager.getTypeManager(configuration);
     }
 
     @Override

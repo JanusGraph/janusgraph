@@ -12,16 +12,14 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.schema.SchemaInspector;
 import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -81,7 +79,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeInspector, TypeSource, VertexFactory {
+public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeInspector, SchemaInspector, VertexFactory {
 
     private static final Logger log = LoggerFactory.getLogger(StandardTitanTx.class);
 
@@ -778,13 +776,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return (EdgeLabel) makeSchemaVertex(TitanSchemaCategory.EDGELABEL, name, definition);
     }
 
-    @Override
-    public boolean containsRelationType(String name) {
-        verifyOpen();
-        if (SystemTypeManager.isSystemType(name)) return true;
-        return getSchemaVertex(TitanSchemaCategory.getRelationTypeName(name))!=null;
-    }
-
     public TitanSchemaVertex getSchemaVertex(String schemaName) {
         Long schemaId = newTypeCache.get(schemaName);
         if (schemaId==null) schemaId=graph.getSchemaCache().getSchemaId(schemaName, this);
@@ -796,6 +787,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
+    public boolean containsRelationType(String name) {
+        return getRelationType(name)!=null;
+    }
+
+    @Override
     public RelationType getRelationType(String name) {
         verifyOpen();
 
@@ -803,6 +799,18 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (type!=null) return type;
 
         return (RelationType)getSchemaVertex(TitanSchemaCategory.getRelationTypeName(name));
+    }
+
+    @Override
+    public boolean containsPropertyKey(String name) {
+        RelationType type = getRelationType(name);
+        return type!=null && type.isPropertyKey();
+    }
+
+    @Override
+    public boolean containsEdgeLabel(String name) {
+        RelationType type = getRelationType(name);
+        return type!=null && type.isEdgeLabel();
     }
 
     // this is critical path we can't allow anything heavier then assertion in here
@@ -819,6 +827,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public PropertyKey getPropertyKey(String name) {
+        RelationType pk = getRelationType(name);
+        Preconditions.checkArgument(pk==null || pk.isPropertyKey(), "The relation type with name [%s] is not a property key",name);
+        return (PropertyKey)pk;
+    }
+
+    @Override
+    public PropertyKey getOrCreatePropertyKey(String name) {
         RelationType et = getRelationType(name);
         if (et == null) {
             return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name));
@@ -826,11 +841,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             return (PropertyKey) et;
         } else
             throw new IllegalArgumentException("The type of given name is not a key: " + name);
-
     }
 
     @Override
     public EdgeLabel getEdgeLabel(String name) {
+        RelationType el = getRelationType(name);
+        Preconditions.checkArgument(el==null || el.isEdgeLabel(), "The relation type with name [%s] is not an edge label",name);
+        return (EdgeLabel)el;
+    }
+
+    @Override
+    public EdgeLabel getOrCreateEdgeLabel(String name) {
         RelationType et = getRelationType(name);
         if (et == null) {
             return config.getAutoSchemaMaker().makeEdgeLabel(makeEdgeLabel(name));
@@ -985,7 +1006,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
             final InternalVertex v = query.getVertex();
 
-            Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
+            EntryList iter = v.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                 @Override
                 public EntryList get(SliceQuery query) {
                     return graph.edgeQuery(v.getLongId(), query, txHandle);

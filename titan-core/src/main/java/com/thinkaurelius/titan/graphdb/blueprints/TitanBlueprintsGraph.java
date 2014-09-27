@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
@@ -153,6 +156,21 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
+    public TitanVertex addVertex() {
+        return getAutoStartTx().addVertex();
+    }
+
+    @Override
+    public TitanVertex getVertex(long id) {
+        return getAutoStartTx().getVertex(id);
+    }
+
+    @Override
+    public boolean containsVertex(long vertexid) {
+        return getAutoStartTx().containsVertex(vertexid);
+    }
+
+    @Override
     public TitanVertex getVertex(Object id) {
         return getAutoStartTx().getVertex(id);
     }
@@ -245,6 +263,53 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
         return getAutoStartTx().getEdges(key, value);
+    }
+
+    //Schema
+
+    @Override
+    public PropertyKeyMaker makePropertyKey(String name) {
+        return getAutoStartTx().makePropertyKey(name);
+    }
+
+    @Override
+    public EdgeLabelMaker makeEdgeLabel(String name) {
+        return getAutoStartTx().makeEdgeLabel(name);
+    }
+
+    @Override
+    public VertexLabelMaker makeVertexLabel(String name) {
+        return getAutoStartTx().makeVertexLabel(name);
+    }
+
+    @Override
+    public boolean containsPropertyKey(String name) {
+        return getAutoStartTx().containsPropertyKey(name);
+    }
+
+    @Override
+    public PropertyKey getOrCreatePropertyKey(String name) {
+        return getAutoStartTx().getOrCreatePropertyKey(name);
+    }
+
+    @Override
+    public PropertyKey getPropertyKey(String name) {
+        return getAutoStartTx().getPropertyKey(name);
+    }
+
+    @Override
+    public boolean containsEdgeLabel(String name) {
+        return getAutoStartTx().containsEdgeLabel(name);
+    }
+
+    @Override
+    public EdgeLabel getOrCreateEdgeLabel(String name) {
+        return getAutoStartTx().getOrCreateEdgeLabel(name);
+    }
+
+    @Override
+    public EdgeLabel getEdgeLabel(String name) {
+        return getAutoStartTx().getEdgeLabel(name);
     }
 
 }

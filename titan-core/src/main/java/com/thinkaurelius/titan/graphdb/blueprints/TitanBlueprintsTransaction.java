@@ -129,7 +129,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         if (null == label) {
             throw new IllegalArgumentException("Edge label must be non-null");
         }
-        return addEdge(outVertex, inVertex, getEdgeLabel(label));
+        return addEdge(outVertex, inVertex, getOrCreateEdgeLabel(label));
     }
 
 
@@ -165,7 +165,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute) {
-        return addProperty(vertex, getPropertyKey(key), attribute);
+        return addProperty(vertex, getOrCreatePropertyKey(key), attribute);
     }
 
     @Override

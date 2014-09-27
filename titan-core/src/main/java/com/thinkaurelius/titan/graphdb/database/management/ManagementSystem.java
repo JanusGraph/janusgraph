@@ -1015,8 +1015,28 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
+    public boolean containsPropertyKey(String name) {
+        return transaction.containsPropertyKey(name);
+    }
+
+    @Override
     public PropertyKey getPropertyKey(String name) {
         return transaction.getPropertyKey(name);
+    }
+
+    @Override
+    public boolean containsEdgeLabel(String name) {
+        return transaction.containsEdgeLabel(name);
+    }
+
+    @Override
+    public EdgeLabel getOrCreateEdgeLabel(String name) {
+        return transaction.getOrCreateEdgeLabel(name);
+    }
+
+    @Override
+    public PropertyKey getOrCreatePropertyKey(String name) {
+        return transaction.getOrCreatePropertyKey(name);
     }
 
     @Override

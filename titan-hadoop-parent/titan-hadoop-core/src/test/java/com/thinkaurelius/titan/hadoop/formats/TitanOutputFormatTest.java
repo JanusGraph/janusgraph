@@ -195,9 +195,9 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         mgmt.commit();
 
         // Reload schema from Titan into Faunus's Type Manager
-        FaunusTypeManager.getTypeManager(null).clear();
+        FaunusSchemaManager.getTypeManager(null).clear();
         SchemaProvider titanSchemaProvider = new SchemaContainer(g);
-        FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(null); //argument is ignored
+        FaunusSchemaManager typeManager = FaunusSchemaManager.getTypeManager(null); //argument is ignored
         typeManager.setSchemaProvider(titanSchemaProvider);
 
         bulkLoadGraphOfTheGods(f1);
@@ -387,9 +387,9 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         mgmt.commit();
 
         // Reload schema from Titan into Faunus's Type Manager
-        FaunusTypeManager.getTypeManager(null).clear();
+        FaunusSchemaManager.getTypeManager(null).clear();
         SchemaProvider titanSchemaProvider = new SchemaContainer(g);
-        FaunusTypeManager typeManager = FaunusTypeManager.getTypeManager(null); //argument is ignored
+        FaunusSchemaManager typeManager = FaunusSchemaManager.getTypeManager(null); //argument is ignored
         typeManager.setSchemaProvider(titanSchemaProvider);
 
 

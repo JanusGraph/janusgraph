@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.FaunusPathElement.MicroElement;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -42,7 +41,7 @@ public class FaunusSerializer {
     // This is volatile to support double-checked locking
     private static volatile Serializer standardSerializer;
 
-    private final FaunusTypeManager types;
+    private final FaunusSchemaManager types;
     private final boolean trackState;
     private final boolean trackPaths;
     private final Configuration configuration;
@@ -52,7 +51,7 @@ public class FaunusSerializer {
 
     public FaunusSerializer(final Configuration configuration) {
         Preconditions.checkNotNull(configuration);
-        this.types = FaunusTypeManager.getTypeManager(configuration);
+        this.types = FaunusSchemaManager.getTypeManager(configuration);
         this.configuration = configuration;
         this.trackState = configuration.get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
         this.trackPaths = configuration.get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
@@ -339,8 +338,8 @@ public class FaunusSerializer {
         int type = in.readByte();
         String typeName = in.readUTF();
         assert type==0 || type==1;
-        if (type==0) return types.getPropertyKey(typeName);
-        else return types.getEdgeLabel(typeName);
+        if (type==0) return types.getOrCreatePropertyKey(typeName);
+        else return types.getOrCreateEdgeLabel(typeName);
     }
 
 

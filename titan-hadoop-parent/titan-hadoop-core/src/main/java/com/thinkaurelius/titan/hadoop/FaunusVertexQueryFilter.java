@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
@@ -28,7 +27,7 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
 
     private RelationCategory resultType;
 
-    public FaunusVertexQueryFilter(FaunusTypeManager typeManager) {
+    public FaunusVertexQueryFilter(FaunusSchemaManager typeManager) {
         super(typeManager);
     }
 
@@ -45,7 +44,7 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
     }
 
     public static FaunusVertexQueryFilter create(final Configuration configuration) {
-        engine.put("v", new DummyVertex(FaunusTypeManager.getTypeManager(configuration)));
+        engine.put("v", new DummyVertex(FaunusSchemaManager.getTypeManager(configuration)));
         try {
             // Can't default to v.query().relations() -- this causes a class cast exception when attempting to convert the Iterable return value of relations() to a FaunusVertexQueryFilter
             FaunusVertexQueryFilter query = (FaunusVertexQueryFilter) engine.eval(configuration.get(TitanHadoopConfiguration.INPUT_VERTEX_QUERY_FILTER));
@@ -67,9 +66,9 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
 
     private static class DummyVertex {
 
-        private final FaunusTypeManager manager;
+        private final FaunusSchemaManager manager;
 
-        private DummyVertex(FaunusTypeManager manager) {
+        private DummyVertex(FaunusSchemaManager manager) {
             this.manager = manager;
         }
 
