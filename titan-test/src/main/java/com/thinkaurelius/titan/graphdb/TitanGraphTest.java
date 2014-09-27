@@ -2324,6 +2324,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(numB<=1);
     }
 
+    private void failTransactionOnCommit(final TransactionJob job) {
+        TitanTransaction tx = graph.newTransaction();
+        try {
+            job.run(tx);
+            tx.commit();
+            fail();
+        } catch (Exception e) {
+            //e.printStackTrace();
+        } finally {
+            if (tx.isOpen()) tx.rollback();
+        }
+    }
+
     private int executeSerialTransaction(final TransactionJob job, int number) {
         final AtomicInteger txSuccess = new AtomicInteger(0);
         for (int i = 0; i < number; i++) {
@@ -3524,7 +3537,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).addKey(weight).addKey(text).buildCompositeIndex();
 
         TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).addKey(time).indexOnly(person).unique().buildCompositeIndex();
-        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).addKey(text).indexOnly(person).buildCompositeIndex();
+        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12", Vertex.class).addKey(text).indexOnly(person).buildCompositeIndex();
         TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).addKey(time).addKey(name).indexOnly(org).buildCompositeIndex();
         TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).addKey(name).buildCompositeIndex();
 
@@ -3888,21 +3901,77 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //*** INIVIDUAL USE CASE TESTS ******
 
+
+    }
+
+    @Test
+    public void testIndexUniqueness() {
+        PropertyKey time = makeKey("time", Long.class);
+        PropertyKey text = makeKey("text", String.class);
+
+        VertexLabel person = mgmt.makeVertexLabel("person").make();
+        VertexLabel org = mgmt.makeVertexLabel("organization").make();
+
+        TitanGraphIndex vindex1 = mgmt.buildIndex("vindex1",Vertex.class).addKey(time).indexOnly(person).unique().buildCompositeIndex();
+        TitanGraphIndex vindex2 = mgmt.buildIndex("vindex2",Vertex.class).addKey(time).addKey(text).unique().buildCompositeIndex();
+        finishSchema();
+
+        //================== VERTEX UNIQUENESS ====================
+
+        //I) Label uniqueness
+        //Ia) Uniqueness violation in same transaction
+        failTransactionOnCommit(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                TitanVertex v0 = tx.addVertexWithLabel("person");
+                v0.setProperty("time",1);
+                TitanVertex v1 = tx.addVertexWithLabel("person");
+                v1.setProperty("time",1);
+            }
+        });
+
+        //Ib) Uniqueness violation across transactions
+        TitanVertex v0 = tx.addVertexWithLabel("person");
+        v0.setProperty("time",1);
         newTx();
-        //Check that index enforces uniqueness on vertices with the right label...
-        try {
-            TitanVertex v1 = tx.addVertexWithLabel(tx.getVertexLabel(person.getName()));
-            v1.setProperty(time.getName(),numV/2);
-            tx.commit();
-            fail();
-        } catch (Exception e) {
-        } finally {
-            if (tx.isOpen()) tx.rollback();
-        }
+        failTransactionOnCommit(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                TitanVertex v1 = tx.addVertexWithLabel("person");
+                v1.setProperty("time",1);
+            }
+        });
+        //Ic) However, this should work since the label is different
+        TitanVertex v1 = tx.addVertexWithLabel("organization");
+        v1.setProperty("time",1);
         newTx();
-        //...but not if we use a different one
-        TitanVertex v1 = tx.addVertexWithLabel(tx.getVertexLabel(org.getName()));
-        v1.setProperty(time.getName(),numV/2);
+
+        //II) Composite uniqueness
+        //IIa) Uniqueness violation in same transaction
+        failTransactionOnCommit(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                TitanVertex v0 = tx.addVertex();
+                ElementHelper.setProperties(v0,"time",2,"text","hello");
+                TitanVertex v1 = tx.addVertex();
+                ElementHelper.setProperties(v1,"time",2,"text","hello");
+            }
+        });
+
+        //IIb) Uniqueness violation across transactions
+        v0 = tx.addVertex();
+        ElementHelper.setProperties(v0,"time",2,"text","hello");
+        newTx();
+        failTransactionOnCommit(new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+
+                TitanVertex v1 = tx.addVertex();
+                ElementHelper.setProperties(v1,"time",2,"text","hello");
+            }
+        });
+
+
     }
 
     public static void evaluateQuery(TitanGraphQuery query, ElementCategory resultType,
