@@ -20,6 +20,8 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -29,6 +31,9 @@ import java.util.List;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class TitanHBaseInputFormat extends TitanInputFormat {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanHBaseInputFormat.class);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private TitanHBaseHadoopGraph graph;
@@ -56,8 +61,8 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 //        if (basicConf.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
         if (inputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
             config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(inputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
-        // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
+        log.debug("hbase.security.authentication={}", config.get("hbase.security.authentication"));
         Scan scanner = new Scan();
         // TODO the mapping is private in HBaseStoreManager and leaks here -- replace String database/CF names with an enum where each value has both a short and long name
         if (inputConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {

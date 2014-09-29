@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop.compat.h2;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +8,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.hadoop.config.HBaseAuthHelper;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -107,29 +107,17 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
                              final Class<? extends WritableComparable> reduceOutputKey,
                              final Class<? extends WritableComparable> reduceOutputValue,
                              final Configuration configuration) {
+
+       Configuration mergedConf = overlayConfiguration(getConf(), configuration);
+
        try {
             final Job job;
 
-            // Combine this.getConf() with the configuration argument (latter takes precedence)
-            final Configuration mergedConf = new Configuration(this.getConf());
-            final Iterator<Entry<String,String>> it = configuration.iterator();
-            while (it.hasNext()) {
-                Entry<String,String> ent = it.next();
-                mergedConf.set(ent.getKey(), ent.getValue());
-            }
-
             if (State.NONE == this.state || State.REDUCER == this.state) {
-                // Set merged configuration for the new job
-                //
-                // This really does matter; just setting the config in
-                // ChainMapper.addMapper and ChainReducer.setReducer invocations
-                // below is not sufficient for some jobs that use a combiner.
-                // For example, LinkMapReduce.Combiner expects to use custom
-                // config keys like DIRECTION. Leaving out this step effectively
-                // drops that combiner's custom keys and makes tests using
-                // linkIn pipeline steps fail.
+                // Create a new job with a reference to mergedConf
                 job = Job.getInstance(mergedConf);
                 job.setJobName(makeClassName(mapper) + ARROW + makeClassName(reducer));
+                HBaseAuthHelper.setHBaseAuthToken(mergedConf, job);
                 this.jobs.add(job);
             } else {
                 job = this.jobs.get(this.jobs.size() - 1);
@@ -137,8 +125,8 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
             job.setNumReduceTasks(this.getConf().getInt("mapreduce.job.reduces", this.getConf().getInt("mapreduce.tasktracker.reduce.tasks.maximum", 1)));
 
-            ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
-            ChainReducer.setReducer(job, reducer, mapOutputKey, mapOutputValue, reduceOutputKey, reduceOutputValue, configuration);
+            ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, mergedConf);
+            ChainReducer.setReducer(job, reducer, mapOutputKey, mapOutputValue, reduceOutputKey, reduceOutputValue, mergedConf);
 
             if (null != comparator)
                 job.setSortComparatorClass(comparator);
@@ -159,13 +147,18 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
     public void addMap(final Class<? extends Mapper> mapper,
                        final Class<? extends WritableComparable> mapOutputKey,
                        final Class<? extends WritableComparable> mapOutputValue,
-                       final Configuration configuration) {
+                       Configuration configuration) {
+
+        Configuration mergedConf = overlayConfiguration(getConf(), configuration);
+
         try {
             final Job job;
             if (State.NONE == this.state) {
-                job = Job.getInstance(this.getConf());
+                // Create a new job with a reference to mergedConf
+                job = Job.getInstance(mergedConf);
                 job.setNumReduceTasks(0);
                 job.setJobName(makeClassName(mapper));
+                HBaseAuthHelper.setHBaseAuthToken(mergedConf, job);
                 this.jobs.add(job);
             } else {
                 job = this.jobs.get(this.jobs.size() - 1);
@@ -173,10 +166,10 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
 
             if (State.MAPPER == this.state || State.NONE == this.state) {
-                ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+                ChainMapper.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, mergedConf);
                 this.state = State.MAPPER;
             } else {
-                ChainReducer.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, configuration);
+                ChainReducer.addMapper(job, mapper, NullWritable.class, FaunusVertex.class, mapOutputKey, mapOutputValue, mergedConf);
                 this.state = State.REDUCER;
             }
         } catch (IOException e) {
@@ -316,5 +309,15 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
             }
         }
         return 0;
+    }
+
+    private static Configuration overlayConfiguration(Configuration base, Configuration overrides) {
+        Configuration mergedConf = new Configuration(base);
+        final Iterator<Entry<String,String>> it = overrides.iterator();
+        while (it.hasNext()) {
+            Entry<String,String> ent = it.next();
+            mergedConf.set(ent.getKey(), ent.getValue());
+        }
+        return mergedConf;
     }
 }

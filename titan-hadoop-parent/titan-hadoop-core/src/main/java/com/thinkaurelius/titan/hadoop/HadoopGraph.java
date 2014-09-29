@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.hadoop.config.HBaseAuthHelper;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -26,11 +27,11 @@ import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.*;
 public class HadoopGraph extends HybridConfigured {
 
     public HadoopGraph() {
-        super();
+        this(new Configuration());
     }
 
     public HadoopGraph(final Configuration configuration) {
-        super(configuration);
+        super(HBaseAuthHelper.wrapConfiguration(configuration));
     }
 
     public Configuration getConf(final String prefix) {
