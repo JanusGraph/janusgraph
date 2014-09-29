@@ -554,8 +554,12 @@ public class SolrIndex implements IndexProvider {
                 if (titanPredicate == Text.CONTAINS) {
                     //e.g. - if terms tomorrow and world were supplied, and fq=text:(tomorrow  world)
                     //sample data set would return 2 documents: one where text = Tomorrow is the World,
-                    //and the second where text = Hello World
-                    q.addFilterQuery(key + ":("+((String) value).toLowerCase()+")");
+                    //and the second where text = Hello World. Hence, we are decomposing the query string
+                    //and building an AND query explicitly because we need AND semantics
+                    value = ((String) value).toLowerCase();
+                    for (String term : Text.tokenize((String)value)) {
+                        q.addFilterQuery(key + ":("+ term +")");
+                    }
                     return q;
                 } else if (titanPredicate == Text.PREFIX) {
                     String prefixConventionName = "String";
@@ -617,7 +621,6 @@ public class SolrIndex implements IndexProvider {
             }
             return q;
         } else if (condition instanceof And) {
-
             for (Condition<TitanElement> c : condition.getChildren()) {
                 SolrQuery andCondition = new SolrQuery();
                 andCondition.setQuery("*:*");

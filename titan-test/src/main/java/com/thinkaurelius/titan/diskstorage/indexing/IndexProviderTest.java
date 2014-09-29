@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
@@ -45,37 +46,49 @@ public abstract class IndexProviderTest {
     protected IndexFeatures indexFeatures;
     protected IndexTransaction tx;
 
+    protected Map<String,KeyInformation> allKeys;
+    protected KeyInformation.IndexRetriever indexRetriever;
+
     public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name";
-
-    public static final Map<String,KeyInformation> allKeys = new HashMap<String,KeyInformation>() {{
-        put(TEXT,new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.TEXT)));
-        put(TIME,new StandardKeyInformation(Long.class));
-        put(WEIGHT,new StandardKeyInformation(Double.class, new Parameter("mapping",Mapping.DEFAULT)));
-        put(LOCATION,new StandardKeyInformation(Geoshape.class));
-        put(NAME,new StandardKeyInformation(String.class, new Parameter("mapping",Mapping.STRING)));
-    }};
-
-    public static final KeyInformation.IndexRetriever indexRetriever = new KeyInformation.IndexRetriever() {
-
-        @Override
-        public KeyInformation get(String store, String key) {
-            //Same for all stores
-            return allKeys.get(key);
-        }
-
-        @Override
-        public KeyInformation.StoreRetriever get(String store) {
-            return new KeyInformation.StoreRetriever() {
-                @Override
-                public KeyInformation get(String key) {
-                    return allKeys.get(key);
-                }
-            };
-        }
-    };
 
     public static StandardKeyInformation of(Class<?> clazz, Parameter... paras) {
         return new StandardKeyInformation(clazz,paras);
+    }
+
+    public static final KeyInformation.IndexRetriever getIndexRetriever(final Map<String,KeyInformation> mappings) {
+        return new KeyInformation.IndexRetriever() {
+
+            @Override
+            public KeyInformation get(String store, String key) {
+                //Same for all stores
+                return mappings.get(key);
+            }
+
+            @Override
+            public KeyInformation.StoreRetriever get(String store) {
+                return new KeyInformation.StoreRetriever() {
+                    @Override
+                    public KeyInformation get(String key) {
+                        return mappings.get(key);
+                    }
+                };
+            }
+        };
+    }
+
+    public static final Map<String,KeyInformation> getMapping(final IndexFeatures indexFeatures) {
+        Preconditions.checkArgument(indexFeatures.supportsStringMapping(Mapping.TEXTSTRING) ||
+                (indexFeatures.supportsStringMapping(Mapping.TEXT) && indexFeatures.supportsStringMapping(Mapping.STRING)),
+                "Index must support string and text mapping");
+        return new HashMap<String,KeyInformation>() {{
+            put(TEXT,new StandardKeyInformation(String.class, new Parameter("mapping",
+                    indexFeatures.supportsStringMapping(Mapping.TEXT)?Mapping.TEXT:Mapping.TEXTSTRING)));
+            put(TIME,new StandardKeyInformation(Long.class));
+            put(WEIGHT,new StandardKeyInformation(Double.class, new Parameter("mapping",Mapping.DEFAULT)));
+            put(LOCATION,new StandardKeyInformation(Geoshape.class));
+            put(NAME,new StandardKeyInformation(String.class, new Parameter("mapping",
+                    indexFeatures.supportsStringMapping(Mapping.STRING)?Mapping.STRING:Mapping.TEXTSTRING)));
+        }};
     }
 
     public abstract IndexProvider openIndex() throws BackendException;
@@ -93,6 +106,9 @@ public abstract class IndexProviderTest {
     public void open() throws BackendException {
         index = openIndex();
         indexFeatures = index.getFeatures();
+        allKeys = getMapping(indexFeatures);
+        indexRetriever = getIndexRetriever(allKeys);
+
         newTx();
     }
 
@@ -728,14 +744,6 @@ public abstract class IndexProviderTest {
     protected void initialize(String store) throws BackendException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
             KeyInformation keyInfo = info.getValue();
-            Mapping map = ParameterType.MAPPING.findParameter(keyInfo.getParameters(),null);
-            if (map!=null && AttributeUtil.isString(keyInfo.getDataType())) {
-                //Automatically upgrade mapping to TEXTSTRING if not supported
-                if (!indexFeatures.supportsStringMapping(map)
-                        && indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) {
-                    keyInfo = new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.TEXTSTRING));
-                }
-            }
             if (index.supports(keyInfo)) index.register(store,info.getKey(),keyInfo,tx);
         }
     }

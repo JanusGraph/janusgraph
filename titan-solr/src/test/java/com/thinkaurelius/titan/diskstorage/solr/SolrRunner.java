@@ -10,7 +10,8 @@ import java.io.File;
 public class SolrRunner {
 
     protected static final int NUM_SERVERS = 5;
-    protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge", "namev", "namee" };
+//    protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge", "namev", "namee" };
+    protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge" };
 
     private static MiniSolrCloudCluster miniSolrCloudCluster;
 

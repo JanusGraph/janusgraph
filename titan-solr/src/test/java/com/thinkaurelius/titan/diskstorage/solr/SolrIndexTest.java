@@ -93,7 +93,7 @@ public class SolrIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.CONTAINS_PREFIX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING)), Text.CONTAINS_REGEX));
         assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING)), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING)), Text.CONTAINS));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.REGEX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.EQUAL));
