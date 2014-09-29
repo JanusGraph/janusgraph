@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.solr;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -13,20 +11,12 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.servlet.SolrDispatchFilter;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -61,11 +51,7 @@ public class SolrIndexTest extends IndexProviderTest {
 
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), index);
         config.set(SolrIndex.CORES, SolrRunner.CORES, index);
-        config.set(SolrIndex.KEY_FIELD_NAMES, new String[] {
-                      "edge=document_id", "vertex=document_id",
-                      "store1=document_id", "store2=document_id"
-                   },
-                   index);
+        config.set(SolrIndex.KEY_FIELD_NAMES, SolrRunner.KEY_FIELDS, index);
 
         return config.restrictTo(index);
     }

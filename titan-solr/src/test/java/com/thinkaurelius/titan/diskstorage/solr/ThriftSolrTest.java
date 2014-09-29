@@ -23,10 +23,7 @@ public class ThriftSolrTest extends TitanIndexTest {
         //Add index
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), INDEX);
         config.set(SolrIndex.CORES, SolrRunner.CORES, INDEX);
-        config.set(SolrIndex.KEY_FIELD_NAMES, new String[] {
-                "edge=document_id", "vertex=document_id",
-                "store1=document_id", "store2=document_id",
-        }, INDEX);
+        config.set(SolrIndex.KEY_FIELD_NAMES, SolrRunner.KEY_FIELDS, INDEX);
 
         config.set(INDEX_BACKEND,"solr",INDEX);
         //TODO: set SOLR specific config options
