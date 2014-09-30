@@ -137,7 +137,7 @@
                     <execution>
                         <id>default-test</id>
                         <configuration>
-                            <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
                         </configuration>
                     </execution>
                 </executions>

@@ -10,9 +10,10 @@ import java.io.File;
 
 public class SolrRunner {
 
-    protected static final int NUM_SERVERS = 5;
+    protected static final int NUM_SERVERS = 1;
     protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge", "namev", "namee",
-            "composite", "vsearch", "mi", "mixed", "index1", "index2", "index3", "ecategory", "vcategory", "theIndex" };
+            "composite", "psearch", "esearch", "vsearch", "mi", "mixed", "index1", "index2", "index3",
+            "ecategory", "vcategory", "pcategory", "theIndex" };
 
     protected static final String[] KEY_FIELDS;
 

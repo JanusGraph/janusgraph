@@ -63,15 +63,15 @@ public class SolrIndex implements IndexProvider {
 
     public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(INDEX_NS,"num-shards",
             "Number of shards",
-            ConfigOption.Type.GLOBAL_OFFLINE, 5);
+            ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<Integer>(INDEX_NS,"max-shards-per-node",
             "Maximum number of shards per node",
-            ConfigOption.Type.GLOBAL_OFFLINE, 2);
+            ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(INDEX_NS,"replication-factor",
             "Number of shards",
-            ConfigOption.Type.GLOBAL_OFFLINE, 2);
+            ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(INDEX_NS,"zookeeper-url",
             "Http connection max connections per host",
@@ -561,25 +561,17 @@ public class SolrIndex implements IndexProvider {
                         q.addFilterQuery(key + ":("+ term +")");
                     }
                     return q;
-                } else if (titanPredicate == Text.PREFIX) {
-                    String prefixConventionName = "String";
-                    q.addFilterQuery(key + prefixConventionName + ":" + value + "*");
-                    return q;
-                } else if (titanPredicate == Text.REGEX) {
-                    String prefixConventionName = "String";
-                    q.addFilterQuery(key + prefixConventionName + ":/" + value + "/");
-                    return q;
-                } else if (titanPredicate == Text.CONTAINS_PREFIX) {
+                } else if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
                     q.addFilterQuery(key + ":" + value + "*");
+                    return q;
+                } else if (titanPredicate == Text.REGEX || titanPredicate == Text.CONTAINS_REGEX) {
+                    q.addFilterQuery(key + ":/" + value + "/");
                     return q;
                 } else if (titanPredicate == Cmp.EQUAL) {
                     q.addFilterQuery(key + ":\"" + value + "\"");
                     return q;
                 } else if (titanPredicate == Cmp.NOT_EQUAL) {
                     q.addFilterQuery("-" + key + ":\"" + value + "\"");
-                    return q;
-                } else if (titanPredicate == Text.CONTAINS_REGEX) {
-                    q.addFilterQuery(key + ":/" + value + "/");
                     return q;
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
@@ -628,7 +620,7 @@ public class SolrIndex implements IndexProvider {
                 String[] andFilterConditions = andCondition.getFilterQueries();
                 for (String filter : andFilterConditions) {
                     //+ in solr makes the condition required
-                    q.addFilterQuery("+" + filter);
+                    q.addFilterQuery(filter);
                 }
             }
             return q;
