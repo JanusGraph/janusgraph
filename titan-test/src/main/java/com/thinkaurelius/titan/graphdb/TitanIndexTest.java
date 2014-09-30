@@ -364,7 +364,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).
                 addKey(name, getStringMapping()).buildMixedIndex(INDEX);
         TitanGraphIndex index2 = mgmt.buildIndex("index2",Vertex.class).indexOnly(person).
-                addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping(), getFieldMap(text)).addKey(weight).buildMixedIndex(INDEX);
         TitanGraphIndex index3 = mgmt.buildIndex("index3",Vertex.class).indexOnly(org).
                 addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
 
@@ -460,7 +460,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         org = tx.getVertexLabel("org");
 
         final int numV = 200;
-        String[] strs = {"aaa","bbb","ccc","ddd"};
+        String[] strs = {"houseboat","humanoid","differential","extraordinary"};
         String[] strs2= new String[strs.length];
         for (int i=0;i<strs.length;i++) strs2[i]=strs[i]+" "+strs[i];
         final int modulo = 5;

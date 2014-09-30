@@ -311,9 +311,7 @@ public class SolrIndex implements IndexProvider {
                             logger.trace("Adding new document {}", docId);
 
                         for (IndexEntry e : mutation.getAdditions()) {
-                            final Object fieldValue = (e.value instanceof Geoshape)
-                                                         ? GeoToWktConverter.convertToWktString((Geoshape) e.value)
-                                                         : e.value;
+                            final Object fieldValue = convertValue(e.value);
 
                             doc.setField(e.field, isNewDoc
                                     ? fieldValue : new HashMap<String, Object>(1) {{ put("set", fieldValue); }});
@@ -332,6 +330,19 @@ public class SolrIndex implements IndexProvider {
         } catch (Exception e) {
             throw storageException(e);
         }
+    }
+
+    private Object convertValue(Object value) throws BackendException {
+        if (value instanceof Geoshape)
+            return GeoToWktConverter.convertToWktString((Geoshape) value);
+
+        // in order to serialize/deserialize properly Solr will have to have an
+        // access to Titan source which has Decimal type, so for now we simply convert to
+        // double and let Solr do the same thing or fail.
+        if (value instanceof Decimal)
+            return ((Decimal) value).doubleValue();
+
+        return value;
     }
 
     @Override
@@ -420,7 +431,6 @@ public class SolrIndex implements IndexProvider {
     private void commitDeletes(String coreName, List<String> deleteIds) throws SolrServerException, IOException {
         if (deleteIds.size() == 0)
             return;
-
         solrServer.request(newUpdateRequest(coreName).deleteById(deleteIds));
     }
 
@@ -558,7 +568,7 @@ public class SolrIndex implements IndexProvider {
                     //and building an AND query explicitly because we need AND semantics
                     value = ((String) value).toLowerCase();
                     for (String term : Text.tokenize((String)value)) {
-                        q.addFilterQuery(key + ":("+ term +")");
+                        q.addFilterQuery(key + ":("+ term + ")");
                     }
                     return q;
                 } else if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
@@ -619,7 +629,6 @@ public class SolrIndex implements IndexProvider {
                 andCondition =  buildQuery(andCondition, c);
                 String[] andFilterConditions = andCondition.getFilterQueries();
                 for (String filter : andFilterConditions) {
-                    //+ in solr makes the condition required
                     q.addFilterQuery(filter);
                 }
             }

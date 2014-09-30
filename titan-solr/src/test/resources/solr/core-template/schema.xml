@@ -294,7 +294,7 @@
         <field name="ttl"  type="string" indexed="true" stored="true" />
         <field name="4qt" type="text" indexed="true" stored="true"/>
         <field name="1l1" type="text" indexed="true" stored="true"/>
-        <field name="35x" type="sfloat" indexed="true" stored="true"/>
+        <field name="35x" type="sdouble" indexed="true" stored="true"/>
         <field name="7wl" type="sint" indexed="true" stored="true"/>
         <field name="e85" type="sint" indexed="true" stored="true"/>
         <field name="6bp" type="geo" indexed="true" stored="true"/>
