@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.thinkaurelius.titan.testutil.TestUtil;
@@ -78,6 +79,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         if (indexFeatures.supportsStringMapping(Mapping.TEXT)) return Mapping.TEXT.getParameter();
         else if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return Mapping.TEXTSTRING.getParameter();
         throw new AssertionError("String mapping not supported");
+    }
+
+    private Parameter getFieldMap(PropertyKey key) {
+        return ParameterType.MAPPED_NAME.getParameter(key.getName());
     }
 
     public abstract boolean supportsLuceneStyleQueries();
@@ -533,7 +538,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey flag = makeKey("flag",Boolean.class);
 
         TitanGraphIndex composite = mgmt.buildIndex("composite",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
-        TitanGraphIndex mixed = mgmt.buildIndex("mixed",Vertex.class).addKey(weight).addKey(text, getTextMapping()).buildMixedIndex(INDEX);
+        TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight, getFieldMap(weight))
+                                    .addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
         mixed.getName(); composite.getName();
         finishSchema();
 
@@ -543,7 +549,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         flag = tx.getPropertyKey("flag");
 
         final int numV = 100;
-        String[] strs = {"aaa","bbb","ccc","ddd"};
+        String[] strs = {"houseboat","humanoid","differential","extraordinary"};
         String[] strs2= new String[strs.length];
         for (int i=0;i<strs.length;i++) strs2[i]=strs[i]+" "+strs[i];
         final int modulo = 5;
