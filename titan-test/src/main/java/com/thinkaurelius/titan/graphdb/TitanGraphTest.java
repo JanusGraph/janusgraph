@@ -570,7 +570,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //Already exists
             mgmt.makeEdgeLabel("link").unidirected().make();
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //signature and sort-key collide
             ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).
@@ -599,7 +599,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //Already exists
             mgmt.makeVertexLabel("tweet").make();
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //only unidrected, Many2One labels are allowed in signatures
             mgmt.makeEdgeLabel("test").signature(friend).make();
@@ -705,7 +705,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //Already exists
             mgmt.makeEdgeLabel("link").unidirected().make();
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //signature and sort-key collide
             ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).
@@ -734,7 +734,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //Already exists
             mgmt.makeVertexLabel("tweet").make();
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //only unidrected, Many2One labels are allowed in signatures
             mgmt.makeEdgeLabel("test").signature(friend).make();
@@ -808,17 +808,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //Invalid data type
             v.setProperty(weight, "x");
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //Only one "Bob" should be allowed
             v.addProperty(name,"John");
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //setProperty not supported for multi-properties
             v.setProperty(name,"Don");
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (UnsupportedOperationException e) {}
 
         //Only one property for weight allowed
         v.addProperty(weight, 1.0);
@@ -845,25 +845,25 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //multiplicity violation
             v12.addEdge(parent, v13);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         try {
             //multiplicity violation
             v13.addEdge(child, v12);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         try {
             //multiplicity violation
             v13.addEdge(spouse, v12);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         try {
             //multiplicity violation
             v.addEdge(spouse, v13);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         assertEquals(2, Iterables.size(v.query().direction(IN).types(parent).edges()));
         assertEquals(1, Iterables.size(v12.query().direction(OUT).types(parent).has(weight,Cmp.EQUAL,4.5).edges()));
@@ -877,7 +877,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //connect is simple
             v.addEdge(connect, v12);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         //Make sure "link" is unidirected
         assertEquals(1, v.query().types(link).direction(BOTH).count());
@@ -921,17 +921,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //Invalid data type
             v.setProperty(weight, "x");
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //Only one "Bob" should be allowed
             v.addProperty(name,"John");
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             //setProperty not supported for multi-properties
             v.setProperty(name,"Don");
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (UnsupportedOperationException e) {}
 
         //Only one property for weight allowed
         v.addProperty(weight, 1.0);
@@ -958,25 +958,25 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //multiplicity violation
             v12.addEdge(parent, v13);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         try {
             //multiplicity violation
             v13.addEdge(child, v12);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         try {
             //multiplicity violation
             v13.addEdge(spouse, v12);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         try {
             //multiplicity violation
             v.addEdge(spouse, v13);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         assertEquals(2, Iterables.size(v.query().direction(IN).types(parent).edges()));
         assertEquals(1, Iterables.size(v12.query().direction(OUT).types(parent).has(weight,Cmp.EQUAL,4.5).edges()));
@@ -990,7 +990,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             //connect is simple
             v.addEdge(connect, v12);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
         }
         //Make sure "link" is unidirected
         assertEquals(1,v.query().types(link).direction(BOTH).count());
@@ -1012,14 +1012,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 //property is unique
                 vx.setProperty(id,"v1");
                 fail();
-            } catch (IllegalArgumentException e) {}
+            } catch (SchemaViolationException e) {}
             vx.setProperty(id,"unique");
             TitanVertex vx2 = tx2.addVertex();
             try {
                 //property unique
                 vx2.setProperty(id,"unique");
                 fail();
-            } catch (IllegalArgumentException e) {}
+            } catch (SchemaViolationException e) {}
         } finally {
             tx2.rollback();
         }
@@ -1031,11 +1031,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         try {
             v2.setProperty(weight,11);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
         try {
             v2.addEdge(friend,v12);
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
 
         //Ensure that unidirected edges keep pointing to deleted vertices
         tx.getVertex(v13).remove();
@@ -1190,7 +1190,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1 = tx.addVertex();
         try {
             v1.setProperty("domain", "unique1");
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
 
         } finally {
             tx.rollback();
@@ -1205,7 +1205,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v2 = tx.addVertex();
             v2.addProperty("domain", "unique1");
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
 
         } finally {
             tx.rollback();
@@ -1221,7 +1221,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v2 = tx.addVertex();
             v2.addProperty("domain", "unique1");
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (SchemaViolationException e) {
 
         } finally {
             tx.rollback();
@@ -1744,7 +1744,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         try {
             v21.addEdge("knows", v11);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
         }
         TitanVertex v22 = tx2.addVertex();
         v21.addEdge("knows", v22);
@@ -2110,43 +2110,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
    /* ==================================================================================
                             CONSISTENCY
      ==================================================================================*/
-
-    /**
-     * Tests correct naming
-     */
-    @Test
-    public void testConsistencyMessages() {
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
-        EdgeLabel knows = mgmt.makeEdgeLabel("know").multiplicity(Multiplicity.SIMPLE).make();
-        finishSchema();
-
-        TitanVertex v = tx.addVertex(), u = tx.addVertex();
-        v.addProperty("name","john");
-        v.addProperty("name","bob");
-        v.addEdge("know",u);
-        newTx();
-
-        v = tx.getVertex(v.getLongId());
-        u = tx.getVertex(u.getLongId());
-        try {
-            v.addProperty("name","john");
-            fail();
-        } catch (TitanException e) {
-            assertTrue(e instanceof SchemaViolationException);
-            //e.printStackTrace();
-        }
-
-        try {
-            v.addEdge("know",u);
-            fail();
-        } catch (TitanException e) {
-            assertTrue(e instanceof SchemaViolationException);
-            //e.printStackTrace();
-        }
-        tx.rollback();
-
-    }
-
 
     /**
      * Tests the correct application of ConsistencyModifiers across transactional boundaries
@@ -2801,7 +2764,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
            //Name already exists
            mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
            fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
 //        try {
 //           //Invalid key - must be single valued
 //           mgmt.createEdgeIndex(connect,"blablub",Direction.OUT,name);
@@ -2845,7 +2808,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
            //Name already exists
            mgmt.buildEdgeIndex(connect, "weightAsc", Direction.OUT, time);
            fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (SchemaViolationException e) {}
 //        try {
 //           //Invalid key - must be single valued
 //           mgmt.createEdgeIndex(connect,"blablub",Direction.OUT,name);

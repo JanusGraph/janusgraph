@@ -245,7 +245,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
         for (TitanVertex v : vertices) {
             if (v.hasId() && idInspector.isUnmodifiableVertex(v.getLongId()) && !v.isNew())
-                throw new IllegalArgumentException("Cannot modify unmodifiable vertex: "+v);
+                throw new SchemaViolationException("Cannot modify unmodifiable vertex: "+v);
         }
         verifyAccess(vertices);
     }
@@ -255,9 +255,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         for (TitanVertex v : vertices) {
             Preconditions.checkArgument(v instanceof InternalVertex, "Invalid vertex: %s", v);
             if (!(v instanceof SystemRelationType) && this != ((InternalVertex) v).tx())
-                throw new IllegalArgumentException("The vertex or type is not associated with this transaction [" + v + "]");
+                throw new IllegalStateException("The vertex or type is not associated with this transaction [" + v + "]");
             if (v.isRemoved())
-                throw new IllegalArgumentException("The vertex or type has been removed [" + v + "]");
+                throw new IllegalStateException("The vertex or type has been removed [" + v + "]");
         }
     }
 
@@ -501,14 +501,20 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      */
 
     public final Object verifyAttribute(PropertyKey key, Object attribute) {
-        Preconditions.checkNotNull(attribute, "Property value cannot be null");
+        if (attribute==null) throw new SchemaViolationException("Property value cannot be null");
         Class<?> datatype = key.getDataType();
         if (datatype.equals(Object.class)) {
             return attribute;
         } else {
             if (!attribute.getClass().equals(datatype)) {
-                Object converted = attributeHandler.convert(datatype, attribute);
-                Preconditions.checkArgument(converted != null,
+
+                Object converted = null;
+                try {
+                    converted = attributeHandler.convert(datatype, attribute);
+                } catch (IllegalArgumentException e) {
+                    //Just means that data could not be converted
+                }
+                if (converted == null) throw new SchemaViolationException(
                         "Value [%s] is not an instance of the expected data type for property key [%s] and cannot be converted. Expected: %s, found: %s", attribute,
                         key.getName(), datatype, attribute.getClass());
                 attribute = converted;
@@ -697,7 +703,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Not a single key: %s. Use addProperty instead", key.getName());
+        if (key.getCardinality()!=Cardinality.SINGLE) throw new UnsupportedOperationException("Not a single key: "+key+". Use addProperty instead");
 
         TransactionLock uniqueLock = FakeLock.INSTANCE;
         try {
