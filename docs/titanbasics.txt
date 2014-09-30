@@ -771,6 +771,9 @@ g.V.has('name','hercules').interval('age',20,50)
 
 Composite indexes do not require configuration of an external indexing backend and are supported through the primary storage backend. Hence, composite index modifications are persisted through the same transaction as graph modifications which means that those changes are atomic and/or consistent if the underlying storage backend supports atomicity and/or consistency.
 
+[NOTE]
+A composite index may comprise just one or multiple keys. A composite index with just one key is sometimes referred to as a key-index.
+
 [[index-unique]]
 Index Uniqueness
 ++++++++++++++++
