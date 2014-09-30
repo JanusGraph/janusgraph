@@ -16,7 +16,7 @@ public abstract class SystemTypeManager {
             ImmutableMap.Builder<Long, SystemRelationType> idBuilder = ImmutableMap.builder();
             ImmutableMap.Builder<String, SystemRelationType> nameBuilder = ImmutableMap.builder();
             for (SystemRelationType et : new SystemRelationType[]{BaseKey.SchemaCategory, BaseKey.SchemaDefinitionDesc,
-                    BaseKey.SchemaDefinitionProperty, BaseKey.SchemaName,
+                    BaseKey.SchemaDefinitionProperty, BaseKey.SchemaName, BaseKey.SchemaUpdateTime,
                     BaseKey.VertexExists,
                     BaseLabel.VertexLabelEdge, BaseLabel.SchemaDefinitionEdge,
                     ImplicitKey.ID, ImplicitKey.TITANID, ImplicitKey.LABEL, ImplicitKey.ADJACENT_ID,
@@ -29,8 +29,8 @@ public abstract class SystemTypeManager {
             SYSTEM_TYPES_BY_ID = idBuilder.build();
             SYSTEM_TYPES_BY_NAME = nameBuilder.build();
         }
-        assert SYSTEM_TYPES_BY_ID.size()==14;
-        assert SYSTEM_TYPES_BY_NAME.size()==14;
+        assert SYSTEM_TYPES_BY_ID.size()==15;
+        assert SYSTEM_TYPES_BY_NAME.size()==15;
     }
 
     public static SystemRelationType getSystemType(long id) {

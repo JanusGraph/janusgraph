@@ -758,6 +758,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (schemaCategory.hasName()) addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
         addProperty(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
         addProperty(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
+        updateSchemaVertex(schemaVertex);
+        addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
             TitanProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
             p.setProperty(BaseKey.SchemaDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
@@ -766,6 +768,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (schemaCategory.hasName()) newTypeCache.put(schemaCategory.getSchemaName(name), schemaVertex.getLongId());
         return schemaVertex;
 
+    }
+
+    public void updateSchemaVertex(TitanSchemaVertex schemaVertex) {
+        setProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
     }
 
     public PropertyKey makePropertyKey(String name, TypeDefinitionMap definition) {

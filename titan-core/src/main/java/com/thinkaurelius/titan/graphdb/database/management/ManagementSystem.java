@@ -494,14 +494,14 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, Cardinality.LIST);
         def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
-        TitanSchemaVertex v = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
+        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
 
         Preconditions.checkArgument(constraint==null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
         if (constraint!=null) {
-            addSchemaEdge(v,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
+            addSchemaEdge(indexVertex,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
         }
-
-        return new TitanGraphIndexWrapper(v.asIndexType());
+        updateSchemaVertex(indexVertex);
+        return new TitanGraphIndexWrapper(indexVertex.asIndexType());
     }
 
     @Override
@@ -524,6 +524,7 @@ public class ManagementSystem implements TitanManagement {
         System.arraycopy(parameters,0,extendedParas,0,parameters.length);
         extendedParas[parameters.length]= ParameterType.STATUS.getParameter(key.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
+        updateSchemaVertex(indexVertex);
         indexType.resetCache();
         try {
             IndexSerializer.register((MixedIndexType) indexType,key,transaction.getTxHandle());
@@ -532,7 +533,6 @@ public class ManagementSystem implements TitanManagement {
         }
         if (!indexVertex.isNew()) updatedTypes.add(indexVertex);
         if (!key.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
-        //TODO: it is possible to have a race condition here if two threads add the same field at the same time
     }
 
     private TitanGraphIndex createCompositeIndex(String indexName, ElementCategory elementCategory, boolean unique, TitanSchemaType constraint, PropertyKey... keys) {
@@ -569,7 +569,7 @@ public class ManagementSystem implements TitanManagement {
         if (constraint!=null) {
             addSchemaEdge(indexVertex,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
         }
-
+        updateSchemaVertex(indexVertex);
         TitanGraphIndexWrapper index = new TitanGraphIndexWrapper(indexVertex.asIndexType());
         if (!oneNewKey) updateIndex(index,SchemaAction.REGISTER_INDEX);
         return index;
@@ -794,6 +794,8 @@ public class ManagementSystem implements TitanManagement {
     private void setStatus(TitanSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
         if (keys.isEmpty()) setStatusVertex(vertex,status);
         else setStatusEdges(vertex,status,keys);
+        vertex.resetCache();
+        updateSchemaVertex(vertex);
     }
 
     private void setStatusVertex(TitanSchemaVertex vertex, SchemaStatus status) {
@@ -809,8 +811,6 @@ public class ManagementSystem implements TitanManagement {
         //Add new status
         TitanProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
         p.setProperty(BaseKey.SchemaDefinitionDesc,TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
-
-        vertex.resetCache();
     }
 
     private void setStatusEdges(TitanSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
@@ -831,7 +831,6 @@ public class ManagementSystem implements TitanManagement {
         }
 
         for (PropertyKeyVertex prop : keys) prop.resetCache();
-        vertex.resetCache();
     }
 
 
@@ -857,6 +856,7 @@ public class ManagementSystem implements TitanManagement {
         }
 
         transaction.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
+        updateSchemaVertex(schemaVertex);
         schemaVertex.resetCache();
         updatedTypes.add(schemaVertex);
     }
@@ -879,6 +879,10 @@ public class ManagementSystem implements TitanManagement {
             return (TitanSchemaVertex)base;
         }
         throw new IllegalArgumentException("Invalid schema element provided: "+element);
+    }
+
+    private void updateSchemaVertex(TitanSchemaVertex schemaVertex) {
+        transaction.updateSchemaVertex(schemaVertex);
     }
 
     /* --------------
@@ -999,6 +1003,7 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(cat, value);
         TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.TYPE_MODIFIER, null, def);
         addSchemaEdge(typeVertex, cVertex, TypeDefinitionCategory.TYPE_MODIFIER, null);
+        updateSchemaVertex(typeVertex);
         updatedTypes.add(typeVertex);
     }
 
