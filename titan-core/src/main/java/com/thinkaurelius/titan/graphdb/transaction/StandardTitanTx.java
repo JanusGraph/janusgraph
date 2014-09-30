@@ -607,16 +607,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
                 if (multiplicity==Multiplicity.SIMPLE) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).titanEdges()),
-                            "An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.getName());
+                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).titanEdges()))
+                            throw new SchemaViolationException("An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.getName());
                 }
                 if (multiplicity.isUnique(Direction.OUT)) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).titanEdges()),
-                            "An edge with the given label already exists on the out-vertex and the label [%s] is out-unique", label.getName());
+                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).titanEdges()))
+                            throw new SchemaViolationException("An edge with the given label already exists on the out-vertex and the label [%s] is out-unique", label.getName());
                 }
                 if (multiplicity.isUnique(Direction.IN)) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).titanEdges()),
-                            "An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.getName());
+                    if (!Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).titanEdges()))
+                            throw new SchemaViolationException("An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.getName());
                 }
             }
             StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
@@ -667,22 +667,22 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
                 if (cardinality==Cardinality.SINGLE) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(vertex).type(key).properties()),
-                            "A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.getName(), vertex);
+                    if (!Iterables.isEmpty(query(vertex).type(key).properties()))
+                            throw new SchemaViolationException("A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.getName(), vertex);
                 }
                 if (cardinality==Cardinality.SET) {
-                    Preconditions.checkArgument(Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanProperty>() {
+                    if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanProperty>() {
                         @Override
                         public boolean apply(@Nullable TitanProperty titanProperty) {
                             return normalizedValue.equals(titanProperty.getValue());
                         }
-                    })),
-                            "A property with the given key [%s] and value [%s] already exists on the vertex and the property key is defined as set-valued", key.getName(), normalizedValue);
+                    })))
+                            throw new SchemaViolationException("A property with the given key [%s] and value [%s] already exists on the vertex and the property key is defined as set-valued", key.getName(), normalizedValue);
                 }
                 //Check all unique indexes
                 for (IndexLockTuple lockTuple : uniqueIndexTuples) {
-                    Preconditions.checkArgument(Iterables.isEmpty(IndexHelper.getQueryResults(lockTuple.getIndex(), lockTuple.getAll(), this)),
-                            "Adding this property for key [%s] and value [%s] violates a uniqueness constraint [%s]", key.getName(), normalizedValue, lockTuple.getIndex());
+                    if (!Iterables.isEmpty(IndexHelper.getQueryResults(lockTuple.getIndex(), lockTuple.getAll(), this)))
+                            throw new SchemaViolationException("Adding this property for key [%s] and value [%s] violates a uniqueness constraint [%s]", key.getName(), normalizedValue, lockTuple.getIndex());
                 }
             }
             StandardProperty prop = new StandardProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
@@ -697,7 +697,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Not an single key: %s. Use addProperty instead", key.getName());
+        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Not a single key: %s. Use addProperty instead", key.getName());
 
         TransactionLock uniqueLock = FakeLock.INSTANCE;
         try {

@@ -253,7 +253,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 Set<Condition> subcover = Sets.newHashSet();
                 Object subcondition;
                 boolean supportsSort = orders.isEmpty();
-                //Check that this index actually applies
+                //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
                     TitanSchemaType type = index.getSchemaTypeConstraint();
                     boolean matchesTypeConstraint = false;

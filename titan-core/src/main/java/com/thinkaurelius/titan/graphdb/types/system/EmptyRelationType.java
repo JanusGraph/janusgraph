@@ -56,4 +56,9 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
     public Integer getTTL() {
         return 0;
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }

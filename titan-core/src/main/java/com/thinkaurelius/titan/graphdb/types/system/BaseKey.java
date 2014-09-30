@@ -98,6 +98,11 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 //        private final Set<TitanKey> fieldSet = ImmutableSet.of((TitanKey)SystemKey.this);
 
         @Override
+        public String toString() {
+            return getName();
+        }
+
+        @Override
         public long getID() {
             return BaseKey.this.getLongId();
         }
@@ -164,7 +169,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public String getName() {
-            return "SystemIndex#"+getID();
+            return "SystemIndex#"+BaseKey.this.getName();
         }
 
         @Override

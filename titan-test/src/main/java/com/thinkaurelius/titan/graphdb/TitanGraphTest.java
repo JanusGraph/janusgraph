@@ -2112,6 +2112,43 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      ==================================================================================*/
 
     /**
+     * Tests correct naming
+     */
+    @Test
+    public void testConsistencyMessages() {
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        EdgeLabel knows = mgmt.makeEdgeLabel("know").multiplicity(Multiplicity.SIMPLE).make();
+        finishSchema();
+
+        TitanVertex v = tx.addVertex(), u = tx.addVertex();
+        v.addProperty("name","john");
+        v.addProperty("name","bob");
+        v.addEdge("know",u);
+        newTx();
+
+        v = tx.getVertex(v.getLongId());
+        u = tx.getVertex(u.getLongId());
+        try {
+            v.addProperty("name","john");
+            fail();
+        } catch (TitanException e) {
+            assertTrue(e instanceof SchemaViolationException);
+            //e.printStackTrace();
+        }
+
+        try {
+            v.addEdge("know",u);
+            fail();
+        } catch (TitanException e) {
+            assertTrue(e instanceof SchemaViolationException);
+            //e.printStackTrace();
+        }
+        tx.rollback();
+
+    }
+
+
+    /**
      * Tests the correct application of ConsistencyModifiers across transactional boundaries
      */
     @Test
