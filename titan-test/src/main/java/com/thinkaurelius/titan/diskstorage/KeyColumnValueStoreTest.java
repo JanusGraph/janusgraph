@@ -7,8 +7,9 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
@@ -646,6 +647,8 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     public void checkSlice(String[][] values, Set<KeyColumn> removed, int key,
                            int start, int end, int limit) throws BackendException {
+        tx.rollback();
+        tx = startTx();
         List<Entry> entries;
         if (limit <= 0)
             entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end)), tx);
@@ -654,8 +657,12 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         int pos = 0;
         for (int i = start; i < end; i++) {
-            if (removed.contains(new KeyColumn(key, i))) continue;
+            if (removed.contains(new KeyColumn(key, i))) {
+                log.debug("Skipping deleted ({},{})", key, i);
+                continue;
+            }
             if (limit <= 0 || pos < limit) {
+                log.debug("Checking k={}[c_start={},c_end={}](limit={}): column index={}/pos={}", key, start, end, limit, i, pos);
                 Assert.assertTrue(entries.size() > pos);
                 Entry entry = entries.get(pos);
                 int col = KeyValueStoreUtil.getID(entry.getColumn());
@@ -704,6 +711,123 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
             int limit = RandomGenerator.randomInt(1, 30);
             checkSlice(values, deleted, key, start, end, limit);
             checkSlice(values, deleted, key, start, end, -1);
+        }
+    }
+
+
+    @Test
+    public void testConcurrentGetSlice() throws ExecutionException, InterruptedException, BackendException {
+        testConcurrentStoreOps(false);
+    }
+
+    @Test
+    public void testConcurrentGetSliceAndMutate() throws BackendException, ExecutionException, InterruptedException {
+        testConcurrentStoreOps(true);
+    }
+
+    private void testConcurrentStoreOps(boolean deletionEnabled) throws BackendException, ExecutionException, InterruptedException {
+        // Load data fixture
+        String[][] values = generateValues();
+        loadValues(values);
+
+        /*
+         * Must reopen transaction prior to deletes.
+         *
+         * This is due to the tx timestamps semantics.  The timestamp is set once
+         * during the lifetime of the transaction, and multiple calls to mutate will
+         * use the same timestamp on each call.  This causes deletions and additions of the
+         * same k-v coordinates made in the same tx to conflict.  On Cassandra, the
+         * addition will win and the delete will appear to be dropped.
+         *
+         * The transaction open right now has already loaded the test fixtures, so any
+         * attempt to delete some of the fixture will appear to fail if carried out in this
+         * transaction.
+         */
+        tx.commit();
+        tx = startTx();
+
+        // Setup executor and runnables
+        final int NUM_THREADS = 64;
+        ExecutorService es = Executors.newFixedThreadPool(NUM_THREADS);
+        List<Runnable> tasks = new ArrayList<Runnable>(NUM_THREADS);
+        for (int i = 0; i < NUM_THREADS; i++) {
+            Set<KeyColumn> deleted = Sets.newHashSet();
+            if (!deletionEnabled) {
+                tasks.add(new ConcurrentRandomSliceReader(values, deleted));
+            } else {
+                tasks.add(new ConcurrentRandomSliceReader(values, deleted, i));
+            }
+        }
+        List<Future<?>> futures = new ArrayList<Future<?>>(NUM_THREADS);
+
+        // Execute
+        for (Runnable r : tasks) {
+            futures.add(es.submit(r));
+        }
+
+        // Block to completion (and propagate any ExecutionExceptions that fall out of get)
+        int collected = 0;
+        for (Future<?> f : futures) {
+            f.get();
+            collected++;
+        }
+
+        assertEquals(NUM_THREADS, collected);
+    }
+
+    private class ConcurrentRandomSliceReader implements Runnable {
+
+        private final String[][] values;
+        private final Set<KeyColumn> d;
+        private final int startKey;
+        private final int endKey;
+        private final boolean deletionEnabled;
+
+        public ConcurrentRandomSliceReader(String[][] values, Set<KeyColumn> deleted) {
+            this.values = values;
+            this.d = deleted;
+            this.startKey = 0;
+            this.endKey = values.length;
+            this.deletionEnabled = false;
+        }
+
+        public ConcurrentRandomSliceReader(String[][] values, Set<KeyColumn> deleted, int key) {
+            this.values = values;
+            this.d = deleted;
+            this.startKey = key % values.length;
+            this.endKey = startKey + 1;
+            this.deletionEnabled = true;
+        }
+
+        @Override
+        public void run() {
+            int trials = 5000;
+            for (int t = 0; t < trials; t++) {
+                int key = RandomGenerator.randomInt(startKey, endKey);
+                log.debug("Random key chosen: {} (start={}, end={})", key, startKey, endKey);
+                int start = RandomGenerator.randomInt(0, numColumns);
+                if (start == numColumns - 1) {
+                    start = numColumns - 2;
+                }
+                int end = RandomGenerator.randomInt(start + 1, numColumns);
+                int limit = RandomGenerator.randomInt(1, 30);
+                try {
+                    if (deletionEnabled) {
+                        int delCol = RandomGenerator.randomInt(start, end);
+                        ImmutableList<StaticBuffer> deletions = ImmutableList.of(KeyValueStoreUtil.getBuffer(delCol));
+                        store.mutate(KeyValueStoreUtil.getBuffer(key), KeyColumnValueStore.NO_ADDITIONS, deletions, tx);
+                        log.debug("Deleting ({},{})", key, delCol);
+                        d.add(new KeyColumn(key, delCol));
+                        tx.commit();
+                        tx = startTx();
+                    }
+                    //clopen();
+                    checkSlice(values, d, key, start, end, limit);
+                    checkSlice(values, d, key, start, end, -1);
+                } catch (BackendException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
