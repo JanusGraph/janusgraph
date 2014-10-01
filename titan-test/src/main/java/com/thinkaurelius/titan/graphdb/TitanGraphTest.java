@@ -449,6 +449,35 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
             assertTrue(edgeIds.equals(nodeEdgeIds[i]));
         }
+
+        newTx();
+        //Bulk vertex retrieval
+        long[] vids1 = new long[noNodes/10];
+        for (int i = 0; i < vids1.length; i++) {
+            vids1[i]=nodeIds[i];
+        }
+        //All non-cached
+        Map<Long,TitanVertex> vs1 = tx.getVertices(vids1);
+        verifyVerticesRetrieval(vids1,vs1);
+
+        //All cached
+        Map<Long,TitanVertex> vs12 = tx.getVertices(vids1);
+        verifyVerticesRetrieval(vids1,vs12);
+
+        long[] vids2 = new long[noNodes/10*2];
+        for (int i = 0; i < vids2.length; i++) {
+            vids2[i]=nodeIds[i];
+        }
+        //Partially cached
+        Map<Long,TitanVertex> vs2 = tx.getVertices(vids2);
+        verifyVerticesRetrieval(vids2,vs2);
+    }
+
+    private void verifyVerticesRetrieval(long[] vids, Map<Long,TitanVertex> vs) {
+        for (int i = 0; i < vids.length; i++) {
+            assertTrue(vs.containsKey(vids[i]));
+            assertEquals(vids[i],vs.get(vids[i]).getLongId());
+        }
     }
 
 

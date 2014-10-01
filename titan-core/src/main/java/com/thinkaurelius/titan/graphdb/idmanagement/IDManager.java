@@ -36,7 +36,7 @@ public class IDManager {
      * 010101 -                     * User Edge Label
      * 110101 -                     * System Edge Label
      *   1101 -             Other Type vertices
-     *  01101 -                 + Vertex Label
+     *  01101 -                 * Vertex Label
      *    001 -         Non-Type vertices
      *   1001 -             * Generic Schema Vertex
      *   0001 -             Reserved for future
@@ -453,7 +453,8 @@ public class IDManager {
     }
 
     private boolean isUserVertex(long vertexid) {
-        return VertexIDType.UserVertex.is(vertexid) && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+        return (VertexIDType.NormalVertex.is(vertexid) || VertexIDType.PartitionedVertex.is(vertexid) || VertexIDType.UnmodifiableVertex.is(vertexid))
+                && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
     }
 
     public long getPartitionId(long vertexid) {
@@ -651,7 +652,7 @@ public class IDManager {
 
         @Override
         public final boolean isSchemaVertexId(long id) {
-            return VertexIDType.Schema.is(id);
+            return isRelationTypeId(id) || isVertexLabelVertexId(id) || isGenericSchemaVertexId(id);
         }
 
         @Override

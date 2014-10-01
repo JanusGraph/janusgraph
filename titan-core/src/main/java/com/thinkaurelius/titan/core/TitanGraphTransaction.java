@@ -5,6 +5,7 @@ import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * TitanGraphTransaction defines a transactional context for a {@link com.thinkaurelius.titan.core.TitanGraph}. Since TitanGraph is a transactional graph
@@ -65,6 +66,16 @@ public interface TitanGraphTransaction extends TransactionalGraph, KeyIndexableG
      * @see #containsVertex
      */
     public TitanVertex getVertex(long id);
+
+    /**
+     * Retrieves the vertices for the given ids and returns a map from those ids to the corresponding vertices.
+     * If a given id does not identify a vertex, it is not included in the returned map
+     *
+     * @param ids array of ids for which to retrieve vertices
+     * @return map from ids to corresponding vertices
+     * does not identify a vertex
+     */
+    public Map<Long,TitanVertex> getVertices(long... ids);
 
     /**
      * Checks whether a vertex with the specified id exists in the graph database.

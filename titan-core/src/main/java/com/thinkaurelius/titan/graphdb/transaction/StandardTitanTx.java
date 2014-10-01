@@ -342,26 +342,57 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return getVertex(vertexid) != null;
     }
 
+    private boolean isValidVertexId(long id) {
+        return id>0 && (idInspector.isSchemaVertexId(id) || idInspector.isUserVertexId(id));
+    }
+
     @Override
     public TitanVertex getVertex(long vertexid) {
         verifyOpen();
-
-        if (vertexid <= 0 || !(idInspector.isSchemaVertexId(vertexid) || idInspector.isUserVertexId(vertexid)))
-            return null;
-        //Make canonical partitioned vertex id
-        if (idInspector.isPartitionedVertex(vertexid)) vertexid=idManager.getCanonicalVertexId(vertexid);
-
         if (null != config.getGroupName()) {
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
         }
+        if (!isValidVertexId(vertexid)) return null;
+        //Make canonical partitioned vertex id
+        if (idInspector.isPartitionedVertex(vertexid)) vertexid=idManager.getCanonicalVertexId(vertexid);
 
         InternalVertex v = null;
-        try {
-            v = vertexCache.get(vertexid, externalVertexRetriever);
-        } catch (InvalidIDException e) {
-            log.warn("Illegal vertex ID", e);
-        }
+        v = vertexCache.get(vertexid, externalVertexRetriever);
         return (null == v || v.isRemoved()) ? null : v;
+    }
+
+    @Override
+    public Map<Long,TitanVertex>  getVertices(long... ids) {
+        verifyOpen();
+        Preconditions.checkArgument(ids != null, "Need to provide valid ids");
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
+        }
+        Map<Long,TitanVertex> result = new HashMap<Long,TitanVertex>(ids.length);
+        LongArrayList vids = new LongArrayList(ids.length);
+        for (long id : ids) {
+            if (isValidVertexId(id)) {
+                if (idInspector.isPartitionedVertex(id)) id=idManager.getCanonicalVertexId(id);
+                if (vertexCache.contains(id))
+                    result.put(id,vertexCache.get(id, existingVertexRetriever));
+                else
+                    vids.add(id);
+            }
+        }
+        if (!vids.isEmpty()) {
+            List<EntryList> existence = graph.edgeMultiQuery(vids,graph.vertexExistenceQuery,txHandle);
+            for (int i = 0; i < vids.size(); i++) {
+                if (!existence.get(i).isEmpty()) {
+                    long id = vids.get(i);
+                    result.put(id,vertexCache.get(id, existingVertexRetriever));
+                }
+            }
+        }
+        //Filter out potentially removed vertices
+        for (Iterator<Map.Entry<Long, TitanVertex>> iterator = result.entrySet().iterator(); iterator.hasNext(); ) {
+            if (iterator.next().getValue().isRemoved()) iterator.remove();
+        }
+        return result;
     }
 
     private InternalVertex getExistingVertex(long vertexid) {

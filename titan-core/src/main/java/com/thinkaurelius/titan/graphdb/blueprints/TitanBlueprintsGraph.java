@@ -166,6 +166,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
+    public Map<Long,TitanVertex>  getVertices(long... ids) {
+        return getAutoStartTx().getVertices(ids);
+    }
+
+    @Override
     public boolean containsVertex(long vertexid) {
         return getAutoStartTx().containsVertex(vertexid);
     }
