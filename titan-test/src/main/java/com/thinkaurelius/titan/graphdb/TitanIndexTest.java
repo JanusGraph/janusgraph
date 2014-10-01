@@ -853,15 +853,6 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 1,new boolean[]{true,true},"mixed");
     }
 
-    private void addVertex(int time, String name, double height) {
-        newTx();
-        TitanVertex v = tx.addVertex();
-        v.setProperty("name",name);
-        v.setProperty("time",time);
-        v.setProperty("height",height);
-        newTx();
-    }
-
     @Test
     public void testIndexReplay() throws Exception {
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
@@ -947,24 +938,24 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         };
 
         clopen(settings);
-        final String defName = "Mountain rocks are great friends";
+        final String defText = "Mountain rocks are great friends";
         final int defTime = 5;
         final double defHeight = 101.1;
 
         //Creates types and index only one key
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
         PropertyKey height = mgmt.makePropertyKey("height").dataType(Decimal.class).make();
         TitanGraphIndex index = mgmt.buildIndex("theIndex",Vertex.class)
-                .addKey(name, getTextMapping()).buildMixedIndex(INDEX);
+                .addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
         finishSchema();
 
         //Add initial data
-        addVertex(defTime,defName,defHeight);
+        addVertex(defTime,defText,defHeight);
 
         //Indexes should not yet be in use
         clopen(settings);
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks"),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
         evaluateQuery(tx.query().has("time",5),
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
@@ -972,18 +963,19 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
         evaluateQuery(tx.query().interval("height",100,200).has("time",5),
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
                 ElementCategory.VERTEX,1,new boolean[]{false,true},"theIndex");
         newTx();
 
         //Add another key to index ------------------------------------------------------
         finishSchema();
-        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),mgmt.getPropertyKey("time"));
+        time = mgmt.getPropertyKey("time");
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),time, getFieldMap(time));
         finishSchema();
         newTx();
 
         //Add more data
-        addVertex(defTime,defName,defHeight);
+        addVertex(defTime,defText,defHeight);
         tx.commit();
         //Should not yet be able to enable since not yet registered
         try {
@@ -999,11 +991,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
 
         //Add more data
-        addVertex(defTime,defName,defHeight);
+        addVertex(defTime,defText,defHeight);
 
         //One more key should be indexed but only sees partial data
         clopen(settings);
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks"),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
                 ElementCategory.VERTEX,3,new boolean[]{true,true},"theIndex");
         evaluateQuery(tx.query().has("time",5),
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
@@ -1011,17 +1003,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,3,new boolean[]{false,true});
         evaluateQuery(tx.query().interval("height",100,200).has("time",5),
                 ElementCategory.VERTEX,2,new boolean[]{false,true},"theIndex");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
                 ElementCategory.VERTEX,2,new boolean[]{false,true},"theIndex");
         newTx();
 
         //Add another key to index ------------------------------------------------------
         finishSchema();
-        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),mgmt.getPropertyKey("height"));
+        height = mgmt.getPropertyKey("height");
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),height,getFieldMap(height));
         finishSchema();
 
         //Add more data
-        addVertex(defTime,defName,defHeight);
+        addVertex(defTime,defText,defHeight);
         tx.commit();
         mgmt.commit();
 
@@ -1031,11 +1024,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
 
         //Add more data
-        addVertex(defTime,defName,defHeight);
+        addVertex(defTime,defText,defHeight);
 
         //One more key should be indexed but only sees partial data
         clopen(settings);
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks"),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
                 ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
         evaluateQuery(tx.query().has("time",5),
                 ElementCategory.VERTEX,4,new boolean[]{true,true},"theIndex");
@@ -1043,11 +1036,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
         evaluateQuery(tx.query().interval("height",100,200).has("time",5),
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
         newTx();
+    }
 
-
+    private void addVertex(int time, String text, double height) {
+        newTx();
+        TitanVertex v = tx.addVertex();
+        v.setProperty("text",text);
+        v.setProperty("time",time);
+        v.setProperty("height",height);
+        newTx();
     }
 
 

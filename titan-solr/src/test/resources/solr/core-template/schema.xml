@@ -281,6 +281,7 @@
         <field name="ptext" type="text" indexed="true" stored="true" multiValued="false" />
         <field name="time" type="slong" indexed="true" stored="true" multiValued="false" />
         <field name="weight" type="sfloat" indexed="true" stored="true" multiValued="false" />
+        <field name="height" type="sfloat" indexed="true" stored="true" multiValued="false" />
         <!-- location will store any geospatial points located in document (o or more)-->
         <field name="location" type="geo" indexed="true" stored="true" multiValued="true" />
 
