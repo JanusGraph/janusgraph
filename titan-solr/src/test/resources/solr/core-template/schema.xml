@@ -168,17 +168,16 @@
                 <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0" splitOnCaseChange="1"/>
                 <filter class="solr.LowerCaseFilterFactory"/>
                 <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
-                <filter class="solr.PorterStemFilterFactory"/>
                 <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
             </analyzer>
             <analyzer type="query">
                 <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+                <filter class="solr.LowerCaseFilterFactory"/>
                 <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
                 <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
                 <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
                 <filter class="solr.LowerCaseFilterFactory"/>
                 <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
-                <filter class="solr.PorterStemFilterFactory"/>
                 <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
             </analyzer>
         </fieldType>
@@ -292,8 +291,8 @@
         <field name="estr" type="string" indexed="true" stored="true"/>
         <field name="blah" type="string" indexed="true" stored="true"/>
         <field name="ttl"  type="string" indexed="true" stored="true" />
-        <field name="4qt" type="text" indexed="true" stored="true"/>
-        <field name="1l1" type="text" indexed="true" stored="true"/>
+        <field name="4qt" type="text" indexed="true" stored="true" />
+        <field name="1l1" type="text" indexed="true" stored="true" />
         <field name="35x" type="sdouble" indexed="true" stored="true"/>
         <field name="7wl" type="sint" indexed="true" stored="true"/>
         <field name="e85" type="sint" indexed="true" stored="true"/>

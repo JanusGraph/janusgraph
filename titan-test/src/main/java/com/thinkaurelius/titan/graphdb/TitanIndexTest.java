@@ -364,7 +364,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).
                 addKey(name, getStringMapping()).buildMixedIndex(INDEX);
         TitanGraphIndex index2 = mgmt.buildIndex("index2",Vertex.class).indexOnly(person).
-                addKey(text, getTextMapping(), getFieldMap(text)).addKey(weight).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
         TitanGraphIndex index3 = mgmt.buildIndex("index3",Vertex.class).indexOnly(org).
                 addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
 

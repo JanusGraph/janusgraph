@@ -628,8 +628,17 @@ public class SolrIndex implements IndexProvider {
                 andCondition.setQuery("*:*");
                 andCondition =  buildQuery(andCondition, c);
                 String[] andFilterConditions = andCondition.getFilterQueries();
-                for (String filter : andFilterConditions) {
-                    q.addFilterQuery(filter);
+                if (andFilterConditions != null) {
+                    for (String filter : andFilterConditions) {
+                        q.addFilterQuery(filter);
+                    }
+                }
+
+                String[] andFacetQueries = andCondition.getFacetQuery();
+                if (andFacetQueries != null) {
+                    for (String filter : andFacetQueries) {
+                        q.addFacetQuery(filter);
+                    }
                 }
             }
             return q;

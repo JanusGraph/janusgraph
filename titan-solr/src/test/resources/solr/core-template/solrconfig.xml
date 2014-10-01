@@ -1792,7 +1792,7 @@
     <!--
        <queryParser name="myparser" class="com.mycompany.MyQParserPlugin"/>
       -->
-
+    <queryParser name="complexParser" class="solr.ComplexPhraseQParserPlugin" />
     <!-- Function Parsers
 
          http://wiki.apache.org/solr/FunctionQuery
