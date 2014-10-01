@@ -1148,7 +1148,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("index1",Edge.class).
                 addKey(name, getStringMapping()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Edge.class).indexOnly(label).
-                addKey(text, getTextMapping()).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(likesTTLSeconds, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));

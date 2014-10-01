@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.solr;
 
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
@@ -51,10 +50,13 @@ public class ThriftSolrTest extends TitanIndexTest {
 
     @BeforeClass
     public static void beforeClass() {
-        System.setProperty("test.cassandra.confdir", Joiner.on(File.separator).join(
-                System.getProperty("user.dir"), "target", "cassandra", "conf", "localhost-rp"));
-        System.setProperty("test.cassandra.datadir", Joiner.on(File.separator).join(
-                System.getProperty("user.dir"), "target", "cassandra", "data", "localhost-rp"));
+        String userDir = System.getProperty("user.dir");
+        String cassandraDirFormat = Joiner.on(File.separator).join(userDir, userDir.contains("titan-solr")
+                                        ? "target" : "titan-solr/target", "cassandra", "%s", "localhost-rp");
+
+        System.setProperty("test.cassandra.confdir", String.format(cassandraDirFormat, "conf"));
+        System.setProperty("test.cassandra.datadir", String.format(cassandraDirFormat, "data"));
+
         CassandraStorageSetup.startCleanEmbedded();
     }
 }
