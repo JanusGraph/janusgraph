@@ -4,12 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -396,7 +393,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      * @return
      */
     private Future<Message> add(StaticBuffer content, int partitionId, ExternalPersistor persistor) {
-        Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
+        ResourceUnavailableException.verifyOpen(isOpen,"Log",name);
         Preconditions.checkArgument(content!=null && content.length()>0,"Content is empty");
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth),"Invalid partition id: %s",partitionId);
         final Timepoint timestamp = times.getTime();
@@ -592,7 +589,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public synchronized void registerReaders(ReadMarker readMarker, Iterable<MessageReader> readers) {
-        Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
+        ResourceUnavailableException.verifyOpen(isOpen,"Log",name);
         Preconditions.checkArgument(!Iterables.isEmpty(readers),"Must specify at least one reader");
         Preconditions.checkArgument(readMarker!=null,"Read marker cannot be null");
         Preconditions.checkArgument(this.readMarker==null || this.readMarker.isCompatible(readMarker),
@@ -631,7 +628,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public synchronized boolean unregisterReader(MessageReader reader) {
-        Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
+        ResourceUnavailableException.verifyOpen(isOpen,"Log",name);
         return this.readers.remove(reader);
     }
 

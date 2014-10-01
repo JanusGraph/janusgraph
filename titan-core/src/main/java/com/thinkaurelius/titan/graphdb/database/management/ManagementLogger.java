@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.ResourceUnavailableException;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
@@ -173,8 +174,14 @@ public class ManagementLogger implements MessageReader {
                     out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION_ACK);
                     out.writeObjectNotNull(originId);
                     VariableLong.writePositive(out,evictionId);
-                    sysLog.add(out.getStaticBuffer());
-                    log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, originId, evictionId);
+                    try {
+                        sysLog.add(out.getStaticBuffer());
+                        log.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, evictionId, originId);
+                    } catch (ResourceUnavailableException e) {
+                        //During shutdown, this event may be triggered but the log is already closed. The failure to send the acknowledgement
+                        //can then be ignored
+                        log.warn("System log has already shut down. Did not sent {}: evictionID={} originID={}",MgmtLogType.CACHED_TYPE_EVICTION_ACK,evictionId,originId);
+                    }
                     break;
                 }
                 if (MAX_WAIT_TIME.compareTo(t.elapsed()) < 0) {

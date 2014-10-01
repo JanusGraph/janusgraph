@@ -104,18 +104,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public StandardTransactionBuilder enableBatchLoading() {
         hasEnabledBatchLoading = true;
-        verifyUniqueness = false;
-        verifyExternalVertexExistence = false;
-        acquireLocks = false;
+        checkExternalVertexExistence(false);
+        consistencyChecks(false);
         return this;
     }
 
     @Override
     public StandardTransactionBuilder disableBatchLoading() {
         hasEnabledBatchLoading = false;
-        verifyUniqueness = true;
-        verifyExternalVertexExistence = true;
-        acquireLocks = true;
+        checkExternalVertexExistence(true);
+        consistencyChecks(true);
         return this;
     }
 
@@ -134,8 +132,21 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder checkInternalVertexExistence() {
-        this.verifyInternalVertexExistence = true;
+    public StandardTransactionBuilder checkInternalVertexExistence(boolean enabled) {
+        this.verifyInternalVertexExistence = enabled;
+        return this;
+    }
+
+    @Override
+    public StandardTransactionBuilder checkExternalVertexExistence(boolean enabled) {
+        this.verifyExternalVertexExistence = enabled;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder consistencyChecks(boolean enabled) {
+        this.verifyUniqueness = enabled;
+        this.acquireLocks = enabled;
         return this;
     }
 

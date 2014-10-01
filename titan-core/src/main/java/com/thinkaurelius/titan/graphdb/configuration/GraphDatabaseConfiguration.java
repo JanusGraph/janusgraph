@@ -151,6 +151,13 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL, new StandardDuration(10, TimeUnit.SECONDS));
 
 
+    public static final ConfigNamespace TRANSACTION_RECOVERY_NS = new ConfigNamespace(TRANSACTION_NS,"recovery",
+            "Configuration options for transaction recovery processes");
+
+    public static final ConfigOption<Boolean> VERBOSE_TX_RECOVERY = new ConfigOption<Boolean>(TRANSACTION_RECOVERY_NS,"verbose",
+            "Whether the transaction recovery system should print recovered transactions and other activity to standard output",
+            ConfigOption.Type.MASKABLE, false);
+
     // ################ Query Processing #######################
     // ################################################
 

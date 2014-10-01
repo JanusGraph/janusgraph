@@ -95,8 +95,10 @@ import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIn
  */
 public class ManagementSystem implements TitanManagement {
 
-    private static final Logger slf =
+    private static final Logger LOGGER =
             LoggerFactory.getLogger(ManagementSystem.class);
+
+    private static final String CURRENT_INSTANCE_SUFFIX = "(current)";
 
     private final StandardTitanGraph graph;
     private final Log sysLog;
@@ -147,7 +149,7 @@ public class ManagementSystem implements TitanManagement {
             Preconditions.checkArgument(option.getType()!= ConfigOption.Type.LOCAL,"Cannot change the local configuration option: %s",option);
             if (option.getType() == ConfigOption.Type.GLOBAL_OFFLINE) {
                 //Verify that there no other open Titan graph instance and no open transactions
-                Set<String> openInstances = getOpenInstances();
+                Set<String> openInstances = getOpenInstancesInternal();
                 assert openInstances.size()>0;
                 Preconditions.checkArgument(openInstances.size()<2,"Cannot change offline config option [%s] since multiple instances are currently open: %s",option,openInstances);
                 Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
@@ -160,15 +162,26 @@ public class ManagementSystem implements TitanManagement {
         }
     };
 
+    public Set<String> getOpenInstancesInternal() {
+        Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
+        LOGGER.debug("Open instances: {}", openInstances);
+        return openInstances;
+    }
+
     @Override
     public Set<String> getOpenInstances() {
-        Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
-        slf.debug("Open instances: {}", openInstances);
+        Set<String> openInstances = getOpenInstancesInternal();
+        String uid = graph.getConfiguration().getUniqueGraphId();
+        Preconditions.checkArgument(openInstances.contains(uid),"Current instance [%s] not listed as an open instance: %s",uid,openInstances);
+        openInstances.remove(uid);
+        openInstances.add(uid+CURRENT_INSTANCE_SUFFIX);
         return openInstances;
     }
 
     @Override
     public void forceCloseInstance(String instanceId) {
+        Preconditions.checkArgument(!graph.getConfiguration().getUniqueGraphId().equals(instanceId),
+                "Cannot force close this current instance [%s]. Properly shut down the graph instead.",instanceId);
         Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME,instanceId),"Instance [%s] is not currently open",instanceId);
         Timepoint registrationTime = modifyConfig.get(REGISTRATION_TIME,instanceId);
         Preconditions.checkArgument(registrationTime.compareTo(txStartTime)<0,"The to-be-closed instance [%s] was started after this transaction" +
@@ -197,7 +210,7 @@ public class ManagementSystem implements TitanManagement {
 
         //Communicate schema changes
         if (!updatedTypes.isEmpty()) {
-            mgmtLogger.sendCacheEviction(updatedTypes,updatedTypeTriggers,getOpenInstances());
+            mgmtLogger.sendCacheEviction(updatedTypes,updatedTypeTriggers,getOpenInstancesInternal());
             for (TitanSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.getLongId());
             }
@@ -433,7 +446,7 @@ public class ManagementSystem implements TitanManagement {
             idx  = mgmt.getGraphIndex(indexName);
             for (PropertyKey pk : idx.getFieldKeys()) {
                 SchemaStatus s = idx.getIndexStatus(pk);
-                slf.debug("Key {} has status {}", pk, s);
+                LOGGER.debug("Key {} has status {}", pk, s);
                 if (!status.equals(s))
                     notConverged.put(pk, s);
                 else
@@ -448,14 +461,14 @@ public class ManagementSystem implements TitanManagement {
             String waitingOn = Joiner.on(",").withKeyValueSeparator("=").join(notConverged);
             mgmt.rollback();
             if (!notConverged.isEmpty()) {
-                slf.info("Some key(s) on index {} do not currently have status {}: ", indexName, status, waitingOn);
+                LOGGER.info("Some key(s) on index {} do not currently have status {}: ", indexName, status, waitingOn);
             } else {
-                slf.info("All {} key(s) on index {} have status {}", converged.size(), indexName, status);
+                LOGGER.info("All {} key(s) on index {} have status {}", converged.size(), indexName, status);
                 return true;
             }
             timedOut = timeout <= t.elapsed().getLength(timeoutUnit);
             if (timedOut) {
-                slf.info("Timed out ({} {}) while waiting for index {} to converge on status {}",
+                LOGGER.info("Timed out ({} {}) while waiting for index {} to converge on status {}",
                         timeout, timeoutUnit, indexName, status);
                 return false;
             }
