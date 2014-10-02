@@ -17,10 +17,7 @@ import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.AbstractDecimal;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.condition.And;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.query.condition.Not;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.*;
 
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import org.apache.commons.lang.StringUtils;
@@ -34,6 +31,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -459,7 +457,8 @@ public class SolrIndex implements IndexProvider {
         String core = query.getStore();
         String keyIdField = getKeyFieldId(core);
         SolrQuery solrQuery = newQuery(core);
-        solrQuery = buildQuery(solrQuery, query.getCondition(),informations.get(core));
+        String queryFilter = buildQueryFilter(query.getCondition(), informations.get(core));
+        solrQuery.addFilterQuery(queryFilter);
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (IndexQuery.OrderEntry order1 : orders) {
@@ -536,8 +535,11 @@ public class SolrIndex implements IndexProvider {
         return result;
     }
 
+    private static String escapeValue(Object value) {
+        return ClientUtils.escapeQueryChars(value.toString());
+    }
 
-    public SolrQuery buildQuery(SolrQuery q, Condition<TitanElement> condition, KeyInformation.StoreRetriever informations) {
+    public String buildQueryFilter(Condition<TitanElement> condition, KeyInformation.StoreRetriever informations) {
         if (condition instanceof PredicateCondition) {
             PredicateCondition<String, TitanElement> atom = (PredicateCondition<String, TitanElement>) condition;
             Object value = atom.getValue();
@@ -545,30 +547,24 @@ public class SolrIndex implements IndexProvider {
             TitanPredicate titanPredicate = atom.getPredicate();
 
             if (value instanceof Number) {
-
+                String queryValue = escapeValue(value);
                 Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on numeric types: " + titanPredicate);
                 Cmp numRel = (Cmp) titanPredicate;
                 switch (numRel) {
                     case EQUAL:
-                        q.addFilterQuery(key + ":" + value.toString());
-                        return q;
+                        return (key + ":" + queryValue);
                     case NOT_EQUAL:
-                        q.addFilterQuery("-" + key + ":" + value.toString());
-                        return q;
+                        return ("-" + key + ":" + queryValue);
                     case LESS_THAN:
                         //use right curly to mean up to but not including value
-                        q.addFilterQuery(key + ":[* TO " + value.toString() + "}");
-                        return q;
+                        return (key + ":[* TO " + queryValue + "}");
                     case LESS_THAN_EQUAL:
-                        q.addFilterQuery(key + ":[* TO " + value.toString() + "]");
-                        return q;
+                        return (key + ":[* TO " + queryValue + "]");
                     case GREATER_THAN:
                         //use left curly to mean greater than but not including value
-                        q.addFilterQuery(key + ":{" + value.toString() + " TO *]");
-                        return q;
+                        return (key + ":{" + queryValue + " TO *]");
                     case GREATER_THAN_EQUAL:
-                        q.addFilterQuery(key + ":[" + value.toString() + " TO *]");
-                        return q;
+                        return (key + ":[" + queryValue + " TO *]");
                     default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof String) {
@@ -579,29 +575,32 @@ public class SolrIndex implements IndexProvider {
                 if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
 
-
+                //Special case
                 if (titanPredicate == Text.CONTAINS) {
                     //e.g. - if terms tomorrow and world were supplied, and fq=text:(tomorrow  world)
                     //sample data set would return 2 documents: one where text = Tomorrow is the World,
                     //and the second where text = Hello World. Hence, we are decomposing the query string
                     //and building an AND query explicitly because we need AND semantics
                     value = ((String) value).toLowerCase();
-                    for (String term : Text.tokenize((String)value)) {
-                        q.addFilterQuery(key + ":("+ term + ")");
+                    List<String> terms = Text.tokenize((String)value);
+                    if (terms.isEmpty()) return "";
+                    else if (terms.size()==1) return (key + ":("+ escapeValue(terms.get(0)) + ")");
+                    else {
+                        And<TitanElement> andTerms = new And<TitanElement>();
+                        for (String term : terms) {
+                            andTerms.add(new PredicateCondition<String,TitanElement>(key,titanPredicate,term));
+                        }
+                        return buildQueryFilter(andTerms,informations);
                     }
-                    return q;
-                } else if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
-                    q.addFilterQuery(key + ":" + value + "*");
-                    return q;
+                }
+                if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
+                    return (key + ":" + escapeValue(value) + "*");
                 } else if (titanPredicate == Text.REGEX || titanPredicate == Text.CONTAINS_REGEX) {
-                    q.addFilterQuery(key + ":/" + value + "/");
-                    return q;
+                    return (key + ":/" + value + "/");
                 } else if (titanPredicate == Cmp.EQUAL) {
-                    q.addFilterQuery(key + ":\"" + value + "\"");
-                    return q;
+                    return (key + ":\"" + escapeValue(value) + "\"");
                 } else if (titanPredicate == Cmp.NOT_EQUAL) {
-                    q.addFilterQuery("-" + key + ":\"" + value + "\"");
-                    return q;
+                    return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else {
                     throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
                 }
@@ -609,16 +608,14 @@ public class SolrIndex implements IndexProvider {
                 Geoshape geo = (Geoshape)value;
                 if (geo.getType() == Geoshape.Type.CIRCLE) {
                     Geoshape.Point center = geo.getPoint();
-                    q.addFilterQuery("{!geofilt sfield=" + key +
+                    return ("{!geofilt sfield=" + key +
                             " pt=" + center.getLatitude() + "," + center.getLongitude() +
                             " d=" + geo.getRadius() + "} distErrPct=0"); //distance in kilometers
-                    return q;
                 } else if (geo.getType() == Geoshape.Type.BOX) {
                     Geoshape.Point southwest = geo.getPoint(0);
                     Geoshape.Point northeast = geo.getPoint(1);
-                    q.addFilterQuery(key + ":[" + southwest.getLatitude() + "," + southwest.getLongitude() +
-                                    " TO " + northeast.getLatitude() + "," + northeast.getLongitude() + "]");
-                    return q;
+                    return (key + ":[" + southwest.getLatitude() + "," + southwest.getLongitude() +
+                            " TO " + northeast.getLatitude() + "," + northeast.getLongitude() + "]");
                 } else if (geo.getType() == Geoshape.Type.POLYGON) {
                     List<Geoshape.Point> coordinates = getPolygonPoints(geo);
                     StringBuilder poly = new StringBuilder(key + ":\"IsWithin(POLYGON((");
@@ -628,42 +625,169 @@ public class SolrIndex implements IndexProvider {
                     //close the polygon with the first coordinate
                     poly.append(coordinates.get(0).getLongitude()).append(" ").append(coordinates.get(0).getLatitude());
                     poly.append(")))\" distErrPct=0");
-                    q.addFilterQuery(poly.toString());
-                    return q;
+                    return (poly.toString());
                 }
             }
         } else if (condition instanceof Not) {
-            String[] filterConditions = q.getFilterQueries();
-            for (String filterCondition : filterConditions) {
-                q.removeFilterQuery(filterCondition);
-                q.addFilterQuery("-" + filterCondition);
-            }
-            return q;
+            String sub = buildQueryFilter(((Not)condition).getChild(),informations);
+            if (StringUtils.isNotBlank(sub)) return "-("+sub+")";
+            else return "";
         } else if (condition instanceof And) {
+            StringBuilder sb = new StringBuilder();
             for (Condition<TitanElement> c : condition.getChildren()) {
-                SolrQuery andCondition = new SolrQuery();
-                andCondition.setQuery("*:*");
-                andCondition =  buildQuery(andCondition, c, informations);
-                String[] andFilterConditions = andCondition.getFilterQueries();
-                if (andFilterConditions != null) {
-                    for (String filter : andFilterConditions) {
-                        q.addFilterQuery(filter);
-                    }
-                }
-
-                String[] andFacetQueries = andCondition.getFacetQuery();
-                if (andFacetQueries != null) {
-                    for (String filter : andFacetQueries) {
-                        q.addFacetQuery(filter);
-                    }
-                }
+                String sub = buildQueryFilter(c,informations);
+                if (StringUtils.isBlank(sub)) continue;
+                if (!sub.startsWith("-")) sb.append("+");
+                sb.append(sub).append(" ");
             }
-            return q;
+            return sb.toString();
+        } else if (condition instanceof Or) {
+            StringBuilder sb = new StringBuilder();
+            int element=0;
+            for (Condition<TitanElement> c : condition.getChildren()) {
+                String sub = buildQueryFilter(c,informations);
+                if (StringUtils.isBlank(sub)) continue;
+                if (element==0) sb.append("(");
+                else sb.append(" OR ");
+                sb.append(sub);
+                element++;
+            }
+            if (element>0) sb.append(")");
+            return sb.toString();
         } else {
             throw new IllegalArgumentException("Invalid condition: " + condition);
         }
         return null;
     }
+
+
+//    public SolrQuery buildQuery(SolrQuery q, Condition<TitanElement> condition, KeyInformation.StoreRetriever informations) {
+//        if (condition instanceof PredicateCondition) {
+//            PredicateCondition<String, TitanElement> atom = (PredicateCondition<String, TitanElement>) condition;
+//            Object value = atom.getValue();
+//            String key = atom.getKey();
+//            TitanPredicate titanPredicate = atom.getPredicate();
+//
+//            if (value instanceof Number) {
+//
+//                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on numeric types: " + titanPredicate);
+//                Cmp numRel = (Cmp) titanPredicate;
+//                switch (numRel) {
+//                    case EQUAL:
+//                        q.addFilterQuery(key + ":" + value.toString());
+//                        return q;
+//                    case NOT_EQUAL:
+//                        q.addFilterQuery("-" + key + ":" + value.toString());
+//                        return q;
+//                    case LESS_THAN:
+//                        //use right curly to mean up to but not including value
+//                        q.addFilterQuery(key + ":[* TO " + value.toString() + "}");
+//                        return q;
+//                    case LESS_THAN_EQUAL:
+//                        q.addFilterQuery(key + ":[* TO " + value.toString() + "]");
+//                        return q;
+//                    case GREATER_THAN:
+//                        //use left curly to mean greater than but not including value
+//                        q.addFilterQuery(key + ":{" + value.toString() + " TO *]");
+//                        return q;
+//                    case GREATER_THAN_EQUAL:
+//                        q.addFilterQuery(key + ":[" + value.toString() + " TO *]");
+//                        return q;
+//                    default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
+//                }
+//            } else if (value instanceof String) {
+//                Mapping map = getStringMapping(informations.get(key));
+//                assert map==Mapping.TEXT || map==Mapping.STRING;
+//                if (map==Mapping.TEXT && !titanPredicate.toString().startsWith("CONTAINS"))
+//                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + titanPredicate);
+//                if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
+//                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
+//
+//
+//                if (titanPredicate == Text.CONTAINS) {
+//                    //e.g. - if terms tomorrow and world were supplied, and fq=text:(tomorrow  world)
+//                    //sample data set would return 2 documents: one where text = Tomorrow is the World,
+//                    //and the second where text = Hello World. Hence, we are decomposing the query string
+//                    //and building an AND query explicitly because we need AND semantics
+//                    value = ((String) value).toLowerCase();
+//                    for (String term : Text.tokenize((String)value)) {
+//                        q.addFilterQuery(key + ":("+ term + ")");
+//                    }
+//                    return q;
+//                } else if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
+//                    q.addFilterQuery(key + ":" + value + "*");
+//                    return q;
+//                } else if (titanPredicate == Text.REGEX || titanPredicate == Text.CONTAINS_REGEX) {
+//                    q.addFilterQuery(key + ":/" + value + "/");
+//                    return q;
+//                } else if (titanPredicate == Cmp.EQUAL) {
+//                    q.addFilterQuery(key + ":\"" + value + "\"");
+//                    return q;
+//                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+//                    q.addFilterQuery("-" + key + ":\"" + value + "\"");
+//                    return q;
+//                } else {
+//                    throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
+//                }
+//            } else if (value instanceof Geoshape) {
+//                Geoshape geo = (Geoshape)value;
+//                if (geo.getType() == Geoshape.Type.CIRCLE) {
+//                    Geoshape.Point center = geo.getPoint();
+//                    q.addFilterQuery("{!geofilt sfield=" + key +
+//                            " pt=" + center.getLatitude() + "," + center.getLongitude() +
+//                            " d=" + geo.getRadius() + "} distErrPct=0"); //distance in kilometers
+//                    return q;
+//                } else if (geo.getType() == Geoshape.Type.BOX) {
+//                    Geoshape.Point southwest = geo.getPoint(0);
+//                    Geoshape.Point northeast = geo.getPoint(1);
+//                    q.addFilterQuery(key + ":[" + southwest.getLatitude() + "," + southwest.getLongitude() +
+//                                    " TO " + northeast.getLatitude() + "," + northeast.getLongitude() + "]");
+//                    return q;
+//                } else if (geo.getType() == Geoshape.Type.POLYGON) {
+//                    List<Geoshape.Point> coordinates = getPolygonPoints(geo);
+//                    StringBuilder poly = new StringBuilder(key + ":\"IsWithin(POLYGON((");
+//                    for (Geoshape.Point coordinate : coordinates) {
+//                        poly.append(coordinate.getLongitude()).append(" ").append(coordinate.getLatitude()).append(", ");
+//                    }
+//                    //close the polygon with the first coordinate
+//                    poly.append(coordinates.get(0).getLongitude()).append(" ").append(coordinates.get(0).getLatitude());
+//                    poly.append(")))\" distErrPct=0");
+//                    q.addFilterQuery(poly.toString());
+//                    return q;
+//                }
+//            }
+//        } else if (condition instanceof Not) {
+//            String[] filterConditions = q.getFilterQueries();
+//            for (String filterCondition : filterConditions) {
+//                q.removeFilterQuery(filterCondition);
+//                q.addFilterQuery("-" + filterCondition);
+//            }
+//            return q;
+//        } else if (condition instanceof And) {
+//            for (Condition<TitanElement> c : condition.getChildren()) {
+//                SolrQuery andCondition = new SolrQuery();
+//                andCondition.setQuery("*:*");
+//                andCondition =  buildQuery(andCondition, c, informations);
+//                String[] andFilterConditions = andCondition.getFilterQueries();
+//                if (andFilterConditions != null) {
+//                    for (String filter : andFilterConditions) {
+//                        q.addFilterQuery(filter);
+//                    }
+//                }
+//
+//                String[] andFacetQueries = andCondition.getFacetQuery();
+//                if (andFacetQueries != null) {
+//                    for (String filter : andFacetQueries) {
+//                        q.addFacetQuery(filter);
+//                    }
+//                }
+//            }
+//            return q;
+//        } else {
+//            throw new IllegalArgumentException("Invalid condition: " + condition);
+//        }
+//        return null;
+//    }
 
     private List<Geoshape.Point> getPolygonPoints(Geoshape polygon) {
         List<Geoshape.Point> locations = new ArrayList<Geoshape.Point>();

@@ -243,6 +243,10 @@ public abstract class IndexProviderTest {
             assertEquals(1, result.size());
             assertEquals("doc1", result.get(0));
 
+            result = tx.query(new IndexQuery(store, PredicateCondition.of(TIME, Cmp.EQUAL, -500)));
+            assertEquals(1, result.size());
+            assertEquals("doc3", result.get(0));
+
             result = tx.query(new IndexQuery(store, And.of(Or.of(PredicateCondition.of(TIME, Cmp.EQUAL, 1001),PredicateCondition.of(TIME, Cmp.EQUAL, -500)))));
             assertEquals(2, result.size());
 
