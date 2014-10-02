@@ -506,11 +506,12 @@ public class ManagementSystem implements TitanManagement {
             Preconditions.checkArgument(!field.getFieldKey().equals(key),"Key [%s] has already been added to index %s",key.getName(),index.getName());
 
         //Assemble parameters
-        boolean addMappingParameter = !ParameterType.MAPPED_NAME.hasParameter(parameters) && modifyConfig.get(INDEX_NAME_MAPPING,indexType.getBackingIndexName());
+        boolean addMappingParameter = !ParameterType.MAPPED_NAME.hasParameter(parameters);
         Parameter[] extendedParas = new Parameter[parameters.length+1+(addMappingParameter?1:0)];
         System.arraycopy(parameters,0,extendedParas,0,parameters.length);
         int arrPosition = parameters.length;
-        if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(key.getName());
+        if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(
+                graph.getIndexSerializer().getDefaultFieldName(key,parameters,indexType.getBackingIndexName()));
         extendedParas[arrPosition++] = ParameterType.STATUS.getParameter(key.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
 
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);

@@ -389,8 +389,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertFalse(index2.isUnique());
         assertEquals(2,index3.getFieldKeys().length);
         assertEquals(1,index1.getFieldKeys().length);
-        assertEquals(2,index3.getParametersFor(text).length);
-        assertEquals(1,index3.getParametersFor(weight).length);
+        assertEquals(3,index3.getParametersFor(text).length);
+        assertEquals(2,index3.getParametersFor(weight).length);
 
         try {
             //Already exists
@@ -432,8 +432,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertFalse(index2.isUnique());
         assertEquals(2,index3.getFieldKeys().length);
         assertEquals(1,index1.getFieldKeys().length);
-        assertEquals(2,index3.getParametersFor(text).length);
-        assertEquals(1,index3.getParametersFor(weight).length);
+        assertEquals(3,index3.getParametersFor(text).length);
+        assertEquals(2,index3.getParametersFor(weight).length);
 
         try {
             //Already exists
@@ -538,8 +538,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey flag = makeKey("flag",Boolean.class);
 
         TitanGraphIndex composite = mgmt.buildIndex("composite",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
-        TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight, getFieldMap(weight))
-                                    .addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
+        TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
+                                    .addKey(text, getTextMapping()).buildMixedIndex(INDEX);
         mixed.getName(); composite.getName();
         finishSchema();
 
@@ -1016,7 +1016,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         //Add another key to index ------------------------------------------------------
         finishSchema();
         height = mgmt.getPropertyKey("height");
-        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),height,getFieldMap(height));
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),height);
         finishSchema();
 
         //Add more data
@@ -1154,7 +1154,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("index1",Edge.class).
                 addKey(name, getStringMapping()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Edge.class).indexOnly(label).
-                addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
+                addKey(text, getTextMapping()).buildMixedIndex(INDEX);
 
         assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
         assertEquals(likesTTLSeconds, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));

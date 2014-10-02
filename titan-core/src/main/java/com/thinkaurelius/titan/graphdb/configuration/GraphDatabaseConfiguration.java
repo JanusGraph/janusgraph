@@ -1605,6 +1605,10 @@ public class GraphDatabaseConfiguration {
         }
     }
 
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
     public Backend getBackend() {
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);

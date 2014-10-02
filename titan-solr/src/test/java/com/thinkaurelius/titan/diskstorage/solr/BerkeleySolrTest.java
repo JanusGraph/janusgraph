@@ -14,21 +14,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BerkeleySolrTest extends TitanIndexTest {
-
-    @BeforeClass
-    public static void setUpMiniCluster() throws Exception {
-        SolrRunner.start();
-    }
-
-    @AfterClass
-    public static void tearDownMiniCluster() throws Exception {
-        SolrRunner.stop();
-    }
-
-    public BerkeleySolrTest() {
-        super(true, true, true);
-    }
+public class BerkeleySolrTest extends SolrTitanIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -38,10 +24,5 @@ public class BerkeleySolrTest extends TitanIndexTest {
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), INDEX);
         //TODO: set SOLR specific config options
         return config.getConfiguration();
-    }
-
-    @Override
-    public boolean supportsLuceneStyleQueries() {
-        return true;
     }
 }

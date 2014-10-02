@@ -275,46 +275,21 @@
             Entity field definitions
         -->
         <field name="document_id" type="string" indexed="true" stored="true" multiValued="false" />
+        <!-- TTL -->
+        <field name="ttl"  type="string" indexed="true" stored="true" />
+        <field name="expire_at" type="date" indexed="true" stored="true" />
+        <field name="timestamp" type="date" indexed="true" stored="true" />
         <!-- IndexProviderTest -->
         <field name="text" type="text" indexed="true" stored="true" multiValued="false" />
         <field name="time" type="slong" indexed="true" stored="true" multiValued="false" />
         <field name="weight" type="sfloat" indexed="true" stored="true" multiValued="false" />
-        <field name="location" type="geo" indexed="true" stored="true" multiValued="true" />
+        <field name="location" type="geo" indexed="true" stored="true" multiValued="false" />
         <field name="name" type="string" indexed="true" stored="true"/>
-        <!-- TitanIndexTest -->
-
-
-        <field name="vtext" type="text" indexed="true" stored="true" multiValued="false" />
-        <field name="etext" type="text" indexed="true" stored="true" multiValued="false" />
-        <field name="ptext" type="text" indexed="true" stored="true" multiValued="false" />
-        <field name="height" type="sfloat" indexed="true" stored="true" multiValued="false" />
-        <!-- location will store any geospatial points located in document (o or more)-->
-
-        <!--<field name="sku" type="textTight" indexed="true" stored="true" omitNorms="true"/>-->
-        <field name="vstr" type="string" indexed="true" stored="true"/>
-        <field name="pstr" type="string" indexed="true" stored="true"/>
-        <field name="estr" type="string" indexed="true" stored="true"/>
         <field name="blah" type="string" indexed="true" stored="true"/>
-        <field name="ttl"  type="string" indexed="true" stored="true" />
-        <field name="4qt" type="text" indexed="true" stored="true" />
-        <field name="1l1" type="text" indexed="true" stored="true" />
-        <field name="35x" type="sdouble" indexed="true" stored="true"/>
-        <field name="7wl" type="sint" indexed="true" stored="true"/>
-        <field name="e85" type="sint" indexed="true" stored="true"/>
-        <field name="6bp" type="geo" indexed="true" stored="true"/>
-        <field name="expire_at" type="date" indexed="true" stored="true" />
-        <field name="timestamp" type="date" indexed="true" stored="true" />
+        <!-- TitanIndexTest -->
+        <field name="xtext" type="text" indexed="true" stored="true" multiValued="false" />
+        <field name="xstr" type="string" indexed="true" stored="true"/>
 
-        <field name="nameString" type="string" indexed="true" stored="true"/>
-        <field name="textString" type="string" indexed="true" stored="true"/>
-
-        <copyField source="name" dest="nameString"/>
-        <copyField source="text" dest="textString"/>
-
-        <!--
-        <field name="text" type="text" indexed="true" stored="true"/>
-        <field name="weight" type="double" indexed="true" stored="true"/>
--->
         <!--<field name="nameSort" type="string" indexed="true" stored="false"/>-->
         <!--<field name="alphaNameSort" type="alphaOnlySort" indexed="true" stored="false"/>-->
         <!--<field name="manu" type="text" indexed="true" stored="true" omitNorms="true"/>-->
@@ -361,6 +336,8 @@
         <dynamicField name="*_f"    type="sfloat"   indexed="true"  stored="true"/>
         <dynamicField name="*_d"    type="sdouble"  indexed="true"  stored="true"/>
         <dynamicField name="*_dt"   type="date"     indexed="true"  stored="true"/>
+        <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
+
         <!--<dynamicField name="*_guid" type="text"     indexed="true"  stored="true"/>-->
         <!--<dynamicField name="*_name" type="text"     indexed="true"  stored="true"/>-->
 

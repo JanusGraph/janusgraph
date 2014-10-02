@@ -1,11 +1,13 @@
 package com.thinkaurelius.titan.graphdb.database.indexing;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -28,6 +30,11 @@ public class StandardIndexInformation implements IndexInformation {
     @Override
     public boolean supports(KeyInformation information) {
         return true;
+    }
+
+    @Override
+    public String mapKey2Field(String key, KeyInformation information) {
+        return key;
     }
 
     @Override

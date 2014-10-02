@@ -14,11 +14,7 @@ import java.io.File;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 
-public class ThriftSolrTest extends TitanIndexTest {
-
-    public ThriftSolrTest() {
-        super(true, true, true);
-    }
+public class ThriftSolrTest extends SolrTitanIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -30,22 +26,6 @@ public class ThriftSolrTest extends TitanIndexTest {
         config.set(INDEX_BACKEND,"solr",INDEX);
         //TODO: set SOLR specific config options
         return config.getConfiguration();
-    }
-
-    @Override
-    public boolean supportsLuceneStyleQueries() {
-        return true;
-    }
-
-
-    @BeforeClass
-    public static void setUpMiniCluster() throws Exception {
-        SolrRunner.start();
-    }
-
-    @AfterClass
-    public static void tearDownMiniCluster() throws Exception {
-        SolrRunner.stop();
     }
 
     @BeforeClass

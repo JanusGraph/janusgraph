@@ -22,6 +22,8 @@ import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.Not;
 import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
@@ -75,6 +77,11 @@ public class SolrIndex implements IndexProvider {
     public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(INDEX_NS,"mode",
             "The operation mode for Solr which is either via HTTP (`http`) or using SolrCloud (`cloud`)",
             ConfigOption.Type.GLOBAL_OFFLINE, "cloud");
+
+    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<Boolean>(INDEX_NS,"dyn-fields",
+            "Whether to use dynamic fields (which appends the data type to the field name). If dynamic fields is disabled" +
+                    "the user must map field names and define them explicitly in the schema.",
+            ConfigOption.Type.GLOBAL_OFFLINE, true);
 
     public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(INDEX_NS,"key-field-names",
             "Field name that uniquely identifies each document in Solr. Must be specified as a list of `core=field`.",
@@ -134,6 +141,7 @@ public class SolrIndex implements IndexProvider {
     private final SolrServer solrServer;
     private final Configuration configuration;
     private final Mode mode;
+    private final boolean dynFields;
     private final Map<String, String> keyFieldIds;
     private final String ttlField;
     private final int maxResults;
@@ -205,6 +213,7 @@ public class SolrIndex implements IndexProvider {
         configuration = config;
 
         mode = Mode.parse(config.get(SOLR_MODE));
+        dynFields = config.get(DYNAMIC_FIELDS);
         keyFieldIds = parseKeyFieldsForCores(config);
         maxResults = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
@@ -755,6 +764,32 @@ public class SolrIndex implements IndexProvider {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXT || mapping==Mapping.STRING) return true;
         }
         return false;
+    }
+
+    @Override
+    public String mapKey2Field(String key, KeyInformation keyInfo) {
+        Preconditions.checkArgument(!StringUtils.containsAny(key, new char[]{' '}),"Invalid key name provided: %s",key);
+        if (!dynFields) return key;
+        if (ParameterType.MAPPED_NAME.hasParameter(keyInfo.getParameters())) return key;
+        String postfix;
+        Class datatype = keyInfo.getDataType();
+        if (AttributeUtil.isString(datatype)) {
+            Mapping map = getStringMapping(keyInfo);
+            switch (map) {
+                case TEXT: postfix = "_t"; break;
+                case STRING: postfix = "_s"; break;
+                default: throw new IllegalArgumentException("Unsupported string mapping: " + map);
+            }
+        } else if (AttributeUtil.isWholeNumber(datatype)) {
+            if (datatype.equals(Long.class)) postfix = "_l";
+            else postfix = "_i";
+        } else if (AttributeUtil.isDecimal(datatype)) {
+            if (datatype.equals(Float.class)) postfix = "_f";
+            else postfix = "_d";
+        } else if (datatype.equals(Geoshape.class)) {
+            postfix = "_g";
+        } else throw new IllegalArgumentException("Unsupported data type ["+datatype+"] for field: " + key);
+        return key+postfix;
     }
 
     @Override

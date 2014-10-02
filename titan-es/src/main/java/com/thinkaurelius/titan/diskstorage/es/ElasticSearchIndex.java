@@ -750,6 +750,12 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
+    public String mapKey2Field(String key, KeyInformation information) {
+        Preconditions.checkArgument(!StringUtils.containsAny(key,new char[]{' '}),"Invalid key name provided: %s",key);
+        return key;
+    }
+
+    @Override
     public IndexFeatures getFeatures() {
         return ES_FEATURES;
     }
