@@ -764,6 +764,11 @@ public class GraphDatabaseConfiguration {
             "Maxium number of results to return if no limit is specified",
             ConfigOption.Type.MASKABLE, 100000);
 
+    public static final ConfigOption<Boolean> INDEX_NAME_MAPPING = new ConfigOption<Boolean>(INDEX_NS,"map-name",
+            "Whether to use the name of the property key as the field name in the index. It must be ensured, that the" +
+                    "indexed property key names are valid field names. Renaming the property key will NOT rename the field.",
+            ConfigOption.Type.GLOBAL, false);
+
 
     // ############## Logging System ######################
     // ################################################

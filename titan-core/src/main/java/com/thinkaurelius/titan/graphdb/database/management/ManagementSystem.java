@@ -84,9 +84,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
 /**
@@ -507,9 +505,14 @@ public class ManagementSystem implements TitanManagement {
         for (IndexField field : indexType.getFieldKeys())
             Preconditions.checkArgument(!field.getFieldKey().equals(key),"Key [%s] has already been added to index %s",key.getName(),index.getName());
 
-        Parameter[] extendedParas = new Parameter[parameters.length+1];
+        //Assemble parameters
+        boolean addMappingParameter = !ParameterType.MAPPED_NAME.hasParameter(parameters) && modifyConfig.get(INDEX_NAME_MAPPING,indexType.getBackingIndexName());
+        Parameter[] extendedParas = new Parameter[parameters.length+1+(addMappingParameter?1:0)];
         System.arraycopy(parameters,0,extendedParas,0,parameters.length);
-        extendedParas[parameters.length]= ParameterType.STATUS.getParameter(key.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
+        int arrPosition = parameters.length;
+        if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(key.getName());
+        extendedParas[arrPosition++] = ParameterType.STATUS.getParameter(key.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
+
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         indexType.resetCache();
         try {

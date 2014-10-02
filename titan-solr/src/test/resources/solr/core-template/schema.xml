@@ -275,18 +275,22 @@
             Entity field definitions
         -->
         <field name="document_id" type="string" indexed="true" stored="true" multiValued="false" />
+        <!-- IndexProviderTest -->
         <field name="text" type="text" indexed="true" stored="true" multiValued="false" />
+        <field name="time" type="slong" indexed="true" stored="true" multiValued="false" />
+        <field name="weight" type="sfloat" indexed="true" stored="true" multiValued="false" />
+        <field name="location" type="geo" indexed="true" stored="true" multiValued="true" />
+        <field name="name" type="string" indexed="true" stored="true"/>
+        <!-- TitanIndexTest -->
+
+
         <field name="vtext" type="text" indexed="true" stored="true" multiValued="false" />
         <field name="etext" type="text" indexed="true" stored="true" multiValued="false" />
         <field name="ptext" type="text" indexed="true" stored="true" multiValued="false" />
-        <field name="time" type="slong" indexed="true" stored="true" multiValued="false" />
-        <field name="weight" type="sfloat" indexed="true" stored="true" multiValued="false" />
         <field name="height" type="sfloat" indexed="true" stored="true" multiValued="false" />
         <!-- location will store any geospatial points located in document (o or more)-->
-        <field name="location" type="geo" indexed="true" stored="true" multiValued="true" />
 
         <!--<field name="sku" type="textTight" indexed="true" stored="true" omitNorms="true"/>-->
-        <field name="name" type="string" indexed="true" stored="true"/>
         <field name="vstr" type="string" indexed="true" stored="true"/>
         <field name="pstr" type="string" indexed="true" stored="true"/>
         <field name="estr" type="string" indexed="true" stored="true"/>

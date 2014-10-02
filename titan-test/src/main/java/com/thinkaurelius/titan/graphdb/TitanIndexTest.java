@@ -607,19 +607,20 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
 
-    private void setupChainGraph(int numV, String[] strs) {
+    private void setupChainGraph(int numV, String[] strs, boolean sameNameMapping) {
+        clopen(option(INDEX_NAME_MAPPING,INDEX),sameNameMapping);
         TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
         TitanGraphIndex pindex = getExternalIndex(TitanProperty.class,INDEX);
         PropertyKey name = makeKey("name",String.class);
 
-        mgmt.addIndexKey(vindex, name, getStringMapping(), Parameter.of("mapped-name","vstr"));
-        mgmt.addIndexKey(eindex,name, getStringMapping(), Parameter.of("mapped-name", "estr"));
-        mgmt.addIndexKey(pindex,name, getStringMapping(), Parameter.of("mapped-name", "pstr"));
+        mgmt.addIndexKey(vindex, name, getStringMapping());
+        mgmt.addIndexKey(eindex, name, getStringMapping());
+        mgmt.addIndexKey(pindex, name, getStringMapping(), Parameter.of("mapped-name", "xstr"));
         PropertyKey text = makeKey("text",String.class);
-        mgmt.addIndexKey(vindex,text, getTextMapping(), Parameter.of("mapped-name","vtext"));
-        mgmt.addIndexKey(eindex,text, getTextMapping(), Parameter.of("mapped-name","etext"));
-        mgmt.addIndexKey(pindex,text, getTextMapping(), Parameter.of("mapped-name","ptext"));
+        mgmt.addIndexKey(vindex, text, getTextMapping(), Parameter.of("mapped-name","xtext"));
+        mgmt.addIndexKey(eindex, text, getTextMapping());
+        mgmt.addIndexKey(pindex, text, getTextMapping());
         mgmt.makeEdgeLabel("knows").signature(name).make();
         mgmt.makePropertyKey("uid").dataType(String.class).signature(text).make();
         finishSchema();
@@ -645,7 +646,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public void testIndexParameters() {
         int numV = 1000;
         String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
-        setupChainGraph(numV,strs);
+        setupChainGraph(numV,strs,false);
 
         evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
                 ElementCategory.VERTEX,numV/strs.length*2,new boolean[]{true,true},VINDEX);
@@ -752,6 +753,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").properties()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").properties()));
 
+        //Test name mapping
+        if (supportsLuceneStyleQueries()) {
+            assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "xtext:ducks").vertices()));
+            assertEquals(0, Iterables.size(graph.indexQuery(EINDEX, "xtext:ducks").edges()));
+        }
     }
 
     /**
@@ -763,7 +769,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         int numV = 1000;
         String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
-        setupChainGraph(numV,strs);
+        setupChainGraph(numV,strs,true);
         clopen();
 
         assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "v.text:ducks").vertices()));
@@ -775,8 +781,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertices()));
         assertEquals(0,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertices()));
         //Test name mapping
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "vtext:ducks").vertices()));
-        assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "etext:ducks").vertices()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "xtext:ducks").vertices()));
+        assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "text:ducks").vertices()));
 
 
         //Same queries for edges
@@ -789,7 +795,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(10, Iterables.size(graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges()));
         assertEquals(0,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges()));
         //Test name mapping
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "etext:ducks").edges()));
+        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "text:ducks").edges()));
 
         //Same queries for edges
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:ducks").properties()));
@@ -801,7 +807,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(10, Iterables.size(graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties()));
         assertEquals(0,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties()));
         //Test name mapping
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"ptext:ducks").properties()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"text:ducks").properties()));
     }
 
     @Test
