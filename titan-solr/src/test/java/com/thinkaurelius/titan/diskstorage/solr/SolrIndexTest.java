@@ -50,8 +50,6 @@ public class SolrIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
 
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), index);
-        config.set(SolrIndex.CORES, SolrRunner.CORES, index);
-        config.set(SolrIndex.KEY_FIELD_NAMES, SolrRunner.KEY_FIELDS, index);
 
         return config.restrictTo(index);
     }
@@ -59,8 +57,9 @@ public class SolrIndexTest extends IndexProviderTest {
     @Test
     public void testSupport() {
         assertTrue(index.supports(of(String.class)));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING))));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING))));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT))));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING))));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING))));
 
         assertTrue(index.supports(of(Double.class)));
         assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT))));
@@ -77,13 +76,15 @@ public class SolrIndexTest extends IndexProviderTest {
 
         assertTrue(index.supports(of(String.class), Text.CONTAINS));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.CONTAINS_PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING)), Text.CONTAINS_REGEX));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING)), Text.CONTAINS));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.REGEX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.EQUAL));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXT)), Text.CONTAINS));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING)), Cmp.NOT_EQUAL));
 
         assertTrue(index.supports(of(Double.class), Cmp.EQUAL));
         assertTrue(index.supports(of(Double.class), Cmp.GREATER_THAN_EQUAL));

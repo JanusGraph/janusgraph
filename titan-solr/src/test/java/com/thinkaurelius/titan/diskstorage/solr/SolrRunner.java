@@ -13,16 +13,16 @@ public class SolrRunner {
     protected static final int NUM_SERVERS = 1;
     protected static final String[] CORES = new String[] { "store1", "store2", "vertex", "edge", "namev", "namee",
             "composite", "psearch", "esearch", "vsearch", "mi", "mixed", "index1", "index2", "index3",
-            "ecategory", "vcategory", "pcategory", "theIndex" };
+            "ecategory", "vcategory", "pcategory", "theIndex", "vertices", "edges" };
 
-    protected static final String[] KEY_FIELDS;
+    protected static final String[] KEY_FIELDS = new String[0];
 
-    static {
-        KEY_FIELDS = new String[CORES.length];
-        for (int i = 0; i < CORES.length; i++)
-            KEY_FIELDS[i] = String.format("%s=document_id", CORES[i]);
-
-    }
+//    static {
+//        KEY_FIELDS = new String[CORES.length];
+//        for (int i = 0; i < CORES.length; i++)
+//            KEY_FIELDS[i] = String.format("%s=document_id", CORES[i]);
+//
+//    }
 
     private static final String TMP_DIRECTORY = System.getProperty("java.io.tmpdir");
     private static final String TEMPLATE_DIRECTORY = "core-template";

@@ -78,7 +78,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     private Parameter getTextMapping() {
         if (indexFeatures.supportsStringMapping(Mapping.TEXT)) return Mapping.TEXT.getParameter();
         else if (indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return Mapping.TEXTSTRING.getParameter();
-        throw new AssertionError("String mapping not supported");
+        throw new AssertionError("Text mapping not supported");
     }
 
     private Parameter getFieldMap(PropertyKey key) {

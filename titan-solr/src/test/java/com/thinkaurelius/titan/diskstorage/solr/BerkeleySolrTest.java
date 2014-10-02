@@ -34,11 +34,8 @@ public class BerkeleySolrTest extends TitanIndexTest {
     public WriteConfiguration getConfiguration() {
         ModifiableConfiguration config = getBerkeleyJEConfiguration();
         //Add index
-        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), INDEX);
-        config.set(SolrIndex.CORES, SolrRunner.CORES, INDEX);
-        config.set(SolrIndex.KEY_FIELD_NAMES, SolrRunner.KEY_FIELDS, INDEX);
-
         config.set(INDEX_BACKEND,"solr",INDEX);
+        config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), INDEX);
         //TODO: set SOLR specific config options
         return config.getConfiguration();
     }
