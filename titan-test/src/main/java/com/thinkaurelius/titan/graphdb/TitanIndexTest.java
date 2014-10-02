@@ -913,7 +913,6 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         recovery.shutdown();
         long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
 
-
         clopen();
 
         evaluateQuery(tx.query().has("name",Text.CONTAINS,"boy"),
