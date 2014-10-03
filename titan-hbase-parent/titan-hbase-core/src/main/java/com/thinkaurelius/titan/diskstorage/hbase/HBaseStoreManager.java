@@ -42,10 +42,8 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
-import org.apache.hadoop.security.token.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -298,16 +296,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
          * applies the contents of hbase-site.xml.
          */
         this.hconf = HBaseConfiguration.create();
-
-        try {
-            logger.debug("Dumping User.getCurrent() credentials");
-            for (Token token : User.getCurrent().getUGI().getCredentials().getAllTokens()) {
-                logger.debug("[Credentials] kind={} ident={} token={}", token.getKind(), token.getIdentifier(), token);
-            }
-            logger.debug("Done dumping User.getCurrent() credentials");
-        } catch (IOException e) {
-            logger.debug("Unable to dump User.getcurrent() credentials", e);
-        }
 
         // Copy a subset of our commons config into a Hadoop config
         int keysLoaded=0;
