@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.Mutation;
 
 import javax.annotation.Nullable;
@@ -69,6 +70,31 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
     @Override
     public boolean isConsolidated() {
         return super.isConsolidated(ENTRY2FIELD_FCT,ENTRY2FIELD_FCT);
+    }
+
+    public int determineTTL() {
+        return hasDeletions() ? 0 : determineTTL(getAdditions());
+    }
+
+    public static int determineTTL(List<IndexEntry> additions) {
+        if (additions == null || additions.isEmpty())
+            return 0;
+
+        Preconditions.checkArgument(!additions.isEmpty());
+        int ttl=-1;
+        for (IndexEntry add : additions) {
+            int ittl = 0;
+            if (add.hasMetaData()) {
+                Preconditions.checkArgument(add.getMetaData().size()==1 && add.getMetaData().containsKey(EntryMetaData.TTL),
+                        "Index only supports TTL meta data. Found: %s",add.getMetaData());
+                ittl = (Integer)add.getMetaData().get(EntryMetaData.TTL);
+            }
+            if (ttl<0) ttl=ittl;
+            Preconditions.checkArgument(ttl==ittl,"Index only supports uniform TTL values across all " +
+                    "index fields, but got additions: %s",additions);
+        }
+        assert ttl>=0;
+        return ttl;
     }
 
 }

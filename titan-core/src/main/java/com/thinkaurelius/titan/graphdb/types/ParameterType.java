@@ -41,6 +41,10 @@ public enum ParameterType {
         return result;
     }
 
+    public boolean hasParameter(Parameter[] parameters) {
+        return findParameter(parameters,null)!=null;
+    }
+
     public<V> Parameter<V> getParameter(V value) {
         return new Parameter<V>(name,value);
     }

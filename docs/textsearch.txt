@@ -22,7 +22,7 @@ By default, strings are indexed as text. To make this indexing option explicit, 
 [source,gremlin]
 mgmt = g.getManagementSystem()
 summary = mgmt.makePropertyKey('booksummary').dataType(String.class).make()
-mgmt.buildIndex('booksBySummary',Vertex.class).addKey(summary,com.thinkaurelius.titan.core.schema.Parameter.of("mapping",Mapping.TEXT)).buildMixedIndex("search")
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(summary,Mapping.TEXT.getParameter()).buildMixedIndex("search")
 mgmt.commit()
 
 This is identical to a standard mixed index definition with the only addition of an extra parameter that specifies the mapping in the index - in this case `Mapping.TEXT`.
@@ -45,7 +45,7 @@ To index string properties as character sequences without any analysis or tokeni
 [source,gremlin]
 mgmt = g.getManagementSystem()
 name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
-mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,com.thinkaurelius.titan.core.schema.Parameter.of('mapping',Mapping.STRING)).buildMixedIndex("search")
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(name,Mapping.STRING.getParameter()).buildMixedIndex("search")
 mgmt.commit()
 
 When a string mapping is configured, the string value is indexed and can be queried "as-is" - including stop words and non-letter characters. However, in this case the query must match the entire string value. Hence, the string mapping is useful when indexing short character sequences that are considered to be one token.

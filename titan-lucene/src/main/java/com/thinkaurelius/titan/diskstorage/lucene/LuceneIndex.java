@@ -60,7 +60,7 @@ public class LuceneIndex implements IndexProvider {
     private static final int MAX_STRING_FIELD_LEN = 256;
 
     private static final Version LUCENE_VERSION = Version.LUCENE_41;
-    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().build();
+    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
 
     private static final int GEO_MAX_LEVELS = 11;
 
@@ -372,12 +372,12 @@ public class LuceneIndex implements IndexProvider {
     private static final Filter numericFilter(String key, Cmp relation, Number value) {
         switch (relation) {
             case EQUAL:
-                return (value instanceof Long || value instanceof Integer) ?
+                return AttributeUtil.isWholeNumber(value) ?
                         NumericRangeFilter.newLongRange(key, value.longValue(), value.longValue(), true, true) :
                         NumericRangeFilter.newDoubleRange(key, value.doubleValue(), value.doubleValue(), true, true);
             case NOT_EQUAL:
                 BooleanFilter q = new BooleanFilter();
-                if (value instanceof Long || value instanceof Integer) {
+                if (AttributeUtil.isWholeNumber(value)) {
                     q.add(NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false), BooleanClause.Occur.SHOULD);
                     q.add(NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
                 } else {
@@ -386,19 +386,19 @@ public class LuceneIndex implements IndexProvider {
                 }
                 return q;
             case LESS_THAN:
-                return (value instanceof Long || value instanceof Integer) ?
+                return (AttributeUtil.isWholeNumber(value)) ?
                         NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false) :
                         NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false);
             case LESS_THAN_EQUAL:
-                return (value instanceof Long || value instanceof Integer) ?
+                return (AttributeUtil.isWholeNumber(value)) ?
                         NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, true) :
                         NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, true);
             case GREATER_THAN:
-                return (value instanceof Long || value instanceof Integer) ?
+                return (AttributeUtil.isWholeNumber(value)) ?
                         NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true) :
                         NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true);
             case GREATER_THAN_EQUAL:
-                return (value instanceof Long || value instanceof Integer) ?
+                return (AttributeUtil.isWholeNumber(value)) ?
                         NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, true, true) :
                         NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, true, true);
             default:
@@ -423,9 +423,15 @@ public class LuceneIndex implements IndexProvider {
                 if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
                     throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
 
+
+
                 if (titanPredicate == Text.CONTAINS) {
                     value = ((String) value).toLowerCase();
-                    return new TermsFilter(new Term(key, (String) value));
+                    BooleanFilter b = new BooleanFilter();
+                    for (String term : Text.tokenize((String)value)) {
+                        b.add(new TermsFilter(new Term(key, term)), BooleanClause.Occur.MUST);
+                    }
+                    return b;
                 } else if (titanPredicate == Text.CONTAINS_PREFIX) {
                     value = ((String) value).toLowerCase();
                     return new PrefixFilter(new Term(key, (String) value));
@@ -537,6 +543,12 @@ public class LuceneIndex implements IndexProvider {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING || mapping==Mapping.TEXT) return true;
         }
         return false;
+    }
+
+    @Override
+    public String mapKey2Field(String key, KeyInformation information) {
+        Preconditions.checkArgument(!StringUtils.containsAny(key,new char[]{' '}),"Invalid key name provided: %s",key);
+        return key;
     }
 
     @Override

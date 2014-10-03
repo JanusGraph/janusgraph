@@ -47,16 +47,6 @@ public class BerkeleyGraphTest extends TitanGraphTest {
         return mcfg.getConfiguration();
     }
 
-    /**
-     * Test {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#create(String)}.
-     */
-    @Test
-    public void testGraphOfTheGodsFactoryCreate() {
-        String bdbtmp = Joiner.on(File.separator).join("target", "gotgfactory");
-        TitanGraph gotg = GraphOfTheGodsFactory.create(bdbtmp);
-        TitanIndexTest.assertGraphOfTheGods(gotg);
-    }
-
     @Override
     public void testConsistencyEnforcement() {
         // Check that getConfiguration() explicitly set serializable isolation

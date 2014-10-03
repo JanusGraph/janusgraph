@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Comparison relations for text objects. These comparisons are based on a tokenized representation
@@ -31,11 +33,15 @@ public enum Text implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluateRaw(String value, String term) {
-            for (String token : tokenize(value.toLowerCase())) {
-                if (token.equalsIgnoreCase(term.trim())) return true;
+        public boolean evaluateRaw(String value, String terms) {
+            Set<String> tokens = Sets.newHashSet(tokenize(value.toLowerCase()));
+            terms = terms.trim();
+            List<String> tokenTerms = tokenize(terms.toLowerCase());
+            if (!terms.isEmpty() && tokenTerms.isEmpty()) return false;
+            for (String term : tokenTerms) {
+                if (!tokens.contains(term)) return false;
             }
-            return false;
+            return true;
         }
 
 

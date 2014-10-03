@@ -30,6 +30,13 @@ public class TextTest {
         assertTrue(CONTAINS.evaluate(text, "surprises"));
         assertTrue(CONTAINS.evaluate(text, "FULL"));
 
+        assertTrue(CONTAINS.evaluate(text, "full surprises"));
+        assertTrue(CONTAINS.evaluate(text, "full,surprises,world"));
+        assertFalse(CONTAINS.evaluate(text, "full bunny"));
+        assertTrue(CONTAINS.evaluate(text, "a world"));
+
+
+
         //Prefix
         assertTrue(CONTAINS_PREFIX.evaluate(text, "worl"));
         assertTrue(CONTAINS_PREFIX.evaluate(text, "wORl"));

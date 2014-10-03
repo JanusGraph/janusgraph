@@ -208,14 +208,15 @@ public class ElasticSearchConfigTest {
 
         final Duration maxWrite = new StandardDuration(2000L, TimeUnit.MILLISECONDS);
         final String storeName = "jvmlocal_test_store";
+        final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures()));
 
         BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(Timestamps.MILLI);
-        IndexTransaction itx = new IndexTransaction(idx, IndexProviderTest.indexRetriever, txConfig, maxWrite);
+        IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
         assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
         itx.add(storeName, "doc", IndexProviderTest.NAME, "alice", false);
         itx.commit();
         Thread.sleep(1500L); // Slightly longer than default 1s index.refresh_interval
-        itx = new IndexTransaction(idx, IndexProviderTest.indexRetriever, txConfig, maxWrite);
+        itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
         assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "zed"))).size());
         assertEquals(1, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
         itx.rollback();

@@ -7,6 +7,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
+
 
 public class BerkeleyVariableLengthKCVSTest extends KeyColumnValueStoreTest {
 
@@ -18,5 +20,15 @@ public class BerkeleyVariableLengthKCVSTest extends KeyColumnValueStoreTest {
     @Test
     public void testGetKeysWithKeyRange() throws Exception {
         super.testGetKeysWithKeyRange();
+    }
+
+    @Test @Override
+    public void testConcurrentGetSlice() throws ExecutionException, InterruptedException, BackendException {
+
+    }
+
+    @Test @Override
+    public void testConcurrentGetSliceAndMutate() throws BackendException, ExecutionException, InterruptedException {
+
     }
 }
