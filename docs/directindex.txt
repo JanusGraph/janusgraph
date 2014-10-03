@@ -44,9 +44,24 @@ This query matches all vertices where the text contains any of the three words (
 Gotchas
 ~~~~~~~
 
-When you have property keys that contain non-alphabetic characters, you have to escape the entire property key name with quotation marks, as in:
+Property Key Names
+^^^^^^^^^^^^^^^^^^
+
+Names of property keys that contain non-alphanumeric characters must be placed in quotation marks to ensure that the query is parsed correctly.
 
 [source,java]
 graph.indexQuery("vertexByText","v.\"first_name\":john").vertices()
 
-Note, that field names used in direct queries should not start with "v.", "e." or "p.".
+Element Identifier Collision
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The strings "v.", "e.", and "p." are used to identify a vertex, edge or property element respectively in a query. If the field name or the query value contains the same sequence of characters, this can cause a collision in the query string and parsing errors as in the following example:
+
+[source,java]
+graph.indexQuery("vertexByText","v.name:v.john").vertices() //DOES NOT WORK!
+
+To avoid such identifier collisions, use the `setElementIdentifier` method to define a unique element identifier string that does not occur in any other parts of the query:
+
+[source,java]
+graph.indexQuery("vertexByText","$v$name:v.john").setElementIdentifier("$v$").vertices()
+

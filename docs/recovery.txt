@@ -29,8 +29,6 @@ recovery = TitanFactory.startTransactionRecovery(graph,startTime,TimeUnit.MILLIS
 
 Enabling the transaction write-ahead log causes an additional write operation for mutating transactions which increases the latency. Also note, that additional space is required to store the log. The transaction write-ahead log has a configurable time-to-live of 2 days which means that log entries expire after that time to keep the storage overhead small. Refer to <<titan-config-ref>> for a complete list of all log related configuration options to fine tune logging behavior.
 
-
-
 Titan Instance Failure
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -46,5 +44,7 @@ mgmt = g.getManagementSystem()
 instances = mgmt.getOpenInstances() //all open instances
 mgmt.forceCloseInstance(instances.iterator().next()) //remove 1st instance
 mgmt.commit()
+
+The unique identifier of the current Titan instance is marked with the suffix `(current)` so that it can be easily identified.
 
 It must be ensured that the manually removed instance is indeed no longer active. Removing an active Titan instance from a cluster can cause data inconsistencies. Hence, use this method with great care in particular when Titan is operated in an environment where instances are automatically restarted.
