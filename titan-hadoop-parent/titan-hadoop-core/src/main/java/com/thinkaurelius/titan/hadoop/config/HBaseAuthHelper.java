@@ -81,7 +81,7 @@ public class HBaseAuthHelper {
             }
 
         } else {
-            log.error("Not obtaining HBase Auth Token for MapReduce job " + job);
+            log.error("Not obtaining HBase Auth Token for MapReduce job " + job.getJobName());
         }
     }
 }
