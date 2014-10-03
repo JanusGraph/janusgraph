@@ -132,7 +132,7 @@ public abstract class AbstractDistCacheConfigurer {
         final String mrj = mapredJarFilename.toLowerCase();
         String mapredJarPath = null;
         for (String cpentry : classpath.split(File.pathSeparator)) {
-            if (cpentry.toLowerCase().endsWith(".jar")) {
+            if (cpentry.toLowerCase().endsWith(".jar") || cpentry.toLowerCase().endsWith(".properties")) {
                 paths.add(new Path(cpentry));
                 if (cpentry.toLowerCase().endsWith(mrj));
                     mapredJarPath = cpentry;

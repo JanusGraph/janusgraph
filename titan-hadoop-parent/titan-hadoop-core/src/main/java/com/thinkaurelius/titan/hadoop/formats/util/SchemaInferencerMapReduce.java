@@ -19,8 +19,12 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.security.token.Token;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -35,6 +39,7 @@ public class SchemaInferencerMapReduce {
 
     private static final long funnyLong = Long.MAX_VALUE; // TODO delete this, move it out-of-band
     private static final LongWritable funnyKey = new LongWritable(funnyLong);
+    private static final Logger log = LoggerFactory.getLogger(SchemaInferencerMapReduce.class);
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex> {
 
@@ -92,6 +97,18 @@ public class SchemaInferencerMapReduce {
             faunusConf = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(context));
             graph = TitanGraphOutputMapReduce.generateGraph(faunusConf);
             tx = graph.buildTransaction().disableBatchLoading().start();
+
+            log.debug("Dumping configuration");
+            for (java.util.Map.Entry<String, String> ent : faunusConf.getHadoopConfiguration()) {
+                log.debug("[SchemaInferencerMRConfig] {}={}", ent.getKey(), ent.getValue());
+            }
+            log.debug("Done dumping configuration");
+
+            log.debug("Dumping credentials");
+            for (Token token : context.getCredentials().getAllTokens()) {
+                log.debug("[Credentials] kind={} ident={} token={}", token.getKind(), token.getIdentifier(), token);
+            }
+            log.debug("Done dumping credentials");
         }
 
         @Override

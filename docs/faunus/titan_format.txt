@@ -309,64 +309,102 @@ gremlin> t.V.map
 ==>{name=neptune, roman=true, type=god}
 ----
 
-///////////////////
+Incremental Loading using TitanOutputFormat
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Incremental Data Loading using a TitanOutputFormat
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+By default, TitanOutputFormat assumes the graph which receives its output is empty.  In this mode, each connected component in the graph must be completely loaded in a single job, and any duplicate data in the input will be passed through TitanOutputFormat (unless a unique index has been defined to detect the duplication).
 
-Faunus can be used for incremental loading. That is, loading data into a graph that already exists. The Faunus property to be aware of is `faunus.graph.output.blueprints.script-file`. If that property does not exist, then it is assumed that the underlying graph is empty. If the property does exist, it points to a file in HDFS that is a Gremlin/Groovy script that has either or both of the following two methods:
+However, TitanOutputFormat also supports incremental loading.  In this mode, the graph is not assumed to be empty, and duplicate data in the input can be detected and resolved before Titan-Hadoop writes data to the graph.
+
+The setting controlling incremental loading is `titan.hadoop.output.loader-script-file`.  When this is set, it points to a Gremlin-Groovy script defining some methods to which Titan delegates vertex, edge, and vertex-property resolution.  These methods, implemented by the user, define TitanOutputFormat's strategy for incrementally updating graph data across several jobs and for detecting and resolving duplicate data in the input.
+
+Incremental Loading Method Contracts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When `loader-script-file` is set, TitanOutputFormat checks the script for each of the following methods:
   
-* `def Vertex getOrCreateVertex(FaunusVertex vertex, Graph graph, Mapper.Context context)`
-* `def Edge getOrCreateEdge(FaunusEdge faunusEdge, Vertex blueprintsOutVertex, Vertex blueprintsInVertex, Graph graph, Mapper.Context context)`
+`getOrCreateVertex(FaunusVertex, TitanGraph, Mapper.Context, Logger)`::
+The first parameter (of type `FaunusVertex`) is the vertex which Titan-Hadoop is attempting to write to `TitanGraph`.  This method must either retrieve an existing `Vertex` from the `TitanGraph` parameter which corresponds to the `FaunusVertex` parameter or a new `Vertex` in the `TitanGraph` parameter if no existing vertices correspond to the `FaunusVertex` parameter.
++
+This method must return an object of type `TitanVertex`.
++
+If this method throws an exception or returns null, then Titan-Hadoop may drop the `FaunusVertex`.
++
+The last two parameters are conveniences to support Hadoop counter updates and logging (at the implementation's option).  The last two parameters are not required to implement the method contract and can safely be ignored without affecting correctness.
 
-An example `getOrCreateVertex()` definition is in the code fragment below. The example determines whether a vertex already exists in the graph by a unique key (e.g. a domain-specific unique address space). If the vertex exists according to a global index query, then return it. Else, create a new vertex and return it. This example is distributed with Faunus in `data/BlueprintsScript.groovy` (e.g. `hadoop fs -copyFromLocal data/BlueprintsScript.groovy BlueprintsScript.groovy`). Finally, realize that the definition of a "unique vertex" can be an arbitrary algorithm -- unique key/value property, a graph traversal, accessing another dataset, etc.
+`getOrCreateVertexProperty(TitanProperty, TitanVertex, TitanGraph, Mapper.Context, Logger)`::
+The first parameter (of type `TitanProperty`) is a vertex property which Titan-Hadoop is attempting to set on the second parameter (of type `TitanVertex`).  The vertex belongs to the `TitanGraph` parameter.  If the previous method was defined, then it will be the same TitanVertex object returned from the previous method.  However, the property parameter is not from the `TitanGraph`.  It's from the Titan-Hadoop job input.  This method is responsible for checking whether the `TitanVertex` parameter already has a property corresponding to the `TitanProperty` parameter, creating said property on the `TitanVertex` parameter if necessary.
++
+Implementations should return the value associated with the property, but this is not required.  The return value of this method is currently ignored.
++
+The last two parameters are conveniences to support Hadoop counter updates and logging (at the implementation's option).  The last two parameters are not required to implement the method contract and can safely be ignored without affecting correctness.
+
+`getOrCreateEdge(FaunusEdge, TitanVertex, TitanVertex, TitanGraph, Mapper.Context, Logger)`::
+The first parameter is an edge from the Titan-Hadoop job input.  The second and third parameters are the out/tail and in/head vertices of the edge.  Both the second and third parameters are vertices belonging to the fourth parameter of type `TitanGraph`.  This method must either retrieve an existing edge or create a new edge corresponding to the first parameter.
++
+This method must return an object of type `TitanEdge`.
++
+The last two parameters are conveniences to support Hadoop counter updates and logging (at the implementation's option).  The last two parameters are not required to implement the method contract and can safely be ignored without affecting correctness.
+
+The script must define at least one of the methods listed above.  If TitanOutputFormat can't load and compile at least one of the methods listed above using the supplied file, then an exception is thrown.  There will also be some debugging output citing compilation failures just prior to the exception.  Only the parameter types and method names matter; the parameter names are ignored.  TitanOutputFormat carries out the following steps when checking for each method:
+
+. Load the script file into a string builder
+. Append a newline
+. Append `metaClass.getMetaMethod(mname, ...) != null`, where `mname` is the method name and `...` is the comma-separated list of argument types
+. Append another newline
+. Compile and invoke the resulting string using GremlinGroovyScriptEngine
+
+If the compiled script string evaluates to true, then the process is repeated with the final `metaClass...` line changed to an invocation of the method itself.  This is compiled and then invoked by TitanOutputFormat as needed.
+
+Example Incremental Loading Script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The sample incremental loading script below was tested with the <<getting-started,Graph of the Gods>> dataset.  It assumes the property key "name" exists on all vertices and has unique values among all vertices.
 
 [source,groovy]
 ----
-def Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Graph graph, final Mapper.Context context) {
-  String uniqueKey = "name";
-  Object uniqueValue = faunusVertex.getProperty(uniqueKey);
-  Vertex blueprintsVertex;
-  if (null == uniqueValue)
-    throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + faunusVertex);
-
-  Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator();
-  if (itty.hasNext()) {
-    blueprintsVertex = itty.next();
-    context.getCounter(VERTICES_RETRIEVED).increment(1l);
-    if (itty.hasNext())
-      LOGGER.error("The unique key is not unique as more than one vertex with the value: " + uniqueValue);
-  } else {
-    blueprintsVertex = graph.addVertex(faunusVertex.getIdAsLong());
-    context.getCounter(VERTICES_WRITTEN).increment(1l);
-  }
-  // if vertex existed or not, add all the properties of the faunusVertex to the blueprintsVertex
-  for (String property : faunusVertex.getPropertyKeys()) {
-    blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
-    context.getCounter(VERTEX_PROPERTIES_WRITTEN).increment(1l);
-  }
-  return blueprintsVertex;
-}
-----
-
-An example of a `getOrCreateEdge()` is provided below that says if an edge already exists between the two vertices with the same edge label return that edge, else create it.
-
-[source,groovy]
-----
-def Edge getOrCreateEdge(final FaunusEdge faunusEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
-    final Edge blueprintsEdge = !blueprintsOutVertex.out(faunusEdge.getLabel()).has("id", blueprintsInVertex.getId()).hasNext() ?
-        graph.addEdge(null, blueprintsOutVertex, blueprintsInVertex, faunusEdge.getLabel()) :
-        blueprintsOutVertex.outE(faunusEdge.getLabel()).as("here").inV().has("id", blueprintsInVertex.getId()).back("here").next();
-    context.getCounter(EDGES_WRITTEN).increment(1l);
-
-    // if edge existed or not, add all the properties of the faunusEdge to the blueprintsEdge
-    for (final String key : faunusEdge.getPropertyKeys()) {
-        blueprintsEdge.setProperty(key, faunusEdge.getProperty(key));
-        context.getCounter(EDGE_PROPERTIES_WRITTEN).increment(1l);
+def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
+    String uniqueKey = "name";
+    Object uniqueValue = faunusVertex.getProperty(uniqueKey);
+    Vertex titanVertex;
+    if (null == uniqueValue)
+      throw new RuntimeException(faunusVertex + " has no value for key " + uniqueKey);
+  
+    Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator();
+    if (itty.hasNext()) {
+      titanVertex = itty.next();
+      if (itty.hasNext())
+        log.info("The key {} has duplicated value {}", uniqueKey, uniqueValue);
+    } else {
+      titanVertex = graph.addVertex(faunusVertex.getId());
     }
-    return blueprintsEdge;
+    return titanVertex;
+}
+
+def TitanEdge getOrCreateEdge(faunusEdge, inVertex, outVertex, graph, context, log) {
+    final String label = faunusEdge.getLabel();
+
+    log.debug("outVertex:{} label:{} inVertex:{}", outVertex, label, inVertex);
+
+    final Edge titanEdge = !outVertex.out(label).has("id", inVertex.getId()).hasNext() ?
+        graph.addEdge(null, outVertex, inVertex, label) :
+        outVertex.outE(label).as("here").inV().has("id", inVertex.getId()).back("here").next();
+
+    return titanEdge;
+}
+
+def Object getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) {
+
+    final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.getPropertyKey();
+    if (pkey.getCardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
+        vertex.setProperty(pkey.getName(), faunusProperty.getValue());
+    } else {
+        vertex.addProperty(pkey.getName(), faunusProperty.getValue());
+    }
+
+    log.debug("Set property {}={} on {}", pkey.getName(), faunusProperty.getValue(), vertex);
+
+    return faunusProperty.getValue();
 }
 ----
 
-
-///////////////////

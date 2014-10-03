@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.hadoop;
 
+import com.thinkaurelius.titan.hadoop.config.HBaseAuthHelper;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 
 import java.io.FileInputStream;
 import java.util.Map;

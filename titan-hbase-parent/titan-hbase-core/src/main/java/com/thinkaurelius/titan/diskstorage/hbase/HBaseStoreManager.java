@@ -42,8 +42,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.hadoop.security.token.Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -297,11 +299,21 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
          */
         this.hconf = HBaseConfiguration.create();
 
+        try {
+            logger.debug("Dumping User.getCurrent() credentials");
+            for (Token token : User.getCurrent().getUGI().getCredentials().getAllTokens()) {
+                logger.debug("[Credentials] kind={} ident={} token={}", token.getKind(), token.getIdentifier(), token);
+            }
+            logger.debug("Done dumping User.getCurrent() credentials");
+        } catch (IOException e) {
+            logger.debug("Unable to dump User.getcurrent() credentials", e);
+        }
+
         // Copy a subset of our commons config into a Hadoop config
         int keysLoaded=0;
         Map<String,Object> configSub = config.getSubset(HBASE_CONFIGURATION_NAMESPACE);
         for (Map.Entry<String,Object> entry : configSub.entrySet()) {
-            logger.debug("HBase configuration: setting {}={}", entry.getKey(), entry.getValue());
+            logger.info("HBase configuration: setting {}={}", entry.getKey(), entry.getValue());
             if (entry.getValue()==null) continue;
             hconf.set(entry.getKey(), entry.getValue().toString());
             keysLoaded++;
@@ -331,6 +343,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             openManagers.put(this, new Throwable("Manager Opened"));
             dumpOpenManagers();
         }
+
+        logger.debug("Dumping HBase config key=value pairs");
+        for (Map.Entry<String, String> entry : hconf) {
+            logger.debug("[HBaseConfig] " + entry.getKey() + "=" + entry.getValue());
+        }
+        logger.debug("End of HBase config key=value pairs");
 
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
     }

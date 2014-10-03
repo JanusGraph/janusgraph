@@ -100,17 +100,17 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public static final ConfigOption<Integer> CPOOL_MAX_TOTAL =
             new ConfigOption<Integer>(CPOOL_NS, "max-total",
             "Max number of allowed Thrift connections, idle or active (-1 to leave undefined)",
-            ConfigOption.Type.MASKABLE, 32);
+            ConfigOption.Type.MASKABLE, -1);
 
     public static final ConfigOption<Integer> CPOOL_MAX_ACTIVE =
             new ConfigOption<Integer>(CPOOL_NS, "max-active",
             "Maximum number of concurrently in-use connections (-1 to leave undefined)",
-            ConfigOption.Type.MASKABLE, -1);
+            ConfigOption.Type.MASKABLE, 16);
 
     public static final ConfigOption<Integer> CPOOL_MAX_IDLE =
             new ConfigOption<Integer>(CPOOL_NS, "max-idle",
             "Maximum number of concurrently idle connections (-1 to leave undefined)",
-            ConfigOption.Type.MASKABLE, -1);
+            ConfigOption.Type.MASKABLE, 4);
 
     public static final ConfigOption<Integer> CPOOL_MIN_IDLE =
             new ConfigOption<Integer>(CPOOL_NS, "min-idle",
