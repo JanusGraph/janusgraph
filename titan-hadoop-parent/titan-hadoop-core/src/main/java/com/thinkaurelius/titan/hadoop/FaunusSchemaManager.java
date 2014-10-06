@@ -106,7 +106,7 @@ public class FaunusSchemaManager implements SchemaInspector {
 
     @Override
     public FaunusPropertyKey getOrCreatePropertyKey(String name) {
-        FaunusRelationType rt = relationTypes.get(name);
+        FaunusRelationType rt = getRelationType(name);
         if (rt==null) {
             relationTypes.putIfAbsent(name,new FaunusPropertyKey(schemaProvider.getPropertyKey(name),false));
             rt = relationTypes.get(name);
@@ -118,14 +118,14 @@ public class FaunusSchemaManager implements SchemaInspector {
 
     @Override
     public FaunusPropertyKey getPropertyKey(String name) {
-        FaunusRelationType rt = relationTypes.get(name);
+        FaunusRelationType rt = getRelationType(name);
         Preconditions.checkArgument(rt==null || rt.isPropertyKey(),"Name does not identify a property key: ",name);
         return (FaunusPropertyKey)rt;
     }
 
     @Override
     public FaunusEdgeLabel getOrCreateEdgeLabel(String name) {
-        FaunusRelationType rt = relationTypes.get(name);
+        FaunusRelationType rt = getRelationType(name);
         if (rt==null) {
             relationTypes.putIfAbsent(name,new FaunusEdgeLabel(schemaProvider.getEdgeLabel(name),false));
             rt = relationTypes.get(name);
@@ -137,7 +137,7 @@ public class FaunusSchemaManager implements SchemaInspector {
 
     @Override
     public FaunusEdgeLabel getEdgeLabel(String name) {
-        FaunusRelationType rt = relationTypes.get(name);
+        FaunusRelationType rt = getRelationType(name);
         Preconditions.checkArgument(rt==null || rt.isEdgeLabel(),"Name does not identify an edge label: ",name);
         return (FaunusEdgeLabel)rt;
     }
