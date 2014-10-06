@@ -59,7 +59,7 @@ public class SolrIndex implements IndexProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(SolrIndex.class);
 
-    private static final String CORE_PARAM = "collection";
+    private static final String COLLECTION_PARAM = "collection";
     private static final String DEFAULT_ID_FIELD = "document_id";
 
     private enum Mode {
@@ -84,11 +84,11 @@ public class SolrIndex implements IndexProvider {
             ConfigOption.Type.GLOBAL_OFFLINE, true);
 
     public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(INDEX_NS,"key-field-names",
-            "Field name that uniquely identifies each document in Solr. Must be specified as a list of `core=field`.",
+            "Field name that uniquely identifies each document in Solr. Must be specified as a list of `collection=field`.",
             ConfigOption.Type.GLOBAL, String[].class);
 
     public static final ConfigOption<String> TTL_FIELD = new ConfigOption<String>(INDEX_NS,"ttl_field",
-            "Name of the TTL field for Solr cores.",
+            "Name of the TTL field for Solr collections.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
     public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(INDEX_NS,"num-shards",
@@ -110,7 +110,7 @@ public class SolrIndex implements IndexProvider {
     /** HTTP Configuration */
 
     public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<String[]>(INDEX_NS,"http-urls",
-            "List of URLs to use to connect to Solr Servers (LBSolrServer is used), don't add core name to the URL.",
+            "List of URLs to use to connect to Solr Servers (LBSolrServer is used), don't add core or collection name to the URL.",
             ConfigOption.Type.MASKABLE, new String[] { "http://localhost:8983/solr" });
 
     public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<Integer>(INDEX_NS,"http-connection-timeout",
@@ -135,9 +135,6 @@ public class SolrIndex implements IndexProvider {
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
             .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
 
-    /**
-     * Builds a mapping between the core name and its respective Solr Server connection.
-     */
     private final SolrServer solrServer;
     private final Configuration configuration;
     private final Mode mode;
@@ -146,75 +143,13 @@ public class SolrIndex implements IndexProvider {
     private final String ttlField;
     private final int maxResults;
 
-    /**
-     *  There are several different modes in which the index can be configured with Solr:
-     *  <ol>
-     *    <li>HttpSolrServer - used to connect to Solr instance via Apache HTTP client to a specific solr instance bound to a specific URL.</li>
-     *    <li>
-     *        CloudSolrServer - used to connect to a SolrCloud cluster that uses Apache Zookeeper.
-     *                      This lets clients hit one host and Zookeeper distributes queries and writes automatically
-     *    </li>
-     *  </ol>
-     *  <p>
-     *      An example follows in configuring Solr support for Titan::
-     *      <pre>
-     *          {@code
-     *              import org.apache.commons.configuration.Configuration;
-     *              import static com.thinkaurelius.titan.diskstorage.solr.SolrSearchConstants.*;
-     *              import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-     *
-     *              public class MyClass {
-     *                  private Configuration config;
-     *
-     *                  public MyClass(String mode) {
-     *                      config = new BaseConfiguration()
-     *                      if (mode.equals(SOLR_MODE_HTTP)) {
-     *                          config.set(SOLR_MODE, "http");
-     *                          config.set(HTTP_URL, new String[] { "http://localhost:8983/solr" });
-     *                          config.set(HTTP_CONNECTION_TIMEOUT, 10000); //in milliseconds
-     *                      } else if (mode.equals(SOLR_MODE_CLOUD)) {
-     *                          config.set(SOLR_MODE, SOLR_MODE_CLOUD);
-     *                          //Don't add the protocol: http:// or https:// to the url
-     *                          config.set(SOLR_CLOUD_ZOOKEEPER_URL, "localhost:2181");
-     *                      }
-     *
-     *                      config.set(CORES, new String[] { "a", "b", "c" });
-     *                      //A key/value list where key is the core name and value us the name of the field used in solr to uniquely identify a document.
-     *                      config.set(KEY_FIELD_NAMES, new String[] { "store=document_id" , "store1=document_id" });
-     *                  }
-     *              }
-     *          }
-     *      </pre>
-     *  </p>
-     *  <p>
-     *      Something to keep in mind when using Solr as the {@link com.thinkaurelius.titan.diskstorage.indexing.IndexProvider} for Titan. Solr has many different
-     *      types of indexes for backing your field types defined in the schema. Whenever you use a solr.Textfield type, string values are split up into individual
-     *      tokens. This is usually desirable except in cases where you are searching for a phrase that begins with a specified prefix as in
-     *      the {@link com.thinkaurelius.titan.core.attribute.Text#PREFIX} enumeration that can be used in gremlin searches. In that case, the SolrIndex will use the
-     *      convention of assuming you have defined a field of the same name as the solr.Textfield but will be of type solr.Strfield.
-     *  </p>
-     *  <p>
-     *      For example, let's say you have two documents in Solr with a field called description. One document has a description of "Tomorrow is the world", the other, "World domination".
-     *      If you defined the description field in your schema and set it to type solr.TextField a PREFIX based search like the one below would return both documents:
-     *      <pre>
-     *          {@code
-     *          g.query().has("description",Text.PREFIX,"World")
-     *          }
-     *      </pre>
-     *  </p>
-     *  <p>
-     *      However, if you create a copyField with the name "descriptionString" and set its type to solr.StrField, the PREFIX search defined above would behave as expected
-     *      and only return the document with description "World domination" as its a raw string that is not tokenized in the index.
-     *  </p>
-     * @param config Titan configuration passed in at start up time
-     */
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
         configuration = config;
 
         mode = Mode.parse(config.get(SOLR_MODE));
         dynFields = config.get(DYNAMIC_FIELDS);
-        keyFieldIds = parseKeyFieldsForCores(config);
+        keyFieldIds = parseKeyFieldsForCollections(config);
         maxResults = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
 
@@ -241,17 +176,17 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private Map<String, String> parseKeyFieldsForCores(Configuration config) throws BackendException {
+    private Map<String, String> parseKeyFieldsForCollections(Configuration config) throws BackendException {
         Map<String, String> keyFieldNames = new HashMap<String, String>();
-        String[] coreFieldStatements = config.has(KEY_FIELD_NAMES)?config.get(KEY_FIELD_NAMES):new String[0];
-        for (String coreFieldStatement : coreFieldStatements) {
-            String[] parts = coreFieldStatement.trim().split("=");
+        String[] collectionFieldStatements = config.has(KEY_FIELD_NAMES)?config.get(KEY_FIELD_NAMES):new String[0];
+        for (String collectionFieldStatement : collectionFieldStatements) {
+            String[] parts = collectionFieldStatement.trim().split("=");
             if (parts.length != 2) {
-                throw new PermanentBackendException("Unable to parse the core name / key field name pair. It should be of the format core=field");
+                throw new PermanentBackendException("Unable to parse the collection name / key field name pair. It should be of the format collection=field");
             }
-            String coreName = parts[0];
+            String collectionName = parts[0];
             String keyFieldName = parts[1];
-            keyFieldNames.put(coreName, keyFieldName);
+            keyFieldNames.put(collectionName, keyFieldName);
         }
         return keyFieldNames;
     }
@@ -296,8 +231,8 @@ public class SolrIndex implements IndexProvider {
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         try {
             for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
-                String coreName = stores.getKey();
-                String keyIdField = getKeyFieldId(coreName);
+                String collectionName = stores.getKey();
+                String keyIdField = getKeyFieldId(collectionName);
 
                 List<String> deleteIds = new ArrayList<String>();
                 Collection<SolrInputDocument> changes = new ArrayList<SolrInputDocument>();
@@ -321,7 +256,7 @@ public class SolrIndex implements IndexProvider {
                                     fieldDeletions.remove(indexEntry);
                                 }
                             }
-                            deleteIndividualFieldsFromIndex(coreName, keyIdField, docId, fieldDeletions);
+                            deleteIndividualFieldsFromIndex(collectionName, keyIdField, docId, fieldDeletions);
                         }
                     }
 
@@ -349,8 +284,8 @@ public class SolrIndex implements IndexProvider {
                     }
                 }
 
-                commitDeletes(coreName, deleteIds);
-                commitDocumentChanges(coreName, changes);
+                commitDeletes(collectionName, deleteIds);
+                commitDocumentChanges(collectionName, changes);
             }
         } catch (Exception e) {
             throw storageException(e);
@@ -373,7 +308,7 @@ public class SolrIndex implements IndexProvider {
     public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         try {
             for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
-                final String coreName = stores.getKey();
+                final String collectionName = stores.getKey();
 
                 List<String> deleteIds = new ArrayList<String>();
                 List<SolrInputDocument> newDocuments = new ArrayList<SolrInputDocument>();
@@ -391,7 +326,7 @@ public class SolrIndex implements IndexProvider {
                     }
 
                     newDocuments.add(new SolrInputDocument() {{
-                        setField(getKeyFieldId(coreName), docID);
+                        setField(getKeyFieldId(collectionName), docID);
 
                         for (IndexEntry addition : content) {
                             Object fieldValue = addition.value;
@@ -400,15 +335,15 @@ public class SolrIndex implements IndexProvider {
                     }});
                 }
 
-                commitDeletes(coreName, deleteIds);
-                commitDocumentChanges(coreName, newDocuments);
+                commitDeletes(collectionName, deleteIds);
+                commitDocumentChanges(collectionName, newDocuments);
             }
         } catch (Exception e) {
             throw new TemporaryBackendException("Could not restore Solr index", e);
         }
     }
 
-    private void deleteIndividualFieldsFromIndex(String coreName, String keyIdField, String docId, HashSet<IndexEntry> fieldDeletions) throws SolrServerException, IOException {
+    private void deleteIndividualFieldsFromIndex(String collectionName, String keyIdField, String docId, HashSet<IndexEntry> fieldDeletions) throws SolrServerException, IOException {
         if (fieldDeletions.isEmpty()) return;
 
         Map<String, String> fieldDeletes = new HashMap<String, String>(1) {{ put("set", null); }};
@@ -424,16 +359,16 @@ public class SolrIndex implements IndexProvider {
         if (logger.isTraceEnabled())
             logger.trace("Deleting individual fields [{}] for document {}", sb.toString(), docId);
 
-        UpdateRequest singleDocument = newUpdateRequest(coreName);
+        UpdateRequest singleDocument = newUpdateRequest(collectionName);
         singleDocument.add(doc);
         solrServer.request(singleDocument);
     }
 
-    private void commitDocumentChanges(String coreName, Collection<SolrInputDocument> documents) throws SolrServerException, IOException {
+    private void commitDocumentChanges(String collectionName, Collection<SolrInputDocument> documents) throws SolrServerException, IOException {
         if (documents.size() == 0) return;
 
         try {
-            solrServer.request(newUpdateRequest(coreName).add(documents));
+            solrServer.request(newUpdateRequest(collectionName).add(documents));
         } catch (HttpSolrServer.RemoteSolrException rse) {
             logger.error("Unable to save documents to Solr as one of the shape objects stored were not compatible with Solr.", rse);
             logger.error("Details in failed document batch: ");
@@ -448,18 +383,18 @@ public class SolrIndex implements IndexProvider {
         }
     }
 
-    private void commitDeletes(String coreName, List<String> deleteIds) throws SolrServerException, IOException {
+    private void commitDeletes(String collectionName, List<String> deleteIds) throws SolrServerException, IOException {
         if (deleteIds.size() == 0) return;
-        solrServer.request(newUpdateRequest(coreName).deleteById(deleteIds));
+        solrServer.request(newUpdateRequest(collectionName).deleteById(deleteIds));
     }
 
     @Override
     public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         List<String> result;
-        String core = query.getStore();
-        String keyIdField = getKeyFieldId(core);
-        SolrQuery solrQuery = newQuery(core);
-        String queryFilter = buildQueryFilter(query.getCondition(), informations.get(core));
+        String collection = query.getStore();
+        String keyIdField = getKeyFieldId(collection);
+        SolrQuery solrQuery = newQuery(collection);
+        String queryFilter = buildQueryFilter(query.getCondition(), informations.get(collection));
         solrQuery.addFilterQuery(queryFilter);
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
@@ -503,9 +438,9 @@ public class SolrIndex implements IndexProvider {
     @Override
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         List<RawQuery.Result<String>> result;
-        String core = query.getStore();
-        String keyIdField = getKeyFieldId(core);
-        SolrQuery solrQuery = newQuery(core)
+        String collection = query.getStore();
+        String keyIdField = getKeyFieldId(collection);
+        SolrQuery solrQuery = newQuery(collection)
                                 .addFilterQuery(query.getQuery())
                                 .addField(keyIdField)
                                 .addField("score")
@@ -806,15 +741,15 @@ public class SolrIndex implements IndexProvider {
         return map;
     }
 
-    private static UpdateRequest newUpdateRequest(String core) {
+    private static UpdateRequest newUpdateRequest(String collection) {
         UpdateRequest req = new UpdateRequest();
-        req.setParam(CORE_PARAM, core);
+        req.setParam(COLLECTION_PARAM, collection);
         req.setAction(UpdateRequest.ACTION.COMMIT, true, true);
         return req;
     }
 
-    private static SolrQuery newQuery(String core) {
-        return new SolrQuery().setParam(CORE_PARAM, core).setQuery("*:*");
+    private static SolrQuery newQuery(String collection) {
+        return new SolrQuery().setParam(COLLECTION_PARAM, collection).setQuery("*:*");
     }
 
     private BackendException storageException(Exception solrException) {
