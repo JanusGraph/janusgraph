@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.util;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanProperty;
@@ -43,17 +41,21 @@ public class LoaderScriptWrapper {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(LoaderScriptWrapper.class);
 
+    private static final String TASK_IO_CONTEXT =
+            "org.apache.hadoop.mapreduce.TaskInputOutputContext";
+
     private static final DefaultImportCustomizerProvider importCustomizer =
             new DefaultImportCustomizerProvider(
                     ImmutableSet.of( /* nonstatic */
                             FaunusVertex.class.getCanonicalName(),
                             FaunusEdge.class.getCanonicalName(),
-                            Mapper.class.getCanonicalName(),
                             FaunusProperty.class.getCanonicalName(),
                             TitanGraph.class.getCanonicalName(),
                             TitanVertex.class.getCanonicalName(),
                             TitanEdge.class.getCanonicalName(),
-                            TitanProperty.class.getCanonicalName()),
+                            TitanProperty.class.getCanonicalName(),
+                            Logger.class.getCanonicalName(),
+                            TASK_IO_CONTEXT),
                     ImmutableSet.<String>of() /* static */);
 
     public enum Counters {
@@ -77,31 +79,31 @@ public class LoaderScriptWrapper {
     private final CompiledScript vpropMethod;
     private final CompiledScript edgeMethod;
 
-    private static final ImmutableMap<String, Class<?>> vertexArguments = ImmutableMap.of(
-            "faunusVertex", FaunusVertex.class,
-            "graph", TitanGraph.class,
-            "context", Mapper.Context.class,
-            "log", Logger.class
+    private static final ImmutableMap<String, String> vertexArguments = ImmutableMap.of(
+            "faunusVertex", FaunusVertex.class.getCanonicalName(),
+            "graph", TitanGraph.class.getCanonicalName(),
+            "context", TASK_IO_CONTEXT,
+            "log", Logger.class.getCanonicalName()
     );
 
-    private static final ImmutableMap<String, Class<?>> vpropArguments = ImmutableMap.of(
-            "faunusProperty", TitanProperty.class,
-            "vertex", TitanVertex.class,
-            "graph", TitanGraph.class,
-            "context", Mapper.Context.class,
-            "log", Logger.class
+    private static final ImmutableMap<String, String> vpropArguments = ImmutableMap.of(
+            "faunusProperty", TitanProperty.class.getCanonicalName(),
+            "vertex", TitanVertex.class.getCanonicalName(),
+            "graph", TitanGraph.class.getCanonicalName(),
+            "context", TASK_IO_CONTEXT,
+            "log", Logger.class.getCanonicalName()
     );
 
-    private static final ImmutableMap<String, Class<?>> edgeArguments;
+    private static final ImmutableMap<String, String> edgeArguments;
 
     static {
-        ImmutableMap.Builder<String, Class<?>> b = ImmutableMap.builder();
-        b.put("faunusEdge", FaunusEdge.class);
-        b.put("inVertex", TitanVertex.class);
-        b.put("outVertex", TitanVertex.class);
-        b.put("graph", TitanGraph.class);
-        b.put("context", Mapper.Context.class);
-        b.put("log", Logger.class);
+        ImmutableMap.Builder<String, String> b = ImmutableMap.builder();
+        b.put("faunusEdge", FaunusEdge.class.getCanonicalName());
+        b.put("inVertex", TitanVertex.class.getCanonicalName());
+        b.put("outVertex", TitanVertex.class.getCanonicalName());
+        b.put("graph", TitanGraph.class.getCanonicalName());
+        b.put("context", TASK_IO_CONTEXT);
+        b.put("log", Logger.class.getCanonicalName());
         edgeArguments = b.build();
     }
 
@@ -218,7 +220,7 @@ public class LoaderScriptWrapper {
         return getMethod(script, loaderEngine, EDGE_METHOD_NAME, edgeArguments);
     }
 
-    private static CompiledScript getMethod(String script, GremlinGroovyScriptEngine loaderEngine, String methodName, Map<String, Class<?>> args) {
+    private static CompiledScript getMethod(String script, GremlinGroovyScriptEngine loaderEngine, String methodName, Map<String, String> args) {
         CompiledScript compiled = null;
 
         // metaString will contain the user's script, a newline, and then check whether
@@ -231,12 +233,7 @@ public class LoaderScriptWrapper {
         StringBuilder callString = new StringBuilder();
         callString.append(metaString.toString());
 
-        String argTypeString = Joiner.on(",").join(Iterables.transform(args.values(), new Function<Class<?>, String>() {
-            @Override
-            public String apply(Class<?> input) {
-                return input.getCanonicalName() + ".class";
-            }
-        }));
+        String argTypeString = Joiner.on(",").join(args.values());
 
         metaString.append("\n");
         metaString.append(String.format("metaClass.getMetaMethod('%s', %s) != null", methodName, argTypeString));

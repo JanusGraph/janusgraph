@@ -323,7 +323,7 @@ Incremental Loading Method Contracts
 
 When `loader-script-file` is set, TitanOutputFormat checks the script for each of the following methods:
   
-`getOrCreateVertex(FaunusVertex, TitanGraph, Mapper.Context, Logger)`::
+`getOrCreateVertex(FaunusVertex, TitanGraph, TaskInputOutputContext, Logger)`::
 The first parameter (of type `FaunusVertex`) is the vertex which Titan-Hadoop is attempting to write to `TitanGraph`.  This method must either retrieve an existing `Vertex` from the `TitanGraph` parameter which corresponds to the `FaunusVertex` parameter or a new `Vertex` in the `TitanGraph` parameter if no existing vertices correspond to the `FaunusVertex` parameter.
 +
 This method must return an object of type `TitanVertex`.
@@ -332,14 +332,14 @@ If this method throws an exception or returns null, then Titan-Hadoop may drop t
 +
 The last two parameters are conveniences to support Hadoop counter updates and logging (at the implementation's option).  The last two parameters are not required to implement the method contract and can safely be ignored without affecting correctness.
 
-`getOrCreateVertexProperty(TitanProperty, TitanVertex, TitanGraph, Mapper.Context, Logger)`::
+`getOrCreateVertexProperty(TitanProperty, TitanVertex, TitanGraph, TaskInputOutputContext, Logger)`::
 The first parameter (of type `TitanProperty`) is a vertex property which Titan-Hadoop is attempting to set on the second parameter (of type `TitanVertex`).  The vertex belongs to the `TitanGraph` parameter.  If the previous method was defined, then it will be the same TitanVertex object returned from the previous method.  However, the property parameter is not from the `TitanGraph`.  It's from the Titan-Hadoop job input.  This method is responsible for checking whether the `TitanVertex` parameter already has a property corresponding to the `TitanProperty` parameter, creating said property on the `TitanVertex` parameter if necessary.
 +
 Implementations should return the value associated with the property, but this is not required.  The return value of this method is currently ignored.
 +
 The last two parameters are conveniences to support Hadoop counter updates and logging (at the implementation's option).  The last two parameters are not required to implement the method contract and can safely be ignored without affecting correctness.
 
-`getOrCreateEdge(FaunusEdge, TitanVertex, TitanVertex, TitanGraph, Mapper.Context, Logger)`::
+`getOrCreateEdge(FaunusEdge, TitanVertex, TitanVertex, TitanGraph, TaskInputOutputContext, Logger)`::
 The first parameter is an edge from the Titan-Hadoop job input.  The second and third parameters are the out/tail and in/head vertices of the edge.  Both the second and third parameters are vertices belonging to the fourth parameter of type `TitanGraph`.  This method must either retrieve an existing edge or create a new edge corresponding to the first parameter.
 +
 This method must return an object of type `TitanEdge`.

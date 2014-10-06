@@ -1,4 +1,4 @@
-def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
+def TitanVertex getOrCreateVertex(FaunusVertex faunusVertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
     String uniqueKey = "name";
     Object uniqueValue = faunusVertex.getProperty(uniqueKey);
     Vertex titanVertex;
@@ -16,7 +16,7 @@ def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
     return titanVertex;
 }
 
-def TitanEdge getOrCreateEdge(faunusEdge, inVertex, outVertex, graph, context, log) {
+def TitanEdge getOrCreateEdge(FaunusEdge faunusEdge, TitanVertex inVertex, TitanVertex outVertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
     final String label = faunusEdge.getLabel();
 
     log.debug("outVertex:{} label:{} inVertex:{}", outVertex, label, inVertex);
@@ -28,7 +28,7 @@ def TitanEdge getOrCreateEdge(faunusEdge, inVertex, outVertex, graph, context, l
     return titanEdge;
 }
 
-def void getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) {
+def void getOrCreateVertexProperty(TitanProperty faunusProperty, TitanVertex vertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
 
     final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.getPropertyKey();
     if (pkey.getCardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
