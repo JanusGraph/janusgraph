@@ -17,6 +17,8 @@ import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The backend agnostic Titan graph reader for pulling a graph of Titan and into Hadoop.
@@ -32,6 +34,9 @@ public class TitanHadoopGraph {
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
     private final boolean verifyVertexExistence = false;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanHadoopGraph.class);
 
     public TitanHadoopGraph(final TitanHadoopSetup setup) {
         this.setup = setup;
@@ -87,10 +92,14 @@ public class TitanHadoopGraph {
                         assert next.value != null;
                         RelationType rt = typeManager.getExistingRelationType(next.key);
                         if (rt.isPropertyKey()) {
-                            frel.setProperty((PropertyKey)vertex.getTypeManager().getPropertyKey(rt.getName()),next.value);
+                            PropertyKey pkey = (PropertyKey)vertex.getTypeManager().getPropertyKey(rt.getName());
+                            log.debug("Retrieved key {} for name \"{}\"", pkey, rt.getName());
+                            frel.setProperty(pkey, next.value);
                         } else {
                             assert next.value instanceof Long;
-                            frel.setProperty((EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.getName()),new FaunusVertex(configuration,(Long)next.value));
+                            EdgeLabel el = (EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.getName());
+                            log.debug("Retrieved ege label {} for name \"{}\"", el, rt.getName());
+                            frel.setProperty(el, new FaunusVertex(configuration,(Long)next.value));
                         }
                     }
                     for (TitanRelation rel : frel.query().queryAll().relations())
