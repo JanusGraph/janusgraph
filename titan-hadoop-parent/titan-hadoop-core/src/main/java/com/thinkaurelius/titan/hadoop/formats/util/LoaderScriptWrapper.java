@@ -48,11 +48,12 @@ public class LoaderScriptWrapper {
                     ImmutableSet.of( /* nonstatic */
                             FaunusVertex.class.getCanonicalName(),
                             FaunusEdge.class.getCanonicalName(),
-                            TitanGraph.class.getCanonicalName(),
-                            Mapper.Context.class.getCanonicalName(),
+                            Mapper.class.getCanonicalName(),
                             FaunusProperty.class.getCanonicalName(),
+                            TitanGraph.class.getCanonicalName(),
                             TitanVertex.class.getCanonicalName(),
-                            TitanEdge.class.getCanonicalName()),
+                            TitanEdge.class.getCanonicalName(),
+                            TitanProperty.class.getCanonicalName()),
                     ImmutableSet.<String>of() /* static */);
 
     public enum Counters {
