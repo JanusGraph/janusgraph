@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -74,58 +75,61 @@ public class SolrIndex implements IndexProvider {
 
     }
 
-    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(INDEX_NS,"mode",
+    public static final ConfigNamespace SOLR_NS =
+            new ConfigNamespace(INDEX_NS, "solr", "Solr index configuration");
+
+    public static final ConfigOption<String> SOLR_MODE = new ConfigOption<String>(SOLR_NS,"mode",
             "The operation mode for Solr which is either via HTTP (`http`) or using SolrCloud (`cloud`)",
             ConfigOption.Type.GLOBAL_OFFLINE, "cloud");
 
-    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<Boolean>(INDEX_NS,"dyn-fields",
+    public static final ConfigOption<Boolean> DYNAMIC_FIELDS = new ConfigOption<Boolean>(SOLR_NS,"dyn-fields",
             "Whether to use dynamic fields (which appends the data type to the field name). If dynamic fields is disabled" +
                     "the user must map field names and define them explicitly in the schema.",
             ConfigOption.Type.GLOBAL_OFFLINE, true);
 
-    public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(INDEX_NS,"key-field-names",
+    public static final ConfigOption<String[]> KEY_FIELD_NAMES = new ConfigOption<String[]>(SOLR_NS,"key-field-names",
             "Field name that uniquely identifies each document in Solr. Must be specified as a list of `collection=field`.",
             ConfigOption.Type.GLOBAL, String[].class);
 
-    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<String>(INDEX_NS,"ttl_field",
+    public static final ConfigOption<String> TTL_FIELD = new ConfigOption<String>(SOLR_NS,"ttl_field",
             "Name of the TTL field for Solr collections.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
-    public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(INDEX_NS,"num-shards",
+    public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(SOLR_NS,"num-shards",
             "Number of shards",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<Integer>(INDEX_NS,"max-shards-per-node",
+    public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<Integer>(SOLR_NS,"max-shards-per-node",
             "Maximum number of shards per node",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(INDEX_NS,"replication-factor",
+    public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(SOLR_NS,"replication-factor",
             "Replication factor",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(INDEX_NS,"zookeeper-url",
+    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(SOLR_NS,"zookeeper-url",
             "Http connection max connections per host",
             ConfigOption.Type.MASKABLE, "localhost:2181");
 
     /** HTTP Configuration */
 
-    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<String[]>(INDEX_NS,"http-urls",
+    public static final ConfigOption<String[]> HTTP_URLS = new ConfigOption<String[]>(SOLR_NS,"http-urls",
             "List of URLs to use to connect to Solr Servers (LBSolrServer is used), don't add core or collection name to the URL.",
             ConfigOption.Type.MASKABLE, new String[] { "http://localhost:8983/solr" });
 
-    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<Integer>(INDEX_NS,"http-connection-timeout",
+    public static final ConfigOption<Integer> HTTP_CONNECTION_TIMEOUT = new ConfigOption<Integer>(SOLR_NS,"http-connection-timeout",
             "Solr HTTP connection timeout.",
             ConfigOption.Type.MASKABLE, 5000);
 
-    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<Boolean>(INDEX_NS,"http-compression",
+    public static final ConfigOption<Boolean> HTTP_ALLOW_COMPRESSION = new ConfigOption<Boolean>(SOLR_NS,"http-compression",
             "Enable/disable compression on the HTTP connections made to Solr.",
             ConfigOption.Type.MASKABLE, false);
 
-    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(INDEX_NS,"http-max-per-host",
+    public static final ConfigOption<Integer> HTTP_MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(SOLR_NS,"http-max-per-host",
             "Maximum number of HTTP connections per Solr host.",
             ConfigOption.Type.MASKABLE, 20);
 
-    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<Integer>(INDEX_NS,"http-max",
+    public static final ConfigOption<Integer> HTTP_GLOBAL_MAX_CONNECTIONS = new ConfigOption<Integer>(SOLR_NS,"http-max",
             "Maximum number of HTTP connections in total to all Solr servers.",
             ConfigOption.Type.MASKABLE, 100);
 
