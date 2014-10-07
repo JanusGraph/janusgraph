@@ -101,8 +101,8 @@
         <test.extra.jvm.opts />
         <test.skip.default>false</test.skip.default>
         <top.level.basedir>${basedir}</top.level.basedir>
-        <compiler.source>1.6</compiler.source>
-        <compiler.target>1.7</compiler.target>
+        <compiler.source>1.8</compiler.source>
+        <compiler.target>1.8</compiler.target>
         <compiler.args />
     </properties>
     <modules>
@@ -191,7 +191,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.5.1</version>
+                    <version>3.1</version>
                     <configuration>
                         <source>${compiler.source}</source>
                         <target>${compiler.target}</target>

@@ -62,7 +62,7 @@
         <dependency>
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
+            <version>1.10</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -94,7 +94,7 @@
         <dependency>
             <groupId>com.esotericsoftware.kryo</groupId>
             <artifactId>kryo</artifactId>
-            <version>2.22</version>
+            <version>2.23.0</version>
             <!--<classifier>shaded</classifier>-->
             
             <!--

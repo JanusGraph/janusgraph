@@ -2,10 +2,10 @@ package com.thinkaurelius.titan.graphdb.query;
 
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
-import com.tinkerpop.blueprints.Compare;
-import com.tinkerpop.blueprints.Contains;
-import com.tinkerpop.blueprints.Predicate;
-import com.tinkerpop.blueprints.Query;
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Contains;
+
+import java.util.function.BiPredicate;
 
 /**
  * Titan's extension of Blueprint's {@link Predicate} interface. Contains some custom methods that Titan needs for
@@ -15,7 +15,7 @@ import com.tinkerpop.blueprints.Query;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanPredicate extends Predicate {
+public interface TitanPredicate extends BiPredicate<Object, Object> {
 
     /**
      * Whether the given condition is a valid condition for this predicate.
@@ -57,7 +57,7 @@ public interface TitanPredicate extends Predicate {
      */
     public boolean isQNF();
 
-    @Override
+
     public boolean evaluate(Object value, Object condition);
 
 
@@ -70,35 +70,25 @@ public interface TitanPredicate extends Predicate {
          * @return A TitanPredicate equivalent to the given predicate
          * @throws IllegalArgumentException if the given Predicate is unknown
          */
-        public static final TitanPredicate convert(Predicate p) {
-            if (p instanceof TitanPredicate) return (TitanPredicate)p;
-            else if (p instanceof Query.Compare) {
-                Query.Compare comp = (Query.Compare)p;
-                switch(comp) {
-                    case EQUAL: return Cmp.EQUAL;
-                    case NOT_EQUAL: return Cmp.NOT_EQUAL;
-                    case GREATER_THAN: return Cmp.GREATER_THAN;
-                    case GREATER_THAN_EQUAL: return Cmp.GREATER_THAN_EQUAL;
-                    case LESS_THAN: return Cmp.LESS_THAN;
-                    case LESS_THAN_EQUAL: return Cmp.LESS_THAN_EQUAL;
-                    default: throw new IllegalArgumentException("Unexpected comparator: " + comp);
-                }
+        public static final TitanPredicate convert(BiPredicate p) {
+            if (p instanceof TitanPredicate) {
+                return (TitanPredicate)p;
             } else if (p instanceof Compare) {
                 Compare comp = (Compare)p;
                 switch(comp) {
-                    case EQUAL: return Cmp.EQUAL;
-                    case NOT_EQUAL: return Cmp.NOT_EQUAL;
-                    case GREATER_THAN: return Cmp.GREATER_THAN;
-                    case GREATER_THAN_EQUAL: return Cmp.GREATER_THAN_EQUAL;
-                    case LESS_THAN: return Cmp.LESS_THAN;
-                    case LESS_THAN_EQUAL: return Cmp.LESS_THAN_EQUAL;
+                    case eq: return Cmp.EQUAL;
+                    case neq: return Cmp.NOT_EQUAL;
+                    case gt: return Cmp.GREATER_THAN;
+                    case gte: return Cmp.GREATER_THAN_EQUAL;
+                    case lt: return Cmp.LESS_THAN;
+                    case lte: return Cmp.LESS_THAN_EQUAL;
                     default: throw new IllegalArgumentException("Unexpected comparator: " + comp);
                 }
             } else if (p instanceof Contains) {
                 Contains con = (Contains)p;
                 switch (con) {
-                    case IN: return Contain.IN;
-                    case NOT_IN: return Contain.NOT_IN;
+                    case in: return Contain.IN;
+                    case nin: return Contain.NOT_IN;
                     default: throw new IllegalArgumentException("Unexpected container: " + con);
 
                 }
