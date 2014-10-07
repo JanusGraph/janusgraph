@@ -113,6 +113,51 @@ Connection Problems
 Irrespective of the operation mode, a Solr instance or a cluster of Solr instances must be running and accessible from the Titan instance(s) in order for Titan to use Solr as an indexing backend. Check that the Solr cluster is running correctly and that it is visible and accessible over the network (or locally) from the Titan instances.
 
 
+JTS ClassNotFoundException with Geo Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Solr relies on Spatial4j for geo processing.  Spatial4j declares an optional dependency on JTS ("JTS Topology Suite").  JTS is required for some geo field definition and query functionality.  If the JTS jar is not on the Solr daemon's classpath and a field in schema.xml uses a geo type, then Solr may throw a ClassNotFoundException on one of the missing JTS classes.  This typically appears when invoking `CREATE` in the https://wiki.apache.org/solr/CoreAdmin[Solr CoreAdmin API].  The exception appears in slightly different formats on the client and server sides, although the root cause is identical.
+
+Here's a representative example from a Solr server log:
+
+[source,text]
+----
+ERROR [http-8983-exec-5] 2014-10-07 02:54:06,665 SolrCoreResourceManager.java (line 344) com/vividsolutions/jts/geom/Geometry
+java.lang.NoClassDefFoundError: com/vividsolutions/jts/geom/Geometry
+        at com.spatial4j.core.context.jts.JtsSpatialContextFactory.newSpatialContext(JtsSpatialContextFactory.java:30)
+        at com.spatial4j.core.context.SpatialContextFactory.makeSpatialContext(SpatialContextFactory.java:83)
+        at org.apache.solr.schema.AbstractSpatialFieldType.init(AbstractSpatialFieldType.java:95)
+        at org.apache.solr.schema.AbstractSpatialPrefixTreeFieldType.init(AbstractSpatialPrefixTreeFieldType.java:43)
+        at org.apache.solr.schema.SpatialRecursivePrefixTreeFieldType.init(SpatialRecursivePrefixTreeFieldType.java:37)
+        at org.apache.solr.schema.FieldType.setArgs(FieldType.java:164)
+        at org.apache.solr.schema.FieldTypePluginLoader.init(FieldTypePluginLoader.java:141)
+        at org.apache.solr.schema.FieldTypePluginLoader.init(FieldTypePluginLoader.java:43)
+        at org.apache.solr.util.plugin.AbstractPluginLoader.load(AbstractPluginLoader.java:190)
+        at org.apache.solr.schema.IndexSchema.readSchema(IndexSchema.java:470)
+        at com.datastax.bdp.search.solr.CassandraIndexSchema.readSchema(CassandraIndexSchema.java:72)
+        at org.apache.solr.schema.IndexSchema.<init>(IndexSchema.java:168)
+        at com.datastax.bdp.search.solr.CassandraIndexSchema.<init>(CassandraIndexSchema.java:54)
+        at com.datastax.bdp.search.solr.core.CassandraCoreContainer.create(CassandraCoreContainer.java:210)
+        at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:256)
+        at com.datastax.bdp.search.solr.handler.admin.CassandraCoreAdminHandler.handleCreateAction(CassandraCoreAdminHandler.java:117)
+        ...
+----
+
+Here's what normally appears in the output of the client that issued the associated `CREATE` command to the CoreAdmin API:
+
+[source,text]
+----
+org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
+        at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:345)
+        at com.datastax.bdp.search.solr.handler.admin.CassandraCoreAdminHandler.handleCreateAction(CassandraCoreAdminHandler.java:117)
+        at org.apache.solr.handler.admin.CoreAdminHandler.handleRequestBody(CoreAdminHandler.java:152)
+        ...
+----
+
+This is resolved by adding the JTS jar to the classpath of the Solr server.
+
+To determine the ideal JTS version, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
+
 Advanced Solr Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
