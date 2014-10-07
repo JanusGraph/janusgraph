@@ -87,7 +87,7 @@ public class LoaderScriptWrapper {
     );
 
     private static final ImmutableMap<String, String> vpropArguments = ImmutableMap.of(
-            "faunusProperty", TitanProperty.class.getCanonicalName(),
+            "titanProperty", TitanProperty.class.getCanonicalName(),
             "vertex", TitanVertex.class.getCanonicalName(),
             "graph", TitanGraph.class.getCanonicalName(),
             "context", TASK_IO_CONTEXT,
@@ -155,9 +155,9 @@ public class LoaderScriptWrapper {
         }
     }
 
-    public void getVProp(TitanProperty faunusProperty, TitanVertex vertex, TitanGraph graph, Mapper.Context context) {
+    public void getVProp(TitanProperty titanProperty, TitanVertex vertex, TitanGraph graph, Mapper.Context context) {
         Bindings bindings = new SimpleBindings();
-        bindings.put("faunusProperty", faunusProperty);
+        bindings.put("titanProperty", titanProperty);
         bindings.put("vertex", vertex);
         bindings.put("graph", graph);
         bindings.put("context", context);
