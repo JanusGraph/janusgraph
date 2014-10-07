@@ -194,7 +194,7 @@ Start DSE Cassandra and Solr in a single background daemon:
 dse cassandra -s -Ddse.solr.data.dir="$DSE_HOME"/dse-data/solr
 ----
 
-The last command will write information some startup information to the console and to the logfile path `log4j.appender.R.File` configured in `$DSE_HOME/resources/cassandra/conf/log4j-server.properties`.
+The previous command will write some startup information to the console and to the logfile path `log4j.appender.R.File` configured in `$DSE_HOME/resources/cassandra/conf/log4j-server.properties`.
 
 Once DSE with Cassandra and Solr has started normally, check the cluster health with `nodetool status`.  A single-instance ring should show one node with flags *U*p and *N*ormal:
 
@@ -246,16 +246,17 @@ CORE_NAME=titan.solr1
 # Where to upload collection configuration and send CoreAdmin requests.
 SOLR_HOST=localhost:8983
 
-# The value of index.[X].solr.http-urls in Titan's config properties
-# must match $SOLR_HOST and $CORE_NAME.  For example, given the
+# The value of index.[X].solr.http-urls in Titan's config file
+# should match $SOLR_HOST and $CORE_NAME.  For example, given the
 # $CORE_NAME and $SOLR_HOST values above, Titan's config file would
-# contain:
+# contain (assuming "search" is the desired index alias):
 #
 # index.search.solr.http-urls=http://localhost:8983/solr/titan.solr1
 #
-# (Assuming "search" is the desired index alias).
+# The stock Titan config file conf/titan-cassandra-solr.properties
+# ships with this http-urls value.
 
-# Upload Solr config files to DSE Solr
+# Upload Solr config files to DSE Search daemon
 for xml in conf/solr/{solrconfig,schema,elevate}.xml ; do
     curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$xml" \
       --data-binary @"$xml" -H 'Content-type:text/xml; charset=utf-8'
