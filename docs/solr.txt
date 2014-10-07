@@ -65,6 +65,8 @@ Dynamic Field Definition
 
 By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/Dynamic+Fields[Dynamic Fields] feature to define the field types for all indexed keys. This requires no extra configuration when adding property keys to a mixed index backed by Solr and provides better performance than schemaless mode.
 
+Titan assumes the following dynamic field tags are defined in the backing Solr collection's schema.xml file:
+
 [source,xml]
 ----
 <dynamicField name="*_i"    type="sint"     indexed="true"  stored="true"/>
@@ -77,6 +79,8 @@ By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/D
 <dynamicField name="*_dt"   type="date"     indexed="true"  stored="true"/>
 <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
 ----
+
+In Titan's default configuration, property key names do not have to end with the type-appropriate suffix to take advantage of Solr's dynamic field feature.  Titan generates the Solr field name from the property key name by encoding the property key definition's numeric identifier and the type-appropriate suffix.  This means that Titan uses synthetic field names with type-appropriate suffixes behind the scenes, regardless of the property key names defined and used by application code using Titan.  This field name mapping can be overridden through non-default configuration.  That's described in the next section. 
 
 Manual Field Definition
 +++++++++++++++++++++++
