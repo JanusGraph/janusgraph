@@ -19,5 +19,7 @@ include::directindex.txt[]
 
 include::elasticsearch.txt[]
 
+include::solr.txt[]
+
 include::lucene.txt[]
 
