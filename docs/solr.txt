@@ -161,12 +161,140 @@ To determine the ideal JTS version, first check the version of Spatial4j in use 
 Advanced Solr Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+[[dse-search]]
 DSE Search
 ^^^^^^^^^^
 
-tbw
+This section covers installation and configuration of Titan with DataStax Enterprise (DSE) Search.  There are multiple ways to install DSE, but this section focuses on DSE's binary tarball install option on Linux.  Most of the steps in this section can be generalized to the other install options for DSE.
+
+Install DataStax Enterprise as directed by the page http://www.datastax.com/documentation/datastax_enterprise/4.5/datastax_enterprise/install/installTARdse.html[Installing DataStax Enterprise using the binary tarball].
+
+Export `DSE_HOME` and append to `PATH` in your shell environment.  Here's an example using Bash syntax:
+
+[source,bourne]
+export DSE_HOME=/path/to/dse-version.number
+export PATH="$DSE_HOME"/bin:"$PATH"
+
+Install JTS for Solr.  The appropriate version varies with the Spatial4j version.  As of DSE 4.5.2, the appropriate version is 1.13.
+
+[source,bourne]
+----
+cd $DSE_HOME/resources/solr/lib
+curl -O 'http://central.maven.org/maven2/com/vividsolutions/jts/1.13/jts-1.13.jar'
+----
+
+Start DSE Cassandra and Solr in a single background daemon:
+
+[source,bourne]
+----
+# The "dse-data" path below was chosen to match the 
+# "Installing DataStax Enterprise using the binary tarball"
+# documentation page from DataStax.  The exact path is not
+# significant.
+dse cassandra -s -Ddse.solr.data.dir="$DSE_HOME"/dse-data/solr
+----
+
+The last command will write information some startup information to the console and to the logfile path `log4j.appender.R.File` configured in `$DSE_HOME/resources/cassandra/conf/log4j-server.properties`.
+
+Once DSE with Cassandra and Solr has started normally, check the cluster health with `nodetool status`.  A single-instance ring should show one node with flags *U*p and *N*ormal:
+
+[source,bourne]
+----
+nodetool status
+Note: Ownership information does not include topology; for complete information, specify a keyspace
+Datacenter: Solr
+================
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address    Load       Owns   Host ID                               Token                                    Rack
+UN  127.0.0.1  99.89 KB   100.0%  5484ef7b-ebce-4560-80f0-cbdcd9e9f496  -7317038863489909889                     rack1
+----
+
+Next, switch to `gremlin.sh` and open a Titan database against the DSE instance.  This will create Titan's keyspace and column families.
+[source,gremlin]
+----
+cd $TITAN_HOME
+bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin> g = TitanFactory.open('conf/titan-cassandra-solr.properties')
+==>titangraph[cassandrathrift:[127.0.0.1]]
+gremlin>
+----
+
+Keep this `gremlin.sh` shell open.  We'll take a break now to install
+a Solr core.  Then we'll come back to this shell to load some sample
+data.
+
+Next, upload configuration files for Titan's Solr collection, then
+create the core in DSE:
+
+[source,bourne]
+----
+# Change to the directory where Titan was extracted.  Later commands
+# use relative paths to the Solr config files shipped with the Titan
+# distribution.
+cd $TITAN_HOME
+
+# The name must be URL safe and should contain one dot/full-stop
+# character. The part of the name after the dot must not conflict with
+# any of Titan's internal CF names.  Starting the part after the dot
+# "solr" will avoid a conflict with Titan's internal CF names.
+CORE_NAME=titan.solr1
+# Where to upload collection configuration and send CoreAdmin requests.
+SOLR_HOST=localhost:8983
+
+# The value of index.[X].solr.http-urls in Titan's config properties
+# must match $SOLR_HOST and $CORE_NAME.  For example, given the
+# $CORE_NAME and $SOLR_HOST values above, Titan's config file would
+# contain:
+#
+# index.search.solr.http-urls=http://localhost:8983/solr/titan.solr1
+#
+# (Assuming "search" is the desired index alias).
+
+# Upload Solr config files to DSE Solr
+for xml in conf/solr/{solrconfig,schema,elevate}.xml ; do
+    curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$xml" \
+      --data-binary @"$xml" -H 'Content-type:text/xml; charset=utf-8'
+done
+for txt in conf/solr/{protwords,stopwords,synonyms}.txt ; do
+    curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$txt" \
+      --data-binary @"$txt" -H 'Content-type:text/plain; charset=utf-8'
+done
+sleep 5
+
+# Create core using the Solr config files just uploaded above
+curl "http://"$SOLR_HOST"/solr/admin/cores?action=CREATE&name=$CORE_NAME"
+sleep 5
+
+# Retrieve and print the status of the core we just created
+curl "http://localhost:8983/solr/admin/cores?action=STATUS&core=$CORE_NAME"
+----
+
+Now the Titan database and backing Solr core are ready for use.  We
+can test it out with the <<getting-started,Graph of the Gods>>
+dataset.  Picking up the gremlin.sh session started above:
+
+[source,gremlin]
+----
+// Assuming g = TitanFactory.open('conf/titan-cassandra-solr.properties')...
+gremlin> GraphOfTheGodsFactory.load(g)
+==>null
+----
+
+Now we can run any of the queries described in <<getting-started>>.
+Queries involving text and geo predicates will be served by Solr.  For
+more verbose reporting from Titan and the Solr client, run `gremlin.sh
+-l DEBUG` and issue some index-backed queries.
+
+///////////
 
 Hadoop Search
 ^^^^^^^^^^^^^
 
 tbw
+
+///////////
