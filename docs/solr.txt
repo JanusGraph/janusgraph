@@ -78,8 +78,8 @@ By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/D
 <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
 ----
 
-Dynamic Field Definition
-++++++++++++++++++++++++
+Manual Field Definition
++++++++++++++++++++++++
 
 If the user would rather manually define the field types for each of the indexed fields in a collection, the configuration option `dyn-fields` needs to be disabled. It is important that the field for each indexed property key is defined before the property key is added to the index.
 
