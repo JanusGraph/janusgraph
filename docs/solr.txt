@@ -81,7 +81,7 @@ By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/D
 Manual Field Definition
 +++++++++++++++++++++++
 
-If the user would rather manually define the field types for each of the indexed fields in a collection, the configuration option `dyn-fields` needs to be disabled. It is important that the field for each indexed property key is defined before the property key is added to the index.
+If the user would rather manually define the field types for each of the indexed fields in a collection, the configuration option `dyn-fields` needs to be disabled.  It is important that the field for each indexed property key is defined in the backing Solr schema before the property key is added to the index.
 
 In this scenario, it is advisable to enable explicit property key name to field mapping in order to fix the field names for their explicit definition. This can be achieved in one of two ways:
 
