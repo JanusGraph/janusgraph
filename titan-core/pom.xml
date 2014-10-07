@@ -57,7 +57,6 @@
         <dependency>
             <groupId>com.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
-            <version>0.4.1</version>
         </dependency>
         <dependency>
             <groupId>commons-collections</groupId>

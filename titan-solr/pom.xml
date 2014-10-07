@@ -67,6 +67,10 @@
                     <groupId>org.apache.zookeeper</groupId>
                     <artifactId>zookeeper</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.spatial4j</groupId>
+                    <artifactId>spatial4j</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -83,7 +87,6 @@
         <dependency>
             <groupId>com.spatial4j</groupId>
             <artifactId>spatial4j</artifactId>
-            <version>0.4.1</version>
         </dependency>
         <dependency>
             <groupId>com.vividsolutions</groupId>
