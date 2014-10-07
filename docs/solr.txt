@@ -1,0 +1,123 @@
+[[solr]]
+Solr
+----
+
+
+[quote,'http://lucene.apache.org/solr/[Solr Homepage]']
+Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project. Solr is a standalone enterprise search server with a REST-like API. Solr is highly reliable, scalable and fault tolerant, providing distributed indexing, replication and load-balanced querying, automated failover and recovery, centralized configuration and more.
+
+Titan supports http://lucene.apache.org/solr/[Solr] as an index backend.  Here are some of the Solr features supported by Titan:
+
+* *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
+* *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given circle. Only supports points for indexing and circles for querying.
+* *Numeric Range*: Supports all numeric comparisons in `Compare`.
+* *TTL*: Supports automatically expiring indexed elements.
+
+Please see <<version-compat>> for details on what versions of Solr will work with Titan.
+
+Solr Configuration Overview
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Connecting to Solr
+^^^^^^^^^^^^^^^^^^
+
+Titan supports two different modes of connecting to a running Solr instance or cluster of instances: SolrCloud and HTTP. The desired connection mode is configured via the parameter `mode` which must be set to either `http` or `cloud`, the latter being the default value.
+
+Connecting to SolrCloud
++++++++++++++++++++++++
+
+When connecting to a SolrCloud enabled cluster by setting the `mode` equal to `cloud`, the Zookeeper URL (and optionally port) must be specified so that Titan can discover and interact with the Solr cluster.
+
+[source,properties]
+----
+index.search.backend=solr
+index.search.solr.mode=cloud
+index.search.solr.zookeeper-url=localhost:2181
+----
+
+A number of additional configuration options pertaining to the creation of new collections (which is only supported in SolrCloud operation mode) can be configured to control sharding behavior among other things. Refer to the <<titan-config-ref>> for a complete listing of those options.
+
+
+Connecting via HTTP
++++++++++++++++++++
+
+When connecting to Solr via HTTP by setting the `mode` equal to `http` a single or list of URLs for the Solr instances must be provided.
+
+[source,properties]
+----
+index.search.backend=solr
+index.search.solr.mode=http
+index.search.solr.http-urls=http://localhost:8983/solr
+----
+
+Additional configuration options for controlling the maximum number of connections, connection timeout and transmission compression are available for the HTTP mode. Refer to the <<titan-config-ref>> for a complete listing of those options.
+
+Solr Collections
+^^^^^^^^^^^^^^^^
+
+Collection Initialization
++++++++++++++++++++++++++
+
+It is required that a collection is initialized in Solr before it can be used by Titan. Initialization refers to definition of a schema (e.g. provided as a `schema.xml` file), and other configurations for a particular collection. When a <<index-mixed>> is defined, a unique name is assigned to that index. For each such index backed by a Solr indexing backend, a collection with that same name must be initialized in Solr before the index can be used in Titan.
+
+Dynamic Field Definition
+++++++++++++++++++++++++
+
+By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/Dynamic+Fields[Dynamic Fields] feature to define the field types for all indexed keys. This requires no extra configuration when adding property keys to a mixed index backed by Solr and provides better performance than schemaless mode.
+
+[source,xml]
+----
+<dynamicField name="*_i"    type="sint"     indexed="true"  stored="true"/>
+<dynamicField name="*_s"    type="string"   indexed="true"  stored="true"/>
+<dynamicField name="*_l"    type="slong"    indexed="true"  stored="true"/>
+<dynamicField name="*_t"    type="text"     indexed="true"  stored="true"/>
+<dynamicField name="*_b"    type="boolean"  indexed="true"  stored="true"/>
+<dynamicField name="*_f"    type="sfloat"   indexed="true"  stored="true"/>
+<dynamicField name="*_d"    type="sdouble"  indexed="true"  stored="true"/>
+<dynamicField name="*_dt"   type="date"     indexed="true"  stored="true"/>
+<dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
+----
+
+Dynamic Field Definition
+++++++++++++++++++++++++
+
+If the user would rather manually define the field types for each of the indexed fields in a collection, the configuration option `dyn-fields` needs to be disabled. It is important that the field for each indexed property key is defined before the property key is added to the index.
+
+In this scenario, it is advisable to enable explicit property key name to field mapping in order to fix the field names for their explicit definition. This can be achieved in one of two ways:
+
+. Configuring the name of the field by providing a `mapped-name` parameter when adding the property key to the index. See <<index-local-field-mapping>> for more information.
+. By enabling the `map-name` configuration option for the Solr index which will use the property key name as the field name in Solr. See <<index-global-field-mapping>> for more information.
+
+Schemaless Mode
++++++++++++++++
+
+Titan can also interact with a SolrCloud cluster that is configured for https://cwiki.apache.org/confluence/display/solr/Schemaless+Mode[schemaless mode]. In this scenario, the configuration option `dyn-fields` should be disabled since Solr will infer the field type from the values and not the field name.
+
+Note, however, that schemaless mode is recommended only for prototyping and initial application development and NOT recommended for production use. 
+
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+Collection Does Not Exist
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The collection (and all of the required configuration files) must be initialized before a defined index can use the collection.
+
+Connection Problems
+^^^^^^^^^^^^^^^^^^^
+
+Irrespective of the operation mode, a Solr instance or a cluster of Solr instances must be running and accessible from the Titan instance(s) in order for Titan to use Solr as an indexing backend. Check that the Solr cluster is running correctly and that it is visible and accessible over the network (or locally) from the Titan instances.
+
+
+Advanced Solr Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DSE Search
+^^^^^^^^^^
+
+tbw
+
+Hadoop Search
+^^^^^^^^^^^^^
+
+tbw

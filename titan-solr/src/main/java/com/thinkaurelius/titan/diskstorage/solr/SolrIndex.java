@@ -95,21 +95,24 @@ public class SolrIndex implements IndexProvider {
             "Name of the TTL field for Solr collections.",
             ConfigOption.Type.GLOBAL_OFFLINE, "ttl");
 
+    /** SolrCloud Configuration */
+
+    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(SOLR_NS,"zookeeper-url",
+            "URL of the Zookeeper instance coordinating the SolrCloud cluster",
+            ConfigOption.Type.MASKABLE, "localhost:2181");
+
     public static final ConfigOption<Integer> NUM_SHARDS = new ConfigOption<Integer>(SOLR_NS,"num-shards",
-            "Number of shards",
+            "Number of shards for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     public static final ConfigOption<Integer> MAX_SHARDS_PER_NODE = new ConfigOption<Integer>(SOLR_NS,"max-shards-per-node",
-            "Maximum number of shards per node",
+            "Maximum number of shards per node. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(SOLR_NS,"replication-factor",
-            "Replication factor",
+            "Replication factor for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
-    public static final ConfigOption<String> ZOOKEEPER_URL = new ConfigOption<String>(SOLR_NS,"zookeeper-url",
-            "Http connection max connections per host",
-            ConfigOption.Type.MASKABLE, "localhost:2181");
 
     /** HTTP Configuration */
 
