@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.5.1-SNAPSHOT</version>
+        <version>0.9.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-test</artifactId>
@@ -37,47 +37,11 @@
         </dependency>
         <!-- TinkerPop -->
         <dependency>
-            <groupId>com.tinkerpop.blueprints</groupId>
-            <artifactId>blueprints-test</artifactId>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>gremlin-test</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-        <!--
-        Can't release Titan with a Furnace dependency until
-        Furnace releases a non-SNAPSHOT version.
 
-        Titan only uses Furnace's generators subpackages.
-
-        To allow for a Titan release with an alpha version of
-        Furnace generators, I copied the source files from
-        the package into titan-test/src/main/java.  I changed
-        the package to com.tinkerpop.furnace.alpha.generators.
-
-        We should get rid of that when Furnace releases.
-
-        <dependency>
-            <groupId>com.tinkerpop.furnace</groupId>
-            <artifactId>furnace</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.tinkerpop.gremlin</groupId>
-                    <artifactId>gremlin-java</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.tinkerpop.gremlin</groupId>
-                    <artifactId>gremlin-groovy</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.tinkerpop.blueprints</groupId>
-                    <artifactId>blueprints-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.tinkerpop</groupId>
-                    <artifactId>pipes</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
@@ -132,7 +96,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop.gremlin</groupId>
+            <groupId>com.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
