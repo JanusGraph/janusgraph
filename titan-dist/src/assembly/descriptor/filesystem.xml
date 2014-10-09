@@ -10,15 +10,6 @@
 
     <componentDescriptors>
         <componentDescriptor>${assembly.descriptor.dir}/common.component.xml</componentDescriptor>
-        <componentDescriptor>${assembly.descriptor.dir}/cassandra.component.xml</componentDescriptor>
-        <componentDescriptor>${assembly.descriptor.dir}/configs.component.xml</componentDescriptor>
     </componentDescriptors>
 
-    <fileSets>
-        <fileSet>
-            <directory>src/assembly/static</directory>
-            <outputDirectory>/</outputDirectory>
-            <filtered>false</filtered>
-        </fileSet>
-    </fileSets>
 </assembly>

@@ -16,6 +16,8 @@
 
         <!-- Zipfile/Tarfile assembly source paths -->
         <assembly.txtfile.dir>${top.level.basedir}</assembly.txtfile.dir>
+        <assembly.cfilter.in.dir>${project.basedir}/src/assembly/cfilter</assembly.cfilter.in.dir>
+        <assembly.cfilter.out.dir>${project.build.directory}/cfilter</assembly.cfilter.out.dir>
 
         <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
@@ -262,6 +264,27 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>run-cfilter</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <!-- Classpath -->
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <!-- Main Classname -->
+                                <mainClass>com.thinkaurelius.titan.util.system.ConfigurationFileFilter</mainClass>
+                                <!-- Input directory (processed recursively) -->
+                                <argument>${assembly.cfilter.in.dir}</argument>
+                                <!-- Output directory prefix -->
+                                <argument>${assembly.cfilter.out.dir}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>generate-titan-gremlin-imports</id>
                         <phase>none</phase>
                     </execution>
@@ -488,6 +511,9 @@
                                         <directory>${top.level.basedir}/db/</directory>
                                     </fileset>
                                     <fileset>
+                                        <directory>${top.level.basedir}/examples/</directory>
+                                    </fileset>
+                                    <fileset>
                                         <directory>${top.level.basedir}/ext/</directory>
                                     </fileset>
                                     <fileset>
@@ -495,6 +521,9 @@
                                     </fileset>
                                     <fileset>
                                         <directory>${top.level.basedir}/log/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>${top.level.basedir}/rexhome/</directory>
                                     </fileset>
                                 </filesets>
                             </configuration>
@@ -750,7 +779,7 @@
                                         <appendAssemblyId>false</appendAssemblyId>
                                         <tarLongFileMode>gnu</tarLongFileMode>
                                         <descriptors>
-                                            <descriptor>${project.basedir}/src/assembly/descriptor/archive.xml</descriptor>
+                                            <descriptor>${assembly.descriptor.dir}/archive.xml</descriptor>
                                         </descriptors>
                                         <formats>
                                             <format>zip</format>
@@ -904,6 +933,22 @@
                                             </resource>
                                         </resources>
                                         <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                    </configuration>
+                                </execution>
+                                <execution>
+                                    <id>copy-test-cfiles</id>
+                                    <phase>none</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <resources>
+                                            <resource>
+                                                <directory>${assembly.cfilter.out.dir}</directory>
+                                                <filtering>false</filtering>
+                                            </resource>
+                                        </resources>
+                                        <outputDirectory>${project.build.directory}</outputDirectory>
                                     </configuration>
                                 </execution>
                             </executions>

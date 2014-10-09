@@ -1,14 +1,21 @@
 package com.thinkaurelius.titan.util.system;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
+import java.util.*;
 
 public class ConfigurationLint {
 
@@ -38,21 +45,59 @@ public class ConfigurationLint {
         p.load(fis);
         fis.close();
 
-        int keys = 0;
-        int errors = 0;
-        for (Object k : p.keySet()) {
-            String key = k.toString();
-            keys++;
+        final PropertiesConfiguration apc;
+        try {
+            apc = new PropertiesConfiguration(filename);
+        } catch (ConfigurationException e) {
+            throw new IOException(e);
+        }
+
+//        new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+//                , BasicConfiguration.Restriction.NONE);
+
+        Iterator<String> iter = apc.getKeys();
+
+        int totalKeys = 0;
+        int keysVerified = 0;
+
+        while (iter.hasNext()) {
+            totalKeys++;
+            String key = iter.next();
+            String value = apc.getString(key);
             try {
-                ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, key);
-                log.info("Validated option: {}", key);
-            } catch (Throwable t) {
-                log.warn(String.format("Unknown configuration key: %s", key));
-                errors++;
+                ConfigElement.PathIdentifier pid = ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, key);
+                // ConfigElement shouldn't return null; failure here probably relates to titan-core, not the file
+                Preconditions.checkState(null != pid);
+                Preconditions.checkState(null != pid.element);
+                if (!pid.element.isOption()) {
+                    log.warn("Config key {} is a namespace (only options can be keys)", key);
+                    continue;
+                }
+                final ConfigOption<?> opt;
+                try {
+                    opt = (ConfigOption<?>) pid.element;
+                } catch (RuntimeException re) {
+                    // This shouldn't happen given the preceding check, but catch it anyway
+                    log.warn("Config key {} maps to the element {}, but it could not be cast to an option",
+                            key, pid.element, re);
+                    continue;
+                }
+                try {
+                    Object o = new CommonsConfiguration(apc).get(key, opt.getDatatype());
+                    opt.verify(o);
+                    keysVerified++;
+                } catch (RuntimeException re) {
+                    log.warn("Config key {} is recognized, but its value {} could not be validated",
+                            key, value /*, re*/);
+                    log.debug("Validation exception on {}={} follows", key, value, re);
+                }
+            } catch (RuntimeException re) {
+                log.warn("Unknown config key {}", key);
             }
         }
 
-        return new Status(keys, errors);
+
+        return new Status(totalKeys, totalKeys - keysVerified);
     }
 
     public static class Status {
@@ -64,11 +109,19 @@ public class ConfigurationLint {
             this.errors = errors;
         }
 
+        public int getTotalSettingCount() {
+            return total;
+        }
+
+        public int getErrorSettingCount() {
+            return errors;
+        }
+
         public String toString() {
             if (0 == errors) {
-                return String.format("[ConfigurationLint.Status: OK: %d keys validated]", total);
+                return String.format("[ConfigurationLint.Status: OK: %d settings validated]", total);
             } else {
-                return String.format("[ConfigurationLint.Status: WARNING: %d unknown keys out of %d total]", errors, total);
+                return String.format("[ConfigurationLint.Status: WARNING: %d settings failed to validate out of %d total]", errors, total);
             }
         }
     }
