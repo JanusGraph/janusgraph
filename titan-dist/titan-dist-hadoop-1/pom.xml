@@ -16,6 +16,7 @@
         <assembly.descriptor.dir>${project.parent.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
         <assembly.static.dir>${project.parent.basedir}/src/assembly/static</assembly.static.dir>
         <assembly.resources.dir>${project.parent.basedir}/src/assembly/resources</assembly.resources.dir>
+        <assembly.cfilter.out.dir>${project.parent.build.directory}/cfilter</assembly.cfilter.out.dir>
         <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
     </properties>
 
@@ -33,6 +34,11 @@
                 <exclusion>
                     <groupId>org.apache.hbase</groupId>
                     <artifactId>hbase-client</artifactId>
+                </exclusion>
+                <!-- Solr depends on Hadoop2 -->
+                <exclusion>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-solr</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
