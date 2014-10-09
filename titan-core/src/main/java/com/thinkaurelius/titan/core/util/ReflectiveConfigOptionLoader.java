@@ -108,6 +108,7 @@ public enum ReflectiveConfigOptionLoader {
             "com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager",
             "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
             "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex",
+            "com.thinkaurelius.titan.diskstorage.solr.SolrIndex",
             "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog",
             "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager",
             "com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration",
