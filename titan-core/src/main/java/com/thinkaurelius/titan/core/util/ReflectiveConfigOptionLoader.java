@@ -4,17 +4,16 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.net.URLClassLoader;
+import java.util.*;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
 import org.reflections.vfs.Vfs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,8 +205,7 @@ public enum ReflectiveConfigOptionLoader {
         int errorCount = 0;
 
         List<ClassLoader> loaderList = getClassLoaders(cfg, caller);
-
-        Collection<URL> scanUrls = ClasspathHelper.forClassLoader(loaderList.toArray(new ClassLoader[loaderList.size()]));
+        Collection<URL> scanUrls = forClassLoaders(loaderList);
         Iterator<URL> i = scanUrls.iterator();
         while (i.hasNext()) {
             URL u = i.next();
@@ -227,7 +225,7 @@ public enum ReflectiveConfigOptionLoader {
 
         org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
             .setUrls(scanUrls)
-            .setScanners(new TypeAnnotationsScanner());
+            .setScanners(new TypeAnnotationsScanner(), new SubTypesScanner());
         Reflections reflections = new Reflections(rc);
 
         //for (Class<?> c : reflections.getSubTypesOf(Object.class)) {  // Returns nothing
@@ -242,6 +240,33 @@ public enum ReflectiveConfigOptionLoader {
 
         log.debug("Preloaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
 
+    }
+
+    /**
+     * This method is based on ClasspathHelper.forClassLoader from Reflections.
+     *
+     * We made our own copy to avoid dealing with bytecode-level incompatibilities
+     * introduced by changing method signatures between 0.9.9-RC1 and 0.9.9.
+     *
+     * @return A set of all URLs associated with URLClassLoaders in the argument
+     */
+    private Set<URL> forClassLoaders(List<ClassLoader> loaders) {
+
+        final Set<URL> result = Sets.newHashSet();
+
+        for (ClassLoader classLoader : loaders) {
+            while (classLoader != null) {
+                if (classLoader instanceof URLClassLoader) {
+                    URL[] urls = ((URLClassLoader) classLoader).getURLs();
+                    if (urls != null) {
+                        result.addAll(Sets.newHashSet(urls));
+                    }
+                }
+                classLoader = classLoader.getParent();
+            }
+        }
+
+        return result;
     }
 
     private int loadSingleClassUnsafe(Class<?> c) {
