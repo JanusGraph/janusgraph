@@ -143,11 +143,14 @@
                                 <id>generate-compat-test-files</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>java</goal>
+                                    <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <mainClass>com.thinkaurelius.titan.example.GraphOfTheGodsFactory</mainClass>
+                                    <executable>java</executable>
                                     <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath />
+                                        <argument>com.thinkaurelius.titan.example.GraphOfTheGodsFactory</argument>
                                         <argument>${project.build.directory}/conf/titan-berkeleydb-es.properties</argument>
                                     </arguments>
                                 </configuration>
