@@ -583,16 +583,24 @@ public class Backend implements LockerProvider {
 
     //############ Registered Storage Managers ##############
 
-    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
-        put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
-        put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
-        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
-        put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
-        put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
-        put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
-        put("inmemory", "com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");
-    }};
+    private static final ImmutableMap<String, String> REGISTERED_STORAGE_MANAGERS;
+
+    static {
+        ImmutableMap.Builder<String, String> b = ImmutableMap.builder();
+        b.put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+        b.put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
+        b.put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
+        b.put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        b.put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        b.put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
+        b.put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
+        b.put("inmemory", "com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");
+        REGISTERED_STORAGE_MANAGERS = b.build();
+    }
+
+    public static final Map<String, String> getRegisteredStoreManagers() {
+        return REGISTERED_STORAGE_MANAGERS;
+    }
 
     public static final Map<String, ConfigOption> REGISTERED_STORAGE_MANAGERS_SHORTHAND = new HashMap<String, ConfigOption>() {{
         put("berkeleyje", STORAGE_DIRECTORY);
