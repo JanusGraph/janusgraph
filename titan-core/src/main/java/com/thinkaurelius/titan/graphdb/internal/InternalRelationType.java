@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * Internal Type interface adding methods that should only be used by Titan

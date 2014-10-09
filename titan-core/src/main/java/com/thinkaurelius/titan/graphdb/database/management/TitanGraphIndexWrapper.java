@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.gremlin.structure.Element;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

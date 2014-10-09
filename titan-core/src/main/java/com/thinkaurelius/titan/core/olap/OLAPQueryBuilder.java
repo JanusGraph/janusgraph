@@ -2,8 +2,7 @@ package com.thinkaurelius.titan.core.olap;
 
 import com.google.common.base.Function;
 import com.thinkaurelius.titan.core.*;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Predicate;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * Builds a vertex-centric query to define the edges and/or properties that will be retrieved for each vertex as part
@@ -130,13 +129,6 @@ public interface OLAPQueryBuilder<S,M,Q extends OLAPQueryBuilder<S,M,Q>> extends
 
     @Override
     public Q hasNot(String key, Object value);
-
-
-    @Override
-    public Q has(PropertyKey key, Predicate predicate, Object value);
-
-    @Override
-    public Q has(String key, Predicate predicate, Object value);
 
     @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);

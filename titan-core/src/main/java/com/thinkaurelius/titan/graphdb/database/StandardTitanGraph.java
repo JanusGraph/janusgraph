@@ -50,8 +50,8 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Features;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Graph.Features;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,14 +148,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     @Override
-    public synchronized void shutdown() throws TitanException {
+    public synchronized void close() throws TitanException {
         if (!isOpen) return;
         try {
             //Unregister instance
             ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
             globalConfig.remove(REGISTRATION_TIME,config.getUniqueGraphId());
 
-            super.shutdown();
+            super.close();
             idAssigner.close();
             backend.close();
             queryCache.close();
@@ -172,8 +172,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     // ################### Simple Getters #########################
 
     @Override
-    public Features getFeatures() {
+    public Features features() {
         return TitanFeatures.getFeatures(getConfiguration(), backend.getStoreFeatures());
+    }
+
+    @Override
+    public Variables variables() {
+        //Implement against KCVS that stores the configuration
+        return null;
     }
 
     public IndexSerializer getIndexSerializer() {
@@ -712,7 +718,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (graph.isOpen && log.isDebugEnabled())
                 log.debug("Shutting down graph {} using built-in shutdown hook.", graph);
 
-            graph.shutdown();
+            graph.close();
         }
     }
 }

@@ -1,7 +1,7 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * TitanRelation is the most abstract form of a relation between a vertex and some other entity, where

@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Element;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +34,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.blueprints.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
      * with default sort order {@link Order#ASC}.
      *
      * @param label

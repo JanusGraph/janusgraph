@@ -5,8 +5,8 @@ import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.util.StringFactory;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

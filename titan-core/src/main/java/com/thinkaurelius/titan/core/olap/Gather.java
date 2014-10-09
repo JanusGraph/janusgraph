@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.olap;
 
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * Function which gathers the state of an adjacent vertex and any properties of the connecting edge

@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 import java.util.*;
 

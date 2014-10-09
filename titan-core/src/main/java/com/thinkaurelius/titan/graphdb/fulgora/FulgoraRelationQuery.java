@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.olap.Combiner;
 import com.thinkaurelius.titan.core.olap.Gather;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;
 import java.util.List;

@@ -1,6 +1,8 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.tinkerpop.gremlin.structure.VertexProperty;
+
 /**
  * TitanProperty is a {@link TitanRelation} connecting a vertex to a value.
  * TitanProperty extends {@link TitanRelation}, with methods for retrieving the property's value and key.
@@ -9,7 +11,7 @@ package com.thinkaurelius.titan.core;
  * @see TitanRelation
  * @see PropertyKey
  */
-public interface TitanProperty extends TitanRelation {
+public interface TitanProperty extends TitanRelation, VertexProperty {
 
     /**
      * Returns the property key of this property

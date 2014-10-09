@@ -5,7 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 import java.util.EnumMap;
 import java.util.concurrent.Callable;

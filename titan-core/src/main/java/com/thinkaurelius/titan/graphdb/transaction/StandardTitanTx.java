@@ -60,9 +60,9 @@ import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.thinkaurelius.titan.util.stats.MetricManager;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import org.apache.commons.lang.StringUtils;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
@@ -487,16 +487,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public TitanVertex addVertex() {
-        return addVertexWithLabel(BaseVertexLabel.DEFAULT_VERTEXLABEL);
+        return addVertex((VertexLabel)BaseVertexLabel.DEFAULT_VERTEXLABEL);
     }
 
     @Override
-    public TitanVertex addVertexWithLabel(String vertexLabel) {
-        return addVertexWithLabel(getVertexLabel(vertexLabel));
+    public TitanVertex addVertex(String vertexLabel) {
+        return addVertex((VertexLabel)getVertexLabel(vertexLabel));
     }
 
     @Override
-    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel) {
+    public TitanVertex addVertex(VertexLabel vertexLabel) {
         return addVertex(null,vertexLabel);
     }
 
@@ -522,7 +522,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         });
     }
 
-    @Override
     public Iterable<Vertex> getVertices() {
         return (Iterable)getInternalVertices();
     }
@@ -631,7 +630,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
 
-    @Override
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, EdgeLabel label) {
         verifyWriteAccess(outVertex, inVertex);
         outVertex = ((InternalVertex) outVertex).it();
@@ -675,7 +673,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) newVertexIndexEntries.add((TitanProperty) r);
     }
 
-    @Override
     public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
         if (key.getCardinality()== Cardinality.SINGLE) return setProperty(vertex, key, value);
         else return addPropertyInternal(vertex, key, value);
@@ -761,7 +758,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
     }
 
-    @Override
     public Iterable<Edge> getEdges() {
         return new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.EDGE);
     }
@@ -1309,7 +1305,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             }
             throw new TitanException("Could not commit transaction due to exception during persistence", e);
         } finally {
-            close();
+            releaseTransaction();
             if (null != config.getGroupName() && !success) {
                 MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
             }
@@ -1329,14 +1325,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         } catch (Exception e) {
             throw new TitanException("Could not rollback transaction due to exception", e);
         } finally {
-            close();
+            releaseTransaction();
             if (null != config.getGroupName() && !success) {
                 MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
             }
         }
     }
 
-    private void close() {
+    private void releaseTransaction() {
         //TODO: release non crucial data structures to preserve memory?
         isOpen = false;
         graph.closeTransaction(this);

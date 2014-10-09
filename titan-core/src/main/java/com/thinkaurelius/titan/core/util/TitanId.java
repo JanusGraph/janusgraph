@@ -13,7 +13,7 @@ public class TitanId {
 
     /**
      * Converts a user provided long id into a Titan vertex id. The id must be positive and can be at most 61 bits long.
-     * This method is useful when providing ids during vertex creation via {@link com.tinkerpop.blueprints.Graph#addVertex(Object)}.
+     * This method is useful when providing ids during vertex creation via {@link com.tinkerpop.gremlin.structure.Graph#addVertex(Object)}.
      *
      * @param id long id
      * @return a corresponding Titan vertex id

@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.util;
 
 import com.google.common.collect.Iterators;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

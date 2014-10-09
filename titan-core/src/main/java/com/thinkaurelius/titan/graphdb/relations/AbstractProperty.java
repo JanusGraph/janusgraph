@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
-import static com.tinkerpop.blueprints.util.StringFactory.*;
+import static com.tinkerpop.gremlin.structure.util.StringFactory.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

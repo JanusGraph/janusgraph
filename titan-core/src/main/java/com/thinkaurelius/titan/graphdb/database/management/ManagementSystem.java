@@ -67,8 +67,8 @@ import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.util.encoding.ConversionHelper;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Element;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;

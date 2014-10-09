@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.Parameter;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * A GraphQuery that queries for graph elements directly against a particular indexing backend and hence allows this

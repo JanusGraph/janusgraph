@@ -1,12 +1,7 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.KeyIndexableGraph;
-import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
+
 
 import java.util.Collection;
 
@@ -18,7 +13,7 @@ import java.util.Collection;
  * @see TitanFactory
  * @see TitanTransaction
  */
-public interface TitanGraph extends TitanGraphTransaction, ThreadedTransactionalGraph {
+public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------
     * Transactions and general admin
@@ -83,7 +78,8 @@ public interface TitanGraph extends TitanGraphTransaction, ThreadedTransactional
      *
      * @throws TitanException if closing the graph database caused errors in the storage backend
      */
-    public void shutdown() throws TitanException;
+    @Override
+    public void close() throws TitanException;
 
 
 

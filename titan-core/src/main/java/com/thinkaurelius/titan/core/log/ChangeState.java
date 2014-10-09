@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.log;
 
 import com.thinkaurelius.titan.core.*;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
 

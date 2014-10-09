@@ -1,13 +1,12 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Predicate;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.
  * <p/>
- * A VertexQuery extends Blueprint's {@link com.tinkerpop.blueprints.Query} by some Titan specific convenience methods
+ * A VertexQuery extends Blueprint's {@link com.tinkerpop.gremlin.structure.Query} by some Titan specific convenience methods
  * for querying for incident edges or properties.
  * Using VertexQuery proceeds in two steps:
  * 1) Define the query by specifying what to retrieve and
@@ -135,28 +134,6 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @return
      */
     public Q hasNot(String key, Object value);
-
-    /**
-     * Query only for those edges or properties which have a property for the given key that satisfies the specified
-     * predicate relationship to the provided value.
-     *
-     * @param key property key
-     * @param predicate boolean relationship to satisfy with the given value
-     * @param value value
-     * @return
-     */
-    public Q has(PropertyKey key, Predicate predicate, Object value);
-
-    /**
-     * Query only for those edges or properties which have a property for the given key that satisfies the specified
-     * predicate relationship to the provided value.
-     *
-     * @param key property key
-     * @param predicate boolean relationship to satisfy with the given value
-     * @param value value
-     * @return
-     */
-    public Q has(String key, Predicate predicate, Object value);
 
     /**
      * Query for those edges or properties that have a property for the given key

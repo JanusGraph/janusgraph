@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.*;
-import com.tinkerpop.blueprints.KeyIndexableGraph;
-import com.tinkerpop.blueprints.TransactionalGraph;
 
 import java.util.Collection;
 
@@ -48,64 +46,6 @@ public interface TitanTransaction extends TitanGraphTransaction {
      * @return New vertex
      */
     public TitanVertex addVertex(Long id, VertexLabel vertexLabel);
-
-    /**
-     * Creates a new edge connecting the specified vertices.
-     * <p/>
-     * Creates and returns a new {@link TitanEdge} with given label connecting the vertices in the order
-     * specified.
-     *
-     * @param label     label of the edge to be created
-     * @param outVertex outgoing vertex of the edge
-     * @param inVertex  incoming vertex of the edge
-     * @return new edge
-     */
-    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, EdgeLabel label);
-
-    /**
-     * Creates a new edge connecting the specified vertices.
-     * <p/>
-     * Creates and returns a new {@link TitanEdge} with given label connecting the vertices in the order
-     * specified.
-     * <br />
-     * Automatically creates the edge label if it does not exist and automatic creation of types is enabled. Otherwise,
-     * this method with throw an {@link IllegalArgumentException}.
-     *
-     * @param label     label of the edge to be created
-     * @param outVertex outgoing vertex of the edge
-     * @param inVertex  incoming vertex of the edge
-     * @return new edge
-     */
-    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, String label);
-
-    /**
-     * Creates a new property for the given vertex and key with the specified value.
-     * <p/>
-     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the value.
-     *
-     * @param key       key of the property to be created
-     * @param vertex    vertex for which to create the property
-     * @param value value of the property to be created
-     * @return new property
-     * @throws IllegalArgumentException if the value does not match the data type of the given property key.
-     */
-    public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object value);
-
-    /**
-     * Creates a new property for the given vertex and key with the specified value.
-     * <p/>
-     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the value.
-     * <br />
-     * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
-     * this method with throw an {@link IllegalArgumentException}.
-     *
-     * @param key       key of the property to be created
-     * @param vertex    vertex for which to create the property
-     * @param value value of the property to be created
-     * @return new property
-     * @throws IllegalArgumentException if the value does not match the data type of the given property key.
-     */
-    public TitanProperty addProperty(TitanVertex vertex, String key, Object value);
 
     /**
      * Retrieves all vertices which have a property of the given key with the specified value.

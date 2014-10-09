@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.*;
+import com.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Map;
@@ -76,13 +76,6 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
 
     @Override
     public Q hasNot(String key, Object value);
-
-
-    @Override
-    public Q has(PropertyKey key, Predicate predicate, Object value);
-
-    @Override
-    public Q has(String key, Predicate predicate, Object value);
 
     @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);

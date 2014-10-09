@@ -17,8 +17,8 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,13 +78,6 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder has(String key, com.tinkerpop.blueprints.Predicate predicate, Object condition) {
-        Preconditions.checkNotNull(key);
-        TitanPredicate titanPredicate = TitanPredicate.Converter.convert(predicate);
-        return has(key, titanPredicate, condition);
-    }
-
-    @Override
     public GraphCentricQueryBuilder has(PropertyKey key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
@@ -99,12 +92,6 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     @Override
     public GraphCentricQueryBuilder hasNot(String key) {
         return has(key, Cmp.EQUAL, (Object) null);
-    }
-
-    @Override
-    @Deprecated
-    public <T extends Comparable<T>> GraphCentricQueryBuilder has(String s, T t, Compare compare) {
-        return has(s, compare, t);
     }
 
     @Override

@@ -11,8 +11,7 @@ import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Predicate;
+import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -246,18 +245,6 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         @Override
         public QueryBuilder hasNot(String key, Object value) {
             super.hasNot(key, value);
-            return this;
-        }
-
-        @Override
-        public QueryBuilder has(String key, Predicate predicate, Object value) {
-            super.has(key, predicate, value);
-            return this;
-        }
-
-        @Override
-        public QueryBuilder has(PropertyKey key, Predicate predicate, Object value) {
-            super.has(key, predicate, value);
             return this;
         }
 

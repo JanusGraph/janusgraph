@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.GraphQuery;
-import com.tinkerpop.blueprints.Predicate;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)
@@ -18,24 +16,12 @@ import com.tinkerpop.blueprints.Vertex;
  * @since 0.3.0
  */
 
-public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> extends GraphQuery {
+public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
 
    /* ---------------------------------------------------------------
     * Query Specification
     * ---------------------------------------------------------------
     */
-
-    /**
-     * The returned element must have a property for the given key that matches the condition according to the
-     * specified relation
-     *
-     * @param key       Key that identifies the property
-     * @param predicate Predicate between property and condition
-     * @param condition
-     * @return This query
-     */
-    @Override
-    public Q has(String key, Predicate predicate, Object condition);
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -49,23 +35,14 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> extends GraphQuer
     public Q has(PropertyKey key, TitanPredicate predicate, Object condition);
 
 
-    @Override
     public Q has(String key);
 
-    @Override
     public Q hasNot(String key);
 
-    @Override
     public Q has(String key, Object value);
 
-    @Override
     public Q hasNot(String key, Object value);
 
-    @Override
-    @Deprecated
-    public <T extends Comparable<T>> Q has(String key, T value, Compare compare);
-
-    @Override
     public <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
 
     /**
@@ -74,7 +51,6 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> extends GraphQuer
      * @param max The maximum number of results to return
      * @return This query
      */
-    @Override
     public Q limit(final int max);
 
     /**

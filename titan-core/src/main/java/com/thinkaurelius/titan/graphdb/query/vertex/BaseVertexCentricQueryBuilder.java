@@ -11,8 +11,7 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Predicate;
+import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -114,16 +113,6 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     @Override
-    public Q has(String key, Predicate predicate, Object value) {
-        return addConstraint(key, TitanPredicate.Converter.convert(predicate), value);
-    }
-
-    @Override
-    public Q has(PropertyKey key, Predicate predicate, Object value) {
-        return has(key.getName(), predicate, value);
-    }
-
-    @Override
     public Q has(String key) {
         return has(key, Cmp.NOT_EQUAL, (Object) null);
     }
@@ -142,11 +131,6 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     public <T extends Comparable<?>> Q interval(String key, T start, T end) {
         addConstraint(key, Cmp.GREATER_THAN_EQUAL, start);
         return addConstraint(key, Cmp.LESS_THAN, end);
-    }
-
-    @Deprecated
-    public <T extends Comparable<T>> Q has(String key, T value, com.tinkerpop.blueprints.Query.Compare compare) {
-        return addConstraint(key, TitanPredicate.Converter.convert(compare), value);
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.*;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * A TitanVertexQuery is a VertexQuery executed for a single vertex.
@@ -13,7 +15,7 @@ import com.tinkerpop.blueprints.*;
  * @see BaseVertexQuery
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVertexQuery<Q>, VertexQuery {
+public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification (overwrite to merge BaseVertexQuery with Blueprint's VertexQuery)
@@ -53,13 +55,6 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     @Override
     public Q hasNot(String key, Object value);
 
-
-    @Override
-    public Q has(PropertyKey key, Predicate predicate, Object value);
-
-    @Override
-    public Q has(String key, Predicate predicate, Object value);
-
     @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
 
@@ -87,6 +82,8 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      * @return Iterable over all incident edges that match this query
      */
     public Iterable<Edge> edges();
+
+    public Iterable<Vertex> vertices();
 
     /**
      * Returns an iterable over all incident edges that match this query. Returns edges as {@link TitanEdge}.
@@ -133,7 +130,6 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      *
      * @return A list of all vertices connected to this query's base vertex by matching edges
      */
-    @Override
     public VertexList vertexIds();
 
 

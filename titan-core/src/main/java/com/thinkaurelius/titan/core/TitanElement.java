@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.core;
 
 
 import com.thinkaurelius.titan.util.datastructures.Removable;
-import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.gremlin.structure.Element;
 
 /**
  * TitanElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting
@@ -41,6 +41,11 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @see #hasId
      */
     public Object getId();
+
+    @Override
+    public default Object id() {
+        return getId();
+    }
 
     /**
      * Unique identifier for this entity. This id can be temporarily assigned and might change.

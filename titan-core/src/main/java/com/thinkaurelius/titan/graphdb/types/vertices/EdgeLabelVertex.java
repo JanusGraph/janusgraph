@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.vertices;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
 

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
@@ -7,9 +8,10 @@ import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
-import com.tinkerpop.blueprints.*;
-import com.tinkerpop.blueprints.Parameter;
-import com.tinkerpop.blueprints.util.StringFactory;
+import com.tinkerpop.gremlin.process.computer.GraphComputer;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Blueprints specific implementation for {@link TitanGraph}.
@@ -30,6 +34,8 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
             LoggerFactory.getLogger(TitanBlueprintsGraph.class);
 
     // ########## TRANSACTION HANDLING ###########################
+
+    final GraphTransaction tinkerpopTxContainer = new GraphTransaction();
 
     private ThreadLocal<TitanBlueprintsTransaction> txs = new ThreadLocal<TitanBlueprintsTransaction>() {
 
@@ -52,60 +58,25 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     private final Map<TitanBlueprintsTransaction, Boolean> openTx =
             new ConcurrentHashMap<TitanBlueprintsTransaction, Boolean>();
 
-    @Override
-    public void commit() {
-        TitanTransaction tx = txs.get();
-        if (tx != null && tx.isOpen()) {
-            try {
-                tx.commit();
-            } finally {
-                txs.remove();
-                openTx.remove(tx);
-                log.debug("Committed thread-bound transaction {}", tx);
-            }
-        }
-    }
-
-    @Override
-    public void rollback() {
-        TitanTransaction tx = txs.get();
-        if (tx != null && tx.isOpen()) {
-            try {
-                tx.rollback();
-            } finally {
-                txs.remove();
-                openTx.remove(tx);
-                log.debug("Rolled back thread-bound transaction {}", tx);
-            }
-        }
-    }
-
-    @Override
-    @Deprecated
-    public void stopTransaction(Conclusion conclusion) {
-        switch (conclusion) {
-            case SUCCESS:
-                commit();
-                break;
-            case FAILURE:
-                rollback();
-                break;
-            default:
-                throw new IllegalArgumentException("Unrecognized conclusion: " + conclusion);
-        }
-    }
 
     public abstract TitanTransaction newThreadBoundTransaction();
 
     private TitanBlueprintsTransaction getAutoStartTx() {
-        if (txs == null) ExceptionFactory.graphShutdown();
+        if (txs == null) throw new IllegalStateException("Graph has been closed");
+        tinkerpopTxContainer.readWrite();
+
         TitanBlueprintsTransaction tx = txs.get();
-        if (tx == null) {
-            tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
-            txs.set(tx);
-            openTx.put(tx, Boolean.TRUE);
-            log.debug("Created new thread-bound transaction {}", tx);
-        }
+        Preconditions.checkState(tx!=null,"Invalid read-write behavior configured: " +
+                "Should either open transaction or throw exception. [%s]",tinkerpopTxContainer.readWriteBehavior);
+        return tx;
+    }
+
+    private TitanBlueprintsTransaction startNewTx() {
+        if (txs.get()!=null) throw Transaction.Exceptions.transactionAlreadyOpen();
+        TitanBlueprintsTransaction tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
+        txs.set(tx);
+        openTx.put(tx, Boolean.TRUE);
+        log.debug("Created new thread-bound transaction {}", tx);
         return tx;
     }
 
@@ -115,49 +86,77 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
 
     @Override
-    public synchronized void shutdown() {
+    public synchronized void close() {
         for (TitanTransaction tx : openTx.keySet()) {
-            tx.commit();
+            tx.close();
         }
         openTx.clear();
         txs = null;
     }
 
     @Override
+    public Transaction tx() {
+        return tinkerpopTxContainer;
+    }
+
+    @Override
     public String toString() {
         GraphDatabaseConfiguration config = ((StandardTitanGraph) this).getConfiguration();
-        return "titangraph" + StringFactory.L_BRACKET +
-                config.getBackendDescription() + StringFactory.R_BRACKET;
-//        return StringFactory.graphString(this,config.getBackendDescription());
-    }
-
-    // ########## INDEX HANDLING ###########################
-
-    @Override
-    public <T extends Element> void dropKeyIndex(String key, Class<T> elementClass) {
-        throw new UnsupportedOperationException("Key indexes cannot be dropped");
-    }
-
-    @Override
-    public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, final Parameter... indexParameters) {
-        getAutoStartTx().createKeyIndex(key, elementClass);
-    }
-
-    @Override
-    public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
-        return getAutoStartTx().getIndexedKeys(elementClass);
+        return StringFactory.graphString(this,config.getBackendDescription());
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################
 
     @Override
-    public TitanVertex addVertex(Object id) {
-        return getAutoStartTx().addVertex(id);
+    public TitanVertex addVertex(Object... keyValues) {
+        return getAutoStartTx().addVertex(keyValues);
     }
+
+    @Override
+    public TitanVertex v(final Object id) {
+        return getAutoStartTx().v(id);
+    }
+
+    @Override
+    public TitanEdge e(final Object id) {
+        return getAutoStartTx().e(id);
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> V() {
+        return getAutoStartTx().V();
+    }
+
+    @Override
+    public GraphTraversal<Edge, Edge> E() {
+        return getAutoStartTx().E();
+    }
+
+    @Override
+    public <S> GraphTraversal<S, S> of() {
+        return getAutoStartTx().of();
+    }
+
+    @Override
+    public GraphComputer compute(final Class... graphComputerClass) {
+        //TODO
+        throw new UnsupportedOperationException();
+    }
+
 
     @Override
     public TitanVertex addVertex() {
         return getAutoStartTx().addVertex();
+    }
+
+    @Override
+    public TitanVertex addVertex(VertexLabel vertexLabel) {
+        return getAutoStartTx().addVertex(vertexLabel);
+    }
+
+    @Override
+    public TitanVertex addVertex(String vertexLabel) {
+        return getAutoStartTx().addVertex(vertexLabel);
     }
 
     @Override
@@ -173,51 +172,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public boolean containsVertex(long vertexid) {
         return getAutoStartTx().containsVertex(vertexid);
-    }
-
-    @Override
-    public TitanVertex getVertex(Object id) {
-        return getAutoStartTx().getVertex(id);
-    }
-
-    @Override
-    public void removeVertex(Vertex vertex) {
-        getAutoStartTx().removeVertex(vertex);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices() {
-        return getAutoStartTx().getVertices();
-    }
-
-    @Override
-    public boolean containsRelationType(String name) {
-        return getAutoStartTx().containsRelationType(name);
-    }
-
-    @Override
-    public RelationType getRelationType(String name) {
-        return getAutoStartTx().getRelationType(name);
-    }
-
-    @Override
-    public boolean containsVertexLabel(String name) {
-        return getAutoStartTx().containsVertexLabel(name);
-    }
-
-    @Override
-    public VertexLabel getVertexLabel(String name) {
-        return getAutoStartTx().getVertexLabel(name);
-    }
-
-    @Override
-    public TitanVertex addVertexWithLabel(VertexLabel vertexLabel) {
-        return getAutoStartTx().addVertexWithLabel(vertexLabel);
-    }
-
-    @Override
-    public TitanVertex addVertexWithLabel(String vertexLabel) {
-        return getAutoStartTx().addVertexWithLabel(vertexLabel);
     }
 
     @Override
@@ -240,35 +194,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return getAutoStartTx().multiQuery(vertices);
     }
 
-    @Override
-    public Iterable<Vertex> getVertices(String key, Object value) {
-        return getAutoStartTx().getVertices(key, value);
-    }
-
-    @Override
-    public TitanEdge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
-        return getAutoStartTx().addEdge(id, outVertex, inVertex, label);
-    }
-
-    @Override
-    public TitanEdge getEdge(Object id) {
-        return getAutoStartTx().getEdge(id);
-    }
-
-    @Override
-    public void removeEdge(Edge edge) {
-        getAutoStartTx().removeEdge(edge);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges() {
-        return getAutoStartTx().getEdges();
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(String key, Object value) {
-        return getAutoStartTx().getEdges(key, value);
-    }
 
     //Schema
 
@@ -315,6 +240,97 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public EdgeLabel getEdgeLabel(String name) {
         return getAutoStartTx().getEdgeLabel(name);
+    }
+
+    @Override
+    public boolean containsRelationType(String name) {
+        return getAutoStartTx().containsRelationType(name);
+    }
+
+    @Override
+    public RelationType getRelationType(String name) {
+        return getAutoStartTx().getRelationType(name);
+    }
+
+    @Override
+    public boolean containsVertexLabel(String name) {
+        return getAutoStartTx().containsVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabel getVertexLabel(String name) {
+        return getAutoStartTx().getVertexLabel(name);
+    }
+
+    class GraphTransaction implements Transaction {
+
+        private Consumer<Transaction> readWriteBehavior = READ_WRITE_BEHAVIOR.AUTO;
+        private Consumer<Transaction> closeBehavior = CLOSE_BEHAVIOR.COMMIT;
+
+        @Override
+        public void open() {
+            if (isOpen()) throw Exceptions.transactionAlreadyOpen();
+            startNewTx();
+        }
+
+        @Override
+        public void commit() {
+            getAutoStartTx().commit();
+        }
+
+        @Override
+        public void rollback() {
+            getAutoStartTx().rollback();
+        }
+
+        @Override
+        public <R> Workload<R> submit(Function<Graph, R> graphRFunction) {
+            return new Workload<R>(TitanBlueprintsGraph.this,graphRFunction);
+        }
+
+        @Override
+        public TitanTransaction create() {
+            return newTransaction();
+        }
+
+        @Override
+        public boolean isOpen() {
+            TitanBlueprintsTransaction tx = txs.get();
+            return tx!=null && tx.isOpen();
+        }
+
+        @Override
+        public void readWrite() {
+            readWriteBehavior.accept(this);
+        }
+
+        @Override
+        public void close() {
+            close(this);
+        }
+
+        void close(Transaction tx) {
+            closeBehavior.accept(tx);
+            Preconditions.checkState(!tx.isOpen(),"Invalid close behavior configured: Should close transaction. [%s]",closeBehavior);
+        }
+
+        @Override
+        public Transaction onReadWrite(Consumer<Transaction> transactionConsumer) {
+            if (transactionConsumer==null) throw Exceptions.onReadWriteBehaviorCannotBeNull();
+            Preconditions.checkArgument(transactionConsumer instanceof READ_WRITE_BEHAVIOR,
+                    "Only READ_WRITE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
+            this.readWriteBehavior = transactionConsumer;
+            return this;
+        }
+
+        @Override
+        public Transaction onClose(Consumer<Transaction> transactionConsumer) {
+            if (transactionConsumer==null) throw Exceptions.onCloseBehaviorCannotBeNull();
+            Preconditions.checkArgument(transactionConsumer instanceof CLOSE_BEHAVIOR,
+                    "Only CLOSE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
+            this.closeBehavior = transactionConsumer;
+            return this;
+        }
     }
 
 }

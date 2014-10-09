@@ -4,7 +4,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
