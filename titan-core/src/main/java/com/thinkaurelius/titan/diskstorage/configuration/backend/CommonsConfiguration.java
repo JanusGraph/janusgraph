@@ -74,7 +74,7 @@ public class CommonsConfiguration implements WriteConfiguration {
 
             String estr = config.getProperty(key).toString();
             for (Enum ec : constants)
-                if (ec.name().equals(estr))
+                if (ec.toString().equals(estr))
                     return (O)ec;
             throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
         } else if (datatype==Object.class) {
