@@ -73,7 +73,7 @@ public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
     }
 
     private void downloadAndTest(String archiveurl) throws IOException, InterruptedException {
-        // Extract the current release's zipfile)
+        // Extract the current release's zipfile
         FileUtils.deleteQuietly(new File(ZIPFILE_EXTRACTED));
         unzip(BUILD_DIR, ZIPFILE_PATH);
 
@@ -91,7 +91,8 @@ public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
     }
 
     private void testGotGQueries(String config) throws IOException, InterruptedException {
+        String idxDir = new File (ZIPFILE_EXTRACTED + File.separator + "db" + File.separator + "es").getAbsolutePath();
         parseTemplateAndRunExpect("compat-test.expect.vm",
-                ImmutableMap.of("graphConfig", config, "graphToString", "berk"));
+                ImmutableMap.of("graphConfig", config, "graphToString", "berk", "indexDirectory", idxDir));
     }
 }
