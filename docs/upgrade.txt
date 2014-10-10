@@ -11,7 +11,10 @@ Version 0.5.1 (October 10, 2014)
 From 0.5.0
 ^^^^^^^^^^
 
-Titan 0.5.1 is compatible with 0.5.0 and no special upgrade is necessary.
+0.5.1 is backwards compatible with 0.5.0. However, there are some minor API level changes to be aware of.
+
+The schema access methods `getPropertyKey()`, `getEdgeLabel()`, and `getVertexLabel()` do no longer create the key or label if it does not yet exists and become purely retrieval methods that return NULL in this case. Change the method name to `getOrCreate/PropertyKey/EdgeLabel/VertexLabel()` to invoke the old semantics.
+
 
 Version 0.5.0
 ~~~~~~~~~~~~~
