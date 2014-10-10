@@ -3,7 +3,7 @@
 Release Notes
 -------------
 
-Version 0.5.1 (In Progress)
+Version 0.5.1 (October 10, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [source,m2]
@@ -20,10 +20,12 @@ Version 0.5.1 (In Progress)
 * BerkeleyJE 5.0.73
 * Elasticsearch 1.2.1
 * Lucene 4.8.1
+* Solr 4.8.1
 * Java 1.7 (partially compatible with Java 1.6)
 
 *Features:*
 
+* Added an experimental Solr indexing adapter
 * Reimplemented incremental loading in Titan-Hadoop
 * Substantially expanded ES configuration options, including support for custom transports
 * Optimized ReflectiveConfigOptionLoader for quicker graph startup and added options to configure or disable it
