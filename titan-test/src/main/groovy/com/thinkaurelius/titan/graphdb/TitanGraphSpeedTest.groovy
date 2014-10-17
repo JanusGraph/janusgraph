@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
+import com.tinkerpop.gremlin.structure.Vertex
 
 import static org.junit.Assert.*
 
@@ -17,15 +18,10 @@ import com.carrotsearch.junitbenchmarks.BenchmarkOptions
 import com.google.common.base.Preconditions
 import com.google.common.collect.Iterables
 import com.thinkaurelius.titan.core.TitanEdge
-import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex
 import com.thinkaurelius.titan.testcategory.PerformanceTests
-import com.thinkaurelius.titan.testutil.gen.Schema
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider
-import com.tinkerpop.blueprints.Vertex
-import com.tinkerpop.frames.FramedGraph
-import com.tinkerpop.gremlin.Tokens.T
 import com.thinkaurelius.titan.diskstorage.BackendException
 
 
@@ -37,14 +33,14 @@ import com.thinkaurelius.titan.diskstorage.BackendException
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @BenchmarkOptions(warmupRounds = 1, benchmarkRounds = 1)
 @Category([PerformanceTests.class])
-public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
+public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
 
-    private static final Logger log = LoggerFactory.getLogger(TitanGraphSerialSpeedTest)
+    private static final Logger log = LoggerFactory.getLogger(TitanGraphSpeedTest)
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get()
 
-    TitanGraphSerialSpeedTest(WriteConfiguration conf) throws BackendException {
+    TitanGraphSpeedTest(WriteConfiguration conf) throws BackendException {
         super(conf)
     }
 
@@ -245,56 +241,10 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         })
     }
 
-    /**
-     * Retrieve vertices by uid, then retrieve their associated properties. All
-     * access is done through a FramedGraph interface. This is inspired by part
-     * of the ONLAB benchmark, but written separately ("from scratch").
-     *
-     */
-    @Test
-    void testFramedUidAndPropertyLookup() {
-        FramedGraph<TitanGraph> fg = new FramedGraph<TitanGraph>(graph);
-        int totalNonNullProps = 0;
-        for (int t = 0; t < DEFAULT_TX_COUNT; t++) {
-            for (int u = 0; u < 100; u++) {
-                Long uid = (long) t * 100 + u;
-                Iterable<FakeVertex> iter = fg.getVertices(Schema.UID_PROP, uid, FakeVertex.class);
-                boolean visited = false;
-                for (FakeVertex fv : iter) {
-                    assertTrue(uid == fv.getUid().longValue());
-                    // Three property retrievals, as in ONLAB, with some
-                    // busywork to attempt to prevent the runtime or compiler
-                    // from optimizing this all away
-                    int nonNullProps = 0;
-                    if (null != fv.getProp0())
-                        nonNullProps++;
-                    if (null != fv.getProp1())
-                        nonNullProps++;
-                    if (null != fv.getProp2())
-                        nonNullProps++;
-                    assertTrue(0 <= nonNullProps);
-                    totalNonNullProps += nonNullProps;
-                    visited = true;
-                }
-                assertTrue(visited);
-            }
-        }
-        // The chance of this going to zero during random scale-free graph
-        // generation (for a graph of non-trivial size) is insignificant.
-        assertTrue(0 < totalNonNullProps);
-    }
-
     /*
     * I'm prefixing test methods that modify the graph with "testZ". In
     * conjunction with JUnit's @FixMethodOrder annotation, this makes
     * graph-mutating test methods run after the rest of the test methods.
-    *
-    * I'm doing this because my box takes about 4 minutes to load a 10k vertex
-    * and 50k edge GraphML file via Blueprints and I'm trying to avoid waiting
-    * while hacking. However, 4 minutes wouldn't be prohibitive in an
-    * unattended batch job, so it would be prudent to move the graph-mutating
-    * test methods into another class that reloads the graph between each
-    * method.
     */
 
     @Test

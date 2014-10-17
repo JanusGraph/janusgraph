@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
+import com.tinkerpop.gremlin.util.Gremlin
 
 import static org.junit.Assert.*
 
@@ -12,29 +13,26 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import com.google.common.base.Preconditions
-import com.tinkerpop.blueprints.Vertex
+import com.tinkerpop.gremlin.structure.Vertex
 import com.thinkaurelius.titan.core.TitanVertex
 import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
-import com.thinkaurelius.titan.testutil.gen.Schema
-import com.thinkaurelius.titan.testutil.gen.GraphGenerator
-import com.tinkerpop.gremlin.groovy.Gremlin
 import com.thinkaurelius.titan.diskstorage.BackendException
 
 import com.google.common.collect.Iterables
 
 import java.util.zip.GZIPInputStream
 
-abstract class GroovyTestSupport {
+abstract class GroovySpeedTestSupport {
 
-    private static final Logger log = LoggerFactory.getLogger(GroovyTestSupport)
+    private static final Logger log = LoggerFactory.getLogger(GroovySpeedTestSupport)
 
     @Rule
     public TestName testName = new TestName()
 
     // Graph generation settings
-    public static final int VERTEX_COUNT = 10 * 100
-    public static final int EDGE_COUNT = VERTEX_COUNT * 5
+    public static final int VERTEX_COUNT = SpeedTestSchema.VERTEX_COUNT
+    public static final int EDGE_COUNT = SpeedTestSchema.EDGE_COUNT
 
     // Query execution setting defaults
     public static final int DEFAULT_TX_COUNT = 3
@@ -51,8 +49,7 @@ abstract class GroovyTestSupport {
      * but we keep the see fixed for repeatability.
      */
     protected Random random = new Random(7)
-    protected GraphGenerator gen
-    protected Schema schema
+    protected SpeedTestSchema schema
     protected TitanGraph graph
     protected WriteConfiguration conf
 
@@ -60,7 +57,7 @@ abstract class GroovyTestSupport {
         Gremlin.load()
     }
 
-    GroovyTestSupport(WriteConfiguration conf) throws BackendException {
+    GroovySpeedTestSupport(WriteConfiguration conf) throws BackendException {
         this.conf = conf
     }
 
@@ -93,7 +90,7 @@ abstract class GroovyTestSupport {
 
     protected abstract StandardTitanGraph getGraph() throws BackendException;
 
-    protected abstract Schema getSchema();
+    protected abstract SpeedTestSchema getSchema();
 
     /*
      * Helper methods
@@ -195,12 +192,12 @@ abstract class GroovyTestSupport {
     protected void initializeGraph(TitanGraph g) throws BackendException {
         log.info("Initializing graph...");
         long before = System.currentTimeMillis()
-        Schema schema = getSchema();
-        GraphGenerator generator = new GraphGenerator(schema);
-        
-//        generator.generate(g);
+        SpeedTestSchema schema = getSchema();
+
         try {
-            generator.generateTypesAndLoadData(g, new GZIPInputStream(new FileInputStream(RELATION_FILE)))
+            InputStream data = new GZIPInputStream(new FileInputStream(RELATION_FILE));
+            schema.makeTypes(g);
+            GraphMLReader.inputGraph(g, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
