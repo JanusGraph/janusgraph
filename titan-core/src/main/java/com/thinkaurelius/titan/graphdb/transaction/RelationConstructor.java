@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
-import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
+import com.thinkaurelius.titan.graphdb.relations.CacheVertexProperty;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
@@ -76,7 +76,7 @@ public class RelationConstructor {
 
         if (type.isPropertyKey()) {
             assert relation.direction == Direction.OUT;
-            return new CacheProperty(relation.relationId, (PropertyKey) type, vertex, relation.getValue(), data);
+            return new CacheVertexProperty(relation.relationId, (PropertyKey) type, vertex, relation.getValue(), data);
         }
 
         if (type.isEdgeLabel()) {

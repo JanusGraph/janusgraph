@@ -11,8 +11,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 public class Schema {
 

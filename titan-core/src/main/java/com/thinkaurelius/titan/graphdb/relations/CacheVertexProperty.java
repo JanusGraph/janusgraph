@@ -20,9 +20,9 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class CacheProperty extends AbstractProperty {
+public class CacheVertexProperty extends AbstractVertexProperty {
 
-    public CacheProperty(long id, PropertyKey key, InternalVertex start, Object value, Entry data) {
+    public CacheVertexProperty(long id, PropertyKey key, InternalVertex start, Object value, Entry data) {
         super(id, key, start.it(), value);
         this.data = data;
     }
@@ -42,7 +42,7 @@ public class CacheProperty extends AbstractProperty {
             it = Iterables.getOnlyElement(startVertex.getAddedRelations(new Predicate<InternalRelation>() {
                 @Override
                 public boolean apply(@Nullable InternalRelation internalRelation) {
-                    return (internalRelation instanceof StandardProperty) && ((StandardProperty) internalRelation).getPreviousID() == id;
+                    return (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id;
                 }
             }), null);
         }
@@ -57,11 +57,11 @@ public class CacheProperty extends AbstractProperty {
     }
 
     private synchronized InternalRelation update() {
-        StandardProperty copy = new StandardProperty(super.getLongId(), getPropertyKey(), getVertex(0), getValue(), ElementLifeCycle.Loaded);
+        StandardVertexProperty copy = new StandardVertexProperty(super.getLongId(), getPropertyKey(), getVertex(0), getValue(), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
-        StandardProperty u = (StandardProperty) tx().addProperty(getVertex(0), getPropertyKey(), getValue());
+        StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), getPropertyKey(), getValue());
         if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(super.getLongId());
         u.setPreviousID(super.getLongId());
         copyProperties(u);

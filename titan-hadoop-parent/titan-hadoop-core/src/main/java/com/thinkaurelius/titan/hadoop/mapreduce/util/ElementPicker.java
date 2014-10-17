@@ -3,9 +3,8 @@ package com.thinkaurelius.titan.hadoop.mapreduce.util;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.hadoop.*;
-import com.thinkaurelius.titan.hadoop.FaunusProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +20,7 @@ public class ElementPicker {
     public static String getPropertyAsString(final FaunusElement element, final String key) {
         if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
-            for (final TitanProperty property : element.query().properties()) {
+            for (final TitanVertexProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getLongId());
@@ -53,7 +52,7 @@ public class ElementPicker {
     public static Object getProperty(final FaunusElement element, final String key) {
         if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
-            for (final TitanProperty property : element.query().properties()) {
+            for (final TitanVertexProperty property : element.query().properties()) {
                 properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getLongId());

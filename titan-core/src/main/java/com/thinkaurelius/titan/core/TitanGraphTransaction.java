@@ -57,6 +57,9 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
      */
     public TitanVertex addVertex(VertexLabel vertexLabel);
 
+    @Override
+    public TitanVertex addVertex(Object... objects);
+
     /**
      * Retrieves the vertex for the specified id.
      *
@@ -65,6 +68,8 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
      * @see #containsVertex
      */
     public TitanVertex getVertex(long id);
+
+    public TitanVertex v(Object id);
 
     /**
      * Retrieves the vertices for the given ids and returns a map from those ids to the corresponding vertices.

@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Joiner;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -21,12 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanRelation;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.SchemaAction;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
@@ -48,7 +45,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
-import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.relations.StandardRelation;
 import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -148,15 +144,15 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             titanRelation = new StandardEdge(faunusRelation.getLongId(),tx.getOrCreateEdgeLabel(indexType),start,end, ElementLifeCycle.Loaded);
         } else {
             assert faunusRelation.isProperty();
-            StandardFaunusProperty faunusProperty = (StandardFaunusProperty)faunusRelation;
-            InternalVertex v = tx.getInternalVertex(faunusProperty.getVertex().getLongId());
+            StandardFaunusVertexProperty faunusProperty = (StandardFaunusVertexProperty)faunusRelation;
+            InternalVertex v = tx.getInternalVertex(faunusProperty.getElement().getLongId());
             if (v==null) return null;
-            titanRelation = new StandardProperty(faunusProperty.getLongId(),tx.getOrCreatePropertyKey(indexType),v,faunusProperty.getValue(), ElementLifeCycle.Loaded);
+            titanRelation = new StandardVertexProperty(faunusProperty.getLongId(),tx.getOrCreatePropertyKey(indexType),v,faunusProperty.getValue(), ElementLifeCycle.Loaded);
         }
         //Add properties
         for (TitanRelation rel : faunusRelation.query().relations()) {
             Object value;
-            if (rel.isProperty()) value = ((FaunusProperty)rel).getValue();
+            if (rel.isProperty()) value = ((FaunusVertexProperty)rel).getValue();
             else value = tx.getInternalVertex(((FaunusEdge) rel).getVertexId(Direction.IN));
             if (value!=null) titanRelation.setProperty(rel.getType().getName(),value);
         }
@@ -202,8 +198,8 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
                         break;
                     case PROPERTY:
                         elements = Lists.newArrayList();
-                        for (TitanProperty p : faunusVertex.query().properties()) {
-                            elements.add((StandardFaunusProperty)p);
+                        for (TitanVertexProperty p : faunusVertex.query().properties()) {
+                            elements.add((StandardFaunusVertexProperty)p);
                         }
                         break;
                     case EDGE:

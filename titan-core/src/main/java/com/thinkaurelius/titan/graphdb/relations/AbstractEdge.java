@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 /**
@@ -31,7 +32,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     }
 
     @Override
-    public String getLabel() {
+    public String label() {
         return type.getName();
     }
 
@@ -111,5 +112,10 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     @Override
     public boolean isEdge() {
         return true;
+    }
+
+    @Override
+    public Edge.Iterators iterators() {
+        return this;
     }
 }

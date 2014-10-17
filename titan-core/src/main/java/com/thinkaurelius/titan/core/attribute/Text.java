@@ -175,6 +175,11 @@ public enum Text implements TitanPredicate {
     }
 
     @Override
+    public boolean test(Object value, Object condition) {
+        return evaluate(value,condition);
+    }
+
+    @Override
     public boolean isValidValueType(Class<?> clazz) {
         Preconditions.checkNotNull(clazz);
         return clazz.equals(String.class);

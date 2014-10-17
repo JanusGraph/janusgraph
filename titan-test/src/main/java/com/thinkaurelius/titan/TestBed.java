@@ -9,8 +9,6 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
-import com.tinkerpop.blueprints.TransactionalGraph;
-import com.tinkerpop.blueprints.Vertex;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.Random;
@@ -112,24 +110,6 @@ public class TestBed {
         return res;
 
 
-    }
-
-
-    private static void codeSnippets() throws Exception {
-        TitanGraph g = TitanFactory.open("/tmp/titan");
-        g.createKeyIndex("name", Vertex.class);
-        Vertex juno = g.addVertex(null);
-        juno.setProperty("name", "juno");
-        juno = g.getVertices("name", "juno").iterator().next();
-
-        TransactionalGraph tx = g.newTransaction();
-        Thread[] threads = new Thread[10];
-        for (int i = 0; i < threads.length; i++) {
-            //threads[i]=new Thread(new DoSomething(tx));
-            threads[i].start();
-        }
-        for (int i = 0; i < threads.length; i++) threads[i].join();
-        tx.commit();
     }
 
 }

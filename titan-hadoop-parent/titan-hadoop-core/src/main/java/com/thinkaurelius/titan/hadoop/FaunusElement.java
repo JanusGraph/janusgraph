@@ -28,9 +28,9 @@ import java.util.Set;
 public abstract class FaunusElement extends LifeCycleElement implements InternalElement, Comparable<FaunusElement> {
 
 
-    protected static final Predicate<FaunusProperty> FILTER_DELETED_PROPERTIES = new Predicate<FaunusProperty>() {
+    protected static final Predicate<FaunusVertexProperty> FILTER_DELETED_PROPERTIES = new Predicate<FaunusVertexProperty>() {
         @Override
-        public boolean apply(@Nullable FaunusProperty p) {
+        public boolean apply(@Nullable FaunusVertexProperty p) {
             return !p.isRemoved();
         }
     };
@@ -222,7 +222,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
                                             "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
                                 }
                             } else {
-                                FaunusProperty p1 = (FaunusProperty)relation, p2 = (FaunusProperty)rel;
+                                FaunusVertexProperty p1 = (FaunusVertexProperty)relation, p2 = (FaunusVertexProperty)rel;
                                 if (p1.getValue().equals(p2.getValue())) {
                                     throw new IllegalArgumentException("A relation already exists which" +
                                             "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
@@ -293,7 +293,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
         while (rels.hasNext()) {
             FaunusRelation r = rels.next();
             if (!r.isRemoved()) {
-                if (r.isProperty()) removed.add(((FaunusProperty)r).getValue());
+                if (r.isProperty()) removed.add(((FaunusVertexProperty)r).getValue());
                 else removed.add(((FaunusEdge)r).getVertex(Direction.IN));
             }
             if (r.isNew()) rels.remove();
@@ -314,7 +314,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     @Override
     public <T> T getProperty(PropertyKey key) {
         FaunusPropertyKey type = (FaunusPropertyKey)key;
-        Iterator<TitanProperty> properties = query().type(type).properties().iterator();
+        Iterator<TitanVertexProperty> properties = query().type(type).properties().iterator();
         if (type.getCardinality()==Cardinality.SINGLE) {
             if (properties.hasNext()) return properties.next().getValue();
             else return (T)null;

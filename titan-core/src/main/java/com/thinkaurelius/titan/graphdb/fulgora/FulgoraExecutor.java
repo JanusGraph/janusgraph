@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.olap.OLAPJob;
 import com.thinkaurelius.titan.core.olap.OLAPResult;
@@ -287,8 +287,8 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                         Entry data = iter.next();
                         TitanRelation r = RelationConstructor.readRelation(vertex,data,edgeSerializer,tx,neighborVertices);
                         if (frq instanceof FulgoraPropertyQuery) {
-                            Preconditions.checkArgument(r instanceof TitanProperty);
-                            combinedMsg = ((FulgoraPropertyQuery)frq).process((TitanProperty)r,combinedMsg);
+                            Preconditions.checkArgument(r instanceof TitanVertexProperty);
+                            combinedMsg = ((FulgoraPropertyQuery)frq).process((TitanVertexProperty)r,combinedMsg);
                         } else {
                             assert frq instanceof FulgoraEdgeQuery;
                             Preconditions.checkArgument(r instanceof TitanEdge);

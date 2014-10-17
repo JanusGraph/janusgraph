@@ -93,14 +93,14 @@ public class FaunusSerializer {
         edge.setLabel((FaunusEdgeLabel)readFaunusType(in));
     }
 
-    public void writeProperty(final StandardFaunusProperty property, final DataOutput out) throws IOException {
+    public void writeProperty(final StandardFaunusVertexProperty property, final DataOutput out) throws IOException {
         writePathElement(property, out);
         WritableUtils.writeVLong(out, property.vertexid);
         serializeObject(out,property.getValue());
         writeFaunusType(property.getType(), out);
     }
 
-    public void readProperty(final StandardFaunusProperty property, final DataInput in) throws IOException {
+    public void readProperty(final StandardFaunusVertexProperty property, final DataInput in) throws IOException {
         readPathElement(property, in);
         property.vertexid = WritableUtils.readVLong(in);
         property.value = deserializeObject(in);
@@ -231,7 +231,7 @@ public class FaunusSerializer {
                         log.trace("readEdges edge={} paths={}", edge, edge.tracker.paths);
                     } else {
                         assert type.isPropertyKey() && direction==Direction.OUT;
-                        final StandardFaunusProperty property = new StandardFaunusProperty(configuration);
+                        final StandardFaunusVertexProperty property = new StandardFaunusVertexProperty(configuration);
                         property.setKey((FaunusPropertyKey) type);
                         readPathElement(property, schema, in);
                         property.value = deserializeObject(in);
@@ -243,7 +243,7 @@ public class FaunusSerializer {
                         relation = new SimpleFaunusEdge((FaunusEdgeLabel)type,new FaunusVertex(configuration,WritableUtils.readVLong(in)));
                     } else {
                         assert type.isPropertyKey() && direction==Direction.OUT;
-                        relation = new SimpleFaunusProperty((FaunusPropertyKey)type,deserializeObject(in));
+                        relation = new SimpleFaunusVertexProperty((FaunusPropertyKey)type,deserializeObject(in));
                     }
                     if (trackState) relation.setLifeCycle(lifecycle);
                 }
@@ -283,7 +283,7 @@ public class FaunusSerializer {
                 if (rel.isEdge()) {
                     WritableUtils.writeVLong(out, ((FaunusEdge)rel).getVertexId(direction.opposite()));
                 } else {
-                    serializeObject(out,((FaunusProperty)rel).getValue());
+                    serializeObject(out,((FaunusVertexProperty)rel).getValue());
                 }
             }
         }

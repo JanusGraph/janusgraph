@@ -20,20 +20,24 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
 
+
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -91,7 +95,7 @@ public abstract class TitanGraphBaseTest {
             mgmt.commit();
         mgmt=graph.getManagementSystem();
         newTx();
-        graph.commit();
+        graph.tx().commit();
     }
 
     public void close() {
@@ -101,7 +105,7 @@ public abstract class TitanGraphBaseTest {
 
 
         if (null != graph && graph.isOpen())
-            graph.shutdown();
+            graph.close();
     }
 
     public void newTx() {
@@ -138,7 +142,7 @@ public abstract class TitanGraphBaseTest {
             lconf.close();
         }
         if (null != graph && graph.isOpen())
-            graph.shutdown();
+            graph.close();
         Preconditions.checkNotNull(config);
         open(config);
     }
@@ -251,7 +255,7 @@ public abstract class TitanGraphBaseTest {
         String prefix;
         if (Vertex.class.isAssignableFrom(clazz)) prefix = "v";
         else if (Edge.class.isAssignableFrom(clazz)) prefix = "e";
-        else if (TitanProperty.class.isAssignableFrom(clazz)) prefix = "p";
+        else if (TitanVertexProperty.class.isAssignableFrom(clazz)) prefix = "p";
         else throw new AssertionError(clazz.toString());
 
         String indexName = prefix+backingIndex;
@@ -310,15 +314,65 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static TitanVertex getVertex(TitanTransaction tx, String key, Object value) {
-        return (TitanVertex)Iterables.getOnlyElement(tx.getVertices(key,value),null);
+        return (TitanVertex)getOnlyElement(tx.V().has(key,value),null);
     }
 
     public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
-        return Iterables.getOnlyElement(tx.getVertices(key,value),null);
+        return getVertex(tx, key.getName(), value);
     }
 
     public static double round(double d) {
         return Math.round(d*1000.0)/1000.0;
+    }
+
+    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal) {
+        if (!traversal.hasNext()) throw new NoSuchElementException();
+        return getOnlyElement(traversal,null);
+    }
+
+    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal, E defaultElement) {
+        if (!traversal.hasNext()) return defaultElement;
+        E result = traversal.next();
+        if (traversal.hasNext()) throw new IllegalArgumentException("Traversal contains more than 1 element: " + traversal.count().next());
+        return result;
+    }
+
+    public static String n(Object obj) {
+        if (obj instanceof RelationType) return ((RelationType)obj).getName();
+        else return obj.toString();
+    }
+
+    public static long getId(Element e) {
+        return ((TitanElement)e).getLongId();
+    }
+
+    public static int size(Object obj) {
+        Preconditions.checkArgument(obj!=null);
+        if (obj instanceof Collection) return ((Collection)obj).size();
+        else if (obj instanceof Iterable) return Iterables.size((Iterable)obj);
+        else if (obj.getClass().isArray()) return Array.getLength(obj);
+        throw new IllegalArgumentException("Cannot find size of: " + obj);
+    }
+
+    public static void verifyElementOrder(Iterable<? extends Element> elements, String key, Order order, int expectedCount) {
+        verifyElementOrder(elements.iterator(), key, order, expectedCount);
+    }
+
+    public static void verifyElementOrder(Iterator<? extends Element> elements, String key, Order order, int expectedCount) {
+        Comparable previous = null;
+        int count = 0;
+        while (elements.hasNext()) {
+            Element element = elements.next();
+            Comparable current = element.value(key);
+            if (previous != null) {
+                int cmp = previous.compareTo(current);
+                assertTrue(previous + " <> " + current + " @ " + count,
+                        order == Order.ASC ? cmp <= 0 : cmp >= 0);
+            }
+            previous = current;
+            count++;
+        }
+        assertEquals(expectedCount, count);
     }
 
 }

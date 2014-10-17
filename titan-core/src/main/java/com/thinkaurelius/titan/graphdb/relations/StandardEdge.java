@@ -8,9 +8,14 @@ import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -90,4 +95,5 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
         } //else throw InvalidElementException.removedException(this);
     }
+
 }

@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -117,7 +117,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex1.getProperty("boolean"));
         assertEquals(2, Iterables.size(vertex1.getProperties("homelist")));
-        for (TitanProperty p : vertex1.getProperties("homelist")) {
+        for (TitanVertexProperty p : vertex1.getProperties("homelist")) {
             assertTrue(ImmutableSet.of("New Mexico", "California").contains(p.getValue()));
         }
         assertEquals(8, Iterables.size(vertex1.getPropertyCollection()));
@@ -140,7 +140,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex1.getProperty("boolean"));
         assertEquals(2, Iterables.size(vertex1.getProperties("homelist")));
-        for (TitanProperty p : vertex1.getProperties("homelist")) {
+        for (TitanVertexProperty p : vertex1.getProperties("homelist")) {
             assertTrue(ImmutableSet.of("New Mexico", "California").contains(p.getValue()));
         }
         assertEquals(8, Iterables.size(vertex1.getPropertyCollection()));
@@ -374,7 +374,7 @@ public class FaunusVertexTest extends BaseTest {
         assertTrue(names.contains("marko a. rodriguez"));
         assertEquals(2,Iterables.size((Iterable)vertex.getProperty("nameset")));
         int counter = 0;
-        for (TitanProperty property : vertex.getProperties()) {
+        for (TitanVertexProperty property : vertex.getProperties()) {
             assertEquals(property.getPropertyKey().getName(), "nameset");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
@@ -399,7 +399,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(2,Iterables.size((Iterable)vertex.getProperty("nameset")));
 
         counter = 0;
-        for (TitanProperty property : vertex.getProperties()) {
+        for (TitanVertexProperty property : vertex.getProperties()) {
             assertEquals(property.getPropertyKey().getName(), "nameset");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
@@ -416,7 +416,7 @@ public class FaunusVertexTest extends BaseTest {
         } catch (IllegalArgumentException e) {}
 
         try {
-            vertex.addProperty(new StandardFaunusProperty(11,vertex,"nameset","marko"));
+            vertex.addProperty(new StandardFaunusVertexProperty(11,vertex,"nameset","marko"));
             fail();
         } catch (IllegalArgumentException e) {}
 

@@ -86,7 +86,7 @@ public interface TitanIndexQuery {
      *
      * @return
      */
-    public Iterable<Result<TitanProperty>> properties();
+    public Iterable<Result<TitanVertexProperty>> properties();
 
     /**
      * Container of a query result with its score.

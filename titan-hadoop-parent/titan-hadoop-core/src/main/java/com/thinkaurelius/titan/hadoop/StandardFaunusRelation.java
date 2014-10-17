@@ -36,7 +36,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     public void setProperty(FaunusRelationType type, Object value) {
         if (type.isPropertyKey()) {
             Preconditions.checkArgument(!((FaunusPropertyKey)type).isImplicit(),"Cannot set implicit properties: %s",type);
-            setRelation(new SimpleFaunusProperty((FaunusPropertyKey)type,value));
+            setRelation(new SimpleFaunusVertexProperty((FaunusPropertyKey)type,value));
         } else {
             FaunusEdgeLabel label = (FaunusEdgeLabel)type;
             Preconditions.checkArgument(value instanceof FaunusVertex,"Vertex expected but got: %s",value);
@@ -107,7 +107,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
         ids[0]=getLongId();
         ids[2]=type.getLongId();
         if (isProperty()) {
-            ids[1]=((StandardFaunusProperty)this).getVertex().getLongId();
+            ids[1]=((StandardFaunusVertexProperty)this).getElement().getLongId();
         } else {
             StandardFaunusEdge edge = (StandardFaunusEdge)this;
             ids[1]=edge.getVertex(Direction.OUT).getLongId();

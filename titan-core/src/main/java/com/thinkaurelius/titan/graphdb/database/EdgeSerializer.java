@@ -5,14 +5,8 @@ import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.Titan;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -282,7 +276,7 @@ public class EdgeSerializer implements RelationReader {
         } else {
             assert relation.isProperty();
             Preconditions.checkArgument(relation.isProperty());
-            Object value = ((TitanProperty) relation).getValue();
+            Object value = ((TitanVertexProperty) relation).getValue();
             Preconditions.checkNotNull(value);
             PropertyKey key = (PropertyKey) type;
             assert key.getDataType().isInstance(value);

@@ -4,7 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 
 import javax.annotation.Nullable;
 
@@ -14,27 +14,27 @@ import javax.annotation.Nullable;
 
 public class SimpleIndexCache implements IndexCache {
 
-    private final HashMultimap<Object,TitanProperty> map;
+    private final HashMultimap<Object,TitanVertexProperty> map;
 
     public SimpleIndexCache() {
         this.map = HashMultimap.create();
     }
 
     @Override
-    public void add(TitanProperty property) {
+    public void add(TitanVertexProperty property) {
         map.put(property.getValue(),property);
     }
 
     @Override
-    public void remove(TitanProperty property) {
+    public void remove(TitanVertexProperty property) {
         map.remove(property.getValue(),property);
     }
 
     @Override
-    public Iterable<TitanProperty> get(final Object value, final PropertyKey key) {
-        return Iterables.filter(map.get(value),new Predicate<TitanProperty>() {
+    public Iterable<TitanVertexProperty> get(final Object value, final PropertyKey key) {
+        return Iterables.filter(map.get(value),new Predicate<TitanVertexProperty>() {
             @Override
-            public boolean apply(@Nullable TitanProperty titanProperty) {
+            public boolean apply(@Nullable TitanVertexProperty titanProperty) {
                 return titanProperty.getPropertyKey().equals(key);
             }
         });

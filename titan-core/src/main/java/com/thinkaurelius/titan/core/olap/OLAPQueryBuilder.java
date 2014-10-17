@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core.olap;
 
 import com.google.common.base.Function;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -70,7 +71,7 @@ public interface OLAPQueryBuilder<S,M,Q extends OLAPQueryBuilder<S,M,Q>> extends
      * @param <M>
      * @return the builder for this OLAPJob
      */
-    public<M> OLAPJobBuilder<S> properties(Function<TitanProperty,M> gather, Combiner<M> combiner);
+    public<M> OLAPJobBuilder<S> properties(Function<TitanVertexProperty,M> gather, Combiner<M> combiner);
 
     /**
      * Identical to {@link #properties(com.google.common.base.Function, Combiner)} using a default gather function which
@@ -129,6 +130,12 @@ public interface OLAPQueryBuilder<S,M,Q extends OLAPQueryBuilder<S,M,Q>> extends
 
     @Override
     public Q hasNot(String key, Object value);
+
+    @Override
+    public Q has(String key, TitanPredicate predicate, Object value);
+
+    @Override
+    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
 
     @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);

@@ -10,7 +10,7 @@ import com.tinkerpop.gremlin.structure.Direction;
  * A TitanRelation extends {@link TitanElement} which means it is an entity in its own right. This means, a TitanRelation
  * can have properties and unidirectional edges connecting it to other vertices.
  * <br />
- * A TitanRelation is an abstract concept. A TitanRelation is either a {@link TitanProperty} or a {@link TitanEdge}.
+ * A TitanRelation is an abstract concept. A TitanRelation is either a {@link TitanVertexProperty} or a {@link TitanEdge}.
  * A TitanRelation has a type which is either a label or key depending on the implementation.
  * <br />
  * A TitanRelation is either directed, or unidirected. Properties are always directed (connecting a vertex
@@ -19,7 +19,7 @@ import com.tinkerpop.gremlin.structure.Direction;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see TitanEdge
- * @see TitanProperty
+ * @see TitanVertexProperty
  */
 public interface TitanRelation extends TitanElement {
 
@@ -79,7 +79,7 @@ public interface TitanRelation extends TitanElement {
      * Checks whether this relation is a property.
      *
      * @return true, if this relation is a property, else false.
-     * @see TitanProperty
+     * @see TitanVertexProperty
      */
     boolean isProperty();
 

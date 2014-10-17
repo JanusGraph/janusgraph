@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -81,8 +80,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
         // 6) Compare property objects or other vertices
         if (r1.isProperty()) {
-            Object o1 = ((TitanProperty) r1).getValue();
-            Object o2 = ((TitanProperty) r2).getValue();
+            Object o1 = ((TitanVertexProperty) r1).getValue();
+            Object o2 = ((TitanVertexProperty) r2).getValue();
             Preconditions.checkArgument(o1 != null && o2 != null);
             if (!o1.equals(o2)) {
                 int objectcompare = 0;

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -30,19 +29,20 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.MAX_COMMIT_TIME;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
+import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.*;
 
 /**
@@ -109,12 +109,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     public static void assertGraphOfTheGods(TitanGraph gotg) {
-        assertEquals(12,Iterables.size(gotg.getVertices()));
-        assertEquals(3,Iterables.size(gotg.getVertices("label","god")));
-        Vertex h = Iterables.getOnlyElement(gotg.getVertices("name","hercules"));
-        assertEquals(30,h.getProperty("age"));
-        assertEquals("demigod",((TitanVertex)h).getLabel());
-        assertEquals(5,Iterables.size(h.getEdges(Direction.BOTH)));
+        assertCount(12, gotg.V());
+        assertCount(3, gotg.V().has("label", "god"));
+        Vertex h = getOnlyElement(gotg.V().has("name", "hercules"));
+        assertEquals(30, h.<Integer>value("age").intValue());
+        assertEquals("demigod",h.label());
+        assertCount(5, h.bothE());
     }
 
     @Test
@@ -613,7 +613,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         clopen(option(INDEX_NAME_MAPPING,INDEX),sameNameMapping);
         TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
-        TitanGraphIndex pindex = getExternalIndex(TitanProperty.class,INDEX);
+        TitanGraphIndex pindex = getExternalIndex(TitanVertexProperty.class,INDEX);
         PropertyKey name = makeKey("name",String.class);
 
         mgmt.addIndexKey(vindex, name, getStringMapping());
@@ -634,7 +634,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             TitanEdge e = v.addEdge("knows",previous==null?v:previous);
             e.setProperty("name",strs[i%strs.length]);
             e.setProperty("text",strs[i%strs.length]);
-            TitanProperty p = v.addProperty("uid","v"+i);
+            TitanVertexProperty p = v.addProperty("uid","v"+i);
             p.setProperty("name", strs[i % strs.length]);
             p.setProperty("text", strs[i % strs.length]);
             previous=v;

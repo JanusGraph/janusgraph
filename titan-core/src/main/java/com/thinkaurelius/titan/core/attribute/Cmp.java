@@ -198,6 +198,10 @@ public enum Cmp implements TitanPredicate {
         }
     };
 
+    @Override
+    public boolean test(Object value, Object condition) {
+        return evaluate(value,condition);
+    }
 
     @Override
     public boolean hasNegation() {

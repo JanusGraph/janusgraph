@@ -238,13 +238,13 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         new HadoopPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
 
         TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
-        for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanProperty>>() {
+        for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanVertexProperty>>() {
             @Override
-            public Iterable<TitanProperty> compute(TitanVertex vertex) {
+            public Iterable<TitanVertexProperty> compute(TitanVertex vertex) {
                 return vertex.getProperties("name");
             }
         }).scatter().toList()) {
-            String value = (String) ((TitanProperty) property).getValue();
+            String value = (String) ((TitanVertexProperty) property).getValue();
             assertTrue(value.equals("saturn") || value.equals("chronos"));
             counter++;
         }

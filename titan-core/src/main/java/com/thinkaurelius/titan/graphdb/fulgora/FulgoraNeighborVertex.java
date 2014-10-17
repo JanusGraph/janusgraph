@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Predicate;
-import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -17,14 +16,16 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraNeighborVertex implements InternalVertex {
+public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
 
     private final long id;
     private final FulgoraExecutor executor;
@@ -197,12 +198,12 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public TitanProperty addProperty(PropertyKey key, Object attribute) {
+    public TitanVertexProperty addProperty(PropertyKey key, Object attribute) {
         throw getAccessException();
     }
 
     @Override
-    public TitanProperty addProperty(String key, Object attribute) {
+    public TitanVertexProperty addProperty(String key, Object attribute) {
         throw getAccessException();
     }
 
@@ -212,22 +213,22 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public Edge addEdge(String s, Vertex vertex) {
+    public Edge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw getAccessException();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties() {
+    public Iterable<TitanVertexProperty> getProperties() {
         throw getAccessException();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(PropertyKey key) {
+    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
         throw getAccessException();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(String key) {
+    public Iterable<TitanVertexProperty> getProperties(String key) {
         throw getAccessException();
     }
 
@@ -276,4 +277,33 @@ public class FulgoraNeighborVertex implements InternalVertex {
         return false;
     }
 
+    /* ---------------------------------------------------------------
+	 * TinkPop Iterators Method
+	 * ---------------------------------------------------------------
+	 */
+
+    @Override
+    public Vertex.Iterators iterators() {
+        return this;
+    }
+
+    @Override
+    public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
+        throw getAccessException();
+    }
+
+    @Override
+    public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
+        throw getAccessException();
+    }
+
+    @Override
+    public <V> Iterator<VertexProperty<V>> propertyIterator(String... strings) {
+        throw getAccessException();
+    }
+
+    @Override
+    public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
+        throw getAccessException();
+    }
 }

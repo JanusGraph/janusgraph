@@ -1,9 +1,12 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
 
 
 /**
@@ -54,7 +57,7 @@ public interface TitanVertex extends TitanElement, Vertex {
     /**
      * Creates a new property for this vertex and given key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanProperty} for the given key on this vertex with the specified
+     * Creates and returns a new {@link TitanVertexProperty} for the given key on this vertex with the specified
      * object being the value.
      *
      * @param key       key of the property to be created
@@ -62,12 +65,12 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return New property
      * @throws IllegalArgumentException if the value does not match the data type of the property key.
      */
-    public TitanProperty addProperty(PropertyKey key, Object value);
+    public TitanVertexProperty addProperty(PropertyKey key, Object value);
 
     /**
      * Creates a new property for this vertex and given key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanProperty} for the given key on this vertex with the specified
+     * Creates and returns a new {@link TitanVertexProperty} for the given key on this vertex with the specified
      * object being the value.
      * <br />
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
@@ -78,7 +81,13 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return New property
      * @throws IllegalArgumentException if the value does not match the data type of the property key.
      */
-    public TitanProperty addProperty(String key, Object value);
+    public TitanVertexProperty addProperty(String key, Object value);
+
+
+    @Override
+    public default<V> TitanVertexProperty<V> property(String key, V value) {
+        return addProperty(key,value);
+    }
 
      /* ---------------------------------------------------------------
       * Vertex Label
@@ -91,6 +100,10 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return
      */
     public String getLabel();
+
+    public default String label() {
+        return getLabel();
+    }
 
     /**
      * Returns the vertex label of this vertex.
@@ -123,7 +136,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      *
      * @return {@link Iterable} over all properties incident on this vertex
      */
-    public Iterable<TitanProperty> getProperties();
+    public Iterable<TitanVertexProperty> getProperties();
 
     /**
      * Returns an iterable over all properties of the specified property key incident on this vertex.
@@ -134,7 +147,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @param key {@link PropertyKey} of the returned properties
      * @return {@link Iterable} over all properties of the specified key incident on this vertex
      */
-    public Iterable<TitanProperty> getProperties(PropertyKey key);
+    public Iterable<TitanVertexProperty> getProperties(PropertyKey key);
 
     /**
      * Returns an iterable over all properties of the specified property key incident on this vertex.
@@ -145,7 +158,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @param key key of the returned properties
      * @return {@link Iterable} over all properties of the specified key incident on this vertex
      */
-    public Iterable<TitanProperty> getProperties(String key);
+    public Iterable<TitanVertexProperty> getProperties(String key);
 
 
     /**
@@ -185,7 +198,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * Returns an iterable over all relations incident on this vertex.
      * <p/>
      * There is no guarantee concerning the order in which the relations are returned. Note, that this
-     * method potentially returns both {@link TitanEdge} and {@link TitanProperty}.
+     * method potentially returns both {@link TitanEdge} and {@link TitanVertexProperty}.
      *
      * @return {@link Iterable} over all properties and edges incident on this vertex.
      */
@@ -225,5 +238,10 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return True, has been loaded and modified, else false.
      */
     public boolean isModified();
+
+
+    public Set<String> getPropertyKeys();
+
+    public Iterable<Vertex> getVertices(Direction direction, String... labels);
 
 }

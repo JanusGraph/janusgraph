@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -56,6 +57,12 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q hasNot(String key, Object value);
 
     @Override
+    public Q has(String key, TitanPredicate predicate, Object value);
+
+    @Override
+    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
+
+    @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
 
     @Override
@@ -97,7 +104,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      *
      * @return Iterable over all incident properties that match this query
      */
-    public Iterable<TitanProperty> properties();
+    public Iterable<TitanVertexProperty> properties();
 
 
     /**

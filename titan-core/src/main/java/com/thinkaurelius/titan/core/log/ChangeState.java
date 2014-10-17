@@ -63,7 +63,7 @@ public interface ChangeState {
      * @param keys
      * @return
      */
-    public Iterable<TitanProperty> getProperties(TitanVertex vertex, Change change, String... keys);
+    public Iterable<TitanVertexProperty> getProperties(TitanVertex vertex, Change change, String... keys);
 
     /**
      * Returns all properties incident for the given vertex that match the provided change state and property keys.
@@ -73,7 +73,7 @@ public interface ChangeState {
      * @param keys
      * @return
      */
-    public Iterable<TitanProperty> getTitanProperties(TitanVertex vertex, Change change, PropertyKey... keys);
+    public Iterable<TitanVertexProperty> getTitanProperties(TitanVertex vertex, Change change, PropertyKey... keys);
 
 
 }

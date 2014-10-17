@@ -6,21 +6,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
+import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.gremlin.structure.Direction;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +157,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         assert isImplicitKeyQuery(RelationCategory.PROPERTY);
         if (dir==Direction.IN || limit<1) return ImmutableList.of();
         ImplicitKey key = (ImplicitKey)tx.getRelationType(types[0]);
-        return ImmutableList.of((TitanRelation)new StandardProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
+        return ImmutableList.of((TitanRelation)new StandardVertexProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
     }
 
     protected interface ResultConstructor<Q> {

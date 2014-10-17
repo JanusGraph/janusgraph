@@ -34,9 +34,9 @@ public class ModificationDeserializer {
         InternalRelation rel;
         if (type.isPropertyKey()) {
             if (state==Change.REMOVED) {
-                rel = new StandardProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(), ElementLifeCycle.Removed);
+                rel = new StandardVertexProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(), ElementLifeCycle.Removed);
             } else {
-                rel = new CacheProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(),relEntry);
+                rel = new CacheVertexProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(),relEntry);
             }
         } else {
             assert type.isEdgeLabel();

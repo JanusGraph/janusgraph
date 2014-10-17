@@ -12,10 +12,11 @@ import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.SerialTests;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
 
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -48,20 +50,19 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
 
-        TitanVertex v = tx.addVertex();
-        v.setProperty("uid", "v");
+        Vertex v = tx.addVertex("uid", "v");
 
         clopen();
 
         //Concurrent index addition
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
-        getVertex(tx1, "uid", "v").setProperty("value", 11);
-        getVertex(tx2, "uid", "v").setProperty("value", 11);
+        getVertex(tx1, "uid", "v").singleProperty("value", 11);
+        getVertex(tx2, "uid", "v").singleProperty("value", 11);
         tx1.commit();
         tx2.commit();
 
-        assertEquals("v", Iterables.getOnlyElement(tx.getVertices("value", 11)).getProperty("uid"));
+        assertEquals("v", getOnlyElement(tx.V().has("value",11).value("uid")));
 
     }
 
@@ -80,89 +81,85 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         String age = "age";
         String address = "address";
 
-        TitanVertex v1 = tx1.addVertex();
-        TitanVertex v2 = tx1.addVertex();
-        v1.setProperty(name, "a");
-        v2.setProperty(age, "14");
-        v2.setProperty(name, "b");
-        v2.setProperty(age, "42");
+        Vertex v1 = tx1.addVertex(name, "a");
+        Vertex v2 = tx1.addVertex(age, "14", name, "b", age, "42");
         tx1.commit();
 
         // Fetch vertex ids
-        long id1 = v1.getLongId();
-        long id2 = v2.getLongId();
+        long id1 = getId(v1);
+        long id2 = getId(v2);
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
         TitanTransaction tx2 = graph.buildTransaction().setCommitTime(1000, unit).start();
-        v1 = tx2.getVertex(id1);
-        v2 = tx2.getVertex(id2);
-        for (TitanProperty prop : v1.getProperties(name)) {
+        v1 = tx2.v(id1);
+        v2 = tx2.v(id2);
+        for (VertexProperty prop : v1.properties(name).toList()) {
             if (features.hasTimestamps()) {
-                Timestamp t = prop.getProperty("$timestamp");
+                Timestamp t = prop.value("$timestamp");
                 assertEquals(100,t.sinceEpoch(unit));
                 assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
             }
             if (features.hasCellTTL()) {
-                Duration d = prop.getProperty("$ttl");
+                Duration d = prop.value("$ttl");
                 assertEquals(0l,d.getLength(unit));
                 assertTrue(d.isZeroLength());
             }
         }
-        v1.removeProperty(name);
-        v1.setProperty(address, "xyz");
-        Edge edge = tx2.addEdge(1, v2, v1, "parent");
+        v1.property(name).remove();
+        v1.singleProperty(address, "xyz");
+        Edge edge = v2.addEdge("parent",v1);
         tx2.commit();
-        Object edgeId = edge.getId();
+        Object edgeId = edge.id();
 
-        Vertex afterTx2 = graph.getVertex(id1);
+        Vertex afterTx2 = graph.v(id1);
 
         // Verify that "name" property is gone
-        assertFalse(afterTx2.getPropertyKeys().contains(name));
+        assertFalse(afterTx2.keys().contains(name));
         // Verify that "address" property is set
-        assertEquals("xyz", afterTx2.getProperty(address));
+        assertEquals("xyz", afterTx2.value(address));
         // Verify that the edge is properly registered with the endpoint vertex
-        assertEquals(1, Iterables.size(afterTx2.getEdges(Direction.IN, "parent")));
+        assertCount(1, afterTx2.inE("parent"));
         // Verify that edge is registered under the id
-        assertNotNull(graph.getEdge(edgeId));
-        graph.commit();
+        assertNotNull(graph.e(edgeId));
+        graph.tx().commit();
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
         TitanTransaction tx3 = graph.buildTransaction().setCommitTime(200, unit).start();
-        v1 = tx3.getVertex(id1);
-        v1.removeProperty(address);
+        v1 = tx3.v(id1);
+        v1.property(address).remove();
         tx3.commit();
 
-        Vertex afterTx3 = graph.getVertex(id1);
-        graph.commit();
+        Vertex afterTx3 = graph.v(id1);
+        graph.tx().commit();
         // Verify that "address" is still set
-        assertEquals("xyz", afterTx3.getProperty(address));
+        assertEquals("xyz", afterTx3.value(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
         TitanTransaction tx4 = graph.buildTransaction().setCommitTime(2000, unit).start();
-        v2 = tx4.getVertex(id2);
-        v2.setProperty(age, "15");
-        tx4.removeEdge(tx4.getEdge(edgeId));
+        v2 = tx4.v(id2);
+        v2.singleProperty(age, "15");
+        tx4.e(edgeId).remove();
         tx4.commit();
 
-        Vertex afterTx4 = graph.getVertex(id2);
+        Vertex afterTx4 = graph.v(id2);
         // Verify that "age" property is modified
-        assertEquals("15", afterTx4.getProperty(age));
+        assertEquals("15", afterTx4.value(age));
         // Verify that edge is no longer registered with the endpoint vertex
-        assertEquals(0, Iterables.size(afterTx4.getEdges(Direction.OUT, "parent")));
+        assertCount(0, afterTx4.outE("parent"));
         // Verify that edge entry disappeared from id registry
-        assertNull(graph.getEdge(edgeId));
+        assertNull(graph.e(edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
         TitanTransaction tx5 = graph.buildTransaction().setCommitTime(1500, unit).start();
-        v2 = tx5.getVertex(id2);
-        v2.setProperty(age, "16");
+        v2 = tx5.v(id2);
+        v2.singleProperty(age, "16");
         tx5.commit();
-        Vertex afterTx5 = graph.getVertex(id2);
+        Vertex afterTx5 = graph.v(id2);
 
         // Verify that the property value is unchanged
-        assertEquals("15", afterTx5.getProperty(age));
+        assertEquals("15", afterTx5.value(age));
     }
 
     /**
@@ -205,16 +202,15 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         int numV = 10000;
         long start = System.currentTimeMillis();
         for (int i=0;i<numV;i++) {
-            TitanVertex v = tx.addVertex();
-            v.setProperty("uid",i+1);
+            Vertex v = tx.addVertex("uid",i+1);
             v.addEdge("knows",v);
         }
         clopen();
 //        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
         for (int i=0;i<Math.min(numV,300);i++) {
-            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
-            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices().iterator().next().getEdges(Direction.OUT, "knows")));
+            assertCount(1, graph.V().has("uid", i + 1));
+            assertCount(1, ((Vertex)getOnlyElement(graph.V().has("uid", i + 1))).outE("knows"));
         }
     }
 
@@ -242,10 +238,10 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         TitanVertex u = tx.addVertex(), v = tx.addVertex();
         TitanRelation[] rs = new TitanRelation[9];
         final int txid = 1;
-        rs[0]=sign(v.addProperty("weight",5.0),txid);
-        rs[1]=sign(v.addProperty("name","John"),txid);
-        rs[2]=sign(v.addProperty("value",2),txid);
-        rs[3]=sign(v.addProperty("valuef",2),txid);
+        rs[0]=sign(v.property("weight",5.0),txid);
+        rs[1]=sign(v.property("name","John"),txid);
+        rs[2]=sign(v.property("value",2),txid);
+        rs[3]=sign(v.property("valuef",2),txid);
 
         rs[6]=sign(v.addEdge("es",u),txid);
         rs[7]=sign(v.addEdge("o2o",u),txid);
@@ -254,7 +250,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         rs[5]=sign(v.addEdge("emf",u),txid);
 
         newTx();
-        long vid = v.getLongId(), uid = u.getLongId();
+        long vid = getId(v), uid = getId(u);
 
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
@@ -266,81 +262,82 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx2.commit(); //tx2 should win using time-based eventual consistency
 
         newTx();
-        v = tx.getVertex(vid);
-        assertEquals(6.0,v.<Decimal>getProperty("weight").doubleValue(),0.00001);
-        TitanProperty p = Iterables.getOnlyElement(v.getProperties("weight"));
-        assertEquals(wintx,p.getProperty("sig"));
-        p = Iterables.getOnlyElement(v.getProperties("name"));
-        assertEquals("Bob",p.getValue());
-        assertEquals(wintx,p.getProperty("sig"));
-        p = Iterables.getOnlyElement(v.getProperties("value"));
-        assertEquals(rs[2].getLongId(),p.getLongId());
-        assertEquals(wintx,p.getProperty("sig"));
-        assertEquals(2,Iterables.size(v.getProperties("valuef")));
-        for (TitanProperty pp : v.getProperties("valuef")) {
-            assertNotEquals(rs[3].getLongId(),pp.getLongId());
-            assertEquals(2,pp.getValue());
+        v = tx.v(vid);
+        assertEquals(6.0,v.<Decimal>value("weight").doubleValue(),0.00001);
+        VertexProperty p = getOnlyElement(v.properties("weight"));
+        assertEquals(wintx,p.<Integer>value("sig").intValue());
+        p = getOnlyElement(v.properties("name"));
+        assertEquals("Bob",p.value());
+        assertEquals(wintx,p.<Integer>value("sig").intValue());
+        p = getOnlyElement(v.properties("value"));
+        assertEquals(rs[2].getLongId(),getId(p));
+        assertEquals(wintx,p.<Integer>value("sig").intValue());
+        assertCount(2,v.properties("valuef"));
+        for (VertexProperty pp : v.getProperties("valuef")) {
+            assertNotEquals(rs[3].getLongId(),getId(pp));
+            assertEquals(2,pp.value());
         }
 
-        TitanEdge e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"es"));
-        assertEquals(wintx,e.getProperty("sig"));
-        assertNotEquals(rs[6].getLongId(),e.getLongId());
-        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2o"));
-        assertEquals(wintx,e.getProperty("sig"));
-        assertEquals(rs[7].getLongId(),e.getLongId());
-        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2m"));
-        assertEquals(wintx,e.getProperty("sig"));
-        assertNotEquals(rs[8].getLongId(),e.getLongId());
-        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"em"));
-        assertEquals(wintx,e.getProperty("sig"));
-        assertEquals(rs[4].getLongId(),e.getLongId());
-        for (Edge ee : v.getEdges(Direction.OUT,"emf")) {
-            assertNotEquals(rs[5].getLongId(),ee.getId());
-            assertEquals(uid,ee.getVertex(Direction.IN).getId());
+        Edge e = getOnlyElement(v.outE("es"));
+        assertEquals(wintx,e.<Integer>value("sig").intValue());
+        assertNotEquals(rs[6].getLongId(),getId(e));
+
+        e = getOnlyElement(v.outE("o2o"));
+        assertEquals(wintx,e.<Integer>value("sig").intValue());
+        assertNotEquals(rs[7].getLongId(),getId(e));
+        e = getOnlyElement(v.outE("o2m"));
+        assertEquals(wintx,e.<Integer>value("sig").intValue());
+        assertNotEquals(rs[8].getLongId(),getId(e));
+        e = getOnlyElement(v.outE("em"));
+        assertEquals(wintx,e.<Integer>value("sig").intValue());
+        assertNotEquals(rs[4].getLongId(),getId(e));
+        for (Edge ee : v.outE("emf").toList()) {
+            assertNotEquals(rs[5].getLongId(),getId(ee));
+            assertEquals(uid,getOnlyElement(ee.inV()).id());
         }
     }
 
 
     private void processTx(TitanTransaction tx, int txid, long vid, long uid) {
-        TitanVertex v = tx.getVertex(vid);
-        TitanVertex u = tx.getVertex(uid);
-        assertEquals(5.0,v.<Decimal>getProperty("weight").doubleValue(),0.00001);
-        TitanProperty p = Iterables.getOnlyElement(v.getProperties("weight"));
-        assertEquals(1,p.getProperty("sig"));
-        sign(v.addProperty("weight",6.0),txid);
-        p = Iterables.getOnlyElement(v.getProperties("name"));
-        assertEquals(1,p.getProperty("sig"));
-        assertEquals("John",p.getValue());
+        TitanVertex v = tx.v(vid);
+        TitanVertex u = tx.v(uid);
+        assertEquals(5.0,v.<Decimal>value("weight").doubleValue(),0.00001);
+        VertexProperty p = getOnlyElement(v.properties("weight"));
+        assertEquals(1,p.<Integer>value("sig").intValue());
+        sign(v.property("weight",6.0),txid);
+        p = getOnlyElement(v.properties("name"));
+        assertEquals(1,p.<Integer>value("sig").intValue());
+        assertEquals("John",p.value());
         p.remove();
-        sign(v.addProperty("name","Bob"),txid);
+        sign(v.property("name","Bob"),txid);
         for (String pkey : new String[]{"value","valuef"}) {
-            p = Iterables.getOnlyElement(v.getProperties(pkey));
-            assertEquals(1,p.getProperty("sig"));
-            assertEquals(2,p.getValue());
-            sign(p,txid);
+            p = getOnlyElement(v.properties(pkey));
+            assertEquals(1,p.<Integer>value("sig").intValue());
+            assertEquals(2,p.value());
+            sign((TitanVertexProperty)p,txid);
         }
 
-        TitanEdge e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"es"));
-        assertEquals(1,e.getProperty("sig"));
+        Edge e = getOnlyElement(v.outE("es"));
+        assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
         sign(v.addEdge("es",u),txid);
-        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2o"));
-        assertEquals(1,e.getProperty("sig"));
-        sign(e,txid);
-        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2m"));
-        assertEquals(1,e.getProperty("sig"));
+        e = getOnlyElement(v.outE("o2o"));
+        assertEquals(1,e.<Integer>value("sig").intValue());
+        sign((TitanEdge)e,txid);
+        e = getOnlyElement(v.outE("o2m"));
+        assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
         sign(v.addEdge("o2m",u),txid);
         for (String label : new String[]{"em","emf"}) {
-            e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,label));
-            assertEquals(1,e.getProperty("sig"));
-            sign(e,txid);
+            e = getOnlyElement(v.outE("label"));
+            assertEquals(1,e.<Integer>value("sig").intValue());
+            sign((TitanEdge)e,txid);
         }
     }
 
 
     private TitanRelation sign(TitanRelation r, int id) {
-        r.setProperty("sig",id);
+        r.property("sig",id);
         return r;
     }
 

@@ -107,7 +107,7 @@ class StandardChangeState implements ChangeState {
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(final TitanVertex vertex, final Change change, final String... keys) {
+    public Iterable<TitanVertexProperty> getProperties(final TitanVertex vertex, final Change change, final String... keys) {
         final Set<String> stypes = toSet(keys);
         return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
             @Override
@@ -119,7 +119,7 @@ class StandardChangeState implements ChangeState {
     }
 
     @Override
-    public Iterable<TitanProperty> getTitanProperties(final TitanVertex vertex, final Change change, final PropertyKey... keys) {
+    public Iterable<TitanVertexProperty> getTitanProperties(final TitanVertex vertex, final Change change, final PropertyKey... keys) {
         final Set<PropertyKey> stypes = toSet(keys);
         return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
             @Override

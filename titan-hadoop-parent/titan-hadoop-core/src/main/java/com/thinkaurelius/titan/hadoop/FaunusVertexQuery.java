@@ -141,7 +141,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
                         FaunusPropertyKey key = (FaunusPropertyKey)rt;
                         Object value = key.computeImplicit(element);
                         if (value!=null)
-                            rels = Lists.newArrayList((FaunusRelation)new SimpleFaunusProperty(key,value));
+                            rels = Lists.newArrayList((FaunusRelation)new SimpleFaunusVertexProperty(key,value));
                         else rels = Collections.EMPTY_LIST;
                     } else {
                         rels = adjacency.get(rt);
@@ -209,7 +209,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
     }
 
     @Override
-    public Iterable<TitanProperty> properties() {
+    public Iterable<TitanVertexProperty> properties() {
         dir = Direction.OUT;
         return (Iterable)getRelations(RelationCategory.PROPERTY);
     }

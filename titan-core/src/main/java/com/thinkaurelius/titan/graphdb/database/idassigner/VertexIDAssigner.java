@@ -214,7 +214,7 @@ public class VertexIDAssigner {
                             newPartition = move2Partition;
                         } else {
                             //...and if such does not exists (i.e. property or both end vertices are partitioned) we use the hash of the relation id
-                            assert (relation.isProperty() && ((TitanProperty)relation).getPropertyKey().getCardinality()!=Cardinality.SINGLE) ||
+                            assert (relation.isProperty() && ((TitanVertexProperty)relation).getPropertyKey().getCardinality()!=Cardinality.SINGLE) ||
                                     (relation.isEdge() && idManager.isPartitionedVertex(relation.getVertex(0).getLongId()) && idManager.isPartitionedVertex(relation.getVertex(1).getLongId()));
                             newPartition = idManager.getPartitionHashForId(relation.getLongId());
                         }

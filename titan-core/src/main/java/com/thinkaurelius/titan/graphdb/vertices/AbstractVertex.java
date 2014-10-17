@@ -14,14 +14,16 @@ import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
+import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.*;
 
-public abstract class AbstractVertex extends AbstractElement implements InternalVertex {
+public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex.Iterators {
 
     private final StandardTitanTx tx;
 
@@ -122,7 +124,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public Set<String> getPropertyKeys() {
         Set<String> result = new HashSet<String>();
-        for (TitanProperty p : getProperties()) {
+        for (TitanVertexProperty p : getProperties()) {
             result.add(p.getPropertyKey().getName());
         }
         return result;
@@ -133,7 +135,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         if (!((InternalRelationType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
             getProperties().iterator().hasNext();
         }
-        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
+        Iterator<TitanVertexProperty> iter = query().type(key).properties().iterator();
         if (key.getCardinality()== Cardinality.SINGLE) {
             if (iter.hasNext()) return (O)iter.next().getValue();
             else return null;
@@ -153,17 +155,17 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties() {
+    public Iterable<TitanVertexProperty> getProperties() {
         return query().properties();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(PropertyKey key) {
+    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
         return query().type(key).properties();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(String key) {
+    public Iterable<TitanVertexProperty> getProperties(String key) {
         return query().keys(key).properties();
     }
 
@@ -224,14 +226,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     @Override
-    public TitanProperty addProperty(PropertyKey key, Object attribute) {
+    public TitanVertexProperty addProperty(PropertyKey key, Object attribute) {
         return tx().addProperty(it(), key, attribute);
     }
 
-
     @Override
-    public TitanProperty addProperty(String key, Object attribute) {
-        return tx().addProperty(it(), key, attribute);
+    public TitanVertexProperty addProperty(String key, Object attribute) {
+        return addProperty(tx().getPropertyKey(key), attribute);
     }
 
     @Override
@@ -244,6 +245,12 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         tx().setProperty(it(),key,value);
     }
 
+    @Override
+    public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
+        TitanVertexProperty<V> p = tx().setProperty(it(),tx().getOrCreatePropertyKey(key),value);
+        ElementHelper.attachProperties(p,keyValues);
+        return p;
+    }
 
     @Override
     public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex) {
@@ -252,12 +259,14 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public TitanEdge addEdge(String label, TitanVertex vertex) {
-        return tx().addEdge(it(), vertex, label);
+        return addEdge(tx().getEdgeLabel(label),vertex);
     }
 
     @Override
-    public Edge addEdge(String label, Vertex vertex) {
-        return addEdge(label,(TitanVertex)vertex);
+    public Edge addEdge(String label, Vertex vertex, Object... keyValues) {
+        TitanEdge edge = addEdge(label,(TitanVertex)vertex);
+        ElementHelper.attachProperties(edge,keyValues);
+        return edge;
     }
 
     @Override
@@ -265,7 +274,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         assert key.isPropertyKey();
 
         Object result = null;
-        for (TitanProperty p : query().type(key).properties()) {
+        for (TitanVertexProperty p : query().type(key).properties()) {
             result = p.getValue();
             p.remove();
         }
@@ -277,4 +286,35 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         if (!tx().containsRelationType(key)) return null;
         else return removeProperty(tx().getPropertyKey(key));
     }
+
+	/* ---------------------------------------------------------------
+	 * TinkPop Iterators Method
+	 * ---------------------------------------------------------------
+	 */
+
+    @Override
+    public Vertex.Iterators iterators() {
+        return this;
+    }
+
+    @Override
+    public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
+        return query().direction(direction).limit(i).labels(strings).edges().iterator();
+    }
+
+    @Override
+    public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
+        return query().direction(direction).limit(i).labels(strings).vertices().iterator();
+    }
+
+    @Override
+    public <V> Iterator<VertexProperty<V>> propertyIterator(String... strings) {
+        return (Iterator)query().keys(strings).properties().iterator();
+    }
+
+    @Override
+    public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
+        return (Iterator)query().keys(strings).system().properties().iterator();
+    }
+
 }

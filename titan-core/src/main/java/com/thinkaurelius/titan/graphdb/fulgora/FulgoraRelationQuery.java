@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.olap.Combiner;
 import com.thinkaurelius.titan.core.olap.Gather;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -33,29 +33,29 @@ class FulgoraRelationQuery<M> {
 
 class FulgoraPropertyQuery<M> extends FulgoraRelationQuery<M> {
 
-    final Function<TitanProperty,M> gather;
+    final Function<TitanVertexProperty,M> gather;
 
-    FulgoraPropertyQuery(List<SliceQuery> query, Function<TitanProperty, M> gather, Combiner<M> combiner) {
+    FulgoraPropertyQuery(List<SliceQuery> query, Function<TitanVertexProperty, M> gather, Combiner<M> combiner) {
         super(query, combiner);
         this.gather = gather;
     }
 
-    M process(TitanProperty p, @Nullable M previous) {
+    M process(TitanVertexProperty p, @Nullable M previous) {
         M result = gather.apply(p);
         if (previous==null) return result;
         else return combiner.combine(previous,result);
     }
 
-    public static final Function<TitanProperty,Object> SINGLE_VALUE_GATHER = new Function<TitanProperty, Object>() {
+    public static final Function<TitanVertexProperty,Object> SINGLE_VALUE_GATHER = new Function<TitanVertexProperty, Object>() {
         @Override
-        public Object apply(TitanProperty titanProperty) {
+        public Object apply(TitanVertexProperty titanProperty) {
             return titanProperty.getValue();
         }
     };
 
-    public static final Function<TitanProperty,List<Object>> VALUE_LIST_GATHER = new Function<TitanProperty, List<Object>>() {
+    public static final Function<TitanVertexProperty,List<Object>> VALUE_LIST_GATHER = new Function<TitanVertexProperty, List<Object>>() {
         @Override
-        public List<Object> apply(TitanProperty titanProperty) {
+        public List<Object> apply(TitanVertexProperty titanProperty) {
             return Lists.newArrayList(titanProperty.getValue());
         }
     };

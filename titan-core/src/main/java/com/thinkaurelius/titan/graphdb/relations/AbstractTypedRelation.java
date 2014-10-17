@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
@@ -9,11 +10,15 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.util.StreamFactory;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
-public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation {
+public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation, Edge.Iterators, VertexProperty.Iterators {
 
     protected final InternalRelationType type;
 
@@ -114,6 +119,12 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
+    public <V> Property<V> property(final String key, final V value) {
+        setProperty(key,value);
+        return new SimpleTitanProperty<V>(this,tx().getRelationType(key),value);
+    }
+
+    @Override
     public void setProperty(String key, Object value) {
         RelationType type = tx().getRelationType(key);
         if (type instanceof PropertyKey) setProperty((PropertyKey)type,value);
@@ -156,13 +167,44 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
 
+    /* ---------------------------------------------------------------
+	 * Blueprints Iterators
+	 * ---------------------------------------------------------------
+	 */
 
     @Override
-    public Set<String> getPropertyKeys() {
-        Set<String> result = Sets.newHashSet();
-        for (RelationType type : it().getPropertyKeysDirect()) result.add(type.getName());
-        return result;
+    public Iterator<Vertex> vertexIterator(Direction direction) {
+        List<Vertex> vertices;
+        if (direction==Direction.BOTH) {
+            vertices = ImmutableList.of((Vertex)getVertex(0),getVertex(1));
+        } else {
+            vertices = ImmutableList.of((Vertex)getVertex(EdgeDirection.position(direction)));
+        }
+        return vertices.iterator();
     }
+
+    public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... strings) {
+        Iterator<RelationType> keys;
+        if (strings==null || strings.length==0) {
+            keys = getPropertyKeysDirect().iterator();
+        } else {
+            keys = Arrays.asList(strings).stream().map(s -> tx().getRelationType(s)).filter(rt -> rt!=null).iterator();
+        }
+        return StreamFactory.stream(keys)
+                .filter( relationType -> hidden ^ !((InternalRelationType)relationType).isHiddenType())
+                .map( relationType -> (Property<V>)new SimpleTitanProperty<V>(this,relationType,getProperty(relationType))).iterator();
+    }
+
+    @Override
+    public <V> Iterator<Property<V>> propertyIterator(String... strings) {
+        return propertyIterator(false,strings);
+    }
+
+    @Override
+    public <V> Iterator<Property<V>> hiddenPropertyIterator(String... strings) {
+        return propertyIterator(true,strings);
+    }
+
 
 
 

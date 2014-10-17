@@ -9,13 +9,14 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
 
 import static org.junit.Assert.*;
+import static com.thinkaurelius.titan.testutil.TitanAssert.*;
 
 import java.util.Map;
 import java.util.Random;
@@ -42,21 +43,20 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         finishSchema();
         int numV = 300;
         int numE = 0;
-        TitanVertex[] vs = new TitanVertex[numV];
+        Vertex[] vs = new Vertex[numV];
         for (int i=0;i<numV;i++) {
-            vs[i] = tx.addVertex();
-            vs[i].setProperty("uid",i+1);
+            vs[i] = tx.addVertex("uid",i+1);
             int numVals = random.nextInt(5)+1;
-            vs[i].setProperty("numvals",numVals);
+            vs[i].singleProperty("numvals",numVals);
             for (int j=0;j<numVals;j++) {
-                vs[i].addProperty("values",random.nextInt(100));
+                vs[i].property("values",random.nextInt(100));
             }
         }
         for (int i=0;i<numV;i++) {
             int edges = i+1;
-            TitanVertex v = vs[i];
+            Vertex v = vs[i];
             for (int j=0;j<edges;j++) {
-                TitanVertex u = vs[random.nextInt(numV)];
+                Vertex u = vs[random.nextInt(numV)];
                 v.addEdge("knows", u);
                 numE++;
             }
@@ -74,10 +74,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         for (Map.Entry<Long,Degree> entry : degrees.entries()) {
             Degree degree = entry.getValue();
             assertEquals(degree.in+degree.out,degree.both);
-            Vertex v = tx.getVertex(entry.getKey().longValue());
-            int count = v.getProperty("uid");
+            Vertex v = tx.v(entry.getKey().longValue());
+            int count = v.value("uid");
             assertEquals(count,degree.out);
-            int numvals = v.getProperty("numvals");
+            int numvals = v.value("numvals");
             assertEquals(numvals,degree.prop);
             totalCount+= degree.both;
         }
@@ -99,8 +99,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             public Degree process(TitanVertex vertex) {
                 Degree d = vertex.getProperty("all");
                 if (d==null) d = new Degree();
-                Degree p = vertex.getProperty(aggregatePropKey);
-                if (checkPropKey!=null) assertNotNull(vertex.getProperty(checkPropKey));
+                Degree p = vertex.value(aggregatePropKey);
+                if (checkPropKey!=null) assertNotNull(vertex.value(checkPropKey));
                 if (p!=null) d.add(p);
                 return d;
             }
@@ -118,10 +118,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                                                     }
                                                 }
         );
-        builder.addQuery().keys(aggregatePropKey).properties(new Function<TitanProperty, Degree>() {
+        builder.addQuery().keys(aggregatePropKey).properties(new Function<TitanVertexProperty, Degree>() {
                                                          @Nullable
                                                          @Override
-                                                         public Degree apply(@Nullable TitanProperty titanProperty) {
+                                                         public Degree apply(@Nullable TitanVertexProperty titanProperty) {
                                                              return new Degree(0,0,1);
                                                          }
                                                      }, new Combiner<Degree>() {
@@ -163,12 +163,12 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     }
 
 
-    private void expand(TitanVertex v, final int distance, final int diameter, final int branch) {
-        v.setProperty("distance",distance);
+    private void expand(Vertex v, final int distance, final int diameter, final int branch) {
+        v.singleProperty("distance",distance);
         if (distance<diameter) {
-            TitanVertex previous = null;
+            Vertex previous = null;
             for (int i=0;i<branch;i++) {
-                TitanVertex u = tx.addVertex();
+                Vertex u = tx.addVertex();
                 u.addEdge("likes",v);
                 if (previous!=null) u.addEdge("knows",previous);
                 previous=u;
@@ -187,10 +187,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         final int diameter = 5;
         final double alpha = 0.85d;
         int numV = (int)((Math.pow(branch,diameter+1)-1)/(branch-1));
-        TitanVertex v = tx.addVertex();
+        Vertex v = tx.addVertex();
         expand(v,0,diameter,branch);
         clopen();
-        assertEquals(numV,Iterables.size(tx.getVertices()));
+        assertCount(numV,tx.V());
         newTx();
 
         //Precompute correct PR results:
@@ -206,8 +206,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         System.out.println(String.format("Computing PR on graph with %s vertices took: %s ms",numV,w.elapsed(TimeUnit.MILLISECONDS)));
         double totalPr = 0.0;
         for (Map.Entry<Long,PageRank> entry : ranks.entries()) {
-            Vertex u = tx.getVertex(entry.getKey());
-            int distance = u.<Integer>getProperty("distance");
+            Vertex u = tx.v(entry.getKey());
+            int distance = u.<Integer>value("distance");
             double pr = entry.getValue().getPr();
             assertEquals(correctPR[distance],pr,EPSILON);
 //            System.out.println(distance+" -> "+pr);
@@ -347,12 +347,12 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         int maxDepth = 16;
         int maxBranch = 5;
-        TitanVertex vertex = tx.addVertex();
+        Vertex vertex = tx.addVertex();
         //Grow a star-shaped graph around vertex which will be the single-source for this shortest path computation
         final int numV = growVertex(vertex,0,maxDepth, maxBranch);
         final int numE = numV-1;
-        assertEquals(numV,Iterables.size(tx.getVertices()));
-        assertEquals(numE,Iterables.size(tx.getEdges()));
+        assertCount(numV,tx.V());
+        assertCount(numE,tx.E());
 
         clopen();
 
@@ -370,7 +370,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                         return Integer.MAX_VALUE;
                     }
                 });
-                builder.setInitialState(ImmutableMap.of(vertex.getLongId(),0));
+                builder.setInitialState(ImmutableMap.of(getId(vertex),0));
             } else {
                 builder.setInitialState(distances);
             }
@@ -379,9 +379,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             builder.setJob(new OLAPJob<Integer>() {
                 @Override
                 public Integer process(TitanVertex vertex) {
-                    Integer d = vertex.getProperty("dist");
+                    Integer d = vertex.value("dist");
                     assertNotNull(d);
-                    Integer c = vertex.getProperty("connect");
+                    Integer c = vertex.value("connect");
                     int result = c==null?d:Math.min(c,d);
                     if (result<d) done.set(false);
                     return result;
@@ -395,7 +395,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                      if (state.intValue() == Integer.MAX_VALUE)
                          return state;
                      else
-                         return state + edge.<Integer>getProperty("distance");
+                         return state + edge.<Integer>value("distance");
                  }
              }, new Combiner<Integer>() {
                  @Override
@@ -412,20 +412,20 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         for (Map.Entry<Long,Integer> entry : distances.entries()) {
             int dist = entry.getValue();
             assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
-            Vertex v = tx.getVertex(entry.getKey().longValue());
-            assertEquals(v.<Integer>getProperty("distance").intValue(),dist);
+            Vertex v = tx.v(entry.getKey().longValue());
+            assertEquals(v.<Integer>value("distance").intValue(),dist);
         }
     }
 
-    private int growVertex(TitanVertex vertex, int depth, int maxDepth, int maxBranch) {
-        vertex.setProperty("distance",depth);
+    private int growVertex(Vertex vertex, int depth, int maxDepth, int maxBranch) {
+        vertex.singleProperty("distance",depth);
         int total=1;
         if (depth>=maxDepth) return total;
 
         for (int i=0;i<random.nextInt(maxBranch)+1;i++) {
             int dist = random.nextInt(3)+1;
-            TitanVertex n = tx.addVertex();
-            n.addEdge("connect",vertex).setProperty("distance",dist);
+            Vertex n = tx.addVertex();
+            n.addEdge("connect",vertex, "distance",dist);
             total+=growVertex(n,depth+dist,maxDepth,maxBranch);
         }
         return total;

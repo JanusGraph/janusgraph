@@ -1,3 +1,5 @@
+import com.thinkaurelius.titan.core.TitanVertexProperty
+
 def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
     String uniqueKey = "name";
     Object uniqueValue = faunusVertex.getProperty(uniqueKey);
@@ -22,7 +24,7 @@ def void getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) 
     if (pkey.getCardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
         vertex.setProperty(pkey.getName(), faunusProperty.getValue());
     } else {
-        Iterator<com.thinkaurelius.titan.core.TitanProperty> itty = vertex.getProperties(pkey.getName()).iterator();
+        Iterator<TitanVertexProperty> itty = vertex.getProperties(pkey.getName()).iterator();
         if (!itty.hasNext()) {
             vertex.addProperty(pkey.getName(), faunusProperty.getValue());
         }

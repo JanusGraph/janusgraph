@@ -3,13 +3,10 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -124,36 +121,36 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     @Override
     public void setProperty(final FaunusRelationType type, final Object value) {
         Preconditions.checkArgument(type.isPropertyKey(),"Expected property key: "+type);
-        super.setRelation(new StandardFaunusProperty(this, (FaunusPropertyKey) type, value));
+        super.setRelation(new StandardFaunusVertexProperty(this, (FaunusPropertyKey) type, value));
     }
 
-    public FaunusProperty addProperty(FaunusProperty property) {
-        return (FaunusProperty)super.addRelation(property);
+    public FaunusVertexProperty addProperty(FaunusVertexProperty property) {
+        return (FaunusVertexProperty)super.addRelation(property);
     }
 
     @Override
-    public TitanProperty addProperty(PropertyKey key, Object value) {
+    public TitanVertexProperty addProperty(PropertyKey key, Object value) {
         Preconditions.checkArgument(key instanceof FaunusPropertyKey);
-        return addProperty(new StandardFaunusProperty(this,(FaunusPropertyKey)key,value));
+        return addProperty(new StandardFaunusVertexProperty(this,(FaunusPropertyKey)key,value));
     }
 
-    public FaunusProperty addProperty(final String key, final Object value) {
+    public FaunusVertexProperty addProperty(final String key, final Object value) {
         FaunusPropertyKey type = getTypeManager().getOrCreatePropertyKey(key);
-        return (FaunusProperty)addProperty(type,value);
+        return (FaunusVertexProperty)addProperty(type,value);
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties() {
+    public Iterable<TitanVertexProperty> getProperties() {
         return query().properties();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(PropertyKey key) {
+    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
         return query().type(key).properties();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(String key) {
+    public Iterable<TitanVertexProperty> getProperties(String key) {
         return query().keys(key).properties();
     }
 
@@ -164,10 +161,10 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     public <T> Iterable<T> getPropertyValues(final String key) {
         FaunusPropertyKey type = getTypeManager().getOrCreatePropertyKey(key);
-        return Iterables.transform(query().type(type).properties(), new Function<TitanProperty, T>() {
+        return Iterables.transform(query().type(type).properties(), new Function<TitanVertexProperty, T>() {
             @Nullable
             @Override
-            public T apply(@Nullable TitanProperty prop) {
+            public T apply(@Nullable TitanVertexProperty prop) {
                 return prop.getValue();
             }
         });

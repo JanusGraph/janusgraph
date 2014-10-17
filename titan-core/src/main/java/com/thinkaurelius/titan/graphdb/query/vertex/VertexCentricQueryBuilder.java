@@ -80,7 +80,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     }
 
     @Override
-    public Iterable<TitanProperty> properties() {
+    public Iterable<TitanVertexProperty> properties() {
         return (Iterable)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
                 executeImplicitKeyQuery(vertex):
                 execute(RelationCategory.PROPERTY, new RelationConstructor()));

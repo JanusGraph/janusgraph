@@ -5,10 +5,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusProperty;
+import com.thinkaurelius.titan.hadoop.FaunusVertexProperty;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.gremlin.groovy.jsr223.DefaultImportCustomizerProvider;
@@ -49,11 +49,11 @@ public class LoaderScriptWrapper {
                     ImmutableSet.of( /* nonstatic */
                             FaunusVertex.class.getCanonicalName(),
                             FaunusEdge.class.getCanonicalName(),
-                            FaunusProperty.class.getCanonicalName(),
+                            FaunusVertexProperty.class.getCanonicalName(),
                             TitanGraph.class.getCanonicalName(),
                             TitanVertex.class.getCanonicalName(),
                             TitanEdge.class.getCanonicalName(),
-                            TitanProperty.class.getCanonicalName(),
+                            TitanVertexProperty.class.getCanonicalName(),
                             Logger.class.getCanonicalName(),
                             TASK_IO_CONTEXT),
                     ImmutableSet.<String>of() /* static */);
@@ -87,7 +87,7 @@ public class LoaderScriptWrapper {
     );
 
     private static final ImmutableMap<String, String> vpropArguments = ImmutableMap.of(
-            "titanProperty", TitanProperty.class.getCanonicalName(),
+            "titanProperty", TitanVertexProperty.class.getCanonicalName(),
             "vertex", TitanVertex.class.getCanonicalName(),
             "graph", TitanGraph.class.getCanonicalName(),
             "context", TASK_IO_CONTEXT,
@@ -155,7 +155,7 @@ public class LoaderScriptWrapper {
         }
     }
 
-    public void getVProp(TitanProperty titanProperty, TitanVertex vertex, TitanGraph graph, Mapper.Context context) {
+    public void getVProp(TitanVertexProperty titanProperty, TitanVertex vertex, TitanGraph graph, Mapper.Context context) {
         Bindings bindings = new SimpleBindings();
         bindings.put("titanProperty", titanProperty);
         bindings.put("vertex", vertex);

@@ -1,5 +1,9 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanGraphQuery;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
@@ -30,37 +34,16 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> {
     @Override
     public void generateTraverserIterator(final boolean trackPaths) {
         //TODO: construct GraphQuery
-        this.start = Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges();
+        TitanTransaction tx = (TitanTransaction)this.traversal.sideEffects().getGraph();
+        TitanGraphQuery query = tx.query();
+        for (HasContainer condition : hasContainers) {
+            Preconditions.checkArgument(condition.predicate instanceof TitanPredicate,"" +
+                    "Expected a Titan predicate but found: %s",condition.predicate);
+            query.has(condition.key,(TitanPredicate)condition.predicate,condition.value);
+        }
+        this.start = Vertex.class.isAssignableFrom(this.returnClass) ? query.vertices() : query.edges();
         super.generateTraverserIterator(trackPaths);
     }
-
-//    private Iterator<? extends Edge> edges() {
-//        final HasContainer indexedContainer = getIndexKey(Edge.class);
-//        final Stream<? extends Edge> edgeStream = (null == indexedContainer) ?
-//                TinkerHelper.getEdges((TinkerGraph)this.traversal.sideEffects().getGraph()).stream() :
-//                TinkerHelper.queryEdgeIndex((TinkerGraph)this.traversal.sideEffects().getGraph(), indexedContainer.key, indexedContainer.value).stream();
-//
-//        // the copy to a new List is intentional as remove() operations will cause ConcurrentModificationException otherwise
-//        return edgeStream.filter(e -> HasContainer.testAll(e, hasContainers)).collect(Collectors.<Edge>toList()).iterator();
-//    }
-//
-//    private Iterator<? extends Vertex> vertices() {
-//        final HasContainer indexedContainer = getIndexKey(Vertex.class);
-//        final Stream<? extends Vertex> vertexStream = (null == indexedContainer) ?
-//                TinkerHelper.getVertices((TinkerGraph)this.traversal.sideEffects().getGraph()).stream() :
-//                TinkerHelper.queryVertexIndex((TinkerGraph)this.traversal.sideEffects().getGraph(), indexedContainer.key, indexedContainer.value).stream();
-//
-//        // the copy to a new List is intentional as remove() operations will cause ConcurrentModificationException otherwise
-//        return vertexStream.filter(v -> HasContainer.testAll(v, this.hasContainers)).collect(Collectors.<Vertex>toList()).iterator();
-//    }
-//
-//    private HasContainer getIndexKey(final Class<? extends Element> indexedClass) {
-//        final Set<String> indexedKeys = ((TinkerGraph)this.traversal.sideEffects().getGraph()).getIndexedKeys(indexedClass);
-//        return this.hasContainers.stream()
-//                .filter(c -> indexedKeys.contains(c.key) && c.predicate.equals(Compare.eq))
-//                .findAny()
-//                .orElseGet(() -> null);
-//    }
 
     public String toString() {
         return this.hasContainers.isEmpty() ? super.toString() : TraversalHelper.makeStepString(this, this.hasContainers);

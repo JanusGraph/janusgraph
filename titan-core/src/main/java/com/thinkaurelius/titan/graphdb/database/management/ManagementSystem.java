@@ -214,7 +214,7 @@ public class ManagementSystem implements TitanManagement {
             }
         }
 
-        if (graphShutdownRequired) graph.shutdown();
+        if (graphShutdownRequired) graph.close();
         close();
     }
 
@@ -806,14 +806,14 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(vertex instanceof RelationTypeVertex || vertex.asIndexType().isCompositeIndex());
 
         //Delete current status
-        for (TitanProperty p : vertex.getProperties(BaseKey.SchemaDefinitionProperty)) {
+        for (TitanVertexProperty p : vertex.getProperties(BaseKey.SchemaDefinitionProperty)) {
             if (p.<TypeDefinitionDescription>getProperty(BaseKey.SchemaDefinitionDesc).getCategory()==TypeDefinitionCategory.STATUS) {
                 if (p.getValue().equals(status)) return;
                 else p.remove();
             }
         }
         //Add new status
-        TitanProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
+        TitanVertexProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
         p.setProperty(BaseKey.SchemaDefinitionDesc,TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
     }
 

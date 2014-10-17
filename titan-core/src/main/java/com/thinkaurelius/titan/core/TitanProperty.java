@@ -1,40 +1,20 @@
-
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.gremlin.structure.VertexProperty;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanElement;
+import com.tinkerpop.gremlin.structure.Property;
 
 /**
- * TitanProperty is a {@link TitanRelation} connecting a vertex to a value.
- * TitanProperty extends {@link TitanRelation}, with methods for retrieving the property's value and key.
- *
- * @author Matthias Br&ouml;cheler (me@matthiasb.com);
- * @see TitanRelation
- * @see PropertyKey
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanProperty extends TitanRelation, VertexProperty {
+public interface TitanProperty<V> extends Property<V> {
 
-    /**
-     * Returns the property key of this property
-     *
-     * @return property key of this property
-     * @see PropertyKey
-     */
-    public PropertyKey getPropertyKey();
+    public RelationType getType();
 
-
-    /**
-     * Returns the vertex on which this property is incident.
-     *
-     * @return The vertex of this property.
-     */
-    public TitanVertex getVertex();
-
-    /**
-     * Returns the value of this property (possibly cast to the expected type).
-     *
-     * @return value of this property
-     * @throws ClassCastException if the value cannot be cast to the expected type
-     */
-    public<O> O getValue();
+    @Override
+    public default String key() {
+        return getType().getName();
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
@@ -78,6 +79,12 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
     public Q hasNot(String key, Object value);
 
     @Override
+    public Q has(String key, TitanPredicate predicate, Object value);
+
+    @Override
+    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
+
+    @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
 
     @Override
@@ -109,7 +116,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      *
      * @return Iterable over all incident properties that match this query for each vertex
      */
-    public Map<TitanVertex, Iterable<TitanProperty>> properties();
+    public Map<TitanVertex, Iterable<TitanVertexProperty>> properties();
 
 
     /**

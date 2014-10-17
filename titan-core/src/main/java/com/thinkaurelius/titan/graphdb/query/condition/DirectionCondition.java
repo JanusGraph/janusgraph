@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -32,7 +30,7 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
             return direction==((CacheEdge)element).getVertexCentricDirection();
         } else if (element instanceof TitanEdge) {
             return ((TitanEdge)element).getVertex(direction).equals(baseVertex);
-        } else if (element instanceof TitanProperty) {
+        } else if (element instanceof TitanVertexProperty) {
             return direction==Direction.OUT;
         }
         return false;

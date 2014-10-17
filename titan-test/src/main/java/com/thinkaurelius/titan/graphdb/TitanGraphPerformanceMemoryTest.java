@@ -1,11 +1,14 @@
 package com.thinkaurelius.titan.graphdb;
 
+import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,8 +45,8 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                 //System.out.println("Memory before run "+(r+1)+": " + memoryBaseline / 1024 + " KB");
             }
             for (int t = 0; t < 1000; t++) {
-                graph.addVertex(null);
-                graph.rollback();
+                graph.addVertex();
+                graph.tx().rollback();
                 TitanTransaction tx = graph.newTransaction();
                 tx.addVertex();
                 tx.rollback();
@@ -80,14 +83,14 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                 public void run() {
                     for (int r = 0; r < rounds; r++) {
                         TitanTransaction tx = graph.newTransaction();
-                        TitanVertex previous = null;
+                        Vertex previous = null;
                         for (int c = 0; c < commitSize; c++) {
-                            TitanVertex v = tx.addVertex();
+                            Vertex v = tx.addVertex();
                             long uid = uidCounter.incrementAndGet();
-                            v.setProperty("uid", uid);
-                            v.setProperty("name", "user" + uid);
+                            v.singleProperty("uid", uid);
+                            v.singleProperty("name", "user" + uid);
                             if (previous != null) {
-                                v.addEdge("friend", previous).setProperty("time", Math.abs(random.nextInt()));
+                                v.addEdge("friend", previous, "time", Math.abs(random.nextInt()));
                             }
                             previous = v;
                         }
@@ -113,19 +116,19 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                 public void run() {
                     TitanTransaction tx = graph.newTransaction();
                     long ruid = random.nextInt(maxUID) + 1;
-                    getVertex(tx,"uid", ruid).setProperty("name", fixedName);
+                    getVertex(tx,"uid", ruid).singleProperty("name", fixedName);
                     for (int t = 1; t <= trials; t++) {
-                        TitanVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
-                        assertEquals(2, Iterables.size(v.getProperties()));
+                        Vertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
+                        assertCount(2, v.properties());
                         int count = 0;
-                        for (TitanEdge e : v.getEdges()) {
+                        for (Edge e : v.bothE().toList()) {
                             count++;
-                            assertTrue(((Number) e.getProperty("time")).longValue() >= 0);
+                            assertTrue(e.<Integer>value("time") >= 0);
                         }
                         assertTrue(count <= 2);
 //                        if (t%(trials/10)==0) System.out.println(t);
                     }
-                    assertEquals(fixedName, getVertex(tx,"uid", ruid).getProperty("name"));
+                    assertEquals(fixedName, getVertex(tx,"uid", ruid).value("name"));
                     tx.commit();
                 }
             });

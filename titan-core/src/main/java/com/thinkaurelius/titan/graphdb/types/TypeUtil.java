@@ -20,11 +20,11 @@ import java.util.Set;
 public class TypeUtil {
 
     public static boolean hasSimpleInternalVertexKeyIndex(TitanRelation rel) {
-        if (!(rel instanceof TitanProperty)) return false;
-        else return hasSimpleInternalVertexKeyIndex((TitanProperty)rel);
+        if (!(rel instanceof TitanVertexProperty)) return false;
+        else return hasSimpleInternalVertexKeyIndex((TitanVertexProperty)rel);
     }
 
-    public static boolean hasSimpleInternalVertexKeyIndex(TitanProperty prop) {
+    public static boolean hasSimpleInternalVertexKeyIndex(TitanVertexProperty prop) {
         return hasSimpleInternalVertexKeyIndex(prop.getPropertyKey());
     }
 

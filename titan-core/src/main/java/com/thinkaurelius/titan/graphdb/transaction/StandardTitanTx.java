@@ -39,7 +39,7 @@ import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
-import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
+import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.AddedRelationsContainer;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.ConcurrentBufferAddedRelations;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.SimpleBufferAddedRelations;
@@ -568,7 +568,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         //Update transaction data structures
         if (relation.isNew()) {
             addedRelations.remove(relation);
-            if (TypeUtil.hasSimpleInternalVertexKeyIndex(relation)) newVertexIndexEntries.remove((TitanProperty) relation);
+            if (TypeUtil.hasSimpleInternalVertexKeyIndex(relation)) newVertexIndexEntries.remove((TitanVertexProperty) relation);
         } else {
             Preconditions.checkArgument(relation.isLoaded());
             if (deletedRelations == EMPTY_DELETED_RELATIONS) {
@@ -670,15 +670,15 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
         addedRelations.add(r);
         for (int pos = 0; pos < r.getLen(); pos++) vertexCache.add(r.getVertex(pos), r.getVertex(pos).getLongId());
-        if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) newVertexIndexEntries.add((TitanProperty) r);
+        if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) newVertexIndexEntries.add((TitanVertexProperty) r);
     }
 
-    public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
+    public TitanVertexProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
         if (key.getCardinality()== Cardinality.SINGLE) return setProperty(vertex, key, value);
         else return addPropertyInternal(vertex, key, value);
     }
 
-    public TitanProperty addPropertyInternal(TitanVertex vertex, final PropertyKey key, Object value) {
+    public TitanVertexProperty addPropertyInternal(TitanVertex vertex, final PropertyKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkArgument(!(key instanceof ImplicitKey),"Cannot create a property of implicit type: %s",key.getName());
         vertex = ((InternalVertex) vertex).it();
@@ -705,9 +705,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             throw new SchemaViolationException("A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.getName(), vertex);
                 }
                 if (cardinality==Cardinality.SET) {
-                    if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanProperty>() {
+                    if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanVertexProperty>() {
                         @Override
-                        public boolean apply(@Nullable TitanProperty titanProperty) {
+                        public boolean apply(@Nullable TitanVertexProperty titanProperty) {
                             return normalizedValue.equals(titanProperty.getValue());
                         }
                     })))
@@ -719,7 +719,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             throw new SchemaViolationException("Adding this property for key [%s] and value [%s] violates a uniqueness constraint [%s]", key.getName(), normalizedValue, lockTuple.getIndex());
                 }
             }
-            StandardProperty prop = new StandardProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
+            StandardVertexProperty prop = new StandardVertexProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
             if (config.hasAssignIDsImmediately()) graph.assignID(prop);
             connectRelation(prop);
             return prop;
@@ -728,7 +728,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
     }
 
-    public TitanProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
+    public TitanVertexProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
         if (key.getCardinality()!=Cardinality.SINGLE) throw new UnsupportedOperationException("Not a single key: "+key+". Use addProperty instead");
@@ -794,7 +794,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         updateSchemaVertex(schemaVertex);
         addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
-            TitanProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
+            TitanVertexProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
             p.setProperty(BaseKey.SchemaDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(schemaVertex, schemaVertex.getLongId());
@@ -1103,21 +1103,21 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             return keys.contains(relation.getType());
                         }
                     })) {
-                        vertexSet.add(((TitanProperty) r).getVertex());
+                        vertexSet.add(((TitanVertexProperty) r).getElement());
                     }
                     for (TitanRelation r : deletedRelations.values()) {
                         if (keys.contains(r.getType())) {
-                            TitanVertex v = ((TitanProperty) r).getVertex();
+                            TitanVertex v = ((TitanVertexProperty) r).getElement();
                             if (!v.isRemoved()) vertexSet.add(v);
                         }
                     }
                     vertices = vertexSet.iterator();
                 } else {
-                    vertices = Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new Function<TitanProperty, TitanVertex>() {
+                    vertices = Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new Function<TitanVertexProperty, TitanVertex>() {
                         @Nullable
                         @Override
-                        public TitanVertex apply(@Nullable TitanProperty o) {
-                            return o.getVertex();
+                        public TitanVertex apply(@Nullable TitanVertexProperty o) {
+                            return o.getElement();
                         }
                     });
                 }
@@ -1246,9 +1246,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
     };
 
-    private final Function<Object, TitanProperty> propertyIDConversionFct = new Function<Object, TitanProperty>() {
+    private final Function<Object, TitanVertexProperty> propertyIDConversionFct = new Function<Object, TitanVertexProperty>() {
         @Override
-        public TitanProperty apply(@Nullable Object id) {
+        public TitanVertexProperty apply(@Nullable Object id) {
             Preconditions.checkNotNull(id);
             Preconditions.checkArgument(id instanceof RelationIdentifier);
             return ((RelationIdentifier)id).findProperty(StandardTitanTx.this);

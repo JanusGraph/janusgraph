@@ -73,63 +73,50 @@ public class GraphOfTheGodsFactory {
         TitanTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertexWithLabel("titan");
-        saturn.setProperty("name", "saturn");
-        saturn.setProperty("age", 10000);
+        Vertex saturn = tx.addVertex("label","titan","name", "saturn","age", 10000);
 
-        Vertex sky = tx.addVertexWithLabel("location");
-        ElementHelper.setProperties(sky, "name", "sky");
+        Vertex sky = tx.addVertex("label","location","name", "sky");
 
-        Vertex sea = tx.addVertexWithLabel("location");
-        ElementHelper.setProperties(sea, "name", "sea");
+        Vertex sea = tx.addVertex("label","location", "name", "sea");
 
-        Vertex jupiter = tx.addVertexWithLabel("god");
-        ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000);
+        Vertex jupiter = tx.addVertex("label","god", "name", "jupiter", "age", 5000);
 
-        Vertex neptune = tx.addVertexWithLabel("god");
-        ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500);
+        Vertex neptune = tx.addVertex("label","god", "name", "neptune", "age", 4500);
 
-        Vertex hercules = tx.addVertexWithLabel("demigod");
-        ElementHelper.setProperties(hercules, "name", "hercules", "age", 30);
+        Vertex hercules = tx.addVertex("label","demigod", "name", "hercules", "age", 30);
 
-        Vertex alcmene = tx.addVertexWithLabel("human");
-        ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45);
+        Vertex alcmene = tx.addVertex("label","human", "name", "alcmene", "age", 45);
 
-        Vertex pluto = tx.addVertexWithLabel("god");
-        ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000);
+        Vertex pluto = tx.addVertex("label","god", "name", "pluto", "age", 4000);
 
-        Vertex nemean = tx.addVertexWithLabel("monster");
-        ElementHelper.setProperties(nemean, "name", "nemean");
+        Vertex nemean = tx.addVertex("label","monster", "name", "nemean");
 
-        Vertex hydra = tx.addVertexWithLabel("monster");
-        ElementHelper.setProperties(hydra, "name", "hydra");
+        Vertex hydra = tx.addVertex("label","monster", "name", "hydra");
 
-        Vertex cerberus = tx.addVertexWithLabel("monster");
-        ElementHelper.setProperties(cerberus, "name", "cerberus");
+        Vertex cerberus = tx.addVertex("label","monster", "name", "cerberus");
 
-        Vertex tartarus = tx.addVertexWithLabel("location");
-        ElementHelper.setProperties(tartarus, "name", "tartarus");
+        Vertex tartarus = tx.addVertex("label","location", "name", "tartarus");
 
         // edges
 
         jupiter.addEdge("father", saturn);
-        jupiter.addEdge("lives", sky).setProperty("reason", "loves fresh breezes");
+        jupiter.addEdge("lives", sky, "reason", "loves fresh breezes");
         jupiter.addEdge("brother", neptune);
         jupiter.addEdge("brother", pluto);
 
-        neptune.addEdge("lives", sea).setProperty("reason", "loves waves");
+        neptune.addEdge("lives", sea).property("reason", "loves waves");
         neptune.addEdge("brother", jupiter);
         neptune.addEdge("brother", pluto);
 
         hercules.addEdge("father", jupiter);
         hercules.addEdge("mother", alcmene);
-        ElementHelper.setProperties(hercules.addEdge("battled", nemean), "time", 1, "place", Geoshape.point(38.1f, 23.7f));
-        ElementHelper.setProperties(hercules.addEdge("battled", hydra), "time", 2, "place", Geoshape.point(37.7f, 23.9f));
-        ElementHelper.setProperties(hercules.addEdge("battled", cerberus), "time", 12, "place", Geoshape.point(39f, 22f));
+        hercules.addEdge("battled", nemean, "time", 1, "place", Geoshape.point(38.1f, 23.7f));
+        hercules.addEdge("battled", hydra, "time", 2, "place", Geoshape.point(37.7f, 23.9f));
+        hercules.addEdge("battled", cerberus, "time", 12, "place", Geoshape.point(39f, 22f));
 
         pluto.addEdge("brother", jupiter);
         pluto.addEdge("brother", neptune);
-        pluto.addEdge("lives", tartarus).setProperty("reason", "no fear of death");
+        pluto.addEdge("lives", tartarus, "reason", "no fear of death");
         pluto.addEdge("pet", cerberus);
 
         cerberus.addEdge("lives", tartarus);
@@ -142,7 +129,7 @@ public class GraphOfTheGodsFactory {
      * Calls {@link TitanFactory#open(String)}, passing the Titan configuration file path
      * which must be the sole element in the {@code args} array, then calls
      * {@link #load(com.thinkaurelius.titan.core.TitanGraph)} on the opened graph,
-     * then calls {@link com.thinkaurelius.titan.core.TitanGraph#shutdown()}
+     * then calls {@link com.thinkaurelius.titan.core.TitanGraph#close()}
      * and returns.
      * <p>
      * This method may call {@link System#exit(int)} if it encounters an error, such as
@@ -161,6 +148,6 @@ public class GraphOfTheGodsFactory {
 
         TitanGraph g = TitanFactory.open(args[0]);
         load(g);
-        g.shutdown();
+        g.close();
     }
 }

@@ -21,7 +21,7 @@ public enum ElementCategory {
         switch(this) {
             case VERTEX: return TitanVertex.class;
             case EDGE: return TitanEdge.class;
-            case PROPERTY: return TitanProperty.class;
+            case PROPERTY: return TitanVertexProperty.class;
             default: throw new IllegalArgumentException();
         }
     }
@@ -52,7 +52,7 @@ public enum ElementCategory {
         switch(this) {
             case VERTEX: return ((TitanVertex)element).getVertexLabel().equals(type);
             case EDGE: return ((TitanEdge)element).getEdgeLabel().equals(type);
-            case PROPERTY: return ((TitanProperty)element).getPropertyKey().equals(type);
+            case PROPERTY: return ((TitanVertexProperty)element).getPropertyKey().equals(type);
             default: throw new IllegalArgumentException();
         }
     }
@@ -90,7 +90,7 @@ public enum ElementCategory {
         Preconditions.checkArgument(clazz!=null,"Need to provide a element class argument");
         if (Vertex.class.isAssignableFrom(clazz)) return VERTEX;
         else if (Edge.class.isAssignableFrom(clazz)) return EDGE;
-        else if (TitanProperty.class.isAssignableFrom(clazz)) return PROPERTY;
+        else if (TitanVertexProperty.class.isAssignableFrom(clazz)) return PROPERTY;
         else throw new IllegalArgumentException("Invalid clazz provided: " + clazz);
     }
 

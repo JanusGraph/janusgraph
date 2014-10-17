@@ -123,6 +123,16 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     @Override
+    public Q has(String key, TitanPredicate predicate, Object value) {
+        return addConstraint(key,predicate,value);
+    }
+
+    @Override
+    public Q has(PropertyKey key, TitanPredicate predicate, Object value) {
+        return addConstraint(key.getName(),predicate,value);
+    }
+
+    @Override
     public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end) {
         return interval(key.getName(), start, end);
     }

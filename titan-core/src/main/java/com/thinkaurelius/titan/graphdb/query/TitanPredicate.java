@@ -87,8 +87,8 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
             } else if (p instanceof Contains) {
                 Contains con = (Contains)p;
                 switch (con) {
-                    case in: return Contain.IN;
-                    case nin: return Contain.NOT_IN;
+                    case within: return Contain.IN;
+                    case without: return Contain.NOT_IN;
                     default: throw new IllegalArgumentException("Unexpected container: " + con);
 
                 }

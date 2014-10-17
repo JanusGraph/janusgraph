@@ -96,11 +96,11 @@ public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
                     TitanVertex[] vs = new TitanVertex[verticesPerTask];
                     for (int j=0;j<verticesPerTask;j++) {
                         vs[j]=tx.addVertex();
-                        vs[j].setProperty("w", random.nextInt(maxWeight));
+                        vs[j].singleProperty("w", random.nextInt(maxWeight));
                     }
                     for (int j=0;j<verticesPerTask*10;j++) {
                         TitanEdge e = vs[random.nextInt(verticesPerTask)].addEdge("l",vs[random.nextInt(verticesPerTask)]);
-                        e.setProperty("t",random.nextInt(maxTime));
+                        e.property("t",random.nextInt(maxTime));
                     }
                     System.out.print(".");
                     tx.commit();

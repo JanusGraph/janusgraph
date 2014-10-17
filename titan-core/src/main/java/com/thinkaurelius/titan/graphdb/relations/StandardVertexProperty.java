@@ -2,12 +2,12 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,9 +17,9 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardProperty extends AbstractProperty implements StandardRelation, ReassignableRelation {
+public class StandardVertexProperty extends AbstractVertexProperty implements StandardRelation, ReassignableRelation {
 
-    public StandardProperty(long id, PropertyKey type, InternalVertex vertex, Object value, byte lifecycle) {
+    public StandardVertexProperty(long id, PropertyKey type, InternalVertex vertex, Object value, byte lifecycle) {
         super(id, type, vertex, value);
         this.lifecycle = lifecycle;
     }
@@ -90,4 +90,5 @@ public class StandardProperty extends AbstractProperty implements StandardRelati
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
         } //else throw InvalidElementException.removedException(this);
     }
+
 }

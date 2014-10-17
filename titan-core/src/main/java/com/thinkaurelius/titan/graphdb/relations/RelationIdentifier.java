@@ -142,10 +142,10 @@ public final class RelationIdentifier {
         else throw new UnsupportedOperationException("Referenced relation is a property not an edge");
     }
 
-    public TitanProperty findProperty(TitanTransaction tx) {
+    public TitanVertexProperty findProperty(TitanTransaction tx) {
         TitanRelation r = findRelation(tx);
         if (r==null) return null;
-        else if (r instanceof TitanProperty) return (TitanProperty)r;
+        else if (r instanceof TitanVertexProperty) return (TitanVertexProperty)r;
         else throw new UnsupportedOperationException("Referenced relation is a edge not a property");
     }
 

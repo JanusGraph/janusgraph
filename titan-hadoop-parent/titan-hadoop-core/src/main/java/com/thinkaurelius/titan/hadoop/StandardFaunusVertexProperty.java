@@ -2,12 +2,11 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
@@ -20,40 +19,40 @@ import java.io.IOException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StandardFaunusProperty extends StandardFaunusRelation implements FaunusProperty {
+public class StandardFaunusVertexProperty extends StandardFaunusRelation implements FaunusVertexProperty {
 
     protected long vertexid;
     protected Object value;
 
     private static final Logger log =
-            LoggerFactory.getLogger(StandardFaunusProperty.class);
+            LoggerFactory.getLogger(StandardFaunusVertexProperty.class);
 
-    public StandardFaunusProperty() {
+    public StandardFaunusVertexProperty() {
         this(ModifiableHadoopConfiguration.immutableWithResources());
     }
 
-    public StandardFaunusProperty(final Configuration configuration) {
+    public StandardFaunusVertexProperty(final Configuration configuration) {
         super(configuration, FaunusElement.NO_ID, FaunusPropertyKey.VALUE);
     }
 
-    public StandardFaunusProperty(final Configuration configuration, final DataInput in) throws IOException {
+    public StandardFaunusVertexProperty(final Configuration configuration, final DataInput in) throws IOException {
         super(configuration, FaunusElement.NO_ID, FaunusPropertyKey.VALUE);
         this.readFields(in);
     }
 
-    public StandardFaunusProperty(FaunusVertex vertex, FaunusPropertyKey type, Object value) {
+    public StandardFaunusVertexProperty(FaunusVertex vertex, FaunusPropertyKey type, Object value) {
         this(FaunusElement.NO_ID, vertex, type, value);
     }
 
-    public StandardFaunusProperty(long id, FaunusVertex vertex, String type, Object value) {
+    public StandardFaunusVertexProperty(long id, FaunusVertex vertex, String type, Object value) {
         this(id, vertex, vertex.getTypeManager().getOrCreatePropertyKey(type), value);
     }
 
-    public StandardFaunusProperty(long id, FaunusVertex vertex, FaunusPropertyKey type, Object value) {
+    public StandardFaunusVertexProperty(long id, FaunusVertex vertex, FaunusPropertyKey type, Object value) {
         this(vertex.getFaunusConf(),id,vertex.getLongId(),type,value);
     }
 
-    public StandardFaunusProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
+    public StandardFaunusVertexProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
         super(config, id, type);
         Preconditions.checkArgument(vertex>=0, "Vertex id %d", vertex);
         Preconditions.checkNotNull(value, "property value must be non-null");
@@ -75,7 +74,7 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     }
 
     @Override
-    public TitanVertex getVertex() {
+    public TitanVertex getElement() {
         return getVertex(0);
     }
 
@@ -119,10 +118,10 @@ public class StandardFaunusProperty extends StandardFaunusRelation implements Fa
     @Override
     public boolean equals(Object oth) {
         if (this == oth) return true;
-        else if (oth == null || !(oth instanceof TitanProperty)) return false;
-        TitanProperty p = (TitanProperty) oth;
+        else if (oth == null || !(oth instanceof TitanVertexProperty)) return false;
+        TitanVertexProperty p = (TitanVertexProperty) oth;
         if (hasId() || p.hasId()) return getLongId()==p.getLongId();
-        return getType().equals(p.getPropertyKey()) && value.equals(p.getValue()) && vertexid==p.getVertex().getLongId();
+        return getType().equals(p.getPropertyKey()) && value.equals(p.getValue()) && vertexid==p.getElement().getLongId();
     }
 
     @Override

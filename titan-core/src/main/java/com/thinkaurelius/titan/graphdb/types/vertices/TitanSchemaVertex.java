@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
@@ -33,10 +33,10 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
     @Override
     public String getName() {
         if (name == null) {
-            TitanProperty p;
+            TitanVertexProperty<String> p;
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
-                p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
+                p = (TitanVertexProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
                         tx.getGraph().getSchemaCache().getSchemaRelations(getLongId(), BaseKey.SchemaName, Direction.OUT, tx()),
                         tx), null);
             } else {
@@ -61,7 +61,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         TypeDefinitionMap def = definition;
         if (def == null) {
             def = new TypeDefinitionMap();
-            Iterable<TitanProperty> ps;
+            Iterable<TitanVertexProperty> ps;
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
@@ -70,7 +70,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             } else {
                 ps = query().type(BaseKey.SchemaDefinitionProperty).properties();
             }
-            for (TitanProperty property : ps) {
+            for (TitanVertexProperty property : ps) {
                 TypeDefinitionDescription desc = property.getProperty(BaseKey.SchemaDefinitionDesc);
                 Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
                 def.setValue(desc.getCategory(), property.getValue());

@@ -71,7 +71,7 @@ public class TitanHadoopGraph {
                 if (type.isPropertyKey()) {
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    final StandardFaunusProperty fprop = new StandardFaunusProperty(relation.relationId, vertex, type.getName(), value);
+                    final StandardFaunusVertexProperty fprop = new StandardFaunusVertexProperty(relation.relationId, vertex, type.getName(), value);
                     vertex.addProperty(fprop);
                     frel = fprop;
                 } else {

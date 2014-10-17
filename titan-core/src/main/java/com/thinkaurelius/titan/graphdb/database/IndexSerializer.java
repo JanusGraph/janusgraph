@@ -299,7 +299,7 @@ public class IndexSerializer {
 
         for (InternalRelation rel : updatedProperties) {
             assert rel.isProperty();
-            TitanProperty p = (TitanProperty)rel;
+            TitanVertexProperty p = (TitanVertexProperty)rel;
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
             IndexUpdate.Type updateType = getUpateType(rel);
             for (IndexType index : ((InternalRelationType)p.getPropertyKey()).getKeyIndexes()) {
@@ -431,7 +431,7 @@ public class IndexSerializer {
             this.key = key;
         }
 
-        private RecordEntry(TitanProperty property) {
+        private RecordEntry(TitanVertexProperty property) {
             this(property.getLongId(),property.getValue(),property.getPropertyKey());
         }
     }
@@ -474,7 +474,7 @@ public class IndexSerializer {
             values = ImmutableList.of(replaceValue);
         } else {
             values = new ArrayList<RecordEntry>();
-            Iterable<TitanProperty> props;
+            Iterable<TitanVertexProperty> props;
             if (onlyLoaded ||
                     (!vertex.isNew() && IDManager.VertexIDType.PartitionedVertex.is(vertex.getLongId()))) {
                 //going through transaction so we can query deleted vertices
@@ -485,7 +485,7 @@ public class IndexSerializer {
             } else {
                 props = vertex.getProperties(key);
             }
-            for (TitanProperty p : props) {
+            for (TitanVertexProperty p : props) {
                 assert !onlyLoaded || p.isLoaded() || p.isRemoved();
                 assert key.getDataType().equals(p.getValue().getClass()) : key + " -> " + p;
                 values.add(new RecordEntry(p));

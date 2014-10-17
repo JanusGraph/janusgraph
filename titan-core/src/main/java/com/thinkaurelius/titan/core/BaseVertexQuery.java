@@ -1,6 +1,7 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -134,6 +135,10 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @return
      */
     public Q hasNot(String key, Object value);
+
+    public Q has(String key, TitanPredicate predicate, Object value);
+
+    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
 
     /**
      * Query for those edges or properties that have a property for the given key

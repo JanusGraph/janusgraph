@@ -1,19 +1,15 @@
 package com.thinkaurelius.titan.graphdb;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.testcategory.PerformanceTests;
+import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
+import com.thinkaurelius.titan.testutil.RandomGenerator;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,11 +19,12 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.testcategory.PerformanceTests;
-import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
-import com.thinkaurelius.titan.testutil.RandomGenerator;
-import com.tinkerpop.blueprints.Direction;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.concurrent.*;
+
+import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
+import static org.junit.Assert.assertTrue;
 
 /**
  * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
@@ -43,7 +40,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
     private static final int TASK_COUNT = THREAD_COUNT * 256;
 
     // Graph structure settings
-    private static final int NODE_COUNT = 1000;
+    private static final int VERTEX_COUNT = 1000;
     private static final int EDGE_COUNT = 5;
     private static final int REL_COUNT = 5;
 
@@ -65,15 +62,14 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         finishSchema();
 
         // Generate synthetic graph
-        TitanVertex nodes[] = new TitanVertex[NODE_COUNT];
-        for (int i = 0; i < NODE_COUNT; i++) {
-            nodes[i] = tx.addVertex();
-            nodes[i].addProperty("uid", i);
+        Vertex vertices[] = new Vertex[VERTEX_COUNT];
+        for (int i = 0; i < VERTEX_COUNT; i++) {
+            vertices[i] = tx.addVertex("uid", i);
         }
-        for (int i = 0; i < NODE_COUNT; i++) {
+        for (int i = 0; i < VERTEX_COUNT; i++) {
             for (int r = 0; r < REL_COUNT; r++) {
                 for (int j = 1; j <= EDGE_COUNT; j++) {
-                    nodes[i].addEdge("rel"+r, nodes[wrapAround(i + j, NODE_COUNT)]);
+                    vertices[i].addEdge("rel"+r, vertices[wrapAround(i + j, VERTEX_COUNT)]);
                 }
             }
         }
@@ -150,9 +146,9 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         CountDownLatch startLatch = new CountDownLatch(TASK_COUNT);
         CountDownLatch stopLatch = new CountDownLatch(TASK_COUNT);
         for (int i = 0; i < TASK_COUNT; i++) {
-            int nodeid = RandomGenerator.randomInt(0, NODE_COUNT);
-            EdgeLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
-            executor.execute(new SimpleReader(tx, startLatch, stopLatch, nodeid, rel, EDGE_COUNT * 2, id));
+            int vertexid = RandomGenerator.randomInt(0, VERTEX_COUNT);
+            EdgeLabel elabel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
+            executor.execute(new SimpleReader(tx, startLatch, stopLatch, vertexid, elabel.getName(), EDGE_COUNT * 2, id.getName()));
             startLatch.countDown();
         }
         stopLatch.await();
@@ -177,8 +173,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         finishSchema();
 
         PropertyKey id = tx.getPropertyKey("uid");
-        Runnable propMaker = new RandomPropertyMaker(tx, NODE_COUNT, id, tx.getPropertyKey("dummyProperty"));
-        Runnable relMaker = new FixedRelationshipMaker(tx, id, tx.getEdgeLabel("dummyRelationship"));
+        Runnable propMaker = new RandomPropertyMaker(tx, VERTEX_COUNT, id.getName(), "dummyProperty");
+        Runnable relMaker = new FixedRelationshipMaker(tx, id.getName(), "dummyRelationship");
 
         Future<?> propFuture = executor.submit(propMaker);
         Future<?> relFuture = executor.submit(relMaker);
@@ -186,9 +182,9 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         CountDownLatch startLatch = new CountDownLatch(TASK_COUNT);
         CountDownLatch stopLatch = new CountDownLatch(TASK_COUNT);
         for (int i = 0; i < TASK_COUNT; i++) {
-            int nodeid = RandomGenerator.randomInt(0, NODE_COUNT);
-            EdgeLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
-            executor.execute(new SimpleReader(tx, startLatch, stopLatch, nodeid, rel, EDGE_COUNT * 2, id));
+            int vertexid = RandomGenerator.randomInt(0, VERTEX_COUNT);
+            EdgeLabel elabel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
+            executor.execute(new SimpleReader(tx, startLatch, stopLatch, vertexid, elabel.getName(), EDGE_COUNT * 2, id.getName()));
             startLatch.countDown();
         }
         stopLatch.await();
@@ -226,9 +222,9 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         log.info("Creating vertices");
         // Write vertices with indexed properties
         for (int i = 0; i < vertexCount; i++) {
-            TitanVertex v = tx.addVertex();
+            Vertex v = tx.addVertex();
             for (int p = 0; p < propCount; p++) {
-                tx.addProperty(v, "p" + p, i);
+                v.property("p" + p, i);
             }
         }
         newTx();
@@ -246,24 +242,24 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
     private static class RandomPropertyMaker implements Runnable {
         private final TitanTransaction tx;
         private final int nodeCount; //inclusive
-        private final PropertyKey idProp;
-        private final PropertyKey randomProp;
+        private final String idKey;
+        private final String randomKey;
 
         public RandomPropertyMaker(TitanTransaction tx, int nodeCount,
-                                   PropertyKey idProp, PropertyKey randomProp) {
+                                   String idKey, String randomKey) {
             this.tx = tx;
             this.nodeCount = nodeCount;
-            this.idProp = idProp;
-            this.randomProp = randomProp;
+            this.idKey = idKey;
+            this.randomKey = randomKey;
         }
 
         @Override
         public void run() {
             while (true) {
                 // Set propType to a random value on a random node
-                TitanVertex n = Iterables.getOnlyElement(tx.getVertices(idProp, RandomGenerator.randomInt(0, nodeCount)));
+                Vertex n = getOnlyElement(tx.V().has(idKey, RandomGenerator.randomInt(0, nodeCount)));
                 String propVal = RandomGenerator.randomString();
-                n.addProperty(randomProp, propVal);
+                n.property(randomKey, propVal);
                 if (Thread.interrupted())
                     break;
 
@@ -282,31 +278,29 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
         private final TitanTransaction tx;
         //		private final int nodeCount; //inclusive
-        private final PropertyKey idProp;
-        private final EdgeLabel relType;
+        private final String idKey;
+        private final String elabel;
 
         public FixedRelationshipMaker(TitanTransaction tx,
-                                      PropertyKey id, EdgeLabel relType) {
+                                      String id, String elabel) {
             this.tx = tx;
-            this.idProp = id;
-            this.relType = relType;
+            this.idKey = id;
+            this.elabel = elabel;
         }
 
         @Override
         public void run() {
             while (true) {
                 // Make or break relType between two (possibly same) random nodes
-//				TitanVertex source = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
-//				TitanVertex sink = tx.getVertex(idProp, RandomGenerator.randomInt(0, nodeCount));
-                TitanVertex source = Iterables.getOnlyElement(tx.getVertices(idProp, 0));
-                TitanVertex sink = Iterables.getOnlyElement(tx.getVertices(idProp, 1));
-                for (TitanEdge r : source.getTitanEdges(Direction.OUT, relType)) {
-                    if (r.getVertex(Direction.IN).getLongId() == sink.getLongId()) {
+                Vertex source = getOnlyElement(tx.V().has(idKey, 0));
+                Vertex sink = getOnlyElement(tx.V().has(idKey, 1));
+                for (Edge r : source.outE(elabel).toList()) {
+                    if (getId(r.inV().next()) == getId(sink)) {
                         r.remove();
                         continue;
                     }
                 }
-                source.addEdge(relType, sink);
+                source.addEdge(elabel, sink);
                 if (Thread.interrupted())
                     break;
             }
@@ -316,29 +310,29 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
     private static class SimpleReader extends BarrierRunnable {
 
-        private final int nodeid;
-        private final EdgeLabel relTypeToTraverse;
+        private final int vertexid;
+        private final String label2Traverse;
         private final long nodeTraversalCount = 256;
         private final int expectedEdges;
-        private final PropertyKey id;
+        private final String idKey;
 
         public SimpleReader(TitanTransaction tx, CountDownLatch startLatch,
-                            CountDownLatch stopLatch, int startNodeId, EdgeLabel relTypeToTraverse, int expectedEdges, PropertyKey id) {
+                            CountDownLatch stopLatch, int startNodeId, String label2Traverse, int expectedEdges, String idKey) {
             super(tx, startLatch, stopLatch);
-            this.nodeid = startNodeId;
-            this.relTypeToTraverse = relTypeToTraverse;
+            this.vertexid = startNodeId;
+            this.label2Traverse = label2Traverse;
             this.expectedEdges = expectedEdges;
-            this.id = id;
+            this.idKey = idKey;
         }
 
         @Override
         protected void doRun() throws Exception {
-            TitanVertex n = Iterables.getOnlyElement(tx.getVertices(id, nodeid));
+            Vertex v = getOnlyElement(tx.V().has(idKey, vertexid));
 
             for (int i = 0; i < nodeTraversalCount; i++) {
-                assertEquals("On vertex: " + n.getLongId(), expectedEdges, Iterables.size(n.getTitanEdges(Direction.BOTH, relTypeToTraverse)));
-                for (TitanEdge r : n.getTitanEdges(Direction.OUT, relTypeToTraverse)) {
-                    n = r.getVertex(Direction.IN);
+                assertCount(expectedEdges, v.bothE(label2Traverse));
+                for (Edge r : v.outE(label2Traverse).toList()) {
+                    v = r.inV().next();
                 }
             }
         }
@@ -393,7 +387,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             for (int i = 0; i < vertexCount; i++) {
                 for (int p = 0; p < propCount; p++) {
-                    tx.getVertices("p" + p, i);
+                    tx.V().has("p" + p, i).count().next();
                 }
             }
         }

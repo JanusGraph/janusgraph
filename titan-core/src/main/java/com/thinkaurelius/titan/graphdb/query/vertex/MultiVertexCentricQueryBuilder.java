@@ -113,7 +113,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
-    public Map<TitanVertex, Iterable<TitanProperty>> properties() {
+    public Map<TitanVertex, Iterable<TitanVertexProperty>> properties() {
         return (Map)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
                 executeImplicitKeyQuery():
                 execute(RelationCategory.PROPERTY, new RelationConstructor()));

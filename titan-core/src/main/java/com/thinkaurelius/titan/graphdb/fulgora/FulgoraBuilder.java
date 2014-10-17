@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -188,7 +189,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public<M> FulgoraBuilder<S> properties(Function<TitanProperty,M> gather, Combiner<M> combiner) {
+        public<M> FulgoraBuilder<S> properties(Function<TitanVertexProperty,M> gather, Combiner<M> combiner) {
             List<SliceQuery> qs = relations(RelationCategory.PROPERTY);
             synchronized (queries) {
                 Preconditions.checkArgument(!queries.containsKey(name),"Name already in use: %s",name);
@@ -257,6 +258,18 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         @Override
         public QueryBuilder hasNot(String key) {
             super.hasNot(key);
+            return this;
+        }
+
+        @Override
+        public QueryBuilder has(String key, TitanPredicate predicate, Object value) {
+            super.has(key,predicate,value);
+            return this;
+        }
+
+        @Override
+        public QueryBuilder has(PropertyKey key, TitanPredicate predicate, Object value) {
+            super.has(key,predicate,value);
             return this;
         }
 

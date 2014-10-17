@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.util;
 
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.TitanEdge;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -54,16 +55,16 @@ public class AllEdgesIterator implements Iterator<Edge> {
     }
 
     private Edge findNext() {
-        Edge rel = null;
+        TitanEdge rel = null;
         while (rel == null) {
             if (currentEdges.hasNext()) {
-                rel = currentEdges.next();
+                rel = (TitanEdge)currentEdges.next();
                 if (vertices != null && !vertices.contains(rel.getVertex(Direction.IN)))
                     rel = null;
             } else {
                 if (vertexIter.hasNext()) {
                     Vertex nextVertex = vertexIter.next();
-                    currentEdges = nextVertex.getEdges(Direction.OUT).iterator();
+                    currentEdges = nextVertex.iterators().edgeIterator(Direction.OUT,Integer.MAX_VALUE);
                 } else break;
             }
         }

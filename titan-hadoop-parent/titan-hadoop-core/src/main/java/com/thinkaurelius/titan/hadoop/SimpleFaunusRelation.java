@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -39,7 +38,7 @@ public abstract class SimpleFaunusRelation extends LifeCycleElement implements F
     public boolean equals(Object oth) {
         if (this == oth) return true;
         else if (oth == null || !getClass().isInstance(oth)) return false;
-        SimpleFaunusProperty p = (SimpleFaunusProperty) oth;
+        SimpleFaunusVertexProperty p = (SimpleFaunusVertexProperty) oth;
         return getType().equals(p.getType()) && otherValue().equals(p.otherValue());
     }
 

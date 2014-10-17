@@ -53,6 +53,11 @@ public enum Contain implements TitanPredicate {
     private static final Logger log = LoggerFactory.getLogger(Contain.class);
 
     @Override
+    public boolean test(Object value, Object condition) {
+        return evaluate(value,condition);
+    }
+
+    @Override
     public boolean isValidValueType(Class<?> clazz) {
         return true;
     }

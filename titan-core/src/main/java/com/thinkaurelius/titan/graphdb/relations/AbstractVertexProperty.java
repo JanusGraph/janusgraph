@@ -2,9 +2,12 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
+import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 import static com.tinkerpop.gremlin.structure.util.StringFactory.*;
 
@@ -12,12 +15,12 @@ import static com.tinkerpop.gremlin.structure.util.StringFactory.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public abstract class AbstractProperty extends AbstractTypedRelation implements TitanProperty {
+public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation implements TitanVertexProperty<V> {
 
     private InternalVertex vertex;
     private final Object value;
 
-    public AbstractProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
+    public AbstractVertexProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
         super(id, type);
         Preconditions.checkNotNull(vertex, "null vertex");
         Preconditions.checkNotNull(value, "null value for property key %s",type);
@@ -27,9 +30,7 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
 
     @Override
     public String toString() {
-        String valueStr = String.valueOf(value);
-        valueStr = valueStr.substring(0,Math.min(valueStr.length(),20));
-        return E + L_BRACKET + getId() + R_BRACKET + L_BRACKET + getVertex().getId() + DASH + getPropertyKey() + ARROW + valueStr + R_BRACKET;
+        return StringFactory.propertyString(this);
     }
 
     public void setVertexAt(int pos, InternalVertex vertex) {
@@ -54,18 +55,23 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     }
 
     @Override
-    public PropertyKey getPropertyKey() {
+    public PropertyKey getType() {
         return (PropertyKey)type;
     }
 
     @Override
-    public TitanVertex getVertex() {
+    public PropertyKey getPropertyKey() {
+        return getType();
+    }
+
+    @Override
+    public TitanVertex getElement() {
         return vertex;
     }
 
     @Override
-    public<O> O getValue() {
-        return (O)value;
+    public V getValue() {
+        return (V)value;
     }
 
     @Override
@@ -77,4 +83,15 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     public boolean isEdge() {
         return false;
     }
+
+    @Override
+    public boolean isPresent() {
+        return true;
+    }
+
+    @Override
+    public VertexProperty.Iterators iterators() {
+        return this;
+    }
+
 }

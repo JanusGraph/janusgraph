@@ -69,7 +69,8 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 	 * ---------------------------------------------------------------
 	 */
 
-    private GraphCentricQueryBuilder has(String key, TitanPredicate predicate, Object condition) {
+    @Override
+    public GraphCentricQueryBuilder has(String key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
@@ -152,9 +153,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public Iterable<TitanProperty> properties() {
+    public Iterable<TitanVertexProperty> properties() {
         GraphCentricQuery query = constructQuery(ElementCategory.PROPERTY);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanProperty.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanVertexProperty.class);
     }
 
     private QueryDescription describe(ElementCategory category) {

@@ -1,17 +1,17 @@
 package com.thinkaurelius.titan.graphdb.transaction.indexcache;
 
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface IndexCache {
 
-    public void add(TitanProperty property);
+    public void add(TitanVertexProperty property);
 
-    public void remove(TitanProperty property);
+    public void remove(TitanVertexProperty property);
 
-    public Iterable<TitanProperty> get(Object value, PropertyKey key);
+    public Iterable<TitanVertexProperty> get(Object value, PropertyKey key);
 
 }

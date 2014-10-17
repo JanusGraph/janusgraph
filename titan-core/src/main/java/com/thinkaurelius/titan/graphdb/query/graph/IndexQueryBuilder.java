@@ -5,10 +5,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
-import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
@@ -209,7 +209,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     }
 
     @Override
-    public Iterable<Result<TitanProperty>> properties() {
+    public Iterable<Result<TitanVertexProperty>> properties() {
         setPrefixInternal(PROPERTY_PREFIX);
         return (Iterable)execute(ElementCategory.PROPERTY);
     }

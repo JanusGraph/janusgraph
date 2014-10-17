@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.primitives.Longs;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -13,10 +13,9 @@ import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -83,17 +82,17 @@ public class EmptyVertex implements InternalVertex {
 
 
     @Override
-    public Iterable<TitanProperty> getProperties() {
+    public Iterable<TitanVertexProperty> getProperties() {
         return IterablesUtil.emptyIterable();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(PropertyKey key) {
+    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
         return IterablesUtil.emptyIterable();
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(String key) {
+    public Iterable<TitanVertexProperty> getProperties(String key) {
         return IterablesUtil.emptyIterable();
     }
 
@@ -157,13 +156,13 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public TitanProperty addProperty(PropertyKey key, Object attribute) {
+    public TitanVertexProperty addProperty(PropertyKey key, Object attribute) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
 
     @Override
-    public TitanProperty addProperty(String key, Object attribute) {
+    public TitanVertexProperty addProperty(String key, Object attribute) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
@@ -210,8 +209,41 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public Edge addEdge(String s, Vertex vertex) {
+    public Edge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
+    }
+
+    @Override
+    public Vertex.Iterators iterators() {
+        return Iterators.INSTANCE;
+    }
+
+    public static class Iterators implements Vertex.Iterators {
+
+        public static final Iterators INSTANCE = new Iterators();
+
+        private Iterators() {}
+
+        @Override
+        public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
+            return com.google.common.collect.Iterators.emptyIterator();
+        }
+
+        @Override
+        public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
+            return com.google.common.collect.Iterators.emptyIterator();
+        }
+
+        @Override
+        public <V> Iterator<VertexProperty<V>> propertyIterator(String... strings) {
+            return com.google.common.collect.Iterators.emptyIterator();
+        }
+
+        @Override
+        public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
+            return com.google.common.collect.Iterators.emptyIterator();
+        }
+
     }
 
 	/* ---------------------------------------------------------------

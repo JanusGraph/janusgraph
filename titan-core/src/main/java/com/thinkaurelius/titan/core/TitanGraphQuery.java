@@ -34,6 +34,7 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      */
     public Q has(PropertyKey key, TitanPredicate predicate, Object condition);
 
+    public Q has(String key, TitanPredicate predicate, Object condition);
 
     public Q has(String key);
 
@@ -98,7 +99,7 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      *
      * @return
      */
-    public Iterable<TitanProperty> properties();
+    public Iterable<TitanVertexProperty> properties();
 
     /**
      * Returns a description of this query for vertices as a {@link QueryDescription} object.

@@ -4,9 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -16,21 +13,26 @@ import java.util.Collections;
  */
 public class ElementHelper {
 
-    public static final Iterable<Object> getValues(TitanElement element, PropertyKey key) {
+    public static Iterable<Object> getValues(TitanElement element, PropertyKey key) {
         if (element instanceof TitanRelation) {
             Object value = element.getProperty(key);
             if (value==null) return Collections.EMPTY_LIST;
             else return ImmutableList.of(value);
         } else {
             assert element instanceof TitanVertex;
-            return Iterables.transform((((TitanVertex) element).query()).keys(key.getName()).properties(), new Function<TitanProperty, Object>() {
+            return Iterables.transform((((TitanVertex) element).query()).keys(key.getName()).properties(), new Function<TitanVertexProperty, Object>() {
                 @Nullable
                 @Override
-                public Object apply(@Nullable TitanProperty titanProperty) {
+                public Object apply(@Nullable TitanVertexProperty titanProperty) {
                     return titanProperty.getValue();
                 }
             });
         }
+    }
+
+    public static void attachProperties(TitanElement element, Object... keyValues) {
+        com.tinkerpop.gremlin.structure.util.ElementHelper.legalPropertyKeyValueArray(keyValues);
+        com.tinkerpop.gremlin.structure.util.ElementHelper.attachProperties(element,keyValues);
     }
 
 }

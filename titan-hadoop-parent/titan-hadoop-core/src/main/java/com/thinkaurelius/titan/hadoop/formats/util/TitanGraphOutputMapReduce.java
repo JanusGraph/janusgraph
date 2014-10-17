@@ -87,7 +87,7 @@ public class TitanGraphOutputMapReduce {
 
     //UTILITY METHODS
     private static Object getValue(TitanRelation relation, TitanGraph graph) {
-        if (relation.isProperty()) return ((TitanProperty)relation).getValue();
+        if (relation.isProperty()) return ((TitanVertexProperty)relation).getValue();
         else return graph.getVertex(((TitanEdge) relation).getVertex(IN).getLongId());
     }
 
@@ -183,12 +183,12 @@ public class TitanGraphOutputMapReduce {
                 }
                 if (faunusVertex.isNew() || faunusVertex.isModified()) {
                     //Synchronize properties
-                    for (final TitanProperty p : faunusVertex.query().queryAll().properties()) {
+                    for (final TitanVertexProperty p : faunusVertex.query().queryAll().properties()) {
                         if (null != loaderScript && loaderScript.hasVPropMethod()) {
                             loaderScript.getVProp(p, titanVertex, graph, context);
                         } else {
                             getCreateOrDeleteRelation(graph, trackState, OUT, faunusVertex, titanVertex,
-                                    (StandardFaunusProperty) p, context);
+                                    (StandardFaunusVertexProperty) p, context);
                         }
                     }
                 }
@@ -245,7 +245,7 @@ public class TitanGraphOutputMapReduce {
                 }
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_ADDED, 1L);
             } else {
-                StandardFaunusProperty faunusProperty = (StandardFaunusProperty)faunusRelation;
+                StandardFaunusVertexProperty faunusProperty = (StandardFaunusVertexProperty)faunusRelation;
                 assert dir==OUT;
                 titanRelation = titanVertex.addProperty(faunusProperty.getTypeName(),faunusProperty.getValue());
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_PROPERTIES_ADDED, 1L);
@@ -272,7 +272,7 @@ public class TitanGraphOutputMapReduce {
                 if (faunusProp.isNew()) {
                     Object value;
                     if (faunusProp.isProperty()) {
-                        value = ((FaunusProperty)faunusProp).getValue();
+                        value = ((FaunusVertexProperty)faunusProp).getValue();
                     } else {
                         //TODO: ensure that the adjacent vertex has been previous assigned an id since ids don't propagate along unidirected edges
                         value = graph.getVertex(((FaunusEdge)faunusProp).getVertexId(IN));
