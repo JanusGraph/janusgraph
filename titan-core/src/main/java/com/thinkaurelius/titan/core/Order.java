@@ -40,4 +40,12 @@ public enum Order {
      */
     public static final Order DEFAULT = ASC;
 
+    public com.tinkerpop.gremlin.structure.Order getTP() {
+        switch (this) {
+            case ASC :return com.tinkerpop.gremlin.structure.Order.incr;
+            case DESC: return com.tinkerpop.gremlin.structure.Order.decr;
+            default: throw new AssertionError();
+        }
+    }
+
 }
