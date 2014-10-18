@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

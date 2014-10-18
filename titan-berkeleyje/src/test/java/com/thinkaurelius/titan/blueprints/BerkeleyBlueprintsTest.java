@@ -5,15 +5,11 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
-import com.tinkerpop.blueprints.Graph;
-
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -27,7 +23,7 @@ public class BerkeleyBlueprintsTest extends TitanBlueprintsTest {
             LoggerFactory.getLogger(BerkeleyBlueprintsTest.class);
 
     @Override
-    public Graph generateGraph() {
+    public TitanGraph generateGraph() {
         return generateGraph(DEFAULT_SUBDIR);
     }
 

@@ -85,10 +85,10 @@ public class VertexIDAssignerTest {
                 List<InternalRelation> relations = new ArrayList<InternalRelation>();
                 TitanVertex old = null;
                 for (int i = 0; i < numVertices; i++) {
-                    TitanVertex next = (TitanVertex) graph.addVertex(null);
+                    TitanVertex next = graph.addVertex();
                     InternalRelation edge = null;
                     if (old != null) {
-                        edge = (InternalRelation) graph.addEdge(null, old, next, "knows");
+                        edge = (InternalRelation) old.addEdge("knows",next);
                     }
                     InternalRelation property = (InternalRelation) next.addProperty("age", 25);
                     if (flush) {
@@ -109,8 +109,8 @@ public class VertexIDAssignerTest {
                     }
                     System.out.println("_____________________________________________");
                 }
-                graph.rollback();
-                graph.shutdown();
+                graph.tx().rollback();
+                graph.close();
             }
         }
     }

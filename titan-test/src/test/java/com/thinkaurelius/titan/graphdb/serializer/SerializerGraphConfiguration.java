@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.*;
 
 import static org.junit.Assert.*;
@@ -29,7 +29,7 @@ public class SerializerGraphConfiguration {
 
     @After
     public void shutdown() {
-        graph.shutdown();
+        graph.close();
     }
 
     @Test
@@ -43,19 +43,19 @@ public class SerializerGraphConfiguration {
         mgmt.commit();
 
         TitanTransaction tx = graph.newTransaction();
-        TitanVertex v = tx.addVertexWithLabel("person");
-        v.setProperty("time",5);
-        v.setProperty("any",new Precision(5.0));
+        Vertex v = tx.addVertex("person");
+        v.singleProperty("time",5);
+        v.singleProperty("any",new Precision(5.0));
         tx.commit();
 
         tx = graph.newTransaction();
-        v = (TitanVertex)Iterables.getOnlyElement(tx.query().has("time",5).vertices());
-        assertEquals(5.0, v.<Precision>getProperty("any").doubleValue(),0.0);
+        v = (Vertex)tx.V().has("time",5).next();
+        assertEquals(5.0, v.<Precision>value("any").doubleValue(),0.0);
         tx.rollback();
 
         tx = graph.newTransaction();
-        v = tx.addVertexWithLabel("person");
-        v.setProperty("any",TestEnum.One); //Should not be allowed
+        v = tx.addVertex("person");
+        v.singleProperty("any",TestEnum.One); //Should not be allowed
         try {
             tx.commit();
             fail();

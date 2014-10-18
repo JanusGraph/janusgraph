@@ -4,43 +4,49 @@ import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 
+import java.util.Map;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+public abstract class TitanBlueprintsTest {
 
-public abstract class InMemoryBlueprintsTest extends TitanBlueprintsTest {
+    protected Map<String,TitanGraph> openGraphs;
 
 
-    @Override
     public void cleanUp() throws BackendException {
 
     }
 
-    @Override
     public boolean supportsMultipleGraphs() {
         return false;
     }
 
-    @Override
     public void beforeSuite() {
 
     }
 
-    @Override
     public void afterSuite() {
 
     }
 
-    @Override
+    public void extraCleanUp(String uid) throws BackendException {
+
+    }
+
+    public void beforeOpeningGraph(String uid) {
+
+    }
+
+    public abstract TitanGraph openGraph(String uid) throws BackendException;
+
     public TitanGraph generateGraph() {
         TitanGraph graph = StorageSetup.getInMemoryGraph();
         return graph;
     }
 
-    @Override
     public TitanGraph generateGraph(String graphDirectoryName) {
         throw new UnsupportedOperationException();
     }
-
 
 }

@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
 
 import javax.annotation.Nullable;

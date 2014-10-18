@@ -4,15 +4,11 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.tinkerpop.blueprints.util.ElementHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -35,7 +31,7 @@ public class QueryTest {
     @After
     public void shutdown() {
         if (tx!=null && tx.isOpen()) tx.commit();
-        if (graph!=null && graph.isOpen()) graph.shutdown();
+        if (graph!=null && graph.isOpen()) graph.close();
     }
 
     @Test
@@ -70,10 +66,9 @@ public class QueryTest {
         OrderList ol3 = new OrderList();
         ol3.add(weight,Order.DESC);
 
-        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
-        ElementHelper.setProperties(v1,"name","abc","time",20,"weight",2.5);
-        ElementHelper.setProperties(v2,"name","bcd","time",10,"weight",2.5);
-        ElementHelper.setProperties(v3,"name","abc","time",10,"weight",4.5);
+        TitanVertex v1 = tx.addVertex("name","abc","time",20,"weight",2.5),
+                v2 = tx.addVertex("name","bcd","time",10,"weight",2.5),
+                v3 = tx.addVertex("name","abc","time",10,"weight",4.5);
 
         assertTrue(ol1.compare(v1,v2)>0);
         assertTrue(ol1.compare(v2,v3)<0);

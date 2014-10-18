@@ -18,9 +18,10 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.util.system.IOUtils;
-import com.tinkerpop.pipes.util.structures.Pair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
@@ -173,8 +174,8 @@ public class LuceneIndex implements IndexProvider {
                 }
 
                 Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docid, searcher);
-                Document doc = docAndGeo.getA();
-                Map<String, Shape> geofields = docAndGeo.getB();
+                Document doc = docAndGeo.getKey();
+                Map<String, Shape> geofields = docAndGeo.getValue();
 
                 Preconditions.checkNotNull(doc);
                 for (IndexEntry del : mutation.getDeletions()) {
@@ -223,10 +224,10 @@ public class LuceneIndex implements IndexProvider {
                     }
 
                     Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docID, searcher);
-                    addToDocument(store, docID, docAndGeo.getA(), content, docAndGeo.getB(), informations);
+                    addToDocument(store, docID, docAndGeo.getKey(), content, docAndGeo.getValue(), informations);
 
                     //write the old document to the index with the modifications
-                    writer.updateDocument(new Term(DOCID, docID), docAndGeo.getA());
+                    writer.updateDocument(new Term(DOCID, docID), docAndGeo.getKey());
                 }
                 writer.commit();
             }
@@ -266,7 +267,7 @@ public class LuceneIndex implements IndexProvider {
             }
         }
 
-        return new Pair<Document, Map<String, Shape>>(doc, geofields);
+        return new ImmutablePair<Document, Map<String, Shape>>(doc, geofields);
     }
 
     private void addToDocument(String store,

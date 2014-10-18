@@ -10,6 +10,8 @@ import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -28,14 +30,14 @@ public class EdgeSerializerTest {
         for (int i=1;i<=5;i++) mgmt.makePropertyKey("key" + i).dataType(Integer.class).make();
         mgmt.commit();
 
-        TitanVertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
-        TitanEdge e1 = v1.addEdge("father",v2);
-        for (int i=1;i<=5;i++) e1.setProperty("key"+i,i);
+        Vertex v1 = graph.addVertex(), v2 = graph.addVertex();
+        Edge e1 = v1.addEdge("father",v2);
+        for (int i=1;i<=5;i++) e1.property("key"+i,i);
 
-        graph.commit();
+        graph.tx().commit();
 
         e1.remove();
-        graph.commit();
+        graph.tx().commit();
 
     }
 
