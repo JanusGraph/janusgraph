@@ -247,7 +247,7 @@ public class EdgeSerializer implements RelationReader {
         Multiplicity multiplicity = type.getMultiplicity();
 
         long[] sortKey = type.getSortKey();
-        assert !multiplicity.isConstrained() || sortKey.length==0: type.getName();
+        assert !multiplicity.isConstrained() || sortKey.length==0: type.name();
         int keyStartPos = out.getPosition();
         if (!multiplicity.isConstrained()) {
             writeInlineTypes(sortKey, relation, out, tx, InlineType.KEY);

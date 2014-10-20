@@ -116,7 +116,7 @@ public class StandardSchemaCache implements SchemaCache {
         else if (type== BaseKey.SchemaName) systemTypeId=1;
         else if (type== BaseKey.SchemaCategory) systemTypeId=2;
         else if (type== BaseKey.SchemaDefinitionProperty) systemTypeId=3;
-        else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.getName());
+        else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.name());
 
         //Ensure that there is enough padding
         assert (systemTypeId<(1<<2));

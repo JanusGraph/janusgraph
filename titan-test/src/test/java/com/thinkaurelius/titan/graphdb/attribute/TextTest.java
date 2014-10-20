@@ -16,65 +16,65 @@ public class TextTest {
     public void testContains() {
         String text = "This world is full of 1funny surprises! A Full Yes";
         //Contains
-        assertTrue(CONTAINS.evaluate(text, "world"));
-        assertTrue(CONTAINS.evaluate(text, "wOrLD"));
-        assertFalse(CONTAINS.evaluate(text, "worl"));
+        assertTrue(CONTAINS.test(text, "world"));
+        assertTrue(CONTAINS.test(text, "wOrLD"));
+        assertFalse(CONTAINS.test(text, "worl"));
 
-        assertTrue(CONTAINS.evaluate(text, "this"));
-        assertTrue(CONTAINS.evaluate(text, "yes"));
-        assertFalse(CONTAINS.evaluate(text, "funny"));
+        assertTrue(CONTAINS.test(text, "this"));
+        assertTrue(CONTAINS.test(text, "yes"));
+        assertFalse(CONTAINS.test(text, "funny"));
 
-        assertFalse(CONTAINS.evaluate(text, "a"));
-        assertFalse(CONTAINS.evaluate(text, "A"));
+        assertFalse(CONTAINS.test(text, "a"));
+        assertFalse(CONTAINS.test(text, "A"));
 
-        assertTrue(CONTAINS.evaluate(text, "surprises"));
-        assertTrue(CONTAINS.evaluate(text, "FULL"));
+        assertTrue(CONTAINS.test(text, "surprises"));
+        assertTrue(CONTAINS.test(text, "FULL"));
 
-        assertTrue(CONTAINS.evaluate(text, "full surprises"));
-        assertTrue(CONTAINS.evaluate(text, "full,surprises,world"));
-        assertFalse(CONTAINS.evaluate(text, "full bunny"));
-        assertTrue(CONTAINS.evaluate(text, "a world"));
+        assertTrue(CONTAINS.test(text, "full surprises"));
+        assertTrue(CONTAINS.test(text, "full,surprises,world"));
+        assertFalse(CONTAINS.test(text, "full bunny"));
+        assertTrue(CONTAINS.test(text, "a world"));
 
 
 
         //Prefix
-        assertTrue(CONTAINS_PREFIX.evaluate(text, "worl"));
-        assertTrue(CONTAINS_PREFIX.evaluate(text, "wORl"));
-        assertTrue(CONTAINS_PREFIX.evaluate(text, "ye"));
-        assertTrue(CONTAINS_PREFIX.evaluate(text, "Y"));
+        assertTrue(CONTAINS_PREFIX.test(text, "worl"));
+        assertTrue(CONTAINS_PREFIX.test(text, "wORl"));
+        assertTrue(CONTAINS_PREFIX.test(text, "ye"));
+        assertTrue(CONTAINS_PREFIX.test(text, "Y"));
 
-        assertFalse(CONTAINS_PREFIX.evaluate(text, "fo"));
-        assertFalse(CONTAINS_PREFIX.evaluate(text, "of 1f"));
-        assertFalse(CONTAINS_PREFIX.evaluate(text, "ses"));
+        assertFalse(CONTAINS_PREFIX.test(text, "fo"));
+        assertFalse(CONTAINS_PREFIX.test(text, "of 1f"));
+        assertFalse(CONTAINS_PREFIX.test(text, "ses"));
 
 
         //Regex
-        assertTrue(CONTAINS_REGEX.evaluate(text, "fu[l]+"));
-        assertTrue(CONTAINS_REGEX.evaluate(text, "wor[ld]{1,2}"));
-        assertTrue(CONTAINS_REGEX.evaluate(text, "\\dfu\\w*"));
+        assertTrue(CONTAINS_REGEX.test(text, "fu[l]+"));
+        assertTrue(CONTAINS_REGEX.test(text, "wor[ld]{1,2}"));
+        assertTrue(CONTAINS_REGEX.test(text, "\\dfu\\w*"));
 
-        assertFalse(CONTAINS_REGEX.evaluate(text, "fo"));
-        assertFalse(CONTAINS_REGEX.evaluate(text, "wor[l]+"));
-        assertFalse(CONTAINS_REGEX.evaluate(text, "wor[ld]{3,5}"));
+        assertFalse(CONTAINS_REGEX.test(text, "fo"));
+        assertFalse(CONTAINS_REGEX.test(text, "wor[l]+"));
+        assertFalse(CONTAINS_REGEX.test(text, "wor[ld]{3,5}"));
 
 
         String name = "fully funny";
         //Cmp
-        assertTrue(Cmp.EQUAL.evaluate(name.toString(),name));
-        assertFalse(Cmp.NOT_EQUAL.evaluate(name,name));
-        assertFalse(Cmp.EQUAL.evaluate("fullly funny",name));
-        assertTrue(Cmp.NOT_EQUAL.evaluate("fullly funny",name));
+        assertTrue(Cmp.EQUAL.test(name.toString(), name));
+        assertFalse(Cmp.NOT_EQUAL.test(name, name));
+        assertFalse(Cmp.EQUAL.test("fullly funny", name));
+        assertTrue(Cmp.NOT_EQUAL.test("fullly funny", name));
 
         //Prefix
-        assertTrue(PREFIX.evaluate(name,"fully"));
-        assertTrue(PREFIX.evaluate(name,"ful"));
-        assertTrue(PREFIX.evaluate(name,"fully fu"));
-        assertFalse(PREFIX.evaluate(name,"fun"));
+        assertTrue(PREFIX.test(name, "fully"));
+        assertTrue(PREFIX.test(name, "ful"));
+        assertTrue(PREFIX.test(name, "fully fu"));
+        assertFalse(PREFIX.test(name, "fun"));
 
         //REGEX
-        assertTrue(REGEX.evaluate(name,"(fu[ln]*y) (fu[ln]*y)"));
-        assertFalse(REGEX.evaluate(name,"(fu[l]*y) (fu[l]*y)"));
-        assertTrue(REGEX.evaluate(name,"(fu[l]*y) .*"));
+        assertTrue(REGEX.test(name, "(fu[ln]*y) (fu[ln]*y)"));
+        assertFalse(REGEX.test(name, "(fu[l]*y) (fu[l]*y)"));
+        assertTrue(REGEX.test(name, "(fu[l]*y) .*"));
 
     }
 

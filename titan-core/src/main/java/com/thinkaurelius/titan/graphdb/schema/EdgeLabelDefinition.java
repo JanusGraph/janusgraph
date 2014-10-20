@@ -17,7 +17,7 @@ public class EdgeLabelDefinition extends RelationTypeDefinition {
     }
 
     public EdgeLabelDefinition(EdgeLabel label) {
-        this(label.getName(),label.getLongId(),label.getMultiplicity(),label.isUnidirected());
+        this(label.name(),label.getLongId(),label.getMultiplicity(),label.isUnidirected());
     }
 
     public boolean isDirected() {

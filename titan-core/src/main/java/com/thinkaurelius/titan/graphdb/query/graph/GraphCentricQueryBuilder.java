@@ -82,7 +82,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     public GraphCentricQueryBuilder has(PropertyKey key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
-        return has(key.getName(), predicate, condition);
+        return has(key.name(), predicate, condition);
     }
 
     @Override
@@ -128,8 +128,8 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     public GraphCentricQueryBuilder orderBy(PropertyKey key, Order order) {
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
-                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
-        Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
+                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.getDataType());
+        Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!orders.containsKey(key));
         orders.add(key, order);
         return this;
@@ -246,7 +246,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                     TitanSchemaType type = index.getSchemaTypeConstraint();
                     boolean matchesTypeConstraint = false;
                     for (PredicateCondition<RelationType, TitanElement> atom : getEqualityPredicateConditions(conditions)) {
-                        if (atom.getKey().equals(ImplicitKey.LABEL) && type.getName().equals((String)atom.getValue())) {
+                        if (atom.getKey().equals(ImplicitKey.LABEL) && type.name().equals((String)atom.getValue())) {
                             matchesTypeConstraint = true;
                             subcover.add(atom);
                         }

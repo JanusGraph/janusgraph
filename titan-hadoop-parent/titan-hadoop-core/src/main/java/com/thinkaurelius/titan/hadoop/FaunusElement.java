@@ -338,7 +338,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
             @Nullable
             @Override
             public String apply(@Nullable RelationType relationType) {
-                return relationType.getName();
+                return relationType.name();
             }
         }));
     }

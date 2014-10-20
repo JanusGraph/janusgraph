@@ -149,7 +149,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
 
         private List<SliceQuery> relations(RelationCategory returnType) {
             if (name==null) {
-                if (hasSingleType()) name = getSingleType().getName();
+                if (hasSingleType()) name = getSingleType().name();
                 else throw new IllegalStateException("Need to specify an explicit name for this query");
             }
             try {

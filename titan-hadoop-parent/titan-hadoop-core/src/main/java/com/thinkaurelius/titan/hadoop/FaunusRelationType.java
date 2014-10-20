@@ -1,17 +1,12 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.schema.RelationTypeDefinition;
 import com.thinkaurelius.titan.graphdb.types.system.EmptyRelationType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -27,7 +22,7 @@ public abstract class FaunusRelationType extends EmptyRelationType implements In
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return definition.getName();
     }
 
@@ -80,7 +75,7 @@ public abstract class FaunusRelationType extends EmptyRelationType implements In
     public boolean equals(Object other) {
         if (this==other) return true;
         else if (other==null || !(other instanceof RelationType)) return false;
-        return definition.getName().equals(((RelationType)other).getName());
+        return definition.getName().equals(((RelationType)other).name());
     }
 
 }

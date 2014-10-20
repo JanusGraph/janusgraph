@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -60,7 +59,7 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public String getLabel() {
-        return getVertexLabel().getName();
+        return getVertexLabel().name();
     }
 
     @Override

@@ -33,7 +33,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public String label() {
-        return type.getName();
+        return type.name();
     }
 
     public void setVertexAt(int pos, InternalVertex vertex) {

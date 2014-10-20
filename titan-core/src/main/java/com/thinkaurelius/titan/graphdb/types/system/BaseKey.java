@@ -169,7 +169,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public String getName() {
-            return "SystemIndex#"+BaseKey.this.getName();
+            return "SystemIndex#"+BaseKey.this.name();
         }
 
         @Override

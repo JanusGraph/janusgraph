@@ -66,7 +66,7 @@ public class FaunusSerializer {
         writePathElement(vertex, schema, out);
         writeEdges(vertex, vertex.inAdjacency, out, Direction.IN, schema);
         FaunusVertexLabel vl = (FaunusVertexLabel)vertex.getVertexLabel();
-        out.writeUTF(vl.isDefault()?"":vl.getName());
+        out.writeUTF(vl.isDefault()?"":vl.name());
     }
 
     public void readVertex(final FaunusVertex vertex, final DataInput in) throws IOException {
@@ -76,7 +76,7 @@ public class FaunusSerializer {
         vertex.inAdjacency = readEdges(vertex, in, Direction.IN, schema);
         String labelName = in.readUTF();
         vertex.setVertexLabel(StringUtils.isBlank(labelName)?FaunusVertexLabel.DEFAULT_VERTEXLABEL:
-                                    types.getVertexLabel(labelName));
+                                    types.getOrCreateVertexLabel(labelName));
     }
 
     public void writeEdge(final StandardFaunusEdge edge, final DataOutput out) throws IOException {
@@ -331,7 +331,7 @@ public class FaunusSerializer {
 
     private void writeFaunusType(final FaunusRelationType type, final DataOutput out) throws IOException {
         out.writeByte(type.isPropertyKey()?0:1);
-        out.writeUTF(type.getName());
+        out.writeUTF(type.name());
     }
 
     private FaunusRelationType readFaunusType(final DataInput in) throws IOException {

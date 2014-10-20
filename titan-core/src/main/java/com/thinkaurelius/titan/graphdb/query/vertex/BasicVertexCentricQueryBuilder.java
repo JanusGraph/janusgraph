@@ -423,13 +423,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                 Direction typeDir = dir;
                 if (type.isPropertyKey()) {
                     if (returnType == RelationCategory.EDGE)
-                        throw new IllegalArgumentException("Querying for edges but including a property key: " + type.getName());
+                        throw new IllegalArgumentException("Querying for edges but including a property key: " + type.name());
                     returnType = RelationCategory.PROPERTY;
                     typeDir = Direction.OUT;
                 }
                 if (type.isEdgeLabel()) {
                     if (returnType == RelationCategory.PROPERTY)
-                        throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.getName());
+                        throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.name());
                     returnType = RelationCategory.EDGE;
                     if (!type.isUnidirected(Direction.BOTH)) {
                         //Make sure unidirectionality lines up
@@ -498,7 +498,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                                 bestCandidateSupportsOrder=supportsOrder && currentOrder==orders.size();
                             }
                         }
-                        Preconditions.checkArgument(bestCandidate!=null,"Current graph schema does not support the specified query constraints for type: %s",type.getName());
+                        Preconditions.checkArgument(bestCandidate!=null,"Current graph schema does not support the specified query constraints for type: %s",type.name());
 
                         //Construct sort key constraints for the best candidate and then serialize into a SliceQuery
                         //that is wrapped into a BackendQueryHolder

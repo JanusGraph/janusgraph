@@ -19,7 +19,7 @@ public interface TitanGraphIndex extends TitanIndex {
      * Returns the name of the index
      * @return
      */
-    public String getName();
+    public String name();
 
     /**
      * Returns the name of the backing index. For composite indexes this returns a default name.

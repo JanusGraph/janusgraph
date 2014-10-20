@@ -1,8 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanElement;
 import com.tinkerpop.gremlin.structure.Property;
 
 /**
@@ -14,7 +11,7 @@ public interface TitanProperty<V> extends Property<V> {
 
     @Override
     public default String key() {
-        return getType().getName();
+        return getType().name();
     }
 
 }

@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -34,8 +33,8 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
     }
 
     @Override
-    public String getName() {
-        String typeName = type.getName();
+    public String name() {
+        String typeName = type.name();
         int index = typeName.lastIndexOf(RELATION_INDEX_SEPARATOR);
         Preconditions.checkArgument(index>0 && index<typeName.length()-1,"Invalid name encountered: %s",typeName);
         return typeName.substring(index+1,typeName.length());
@@ -86,6 +85,6 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public String toString() {
-        return getName();
+        return name();
     }
 }

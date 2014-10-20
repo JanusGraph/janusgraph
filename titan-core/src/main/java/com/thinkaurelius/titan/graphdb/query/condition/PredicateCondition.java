@@ -32,7 +32,7 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
 
 
     private boolean satisfiesCondition(Object value) {
-        return predicate.evaluate(value, this.value);
+        return predicate.test(value, this.value);
     }
 
     @Override

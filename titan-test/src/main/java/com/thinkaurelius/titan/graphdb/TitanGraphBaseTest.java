@@ -318,7 +318,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
-        return getVertex(tx, key.getName(), value);
+        return getVertex(tx, key.name(), value);
     }
 
     public static double round(double d) {
@@ -338,7 +338,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static String n(Object obj) {
-        if (obj instanceof RelationType) return ((RelationType)obj).getName();
+        if (obj instanceof RelationType) return ((RelationType)obj).name();
         else return obj.toString();
     }
 

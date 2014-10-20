@@ -31,7 +31,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
     private String name = null;
 
     @Override
-    public String getName() {
+    public String name() {
         if (name == null) {
             TitanVertexProperty<String> p;
             if (isLoaded()) {
@@ -149,7 +149,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
 
     @Override
     public String toString() {
-        return getName();
+        return name();
     }
 
     @Override
@@ -159,7 +159,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
 
     @Override
     public IndexType asIndexType() {
-        Preconditions.checkArgument(getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX),"Schema vertex is not a type vertex: [%s,%s]", getLongId(),getName());
+        Preconditions.checkArgument(getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX),"Schema vertex is not a type vertex: [%s,%s]", getLongId(), name());
         if (getDefinition().getValue(TypeDefinitionCategory.INTERNAL_INDEX)) {
             return new CompositeIndexTypeWrapper(this);
         } else {

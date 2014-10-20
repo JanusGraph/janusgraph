@@ -8,10 +8,11 @@ import com.tinkerpop.gremlin.structure.Contains;
 import java.util.function.BiPredicate;
 
 /**
- * Titan's extension of Blueprint's {@link Predicate} interface. Contains some custom methods that Titan needs for
+ * A special kind of {@link BiPredicate} which marks all the predicates that are natively supported by
+ * Titan and known to the query optimizer. Contains some custom methods that Titan needs for
  * query answering and evaluation.
  * </p>
- * This class contains a subclass used to convert Blueprint's {@link Predicate} to the corresponding Titan predicates.
+ * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding Titan predicates.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -58,13 +59,14 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
     public boolean isQNF();
 
 
-    public boolean evaluate(Object value, Object condition);
+    @Override
+    public boolean test(Object value, Object condition);
 
 
     public static class Converter {
 
         /**
-         * Convert Blueprint's comparison operators to Titan's
+         * Convert Tinkerpop's comparison operators to Titan's
          *
          * @param p Any predicate
          * @return A TitanPredicate equivalent to the given predicate

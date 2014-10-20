@@ -44,7 +44,7 @@ public abstract class SimpleFaunusRelation extends LifeCycleElement implements F
 
     @Override
     public String toString() {
-        return getType().getName() + "->" + otherValue();
+        return getType().name() + "->" + otherValue();
     }
 
     //##################################

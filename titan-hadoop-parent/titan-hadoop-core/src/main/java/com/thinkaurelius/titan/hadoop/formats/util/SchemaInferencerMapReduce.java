@@ -11,7 +11,6 @@ import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -24,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -58,7 +56,7 @@ public class SchemaInferencerMapReduce {
             //Vertex labels
             VertexLabel vl = value.getVertexLabel();
             if (vl!= BaseVertexLabel.DEFAULT_VERTEXLABEL) {
-                this.funnyVertex.setProperty("v"+vl.getName(),String.class.getName());
+                this.funnyVertex.setProperty("v"+vl.name(),String.class.getName());
             }
 
             //Vertex keys

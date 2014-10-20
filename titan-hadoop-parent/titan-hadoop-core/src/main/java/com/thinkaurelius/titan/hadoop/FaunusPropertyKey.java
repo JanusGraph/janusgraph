@@ -3,9 +3,7 @@ package com.thinkaurelius.titan.hadoop;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
 import com.thinkaurelius.titan.graphdb.schema.PropertyKeyDefinition;
 
 import javax.annotation.Nullable;
@@ -57,7 +55,7 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
                 @Override
                 public String apply(@Nullable FaunusElement element) {
                     if (element instanceof FaunusVertex) return ((FaunusVertex)element).getLabel();
-                    else if (element instanceof FaunusRelation) return ((FaunusRelation)element).getType().getName();
+                    else if (element instanceof FaunusRelation) return ((FaunusRelation)element).getType().name();
                     else return null;
                 }
             }

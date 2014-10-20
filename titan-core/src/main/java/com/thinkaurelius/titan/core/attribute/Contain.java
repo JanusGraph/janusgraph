@@ -20,7 +20,7 @@ public enum Contain implements TitanPredicate {
      */
     IN {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
             Collection col = (Collection) condition;
             return col.contains(value);
@@ -37,7 +37,7 @@ public enum Contain implements TitanPredicate {
      */
     NOT_IN {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
             Collection col = (Collection) condition;
             return !col.contains(value);
@@ -51,11 +51,6 @@ public enum Contain implements TitanPredicate {
     };
 
     private static final Logger log = LoggerFactory.getLogger(Contain.class);
-
-    @Override
-    public boolean test(Object value, Object condition) {
-        return evaluate(value,condition);
-    }
 
     @Override
     public boolean isValidValueType(Class<?> clazz) {

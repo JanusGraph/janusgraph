@@ -262,6 +262,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return getAutoStartTx().getVertexLabel(name);
     }
 
+    @Override
+    public VertexLabel getOrCreateVertexLabel(String name) {
+        return getAutoStartTx().getOrCreateVertexLabel(name);
+    }
+
     class GraphTransaction implements Transaction {
 
         private Consumer<Transaction> readWriteBehavior = READ_WRITE_BEHAVIOR.AUTO;

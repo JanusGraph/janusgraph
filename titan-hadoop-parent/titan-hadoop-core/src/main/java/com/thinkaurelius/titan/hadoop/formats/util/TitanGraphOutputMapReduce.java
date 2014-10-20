@@ -202,7 +202,7 @@ public class TitanGraphOutputMapReduce {
             } else {
                 VertexLabel titanLabel = BaseVertexLabel.DEFAULT_VERTEXLABEL;
                 FaunusVertexLabel faunusLabel = faunusVertex.getVertexLabel();
-                if (!faunusLabel.isDefault()) titanLabel = graph.getVertexLabel(faunusLabel.getName());
+                if (!faunusLabel.isDefault()) titanLabel = graph.getOrCreateVertexLabel(faunusLabel.name());
                 TitanVertex tv = graph.addVertexWithLabel(titanLabel);
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_ADDED, 1L);
                 return tv;
@@ -264,7 +264,7 @@ public class TitanGraphOutputMapReduce {
         if (faunusRelation.isModified()  || faunusRelation.isNew()) { //Synchronize incident properties + unidirected edges
             for (TitanRelation faunusProp : faunusRelation.query().queryAll().relations()) {
                 if (faunusProp.isRemoved()) {
-                    titanRelation.removeProperty(faunusProp.getType().getName());
+                    titanRelation.removeProperty(faunusProp.getType().name());
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGE_PROPERTIES_REMOVED, 1L);
                 }
             }
@@ -277,7 +277,7 @@ public class TitanGraphOutputMapReduce {
                         //TODO: ensure that the adjacent vertex has been previous assigned an id since ids don't propagate along unidirected edges
                         value = graph.getVertex(((FaunusEdge)faunusProp).getVertexId(IN));
                     }
-                    titanRelation.setProperty(faunusProp.getType().getName(),value);
+                    titanRelation.setProperty(faunusProp.getType().name(),value);
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGE_PROPERTIES_ADDED, 1L);
                 }
             }

@@ -45,7 +45,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     }
 
     public String getTypeName() {
-        return null != type ? type.getName() : null;
+        return null != type ? type.name() : null;
     }
 
     @Override

@@ -84,7 +84,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     private Parameter getFieldMap(PropertyKey key) {
-        return ParameterType.MAPPED_NAME.getParameter(key.getName());
+        return ParameterType.MAPPED_NAME.getParameter(key.name());
     }
 
     public abstract boolean supportsLuceneStyleQueries();
@@ -376,7 +376,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         index3 = mgmt.getGraphIndex("index3");
 
         assertTrue(Vertex.class.isAssignableFrom(index1.getIndexedElement()));
-        assertEquals("index2",index2.getName());
+        assertEquals("index2",index2.name());
         assertEquals(INDEX,index3.getBackingIndex());
         assertFalse(index2.isUnique());
         assertEquals(2,index3.getFieldKeys().length);
@@ -419,7 +419,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         index3 = mgmt.getGraphIndex("index3");
 
         assertTrue(Vertex.class.isAssignableFrom(index1.getIndexedElement()));
-        assertEquals("index2",index2.getName());
+        assertEquals("index2",index2.name());
         assertEquals(INDEX,index3.getBackingIndex());
         assertFalse(index2.isUnique());
         assertEquals(2,index3.getFieldKeys().length);
@@ -464,25 +464,25 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         //########## QUERIES ################
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index2.getName());
+                numV/strs.length,new boolean[]{true,true},index2.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,"person").orderBy("weight",Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index2.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index2.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[3]).has("label",Cmp.EQUAL,"org"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index3.getName());
+                numV/strs.length,new boolean[]{true,true},index3.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,"org").orderBy("weight",Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index3.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index3.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("weight",Cmp.EQUAL,2.5).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/(modulo*strs.length),new boolean[]{true,true},index2.getName());
+                numV/(modulo*strs.length),new boolean[]{true,true},index2.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[2]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},index1.getName());
+                numV/strs.length,new boolean[]{false,true},index1.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[3]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                0,new boolean[]{false,true},index1.getName());
+                0,new boolean[]{false,true},index1.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index1.getName());
+                numV/strs.length,new boolean[]{true,true},index1.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[2]).has("text",Text.CONTAINS,strs[2]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index1.getName(),index2.getName());
+                numV/strs.length,new boolean[]{true,true},index1.name(),index2.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]).has("text",Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,"person").orderBy("weight",Order.ASC),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},weight,Order.ASC,index1.getName(),index2.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.ASC,index1.name(),index2.name());
 
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
@@ -494,25 +494,25 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         //########## QUERIES (copied from above) ################
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index2.getName());
+                numV/strs.length,new boolean[]{true,true},index2.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,"person").orderBy("weight",Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index2.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index2.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[3]).has("label",Cmp.EQUAL,"org"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index3.getName());
+                numV/strs.length,new boolean[]{true,true},index3.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,"org").orderBy("weight",Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index3.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index3.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("weight",Cmp.EQUAL,2.5).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/(modulo*strs.length),new boolean[]{true,true},index2.getName());
+                numV/(modulo*strs.length),new boolean[]{true,true},index2.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[2]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},index1.getName());
+                numV/strs.length,new boolean[]{false,true},index1.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[3]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                0,new boolean[]{false,true},index1.getName());
+                0,new boolean[]{false,true},index1.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index1.getName());
+                numV/strs.length,new boolean[]{true,true},index1.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[2]).has("text",Text.CONTAINS,strs[2]).has("label",Cmp.EQUAL,"person"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},index1.getName(),index2.getName());
+                numV/strs.length,new boolean[]{true,true},index1.name(),index2.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]).has("text",Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,"person").orderBy("weight",Order.ASC),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},weight,Order.ASC,index1.getName(),index2.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.ASC,index1.name(),index2.name());
 
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
@@ -530,7 +530,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanGraphIndex composite = mgmt.buildIndex("composite",Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
         TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
                                     .addKey(text, getTextMapping()).buildMixedIndex(INDEX);
-        mixed.getName(); composite.getName();
+        mixed.name(); composite.name();
         finishSchema();
 
         final int numV = 100;
@@ -551,21 +551,21 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},mixed.getName());
+                numV/strs.length,new boolean[]{true,true},mixed.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("flag"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},mixed.getName());
+                numV/strs.length,new boolean[]{false,true},mixed.name());
         evaluateQuery(tx.query().has("name", Cmp.EQUAL, strs[0]).has("weight", Cmp.EQUAL, 1.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, composite.getName());
+                numV / divisor, new boolean[]{true, true}, composite.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]).has("weight",Cmp.EQUAL,1.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},composite.getName());
+                numV/divisor,new boolean[]{false,true},composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[2]).has("weight", Cmp.EQUAL, 2.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, mixed.getName());
+                numV / divisor, new boolean[]{true, true}, mixed.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[2]).has("weight",Cmp.EQUAL,2.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},mixed.getName());
+                numV/divisor,new boolean[]{false,true},mixed.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name",Cmp.EQUAL,strs[3]).has("weight",Cmp.EQUAL,3.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},mixed.getName(),composite.getName());
+                numV/divisor,new boolean[]{true,true},mixed.name(),composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name",Cmp.EQUAL,strs[3]).has("weight",Cmp.EQUAL,3.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},mixed.getName(),composite.getName());
+                numV/divisor,new boolean[]{false,true},mixed.name(),composite.name());
 
         clopen();
 
@@ -573,21 +573,21 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},mixed.getName());
+                numV/strs.length,new boolean[]{true,true},mixed.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("flag"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},mixed.getName());
+                numV/strs.length,new boolean[]{false,true},mixed.name());
         evaluateQuery(tx.query().has("name", Cmp.EQUAL, strs[0]).has("weight", Cmp.EQUAL, 1.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, composite.getName());
+                numV / divisor, new boolean[]{true, true}, composite.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]).has("weight",Cmp.EQUAL,1.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},composite.getName());
+                numV/divisor,new boolean[]{false,true},composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[2]).has("weight", Cmp.EQUAL, 2.5), ElementCategory.VERTEX,
-                numV / divisor, new boolean[]{true, true}, mixed.getName());
+                numV / divisor, new boolean[]{true, true}, mixed.name());
         evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[2]).has("weight",Cmp.EQUAL,2.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},mixed.getName());
+                numV/divisor,new boolean[]{false,true},mixed.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name",Cmp.EQUAL,strs[3]).has("weight",Cmp.EQUAL,3.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},mixed.getName(),composite.getName());
+                numV/divisor,new boolean[]{true,true},mixed.name(),composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name",Cmp.EQUAL,strs[3]).has("weight",Cmp.EQUAL,3.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},mixed.getName(),composite.getName());
+                numV/divisor,new boolean[]{false,true},mixed.name(),composite.name());
 
     }
 
@@ -799,7 +799,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         PropertyKey name = makeKey("name", String.class);
         TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.getParameter()).buildMixedIndex(INDEX);
-        mixed.getName();
+        mixed.name();
         finishSchema();
 
         Vertex v = tx.addVertex("name","Long John Don");

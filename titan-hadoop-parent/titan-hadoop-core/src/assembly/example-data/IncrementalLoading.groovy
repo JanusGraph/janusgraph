@@ -39,12 +39,12 @@ def Object getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log
 
     final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.getPropertyKey();
     if (pkey.getCardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
-        vertex.setProperty(pkey.getName(), faunusProperty.getValue());
+        vertex.setProperty(pkey.name(), faunusProperty.getValue());
     } else {
-        vertex.addProperty(pkey.getName(), faunusProperty.getValue());
+        vertex.addProperty(pkey.name(), faunusProperty.getValue());
     }
 
-    log.debug("Set property {}={} on {}", pkey.getName(), faunusProperty.getValue(), vertex);
+    log.debug("Set property {}={} on {}", pkey.name(), faunusProperty.getValue(), vertex);
 
     return faunusProperty.getValue();
 }

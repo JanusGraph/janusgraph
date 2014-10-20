@@ -41,7 +41,7 @@ public class IndexHelper {
             gb.has(key, Cmp.EQUAL,value);
         }
         if (index.hasSchemaTypeConstraint()) {
-            gb.has(ImplicitKey.LABEL,Cmp.EQUAL,index.getSchemaTypeConstraint().getName());
+            gb.has(ImplicitKey.LABEL,Cmp.EQUAL,index.getSchemaTypeConstraint().name());
         }
         return gb;
     }

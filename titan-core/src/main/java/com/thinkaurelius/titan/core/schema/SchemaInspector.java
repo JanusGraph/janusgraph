@@ -108,4 +108,7 @@ public interface SchemaInspector {
     public VertexLabel getVertexLabel(String name);
 
 
+    public VertexLabel getOrCreateVertexLabel(String name);
+
+
 }

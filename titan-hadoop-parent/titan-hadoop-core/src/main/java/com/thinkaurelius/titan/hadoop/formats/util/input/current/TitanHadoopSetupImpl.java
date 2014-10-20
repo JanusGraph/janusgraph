@@ -47,7 +47,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
                 assert k instanceof TitanSchemaVertex;
                 TitanSchemaVertex s = (TitanSchemaVertex)k;
                 if (sc.hasName()) {
-                    String name = s.getName();
+                    String name = s.name();
                     Preconditions.checkNotNull(name);
                 }
                 TypeDefinitionMap dm = s.getDefinition();

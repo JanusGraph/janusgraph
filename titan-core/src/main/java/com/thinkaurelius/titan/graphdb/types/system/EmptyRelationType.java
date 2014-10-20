@@ -59,6 +59,6 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
 
     @Override
     public String toString() {
-        return getName();
+        return name();
     }
 }

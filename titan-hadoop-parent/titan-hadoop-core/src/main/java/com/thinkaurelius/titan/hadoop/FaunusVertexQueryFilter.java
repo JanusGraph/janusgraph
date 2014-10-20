@@ -156,7 +156,7 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
             //orders
             if (!query.orders.isEmpty()) {
                 for (OrderList.OrderEntry entry : query.orders) {
-                    orderBy(entry.getKey().getName(),entry.getOrder());
+                    orderBy(entry.getKey().name(),entry.getOrder());
                 }
             }
             assert query.adjacentVertex==null;

@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.types.system.EmptyVertex;
 public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabel {
 
     public static FaunusVertexLabel DEFAULT_VERTEXLABEL = new FaunusVertexLabel(
-            new VertexLabelDefinition(BaseVertexLabel.DEFAULT_VERTEXLABEL.getName(), FaunusElement.NO_ID,false,false));
+            new VertexLabelDefinition(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(), FaunusElement.NO_ID,false,false));
 
     private final VertexLabelDefinition definition;
 
@@ -21,7 +21,7 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
     }
 
     public boolean isDefault() {
-        return getName().equals(BaseVertexLabel.DEFAULT_VERTEXLABEL.getName());
+        return name().equals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name());
     }
 
     @Override
@@ -35,7 +35,7 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return definition.getName();
     }
 
@@ -51,7 +51,7 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
 
     @Override
     public String toString() {
-        return getName();
+        return name();
     }
 
     @Override
@@ -66,14 +66,14 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
 
     @Override
     public int hashCode() {
-        return getName().hashCode();
+        return name().hashCode();
     }
 
     @Override
     public boolean equals(Object oth) {
         if (this==oth) return true;
         else if (oth==null || !(oth instanceof VertexLabel)) return false;
-        return getName().equals(((VertexLabel)oth).getName());
+        return name().equals(((VertexLabel)oth).name());
     }
 
 }

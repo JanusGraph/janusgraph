@@ -40,7 +40,7 @@ public class IndexField {
 
     @Override
     public String toString() {
-        return "["+key.getName()+"]";
+        return "["+key.name()+"]";
     }
 
 }

@@ -92,7 +92,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                 ttl = 0;
             }
             return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
-        } else throw new AssertionError("Implicit key property is undefined: " + this.getName());
+        } else throw new AssertionError("Implicit key property is undefined: " + this.name());
     }
 
     @Override
@@ -106,7 +106,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return name;
     }
 

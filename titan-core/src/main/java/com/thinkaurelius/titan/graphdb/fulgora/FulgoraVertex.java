@@ -48,7 +48,7 @@ public class FulgoraVertex<S> extends CacheVertex {
 
     @Override
     public<A> A getProperty(PropertyKey key) {
-        return getProperty(key.getName());
+        return getProperty(key.name());
     }
 
     @Override
@@ -69,7 +69,7 @@ public class FulgoraVertex<S> extends CacheVertex {
      */
     @Override
     public VertexLabel getVertexLabel() {
-        Long labelid = getProperty(BaseLabel.VertexLabelEdge.getName());
+        Long labelid = getProperty(BaseLabel.VertexLabelEdge.name());
         if (labelid==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)tx().getInternalVertex(labelid);
     }

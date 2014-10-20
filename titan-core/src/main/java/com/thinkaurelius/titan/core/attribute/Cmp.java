@@ -3,8 +3,6 @@ package com.thinkaurelius.titan.core.attribute;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Basic comparison relations for comparable (i.e. linearly ordered) objects.
@@ -27,7 +25,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             if (condition==null) {
                 return value==null;
             } else {
@@ -59,7 +57,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             if (condition==null) {
                 return value!=null;
             } else {
@@ -92,7 +90,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
             return cmp!=null?cmp<0:false;
         }
@@ -122,7 +120,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
             return cmp!=null?cmp<=0:false;
         }
@@ -152,7 +150,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
             return cmp!=null?cmp>0:false;
         }
@@ -182,7 +180,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Integer cmp = AttributeUtil.compare(value,condition);
             return cmp!=null?cmp>=0:false;
         }
@@ -197,11 +195,6 @@ public enum Cmp implements TitanPredicate {
             return LESS_THAN;
         }
     };
-
-    @Override
-    public boolean test(Object value, Object condition) {
-        return evaluate(value,condition);
-    }
 
     @Override
     public boolean hasNegation() {

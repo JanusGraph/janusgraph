@@ -154,7 +154,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             Object value;
             if (rel.isProperty()) value = ((FaunusVertexProperty)rel).getValue();
             else value = tx.getInternalVertex(((FaunusEdge) rel).getVertexId(Direction.IN));
-            if (value!=null) titanRelation.setProperty(rel.getType().getName(),value);
+            if (value!=null) titanRelation.setProperty(rel.getType().name(),value);
         }
         return titanRelation;
     }
@@ -174,7 +174,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
                 List<Entry> additions = new ArrayList<Entry>();
 
                 for (TitanRelation faunusRelation : faunusVertex.query().relations()) {
-                    if (!faunusRelation.getType().getName().equals(indexType) ||
+                    if (!faunusRelation.getType().name().equals(indexType) ||
                             faunusRelation.getDirection(faunusVertex)!=Direction.OUT) continue; //Isolate relevant relations and only outgoing ones
                     StandardRelation titanRelation = getTitanRelation((StandardFaunusRelation)faunusRelation,tx);
                     for (int pos = 0; pos < titanRelation.getArity(); pos++) {
@@ -272,7 +272,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
                 SchemaStatus status = gindex.getIndexStatus(key);
                 if (status!=SchemaStatus.DISABLED && !acceptableStatuses.contains(status)) {
                     isValidIndex=false;
-                    invalidKeyStatuses.put(key.getName(), status);
+                    invalidKeyStatuses.put(key.name(), status);
                     log.warn("Index {} has key {} in an invalid status {}",index,key,status);
                 }
             }

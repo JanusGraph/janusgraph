@@ -60,7 +60,7 @@ public class TitanHadoopGraph {
                     //Vertex Label
                     long vertexLabelId = relation.getOtherVertexId();
                     VertexLabel vl = typeManager.getExistingVertexLabel(vertexLabelId);
-                    vertex.setVertexLabel(vertex.getTypeManager().getVertexLabel(vl.getName()));
+                    vertex.setVertexLabel(vertex.getTypeManager().getOrCreateVertexLabel(vl.name()));
                 }
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
@@ -71,16 +71,16 @@ public class TitanHadoopGraph {
                 if (type.isPropertyKey()) {
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    final StandardFaunusVertexProperty fprop = new StandardFaunusVertexProperty(relation.relationId, vertex, type.getName(), value);
+                    final StandardFaunusVertexProperty fprop = new StandardFaunusVertexProperty(relation.relationId, vertex, type.name(), value);
                     vertex.addProperty(fprop);
                     frel = fprop;
                 } else {
                     assert type.isEdgeLabel();
                     StandardFaunusEdge fedge;
                     if (relation.direction.equals(Direction.IN))
-                        fedge = new StandardFaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
+                        fedge = new StandardFaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.name());
                     else if (relation.direction.equals(Direction.OUT))
-                        fedge = new StandardFaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
+                        fedge = new StandardFaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.name());
                     else
                         throw ExceptionFactory.bothIsNotSupported();
                     vertex.addEdge(fedge);
@@ -92,13 +92,13 @@ public class TitanHadoopGraph {
                         assert next.value != null;
                         RelationType rt = typeManager.getExistingRelationType(next.key);
                         if (rt.isPropertyKey()) {
-                            PropertyKey pkey = (PropertyKey)vertex.getTypeManager().getPropertyKey(rt.getName());
-                            log.debug("Retrieved key {} for name \"{}\"", pkey, rt.getName());
+                            PropertyKey pkey = (PropertyKey)vertex.getTypeManager().getPropertyKey(rt.name());
+                            log.debug("Retrieved key {} for name \"{}\"", pkey, rt.name());
                             frel.setProperty(pkey, next.value);
                         } else {
                             assert next.value instanceof Long;
-                            EdgeLabel el = (EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.getName());
-                            log.debug("Retrieved ege label {} for name \"{}\"", el, rt.getName());
+                            EdgeLabel el = (EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.name());
+                            log.debug("Retrieved ege label {} for name \"{}\"", el, rt.name());
                             frel.setProperty(el, new FaunusVertex(configuration,(Long)next.value));
                         }
                     }

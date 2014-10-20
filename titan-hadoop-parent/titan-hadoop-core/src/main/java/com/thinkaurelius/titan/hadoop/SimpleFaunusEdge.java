@@ -43,7 +43,7 @@ public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge
 
     @Override
     public String getLabel() {
-        return label.getName();
+        return label.name();
     }
 
     @Override

@@ -16,7 +16,7 @@ public enum Geo implements TitanPredicate {
      */
     INTERSECT {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
             if (value == null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
@@ -44,7 +44,7 @@ public enum Geo implements TitanPredicate {
      */
     DISJOINT {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
             if (value == null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
@@ -72,7 +72,7 @@ public enum Geo implements TitanPredicate {
      */
     WITHIN {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
             if (value == null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
@@ -94,11 +94,6 @@ public enum Geo implements TitanPredicate {
             throw new UnsupportedOperationException();
         }
     };
-
-    @Override
-    public boolean test(Object value, Object condition) {
-        return evaluate(value,condition);
-    }
 
     @Override
     public boolean isValidCondition(Object condition) {

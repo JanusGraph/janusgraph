@@ -69,6 +69,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         Preconditions.checkArgument(idValue==null || (idValue instanceof Number && AttributeUtil.isWholeNumber((Number)idValue)),"Id must be a number but was given: %s",idValue);
+        Long id = (idValue==null)?null:((Number)idValue).longValue();
         Object labelValue = null;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (keyValues[i].equals(T.label)) {
@@ -78,9 +79,9 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
                 if (labelValue instanceof String) ElementHelper.validateLabel((String) labelValue);
             }
         }
-        VertexLabel label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getVertexLabel((String)labelValue);
+        VertexLabel label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String)labelValue);
 
-        final TitanVertex vertex = addVertex(((Number)idValue).longValue(), label);
+        final TitanVertex vertex = addVertex(id, label);
         ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
     }

@@ -99,12 +99,12 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public void setVertexLabel(String label) {
-        setVertexLabel(getTypeManager().getVertexLabel(label));
+        setVertexLabel(getTypeManager().getOrCreateVertexLabel(label));
     }
 
     @Override
     public String getLabel() {
-        return vertexLabel.getName();
+        return vertexLabel.name();
     }
 
     @Override

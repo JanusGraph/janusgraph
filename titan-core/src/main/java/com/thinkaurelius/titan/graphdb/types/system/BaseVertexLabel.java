@@ -26,7 +26,7 @@ public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel 
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return name;
     }
 
@@ -42,6 +42,6 @@ public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel 
 
     @Override
     public String toString() {
-        return getName();
+        return name();
     }
 }

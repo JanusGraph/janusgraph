@@ -12,6 +12,6 @@ public interface Namifiable {
      *
      * @return Name of this entity.
      */
-    public String getName();
+    public String name();
 
 }

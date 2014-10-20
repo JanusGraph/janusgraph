@@ -82,7 +82,7 @@ public class IndexSerializer {
     public String getDefaultFieldName(final PropertyKey key, final Parameter[] parameters, final String indexName) {
         Preconditions.checkArgument(!ParameterType.MAPPED_NAME.hasParameter(parameters),"A field name mapping has been specified for key: %s",key);
         Preconditions.checkArgument(containsIndex(indexName),"Unknown backing index: %s",indexName);
-        String fieldname = configuration.get(INDEX_NAME_MAPPING,indexName)?key.getName():keyID2Name(key);
+        String fieldname = configuration.get(INDEX_NAME_MAPPING,indexName)?key.name():keyID2Name(key);
         return mixedIndexes.get(indexName).mapKey2Field(fieldname,
                 new StandardKeyInformation(key.getDataType(),parameters));
     }
@@ -336,7 +336,7 @@ public class IndexSerializer {
         for (ParameterIndexField field: index.getFieldKeys()) {
             PropertyKey key = field.getFieldKey();
             if (field.getStatus()==SchemaStatus.DISABLED) continue;
-            Object value = element.getProperty(key.getName());
+            Object value = element.getProperty(key.name());
             if (value!=null) {
                 entries.add(new IndexEntry(key2Field(field), value));
             }
@@ -624,7 +624,7 @@ public class IndexSerializer {
                 PropertyKey key = transaction.getPropertyKey(keyname);
                 Preconditions.checkNotNull(key);
                 Preconditions.checkArgument(index.indexesKey(key),
-                        "The used key [%s] is not indexed in the targeted index [%s]",key.getName(),query.getIndex());
+                        "The used key [%s] is not indexed in the targeted index [%s]",key.name(),query.getIndex());
                 replacement = key2Field(index,key);
             } else {
                 Preconditions.checkArgument(query.getUnknownKeyName()!=null,

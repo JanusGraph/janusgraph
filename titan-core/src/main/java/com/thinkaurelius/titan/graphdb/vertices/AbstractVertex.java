@@ -101,7 +101,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public String getLabel() {
-        return getVertexLabel().getName();
+        return getVertexLabel().name();
     }
 
     protected Vertex getVertexLabelInternal() {
@@ -125,7 +125,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     public Set<String> getPropertyKeys() {
         Set<String> result = new HashSet<String>();
         for (TitanVertexProperty p : getProperties()) {
-            result.add(p.getPropertyKey().getName());
+            result.add(p.getPropertyKey().name());
         }
         return result;
     }

@@ -34,13 +34,13 @@ public class FaunusSchemaManager implements SchemaInspector {
     }
 
     private final void initialize() {
-        vertexLabels.put(FaunusVertexLabel.DEFAULT_VERTEXLABEL.getName(),FaunusVertexLabel.DEFAULT_VERTEXLABEL);
-        relationTypes.put(FaunusPropertyKey.COUNT.getName(),FaunusPropertyKey.COUNT);
-        relationTypes.put(FaunusEdgeLabel.LINK.getName(),FaunusEdgeLabel.LINK);
-        relationTypes.put(FaunusPropertyKey.VALUE.getName(),FaunusPropertyKey.VALUE);
-        relationTypes.put(FaunusPropertyKey.ID.getName(),FaunusPropertyKey.ID);
-        relationTypes.put(FaunusPropertyKey._ID.getName(),FaunusPropertyKey._ID);
-        relationTypes.put(FaunusPropertyKey.LABEL.getName(),FaunusPropertyKey.LABEL);
+        vertexLabels.put(FaunusVertexLabel.DEFAULT_VERTEXLABEL.name(),FaunusVertexLabel.DEFAULT_VERTEXLABEL);
+        relationTypes.put(FaunusPropertyKey.COUNT.name(),FaunusPropertyKey.COUNT);
+        relationTypes.put(FaunusEdgeLabel.LINK.name(),FaunusEdgeLabel.LINK);
+        relationTypes.put(FaunusPropertyKey.VALUE.name(),FaunusPropertyKey.VALUE);
+        relationTypes.put(FaunusPropertyKey.ID.name(),FaunusPropertyKey.ID);
+        relationTypes.put(FaunusPropertyKey._ID.name(),FaunusPropertyKey._ID);
+        relationTypes.put(FaunusPropertyKey.LABEL.name(),FaunusPropertyKey.LABEL);
     }
 
     public void setSchemaProvider(SchemaProvider provider) {
@@ -56,7 +56,13 @@ public class FaunusSchemaManager implements SchemaInspector {
         initialize();
     }
 
+    @Override
     public FaunusVertexLabel getVertexLabel(String name) {
+        return vertexLabels.get(name);
+    }
+
+    @Override
+    public FaunusVertexLabel getOrCreateVertexLabel(String name) {
         FaunusVertexLabel vl = vertexLabels.get(name);
         if (vl==null) {
             vertexLabels.putIfAbsent(name,new FaunusVertexLabel(schemaProvider.getVertexLabel(name)));

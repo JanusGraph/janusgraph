@@ -26,7 +26,7 @@ public enum Text implements TitanPredicate {
     CONTAINS {
 
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             this.preevaluate(value,condition);
             if (value == null) return false;
             return evaluateRaw(value.toString(),(String)condition);
@@ -58,7 +58,7 @@ public enum Text implements TitanPredicate {
      */
     CONTAINS_PREFIX {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             this.preevaluate(value,condition);
             if (value == null) return false;
             return evaluateRaw(value.toString(),(String)condition);
@@ -84,7 +84,7 @@ public enum Text implements TitanPredicate {
      */
     CONTAINS_REGEX {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             this.preevaluate(value,condition);
             if (value == null) return false;
             return evaluateRaw(value.toString(),(String)condition);
@@ -110,7 +110,7 @@ public enum Text implements TitanPredicate {
      */
     PREFIX {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             this.preevaluate(value,condition);
             if (value==null) return false;
             return evaluateRaw(value.toString(),(String)condition);
@@ -133,7 +133,7 @@ public enum Text implements TitanPredicate {
      */
     REGEX {
         @Override
-        public boolean evaluate(Object value, Object condition) {
+        public boolean test(Object value, Object condition) {
             this.preevaluate(value,condition);
             if (value == null) return false;
             return evaluateRaw(value.toString(),(String)condition);
@@ -172,11 +172,6 @@ public enum Text implements TitanPredicate {
         }
         if (previous + MIN_TOKEN_LENGTH < str.length()) tokens.add(str.substring(previous, str.length()));
         return tokens;
-    }
-
-    @Override
-    public boolean test(Object value, Object condition) {
-        return evaluate(value,condition);
     }
 
     @Override

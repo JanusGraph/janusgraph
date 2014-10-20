@@ -29,7 +29,7 @@ public class TitanGraphIndexWrapper implements TitanGraphIndex {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return index.getName();
     }
 

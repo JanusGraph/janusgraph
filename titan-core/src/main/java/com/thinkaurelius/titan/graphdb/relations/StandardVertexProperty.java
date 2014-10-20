@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,7 +50,7 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
 
     @Override
     public void setPropertyDirect(RelationType type, Object value) {
-        Preconditions.checkArgument(!(type instanceof ImplicitKey),"Cannot use implicit type [%s] when setting property",type.getName());
+        Preconditions.checkArgument(!(type instanceof ImplicitKey),"Cannot use implicit type [%s] when setting property",type.name());
         if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
                 properties = new HashMap<RelationType, Object>(5);

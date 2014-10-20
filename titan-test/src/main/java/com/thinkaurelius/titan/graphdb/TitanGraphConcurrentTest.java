@@ -148,7 +148,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         for (int i = 0; i < TASK_COUNT; i++) {
             int vertexid = RandomGenerator.randomInt(0, VERTEX_COUNT);
             EdgeLabel elabel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
-            executor.execute(new SimpleReader(tx, startLatch, stopLatch, vertexid, elabel.getName(), EDGE_COUNT * 2, id.getName()));
+            executor.execute(new SimpleReader(tx, startLatch, stopLatch, vertexid, elabel.name(), EDGE_COUNT * 2, id.name()));
             startLatch.countDown();
         }
         stopLatch.await();
@@ -173,8 +173,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         finishSchema();
 
         PropertyKey id = tx.getPropertyKey("uid");
-        Runnable propMaker = new RandomPropertyMaker(tx, VERTEX_COUNT, id.getName(), "dummyProperty");
-        Runnable relMaker = new FixedRelationshipMaker(tx, id.getName(), "dummyRelationship");
+        Runnable propMaker = new RandomPropertyMaker(tx, VERTEX_COUNT, id.name(), "dummyProperty");
+        Runnable relMaker = new FixedRelationshipMaker(tx, id.name(), "dummyRelationship");
 
         Future<?> propFuture = executor.submit(propMaker);
         Future<?> relFuture = executor.submit(relMaker);
@@ -184,7 +184,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         for (int i = 0; i < TASK_COUNT; i++) {
             int vertexid = RandomGenerator.randomInt(0, VERTEX_COUNT);
             EdgeLabel elabel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
-            executor.execute(new SimpleReader(tx, startLatch, stopLatch, vertexid, elabel.getName(), EDGE_COUNT * 2, id.getName()));
+            executor.execute(new SimpleReader(tx, startLatch, stopLatch, vertexid, elabel.name(), EDGE_COUNT * 2, id.name()));
             startLatch.countDown();
         }
         stopLatch.await();

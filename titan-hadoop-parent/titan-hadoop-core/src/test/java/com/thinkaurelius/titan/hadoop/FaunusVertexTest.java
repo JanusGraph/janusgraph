@@ -375,7 +375,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(2,Iterables.size((Iterable)vertex.getProperty("nameset")));
         int counter = 0;
         for (TitanVertexProperty property : vertex.getProperties()) {
-            assertEquals(property.getPropertyKey().getName(), "nameset");
+            assertEquals(property.getPropertyKey().name(), "nameset");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
         }
@@ -400,7 +400,7 @@ public class FaunusVertexTest extends BaseTest {
 
         counter = 0;
         for (TitanVertexProperty property : vertex.getProperties()) {
-            assertEquals(property.getPropertyKey().getName(), "nameset");
+            assertEquals(property.getPropertyKey().name(), "nameset");
             assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
             counter++;
         }

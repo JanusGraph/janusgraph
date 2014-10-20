@@ -23,7 +23,7 @@ public abstract class SystemTypeManager {
                     ImplicitKey.TIMESTAMP, ImplicitKey.TTL, ImplicitKey.VISIBILITY
                 }) {
                 idBuilder.put(et.getLongId(), et);
-                nameBuilder.put(et.getName(),et);
+                nameBuilder.put(et.name(),et);
             }
 
             SYSTEM_TYPES_BY_ID = idBuilder.build();

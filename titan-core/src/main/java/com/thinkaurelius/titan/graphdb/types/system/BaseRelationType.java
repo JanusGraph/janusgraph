@@ -19,7 +19,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return name;
     }
 

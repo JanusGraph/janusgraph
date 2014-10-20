@@ -83,7 +83,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
         pullThreads = new DataPuller[numQueries];
 
         int pos = 0;
-        pullThreads[pos++]=addDataPuller(BaseKey.VertexExists.getName(),
+        pullThreads[pos++]=addDataPuller(BaseKey.VertexExists.name(),
                 new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1),btx);
         for (Map.Entry<String,FulgoraRelationQuery> queryDef : queryDefs.entrySet()) {
             String queryName = queryDef.getKey();

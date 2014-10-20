@@ -508,7 +508,7 @@ public class ManagementSystem implements TitanManagement {
                 && !(key instanceof BaseKey),"Need to provide valid index and key");
         if (parameters==null) parameters=new Parameter[0];
         IndexType indexType = ((TitanGraphIndexWrapper)index).getBaseIndex();
-        Preconditions.checkArgument(indexType instanceof MixedIndexType,"Can only add keys to an external index, not %s",index.getName());
+        Preconditions.checkArgument(indexType instanceof MixedIndexType,"Can only add keys to an external index, not %s",index.name());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
             && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
         Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
@@ -516,7 +516,7 @@ public class ManagementSystem implements TitanManagement {
         TitanSchemaVertex indexVertex = (TitanSchemaVertex)((IndexTypeWrapper)indexType).getSchemaBase();
 
         for (IndexField field : indexType.getFieldKeys())
-            Preconditions.checkArgument(!field.getFieldKey().equals(key),"Key [%s] has already been added to index %s",key.getName(),index.getName());
+            Preconditions.checkArgument(!field.getFieldKey().equals(key),"Key [%s] has already been added to index %s",key.name(),index.name());
 
         //Assemble parameters
         boolean addMappingParameter = !ParameterType.MAPPED_NAME.hasParameter(parameters);
@@ -695,7 +695,7 @@ public class ManagementSystem implements TitanManagement {
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
                 break;
             case REINDEX:
-                throw new UnsupportedOperationException(updateAction + " requires a manual step: run a MapReduce reindex on index name \"" + index.getName() + "\"");
+                throw new UnsupportedOperationException(updateAction + " requires a manual step: run a MapReduce reindex on index name \"" + index.name() + "\"");
             case ENABLE_INDEX:
                 setStatus(schemaVertex,SchemaStatus.ENABLED,keySubset);
                 updatedTypes.add(schemaVertex);
@@ -753,7 +753,7 @@ public class ManagementSystem implements TitanManagement {
                     Set<String> propNames = Sets.newHashSet();
                     for (PropertyKeyVertex v : keys) {
                         try {
-                            propNames.add(v.getName());
+                            propNames.add(v.name());
                         } catch (Throwable t) {
                             log.warn("Failed to get name for property key with id {}", v.getLongId(), t);
                             propNames.add("(ID#" + v.getLongId() + ")");
@@ -761,7 +761,7 @@ public class ManagementSystem implements TitanManagement {
                     }
                     String schemaName = "(ID#" + schemaVertexId + ")";
                     try {
-                        schemaName = schemaVertex.getName();
+                        schemaName = schemaVertex.name();
                     } catch (Throwable t) {
                         log.warn("Failed to get name for schema vertex with id {}", schemaVertexId, t);
                     }
@@ -842,7 +842,7 @@ public class ManagementSystem implements TitanManagement {
     public void changeName(TitanSchemaElement element, String newName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(newName),"Invalid name: %s",newName);
         TitanSchemaVertex schemaVertex = getSchemaVertex(element);
-        if (schemaVertex.getName().equals(newName)) return;
+        if (schemaVertex.name().equals(newName)) return;
 
         TitanSchemaCategory schemaCategory = schemaVertex.getProperty(BaseKey.SchemaCategory);
         Preconditions.checkArgument(schemaCategory.hasName(),"Invalid schema element: %s",element);
@@ -925,7 +925,7 @@ public class ManagementSystem implements TitanManagement {
         if (element instanceof RelationType) {
             RelationTypeVertex rv = (RelationTypeVertex) element;
             Preconditions.checkArgument(consistency != ConsistencyModifier.FORK || !rv.getMultiplicity().isConstrained(),
-                    "Cannot apply FORK consistency mode to constraint relation type: %s",rv.getName());
+                    "Cannot apply FORK consistency mode to constraint relation type: %s",rv.name());
         } else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
             if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on mixed index: " + element);
@@ -1091,6 +1091,11 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public VertexLabel getVertexLabel(String name) {
         return transaction.getVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabel getOrCreateVertexLabel(String name) {
+        return transaction.getOrCreateVertexLabel(name);
     }
 
     @Override

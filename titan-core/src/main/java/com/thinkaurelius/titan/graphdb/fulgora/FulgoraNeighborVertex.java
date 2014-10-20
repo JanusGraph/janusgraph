@@ -58,7 +58,7 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
 
     @Override
     public String getLabel() {
-        return getVertexLabel().getName();
+        return getVertexLabel().name();
     }
 
     @Override

@@ -125,10 +125,10 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             VertexLabel person = tx.getVertexLabel("person");
             PropertyKey uid = tx.getPropertyKey("uid");
             //Retrieve name as property (one backend call each)
-            assertEquals("name",name.getName());
-            assertEquals("knows",knows.getName());
-            assertEquals("person",person.getName());
-            assertEquals("uid",uid.getName());
+            assertEquals("name",name.name());
+            assertEquals("knows",knows.name());
+            assertEquals("person",person.name());
+            assertEquals("uid",uid.name());
             //Looking up the definition (one backend call each)
             assertEquals(Cardinality.SINGLE,name.getCardinality());
             assertEquals(Multiplicity.MULTI,knows.getMultiplicity());
