@@ -40,7 +40,6 @@
         <!-- Example data (from titan-hadoop/faunus) -->
         <dependencySet>
             <unpack>true</unpack>
-            <!-- Dump into /javadocs instead of /docs/javadocs for milestone release -->
             <outputDirectory>/examples</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
