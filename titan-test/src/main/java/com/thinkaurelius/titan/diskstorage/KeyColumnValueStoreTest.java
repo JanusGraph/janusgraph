@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
+import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -1017,6 +1018,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         examineGetKeysResults(keyIterator, 10, 40, 1);
     }
 
+    @Category({ BrittleTests.class })
     @Test
     public void testTtl() throws Exception {
 

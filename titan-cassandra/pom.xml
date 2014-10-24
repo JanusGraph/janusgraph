@@ -237,7 +237,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                            <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
@@ -256,7 +256,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
-                            <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>

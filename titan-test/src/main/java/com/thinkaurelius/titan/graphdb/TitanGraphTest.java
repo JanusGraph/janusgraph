@@ -67,6 +67,7 @@ import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
@@ -78,6 +79,7 @@ import com.tinkerpop.gremlin.structure.*;
 import static com.thinkaurelius.titan.testutil.TitanAssert.*;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1427,6 +1429,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
     }
 
+    @Category({ BrittleTests.class })
     @Test
     public void testIndexUpdateSyncWithMultipleInstances() throws InterruptedException {
         clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
@@ -4281,6 +4284,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEmpty(v1.out());
     }
 
+    @Category({ BrittleTests.class })
     @Test
     public void testEdgeTTLWithIndex() throws Exception {
         if (!features.hasCellTTL()) {
@@ -4319,6 +4323,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEmpty(graph.E().has("time",42));
     }
 
+    @Category({ BrittleTests.class })
     @Test
     public void testPropertyTTLTiming() throws Exception {
         if (!features.hasCellTTL()) {
@@ -4400,6 +4405,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEmpty(graph.V().has("name", "some event"));
     }
 
+    @Category({ BrittleTests.class })
     @Test
     public void testEdgeTTLLimitedByVertexTTL() throws Exception {
 
