@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.
@@ -35,7 +36,16 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param vertex
      * @return this query builder
      */
-    public Q adjacent(TitanVertex vertex);
+    public Q adjacent(Vertex vertex);
+
+    /**
+     * Query for only those relations matching one of the given relation types.
+     * By default, a query includes all relations in the result set.
+     *
+     * @param type relation types to query for
+     * @return this query
+     */
+    public Q types(String... type);
 
     /**
      * Query for only those relations matching one of the given relation types.
@@ -74,26 +84,19 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
     public Q direction(Direction d);
 
     /**
-     * Query only for edges or properties that have an incident property matching the given value.
+     * Query only for edges or properties that have an incident property or unidirected edge matching the given value.
      * <p/>
+     * If type is a property key, then the query is restricted to edges or properties having an incident property matching
+     * this key-value pair.
+     * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
+     * and the query is restricted to edges or properties having an incident unidirectional edge pointing to the value which is
+     * expected to be a {@link com.thinkaurelius.titan.core.TitanVertex}.
      *
-     * @param key  key
-     * @param value Value for the property of the given key to match
+     * @param type  TitanType name
+     * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
-    public Q has(PropertyKey key, Object value);
-
-    /**
-     * Query only for edges or properties that have a unidirected edge pointing to the given vertex
-     * <p/>
-     * It is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
-     * and the query is restricted to edges or properties having an incident unidirectional edge pointing to the given vertex.
-     *
-     * @param label  Label
-     * @param vertex Vertex to point unidirectional edge to
-     * @return this query
-     */
-    public Q has(EdgeLabel label, TitanVertex vertex);
+    public Q has(String type, Object value);
 
     /**
      * Query for edges or properties that have defined property with the given key
@@ -112,21 +115,6 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
     public Q hasNot(String key);
 
     /**
-     * Query only for edges or properties that have an incident property or unidirected edge matching the given value.
-     * <p/>
-     * If type is a property key, then the query is restricted to edges or properties having an incident property matching
-     * this key-value pair.
-     * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
-     * and the query is restricted to edges or properties having an incident unidirectional edge pointing to the value which is
-     * expected to be a {@link com.thinkaurelius.titan.core.TitanVertex}.
-     *
-     * @param type  TitanType name
-     * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
-     * @return this query
-     */
-    public Q has(String type, Object value);
-
-    /**
      * Identical to {@link #has(String, Object)} but negates the condition, i.e. matches those edges or properties
      * that DO NOT satisfy this property condition.
      *
@@ -138,8 +126,6 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 
     public Q has(String key, TitanPredicate predicate, Object value);
 
-    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
-
     /**
      * Query for those edges or properties that have a property for the given key
      * whose values lies in the interval by [start,end).
@@ -150,17 +136,6 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @return this query
      */
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
-
-    /**
-     * Query for those edges or properties that have a property for the given key
-     * whose values lies in the interval by [start,end).
-     *
-     * @param key   property key
-     * @param start value defining the start of the interval (inclusive)
-     * @param end   value defining the end of the interval (exclusive)
-     * @return this query
-     */
-    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
 
     /**
      * Sets the retrieval limit for this query.
@@ -186,19 +161,6 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @return
      */
     public Q orderBy(String key, Order order);
-
-    /**
-     * Orders the relation results of this query according
-     * to their property for the given key in the given order (increasing/decreasing).
-     * </p>
-     * Note, that the ordering always applies to the incident relations (edges/properties) and NOT
-     * to the adjacent vertices even if only vertices are being returned.
-     *
-     * @param key   The key of the properties on which to order
-     * @param order the ordering direction
-     * @return
-     */
-    public Q orderBy(PropertyKey key, Order order);
 
 
     /* ---------------------------------------------------------------

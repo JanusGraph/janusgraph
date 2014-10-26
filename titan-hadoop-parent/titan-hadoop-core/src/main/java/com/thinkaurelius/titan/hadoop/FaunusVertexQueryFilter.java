@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Iterator;
 
@@ -109,7 +110,7 @@ public class FaunusVertexQueryFilter extends FaunusVertexQuery implements Iterab
     }
 
     @Override
-    public FaunusVertexQuery adjacent(TitanVertex vertex) {
+    public FaunusVertexQuery adjacent(Vertex vertex) {
         throw new UnsupportedOperationException("Adjacency constraints are not supported by filter");
     }
 

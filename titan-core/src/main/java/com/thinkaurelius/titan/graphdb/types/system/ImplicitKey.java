@@ -62,19 +62,19 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
 
     public<O> O computeProperty(InternalElement e) {
         if (this==ID) {
-            return (O)e.getId();
+            return (O)e.id();
         } else if (this==TITANID) {
-            return (O)Long.valueOf(e.getLongId());
+            return (O)Long.valueOf(e.longId());
         } else if (this==LABEL) {
             return (O)e.label();
         } else if (this==TIMESTAMP || this==VISIBILITY) {
             if (e instanceof InternalRelation) {
                 InternalRelation r = (InternalRelation) e;
                 if (this==VISIBILITY) {
-                    return r.getPropertyDirect(this);
+                    return r.getValueDirect(this);
                 } else {
                     assert this == TIMESTAMP;
-                    Long time = r.getPropertyDirect(this);
+                    Long time = r.getValueDirect(this);
                     if (time==null) return null; //there is no timestamp
                     TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
                     return (O) new StandardTimestamp(time, unit);
@@ -87,7 +87,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
             if (e instanceof InternalRelation) {
                 ttl = ((InternalRelationType)((InternalRelation) e).getType()).getTTL();
             } else if (e instanceof InternalVertex) {
-                ttl = ((InternalVertexLabel)((InternalVertex) e).getVertexLabel()).getTTL();
+                ttl = ((InternalVertexLabel)((InternalVertex) e).vertexLabel()).getTTL();
             } else {
                 ttl = 0;
             }
@@ -96,12 +96,12 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public Class<?> getDataType() {
+    public Class<?> dataType() {
         return datatype;
     }
 
     @Override
-    public Cardinality getCardinality() {
+    public Cardinality cardinality() {
         return Cardinality.SINGLE;
     }
 
@@ -126,8 +126,8 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public Multiplicity getMultiplicity() {
-        return Multiplicity.convert(getCardinality());
+    public Multiplicity multiplicity() {
+        return Multiplicity.convert(cardinality());
     }
 
     @Override
@@ -141,7 +141,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return id;
     }
 

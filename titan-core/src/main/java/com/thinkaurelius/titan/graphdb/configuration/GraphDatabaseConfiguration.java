@@ -901,7 +901,7 @@ public class GraphDatabaseConfiguration {
      * The default name prefix for Metrics reported by Titan. All metric names
      * will begin with this string and a period. This value can be overridden on
      * a transaction-specific basis through
-     * {@link StandardTransactionBuilder#setGroupName(String)}.
+     * {@link StandardTransactionBuilder#groupName(String)}.
      * <p/>
      * Default = {@literal #METRICS_PREFIX_DEFAULT}
      */

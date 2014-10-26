@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
@@ -20,7 +21,10 @@ public interface TitanEdge extends TitanRelation, Edge {
      *
      * @return edge label of this edge
      */
-    public EdgeLabel getEdgeLabel();
+    public default EdgeLabel edgeLabel() {
+        assert getType() instanceof EdgeLabel;
+        return (EdgeLabel)getType();
+    }
 
     /**
      * Returns the vertex for the specified direction.
@@ -28,7 +32,7 @@ public interface TitanEdge extends TitanRelation, Edge {
      *
      * @return the vertex for the specified direction
      */
-    public TitanVertex getVertex(Direction dir);
+    public TitanVertex vertex(Direction dir);
 
     /**
      * Returns the vertex at the opposite end of the edge.
@@ -37,24 +41,7 @@ public interface TitanEdge extends TitanRelation, Edge {
      * @return The vertex at the opposite end of the edge.
      * @throws InvalidElementException if the edge is not incident on the specified vertex
      */
-    public TitanVertex getOtherVertex(TitanVertex vertex);
-
-
-    /**
-     * Checks whether this relation is directed, i.e. has a start and end vertex
-     * both of which are aware of the incident edge.
-     *
-     * @return true, if this relation is directed, else false.
-     */
-    public boolean isDirected();
-
-    /**
-     * Checks whether this relation is unidirected, i.e. only the start vertex is aware of
-     * the edge's existence. A unidirected edge is similar to a link.
-     *
-     * @return true, if this relation is unidirected, else false.
-     */
-    public boolean isUnidirected();
+    public TitanVertex otherVertex(Vertex vertex);
 
 
 }

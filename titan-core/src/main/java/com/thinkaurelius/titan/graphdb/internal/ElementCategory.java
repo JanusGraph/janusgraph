@@ -50,9 +50,9 @@ public enum ElementCategory {
         assert isInstance(element);
         assert isValidConstraint(type);
         switch(this) {
-            case VERTEX: return ((TitanVertex)element).getVertexLabel().equals(type);
-            case EDGE: return ((TitanEdge)element).getEdgeLabel().equals(type);
-            case PROPERTY: return ((TitanVertexProperty)element).getPropertyKey().equals(type);
+            case VERTEX: return ((TitanVertex)element).vertexLabel().equals(type);
+            case EDGE: return ((TitanEdge)element).edgeLabel().equals(type);
+            case PROPERTY: return ((TitanVertexProperty)element).propertyKey().equals(type);
             default: throw new IllegalArgumentException();
         }
     }

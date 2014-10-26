@@ -91,7 +91,7 @@ public class LinkMapReduce {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            final long valueId = value.getLongId();
+            final long valueId = value.longId();
 
             if (value.hasPaths()) {
                 long edgesCreated = 0;
@@ -109,7 +109,7 @@ public class LinkMapReduce {
                             edge = new StandardFaunusEdge(faunusConf, valueId, linkElementId, label);
 
                         if (!mergeWeightKey.equals(NO_WEIGHT_KEY))
-                            edge.setProperty(mergeWeightKey, entry.getValue());
+                            edge.property(mergeWeightKey, entry.getValue());
 
                         value.addEdge(direction, edge);
                         edgesCreated++;

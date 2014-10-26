@@ -38,7 +38,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
-            final long id = super.getLongId();
+            final long id = super.longId();
             it = Iterables.getOnlyElement(startVertex.getAddedRelations(new Predicate<InternalRelation>() {
                 @Override
                 public boolean apply(@Nullable InternalRelation internalRelation) {
@@ -57,21 +57,21 @@ public class CacheVertexProperty extends AbstractVertexProperty {
     }
 
     private synchronized InternalRelation update() {
-        StandardVertexProperty copy = new StandardVertexProperty(super.getLongId(), getPropertyKey(), getVertex(0), getValue(), ElementLifeCycle.Loaded);
+        StandardVertexProperty copy = new StandardVertexProperty(super.longId(), propertyKey(), getVertex(0), value(), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
-        StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), getPropertyKey(), getValue());
-        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(super.getLongId());
-        u.setPreviousID(super.getLongId());
+        StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), propertyKey(), value());
+        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(super.longId());
+        u.setPreviousID(super.longId());
         copyProperties(u);
         return u;
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         InternalRelation it = it();
-        return (it == this) ? super.getLongId() : it.getLongId();
+        return (it == this) ? super.longId() : it.longId();
     }
 
     private RelationCache getPropertyMap() {
@@ -83,8 +83,8 @@ public class CacheVertexProperty extends AbstractVertexProperty {
     }
 
     @Override
-    public <O> O getPropertyDirect(RelationType type) {
-        return getPropertyMap().get(type.getLongId());
+    public <O> O getValueDirect(RelationType type) {
+        return getPropertyMap().get(type.longId());
     }
 
     @Override
@@ -110,14 +110,14 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     @Override
     public byte getLifeCycle() {
-        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.getLongId()))
+        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(super.longId()))
             return ElementLifeCycle.Removed;
         else return ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.getLongId())) {
+        if (!tx().isRemovedRelation(super.longId())) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }

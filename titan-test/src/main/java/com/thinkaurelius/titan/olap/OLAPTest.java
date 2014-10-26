@@ -4,7 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
@@ -97,7 +96,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         builder.setJob(new OLAPJob() {
             @Override
             public Degree process(TitanVertex vertex) {
-                Degree d = vertex.getProperty("all");
+                Degree d = vertex.value("all");
                 if (d==null) d = new Degree();
                 Degree p = vertex.value(aggregatePropKey);
                 if (checkPropKey!=null) assertNotNull(vertex.value(checkPropKey));
@@ -244,7 +243,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         builder.setJob(new OLAPJob() {
             @Override
             public PageRank process(TitanVertex vertex) {
-                Long degree = vertex.<Long>getProperty("degree");
+                Long degree = vertex.<Long>value("degree");
                 return new PageRank(degree==null?0:degree,1.0d/numVertices);
             }
         });
@@ -280,8 +279,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             builder.setJob(new OLAPJob() {
                 @Override
                 public PageRank process(TitanVertex vertex) {
-                    PageRank pr = vertex.<PageRank>getProperty("pageRank");
-                    Double energy = vertex.getProperty("energy");
+                    PageRank pr = vertex.<PageRank>value("pageRank");
+                    Double energy = vertex.value("energy");
                     if (energy==null) energy=0.0;
                     pr.setPr(energy, alpha, numVertices);
                     return pr;

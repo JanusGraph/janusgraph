@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.util.datastructures.Removable;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Property;
 
 /**
  * TitanElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting
@@ -18,7 +19,7 @@ import com.tinkerpop.gremlin.structure.Element;
  * <li><strong>Deleted:</strong> The entity has been deleted in the current transaction</li>
  * </ul>
  * Depending on the concrete type of the entity, an entity may be identifiable,
- * i.e. it has a unique ID which can be retrieved via {@link #getId}
+ * i.e. it has a unique ID which can be retrieved via {@link #id}
  * (use {@link #hasId} to determine if a given entity has a unique ID).
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
@@ -40,20 +41,17 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @throws IllegalStateException if the entity does not (yet) have a unique identifier
      * @see #hasId
      */
-    public Object getId();
-
     @Override
-    public default Object id() {
-        return getId();
-    }
+    public Object id();
 
     /**
      * Unique identifier for this entity. This id can be temporarily assigned and might change.
-     * Use {@link #getId()} for the permanent id.
+     * Use {@link #id()} for the permanent id.
      *
      * @return Unique long id
      */
-    public long getLongId();
+    @Override
+    public long longId();
 
     /**
      * Checks whether this entity has a unique identifier.
@@ -62,7 +60,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * assigned an identifier at the end of a transaction.
      *
      * @return true if this entity has been assigned a unique id, else false
-     * @see #getLongId()
+     * @see #longId()
      */
     public boolean hasId();
 
@@ -73,6 +71,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @throws IllegalStateException if the entity cannot be deleted or if the user does not
      *                               have permission to remove the entity
      */
+    @Override
     public void remove();
 
     /**
@@ -82,16 +81,8 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @param key   the string identifying the key
      * @param value the object value
      */
-    public void setProperty(String key, Object value);
-
-    /**
-     * Sets the value for the given key on this element.
-     * The key must be defined to have {@link Cardinality#SINGLE}, otherwise this method throws an exception.
-     *
-     * @param key   the key
-     * @param value the object value
-     */
-    public void setProperty(PropertyKey key, Object value);
+    @Override
+    public<V> Property<V> property(String key, V value);
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
@@ -102,38 +93,9 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @param key key
      * @return value or list of values associated with key
      */
-    public <O> O getProperty(PropertyKey key);
-
-    /**
-     * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
-     * If the key has cardinality SINGLE, then there can be at most one value and this value is returned (or null).
-     * Otherwise a list of all associated values is returned, or an empty list if non exist.
-     * <p/>
-     *
-     * @param key string identifying a key
-     * @return value or list of values associated with key
-     */
-    public <O> O getProperty(String key);
-
-    /**
-     * Removes the value associated with the given key for this vertex (if exists).
-     *
-     * @param key the string identifying the key
-     * @return the object value associated with that key prior to removal, or NULL if such does not exist.
-     * @see #removeProperty(RelationType)
-     */
-    public <O> O removeProperty(String key);
-
-    /**
-     * Removes the value associated with the given key for this vertex (if exists).
-     * If the key is list-valued then all values associated with this key are removed and only
-     * the last removed value returned.
-     *
-     * @param type the key
-     * @return the object value associated with that key prior to removal, or NULL if such does not exist.
-     */
-    public <O> O removeProperty(RelationType type);
-
+    public default <V> V value(PropertyKey key) {
+        return value(key.name());
+    }
 
     //########### LifeCycle Status ##########
 

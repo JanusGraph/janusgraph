@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Map;
@@ -34,7 +35,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      * @param vertex
      * @return this query builder
      */
-    public TitanMultiVertexQuery addVertex(TitanVertex vertex);
+    public TitanMultiVertexQuery addVertex(Vertex vertex);
 
     /**
      * Adds the given collection of vertices to the set of vertices against which to execute this query.
@@ -42,11 +43,14 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      * @param vertices
      * @return this query builder
      */
-    public TitanMultiVertexQuery addAllVertices(Collection<TitanVertex> vertices);
+    public TitanMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices);
 
 
     @Override
-    public Q adjacent(TitanVertex vertex);
+    public Q adjacent(Vertex vertex);
+
+    @Override
+    public Q types(String... type);
 
     @Override
     public Q types(RelationType... type);
@@ -61,10 +65,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
     public Q direction(Direction d);
 
     @Override
-    public Q has(PropertyKey key, Object value);
-
-    @Override
-    public Q has(EdgeLabel label, TitanVertex vertex);
+    public Q has(String type, Object value);
 
     @Override
     public Q has(String key);
@@ -73,31 +74,19 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
     public Q hasNot(String key);
 
     @Override
-    public Q has(String type, Object value);
-
-    @Override
     public Q hasNot(String key, Object value);
 
     @Override
     public Q has(String key, TitanPredicate predicate, Object value);
 
     @Override
-    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
-
-    @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
-
-    @Override
-    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
 
     @Override
     public Q limit(int limit);
 
     @Override
     public Q orderBy(String key, Order order);
-
-    @Override
-    public Q orderBy(PropertyKey key, Order order);
 
    /* ---------------------------------------------------------------
     * Query execution

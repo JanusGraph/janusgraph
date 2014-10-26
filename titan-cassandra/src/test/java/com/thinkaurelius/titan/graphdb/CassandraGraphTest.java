@@ -81,8 +81,8 @@ public abstract class CassandraGraphTest extends TitanGraphTest {
         graph = (StandardTitanGraph) TitanFactory.open(wc);
 
         StandardTitanTx tx = (StandardTitanTx)graph.buildTransaction()
-                .setCustomOption(ConfigElement.getPath(CASSANDRA_READ_CONSISTENCY), "ONE")
-                .setCustomOption(ConfigElement.getPath(CASSANDRA_WRITE_CONSISTENCY), "TWO").start();
+                .customOption(ConfigElement.getPath(CASSANDRA_READ_CONSISTENCY), "ONE")
+                .customOption(ConfigElement.getPath(CASSANDRA_WRITE_CONSISTENCY), "TWO").start();
 
         assertEquals("ONE",
                 tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()

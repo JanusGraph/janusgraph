@@ -22,7 +22,7 @@ public abstract class SystemTypeManager {
                     ImplicitKey.ID, ImplicitKey.TITANID, ImplicitKey.LABEL, ImplicitKey.ADJACENT_ID,
                     ImplicitKey.TIMESTAMP, ImplicitKey.TTL, ImplicitKey.VISIBILITY
                 }) {
-                idBuilder.put(et.getLongId(), et);
+                idBuilder.put(et.longId(), et);
                 nameBuilder.put(et.name(),et);
             }
 

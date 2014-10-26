@@ -74,12 +74,12 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     }
 
     @Override
-    public Object getId() {
+    public Object id() {
         return this.id;
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return this.id;
     }
 
@@ -122,7 +122,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     protected Multiplicity getAdjustedMultiplicity(FaunusRelationType type) {
         if (this instanceof FaunusRelation) {
             return Multiplicity.MANY2ONE;
-        } return type.getMultiplicity();
+        } return type.multiplicity();
     }
 
     SetMultimap<FaunusRelationType, FaunusRelation> getAdjacency(Direction dir) {
@@ -173,9 +173,9 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
                 continue;
             } else if (relation.isEdge()) {
                 FaunusEdge edge = (FaunusEdge)relation;
-                if (edge.getEdgeLabel().isUnidirected()) {
+                if (edge.edgeLabel().isUnidirected()) {
                     if (dir==Direction.IN) continue;
-                } else if (!edge.getVertex(dir).equals(this)) {
+                } else if (!edge.vertex(dir).equals(this)) {
                     continue;
                 }
             }
@@ -199,7 +199,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
                 }
             } else {
                 //Verify multiplicity constraint
-                switch(relation.getType().getMultiplicity()) {
+                switch(relation.getType().multiplicity()) {
                     case MANY2ONE:
                         if (dir==Direction.OUT)
                             ensureUniqueness(relation.getType(),adjacency);
@@ -216,16 +216,16 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
                             if (rel.isRemoved()) continue;
                             if (relation.isEdge()) {
                                 FaunusEdge e1 = (FaunusEdge)relation, e2 = (FaunusEdge)rel;
-                                if (e1.getVertex(Direction.OUT).equals(e2.getVertex(Direction.OUT)) &&
-                                        e1.getVertex(Direction.IN).equals(e2.getVertex(Direction.IN))) {
+                                if (e1.vertex(Direction.OUT).equals(e2.vertex(Direction.OUT)) &&
+                                        e1.vertex(Direction.IN).equals(e2.vertex(Direction.IN))) {
                                     throw new IllegalArgumentException("A relation already exists which" +
-                                            "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
+                                            "violates the multiplicity constraint: " + relation.getType().multiplicity());
                                 }
                             } else {
                                 FaunusVertexProperty p1 = (FaunusVertexProperty)relation, p2 = (FaunusVertexProperty)rel;
-                                if (p1.getValue().equals(p2.getValue())) {
+                                if (p1.value().equals(p2.value())) {
                                     throw new IllegalArgumentException("A relation already exists which" +
-                                            "violates the multiplicity constraint: " + relation.getType().getMultiplicity());
+                                            "violates the multiplicity constraint: " + relation.getType().multiplicity());
                                 }
                             }
                         }
@@ -246,7 +246,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     private static void ensureUniqueness(FaunusRelationType type, SetMultimap<FaunusRelationType, FaunusRelation> adjacency) {
         for (FaunusRelation rel : adjacency.get(type)) {
             if (!rel.isRemoved()) throw new IllegalArgumentException("A relation already exists which " +
-                    "violates the multiplicity constraint: " + type.getMultiplicity() + " on type " + type);
+                    "violates the multiplicity constraint: " + type.multiplicity() + " on type " + type);
         }
     }
 
@@ -262,12 +262,12 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     }
 
     @Override
-    public void setProperty(PropertyKey key, Object value) {
+    public void property(PropertyKey key, Object value) {
         setProperty((FaunusRelationType)key,value);
     }
 
     @Override
-    public void setProperty(final String key, final Object value) {
+    public void property(final String key, final Object value) {
         FaunusRelationType rt = getTypeManager().getRelationType(key);
         if (rt==null) rt = getTypeManager().getOrCreatePropertyKey(key);
         setProperty(rt,value);
@@ -293,8 +293,8 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
         while (rels.hasNext()) {
             FaunusRelation r = rels.next();
             if (!r.isRemoved()) {
-                if (r.isProperty()) removed.add(((FaunusVertexProperty)r).getValue());
-                else removed.add(((FaunusEdge)r).getVertex(Direction.IN));
+                if (r.isProperty()) removed.add(((FaunusVertexProperty)r).value());
+                else removed.add(((FaunusEdge)r).vertex(Direction.IN));
             }
             if (r.isNew()) rels.remove();
             r.updateLifeCycle(ElementLifeCycle.Event.REMOVED);
@@ -312,23 +312,23 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     }
 
     @Override
-    public <T> T getProperty(PropertyKey key) {
+    public <T> T value(PropertyKey key) {
         FaunusPropertyKey type = (FaunusPropertyKey)key;
         Iterator<TitanVertexProperty> properties = query().type(type).properties().iterator();
-        if (type.getCardinality()==Cardinality.SINGLE) {
-            if (properties.hasNext()) return properties.next().getValue();
+        if (type.cardinality()==Cardinality.SINGLE) {
+            if (properties.hasNext()) return properties.next().value();
             else return (T)null;
         }
         List result = Lists.newArrayList();
-        while (properties.hasNext()) result.add(properties.next().getValue());
+        while (properties.hasNext()) result.add(properties.next().value());
         return (T)result;
     }
 
     @Override
-    public <T> T getProperty(final String key) {
+    public <T> T value(final String key) {
         FaunusRelationType rt = getTypeManager().getRelationType(key);
         if (rt==null) return null;
-        if (rt.isPropertyKey()) return getProperty((FaunusPropertyKey)rt);
+        if (rt.isPropertyKey()) return value((FaunusPropertyKey) rt);
         else return (T)getProperty((FaunusEdgeLabel)rt);
     }
 
@@ -371,7 +371,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
         else if (other==null || !(other instanceof TitanElement)) return false;
         TitanElement o = (TitanElement)other;
         if (!hasId() || !o.hasId()) return o==this;
-        if (getLongId()!=o.getLongId()) return false;
+        if (longId()!=o.longId()) return false;
         return true;
     }
 
@@ -382,6 +382,6 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
 
     @Override
     public int compareTo(FaunusElement o) {
-        return Longs.compare(id, o.getLongId());
+        return Longs.compare(id, o.longId());
     }
 }

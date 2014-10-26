@@ -25,11 +25,6 @@ public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge
     }
 
     @Override
-    public EdgeLabel getEdgeLabel() {
-        return label;
-    }
-
-    @Override
     public TitanVertex getVertex(Direction dir) {
         if (dir!=Direction.IN) throw new UnsupportedOperationException();
         return vertex;
@@ -38,7 +33,7 @@ public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge
     @Override
     public long getVertexId(Direction dir) {
         if (dir!=Direction.IN) throw new UnsupportedOperationException();
-        return vertex.getLongId();
+        return vertex.longId();
     }
 
     @Override
@@ -47,18 +42,8 @@ public class SimpleFaunusEdge extends SimpleFaunusRelation implements FaunusEdge
     }
 
     @Override
-    public TitanVertex getOtherVertex(TitanVertex vertex) {
+    public TitanVertex otherVertex(TitanVertex vertex) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isDirected() {
-        return label.isDirected();
-    }
-
-    @Override
-    public boolean isUnidirected() {
-        return label.isUnidirected();
     }
 
     @Override

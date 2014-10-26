@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.*;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
@@ -76,11 +75,11 @@ public class VerticesEdgesMapReduce {
                 if (direction.equals(IN) || direction.equals(BOTH)) {
                     for (final Edge e : value.getEdges(IN, labels)) {
                         final StandardFaunusEdge edge = (StandardFaunusEdge) e;
-                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(faunusConf, edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(faunusConf, edge.longId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
 
                         if (trackPaths) {
-                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
+                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.longId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
                         } else {
@@ -96,10 +95,10 @@ public class VerticesEdgesMapReduce {
                 if (direction.equals(OUT) || direction.equals(BOTH)) {
                     for (final Edge e : value.getEdges(OUT, labels)) {
                         final StandardFaunusEdge edge = (StandardFaunusEdge) e;
-                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(faunusConf, edge.getLongId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final StandardFaunusEdge shellEdge = new StandardFaunusEdge(faunusConf, edge.longId(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
                         if (trackPaths) {
-                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.getLongId()));
+                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new StandardFaunusEdge.MicroEdge(edge.longId()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
                             log.trace("shellEdge pathCount={} for edgelabel={}", shellEdge.pathCount(), e.getLabel());
@@ -118,7 +117,7 @@ public class VerticesEdgesMapReduce {
             }
 
 
-            longWritable.set(value.getLongId());
+            longWritable.set(value.longId());
             context.write(longWritable, holder.set('v', value));
         }
 
@@ -169,7 +168,7 @@ public class VerticesEdgesMapReduce {
             for (final Edge e : vertex.getEdges(direction, labels)) {
                 StandardFaunusEdge fe = (StandardFaunusEdge)e;
                 for (final StandardFaunusEdge edge : edges) {
-                    if (fe.getLongId()==edge.getLongId()) {
+                    if (fe.longId()==edge.longId()) {
                         fe.getPaths(edge, false);
                         break;
                     }

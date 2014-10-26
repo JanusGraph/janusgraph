@@ -55,7 +55,7 @@ public class FaunusVertexLabel extends EmptyVertex implements InternalVertexLabe
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return definition.getLongId();
     }
 

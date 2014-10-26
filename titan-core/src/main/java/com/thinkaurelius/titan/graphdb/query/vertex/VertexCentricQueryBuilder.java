@@ -75,7 +75,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     //#### RELATIONS
 
     @Override
-    public Iterable<TitanEdge> titanEdges() {
+    public Iterable<TitanEdge> edges() {
         return (Iterable)execute(RelationCategory.EDGE,new RelationConstructor());
     }
 
@@ -93,15 +93,10 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
                 execute(RelationCategory.RELATION,new RelationConstructor()));
     }
 
-    @Override
-    public Iterable<Edge> edges() {
-        return (Iterable) titanEdges();
-    }
-
     //#### VERTICES
 
     @Override
-    public Iterable<Vertex> vertices() {
+    public Iterable<TitanVertex> vertices() {
         return (Iterable)execute(RelationCategory.EDGE,new VertexConstructor());
     }
 

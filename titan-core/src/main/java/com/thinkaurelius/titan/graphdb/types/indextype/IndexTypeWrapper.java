@@ -50,12 +50,12 @@ public abstract class IndexTypeWrapper implements IndexType {
 
     @Override
     public String toString() {
-        return base.getName();
+        return base.name();
     }
 
     @Override
     public String getName() {
-        return base.getName();
+        return base.name();
     }
 
     private volatile Map<PropertyKey,IndexField> fieldMap = null;

@@ -57,7 +57,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     }
 
     @Override
-    public Class<?> getDataType() {
+    public Class<?> dataType() {
         return dataType;
     }
 
@@ -72,8 +72,8 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     }
 
     @Override
-    public Multiplicity getMultiplicity() {
-        return Multiplicity.convert(getCardinality());
+    public Multiplicity multiplicity() {
+        return Multiplicity.convert(cardinality());
     }
 
     @Override
@@ -82,7 +82,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     }
 
     @Override
-    public Cardinality getCardinality() {
+    public Cardinality cardinality() {
         return cardinality;
     }
 
@@ -104,7 +104,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public long getID() {
-            return BaseKey.this.getLongId();
+            return BaseKey.this.longId();
         }
 
         @Override

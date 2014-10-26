@@ -23,7 +23,7 @@ public interface InternalRelationType extends RelationType, InternalVertex {
 
     public Order getSortOrder();
 
-    public Multiplicity getMultiplicity();
+    public Multiplicity multiplicity();
 
     public ConsistencyModifier getConsistencyModifier();
 

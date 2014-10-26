@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
 
 import java.io.File;
 
@@ -40,7 +39,7 @@ public class GraphOfTheGodsFactory {
 
     public static void load(final TitanGraph graph) {
         //Create Schema
-        TitanManagement mgmt = graph.getManagementSystem();
+        TitanManagement mgmt = graph.openManagement();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).addKey(name).unique().buildCompositeIndex();
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);

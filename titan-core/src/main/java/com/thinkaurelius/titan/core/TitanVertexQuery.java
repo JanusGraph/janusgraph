@@ -24,7 +24,10 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     */
 
     @Override
-    public Q adjacent(TitanVertex vertex);
+    public Q adjacent(Vertex vertex);
+
+    @Override
+    public Q types(String... type);
 
     @Override
     public Q types(RelationType... type);
@@ -39,10 +42,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q direction(Direction d);
 
     @Override
-    public Q has(PropertyKey key, Object value);
-
-    @Override
-    public Q has(EdgeLabel label, TitanVertex vertex);
+    public Q has(String type, Object value);
 
     @Override
     public Q has(String key);
@@ -51,31 +51,19 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q hasNot(String key);
 
     @Override
-    public Q has(String type, Object value);
-
-    @Override
     public Q hasNot(String key, Object value);
 
     @Override
     public Q has(String key, TitanPredicate predicate, Object value);
 
     @Override
-    public Q has(PropertyKey key, TitanPredicate predicate, Object value);
-
-    @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
-
-    @Override
-    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
 
     @Override
     public Q limit(int limit);
 
     @Override
     public Q orderBy(String key, Order order);
-
-    @Override
-    public Q orderBy(PropertyKey key, Order order);
 
 
     /* ---------------------------------------------------------------
@@ -88,16 +76,10 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      *
      * @return Iterable over all incident edges that match this query
      */
-    public Iterable<Edge> edges();
+    public Iterable<TitanEdge> edges();
 
-    public Iterable<Vertex> vertices();
 
-    /**
-     * Returns an iterable over all incident edges that match this query. Returns edges as {@link TitanEdge}.
-     *
-     * @return Iterable over all incident edges that match this query
-     */
-    public Iterable<TitanEdge> titanEdges();
+    public Iterable<TitanVertex> vertices();
 
     /**
      * Returns an iterable over all incident properties that match this query
@@ -106,14 +88,12 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      */
     public Iterable<TitanVertexProperty> properties();
 
-
     /**
      * Returns an iterable over all incident relations that match this query
      *
      * @return Iterable over all incident relations that match this query
      */
     public Iterable<TitanRelation> relations();
-
 
     /**
      * Returns the number of edges that match this query

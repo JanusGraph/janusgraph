@@ -9,8 +9,6 @@ import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -79,11 +77,11 @@ public class CommitVerticesMapReduce {
                 keep = this.drop && !hasPaths;
 
             if (keep) {
-                this.longWritable.set(value.getLongId());
+                this.longWritable.set(value.longId());
                 context.write(this.longWritable, this.holder.set('v', value));
                 verticesKept++;
             } else {
-                final long vertexId = value.getLongId();
+                final long vertexId = value.longId();
                 this.holder.set('k', new FaunusVertex(faunusConf, vertexId));
 
                 Iterator<Edge> itty = value.getEdges(OUT).iterator();
@@ -105,7 +103,7 @@ public class CommitVerticesMapReduce {
                         context.write(this.longWritable, this.holder);
                     }
                 }
-                this.longWritable.set(value.getLongId());
+                this.longWritable.set(value.longId());
                 context.write(this.longWritable, this.holder.set('d', value));
                 verticesDropped++;
             }
@@ -134,7 +132,7 @@ public class CommitVerticesMapReduce {
             for (final Holder holder : values) {
                 char tag = holder.getTag();
                 if (tag == 'k') {
-                    ids.add(holder.get().getLongId());
+                    ids.add(holder.get().longId());
                     // todo: once vertex is found, do individual removes to save memory
                 } else {
                     vertex = (FaunusVertex) holder.get();
@@ -171,7 +169,7 @@ public class CommitVerticesMapReduce {
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'k') {
-                    ids.add(holder.get().getLongId());
+                    ids.add(holder.get().longId());
                     // todo: once vertex is found, do individual removes to save memory
                 } else if (tag == 'v') {
                     vertex = (FaunusVertex) holder.get();

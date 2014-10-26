@@ -71,7 +71,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (dirCompare != 0) return dirCompare;
 
         // Breakout: If type&direction are the same and the type is unique in the direction it follows that the relations are the same
-        if (t1.getMultiplicity().isUnique(dir1)) return 0;
+        if (t1.multiplicity().isUnique(dir1)) return 0;
 
         // 5) Compare sort key values (this is empty and hence skipped if the type multiplicity is constrained)
         for (long typeid : t1.getSortKey()) {
@@ -80,12 +80,12 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
         // 6) Compare property objects or other vertices
         if (r1.isProperty()) {
-            Object o1 = ((TitanVertexProperty) r1).getValue();
-            Object o2 = ((TitanVertexProperty) r2).getValue();
+            Object o1 = ((TitanVertexProperty) r1).value();
+            Object o2 = ((TitanVertexProperty) r2).value();
             Preconditions.checkArgument(o1 != null && o2 != null);
             if (!o1.equals(o2)) {
                 int objectcompare = 0;
-                if (Comparable.class.isAssignableFrom(((PropertyKey) t1).getDataType())) {
+                if (Comparable.class.isAssignableFrom(((PropertyKey) t1).dataType())) {
                     objectcompare = ((Comparable) o1).compareTo(o2);
                 } else {
                     objectcompare = System.identityHashCode(o1) - System.identityHashCode(o2);
@@ -99,7 +99,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
             if (vertexcompare != 0) return vertexcompare;
         }
         // Breakout: if type&direction are the same, and the end points of the relation are the same and the type is constrained, the relations must be the same
-        if (t1.getMultiplicity().isConstrained()) return 0;
+        if (t1.multiplicity().isConstrained()) return 0;
 
         // 7)compare relation ids
         return AbstractElement.compare(r1,r2);
@@ -125,16 +125,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
     }
 
     private int compareOnKey(TitanRelation r1, TitanRelation r2, RelationType type, Order order) {
-        Object v1, v2;
-        if (type.isPropertyKey()) {
-            PropertyKey key = (PropertyKey) type;
-            v1 = r1.getProperty(key);
-            v2 = r2.getProperty(key);
-        } else {
-            EdgeLabel label = (EdgeLabel) type;
-            v1 = r1.getProperty(label);
-            v2 = r2.getProperty(label);
-        }
+        Object v1 = r1.value(type.name()), v2 = r2.value(type.name());
         return compareValues(v1, v2,order);
     }
 }

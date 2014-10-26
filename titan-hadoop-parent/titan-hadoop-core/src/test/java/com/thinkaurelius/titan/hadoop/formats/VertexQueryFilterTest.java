@@ -5,13 +5,11 @@ import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
 import org.apache.hadoop.conf.Configuration;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,10 +26,10 @@ public class VertexQueryFilterTest extends BaseTest {
         assertEquals(query.direction, Direction.BOTH);
         assertEquals(query.labels.length, 0);
         FaunusVertex vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 1);
-        vertex.setProperty("name", "marko");
-        vertex.addEdge("knows", vertex).setProperty("time", 1);
+        vertex.property("name", "marko");
+        vertex.addEdge("knows", vertex).property("time", 1);
         query.defaultFilter(vertex);
-        assertEquals(vertex.getProperty("name"), "marko");
+        assertEquals(vertex.value("name"), "marko");
         assertEquals(vertex.getPropertyKeys().size(), 1);
         assertEquals(vertex.getVertices(Direction.OUT).iterator().next(), vertex);
         assertEquals(vertex.getEdges(Direction.OUT).iterator().next().getProperty("time"), new Integer(1));

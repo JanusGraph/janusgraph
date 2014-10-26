@@ -55,22 +55,12 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     }
 
     @Override
-    public PropertyKey getType() {
-        return (PropertyKey)type;
-    }
-
-    @Override
-    public PropertyKey getPropertyKey() {
-        return getType();
-    }
-
-    @Override
     public TitanVertex getElement() {
         return vertex;
     }
 
     @Override
-    public V getValue() {
+    public V value() {
         return (V)value;
     }
 

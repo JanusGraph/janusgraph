@@ -51,13 +51,13 @@ public interface TitanGraph extends TitanGraphTransaction {
      *
      * @return
      */
-    public TitanManagement getManagementSystem();
+    public TitanManagement openManagement();
 
     /**
      * Checks whether the graph is open.
      *
      * @return true, if the graph is open, else false.
-     * @see #shutdown()
+     * @see #close()
      */
     public boolean isOpen();
 

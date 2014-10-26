@@ -44,7 +44,7 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
     }
 
     @Override
-    public <O> O getPropertyDirect(RelationType type) {
+    public <O> O getValueDirect(RelationType type) {
         return (O) properties.get(type);
     }
 

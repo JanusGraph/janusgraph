@@ -83,7 +83,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
-        assertEquals(vertex2.getLongId(), 10l);
+        assertEquals(vertex2.longId(), 10l);
         assertFalse(vertex1.hasPaths());
         assertFalse(vertex2.hasPaths());
         assertEquals(vertex1.pathCount(), 0);
@@ -99,26 +99,26 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testVertexSerialization() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 10);
-        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.getLongId(), 2, "knows"));
-        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.getLongId(), 3, "knows"));
-        vertex1.setProperty("name", "marko");
-        vertex1.setProperty("age", 32);
-        vertex1.setProperty("longitude", 10.01d);
-        vertex1.setProperty("latitude", 11.399f);
-        vertex1.setProperty("size", 10l);
-        vertex1.setProperty("boolean", true);
-        vertex1.addProperty("homelist", "New Mexico");
-        vertex1.addProperty("homelist", "California");
+        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.longId(), 2, "knows"));
+        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.longId(), 3, "knows"));
+        vertex1.property("name", "marko");
+        vertex1.property("age", 32);
+        vertex1.property("longitude", 10.01d);
+        vertex1.property("latitude", 11.399f);
+        vertex1.property("size", 10l);
+        vertex1.property("boolean", true);
+        vertex1.property("homelist", "New Mexico");
+        vertex1.property("homelist", "California");
         assertEquals(vertex1.getPropertyKeys().size(), 7);
-        assertEquals(vertex1.getProperty("name"), "marko");
-        assertEquals(vertex1.getProperty("age"), 32);
-        assertEquals(vertex1.getProperty("longitude"), 10.01d);
-        assertEquals(vertex1.getProperty("latitude"), 11.399f);
-        assertEquals(vertex1.getProperty("size"), 10l);
-        assertTrue((Boolean) vertex1.getProperty("boolean"));
+        assertEquals(vertex1.value("name"), "marko");
+        assertEquals(vertex1.value("age"), 32);
+        assertEquals(vertex1.value("longitude"), 10.01d);
+        assertEquals(vertex1.value("latitude"), 11.399f);
+        assertEquals(vertex1.value("size"), 10l);
+        assertTrue((Boolean) vertex1.value("boolean"));
         assertEquals(2, Iterables.size(vertex1.getProperties("homelist")));
         for (TitanVertexProperty p : vertex1.getProperties("homelist")) {
-            assertTrue(ImmutableSet.of("New Mexico", "California").contains(p.getValue()));
+            assertTrue(ImmutableSet.of("New Mexico", "California").contains(p.value()));
         }
         assertEquals(8, Iterables.size(vertex1.getPropertyCollection()));
 
@@ -131,17 +131,17 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
-        assertEquals(vertex2.getLongId(), 10l);
+        assertEquals(vertex2.longId(), 10l);
         assertEquals(vertex1.getPropertyKeys().size(), 7);
-        assertEquals(vertex1.getProperty("name"), "marko");
-        assertEquals(vertex1.getProperty("age"), 32);
-        assertEquals(vertex1.getProperty("longitude"), 10.01d);
-        assertEquals(vertex1.getProperty("latitude"), 11.399f);
-        assertEquals(vertex1.getProperty("size"), 10l);
-        assertTrue((Boolean) vertex1.getProperty("boolean"));
+        assertEquals(vertex1.value("name"), "marko");
+        assertEquals(vertex1.value("age"), 32);
+        assertEquals(vertex1.value("longitude"), 10.01d);
+        assertEquals(vertex1.value("latitude"), 11.399f);
+        assertEquals(vertex1.value("size"), 10l);
+        assertTrue((Boolean) vertex1.value("boolean"));
         assertEquals(2, Iterables.size(vertex1.getProperties("homelist")));
         for (TitanVertexProperty p : vertex1.getProperties("homelist")) {
-            assertTrue(ImmutableSet.of("New Mexico", "California").contains(p.getValue()));
+            assertTrue(ImmutableSet.of("New Mexico", "California").contains(p.value()));
         }
         assertEquals(8, Iterables.size(vertex1.getPropertyCollection()));
 
@@ -159,19 +159,19 @@ public class FaunusVertexTest extends BaseTest {
         mc.set(PIPELINE_TRACK_PATHS, true);
 
         FaunusVertex vertex1 = new FaunusVertex(mc, 10);
-        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.getLongId(), 2, "knows"));
-        vertex1.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 3, vertex1.getLongId(), "knows"));
-        vertex1.setProperty("name", "marko");
-        vertex1.setProperty("age", 32);
-        vertex1.setProperty("longitude", 10.01d);
-        vertex1.setProperty("latitude", 11.399f);
-        vertex1.setProperty("size", 10l);
+        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.longId(), 2, "knows"));
+        vertex1.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 3, vertex1.longId(), "knows"));
+        vertex1.property("name", "marko");
+        vertex1.property("age", 32);
+        vertex1.property("longitude", 10.01d);
+        vertex1.property("latitude", 11.399f);
+        vertex1.property("size", 10l);
         assertEquals(vertex1.getPropertyKeys().size(), 5);
-        assertEquals(vertex1.getProperty("name"), "marko");
-        assertEquals(vertex1.getProperty("age"), 32);
-        assertEquals(vertex1.getProperty("longitude"), 10.01d);
-        assertEquals(vertex1.getProperty("latitude"), 11.399f);
-        assertEquals(vertex1.getProperty("size"), 10l);
+        assertEquals(vertex1.value("name"), "marko");
+        assertEquals(vertex1.value("age"), 32);
+        assertEquals(vertex1.value("longitude"), 10.01d);
+        assertEquals(vertex1.value("latitude"), 11.399f);
+        assertEquals(vertex1.value("size"), 10l);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(10l), new FaunusVertex.MicroVertex(1l)), false);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(10l), new FaunusVertex.MicroVertex(2l)), false);
 
@@ -185,13 +185,13 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1, vertex2);
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
-        assertEquals(vertex2.getLongId(), 10l);
+        assertEquals(vertex2.longId(), 10l);
         assertEquals(vertex2.getPropertyKeys().size(), 5);
-        assertEquals(vertex2.getProperty("name"), "marko");
-        assertEquals(vertex2.getProperty("age"), 32);
-        assertEquals(vertex2.getProperty("longitude"), 10.01d);
-        assertEquals(vertex2.getProperty("latitude"), 11.399f);
-        assertEquals(vertex1.getProperty("size"), 10l);
+        assertEquals(vertex2.value("name"), "marko");
+        assertEquals(vertex2.value("age"), 32);
+        assertEquals(vertex2.value("longitude"), 10.01d);
+        assertEquals(vertex2.value("latitude"), 11.399f);
+        assertEquals(vertex1.value("size"), 10l);
         assertEquals(vertex2.pathCount(), 2);
         assertTrue(vertex2.hasPaths());
         for (List<FaunusPathElement.MicroElement> path : vertex2.getPaths()) {
@@ -221,9 +221,9 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testVertexSerializationNoProperties() throws IOException {
         FaunusVertex vertex1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.getLongId(), 5, "knows"));
+        vertex1.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex1.longId(), 5, "knows"));
 
-        assertNull(vertex1.getProperty("name"));
+        assertNull(vertex1.value("name"));
         assertNull(vertex1.removeProperty("name"));
         assertEquals(vertex1.getPropertyKeys().size(), 0);
         assertEquals(vertex1.getPropertyCollection().size(), 0);
@@ -235,8 +235,8 @@ public class FaunusVertexTest extends BaseTest {
         System.out.println("Vertex with 0 properties and 1 outgoing edge has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
-        assertEquals(vertex1.getLongId(), 1l);
-        assertNull(vertex1.getProperty("name"));
+        assertEquals(vertex1.longId(), 1l);
+        assertNull(vertex1.value("name"));
         assertNull(vertex1.removeProperty("name"));
         assertEquals(vertex1.getPropertyKeys().size(), 0);
         assertEquals(vertex1.getPropertyCollection().size(), 0);
@@ -245,8 +245,8 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertex1.getEdges(BOTH)).size(), 1);
 
         assertEquals(vertex2, vertex1);
-        assertEquals(vertex2.getLongId(), 1l);
-        assertNull(vertex2.getProperty("age"));
+        assertEquals(vertex2.longId(), 1l);
+        assertNull(vertex2.value("age"));
         assertNull(vertex2.removeProperty("age"));
         assertEquals(vertex2.getPropertyKeys().size(), 0);
         assertEquals(vertex2.getPropertyCollection().size(), 0);
@@ -257,43 +257,43 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testRemovingEdges() {
         FaunusVertex vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "knows"));
-        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "created"));
+        vertex.property("name", "marko");
+        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "knows"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, OUT, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
-        assertEquals(vertex.getProperty("name"), "marko");
+        assertEquals(vertex.value("name"), "marko");
 
         vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "knows"));
-        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "created"));
-        vertex.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "knows"));
-        vertex.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "created"));
+        vertex.property("name", "marko");
+        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "knows"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "created"));
+        vertex.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "knows"));
+        vertex.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(BOTH)).size(), 2);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
-        assertEquals(vertex.getProperty("name"), "marko");
+        assertEquals(vertex.value("name"), "marko");
 
         vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "knows"));
-        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "created"));
-        vertex.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.getLongId(), vertex.getLongId(), "created"));
+        vertex.property("name", "marko");
+        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "knows"));
+        vertex.addEdge(OUT, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "created"));
+        vertex.addEdge(IN, new StandardFaunusEdge(new ModifiableHadoopConfiguration(), vertex.longId(), vertex.longId(), "created"));
         assertEquals(2,asList(vertex.getEdges(OUT)).size());
         vertex.removeEdges(Tokens.Action.KEEP, BOTH, "knows");
         assertEquals(1,asList(vertex.getEdges(OUT)).size());
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "knows");
-        assertEquals(vertex.getProperty("name"), "marko");
+        assertEquals(vertex.value("name"), "marko");
     }
 
     public void testGetVerticesAndQuery() throws Exception {
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, new org.apache.hadoop.conf.Configuration());
         for (FaunusVertex vertex : graph.values()) {
-            if (vertex.getLongId()==1l) {
+            if (vertex.longId()==1l) {
                 assertFalse(vertex.getVertices(IN).iterator().hasNext());
                 assertTrue(vertex.getVertices(OUT).iterator().hasNext());
                 assertTrue(vertex.getVertices(BOTH).iterator().hasNext());
@@ -321,7 +321,7 @@ public class FaunusVertexTest extends BaseTest {
                 assertEquals(id3, 1);
                 assertEquals(id4, 1);
                 assertEquals(asList(vertex.query().has("weight", 0.5).limit(1).vertices()).size(), 1);
-                assertEquals(vertex.query().has("weight", 0.5).limit(1).vertices().iterator().next().getId(), 2l);
+                assertEquals(vertex.query().has("weight", 0.5).limit(1).vertices().iterator().next().id(), 2l);
             }
         }
     }
@@ -360,23 +360,23 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testPropertyHandling() throws Exception {
         FaunusVertex vertex = new FaunusVertex(new ModifiableHadoopConfiguration(), 10l);
-        assertEquals(vertex.getLongId(), 10l);
+        assertEquals(vertex.longId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 0);
-        vertex.addProperty("nameset", "marko");
-        assertEquals(vertex.getProperties("nameset").iterator().next().getValue(), "marko");
-        vertex.addProperty("nameset", "marko a. rodriguez");
-        vertex.addProperty("nameset", "marko"); //does nothing since it already exists
+        vertex.property("nameset", "marko");
+        assertEquals(vertex.getProperties("nameset").iterator().next().value(), "marko");
+        vertex.property("nameset", "marko a. rodriguez");
+        vertex.property("nameset", "marko"); //does nothing since it already exists
         assertEquals(vertex.getPropertyKeys().size(), 1);
         Set<String> names = new HashSet<String>();
         Iterables.addAll(names, (Iterable) vertex.getPropertyValues("nameset"));
         assertEquals(names.size(), 2);
         assertTrue(names.contains("marko"));
         assertTrue(names.contains("marko a. rodriguez"));
-        assertEquals(2,Iterables.size((Iterable)vertex.getProperty("nameset")));
+        assertEquals(2,Iterables.size((Iterable)vertex.value("nameset")));
         int counter = 0;
         for (TitanVertexProperty property : vertex.getProperties()) {
-            assertEquals(property.getPropertyKey().name(), "nameset");
-            assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
+            assertEquals(property.propertyKey().name(), "nameset");
+            assertTrue(property.value().equals("marko") || property.value().equals("marko a. rodriguez"));
             counter++;
         }
         assertEquals(counter, 2);
@@ -389,29 +389,29 @@ public class FaunusVertexTest extends BaseTest {
 
         ///////// END SERIALIZE
 
-        assertEquals(vertex.getLongId(), 10l);
+        assertEquals(vertex.longId(), 10l);
         assertEquals(vertex.getPropertyKeys().size(), 1);
         names = new HashSet<String>();
         Iterables.addAll(names, (Iterable) vertex.getPropertyValues("nameset"));
         assertEquals(names.size(), 2);
         assertTrue(names.contains("marko"));
         assertTrue(names.contains("marko a. rodriguez"));
-        assertEquals(2,Iterables.size((Iterable)vertex.getProperty("nameset")));
+        assertEquals(2,Iterables.size((Iterable)vertex.value("nameset")));
 
         counter = 0;
         for (TitanVertexProperty property : vertex.getProperties()) {
-            assertEquals(property.getPropertyKey().name(), "nameset");
-            assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
+            assertEquals(property.propertyKey().name(), "nameset");
+            assertTrue(property.value().equals("marko") || property.value().equals("marko a. rodriguez"));
             counter++;
         }
         assertEquals(counter, 2);
 
         //Test cardinality constraint enforcement
 
-        vertex.addProperty("uid","v1");
-        assertEquals("v1",vertex.getProperty("uid"));
+        vertex.property("uid", "v1");
+        assertEquals("v1",vertex.value("uid"));
         try {
-            vertex.addProperty("uid","vx"); //violates uniqueness
+            vertex.property("uid", "vx"); //violates uniqueness
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -448,11 +448,11 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(value.length(), 2621440);
 
         FaunusVertex vertex1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        vertex1.setProperty("name", value);
+        vertex1.property("name", value);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
         FaunusVertex vertex2 = new FaunusVertex(new ModifiableHadoopConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
-        assertEquals(vertex2.getProperty("name"), value);
+        assertEquals(vertex2.value("name"), value);
     }
 
 }

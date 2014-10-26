@@ -87,7 +87,7 @@ class StandardChangeState implements ChangeState {
             @Override
             public boolean apply(@Nullable TitanRelation titanRelation) {
                 return titanRelation.isEdge() && titanRelation.isIncidentOn(vertex) &&
-                        (dir==Direction.BOTH || ((TitanEdge)titanRelation).getVertex(dir).equals(vertex)) &&
+                        (dir==Direction.BOTH || ((TitanEdge)titanRelation).vertex(dir).equals(vertex)) &&
                         (stypes.isEmpty() || stypes.contains(titanRelation.getType().name()));
             }
         });
@@ -100,7 +100,7 @@ class StandardChangeState implements ChangeState {
             @Override
             public boolean apply(@Nullable TitanRelation titanRelation) {
                 return titanRelation.isEdge() && titanRelation.isIncidentOn(vertex) &&
-                        (dir==Direction.BOTH || ((TitanEdge)titanRelation).getVertex(dir).equals(vertex)) &&
+                        (dir==Direction.BOTH || ((TitanEdge)titanRelation).vertex(dir).equals(vertex)) &&
                         (stypes.isEmpty() || stypes.contains(titanRelation.getType()));
             }
         });

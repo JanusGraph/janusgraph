@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.util.input.current;
 
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
@@ -36,14 +37,14 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         BasicConfiguration bc = ModifiableHadoopConfiguration.of(config).getInputConf();
         graph = (StandardTitanGraph)TitanFactory.open(bc);
 
-        tx = (StandardTitanTx)graph.buildTransaction().readOnly().setVertexCacheSize(200).start();
+        tx = (StandardTitanTx)graph.buildTransaction().readOnly().vertexCacheSize(200).start();
    }
 
     @Override
     public TypeInspector getTypeInspector() {
         //Pre-load schema
         for (TitanSchemaCategory sc : TitanSchemaCategory.values()) {
-            for (TitanVertex k : tx.getVertices(BaseKey.SchemaCategory, sc)) {
+            for (TitanVertex k : QueryUtil.getVertices(tx,BaseKey.SchemaCategory, sc)) {
                 assert k instanceof TitanSchemaVertex;
                 TitanSchemaVertex s = (TitanSchemaVertex)k;
                 if (sc.hasName()) {
@@ -69,21 +70,21 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
             @Override
             public boolean isVertexExistsSystemType(long typeid) {
-                return typeid == BaseKey.VertexExists.getLongId();
+                return typeid == BaseKey.VertexExists.longId();
             }
 
             @Override
             public boolean isVertexLabelSystemType(long typeid) {
-                return typeid == BaseLabel.VertexLabelEdge.getLongId();
+                return typeid == BaseLabel.VertexLabelEdge.longId();
             }
 
             @Override
             public boolean isTypeSystemType(long typeid) {
-                return typeid == BaseKey.SchemaCategory.getLongId() ||
-                        typeid == BaseKey.SchemaDefinitionProperty.getLongId() ||
-                        typeid == BaseKey.SchemaDefinitionDesc.getLongId() ||
-                        typeid == BaseKey.SchemaName.getLongId() ||
-                        typeid == BaseLabel.SchemaDefinitionEdge.getLongId();
+                return typeid == BaseKey.SchemaCategory.longId() ||
+                        typeid == BaseKey.SchemaDefinitionProperty.longId() ||
+                        typeid == BaseKey.SchemaDefinitionDesc.longId() ||
+                        typeid == BaseKey.SchemaName.longId() ||
+                        typeid == BaseLabel.SchemaDefinitionEdge.longId();
             }
         };
     }

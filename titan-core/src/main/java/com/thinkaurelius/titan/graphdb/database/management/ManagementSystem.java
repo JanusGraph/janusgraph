@@ -43,6 +43,7 @@ import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
@@ -210,7 +211,7 @@ public class ManagementSystem implements TitanManagement {
         if (!updatedTypes.isEmpty()) {
             mgmtLogger.sendCacheEviction(updatedTypes,updatedTypeTriggers,getOpenInstancesInternal());
             for (TitanSchemaVertex schemaVertex : updatedTypes) {
-                schemaCache.expireSchemaElement(schemaVertex.getLongId());
+                schemaCache.expireSchemaElement(schemaVertex.longId());
             }
         }
 
@@ -243,7 +244,7 @@ public class ManagementSystem implements TitanManagement {
         assert def.isEdge();
         TitanEdge edge = transaction.addEdge(out,in, BaseLabel.SchemaDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def,modifier);
-        edge.setProperty(BaseKey.SchemaDefinitionDesc,desc);
+        edge.property(BaseKey.SchemaDefinitionDesc.name(), desc);
         return edge;
     }
 
@@ -297,7 +298,7 @@ public class ManagementSystem implements TitanManagement {
         for (RelationType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
         Preconditions.checkArgument(!(type instanceof EdgeLabel) || !((EdgeLabel)type).isUnidirected() || direction==Direction.OUT,
                 "Can only index uni-directed labels in the out-direction: %s",type);
-        Preconditions.checkArgument(!((InternalRelationType)type).getMultiplicity().isConstrained(direction),
+        Preconditions.checkArgument(!((InternalRelationType)type).multiplicity().isConstrained(direction),
                 "The relation type [%s] has a multiplicity or cardinality constraint in direction [%s] and can therefore not be indexed",type,direction);
 
         String composedName = composeRelationTypeIndexName(type,name);
@@ -310,7 +311,7 @@ public class ManagementSystem implements TitanManagement {
             assert type.isPropertyKey();
             assert direction==Direction.OUT;
             StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker)transaction.makePropertyKey(composedName);
-            lm.dataType(((PropertyKey)type).getDataType());
+            lm.dataType(((PropertyKey)type).dataType());
             maker = lm;
         }
         maker.status(type.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
@@ -336,7 +337,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     private static String composeRelationTypeIndexName(RelationType type, String name) {
-        return String.valueOf(type.getLongId())+RELATION_INDEX_SEPARATOR+name;
+        return String.valueOf(type.longId())+RELATION_INDEX_SEPARATOR+name;
     }
 
     @Override
@@ -351,7 +352,7 @@ public class ManagementSystem implements TitanManagement {
         String composedName = composeRelationTypeIndexName(type, name);
 
         //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
-        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.SchemaName,TitanSchemaCategory.getRelationTypeName(composedName)),null);
+        TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(transaction,BaseKey.SchemaName,TitanSchemaCategory.getRelationTypeName(composedName)),null);
         if (v==null) return null;
         assert v instanceof InternalRelationType;
         return new RelationTypeIndexWrapper((InternalRelationType)v);
@@ -398,7 +399,7 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public Iterable<TitanGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
         return Iterables.transform(Iterables.filter(Iterables.transform(
-                transaction.getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.GRAPHINDEX),
+                QueryUtil.getVertices(transaction,BaseKey.SchemaCategory, TitanSchemaCategory.GRAPHINDEX),
                 new Function<TitanVertex, IndexType>() {
                     @Nullable
                     @Override
@@ -440,7 +441,7 @@ public class ManagementSystem implements TitanManagement {
         Timer t = new Timer(Timestamps.MILLI).start();
         boolean timedOut;
         while (true) {
-            TitanManagement mgmt = g.getManagementSystem();
+            TitanManagement mgmt = g.openManagement();
             idx  = mgmt.getGraphIndex(indexName);
             for (PropertyKey pk : idx.getFieldKeys()) {
                 SchemaStatus s = idx.getIndexStatus(pk);
@@ -511,7 +512,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(indexType instanceof MixedIndexType,"Can only add keys to an external index, not %s",index.name());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
             && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
-        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
+        Preconditions.checkArgument(key.cardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
                 "Can only index single-valued property keys on vertices [%s]",key);
         TitanSchemaVertex indexVertex = (TitanSchemaVertex)((IndexTypeWrapper)indexType).getSchemaBase();
 
@@ -547,7 +548,7 @@ public class ManagementSystem implements TitanManagement {
         boolean oneNewKey = false;
         for (PropertyKey key : keys) {
             Preconditions.checkArgument(key!=null && key instanceof PropertyKeyVertex,"Need to provide valid keys: %s",key);
-            if (key.getCardinality()!=Cardinality.SINGLE) allSingleKeys=false;
+            if (key.cardinality()!=Cardinality.SINGLE) allSingleKeys=false;
             if (key.isNew()) oneNewKey = true;
             else updatedTypes.add((PropertyKeyVertex)key);
         }
@@ -725,20 +726,20 @@ public class ManagementSystem implements TitanManagement {
 
         private UpdateStatusTrigger(StandardTitanGraph graph, TitanSchemaVertex vertex, SchemaStatus newStatus, Iterable<PropertyKeyVertex> keys) {
             this.graph = graph;
-            this.schemaVertexId = vertex.getLongId();
+            this.schemaVertexId = vertex.longId();
             this.newStatus = newStatus;
             this.propertyKeys = Sets.newHashSet(Iterables.transform(keys,new Function<PropertyKey, Long>() {
                 @Nullable
                 @Override
                 public Long apply(@Nullable PropertyKey propertyKey) {
-                    return propertyKey.getLongId();
+                    return propertyKey.longId();
                 }
             }));
         }
 
         @Override
         public Boolean call() throws Exception {
-            ManagementSystem mgmt = (ManagementSystem)graph.getManagementSystem();
+            ManagementSystem mgmt = (ManagementSystem)graph.openManagement();
             try {
                 TitanVertex vertex = mgmt.transaction.getVertex(schemaVertexId);
                 Preconditions.checkArgument(vertex!=null && vertex instanceof TitanSchemaVertex);
@@ -755,8 +756,8 @@ public class ManagementSystem implements TitanManagement {
                         try {
                             propNames.add(v.name());
                         } catch (Throwable t) {
-                            log.warn("Failed to get name for property key with id {}", v.getLongId(), t);
-                            propNames.add("(ID#" + v.getLongId() + ")");
+                            log.warn("Failed to get name for property key with id {}", v.longId(), t);
+                            propNames.add("(ID#" + v.longId() + ")");
                         }
                     }
                     String schemaName = "(ID#" + schemaVertexId + ")";
@@ -806,23 +807,23 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(vertex instanceof RelationTypeVertex || vertex.asIndexType().isCompositeIndex());
 
         //Delete current status
-        for (TitanVertexProperty p : vertex.getProperties(BaseKey.SchemaDefinitionProperty)) {
-            if (p.<TypeDefinitionDescription>getProperty(BaseKey.SchemaDefinitionDesc).getCategory()==TypeDefinitionCategory.STATUS) {
-                if (p.getValue().equals(status)) return;
+        for (TitanVertexProperty p : vertex.query().types(BaseKey.SchemaDefinitionProperty).properties()) {
+            if (p.<TypeDefinitionDescription>value(BaseKey.SchemaDefinitionDesc).getCategory()==TypeDefinitionCategory.STATUS) {
+                if (p.value().equals(status)) return;
                 else p.remove();
             }
         }
         //Add new status
         TitanVertexProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
-        p.setProperty(BaseKey.SchemaDefinitionDesc,TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
+        p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
     }
 
     private void setStatusEdges(TitanSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
         Preconditions.checkArgument(vertex.asIndexType().isMixedIndex());
 
         for (TitanEdge edge : vertex.getEdges(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT)) {
-            if (!keys.contains(edge.getVertex(Direction.IN))) continue; //Only address edges with matching keys
-            TypeDefinitionDescription desc = edge.getProperty(BaseKey.SchemaDefinitionDesc);
+            if (!keys.contains(edge.vertex(Direction.IN))) continue; //Only address edges with matching keys
+            TypeDefinitionDescription desc = edge.value(BaseKey.SchemaDefinitionDesc);
             assert desc.getCategory()==TypeDefinitionCategory.INDEX_FIELD;
             Parameter[] parameters = (Parameter[])desc.getModifier();
             assert parameters[parameters.length-1].getKey().equals(ParameterType.STATUS.getName());
@@ -831,7 +832,7 @@ public class ManagementSystem implements TitanManagement {
             Parameter[] paraCopy = Arrays.copyOf(parameters,parameters.length);
             paraCopy[parameters.length-1]=ParameterType.STATUS.getParameter(status);
             edge.remove();
-            addSchemaEdge(vertex,edge.getVertex(Direction.IN),TypeDefinitionCategory.INDEX_FIELD,paraCopy);
+            addSchemaEdge(vertex,edge.vertex(Direction.IN),TypeDefinitionCategory.INDEX_FIELD,paraCopy);
         }
 
         for (PropertyKeyVertex prop : keys) prop.resetCache();
@@ -844,7 +845,7 @@ public class ManagementSystem implements TitanManagement {
         TitanSchemaVertex schemaVertex = getSchemaVertex(element);
         if (schemaVertex.name().equals(newName)) return;
 
-        TitanSchemaCategory schemaCategory = schemaVertex.getProperty(BaseKey.SchemaCategory);
+        TitanSchemaCategory schemaCategory = schemaVertex.value(BaseKey.SchemaCategory);
         Preconditions.checkArgument(schemaCategory.hasName(),"Invalid schema element: %s",element);
 
         if (schemaVertex instanceof RelationType) {
@@ -924,7 +925,7 @@ public class ManagementSystem implements TitanManagement {
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency) {
         if (element instanceof RelationType) {
             RelationTypeVertex rv = (RelationTypeVertex) element;
-            Preconditions.checkArgument(consistency != ConsistencyModifier.FORK || !rv.getMultiplicity().isConstrained(),
+            Preconditions.checkArgument(consistency != ConsistencyModifier.FORK || !rv.multiplicity().isConstrained(),
                     "Cannot apply FORK consistency mode to constraint relation type: %s",rv.name());
         } else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
@@ -989,7 +990,7 @@ public class ManagementSystem implements TitanManagement {
 
         // remove any pre-existing value for the modifier, or return if an identical value has already been set
         for (TitanEdge e : typeVertex.getEdges(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT)) {
-            TitanSchemaVertex v = (TitanSchemaVertex) e.getVertex(Direction.IN);
+            TitanSchemaVertex v = (TitanSchemaVertex) e.vertex(Direction.IN);
 
             TypeDefinitionMap def = v.getDefinition();
             Object existingValue = def.getValue(modifierType.getCategory());
@@ -1068,9 +1069,9 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkNotNull(clazz);
         Iterable<? extends TitanVertex> types = null;
         if (PropertyKey.class.equals(clazz)) {
-            types = transaction.getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.PROPERTYKEY);
+            types = QueryUtil.getVertices(transaction,BaseKey.SchemaCategory, TitanSchemaCategory.PROPERTYKEY);
         } else if (EdgeLabel.class.equals(clazz)) {
-            types = transaction.getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.EDGELABEL);
+            types = QueryUtil.getVertices(transaction,BaseKey.SchemaCategory, TitanSchemaCategory.EDGELABEL);
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
@@ -1105,7 +1106,8 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public Iterable<VertexLabel> getVertexLabels() {
-        return Iterables.filter(transaction.getVertices(BaseKey.SchemaCategory,TitanSchemaCategory.VERTEXLABEL),VertexLabel.class);
+        return Iterables.filter(QueryUtil.getVertices(transaction,BaseKey.SchemaCategory,
+                TitanSchemaCategory.VERTEXLABEL),VertexLabel.class);
     }
 
     // ###### USERMODIFIABLECONFIGURATION PROXY #########

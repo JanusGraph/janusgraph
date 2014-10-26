@@ -21,9 +21,9 @@ public class ElementPicker {
         if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
             for (final TitanVertexProperty property : element.query().properties()) {
-                properties.put(property.getType().name(), property.getValue());
+                properties.put(property.getType().name(), property.value());
             }
-            properties.put(Tokens._ID, element.getLongId());
+            properties.put(Tokens._ID, element.longId());
             if (element instanceof StandardFaunusEdge)
                 properties.put(Tokens._LABEL, ((StandardFaunusEdge) element).getLabel());
 
@@ -40,7 +40,7 @@ public class ElementPicker {
                     return values.toString();
                 }
             } else {
-                final Object value = element.getProperty(key);
+                final Object value = element.value(key);
                 if (null != value)
                     return value.toString();
                 else
@@ -53,9 +53,9 @@ public class ElementPicker {
         if (key.equals(Tokens._PROPERTIES)) {
             final ListMultimap<String, Object> properties = ArrayListMultimap.create();
             for (final TitanVertexProperty property : element.query().properties()) {
-                properties.put(property.getType().name(), property.getValue());
+                properties.put(property.getType().name(), property.value());
             }
-            properties.put(Tokens._ID, element.getLongId());
+            properties.put(Tokens._ID, element.longId());
             return properties;
         } else {
             if (element instanceof FaunusVertex) {
@@ -69,7 +69,7 @@ public class ElementPicker {
                     return values;
                 }
             } else
-                return element.getProperty(key);
+                return element.value(key);
         }
     }
 }

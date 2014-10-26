@@ -72,14 +72,14 @@ public interface TitanIndexQuery {
      *
      * @return
      */
-    public Iterable<Result<Vertex>> vertices();
+    public Iterable<Result<TitanVertex>> vertices();
 
     /**
      * Returns all edges that match the query in the indexing backend.
      *
      * @return
      */
-    public Iterable<Result<Edge>> edges();
+    public Iterable<Result<TitanEdge>> edges();
 
     /**
      * Returns all properties that match the query in the indexing backend.

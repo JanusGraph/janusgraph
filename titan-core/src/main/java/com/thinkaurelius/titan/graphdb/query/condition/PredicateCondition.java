@@ -59,8 +59,8 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
             }
             return satisfiesCondition(null);
         } else {
-            assert ((InternalRelationType)type).getMultiplicity().isUnique(Direction.OUT);
-            return satisfiesCondition(((TitanRelation) element).getProperty((EdgeLabel) type));
+            assert ((InternalRelationType)type).multiplicity().isUnique(Direction.OUT);
+            return satisfiesCondition((TitanVertex)element.value(type.name()));
         }
     }
 

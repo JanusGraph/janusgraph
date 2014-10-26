@@ -27,7 +27,7 @@ public abstract class FaunusRelationType extends EmptyRelationType implements In
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return definition.getLongId();
     }
 
@@ -47,7 +47,7 @@ public abstract class FaunusRelationType extends EmptyRelationType implements In
     }
 
     @Override
-    public Multiplicity getMultiplicity() {
+    public Multiplicity multiplicity() {
         return definition.getMultiplicity();
     }
 

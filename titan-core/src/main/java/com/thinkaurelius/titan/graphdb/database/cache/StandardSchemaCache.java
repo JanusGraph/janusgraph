@@ -125,7 +125,7 @@ public class StandardSchemaCache implements SchemaCache {
 
     @Override
     public EntryList getSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
-        assert IDManager.isSystemRelationTypeId(type.getLongId()) && type.getLongId()>0;
+        assert IDManager.isSystemRelationTypeId(type.longId()) && type.longId()>0;
         Preconditions.checkArgument(IDManager.VertexIDType.Schema.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);
 

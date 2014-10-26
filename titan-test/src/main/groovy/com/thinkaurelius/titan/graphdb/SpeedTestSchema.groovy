@@ -241,7 +241,7 @@ class SpeedTestSchema {
     public void makeTypes(TitanGraph g) {
         Preconditions.checkArgument(edgeLabels <= edgePropKeys);
 
-        TitanManagement mgmt = g.getManagementSystem();
+        TitanManagement mgmt = g.openManagement();
         for (int i = 0; i < vertexPropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
             mgmt.setConsistency(key, ConsistencyModifier.LOCK);

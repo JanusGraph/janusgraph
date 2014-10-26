@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.Compare;
@@ -14,10 +13,10 @@ public class ElementCheckerTest extends TestCase {
 
     public void testEqual() {
         FaunusVertex v1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        v1.setProperty("age", 34);
+        v1.property("age", 34);
 
         FaunusVertex v2 = new FaunusVertex(new ModifiableHadoopConfiguration(), 2l);
-        v2.setProperty("age", 12);
+        v2.property("age", 12);
 
         FaunusVertex v3 = new FaunusVertex(new ModifiableHadoopConfiguration(), 3l);
 
@@ -29,10 +28,10 @@ public class ElementCheckerTest extends TestCase {
 
     public void testGreaterThan() {
         FaunusVertex v1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        v1.setProperty("age", 34);
+        v1.property("age", 34);
 
         FaunusVertex v2 = new FaunusVertex(new ModifiableHadoopConfiguration(), 2l);
-        v2.setProperty("age", 12);
+        v2.property("age", 12);
 
         FaunusVertex v3 = new FaunusVertex(new ModifiableHadoopConfiguration(), 3l);
 
@@ -44,10 +43,10 @@ public class ElementCheckerTest extends TestCase {
 
     public void testLessThan() {
         FaunusVertex v1 = new FaunusVertex(new ModifiableHadoopConfiguration(), 1l);
-        v1.setProperty("age", 34);
+        v1.property("age", 34);
 
         FaunusVertex v2 = new FaunusVertex(new ModifiableHadoopConfiguration(), 2l);
-        v2.setProperty("age", 12);
+        v2.property("age", 12);
 
         FaunusVertex v3 = new FaunusVertex(new ModifiableHadoopConfiguration(), 3l);
 

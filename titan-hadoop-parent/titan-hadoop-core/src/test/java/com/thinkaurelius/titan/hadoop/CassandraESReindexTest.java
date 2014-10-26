@@ -80,8 +80,8 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         // Create some named vertices
         for (int i=0;i<10;i++) {
             TitanVertex v = tx.addVertex();
-            v.setProperty("name", "v"+i);
-            v.setProperty("desc", "d"+i);
+            v.property("name", "v" + i);
+            v.property("desc", "d" + i);
         }
         newTx();
 
@@ -99,8 +99,8 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
 
         for (int i=20;i<30;i++) {
             TitanVertex v = tx.addVertex();
-            v.setProperty("name", "v"+i);
-            v.setProperty("desc", "d"+i);
+            v.property("name", "v" + i);
+            v.property("desc", "d" + i);
         }
         newTx();
 
@@ -125,8 +125,8 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         // Add more named vertices that should get mixed index entries
         for (int i=100;i<110;i++) {
             TitanVertex v = tx.addVertex();
-            v.addProperty("name", "v"+i);
-            v.setProperty("desc", "d"+i);
+            v.property("name", "v" + i);
+            v.property("desc", "d" + i);
         }
         newTx();
 

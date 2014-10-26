@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -34,7 +33,7 @@ public class SerializerGraphConfiguration {
 
     @Test
     public void testOnlyRegisteredSerialization() {
-        TitanManagement mgmt = graph.getManagementSystem();
+        TitanManagement mgmt = graph.openManagement();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey any  = mgmt.makePropertyKey("any").dataType(Object.class).make();
         mgmt.buildIndex("byTime",Vertex.class).addKey(time).buildCompositeIndex();

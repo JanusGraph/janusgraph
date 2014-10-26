@@ -65,7 +65,7 @@ public class FaunusSerializer {
         schema.writeSchema(out);
         writePathElement(vertex, schema, out);
         writeEdges(vertex, vertex.inAdjacency, out, Direction.IN, schema);
-        FaunusVertexLabel vl = (FaunusVertexLabel)vertex.getVertexLabel();
+        FaunusVertexLabel vl = (FaunusVertexLabel)vertex.vertexLabel();
         out.writeUTF(vl.isDefault()?"":vl.name());
     }
 
@@ -96,7 +96,7 @@ public class FaunusSerializer {
     public void writeProperty(final StandardFaunusVertexProperty property, final DataOutput out) throws IOException {
         writePathElement(property, out);
         WritableUtils.writeVLong(out, property.vertexid);
-        serializeObject(out,property.getValue());
+        serializeObject(out,property.value());
         writeFaunusType(property.getType(), out);
     }
 
@@ -217,11 +217,11 @@ public class FaunusSerializer {
                         long otherId = WritableUtils.readVLong(in);
                         switch (direction) {
                             case IN:
-                                edge.inVertex = element.getLongId();
+                                edge.inVertex = element.longId();
                                 edge.outVertex = otherId;
                                 break;
                             case OUT:
-                                edge.outVertex = element.getLongId();
+                                edge.outVertex = element.longId();
                                 edge.inVertex = otherId;
                                 break;
                             default:
@@ -283,7 +283,7 @@ public class FaunusSerializer {
                 if (rel.isEdge()) {
                     WritableUtils.writeVLong(out, ((FaunusEdge)rel).getVertexId(direction.opposite()));
                 } else {
-                    serializeObject(out,((FaunusVertexProperty)rel).getValue());
+                    serializeObject(out,((FaunusVertexProperty)rel).value());
                 }
             }
         }
@@ -426,7 +426,7 @@ public class FaunusSerializer {
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof FaunusElement && b instanceof FaunusElement)
-                return ((Long) (((FaunusElement) a).getLongId())).compareTo(((FaunusElement) b).getLongId());
+                return ((Long) (((FaunusElement) a).longId())).compareTo(((FaunusElement) b).longId());
             else
                 return super.compare(a, b);
         }

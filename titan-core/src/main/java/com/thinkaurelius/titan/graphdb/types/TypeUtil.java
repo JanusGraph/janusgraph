@@ -25,7 +25,7 @@ public class TypeUtil {
     }
 
     public static boolean hasSimpleInternalVertexKeyIndex(TitanVertexProperty prop) {
-        return hasSimpleInternalVertexKeyIndex(prop.getPropertyKey());
+        return hasSimpleInternalVertexKeyIndex(prop.propertyKey());
     }
 
     public static boolean hasSimpleInternalVertexKeyIndex(PropertyKey key) {
@@ -83,6 +83,8 @@ public class TypeUtil {
         }
         return defaultValue;
     }
+
+
 
     public static ConsistencyModifier getConsistencyModifier(SchemaSource schema) {
         return getTypeModifier(schema, ModifierType.CONSISTENCY, ConsistencyModifier.DEFAULT);

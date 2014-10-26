@@ -1,6 +1,6 @@
 def TitanVertex getOrCreateVertex(FaunusVertex faunusVertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
     String uniqueKey = "name";
-    Object uniqueValue = faunusVertex.getProperty(uniqueKey);
+    Object uniqueValue = faunusVertex.value(uniqueKey);
     Vertex titanVertex;
     if (null == uniqueValue)
       throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + faunusVertex);
@@ -11,34 +11,34 @@ def TitanVertex getOrCreateVertex(FaunusVertex faunusVertex, TitanGraph graph, T
       if (itty.hasNext())
         log.info("The unique key is not unique as more than one vertex with the value {}", uniqueValue);
     } else {
-      titanVertex = graph.addVertex(faunusVertex.getId());
+      titanVertex = graph.addVertex(faunusVertex.longId(),faunusVertex.label());
     }
     return titanVertex;
 }
 
 def TitanEdge getOrCreateEdge(FaunusEdge faunusEdge, TitanVertex inVertex, TitanVertex outVertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
-    final String label = faunusEdge.getLabel();
+    final String label = faunusEdge.label();
 
     log.debug("outVertex:{} label:{} inVertex:{}", outVertex, label, inVertex);
 
-    final Edge titanEdge = !outVertex.out(label).has("id", inVertex.getId()).hasNext() ?
+    final Edge titanEdge = !outVertex.out(label).has("id", inVertex.id()).hasNext() ?
         graph.addEdge(null, outVertex, inVertex, label) :
-        outVertex.outE(label).as("here").inV().has("id", inVertex.getId()).back("here").next();
+        outVertex.outE(label).as("here").inV().has("id", inVertex.id()).back("here").next();
 
     return titanEdge;
 }
 
 def void getOrCreateVertexProperty(TitanProperty faunusProperty, TitanVertex vertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
 
-    final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.getPropertyKey();
-    if (pkey.getCardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
-        vertex.setProperty(pkey.name(), faunusProperty.getValue());
+    final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.propertyKey();
+    if (pkey.cardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
+        vertex.property(pkey.name(), faunusProperty.value());
     } else {
 //        Iterator<com.thinkaurelius.titan.core.TitanProperty> itty = vertex.getProperties(pkey.getName()).iterator();
 //        if (!itty.hasNext()) {
-            vertex.addProperty(pkey.name(), faunusProperty.getValue());
+            vertex.property(pkey.name(), faunusProperty.value());
 //        }
     }
 
-    log.debug("Set property {}={} on {}", pkey.name(), faunusProperty.getValue(), vertex);
+    log.debug("Set property {}={} on {}", pkey.name(), faunusProperty.value(), vertex);
 }

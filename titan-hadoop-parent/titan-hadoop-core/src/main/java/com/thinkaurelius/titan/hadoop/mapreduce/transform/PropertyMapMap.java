@@ -57,7 +57,7 @@ public class PropertyMapMap {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    this.longWritable.set(value.getLongId());
+                    this.longWritable.set(value.longId());
                     this.text.set(ElementPicker.getPropertyAsString(value, Tokens._PROPERTIES));
                     for (int i = 0; i < value.pathCount(); i++) {
                         this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);
@@ -69,7 +69,7 @@ public class PropertyMapMap {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        this.longWritable.set(edge.getLongId());
+                        this.longWritable.set(edge.longId());
                         this.text.set(ElementPicker.getPropertyAsString(edge, Tokens._PROPERTIES));
                         for (int i = 0; i < edge.pathCount(); i++) {
                             this.outputs.write(Tokens.SIDEEFFECT, this.longWritable, this.text);

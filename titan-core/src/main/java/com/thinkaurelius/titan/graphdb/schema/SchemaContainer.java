@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -22,7 +21,7 @@ public class SchemaContainer implements SchemaProvider {
     public SchemaContainer(TitanGraph graph) {
         vertexLabels = Maps.newHashMap();
         relationTypes = Maps.newHashMap();
-        TitanManagement mgmt = graph.getManagementSystem();
+        TitanManagement mgmt = graph.openManagement();
 
         try {
             for (VertexLabel vl : mgmt.getVertexLabels()) {

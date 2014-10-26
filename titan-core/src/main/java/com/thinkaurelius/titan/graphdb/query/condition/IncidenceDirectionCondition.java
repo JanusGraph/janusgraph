@@ -25,7 +25,7 @@ public class IncidenceDirectionCondition<E extends TitanRelation> extends Litera
 
     @Override
     public boolean evaluate(E relation) {
-        return relation.isEdge() && ((TitanEdge) relation).getVertex(direction).equals(otherVertex);
+        return relation.isEdge() && ((TitanEdge) relation).vertex(direction).equals(otherVertex);
     }
 
     @Override

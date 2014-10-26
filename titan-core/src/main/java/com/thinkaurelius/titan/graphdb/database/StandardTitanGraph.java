@@ -40,6 +40,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -51,7 +52,6 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Graph.Features;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,7 +220,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     @Override
-    public TitanManagement getManagementSystem() {
+    public TitanManagement openManagement() {
         return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger, schemaCache);
     }
 
@@ -273,9 +273,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         @Override
         public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
             tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once and cache eviction works!
-            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.SchemaName, typeName),null);
+            TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,BaseKey.SchemaName, typeName),null);
             tx.getTxHandle().enableCache();
-            return v!=null?v.getLongId():null;
+            return v!=null?v.longId():null;
         }
 
         @Override
@@ -357,8 +357,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public static boolean acquireLock(InternalRelation relation, int pos, boolean acquireLocksConfig) {
         InternalRelationType type = (InternalRelationType)relation.getType();
         return acquireLocksConfig && type.getConsistencyModifier()== ConsistencyModifier.LOCK &&
-                ( type.getMultiplicity().isUnique(EdgeDirection.fromPosition(pos))
-                        || pos==0 && type.getMultiplicity()== Multiplicity.SIMPLE);
+                ( type.multiplicity().isUnique(EdgeDirection.fromPosition(pos))
+                        || pos==0 && type.multiplicity()== Multiplicity.SIMPLE);
     }
 
     public static boolean acquireLock(CompositeIndexType index, boolean acquireLocksConfig) {
@@ -390,9 +390,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public static int getTTL(InternalVertex v) {
         assert v.hasId();
-        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.getLongId())) {
+        if (IDManager.VertexIDType.UnmodifiableVertex.is(v.longId())) {
             assert v.isNew() : "Should not be able to add relations to existing static vertices: " + v;
-            return ((InternalVertexLabel)v.getVertexLabel()).getTTL();
+            return ((InternalVertexLabel)v.vertexLabel()).getTTL();
         } else return 0;
     }
 
@@ -424,11 +424,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalVertex vertex = del.getVertex(pos);
                 if (pos == 0 || !del.isLoop()) {
                     if (del.isProperty()) mutatedProperties.put(vertex,del);
-                    mutations.put(vertex.getLongId(), del);
+                    mutations.put(vertex.longId(), del);
                 }
                 if (acquireLock(del,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.getLongId()), entry);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.longId()), entry);
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
@@ -442,11 +442,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalVertex vertex = add.getVertex(pos);
                 if (pos == 0 || !add.isLoop()) {
                     if (add.isProperty()) mutatedProperties.put(vertex,add);
-                    mutations.put(vertex.getLongId(), add);
+                    mutations.put(vertex.longId(), add);
                 }
                 if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(add, pos, tx);
-                    mutator.acquireEdgeLock(idManager.getKey(vertex.getLongId()), entry.getColumn());
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.longId()), entry.getColumn());
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
@@ -487,7 +487,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        if (edge.getVertex(pos).getLongId()==vertexid) {
+                        if (edge.getVertex(pos).longId()==vertexid) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);

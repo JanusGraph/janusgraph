@@ -65,7 +65,7 @@ public class EdgeCopyMapReduce {
                 context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 edgesInverted++;
             }
-            this.longWritable.set(value.getLongId());
+            this.longWritable.set(value.longId());
             context.write(this.longWritable, this.vertexHolder.set('r', value));
             DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_COPIED, edgesInverted);
         }

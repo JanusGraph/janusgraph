@@ -32,8 +32,6 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      * @param condition
      * @return This query
      */
-    public Q has(PropertyKey key, TitanPredicate predicate, Object condition);
-
     public Q has(String key, TitanPredicate predicate, Object condition);
 
     public Q has(String key);
@@ -64,16 +62,6 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      */
     public Q orderBy(String key, Order order);
 
-    /**
-     * Orders the element results of this query according
-     * to their property for the given key in the given order (increasing/decreasing).
-     *
-     * @param key   The key of the properties on which to order
-     * @param order the ordering direction
-     * @return
-     */
-    public Q orderBy(PropertyKey key, Order order);
-
 
     /* ---------------------------------------------------------------
     * Query Execution
@@ -85,14 +73,14 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      *
      * @return
      */
-    public Iterable<Vertex> vertices();
+    public Iterable<TitanVertex> vertices();
 
     /**
      * Returns all edges that match the conditions.
      *
      * @return
      */
-    public Iterable<Edge> edges();
+    public Iterable<TitanEdge> edges();
 
     /**
      * Returns all properties that match the conditions

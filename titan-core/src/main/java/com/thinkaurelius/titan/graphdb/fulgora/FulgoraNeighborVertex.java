@@ -13,10 +13,7 @@ import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
+import com.tinkerpop.gremlin.structure.*;
 
 import java.util.Iterator;
 import java.util.List;
@@ -41,9 +38,9 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
 
 
     @Override
-    public<A> A getProperty(String key) {
+    public<A> A value(String key) {
         if (key.equals(executor.stateKey)) {
-            return (A)executor.getVertexState(getLongId());
+            return (A)executor.getVertexState(longId());
         }
         SystemRelationType t = SystemTypeManager.getSystemType(key);
         if (t!=null && t instanceof ImplicitKey) return ((ImplicitKey)t).computeProperty(this);
@@ -51,18 +48,18 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public <O> O getProperty(PropertyKey key) {
+    public <O> O value(PropertyKey key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         throw getAccessException();
     }
 
     @Override
-    public String getLabel() {
-        return getVertexLabel().name();
+    public String label() {
+        return vertexLabel().name();
     }
 
     @Override
-    public VertexLabel getVertexLabel() {
+    public VertexLabel vertexLabel() {
         throw getAccessException();
     }
 
@@ -82,12 +79,12 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public Object getId() {
-        return getLongId();
+    public Object id() {
+        return longId();
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return id;
     }
 
@@ -96,34 +93,8 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
         return true;
     }
 
-
-    @Override
-    public Set<String> getPropertyKeys() {
-        throw getAccessException();
-    }
-
-    @Override
-    public <O> O removeProperty(String key) {
-        throw getAccessException();
-    }
-
-    @Override
-    public <O> O removeProperty(RelationType type) {
-        throw getAccessException();
-    }
-
     @Override
     public void remove() {
-        throw getAccessException();
-    }
-
-    @Override
-    public void setProperty(String key, Object value) {
-        throw getAccessException();
-    }
-
-    @Override
-    public void setProperty(PropertyKey key, Object value) {
         throw getAccessException();
     }
 
@@ -188,22 +159,7 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex) {
-        throw getAccessException();
-    }
-
-    @Override
-    public TitanEdge addEdge(String label, TitanVertex vertex) {
-        throw getAccessException();
-    }
-
-    @Override
-    public TitanVertexProperty addProperty(PropertyKey key, Object attribute) {
-        throw getAccessException();
-    }
-
-    @Override
-    public TitanVertexProperty addProperty(String key, Object attribute) {
+    public<V> TitanVertexProperty<V> property(String key, V attribute) {
         throw getAccessException();
     }
 
@@ -213,62 +169,7 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public Edge addEdge(String s, Vertex vertex, Object... keyValues) {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties() {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties(String key) {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<TitanEdge> getTitanEdges(Direction d, EdgeLabel... labels) {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction d, String... labels) {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String... strings) {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<TitanEdge> getEdges() {
-        throw getAccessException();
-    }
-
-    @Override
-    public Iterable<TitanRelation> getRelations() {
-        throw getAccessException();
-    }
-
-    @Override
-    public long getEdgeCount() {
-        throw getAccessException();
-    }
-
-    @Override
-    public long getPropertyCount() {
-        throw getAccessException();
-    }
-
-    @Override
-    public boolean isConnected() {
+    public TitanEdge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw getAccessException();
     }
 

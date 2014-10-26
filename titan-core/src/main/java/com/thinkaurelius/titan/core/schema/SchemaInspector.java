@@ -97,6 +97,14 @@ public interface SchemaInspector {
     public boolean containsVertexLabel(String name);
 
     /**
+     * Returns the vertex label with the given name. If such does not exist, NULL is returned.
+     *
+     * @param name
+     * @return
+     */
+    public VertexLabel getVertexLabel(String name);
+
+    /**
      * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
      * automatically created through the registered {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker}.
      * <p />
@@ -105,9 +113,6 @@ public interface SchemaInspector {
      * @param name
      * @return
      */
-    public VertexLabel getVertexLabel(String name);
-
-
     public VertexLabel getOrCreateVertexLabel(String name);
 
 

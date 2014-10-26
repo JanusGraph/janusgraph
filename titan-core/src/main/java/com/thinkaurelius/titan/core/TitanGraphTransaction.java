@@ -35,13 +35,6 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
     */
 
     /**
-     * Creates a new vertex in the graph with the default vertex label.
-     *
-     * @return New vertex in the graph created in the context of this transaction.
-     */
-    public TitanVertex addVertex();
-
-    /**
      * Creates a new vertex in the graph with the vertex label named by the argument.
      *
      * @param vertexLabel the name of the vertex label to use
@@ -49,26 +42,10 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
      */
     public TitanVertex addVertex(String vertexLabel);
 
-    /**
-     * Creates a new vertex in the graph with the given vertex label.
-     *
-     * @param vertexLabel the vertex label which will apply to the new vertex
-     * @return a new vertex in the graph created in the context of this transaction
-     */
-    public TitanVertex addVertex(VertexLabel vertexLabel);
-
     @Override
     public TitanVertex addVertex(Object... objects);
 
-    /**
-     * Retrieves the vertex for the specified id.
-     *
-     * @param id id of the vertex to retrieve
-     * @return vertex with the given id if it exists, else null
-     * @see #containsVertex
-     */
-    public TitanVertex getVertex(long id);
-
+    @Override
     public TitanVertex v(Object id);
 
     /**
@@ -79,15 +56,7 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
      * @return map from ids to corresponding vertices
      * does not identify a vertex
      */
-    public Map<Long,TitanVertex> getVertices(long... ids);
-
-    /**
-     * Checks whether a vertex with the specified id exists in the graph database.
-     *
-     * @param vertexid vertex id
-     * @return true, if a vertex with that id exists, else false
-     */
-    public boolean containsVertex(long vertexid);
+    public Map<Long,TitanVertex> vertices(long... ids);
 
     /**
      * @return

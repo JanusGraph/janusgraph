@@ -93,7 +93,7 @@ public class BackFilterMapReduce {
                 }
             }
 
-            longWritable.set(value.getLongId());
+            longWritable.set(value.longId());
             context.write(longWritable, holder.set('v', value));
         }
     }

@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * <p/>
  * TitanManagement behaves like a transaction in that it opens a transactional scope for reading the schema and making
  * changes to it. As such, it needs to be explicitly closed via its {@link #commit()} or {@link #rollback()} methods.
- * A TitanManagement transaction is opened on a graph via {@link com.thinkaurelius.titan.core.TitanGraph#getManagementSystem()}.
+ * A TitanManagement transaction is opened on a graph via {@link com.thinkaurelius.titan.core.TitanGraph#openManagement()}.
  * <p/>
  * TitanManagement provides methods to:
  * <ul>

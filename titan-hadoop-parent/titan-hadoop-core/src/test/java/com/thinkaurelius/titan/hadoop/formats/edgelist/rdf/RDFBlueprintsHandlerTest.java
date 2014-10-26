@@ -59,8 +59,8 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "created");
 
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
-        assertEquals(handler.next().getProperty("name"), "Abraham_Lincoln");
-        assertEquals(handler.next().getProperty("name"), "Person");
+        assertEquals(handler.next().value("name"), "Abraham_Lincoln");
+        assertEquals(handler.next().value("name"), "Person");
         FaunusElement faunusElement = handler.next();
         assertNotNull(faunusElement);
         assertTrue(faunusElement instanceof StandardFaunusEdge);
@@ -69,8 +69,8 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/2000/01/rdf-schema#label> \"Abraham Lincoln\" .");
         FaunusVertex abe = (FaunusVertex) handler.next();
-        assertEquals(abe.getProperty("name"), "Abraham_Lincoln");
-        assertEquals(handler.next().getProperty("name"), "Abraham Lincoln");
+        assertEquals(abe.value("name"), "Abraham_Lincoln");
+        assertEquals(handler.next().value("name"), "Abraham Lincoln");
         // note "label_", not the reserved "label"
         assertEquals(((StandardFaunusEdge) handler.next()).getLabel(), "label_");
         assertFalse(handler.hasNext());
@@ -95,8 +95,8 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertFalse(handler.hasNext());
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
         FaunusVertex subject = (FaunusVertex) handler.next();
-        assertEquals(subject.getProperty("name"), "Abraham_Lincoln");
-        assertEquals(subject.getProperty("type"), "Person");
+        assertEquals(subject.value("name"), "Abraham_Lincoln");
+        assertEquals(subject.value("type"), "Person");
         assertFalse(handler.hasNext());
     }
 
@@ -111,38 +111,38 @@ public class RDFBlueprintsHandlerTest extends TestCase {
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
         FaunusElement subject = handler.next();
-        assertEquals(subject.getProperty("name"), "josh");
-        assertEquals(subject.getProperty("age"), 32);
+        assertEquals(subject.value("name"), "josh");
+        assertEquals(subject.value("age"), 32);
         assertFalse(handler.hasNext());
 
         handler.parse("<http://tinkerpop.com#marko> <http://tinkerpop.com#firstname> \"marko\"^^<http://www.w3.org/2001/XMLSchema#string> .");
         subject = handler.next();
-        assertEquals(subject.getProperty("name"), "marko");
-        assertEquals(subject.getProperty("firstname"), "marko");
+        assertEquals(subject.value("name"), "marko");
+        assertEquals(subject.value("firstname"), "marko");
         assertFalse(handler.hasNext());
 
         handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#location> \"1.023\"^^<http://www.w3.org/2001/XMLSchema#double> .");
         subject = handler.next();
-        assertEquals(subject.getProperty("name"), "stephen");
-        assertEquals(subject.getProperty("location"), 1.023d);
+        assertEquals(subject.value("name"), "stephen");
+        assertEquals(subject.value("location"), 1.023d);
         assertFalse(handler.hasNext());
 
         handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#alive> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .");
         subject = handler.next();
-        assertEquals(subject.getProperty("name"), "stephen");
-        assertEquals(subject.getProperty("alive"), true);
+        assertEquals(subject.value("name"), "stephen");
+        assertEquals(subject.value("alive"), true);
         assertFalse(handler.hasNext());
 
         handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#ttl> \"1234567890005543\"^^<http://www.w3.org/2001/XMLSchema#long> .");
         subject = handler.next();
-        assertEquals(subject.getProperty("name"), "stephen");
-        assertEquals(subject.getProperty("ttl"), 1234567890005543l);
+        assertEquals(subject.value("name"), "stephen");
+        assertEquals(subject.value("ttl"), 1234567890005543l);
         assertFalse(handler.hasNext());
 
         handler.parse("<http://tinkerpop.com#stephen> <http://tinkerpop.com#height> \"0.45\"^^<http://www.w3.org/2001/XMLSchema#float> .");
         subject = handler.next();
-        assertEquals(subject.getProperty("name"), "stephen");
-        assertEquals(subject.getProperty("height"), 0.45f);
+        assertEquals(subject.value("name"), "stephen");
+        assertEquals(subject.value("height"), 0.45f);
         assertFalse(handler.hasNext());
 
     }
@@ -159,14 +159,14 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#knows> <http://tinkerpop.com#marko> .");
 
         FaunusVertex josh = (FaunusVertex) handler.next();
-        assertEquals(josh.getProperty("age"), 32);
-        assertEquals(josh.getProperty("name"), "josh");
+        assertEquals(josh.value("age"), 32);
+        assertEquals(josh.value("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 3);
         josh = (FaunusVertex) handler.next();
-        assertEquals(josh.getProperty("name"), "josh");
+        assertEquals(josh.value("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 2);
         FaunusVertex marko = (FaunusVertex) handler.next();
-        assertEquals(marko.getProperty("name"), "marko");
+        assertEquals(marko.value("name"), "marko");
         assertEquals(marko.getPropertyKeys().size(), 2);
         StandardFaunusEdge knows = (StandardFaunusEdge) handler.next();
         assertEquals(knows.getLabel(), "knows");

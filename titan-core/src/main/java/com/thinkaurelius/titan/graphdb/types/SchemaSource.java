@@ -9,9 +9,9 @@ import com.tinkerpop.gremlin.structure.Direction;
  */
 public interface SchemaSource {
 
-    public long getLongId();
+    public long longId();
 
-    public String getName();
+    public String name();
 
     public SchemaStatus getStatus();
 

@@ -58,93 +58,25 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public String getLabel() {
-        return getVertexLabel().name();
+    public String label() {
+        return vertexLabel().name();
     }
 
     @Override
-    public VertexLabel getVertexLabel() {
+    public VertexLabel vertexLabel() {
         return BaseVertexLabel.DEFAULT_VERTEXLABEL;
     }
 
     @Override
-    public <O> O getProperty(PropertyKey key) {
+    public <O> O value(PropertyKey key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return null;
     }
 
     @Override
-    public <O> O getProperty(String key) {
+    public <O> O value(String key) {
         if (!tx().containsRelationType(key)) return null;
-        else return getProperty(tx().getPropertyKey(key));
-    }
-
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties() {
-        return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
-        return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties(String key) {
-        return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public Set<String> getPropertyKeys() {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Iterable<TitanEdge> getEdges() {
-        return IterablesUtil.emptyIterable();
-    }
-
-
-    @Override
-    public Iterable<TitanEdge> getTitanEdges(Direction dir, EdgeLabel... labels) {
-        return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction dir, String... labels) {
-        return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public Iterable<TitanRelation> getRelations() {
-        return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String... labels) {
-        return IterablesUtil.emptyIterable();
-    }
-
-	/* ---------------------------------------------------------------
-	 * TitanRelation Counts
-	 * ---------------------------------------------------------------
-	 */
-
-
-    @Override
-    public long getPropertyCount() {
-        return 0;
-    }
-
-    @Override
-    public long getEdgeCount() {
-        return 0;
-    }
-
-    @Override
-    public boolean isConnected() {
-        return false;
+        else return value(tx().getPropertyKey(key));
     }
 
 
@@ -155,24 +87,8 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public TitanVertexProperty addProperty(PropertyKey key, Object attribute) {
+    public<V> TitanVertexProperty<V> property(String key, V value) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
-    }
-
-
-    @Override
-    public TitanVertexProperty addProperty(String key, Object attribute) {
-        throw new UnsupportedOperationException(errorName + " do not support incident properties");
-    }
-
-    @Override
-    public void setProperty(String key, Object value) {
-        throw new UnsupportedOperationException(errorName + " do not support incident properties");
-    }
-
-    @Override
-    public void setProperty(PropertyKey key, Object value) {
-        throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
     @Override
@@ -186,29 +102,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public <O> O removeProperty(String key) {
-        throw new UnsupportedOperationException(errorName + " do not support incident properties");
-    }
-
-    @Override
-    public <O> O removeProperty(RelationType type) {
-        throw new UnsupportedOperationException(errorName + " do not support incident edges");
-    }
-
-
-    @Override
-    public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex) {
-        throw new UnsupportedOperationException(errorName + " do not support incident edges");
-    }
-
-
-    @Override
-    public TitanEdge addEdge(String label, TitanVertex vertex) {
-        throw new UnsupportedOperationException(errorName + " do not support incident edges");
-    }
-
-    @Override
-    public Edge addEdge(String s, Vertex vertex, Object... keyValues) {
+    public TitanEdge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
@@ -251,13 +145,13 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public long getLongId() {
+    public long longId() {
         throw new UnsupportedOperationException(errorName + " don't have an ID");
     }
 
     @Override
-    public Object getId() {
-        return hasId() ? getLongId() : null;
+    public Object id() {
+        return hasId() ? longId() : null;
     }
 
     @Override

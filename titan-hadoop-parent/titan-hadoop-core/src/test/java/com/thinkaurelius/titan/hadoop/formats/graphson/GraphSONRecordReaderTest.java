@@ -34,7 +34,7 @@ public class GraphSONRecordReaderTest extends BaseTest {
             counter++;
             assertEquals(reader.getCurrentKey(), NullWritable.get());
             FaunusVertex vertex = reader.getCurrentValue();
-            graph.put(vertex.getLongId(), vertex);
+            graph.put(vertex.longId(), vertex);
         }
         identicalStructure(graph, ExampleGraph.GRAPH_OF_THE_GODS);
         assertEquals(counter, 12);

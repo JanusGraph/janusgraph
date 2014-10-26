@@ -101,7 +101,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             FaunusSchemaManager typeManager = FaunusSchemaManager.getTypeManager(titanConf);
             typeManager.setSchemaProvider(schema);
             log.info("Opened graph {}", graph);
-            mgmt = (ManagementSystem) graph.getManagementSystem();
+            mgmt = (ManagementSystem) graph.openManagement();
             validateIndexStatus();
         } catch (final Exception e) {
             if (null != mgmt && mgmt.isOpen())
@@ -141,20 +141,20 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
             InternalVertex start = tx.getInternalVertex(faunusEdge.getVertexId(Direction.OUT)),
                     end = tx.getInternalVertex(faunusEdge.getVertexId(Direction.IN));
             if (start==null || end==null) return null;
-            titanRelation = new StandardEdge(faunusRelation.getLongId(),tx.getOrCreateEdgeLabel(indexType),start,end, ElementLifeCycle.Loaded);
+            titanRelation = new StandardEdge(faunusRelation.longId(),tx.getOrCreateEdgeLabel(indexType),start,end, ElementLifeCycle.Loaded);
         } else {
             assert faunusRelation.isProperty();
             StandardFaunusVertexProperty faunusProperty = (StandardFaunusVertexProperty)faunusRelation;
-            InternalVertex v = tx.getInternalVertex(faunusProperty.getElement().getLongId());
+            InternalVertex v = tx.getInternalVertex(faunusProperty.getElement().longId());
             if (v==null) return null;
-            titanRelation = new StandardVertexProperty(faunusProperty.getLongId(),tx.getOrCreatePropertyKey(indexType),v,faunusProperty.getValue(), ElementLifeCycle.Loaded);
+            titanRelation = new StandardVertexProperty(faunusProperty.longId(),tx.getOrCreatePropertyKey(indexType),v,faunusProperty.value(), ElementLifeCycle.Loaded);
         }
         //Add properties
         for (TitanRelation rel : faunusRelation.query().relations()) {
             Object value;
-            if (rel.isProperty()) value = ((FaunusVertexProperty)rel).getValue();
+            if (rel.isProperty()) value = ((FaunusVertexProperty)rel).value();
             else value = tx.getInternalVertex(((FaunusEdge) rel).getVertexId(Direction.IN));
-            if (value!=null) titanRelation.setProperty(rel.getType().name(),value);
+            if (value!=null) titanRelation.property(rel.getType().name(), value);
         }
         return titanRelation;
     }
@@ -175,7 +175,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
 
                 for (TitanRelation faunusRelation : faunusVertex.query().relations()) {
                     if (!faunusRelation.getType().name().equals(indexType) ||
-                            faunusRelation.getDirection(faunusVertex)!=Direction.OUT) continue; //Isolate relevant relations and only outgoing ones
+                            faunusRelation.direction(faunusVertex)!=Direction.OUT) continue; //Isolate relevant relations and only outgoing ones
                     StandardRelation titanRelation = getTitanRelation((StandardFaunusRelation)faunusRelation,tx);
                     for (int pos = 0; pos < titanRelation.getArity(); pos++) {
                         if (!wrappedType.isUnidirected(Direction.BOTH) && !wrappedType.isUnidirected(EdgeDirection.fromPosition(pos)))
@@ -184,7 +184,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
                         additions.add(entry);
                     }
                 }
-                StaticBuffer vertexKey = graph.getIDManager().getKey(faunusVertex.getLongId());
+                StaticBuffer vertexKey = graph.getIDManager().getKey(faunusVertex.longId());
                 mutator.mutateEdges(vertexKey, additions, KCVSCache.NO_DELETIONS);
             } else if (index instanceof TitanGraphIndex) {
                 IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();

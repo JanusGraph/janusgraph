@@ -49,14 +49,14 @@ class FulgoraPropertyQuery<M> extends FulgoraRelationQuery<M> {
     public static final Function<TitanVertexProperty,Object> SINGLE_VALUE_GATHER = new Function<TitanVertexProperty, Object>() {
         @Override
         public Object apply(TitanVertexProperty titanProperty) {
-            return titanProperty.getValue();
+            return titanProperty.value();
         }
     };
 
     public static final Function<TitanVertexProperty,List<Object>> VALUE_LIST_GATHER = new Function<TitanVertexProperty, List<Object>>() {
         @Override
         public List<Object> apply(TitanVertexProperty titanProperty) {
-            return Lists.newArrayList(titanProperty.getValue());
+            return Lists.newArrayList(titanProperty.value());
         }
     };
 

@@ -81,7 +81,7 @@ public abstract class TitanGraphBaseTest {
         graph = (StandardTitanGraph) TitanFactory.open(config);
         features = graph.getConfiguration().getStoreFeatures();
         tx = graph.newTransaction();
-        mgmt = graph.getManagementSystem();
+        mgmt = graph.openManagement();
     }
 
     @After
@@ -93,7 +93,7 @@ public abstract class TitanGraphBaseTest {
     public void finishSchema() {
         if (mgmt!=null && mgmt.isOpen())
             mgmt.commit();
-        mgmt=graph.getManagementSystem();
+        mgmt=graph.openManagement();
         newTx();
         graph.tx().commit();
     }
@@ -134,7 +134,7 @@ public abstract class TitanGraphBaseTest {
                 if (option.getKey().option.isLocal()) {
                     lconf.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
                 } else {
-                    if (gconf==null) gconf = graph.getManagementSystem();
+                    if (gconf==null) gconf = graph.openManagement();
                     gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
                 }
             }
@@ -343,7 +343,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static long getId(Element e) {
-        return ((TitanElement)e).getLongId();
+        return ((TitanElement)e).longId();
     }
 
     public static int size(Object obj) {

@@ -58,14 +58,14 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         //Add some sensor & friend data
         TitanVertex v = tx.addVertex();
         for (int i=0;i<10;i++) {
-            v.addProperty("sensor",i).setProperty("time",i);
-            v.addProperty("name","v"+i);
+            v.property("sensor", i).property("time", i);
+            v.property("name", "v" + i);
             TitanVertex o = tx.addVertex();
-            v.addEdge("friend",o).setProperty("time",i);
+            v.addEdge("friend",o).property("time", i);
         }
         newTx();
         //Indexes should not yet be in use
-        v = tx.getVertex(v.getLongId());
+        v = tx.getVertex(v.longId());
         evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
@@ -92,12 +92,12 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         finishSchema();
         newTx();
         //Add some sensor & friend data that should already be indexed even though index is not yet enabled
-        v = tx.getVertex(v.getLongId());
+        v = tx.getVertex(v.longId());
         for (int i=100;i<110;i++) {
-            v.addProperty("sensor",i).setProperty("time",i);
-            v.addProperty("name","v"+i);
+            v.property("sensor", i).property("time", i);
+            v.property("name", "v" + i);
             TitanVertex o = tx.addVertex();
-            v.addEdge("friend",o).setProperty("time",i);
+            v.addEdge("friend",o).property("time", i);
         }
         tx.commit();
         //Should not yet be able to enable since not yet registered
@@ -128,16 +128,16 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
 
         //Add some more sensor & friend data
         newTx();
-        v = tx.getVertex(v.getLongId());
+        v = tx.getVertex(v.longId());
         for (int i=200;i<210;i++) {
-            v.addProperty("sensor",i).setProperty("time",i);
-            v.addProperty("name","v"+i);
+            v.property("sensor", i).property("time", i);
+            v.property("name", "v" + i);
             TitanVertex o = tx.addVertex();
-            v.addEdge("friend",o).setProperty("time",i);
+            v.addEdge("friend",o).property("time", i);
         }
         newTx();
         //Use indexes now but only see new data
-        v = tx.getVertex(v.getLongId());
+        v = tx.getVertex(v.longId());
         evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time",Order.DESC),
                 PROPERTY,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),
@@ -172,7 +172,7 @@ public class CassandraReindexTest extends TitanGraphBaseTest {
         newTx();
 
         // Use indexes, see old and new data
-        v = tx.getVertex(v.getLongId());
+        v = tx.getVertex(v.longId());
         evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time",Order.DESC),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time",Order.DESC),

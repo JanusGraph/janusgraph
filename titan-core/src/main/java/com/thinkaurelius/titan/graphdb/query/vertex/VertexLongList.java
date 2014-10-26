@@ -34,8 +34,8 @@ public class VertexLongList implements VertexListInternal {
 
     @Override
     public void add(TitanVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && vertices.get(vertices.size()-1)<=n.getLongId();
-        vertices.add(n.getLongId());
+        if (!vertices.isEmpty()) sorted = sorted && vertices.get(vertices.size()-1)<=n.longId();
+        vertices.add(n.longId());
     }
 
     @Override

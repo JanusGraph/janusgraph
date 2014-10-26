@@ -25,11 +25,11 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
     @Override
     public long[] getSignature() {
-        return new long[]{BaseKey.SchemaDefinitionDesc.getLongId()};
+        return new long[]{BaseKey.SchemaDefinitionDesc.longId()};
     }
 
     @Override
-    public Multiplicity getMultiplicity() {
+    public Multiplicity multiplicity() {
         return multiplicity;
     }
 

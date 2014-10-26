@@ -22,12 +22,12 @@ public class SimpleIndexCache implements IndexCache {
 
     @Override
     public void add(TitanVertexProperty property) {
-        map.put(property.getValue(),property);
+        map.put(property.value(),property);
     }
 
     @Override
     public void remove(TitanVertexProperty property) {
-        map.remove(property.getValue(),property);
+        map.remove(property.value(),property);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class SimpleIndexCache implements IndexCache {
         return Iterables.filter(map.get(value),new Predicate<TitanVertexProperty>() {
             @Override
             public boolean apply(@Nullable TitanVertexProperty titanProperty) {
-                return titanProperty.getPropertyKey().equals(key);
+                return titanProperty.propertyKey().equals(key);
             }
         });
     }

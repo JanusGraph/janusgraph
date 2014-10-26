@@ -16,14 +16,9 @@ public class SimpleFaunusVertexProperty extends SimpleFaunusRelation implements 
         Preconditions.checkArgument(key!=null);
         Preconditions.checkArgument(value != null);
         Preconditions.checkArgument(AttributeUtil.hasGenericDataType(key) ||
-                key.getDataType().isInstance(value),"Value does not match data type: %s",value);
+                key.dataType().isInstance(value),"Value does not match data type: %s",value);
         this.key=key;
         this.value=value;
-    }
-
-    @Override
-    public PropertyKey getPropertyKey() {
-        return key;
     }
 
     @Override
@@ -34,11 +29,6 @@ public class SimpleFaunusVertexProperty extends SimpleFaunusRelation implements 
     @Override
     public <O> O getValue() {
         return (O)value;
-    }
-
-    @Override
-    public FaunusRelationType getType() {
-        return key;
     }
 
     protected Object otherValue() {

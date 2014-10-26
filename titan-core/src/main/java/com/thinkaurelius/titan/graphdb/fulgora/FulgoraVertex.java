@@ -38,17 +38,17 @@ public class FulgoraVertex<S> extends CacheVertex {
     }
 
     @Override
-    public<A> A getProperty(String key) {
+    public<A> A value(String key) {
         if (key.equals(executor.stateKey)) {
-            return (A)executor.getVertexState(getLongId());
+            return (A)executor.getVertexState(longId());
         } else if (processedProperties.containsKey(key)) {
             return (A)processedProperties.get(key);
         } else return null;
     }
 
     @Override
-    public<A> A getProperty(PropertyKey key) {
-        return getProperty(key.name());
+    public<A> A value(PropertyKey key) {
+        return value(key.name());
     }
 
     @Override
@@ -68,8 +68,8 @@ public class FulgoraVertex<S> extends CacheVertex {
      * @return
      */
     @Override
-    public VertexLabel getVertexLabel() {
-        Long labelid = getProperty(BaseLabel.VertexLabelEdge.name());
+    public VertexLabel vertexLabel() {
+        Long labelid = value(BaseLabel.VertexLabelEdge.name());
         if (labelid==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)tx().getInternalVertex(labelid);
     }

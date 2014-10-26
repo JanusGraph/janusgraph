@@ -1,17 +1,13 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -19,9 +15,6 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -79,7 +72,10 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
                 if (labelValue instanceof String) ElementHelper.validateLabel((String) labelValue);
             }
         }
-        VertexLabel label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String)labelValue);
+        VertexLabel label = BaseVertexLabel.DEFAULT_VERTEXLABEL;
+        if (labelValue!=null) {
+            label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
+        }
 
         final TitanVertex vertex = addVertex(id, label);
         ElementHelper.attachProperties(vertex, keyValues);
@@ -92,7 +88,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
         long vertexId;
         if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
-            vertexId = ((TitanVertex) id).getLongId();
+            vertexId = ((TitanVertex) id).longId();
         else if (id instanceof Long) {
             vertexId = (Long) id;
         } else if (id instanceof Number) {
@@ -119,7 +115,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         RelationIdentifier rid = null;
 
         try {
-            if (id instanceof TitanEdge) rid = (RelationIdentifier) ((TitanEdge) id).getId();
+            if (id instanceof TitanEdge) rid = (RelationIdentifier) ((TitanEdge) id).id();
             else if (id instanceof RelationIdentifier) rid = (RelationIdentifier) id;
             else if (id instanceof String) rid = RelationIdentifier.parse((String) id);
             else if (id instanceof long[]) rid = RelationIdentifier.get((long[]) id);

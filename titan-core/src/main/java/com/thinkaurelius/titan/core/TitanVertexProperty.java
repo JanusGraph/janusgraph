@@ -21,23 +21,13 @@ public interface TitanVertexProperty<V> extends TitanRelation, VertexProperty<V>
     @Override
     public TitanVertex getElement();
 
-    @Override
-    public default PropertyKey getType() {
-        return getPropertyKey();
-    }
-
-    public PropertyKey getPropertyKey();
-
     /**
-     * Returns the value of this property (possibly cast to the expected type).
-     *
-     * @return value of this property
-     * @throws ClassCastException if the value cannot be cast to the expected type
+     * Returns the {@link PropertyKey} for this property
+     * 
+     * @return
      */
-    public<O> O getValue();
-
-    public default V value() {
-        return getValue();
+    public default PropertyKey propertyKey() {
+        return (PropertyKey)getType();
     }
 
 }

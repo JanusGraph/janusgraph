@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
+import com.thinkaurelius.titan.graphdb.util.ElementHelper
 import com.tinkerpop.gremlin.structure.Vertex
 
 import static org.junit.Assert.*
@@ -224,11 +225,11 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         sequentialUidTask(50, { tx, v ->
             int c = 0
             for (int i = 0; i < schema.getVertexPropKeys(); i++) {
-                if (v.getProperty(schema.getVertexPropertyName(i)) != null) {
+                if (v.value(schema.getVertexPropertyName(i)) != null) {
                     c++
                 }
             }
-            def k = v.getPropertyKeys().size() - 1;
+            def k = ElementHelper.getPropertyKeys(v) - 1;
             assertTrue(k + "vs" + c, k <= c)
             assertTrue(0 <= c)
         })
@@ -237,7 +238,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
     @Test
     public void testSingleVertexProperty() {
         sequentialUidTask(50, { tx, v ->
-            assertNotNull(v.getProperty(Schema.UID_PROP));
+            assertNotNull(v.value(Schema.UID_PROP));
         })
     }
 
@@ -254,12 +255,12 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         int n = 314159
         sequentialUidTask { tx, vertex ->
             visited++
-            for (p in vertex.getPropertyKeys()) {
+            for (p in ElementHelper.getPropertyKeys(v)) {
                 if (p.equals(Schema.UID_PROP))
                     continue
-                int old = vertex.getProperty(p)
-                vertex.removeProperty(p)
-                vertex.setProperty(p, old * n)
+                int old = vertex.value(p)
+                vertex.property(p).remove()
+                vertex.property(p, old * n)
                 n *= n
                 propsModified++
                 break
@@ -275,14 +276,14 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         long last = -1
         String labelName = schema.getEdgeLabelName(0)
         sequentialUidTask { tx, vertex ->
-            if (-1 != last && last != vertex.getId()) {
-                Vertex target = tx.getVertex(last)
+            if (-1 != last && last != vertex.id()) {
+                Vertex target = tx.v(last)
                 vertex.addEdge(labelName, target)
                 edgesAdded++
             } else {
                 skipped++
             }
-            last = vertex.getId()
+            last = vertex.id()
         }
         assertTrue(0 < edgesAdded + skipped)
         assertTrue(edgesAdded > skipped)

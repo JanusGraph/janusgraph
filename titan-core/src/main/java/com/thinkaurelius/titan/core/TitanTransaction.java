@@ -48,30 +48,12 @@ public interface TitanTransaction extends TitanGraphTransaction {
     public TitanVertex addVertex(Long id, VertexLabel vertexLabel);
 
     /**
-     * Retrieves all vertices which have a property of the given key with the specified value.
-     * <p/>
-     * For this operation to be efficient, please ensure that the given property key is indexed.
-     * Some storage backends may not support this method without a pre-configured index.
+     * Retrieves the vertex for the specified id.
      *
-     * @param key       key
-     * @param value value value
-     * @return All vertices which have a property of the given key with the specified value.
-     * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
+     * @param id id of the vertex to retrieve
+     * @return vertex with the given id if it exists, else null
      */
-    public Iterable<TitanVertex> getVertices(PropertyKey key, Object value);
-
-    /**
-     * Retrieves all vertices which have a property of the given key with the specified value.
-     * <p/>
-     * For this operation to be efficient, please ensure that the given property key is indexed.
-     * Some storage backends may not support this method without a pre-configured index.
-     *
-     * @param key       key
-     * @param value value value
-     * @return All edges which have a property of the given key with the specified value.
-     * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
-     */
-    public Iterable<TitanEdge> getEdges(PropertyKey key, Object value);
+    public TitanVertex getVertex(long id);
 
    /* ---------------------------------------------------------------
     * Closing and admin

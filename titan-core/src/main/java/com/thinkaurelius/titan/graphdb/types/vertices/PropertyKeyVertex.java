@@ -13,13 +13,13 @@ public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey
     }
 
     @Override
-    public Class<?> getDataType() {
+    public Class<?> dataType() {
         return getDefinition().getValue(TypeDefinitionCategory.DATATYPE,Class.class);
     }
 
     @Override
-    public Cardinality getCardinality() {
-        return super.getMultiplicity().getCardinality();
+    public Cardinality cardinality() {
+        return super.multiplicity().getCardinality();
     }
 
     @Override

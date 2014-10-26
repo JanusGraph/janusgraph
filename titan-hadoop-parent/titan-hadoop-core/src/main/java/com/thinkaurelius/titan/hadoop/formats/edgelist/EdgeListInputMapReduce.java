@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.FaunusElement;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -70,7 +69,7 @@ public class EdgeListInputMapReduce {
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_PROCESSED, 1L);
                 this.counter++;
             } else {
-                final long id = value.getLongId();
+                final long id = value.longId();
                 FaunusVertex vertex = this.map.get(id);
                 if (null == vertex) {
                     vertex = new FaunusVertex(faunusConf, id);
@@ -91,7 +90,7 @@ public class EdgeListInputMapReduce {
 
         private void flush(final Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             for (final FaunusVertex vertex : this.map.values()) {
-                this.longWritable.set(vertex.getLongId());
+                this.longWritable.set(vertex.longId());
                 context.write(this.longWritable, vertex);
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_EMITTED, 1L);
             }

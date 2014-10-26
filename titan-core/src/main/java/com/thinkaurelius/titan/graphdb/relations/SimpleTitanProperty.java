@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.gremlin.structure.Element;
 
@@ -15,12 +17,12 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
 
     private final InternalRelationType type;
     private final V value;
-    private final TitanElement element;
+    private final InternalRelation relation;
 
-    public SimpleTitanProperty(TitanElement element, RelationType type, V value) {
+    public SimpleTitanProperty(InternalRelation relation, RelationType type, V value) {
         this.type = (InternalRelationType)type;
         this.value = value;
-        this.element = element;
+        this.relation = relation;
     }
 
     @Override
@@ -40,16 +42,17 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
 
     @Override
     public boolean isHidden() {
-        return ((InternalRelationType) type).isHiddenType();
+        return type.isHiddenType();
     }
 
     @Override
     public <E extends Element> E getElement() {
-        return (E)element;
+        return (E) relation;
     }
 
     @Override
     public void remove() {
-        element.removeProperty(type);
+        Preconditions.checkArgument(!relation.isRemoved(), "Cannot modified removed relation");
+        relation.it().removePropertyDirect(type);
     }
 }

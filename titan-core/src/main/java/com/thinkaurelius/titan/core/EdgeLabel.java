@@ -39,6 +39,6 @@ public interface EdgeLabel extends RelationType {
      *
      * @return
      */
-    public Multiplicity getMultiplicity();
+    public Multiplicity multiplicity();
 
 }

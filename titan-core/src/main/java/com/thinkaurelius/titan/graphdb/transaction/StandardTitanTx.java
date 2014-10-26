@@ -244,7 +244,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (config.isReadOnly())
             throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
         for (TitanVertex v : vertices) {
-            if (v.hasId() && idInspector.isUnmodifiableVertex(v.getLongId()) && !v.isNew())
+            if (v.hasId() && idInspector.isUnmodifiableVertex(v.longId()) && !v.isNew())
                 throw new SchemaViolationException("Cannot modify unmodifiable vertex: "+v);
         }
         verifyAccess(vertices);
@@ -299,31 +299,31 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public boolean isPartitionedVertex(TitanVertex vertex) {
-        return vertex.hasId() && idInspector.isPartitionedVertex(vertex.getLongId());
+        return vertex.hasId() && idInspector.isPartitionedVertex(vertex.longId());
     }
 
     public InternalVertex getCanonicalVertex(InternalVertex partitionedVertex) {
         Preconditions.checkArgument(isPartitionedVertex(partitionedVertex));
-        long canonicalId = idManager.getCanonicalVertexId(partitionedVertex.getLongId());
-        if (canonicalId==partitionedVertex.getLongId()) return partitionedVertex;
+        long canonicalId = idManager.getCanonicalVertexId(partitionedVertex.longId());
+        if (canonicalId==partitionedVertex.longId()) return partitionedVertex;
         else return getExistingVertex(canonicalId);
     }
 
     public InternalVertex getOtherPartitionVertex(TitanVertex partitionedVertex, long otherPartition) {
         Preconditions.checkArgument(isPartitionedVertex(partitionedVertex));
-        return getExistingVertex(idManager.getPartitionedVertexId(partitionedVertex.getLongId(), otherPartition));
+        return getExistingVertex(idManager.getPartitionedVertexId(partitionedVertex.longId(), otherPartition));
     }
 
     public InternalVertex[] getAllRepresentatives(TitanVertex partitionedVertex, boolean restrict2Partitions) {
         Preconditions.checkArgument(isPartitionedVertex(partitionedVertex));
         long[] ids;
         if (!restrict2Partitions || !config.hasRestrictedPartitions()) {
-            ids = idManager.getPartitionedVertexRepresentatives(partitionedVertex.getLongId());
+            ids = idManager.getPartitionedVertexRepresentatives(partitionedVertex.longId());
         } else {
             int[] restrictedParititions = config.getRestrictedPartitions();
             ids = new long[restrictedParititions.length];
             for (int i=0;i<ids.length;i++) {
-                ids[i]=idManager.getPartitionedVertexId(partitionedVertex.getLongId(),restrictedParititions[i]);
+                ids[i]=idManager.getPartitionedVertexId(partitionedVertex.longId(),restrictedParititions[i]);
             }
         }
         Preconditions.checkArgument(ids.length>0);
@@ -337,7 +337,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      * ------------------------------------ Vertex Handling ------------------------------------
      */
 
-    @Override
     public boolean containsVertex(final long vertexid) {
         return getVertex(vertexid) != null;
     }
@@ -362,7 +361,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
-    public Map<Long,TitanVertex>  getVertices(long... ids) {
+    public Map<Long,TitanVertex> vertices(long... ids) {
         verifyOpen();
         Preconditions.checkArgument(ids != null, "Need to provide valid ids");
         if (null != config.getGroupName()) {
@@ -480,22 +479,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
             addEdge(vertex, (VertexLabelVertex) label, BaseLabel.VertexLabelEdge);
         }
-        vertexCache.add(vertex, vertex.getLongId());
+        vertexCache.add(vertex, vertex.longId());
         return vertex;
 
     }
 
     @Override
-    public TitanVertex addVertex() {
-        return addVertex((VertexLabel)BaseVertexLabel.DEFAULT_VERTEXLABEL);
-    }
-
-    @Override
     public TitanVertex addVertex(String vertexLabel) {
-        return addVertex((VertexLabel)getOrCreateVertexLabel(vertexLabel));
+        return addVertex(getOrCreateVertexLabel(vertexLabel));
     }
 
-    @Override
     public TitanVertex addVertex(VertexLabel vertexLabel) {
         return addVertex(null,vertexLabel);
     }
@@ -517,7 +510,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return Iterables.filter(allVertices,new Predicate<InternalVertex>() {
             @Override
             public boolean apply(@Nullable InternalVertex internalVertex) {
-                return !isPartitionedVertex(internalVertex) || internalVertex.getLongId()==idInspector.getCanonicalVertexId(internalVertex.getLongId());
+                return !isPartitionedVertex(internalVertex) || internalVertex.longId()==idInspector.getCanonicalVertexId(internalVertex.longId());
             }
         });
     }
@@ -532,7 +525,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     public final Object verifyAttribute(PropertyKey key, Object attribute) {
         if (attribute==null) throw new SchemaViolationException("Property value cannot be null");
-        Class<?> datatype = key.getDataType();
+        Class<?> datatype = key.dataType();
         if (datatype.equals(Object.class)) {
             return attribute;
         } else {
@@ -581,7 +574,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     }
                 }
             }
-            deletedRelations.put(relation.getLongId(), relation);
+            deletedRelations.put(relation.longId(), relation);
         }
     }
 
@@ -609,7 +602,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     private TransactionLock getUniquenessLock(final TitanVertex out, final InternalRelationType type, final Object in) {
-        Multiplicity multiplicity = type.getMultiplicity();
+        Multiplicity multiplicity = type.multiplicity();
         TransactionLock uniqueLock = FakeLock.INSTANCE;
         if (config.hasVerifyUniqueness() && multiplicity.isConstrained()) {
             uniqueLock = null;
@@ -635,22 +628,22 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         outVertex = ((InternalVertex) outVertex).it();
         inVertex = ((InternalVertex) inVertex).it();
         Preconditions.checkNotNull(label);
-        Multiplicity multiplicity = label.getMultiplicity();
+        Multiplicity multiplicity = label.multiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
         uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
                 if (multiplicity==Multiplicity.SIMPLE) {
-                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).titanEdges()))
+                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).edges()))
                             throw new SchemaViolationException("An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.name());
                 }
                 if (multiplicity.isUnique(Direction.OUT)) {
-                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).titanEdges()))
+                    if (!Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).edges()))
                             throw new SchemaViolationException("An edge with the given label already exists on the out-vertex and the label [%s] is out-unique", label.name());
                 }
                 if (multiplicity.isUnique(Direction.IN)) {
-                    if (!Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).titanEdges()))
+                    if (!Iterables.isEmpty(query(inVertex).type(label).direction(Direction.IN).edges()))
                             throw new SchemaViolationException("An edge with the given label already exists on the in-vertex and the label [%s] is in-unique", label.name());
                 }
             }
@@ -669,12 +662,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             if (!success) throw new AssertionError("Could not connect relation: " + r);
         }
         addedRelations.add(r);
-        for (int pos = 0; pos < r.getLen(); pos++) vertexCache.add(r.getVertex(pos), r.getVertex(pos).getLongId());
+        for (int pos = 0; pos < r.getLen(); pos++) vertexCache.add(r.getVertex(pos), r.getVertex(pos).longId());
         if (TypeUtil.hasSimpleInternalVertexKeyIndex(r)) newVertexIndexEntries.add((TitanVertexProperty) r);
     }
 
     public TitanVertexProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
-        if (key.getCardinality()== Cardinality.SINGLE) return setProperty(vertex, key, value);
+        if (key.cardinality()== Cardinality.SINGLE) return setProperty(vertex, key, value);
         else return addPropertyInternal(vertex, key, value);
     }
 
@@ -684,7 +677,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         vertex = ((InternalVertex) vertex).it();
         Preconditions.checkNotNull(key);
         final Object normalizedValue = verifyAttribute(key, value);
-        Cardinality cardinality = key.getCardinality();
+        Cardinality cardinality = key.cardinality();
 
         //Determine unique indexes
         List<IndexLockTuple> uniqueIndexTuples = new ArrayList<IndexLockTuple>();
@@ -708,7 +701,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanVertexProperty>() {
                         @Override
                         public boolean apply(@Nullable TitanVertexProperty titanProperty) {
-                            return normalizedValue.equals(titanProperty.getValue());
+                            return normalizedValue.equals(titanProperty.value());
                         }
                     })))
                             throw new SchemaViolationException("A property with the given key [%s] and value [%s] already exists on the vertex and the property key is defined as set-valued", key.name(), normalizedValue);
@@ -731,7 +724,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanVertexProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
-        if (key.getCardinality()!=Cardinality.SINGLE) throw new UnsupportedOperationException("Not a single key: "+key+". Use addProperty instead");
+        if (key.cardinality()!=Cardinality.SINGLE) throw new UnsupportedOperationException("Not a single key: "+key+". Use addProperty instead");
 
         TransactionLock uniqueLock = FakeLock.INSTANCE;
         try {
@@ -739,7 +732,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 //Acquire uniqueness lock, remove and add
                 uniqueLock = getLock(vertex, key, Direction.OUT);
                 uniqueLock.lock(LOCK_TIMEOUT);
-                vertex.removeProperty(key);
+                vertex.property(key.name()).remove();
             } else {
                 //Only delete in-memory
                 InternalVertex v = (InternalVertex) vertex;
@@ -787,7 +780,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
 
         graph.assignID(schemaVertex, BaseVertexLabel.DEFAULT_VERTEXLABEL);
-        Preconditions.checkArgument(schemaVertex.getLongId() > 0);
+        Preconditions.checkArgument(schemaVertex.longId() > 0);
         if (schemaCategory.hasName()) addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
         addProperty(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
         addProperty(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
@@ -795,10 +788,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
             TitanVertexProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
-            p.setProperty(BaseKey.SchemaDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
+            p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(def.getKey()));
         }
-        vertexCache.add(schemaVertex, schemaVertex.getLongId());
-        if (schemaCategory.hasName()) newTypeCache.put(schemaCategory.getSchemaName(name), schemaVertex.getLongId());
+        vertexCache.add(schemaVertex, schemaVertex.longId());
+        if (schemaCategory.hasName()) newTypeCache.put(schemaCategory.getSchemaName(name), schemaVertex.longId());
         return schemaVertex;
 
     }
@@ -978,14 +971,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public void executeMultiQuery(final Collection<InternalVertex> vertices, final SliceQuery sq) {
         LongArrayList vids = new LongArrayList(vertices.size());
         for (InternalVertex v : vertices) {
-            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) vids.add(v.getLongId());
+            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) vids.add(v.longId());
         }
 
         if (!vids.isEmpty()) {
             List<EntryList> results = graph.edgeMultiQuery(vids, sq, txHandle);
             int pos = 0;
             for (TitanVertex v : vertices) {
-                if (pos<vids.size() && vids.get(pos) == v.getLongId()) {
+                if (pos<vids.size() && vids.get(pos) == v.longId()) {
                     final EntryList vresults = results.get(pos);
                     ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                         @Override
@@ -1036,7 +1029,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         @Override
         public boolean isDeleted(VertexCentricQuery query, TitanRelation result) {
-            return deletedRelations.containsKey(result.getLongId()) || result != ((InternalRelation) result).it();
+            return deletedRelations.containsKey(result.longId()) || result != ((InternalRelation) result).it();
         }
 
         @Override
@@ -1050,7 +1043,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             EntryList iter = v.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                 @Override
                 public EntryList get(SliceQuery query) {
-                    return graph.edgeQuery(v.getLongId(), query, txHandle);
+                    return graph.edgeQuery(v.longId(), query, txHandle);
                 }
             });
 
@@ -1265,20 +1258,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public TitanIndexQuery indexQuery(String indexName, String query) {
         return new IndexQueryBuilder(this,indexSerializer).setIndex(indexName).setQuery(query);
-    }
-
-    @Override
-    public Iterable<TitanVertex> getVertices(PropertyKey key, Object attribute) {
-        Preconditions.checkNotNull(key);
-        Preconditions.checkNotNull(attribute);
-        return (Iterable) query().has(key, Cmp.EQUAL, attribute).vertices();
-    }
-
-    @Override
-    public Iterable<TitanEdge> getEdges(PropertyKey key, Object attribute) {
-        Preconditions.checkNotNull(key);
-        Preconditions.checkNotNull(attribute);
-        return (Iterable) query().has(key, Cmp.EQUAL, attribute).edges();
     }
 
     /*

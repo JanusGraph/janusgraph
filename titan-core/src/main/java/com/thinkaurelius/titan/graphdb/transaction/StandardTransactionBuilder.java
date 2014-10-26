@@ -85,8 +85,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.writableCustomOptions = GraphDatabaseConfiguration.buildConfiguration();
         this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
-        setVertexCacheSize(graphConfig.getTxVertexCacheSize());
-        setDirtyVertexSize(graphConfig.getTxDirtyVertexSize());
+        vertexCacheSize(graphConfig.getTxVertexCacheSize());
+        dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
     public StandardTransactionBuilder threadBound() {
@@ -118,7 +118,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setVertexCacheSize(int size) {
+    public StandardTransactionBuilder vertexCacheSize(int size) {
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
         this.indexCacheWeight = size / 2;
@@ -126,7 +126,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public TransactionBuilder setDirtyVertexSize(int size) {
+    public TransactionBuilder dirtyVertexSize(int size) {
         this.dirtyVertexSize = size;
         return this;
     }
@@ -151,7 +151,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit) {
+    public StandardTransactionBuilder commitTime(long timestampSinceEpoch, TimeUnit unit) {
         this.userCommitTime = getTimestampProvider().getTime(timestampSinceEpoch,unit);
         return this;
     }
@@ -162,19 +162,19 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setGroupName(String p) {
+    public StandardTransactionBuilder groupName(String p) {
         this.groupName = p;
         return this;
     }
 
     @Override
-    public StandardTransactionBuilder setLogIdentifier(String logName) {
+    public StandardTransactionBuilder logIdentifier(String logName) {
         this.logIdentifier = logName;
         return this;
     }
 
     @Override
-    public TransactionBuilder setRestrictedPartitions(int[] partitions) {
+    public TransactionBuilder restrictedPartitions(int[] partitions) {
         Preconditions.checkNotNull(partitions);
         this.restrictedPartitions=partitions;
         return this;
@@ -182,7 +182,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
 
     @Override
-    public TransactionBuilder setCustomOption(String k, Object v) {
+    public TransactionBuilder customOption(String k, Object v) {
         writableCustomOptions.set((ConfigOption<Object>)ConfigElement.parse(ROOT_NS, k).element, v);
         return this;
     }

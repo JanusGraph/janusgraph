@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
+import com.thinkaurelius.titan.graphdb.query.QueryUtil
 import com.tinkerpop.gremlin.util.Gremlin
 
 import static org.junit.Assert.*
@@ -124,7 +125,7 @@ abstract class GroovySpeedTestSupport {
 
         while (uids.hasNext()) {
             long u = uids.next()
-            Vertex v = Iterables.getOnlyElement(tx.getVertices(Schema.UID_PROP, u))
+            Vertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,Schema.UID_PROP, u))
             assertNotNull(v)
             vbuf[vloaded++] = v
             if (vloaded == chunksize) {
@@ -151,7 +152,7 @@ abstract class GroovySpeedTestSupport {
         assertNotNull(pkey)
 
         def tx = graph.newTransaction()
-        def v = Iterables.getOnlyElement(tx.getVertices(Schema.UID_PROP, uid))
+        def v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,Schema.UID_PROP, uid))
 //            def v = graph.V(Schema.UID_PROP, uid).next()
         assertNotNull(v)
         closure(v, label, pkey)

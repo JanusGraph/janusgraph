@@ -47,7 +47,7 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
     }
 
     @Override
-    public Multiplicity getMultiplicity() {
+    public Multiplicity multiplicity() {
         return getDefinition().getValue(TypeDefinitionCategory.MULTIPLICITY, Multiplicity.class);
     }
 

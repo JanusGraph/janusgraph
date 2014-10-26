@@ -24,7 +24,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return id;
     }
 

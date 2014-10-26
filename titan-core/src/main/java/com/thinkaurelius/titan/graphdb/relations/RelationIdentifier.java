@@ -32,9 +32,9 @@ public final class RelationIdentifier {
 
     static final RelationIdentifier get(InternalRelation r) {
         if (r.hasId()) {
-            return new RelationIdentifier(r.getVertex(0).getLongId(),
-                    r.getType().getLongId(),
-                    r.getLongId(),(r.isEdge()?r.getVertex(1).getLongId():0));
+            return new RelationIdentifier(r.getVertex(0).longId(),
+                    r.getType().longId(),
+                    r.longId(),(r.isEdge()?r.getVertex(1).longId():0));
         } else return null;
     }
 
@@ -122,14 +122,14 @@ public final class RelationIdentifier {
                 v = tmp;
                 dir = Direction.IN;
             }
-            rels = ((VertexCentricQueryBuilder)v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).titanEdges();
+            rels = ((VertexCentricQueryBuilder)v.query()).noPartitionRestriction().types((EdgeLabel) type).direction(dir).adjacent(other).edges();
         } else {
             rels = ((VertexCentricQueryBuilder)v.query()).noPartitionRestriction().types((PropertyKey)type).properties();
         }
 
         for (TitanRelation r : rels) {
             //Find current or previous relation
-            if (r.getLongId() == relationId ||
+            if (r.longId() == relationId ||
                     ((r instanceof StandardRelation) && ((StandardRelation)r).getPreviousID()==relationId)) return r;
         }
         return null;

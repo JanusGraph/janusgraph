@@ -179,16 +179,16 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                                 if (index.getElement()==ElementCategory.VERTEX && isFailedIndex.apply(index.getBackingIndexName())) {
                                     assert rel.isProperty();
                                     indexRestores.put(index.getBackingIndexName(),
-                                            new IndexRestore(rel.getVertex(0).getLongId(),ElementCategory.VERTEX,getIndexId(index)));
+                                            new IndexRestore(rel.getVertex(0).longId(),ElementCategory.VERTEX,getIndexId(index)));
                                 }
                             }
                             //See if relation itself is affected
                             for (RelationType relType : rel.getPropertyKeysDirect()) {
                                 for (MixedIndexType index : getMixedIndexes(relType)) {
                                     if (index.getElement().isInstance(rel) && isFailedIndex.apply(index.getBackingIndexName())) {
-                                        assert rel.getId() instanceof RelationIdentifier;
+                                        assert rel.id() instanceof RelationIdentifier;
                                         indexRestores.put(index.getBackingIndexName(),
-                                                new IndexRestore(rel.getId(),ElementCategory.getByClazz(rel.getClass()),getIndexId(index)));
+                                                new IndexRestore(rel.id(),ElementCategory.getByClazz(rel.getClass()),getIndexId(index)));
                                     }
                                 }
                             }
@@ -294,7 +294,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private static long getIndexId(IndexType index) {
         SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
         assert base instanceof TitanSchemaVertex;
-        return base.getLongId();
+        return base.longId();
     }
 
     private static Iterable<MixedIndexType> getMixedIndexes(RelationType type) {

@@ -4,7 +4,6 @@ import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
@@ -25,7 +24,7 @@ public class EdgeSerializerTest {
     @Test
     public void testValueOrdering() {
         StandardTitanGraph graph = (StandardTitanGraph) StorageSetup.getInMemoryGraph();
-        TitanManagement mgmt = graph.getManagementSystem();
+        TitanManagement mgmt = graph.openManagement();
         EdgeLabel father = mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         for (int i=1;i<=5;i++) mgmt.makePropertyKey("key" + i).dataType(Integer.class).make();
         mgmt.commit();

@@ -22,7 +22,7 @@ public class PropertyKeyDefinition extends RelationTypeDefinition {
     }
 
     public PropertyKeyDefinition(PropertyKey key) {
-        this(key.name(),key.getLongId(),key.getCardinality(),key.getDataType());
+        this(key.name(),key.longId(),key.cardinality(),key.dataType());
     }
 
     public Class<?> getDataType() {

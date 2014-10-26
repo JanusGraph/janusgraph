@@ -21,7 +21,7 @@ public class VertexArrayList implements VertexListInternal {
     public static final Comparator<TitanVertex> VERTEX_ID_COMPARATOR = new Comparator<TitanVertex>() {
         @Override
         public int compare(TitanVertex o1, TitanVertex o2) {
-            return Long.compare(o1.getLongId(),o2.getLongId());
+            return Long.compare(o1.longId(),o2.longId());
         }
     };
 
@@ -46,13 +46,13 @@ public class VertexArrayList implements VertexListInternal {
 
     @Override
     public void add(TitanVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size()-1).getLongId()<=n.getLongId());
+        if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size()-1).longId()<=n.longId());
         vertices.add(n);
     }
 
     @Override
     public long getID(int pos) {
-        return vertices.get(pos).getLongId();
+        return vertices.get(pos).longId();
     }
 
     @Override
@@ -120,7 +120,7 @@ public class VertexArrayList implements VertexListInternal {
     private static final LongArrayList toLongList(List<TitanVertex> vertices) {
         LongArrayList result = new LongArrayList(vertices.size());
         for (TitanVertex n : vertices) {
-            result.add(n.getLongId());
+            result.add(n.longId());
         }
         return result;
     }

@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
 
@@ -43,7 +44,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 	 */
 
     @Override
-    public TitanMultiVertexQuery addVertex(TitanVertex vertex) {
+    public TitanMultiVertexQuery addVertex(Vertex vertex) {
         assert vertex != null;
         assert vertex instanceof InternalVertex;
         vertices.add(((InternalVertex)vertex).it());
@@ -51,8 +52,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
-    public TitanMultiVertexQuery addAllVertices(Collection<TitanVertex> vertices) {
-        for (TitanVertex v : vertices) addVertex(v);
+    public TitanMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices) {
+        for (Vertex v : vertices) addVertex(v);
         return this;
     }
 

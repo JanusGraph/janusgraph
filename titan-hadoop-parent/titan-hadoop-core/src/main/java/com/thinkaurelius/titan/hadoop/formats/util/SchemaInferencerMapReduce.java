@@ -54,27 +54,27 @@ public class SchemaInferencerMapReduce {
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             //Vertex labels
-            VertexLabel vl = value.getVertexLabel();
+            VertexLabel vl = value.vertexLabel();
             if (vl!= BaseVertexLabel.DEFAULT_VERTEXLABEL) {
-                this.funnyVertex.setProperty("v"+vl.name(),String.class.getName());
+                this.funnyVertex.property("v" + vl.name(), String.class.getName());
             }
 
             //Vertex keys
             for (final String property : value.getPropertyKeys()) {
-                this.funnyVertex.setProperty("k" + property, Object.class.getName());
+                this.funnyVertex.property("k" + property, Object.class.getName());
                 // TODO: Automated type inference
             }
 
             //Edge Labels
             for (final Edge edge : value.getEdges(Direction.OUT)) {
-                this.funnyVertex.setProperty("l" + edge.getLabel(), String.class.getName());
+                this.funnyVertex.property("l" + edge.getLabel(), String.class.getName());
                 //Edge keys
                 for (final String property : edge.getPropertyKeys()) {
-                    this.funnyVertex.setProperty("k" + property, Object.class.getName());
+                    this.funnyVertex.property("k" + property, Object.class.getName());
                 }
             }
 
-            this.longWritable.set(value.getLongId());
+            this.longWritable.set(value.longId());
             context.write(this.longWritable, value);
         }
 

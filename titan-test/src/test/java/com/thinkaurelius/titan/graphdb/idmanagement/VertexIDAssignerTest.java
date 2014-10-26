@@ -90,9 +90,9 @@ public class VertexIDAssignerTest {
                     if (old != null) {
                         edge = (InternalRelation) old.addEdge("knows",next);
                     }
-                    InternalRelation property = (InternalRelation) next.addProperty("age", 25);
+                    InternalRelation property = (InternalRelation) next.property("age", 25);
                     if (flush) {
-                        idAssigner.assignID((InternalVertex) next,next.getVertexLabel());
+                        idAssigner.assignID((InternalVertex) next,next.vertexLabel());
                         idAssigner.assignID(property);
                         if (edge != null) idAssigner.assignID(edge);
                     } else {
@@ -105,7 +105,7 @@ public class VertexIDAssignerTest {
                 if (!flush) idAssigner.assignIDs(relations);
                 if (trial == -1) {
                     for (TitanVertex v : vertices) {
-                        System.out.println(idAssigner.getIDManager().getPartitionId(v.getLongId()));
+                        System.out.println(idAssigner.getIDManager().getPartitionId(v.longId()));
                     }
                     System.out.println("_____________________________________________");
                 }

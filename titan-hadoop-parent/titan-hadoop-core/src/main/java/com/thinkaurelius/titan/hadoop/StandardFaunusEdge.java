@@ -64,11 +64,6 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
         this.readFields(in);
     }
 
-    @Override
-    public EdgeLabel getEdgeLabel() {
-        return (EdgeLabel)getType();
-    }
-
 
     @Override
     public TitanVertex getVertex(int pos) {
@@ -92,21 +87,11 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
     }
 
     @Override
-    public TitanVertex getOtherVertex(TitanVertex vertex) {
+    public TitanVertex otherVertex(TitanVertex vertex) {
         for (int i=0;i<2;i++) {
             if (getVertex(i).equals(vertex)) return getVertex((i+1)%2);
         }
         throw new IllegalArgumentException("Edge is not incident on vertex: "+ vertex);
-    }
-
-    @Override
-    public boolean isDirected() {
-        return getEdgeLabel().isDirected();
-    }
-
-    @Override
-    public boolean isUnidirected() {
-        return getEdgeLabel().isUnidirected();
     }
 
     public long getVertexId(final Direction direction) {
@@ -155,7 +140,7 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(outVertex).append(inVertex).append(getLongId()).append(getType()).toHashCode();
+        return new HashCodeBuilder().append(outVertex).append(inVertex).append(longId()).append(getType()).toHashCode();
     }
 
     @Override
@@ -163,9 +148,9 @@ public class StandardFaunusEdge extends StandardFaunusRelation implements Faunus
         if (this == oth) return true;
         else if (oth == null || !(oth instanceof TitanEdge)) return false;
         TitanEdge e = (TitanEdge) oth;
-        if (hasId() || e.hasId()) return getLongId()==e.getLongId();
-        return getType().equals(e.getEdgeLabel()) && outVertex==e.getVertex(Direction.OUT).getLongId() &&
-                inVertex==e.getVertex(Direction.IN).getLongId();
+        if (hasId() || e.hasId()) return longId()==e.longId();
+        return getType().equals(e.edgeLabel()) && outVertex==e.vertex(Direction.OUT).longId() &&
+                inVertex==e.vertex(Direction.IN).longId();
     }
 
 

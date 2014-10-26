@@ -126,15 +126,15 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertTrue(getId(g)>0);
             gids[i]=getId(g);
             if (i>0) {
-                g.addEdge("base",tx.getVertex(gids[0]));
+                g.addEdge("base",tx.v(gids[0]));
             }
             if (i%2==1) {
-                g.addEdge("one",tx.getVertex(gids[i-1]));
+                g.addEdge("one",tx.v(gids[i-1]));
             }
         }
 
         for (int i = 0; i < numG; i++) {
-            Vertex g = tx.getVertex(gids[i]);
+            Vertex g = tx.v(gids[i]);
             assertCount(1,g.bothE("one"));
             assertCount(1, g.toE(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
             assertCount(0, g.toE(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
@@ -214,12 +214,12 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
                 if (partition<0) partition=pid;
                 else assertEquals(partition,pid);
                 int numRels = 0;
-                TitanVertex v = txx.v(vs[vi].getLongId());
+                TitanVertex v = txx.v(vs[vi].longId());
                 for (TitanRelation r : v.query().relations()) {
                     numRels++;
                     assertEquals(partition,getPartitionID(r,idManager));
                     if (r instanceof TitanEdge) {
-                        TitanVertex o = ((TitanEdge)r).getOtherVertex(v);
+                        TitanVertex o = ((TitanEdge)r).otherVertex(v);
                         assertTrue(o.equals(g1) || o.equals(g2));
                     }
                 }
@@ -255,7 +255,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             numV*=vPerTx;
             int[] partarr = new int[numP]; int i=0;
             for (Integer part : parts) partarr[i++]=part;
-            TitanTransaction tx2 = graph.buildTransaction().setRestrictedPartitions(partarr).readOnly().start();
+            TitanTransaction tx2 = graph.buildTransaction().restrictedPartitions(partarr).readOnly().start();
             //Copied from above
             g1 = tx2.v(gids[0]);
             assertEquals(0, g1.<Integer>value("gid").intValue());
@@ -336,20 +336,20 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         graph.tx().rollback();
         graph.addVertex(label);
         graph.tx().commit();
-        mgmt = graph.getManagementSystem();
+        mgmt = graph.openManagement();
         VertexLabel vl = mgmt.getVertexLabel(label);
         assertTrue(vl.isPartitioned());
         mgmt.rollback();
     }
 
     public static int getPartitionID(TitanVertex vertex, IDManager idManager) {
-        long p = idManager.getPartitionId(vertex.getLongId());
+        long p = idManager.getPartitionId(vertex.longId());
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }
 
     public static int getPartitionID(TitanRelation relation, IDManager idManager) {
-        long p = relation.getLongId() & (idManager.getPartitionBound()-1);
+        long p = relation.longId() & (idManager.getPartitionBound()-1);
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }

@@ -43,7 +43,7 @@ public interface TransactionBuilder {
      * @param size
      * @return
      */
-    public TransactionBuilder setVertexCacheSize(int size);
+    public TransactionBuilder vertexCacheSize(int size);
 
     /**
      * Configures the initial size of the map of modified vertices held by this
@@ -54,7 +54,7 @@ public interface TransactionBuilder {
      * @param size initial size of the transaction's dirty vertex collection
      * @return
      */
-    public TransactionBuilder setDirtyVertexSize(int size);
+    public TransactionBuilder dirtyVertexSize(int size);
 
     /**
      * Enables/disables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
@@ -103,7 +103,7 @@ public interface TransactionBuilder {
      *            units of the {@code timestampSinceEpoch argument}
      * @return
      */
-    public TransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit);
+    public TransactionBuilder commitTime(long timestampSinceEpoch, TimeUnit unit);
 
 
     /**
@@ -140,7 +140,7 @@ public interface TransactionBuilder {
      *            Metric name prefix for this transaction
      * @return
      */
-    public TransactionBuilder setGroupName(String name);
+    public TransactionBuilder groupName(String name);
 
     /**
      * Name of the log to be used for logging the mutations in this transaction. If no log identifier is set,
@@ -149,7 +149,7 @@ public interface TransactionBuilder {
      * @param logName
      * @return
      */
-    public TransactionBuilder setLogIdentifier(String logName);
+    public TransactionBuilder logIdentifier(String logName);
 
     /**
      * Configures this transaction such that queries against partitioned vertices are
@@ -158,7 +158,7 @@ public interface TransactionBuilder {
      * @param partitions
      * @return
      */
-    public TransactionBuilder setRestrictedPartitions(int[] partitions);
+    public TransactionBuilder restrictedPartitions(int[] partitions);
 
     /**
      * Configures a custom option on this transaction which will be passed through to the storage and indexing backends.
@@ -166,7 +166,7 @@ public interface TransactionBuilder {
      * @param v
      * @return
      */
-    public TransactionBuilder setCustomOption(String k, Object v);
+    public TransactionBuilder customOption(String k, Object v);
 
     /**
      * Starts and returns the transaction build by this builder

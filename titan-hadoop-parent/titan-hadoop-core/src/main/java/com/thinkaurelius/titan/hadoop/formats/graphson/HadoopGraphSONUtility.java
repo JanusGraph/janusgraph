@@ -163,7 +163,7 @@ public class HadoopGraphSONUtility {
 
         @Override
         public StandardFaunusEdge createEdge(final Object id, final FaunusVertex out, final FaunusVertex in, final String label) {
-            return new StandardFaunusEdge(configuration, convertIdentifier(id), out.getLongId(), in.getLongId(), label);
+            return new StandardFaunusEdge(configuration, convertIdentifier(id), out.longId(), in.longId(), label);
         }
 
         @Override

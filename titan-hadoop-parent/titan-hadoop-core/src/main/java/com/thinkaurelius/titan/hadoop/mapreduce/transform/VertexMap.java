@@ -47,7 +47,7 @@ public class VertexMap {
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            if (this.ids.contains(value.getLongId())) {
+            if (this.ids.contains(value.longId())) {
                 value.startPath();
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
             } else {

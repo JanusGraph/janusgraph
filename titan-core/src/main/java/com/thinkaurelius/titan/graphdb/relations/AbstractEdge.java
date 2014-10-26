@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 /**
@@ -70,21 +71,16 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     @Override
     public int getLen() {
         assert !type.isUnidirected(Direction.IN);
-        return isUnidirected()?1:2;
+        return type.isUnidirected(Direction.OUT)?1:2;
     }
 
     @Override
-    public EdgeLabel getEdgeLabel() {
-        return (EdgeLabel)type;
-    }
-
-    @Override
-    public TitanVertex getVertex(Direction dir) {
+    public TitanVertex vertex(Direction dir) {
         return getVertex(EdgeDirection.position(dir));
     }
 
     @Override
-    public TitanVertex getOtherVertex(TitanVertex vertex) {
+    public TitanVertex otherVertex(Vertex vertex) {
         if (start.equals(vertex))
             return end;
 
@@ -92,16 +88,6 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
             return start;
 
         throw new IllegalArgumentException("Edge is not incident on vertex");
-    }
-
-    @Override
-    public boolean isDirected() {
-        return ((EdgeLabel)type).isDirected();
-    }
-
-    @Override
-    public boolean isUnidirected() {
-        return ((EdgeLabel)type).isUnidirected();
     }
 
     @Override

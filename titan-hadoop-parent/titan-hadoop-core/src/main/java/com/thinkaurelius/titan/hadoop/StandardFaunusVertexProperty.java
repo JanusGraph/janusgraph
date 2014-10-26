@@ -49,7 +49,7 @@ public class StandardFaunusVertexProperty extends StandardFaunusRelation impleme
     }
 
     public StandardFaunusVertexProperty(long id, FaunusVertex vertex, FaunusPropertyKey type, Object value) {
-        this(vertex.getFaunusConf(),id,vertex.getLongId(),type,value);
+        this(vertex.getFaunusConf(),id,vertex.longId(),type,value);
     }
 
     public StandardFaunusVertexProperty(Configuration config, long id, long vertex, FaunusPropertyKey type, Object value) {
@@ -58,18 +58,18 @@ public class StandardFaunusVertexProperty extends StandardFaunusRelation impleme
         Preconditions.checkNotNull(value, "property value must be non-null");
         Preconditions.checkArgument(!type.isImplicit(),"Cannot set implicit properties: " + type);
         Preconditions.checkArgument(AttributeUtil.hasGenericDataType(type) ||
-                type.getDataType().isInstance(value),"Value does not match data type: %s",value);
+                type.dataType().isInstance(value),"Value does not match data type: %s",value);
         this.value = value;
         this.vertexid = vertex;
         log.debug("Initialized property {}", this);
     }
 
-    public Object getValue() {
+    public Object value() {
         return value;
     }
 
     @Override
-    public PropertyKey getPropertyKey() {
+    public PropertyKey propertyKey() {
         return (PropertyKey)getType();
     }
 
@@ -112,7 +112,7 @@ public class StandardFaunusVertexProperty extends StandardFaunusRelation impleme
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(vertexid).append(getLongId()).append(getType()).append(value).toHashCode();
+        return new HashCodeBuilder().append(vertexid).append(longId()).append(getType()).append(value).toHashCode();
     }
 
     @Override
@@ -120,8 +120,8 @@ public class StandardFaunusVertexProperty extends StandardFaunusRelation impleme
         if (this == oth) return true;
         else if (oth == null || !(oth instanceof TitanVertexProperty)) return false;
         TitanVertexProperty p = (TitanVertexProperty) oth;
-        if (hasId() || p.hasId()) return getLongId()==p.getLongId();
-        return getType().equals(p.getPropertyKey()) && value.equals(p.getValue()) && vertexid==p.getElement().getLongId();
+        if (hasId() || p.hasId()) return longId()==p.longId();
+        return getType().equals(p.propertyKey()) && value.equals(p.value()) && vertexid==p.getElement().longId();
     }
 
     @Override

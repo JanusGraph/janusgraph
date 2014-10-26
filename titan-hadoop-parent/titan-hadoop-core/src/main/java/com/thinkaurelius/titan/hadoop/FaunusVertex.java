@@ -65,7 +65,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     public void addAll(final FaunusVertex vertex) {
-        this.id = vertex.getLongId();
+        this.id = vertex.longId();
 //        this.inAdjacency = vertex.inAdjacency;
 //        this.outAdjacency = vertex.outAdjacency;
         initializeAdjacency(Direction.BOTH);
@@ -103,12 +103,12 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     }
 
     @Override
-    public String getLabel() {
+    public String label() {
         return vertexLabel.name();
     }
 
     @Override
-    public FaunusVertexLabel getVertexLabel() {
+    public FaunusVertexLabel vertexLabel() {
         return vertexLabel;
     }
 
@@ -128,15 +128,9 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
         return (FaunusVertexProperty)super.addRelation(property);
     }
 
-    @Override
-    public TitanVertexProperty addProperty(PropertyKey key, Object value) {
-        Preconditions.checkArgument(key instanceof FaunusPropertyKey);
-        return addProperty(new StandardFaunusVertexProperty(this,(FaunusPropertyKey)key,value));
-    }
-
-    public FaunusVertexProperty addProperty(final String key, final Object value) {
+    public FaunusVertexProperty property(final String key, final Object value) {
         FaunusPropertyKey type = getTypeManager().getOrCreatePropertyKey(key);
-        return (FaunusVertexProperty)addProperty(type,value);
+        return addProperty(new StandardFaunusVertexProperty(this,type,value));
     }
 
     @Override
@@ -165,7 +159,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
             @Nullable
             @Override
             public T apply(@Nullable TitanVertexProperty prop) {
-                return prop.getValue();
+                return prop.value();
             }
         });
     }
@@ -259,16 +253,16 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
 
     public FaunusEdge addEdge(final Direction direction, final String label, final long otherVertexId) {
         if (direction == OUT)
-            return this.addEdge(new StandardFaunusEdge(this.configuration, getLongId(), otherVertexId, label));
+            return this.addEdge(new StandardFaunusEdge(this.configuration, longId(), otherVertexId, label));
         else if (direction == Direction.IN)
-            return this.addEdge(new StandardFaunusEdge(this.configuration, otherVertexId, getLongId(), label));
+            return this.addEdge(new StandardFaunusEdge(this.configuration, otherVertexId, longId(), label));
         else
             throw ExceptionFactory.bothIsNotSupported();
     }
 
     @Override
     public FaunusEdge addEdge(EdgeLabel label, TitanVertex vertex) {
-        return addEdge(new StandardFaunusEdge(this.configuration,getLongId(),vertex.getLongId(),(FaunusEdgeLabel)label));
+        return addEdge(new StandardFaunusEdge(this.configuration, longId(),vertex.longId(),(FaunusEdgeLabel)label));
     }
 
     @Override
@@ -281,7 +275,7 @@ public class FaunusVertex extends FaunusPathElement implements TitanVertex {
     public void removeEdgesToFrom(final Set<Long> ids) {
         for (Iterator<TitanEdge> iterator = query().titanEdges().iterator(); iterator.hasNext(); ) {
             TitanEdge next =  iterator.next();
-            if (ids.contains(next.getOtherVertex(this).getLongId())) {
+            if (ids.contains(next.otherVertex(this).longId())) {
                 iterator.remove();
             }
         }

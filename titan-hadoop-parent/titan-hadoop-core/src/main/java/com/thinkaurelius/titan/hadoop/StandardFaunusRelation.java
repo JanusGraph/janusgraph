@@ -70,7 +70,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
 	 */
 
     @Override
-    public Direction getDirection(TitanVertex vertex) {
+    public Direction direction(TitanVertex vertex) {
         for (int i=0;i<getArity();i++) {
             if (getVertex(i).equals(vertex)) return EdgeDirection.fromPosition(i);
         }
@@ -101,17 +101,17 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     }
 
     @Override
-    public Object getId() {
+    public Object id() {
         if (!hasId()) return null;
         long[] ids = new long[isProperty()?3:4];
-        ids[0]=getLongId();
-        ids[2]=type.getLongId();
+        ids[0]= longId();
+        ids[2]=type.longId();
         if (isProperty()) {
-            ids[1]=((StandardFaunusVertexProperty)this).getElement().getLongId();
+            ids[1]=((StandardFaunusVertexProperty)this).getElement().longId();
         } else {
             StandardFaunusEdge edge = (StandardFaunusEdge)this;
-            ids[1]=edge.getVertex(Direction.OUT).getLongId();
-            ids[3]=edge.getVertex(Direction.IN).getLongId();
+            ids[1]=edge.getVertex(Direction.OUT).longId();
+            ids[3]=edge.getVertex(Direction.IN).longId();
         }
         for (int i = 0; i < ids.length; i++) {
             if (ids[i]<=0) return null;

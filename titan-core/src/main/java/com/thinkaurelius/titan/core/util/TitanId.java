@@ -43,7 +43,7 @@ public class TitanId {
      */
     public static final long fromVertexID(TitanVertex v) {
         Preconditions.checkArgument(v.hasId(), "Invalid vertex provided: %s", v);
-        return fromVertexId(v.getLongId());
+        return fromVertexId(v.longId());
     }
 
 

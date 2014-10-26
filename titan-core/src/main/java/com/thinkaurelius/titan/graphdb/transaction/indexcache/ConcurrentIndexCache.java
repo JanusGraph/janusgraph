@@ -21,19 +21,19 @@ public class ConcurrentIndexCache implements IndexCache {
 
     @Override
     public synchronized void add(TitanVertexProperty property) {
-        map.put(property.getValue(),property);
+        map.put(property.value(),property);
     }
 
     @Override
     public synchronized void remove(TitanVertexProperty property) {
-        map.remove(property.getValue(),property);
+        map.remove(property.value(),property);
     }
 
     @Override
     public synchronized Iterable<TitanVertexProperty> get(final Object value, final PropertyKey key) {
         List<TitanVertexProperty> result = new ArrayList<TitanVertexProperty>(4);
         for (TitanVertexProperty p : map.get(value)) {
-            if (p.getPropertyKey().equals(key)) result.add(p);
+            if (p.propertyKey().equals(key)) result.add(p);
         }
         return result;
     }

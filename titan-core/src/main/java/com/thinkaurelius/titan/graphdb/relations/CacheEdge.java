@@ -45,7 +45,7 @@ public class CacheEdge extends AbstractEdge {
 
         if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
-            final long id = super.getLongId();
+            final long id = super.longId();
             Iterable<InternalRelation> previous = startVertex.getAddedRelations(new Predicate<InternalRelation>() {
                 @Override
                 public boolean apply(@Nullable InternalRelation internalRelation) {
@@ -69,15 +69,15 @@ public class CacheEdge extends AbstractEdge {
     }
 
     private synchronized InternalRelation update() {
-        StandardEdge copy = new StandardEdge(super.getLongId(), getEdgeLabel(), getVertex(0), getVertex(1), ElementLifeCycle.Loaded);
+        StandardEdge copy = new StandardEdge(super.longId(), edgeLabel(), getVertex(0), getVertex(1), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
-        StandardEdge u = (StandardEdge) tx().addEdge(getVertex(0), getVertex(1), getEdgeLabel());
-        if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setId(super.getLongId());
-        u.setPreviousID(super.getLongId());
+        StandardEdge u = (StandardEdge) tx().addEdge(getVertex(0), getVertex(1), edgeLabel());
+        if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setId(super.longId());
+        u.setPreviousID(super.longId());
         copyProperties(u);
-        setId(u.getLongId());
+        setId(u.longId());
         return u;
     }
 
@@ -90,8 +90,8 @@ public class CacheEdge extends AbstractEdge {
     }
 
     @Override
-    public <O> O getPropertyDirect(RelationType type) {
-        return getPropertyMap().get(type.getLongId());
+    public <O> O getValueDirect(RelationType type) {
+        return getPropertyMap().get(type.longId());
     }
 
     @Override
@@ -119,13 +119,13 @@ public class CacheEdge extends AbstractEdge {
     @Override
     public byte getLifeCycle() {
         InternalVertex startVertex = getVertex(0);
-        return ((startVertex.hasRemovedRelations() || startVertex.isRemoved()) && tx().isRemovedRelation(super.getLongId()))
+        return ((startVertex.hasRemovedRelations() || startVertex.isRemoved()) && tx().isRemovedRelation(super.longId()))
                 ? ElementLifeCycle.Removed : ElementLifeCycle.Loaded;
     }
 
     @Override
     public void remove() {
-        if (!tx().isRemovedRelation(super.getLongId())) {
+        if (!tx().isRemovedRelation(super.longId())) {
             tx().removeRelation(this);
         }// else throw InvalidElementException.removedException(this);
     }

@@ -32,7 +32,7 @@ public class ScriptRecordReaderTest extends BaseTest {
         while (reader.nextKeyValue()) {
             assertEquals(reader.getCurrentKey(), NullWritable.get());
             FaunusVertex vertex = reader.getCurrentValue();
-            long id = vertex.getLongId();
+            long id = vertex.longId();
             assertEquals(id, counter++);
             assertEquals(vertex.getPropertyKeys().size(), 0);
             assertEquals(count(vertex.getEdges(Direction.IN)), 0);

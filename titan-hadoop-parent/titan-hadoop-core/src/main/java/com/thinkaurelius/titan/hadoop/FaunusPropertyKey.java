@@ -32,7 +32,7 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
                 @Nullable
                 @Override
                 public Object apply(@Nullable FaunusElement element) {
-                    return element.getId();
+                    return element.id();
                 }
             }
     );
@@ -43,7 +43,7 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
                 @Nullable
                 @Override
                 public Long apply(@Nullable FaunusElement element) {
-                    return element.getLongId();
+                    return element.longId();
                 }
             }
     );
@@ -54,7 +54,7 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
                 @Nullable
                 @Override
                 public String apply(@Nullable FaunusElement element) {
-                    if (element instanceof FaunusVertex) return ((FaunusVertex)element).getLabel();
+                    if (element instanceof FaunusVertex) return ((FaunusVertex)element).label();
                     else if (element instanceof FaunusRelation) return ((FaunusRelation)element).getType().name();
                     else return null;
                 }
@@ -81,12 +81,12 @@ public class FaunusPropertyKey<T> extends FaunusRelationType implements Property
     }
 
     @Override
-    public Class<?> getDataType() {
+    public Class<?> dataType() {
         return definition.getDataType();
     }
 
     @Override
-    public Cardinality getCardinality() {
+    public Cardinality cardinality() {
         return definition.getCardinality();
     }
 

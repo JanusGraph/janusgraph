@@ -104,7 +104,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         if (cache) clopen(option(DB_CACHE),true,option(DB_CACHE_CLEAN_WAIT),0,option(DB_CACHE_TIME),0);
         else clopen();
 
-        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
         tx.makePropertyKey("name").dataType(String.class).make();
         tx.makeEdgeLabel("knows").make();
         tx.makeVertexLabel("person").make();
@@ -115,7 +115,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         //Test schema caching
         for (int t=0;t<10;t++) {
-            tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+            tx = graph.buildTransaction().groupName(metricsPrefix).start();
             //Retrieve name by index (one backend call each)
             assertTrue(tx.containsRelationType("name"));
             assertTrue(tx.containsRelationType("knows"));
@@ -130,10 +130,10 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             assertEquals("person",person.name());
             assertEquals("uid",uid.name());
             //Looking up the definition (one backend call each)
-            assertEquals(Cardinality.SINGLE,name.getCardinality());
-            assertEquals(Multiplicity.MULTI,knows.getMultiplicity());
+            assertEquals(Cardinality.SINGLE,name.cardinality());
+            assertEquals(Multiplicity.MULTI,knows.multiplicity());
             assertFalse(person.isPartitioned());
-            assertEquals(Integer.class,uid.getDataType());
+            assertEquals(Integer.class,uid.dataType());
             //Retrieving in and out relations for the relation types...
             InternalRelationType namei = (InternalRelationType)name;
             InternalRelationType knowsi = (InternalRelationType)knows;
@@ -160,7 +160,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         //Create some graph data
         metricsPrefix = "add"+cache;
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         Vertex v = tx.addVertex(), u = tx.addVertex("person");
         v.singleProperty("uid", 1);
         u.singleProperty("name", "juju");
@@ -172,7 +172,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         for (int i = 1; i <= 20; i++) {
             metricsPrefix = "op"+i+cache;
-            tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+            tx = graph.buildTransaction().groupName(metricsPrefix).start();
             v = getOnlyElement(tx.V().has("uid",1));
             assertEquals(1,v.<Integer>value("uid").intValue());
             u = getOnlyElement(v.both("knows"));
@@ -202,7 +202,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
     public void testKCVSAccess1() throws InterruptedException {
         metricsPrefix = "metrics1";
 
-        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
         Vertex v = tx.addVertex("age", 25, "name", "john");
         verifyStoreMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 2l, M_GET_SLICE, 4l));
         Vertex u = tx.addVertex("age", 35, "name", "mary");
@@ -218,7 +218,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyTypeCacheMetrics(3, 3, 0, 0);
 
         //Check type name & definition caching
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         assertCount(2, v.properties());
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 4l)); //1 verify vertex existence, 1 for query, 1 for each of the 2 types (Definition)
@@ -228,7 +228,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyTypeCacheMetrics(3, 3, 2, 2);
         tx.commit();
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         assertCount(2, v.properties());
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 6l));
@@ -239,7 +239,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         tx.commit();
 
         //Check type index lookup caching
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         assertNotNull(v.value("age"));
         assertNotNull(v.value("name"));
@@ -250,7 +250,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyTypeCacheMetrics(9, 5, 8, 4);
         tx.commit();
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         assertCount(1, v.bothE());
         assertCount(2, v.properties());
@@ -267,7 +267,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
     public void testKCVSAccess2() throws InterruptedException {
         metricsPrefix = "metrics2";
 
-        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
         Vertex parentVertex = tx.addVertex();
         parentVertex.singleProperty("name", "vParent");
         parentVertex.singleProperty("other-prop-key1", "other-prop-value1");
@@ -286,7 +286,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         //==> 8 mutations in edgeStore to create vertices and types
         //3 cache misses when doing the index lookup for the type names (since they are not yet defined)
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         assertCount(3, tx.v(parentVertex).properties());
         tx.commit();
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 5l));
@@ -296,7 +296,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         //==> of those, the 3 type related calls go through the cache which is empty at this point ==> 3 (additional) misses
         //all other stats remain unchanged
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         assertCount(3, tx.v(parentVertex).properties());
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 7l));
         verifyStoreMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
@@ -329,7 +329,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         clopen(option(GraphDatabaseConfiguration.PROPERTY_PREFETCHING), fastProperty);
         metricsPrefix = "metrics3"+fastProperty;
 
-        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
         tx.makePropertyKey("name").dataType(String.class).make();
         tx.makePropertyKey("age").dataType(Integer.class).make();
         Vertex v = tx.addVertex("uid", "v1", "age", 25, "name", "john");
@@ -338,7 +338,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 4l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 3l));
         verifyTypeCacheMetrics(0, 0, 0, 0);
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         v.singleProperty("age", 35);
         v.singleProperty("name", "johnny");
@@ -353,7 +353,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         else
             verifyTypeCacheMetrics(6, 2, 4, 4);
 
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         v.singleProperty("age", 45);
         v.singleProperty("name", "johnnie");
@@ -370,7 +370,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         }
 
         //Check no further locks on read all
-        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = tx.v(v);
         for (VertexProperty p : v.properties().toList()) {
             assertNotNull(p.value());

@@ -2,12 +2,10 @@ package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.StandardFaunusEdge;
 import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -68,7 +66,7 @@ public class VerticesVerticesMapReduce {
                     for (final Edge edge : value.getEdges(OUT, this.labels)) {
                         final FaunusVertex vertex = new FaunusVertex(faunusConf, ((StandardFaunusEdge) edge).getVertexId(IN));
                         vertex.getPaths(value, false);
-                        this.longWritable.set(vertex.getLongId());
+                        this.longWritable.set(vertex.longId());
                         context.write(this.longWritable, this.holder.set('p', vertex));
                         edgesTraversed++;
                     }
@@ -78,7 +76,7 @@ public class VerticesVerticesMapReduce {
                     for (final Edge edge : value.getEdges(IN, this.labels)) {
                         final FaunusVertex vertex = new FaunusVertex(faunusConf, ((StandardFaunusEdge) edge).getVertexId(OUT));
                         vertex.getPaths(value, false);
-                        this.longWritable.set(vertex.getLongId());
+                        this.longWritable.set(vertex.longId());
                         context.write(this.longWritable, this.holder.set('p', vertex));
                         edgesTraversed++;
                     }
@@ -87,7 +85,7 @@ public class VerticesVerticesMapReduce {
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGES_TRAVERSED, edgesTraversed);
             }
 
-            this.longWritable.set(value.getLongId());
+            this.longWritable.set(value.longId());
             context.write(this.longWritable, this.holder.set('v', value));
         }
     }

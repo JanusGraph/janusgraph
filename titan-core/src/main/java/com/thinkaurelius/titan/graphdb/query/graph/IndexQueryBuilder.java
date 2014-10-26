@@ -5,10 +5,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
@@ -197,13 +195,13 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     }
 
     @Override
-    public Iterable<Result<Vertex>> vertices() {
+    public Iterable<Result<TitanVertex>> vertices() {
         setPrefixInternal(VERTEX_PREFIX);
         return (Iterable)execute(ElementCategory.VERTEX);
     }
 
     @Override
-    public Iterable<Result<Edge>> edges() {
+    public Iterable<Result<TitanEdge>> edges() {
         setPrefixInternal(EDGE_PREFIX);
         return (Iterable)execute(ElementCategory.EDGE);
     }

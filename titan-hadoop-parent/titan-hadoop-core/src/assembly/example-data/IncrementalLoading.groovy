@@ -38,7 +38,7 @@ def TitanEdge getOrCreateEdge(faunusEdge, inVertex, outVertex, graph, context, l
 def Object getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) {
 
     final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.getPropertyKey();
-    if (pkey.getCardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
+    if (pkey.cardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
         vertex.setProperty(pkey.name(), faunusProperty.getValue());
     } else {
         vertex.addProperty(pkey.name(), faunusProperty.getValue());

@@ -120,15 +120,15 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
 
     @Override
     public OLAPQueryBuilder addQuery() {
-        return new QueryBuilder((StandardTitanTx)graph.buildTransaction().readOnly().setVertexCacheSize(100).start());
+        return new QueryBuilder((StandardTitanTx)graph.buildTransaction().readOnly().vertexCacheSize(100).start());
     }
 
     @Override
     public Future<OLAPResult<S>> execute() {
         Preconditions.checkArgument(!queries.isEmpty(),"Need to register at least one query");
-        TransactionBuilder txBuilder = graph.buildTransaction().readOnly().setVertexCacheSize(100);
+        TransactionBuilder txBuilder = graph.buildTransaction().readOnly().vertexCacheSize(100);
         for (Map.Entry<String,Object> txOption : txOptions.entrySet())
-            txBuilder.setCustomOption(txOption.getKey(),txOption.getValue());
+            txBuilder.customOption(txOption.getKey(), txOption.getValue());
         final StandardTitanTx tx = (StandardTitanTx)txBuilder.start();
         FulgoraResult<S> state = initialState!=null?initialState:new FulgoraResult<S>(numVertices>=0?numVertices:NUM_VERTEX_DEFAULT,graph.getIDManager());
         FulgoraExecutor executor = new FulgoraExecutor(queries,tx,graph.getIDManager(),
@@ -214,7 +214,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
             if (hasSingleType()) {
                 RelationType type = getSingleType();
                 Preconditions.checkArgument(type instanceof PropertyKey);
-                if (((PropertyKey)type).getCardinality()==Cardinality.SINGLE) {
+                if (((PropertyKey)type).cardinality()==Cardinality.SINGLE) {
                     return properties(FulgoraPropertyQuery.SINGLE_VALUE_GATHER,FulgoraPropertyQuery.SINGLE_COMBINER);
                 }
             }
@@ -224,18 +224,6 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         /*
         ########### SIMPLE OVERWRITES ##########
          */
-
-        @Override
-        public QueryBuilder has(PropertyKey key, Object value) {
-            super.has(key, value);
-            return this;
-        }
-
-        @Override
-        public QueryBuilder has(EdgeLabel label, TitanVertex vertex) {
-            super.has(label, vertex);
-            return this;
-        }
 
         @Override
         public QueryBuilder has(String type, Object value) {
@@ -264,18 +252,6 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         @Override
         public QueryBuilder has(String key, TitanPredicate predicate, Object value) {
             super.has(key,predicate,value);
-            return this;
-        }
-
-        @Override
-        public QueryBuilder has(PropertyKey key, TitanPredicate predicate, Object value) {
-            super.has(key,predicate,value);
-            return this;
-        }
-
-        @Override
-        public <T extends Comparable<?>> QueryBuilder interval(PropertyKey key, T start, T end) {
-            super.interval(key, start, end);
             return this;
         }
 

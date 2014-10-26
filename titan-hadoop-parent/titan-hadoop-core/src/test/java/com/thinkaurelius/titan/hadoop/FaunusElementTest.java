@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 
 import junit.framework.TestCase;
@@ -110,7 +109,7 @@ public class FaunusElementTest extends TestCase {
     public void testSettingIdPropertyException() {
         FaunusVertex a = new FaunusVertex(new ModifiableHadoopConfiguration(), 10l);
         try {
-            a.setProperty(Tokens.ID, 11l);
+            a.property(Tokens.ID, 11l);
             assertFalse(true);
         } catch (IllegalArgumentException e) {
             assertTrue(true);
@@ -118,14 +117,14 @@ public class FaunusElementTest extends TestCase {
 
         StandardFaunusEdge b = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1l, 2l, 13l, "self");
         try {
-            b.setProperty(Tokens.ID, 10);
+            b.property(Tokens.ID, 10);
             assertFalse(true);
         } catch (IllegalArgumentException e) {
             assertTrue(true);
         }
 
         try {
-            b.setProperty(Tokens.ID, 10);
+            b.property(Tokens.ID, 10);
             assertFalse(true);
         } catch (IllegalArgumentException e) {
             assertTrue(true);

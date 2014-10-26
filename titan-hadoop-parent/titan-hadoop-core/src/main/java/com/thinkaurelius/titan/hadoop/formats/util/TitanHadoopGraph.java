@@ -52,7 +52,7 @@ public class TitanHadoopGraph {
         boolean foundVertexState = !verifyVertexExistence;
         for (final Entry data : entries) {
             try {
-                RelationReader relationReader = setup.getRelationReader(vertex.getLongId());
+                RelationReader relationReader = setup.getRelationReader(vertex.longId());
                 final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
                 if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {
                     foundVertexState = true;
@@ -94,7 +94,7 @@ public class TitanHadoopGraph {
                         if (rt.isPropertyKey()) {
                             PropertyKey pkey = (PropertyKey)vertex.getTypeManager().getPropertyKey(rt.name());
                             log.debug("Retrieved key {} for name \"{}\"", pkey, rt.name());
-                            frel.setProperty(pkey, next.value);
+                            frel.property(pkey.label(), next.value);
                         } else {
                             assert next.value instanceof Long;
                             EdgeLabel el = (EdgeLabel)vertex.getTypeManager().getEdgeLabel(rt.name());

@@ -2,6 +2,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * TitanRelation is the most abstract form of a relation between a vertex and some other entity, where
@@ -24,21 +25,15 @@ import com.tinkerpop.gremlin.structure.Direction;
 public interface TitanRelation extends TitanElement {
 
     /**
-     * Establishes a unidirectional edge between this relation and the given vertex for the specified label.
-     * The label must be defined {@link EdgeLabel#isUnidirected()}.
+     * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
+     * If the key has cardinality SINGLE, then there can be at most one value and this value is returned (or null).
+     * Otherwise a list of all associated values is returned, or an empty list if non exist.
+     * <p/>
      *
-     * @param label
-     * @param vertex
+     * @param key string identifying a key
+     * @return value or list of values associated with key
      */
-    public void setProperty(EdgeLabel label, TitanVertex vertex);
-
-    /**
-     * Returns the vertex associated to this relation by a unidirected edge of the given label or NULL if such does not exist.
-     *
-     * @param label
-     * @return
-     */
-    public TitanVertex getProperty(EdgeLabel label);
+    public <V> V value(String key); //TODO: rename to value()
 
     /**
      * Returns the type of this relation.
@@ -57,7 +52,7 @@ public interface TitanRelation extends TitanElement {
      * @return The direction of this relation from the perspective of the specified vertex.
      * @throws InvalidElementException if this relation is not incident on the vertex
      */
-    public Direction getDirection(TitanVertex vertex);
+    public Direction direction(Vertex vertex);
 
     /**
      * Checks whether this relation is incident on the specified vertex.
@@ -65,7 +60,7 @@ public interface TitanRelation extends TitanElement {
      * @param vertex vertex to check incidence for
      * @return true, if this relation is incident on the vertex, else false
      */
-    public boolean isIncidentOn(TitanVertex vertex);
+    public boolean isIncidentOn(Vertex vertex);
 
     /**
      * Checks whether this relation is a loop.

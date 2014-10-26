@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -70,9 +71,9 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
 
     @Override
-    public Q adjacent(TitanVertex vertex) {
-        Preconditions.checkArgument(vertex!=null,"Not a valid vertex provided for adjacency constraint");
-        this.adjacentVertex = vertex;
+    public Q adjacent(Vertex vertex) {
+        Preconditions.checkArgument(vertex!=null && (vertex instanceof TitanVertex),"Not a valid vertex provided for adjacency constraint");
+        this.adjacentVertex = (TitanVertex)vertex;
         return getThis();
     }
 
@@ -90,16 +91,6 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         if (constraints==NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, TitanRelation>>(5);
         constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
         return getThis();
-    }
-
-    @Override
-    public Q has(PropertyKey key, Object value) {
-        return has(key.name(), value);
-    }
-
-    @Override
-    public Q has(EdgeLabel label, TitanVertex vertex) {
-        return has(label.name(), vertex);
     }
 
     @Override
@@ -124,17 +115,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     @Override
     public Q has(String key, TitanPredicate predicate, Object value) {
-        return addConstraint(key,predicate,value);
-    }
-
-    @Override
-    public Q has(PropertyKey key, TitanPredicate predicate, Object value) {
-        return addConstraint(key.name(),predicate,value);
-    }
-
-    @Override
-    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end) {
-        return interval(key.name(), start, end);
+        return addConstraint(key, predicate, value);
     }
 
     @Override
@@ -152,6 +133,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         return types(ts);
     }
 
+
+
     @Override
     public Q labels(String... labels) {
         return types(labels);
@@ -166,6 +149,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         return types(type.name());
     }
 
+    @Override
     public Q types(String... types) {
         if (types==null) types = NO_TYPES;
         for (String type : types) Preconditions.checkArgument(StringUtils.isNotBlank(type),"Invalid type: %s",type);
@@ -188,17 +172,13 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     @Override
-    public Q orderBy(String key, Order order) {
-        Preconditions.checkArgument(schemaInspector.containsPropertyKey(key),"Provided key does not exist: %s",key);
-        return orderBy(schemaInspector.getPropertyKey(key), order);
-    }
-
-    @Override
-    public Q orderBy(PropertyKey key, Order order) {
+    public Q orderBy(String keyName, Order order) {
+        Preconditions.checkArgument(schemaInspector.containsPropertyKey(keyName),"Provided key does not exist: %s",keyName);
+        PropertyKey key = schemaInspector.getPropertyKey(keyName);
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
-        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
-                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.getDataType());
-        Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
+        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
+                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
+        Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!(key instanceof SystemRelationType),"Cannot use system types in ordering: %s",key);
         Preconditions.checkArgument(!orders.containsKey(key));
         Preconditions.checkArgument(orders.isEmpty(),"Only a single sort order is supported on vertex queries");

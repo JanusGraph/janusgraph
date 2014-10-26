@@ -174,7 +174,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
-        for (Vertex v : g.getVertices()) {
+        for (Vertex v : g.vertices()) {
             assertNull(v.getProperty("name"));
             assertEquals(1, v.getPropertyKeys().size());
         }
@@ -190,7 +190,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
     @Test
     public void testBulkVertexPropertyUpdates() throws Exception {
         // Declare schema in Titan
-        TitanManagement mgmt = g.getManagementSystem();
+        TitanManagement mgmt = g.openManagement();
         mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
         mgmt.commit();
 
@@ -209,7 +209,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
-        for (Vertex v : g.getVertices()) {
+        for (Vertex v : g.vertices()) {
             assertTrue(v.<List<String>>getProperty("name").get(0).startsWith("marko"));
             assertEquals(v.<List<String>>getProperty("name").size(), 1);
             assertEquals(2, v.getPropertyKeys().size());
@@ -237,14 +237,14 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         clopen();
         new HadoopPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
 
-        TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
+        TitanVertex v = (TitanVertex) g.vertices("name", "saturn").iterator().next();
         for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanVertexProperty>>() {
             @Override
             public Iterable<TitanVertexProperty> compute(TitanVertex vertex) {
                 return vertex.getProperties("name");
             }
         }).scatter().toList()) {
-            String value = (String) ((TitanVertexProperty) property).getValue();
+            String value = (String) ((TitanVertexProperty) property).value();
             assertTrue(value.equals("saturn") || value.equals("chronos"));
             counter++;
         }
@@ -304,7 +304,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
     @Test
     public void testUnidirectionEdges() throws Exception {
         // Declare schema in Titan
-        TitanManagement mgmt = g.getManagementSystem();
+        TitanManagement mgmt = g.openManagement();
         mgmt.makeEdgeLabel("father").unidirected().make();
         mgmt.commit();
 
@@ -337,20 +337,20 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         assertEquals(17, new GremlinPipeline(g).E().count());
         assertEquals(1, new GremlinPipeline(g).V("name", "jupiter").count());
         assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
-        assertEquals(1, Iterables.size(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
+        assertEquals(1, Iterables.size(Iterables.getOnlyElement(g.vertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
 
         // Delete a vertex (jupiter), a property (type on cerberus), and an edge (where pluto lives)
         // The deletions are orthogonal to one another
-        Iterables.getOnlyElement(g.getVertices("name", "jupiter")).remove();
-        Iterables.getOnlyElement(g.getVertices("name", "cerberus")).removeProperty("type");
-        Iterables.getOnlyElement(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")).remove();
+        Iterables.getOnlyElement(g.vertices("name", "jupiter")).remove();
+        Iterables.getOnlyElement(g.vertices("name", "cerberus")).removeProperty("type");
+        Iterables.getOnlyElement(Iterables.getOnlyElement(g.vertices("name", "pluto")).getEdges(Direction.OUT, "lives")).remove();
         g.commit();
 
         assertEquals(11, new GremlinPipeline(g).V().count());
         assertEquals(9, new GremlinPipeline(g).E().count());
         assertEquals(0, new GremlinPipeline(g).V("name", "jupiter").count());
         assertEquals(0, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
-        assertEquals(0, Iterables.size(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
+        assertEquals(0, Iterables.size(Iterables.getOnlyElement(g.vertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
 
         // Incrementally load gotg to replace the deleted elements (without duplicating existing elements)
         bulkLoadGraphOfTheGods(getIncrementalGraphSONToTitan());
@@ -360,7 +360,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         assertEquals(17, new GremlinPipeline(g).E().count());
         assertEquals(1, new GremlinPipeline(g).V("name", "jupiter").count());
         assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
-        assertEquals(1, Iterables.size(Iterables.getOnlyElement(g.getVertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
+        assertEquals(1, Iterables.size(Iterables.getOnlyElement(g.vertices("name", "pluto")).getEdges(Direction.OUT, "lives")));
 
         // Load non-incrementally as a control case.  This should result in two copies of the graph.
         bulkLoadGraphOfTheGods(f1);
@@ -381,7 +381,7 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
      */
     @Test
     public void testIncrementalVertexPropertyLoad() throws Exception {
-        TitanManagement mgmt = g.getManagementSystem();
+        TitanManagement mgmt = g.openManagement();
         mgmt.makePropertyKey("type").dataType(String.class).cardinality(Cardinality.LIST).make();
         mgmt.makePropertyKey("heads").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         mgmt.commit();
@@ -399,24 +399,24 @@ public abstract class TitanOutputFormatTest extends BaseTestNG {
         assertEquals(17, new GremlinPipeline(g).E().count());
         assertEquals(1, new GremlinPipeline(g).V("name", "jupiter").count());
         assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
-        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("type").iterator()));
-        assertEquals(0, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("heads").iterator()));
+        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.vertices("name", "cerberus"))).getProperties("type").iterator()));
+        assertEquals(0, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.vertices("name", "cerberus"))).getProperties("heads").iterator()));
 
         // Incrementally load a new Cerberus property by defining getOrCreateVertex and getOrCreateVertexProperty
         bulkLoadGraphOfTheGods(getCustomIncrementalCerberusLoad());
         clopen();
 
         assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
-        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("type").iterator()));
-        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("heads").iterator()));
+        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.vertices("name", "cerberus"))).getProperties("type").iterator()));
+        assertEquals(1, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.vertices("name", "cerberus"))).getProperties("heads").iterator()));
 
         // Control case: define getOrCreateVertex, but omit getOrCreateVertexProperty
         // This should lead to a single Cerberus vertex with two values for the type property
         bulkLoadGraphOfTheGods(getNaiveIncrementalCerberusLoad());
         clopen();
         assertEquals(1, new GremlinPipeline(g).V("name", "cerberus").has("type", "monster").count());
-        assertEquals(2, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("type").iterator()));
-        assertEquals(2, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.getVertices("name", "cerberus"))).getProperties("heads").iterator()));
+        assertEquals(2, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.vertices("name", "cerberus"))).getProperties("type").iterator()));
+        assertEquals(2, Iterators.size(((TitanVertex) Iterables.getOnlyElement(g.vertices("name", "cerberus"))).getProperties("heads").iterator()));
     }
 
     private void close() {

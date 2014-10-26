@@ -88,7 +88,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     private long[] checkSortKey(List<RelationType> sig) {
         for (RelationType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
-                    || attributeHandler.isOrderPreservingDatatype(((PropertyKey) t).getDataType()),
+                    || attributeHandler.isOrderPreservingDatatype(((PropertyKey) t).dataType()),
                     "Key must have an order-preserving data type to be used as sort key: " + t);
         }
         return checkSignature(sig);
@@ -102,9 +102,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
             Preconditions.checkNotNull(et);
             Preconditions.checkArgument(!et.isEdgeLabel() || ((EdgeLabel) et).isUnidirected(),
                     "Label must be unidirectional: %s", et.name());
-            Preconditions.checkArgument(!et.isPropertyKey() || !((PropertyKey) et).getDataType().equals(Object.class),
+            Preconditions.checkArgument(!et.isPropertyKey() || !((PropertyKey) et).dataType().equals(Object.class),
                     "Signature and sort keys must have a proper declared datatype: %s", et.name());
-            signature[i] = et.getLongId();
+            signature[i] = et.longId();
         }
         return signature;
     }

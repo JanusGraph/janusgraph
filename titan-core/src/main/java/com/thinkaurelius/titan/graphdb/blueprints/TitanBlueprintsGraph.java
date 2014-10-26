@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -143,35 +141,14 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         throw new UnsupportedOperationException();
     }
 
-
-    @Override
-    public TitanVertex addVertex() {
-        return getAutoStartTx().addVertex();
-    }
-
-    @Override
-    public TitanVertex addVertex(VertexLabel vertexLabel) {
-        return getAutoStartTx().addVertex(vertexLabel);
-    }
-
     @Override
     public TitanVertex addVertex(String vertexLabel) {
         return getAutoStartTx().addVertex(vertexLabel);
     }
 
     @Override
-    public TitanVertex getVertex(long id) {
-        return getAutoStartTx().getVertex(id);
-    }
-
-    @Override
-    public Map<Long,TitanVertex>  getVertices(long... ids) {
-        return getAutoStartTx().getVertices(ids);
-    }
-
-    @Override
-    public boolean containsVertex(long vertexid) {
-        return getAutoStartTx().containsVertex(vertexid);
+    public Map<Long,TitanVertex> vertices(long... ids) {
+        return getAutoStartTx().vertices(ids);
     }
 
     @Override

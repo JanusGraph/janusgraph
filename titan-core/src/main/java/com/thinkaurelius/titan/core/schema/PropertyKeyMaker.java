@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 
@@ -34,7 +33,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      *
      * @param clazz Data type to be configured.
      * @return this PropertyKeyMaker
-     * @see com.thinkaurelius.titan.core.PropertyKey#getDataType()
+     * @see com.thinkaurelius.titan.core.PropertyKey#dataType()
      */
     public PropertyKeyMaker dataType(Class<?> clazz);
 

@@ -112,7 +112,7 @@ public class Holder<T extends FaunusPathElement> extends GenericWritable impleme
         @Override
         public int compare(final WritableComparable a, final WritableComparable b) {
             if (a instanceof Holder && b instanceof Holder)
-                return ((Long) (((Holder) a).get().getLongId())).compareTo(((Holder) b).get().getLongId());
+                return ((Long) (((Holder) a).get().longId())).compareTo(((Holder) b).get().longId());
             else
                 return super.compare(a, b);
         }

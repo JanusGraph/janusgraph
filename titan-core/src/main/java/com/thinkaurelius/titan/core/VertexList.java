@@ -61,7 +61,7 @@ public interface VertexList extends Iterable<TitanVertex> {
      * Uses an efficient primitive variable-sized array.
      *
      * @return A list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
-     * @see AbstractLongList
+     * @see LongArrayList
      */
     public LongArrayList getIDs();
 

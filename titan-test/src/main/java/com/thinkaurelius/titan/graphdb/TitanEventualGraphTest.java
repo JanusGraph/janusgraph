@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Duration;
@@ -13,7 +12,6 @@ import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 
-import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
@@ -76,7 +74,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         final TimeUnit unit = TimeUnit.SECONDS;
 
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
-        TitanTransaction tx1 = graph.buildTransaction().setCommitTime(100, unit).start();
+        TitanTransaction tx1 = graph.buildTransaction().commitTime(100, unit).start();
         String name = "name";
         String age = "age";
         String address = "address";
@@ -91,7 +89,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
-        TitanTransaction tx2 = graph.buildTransaction().setCommitTime(1000, unit).start();
+        TitanTransaction tx2 = graph.buildTransaction().commitTime(1000, unit).start();
         v1 = tx2.v(id1);
         v2 = tx2.v(id2);
         for (VertexProperty prop : v1.properties(name).toList()) {
@@ -126,7 +124,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
-        TitanTransaction tx3 = graph.buildTransaction().setCommitTime(200, unit).start();
+        TitanTransaction tx3 = graph.buildTransaction().commitTime(200, unit).start();
         v1 = tx3.v(id1);
         v1.property(address).remove();
         tx3.commit();
@@ -137,7 +135,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("xyz", afterTx3.value(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
-        TitanTransaction tx4 = graph.buildTransaction().setCommitTime(2000, unit).start();
+        TitanTransaction tx4 = graph.buildTransaction().commitTime(2000, unit).start();
         v2 = tx4.v(id2);
         v2.singleProperty(age, "15");
         tx4.e(edgeId).remove();
@@ -152,7 +150,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertNull(graph.e(edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
-        TitanTransaction tx5 = graph.buildTransaction().setCommitTime(1500, unit).start();
+        TitanTransaction tx5 = graph.buildTransaction().commitTime(1500, unit).start();
         v2 = tx5.v(id2);
         v2.singleProperty(age, "16");
         tx5.commit();
@@ -270,29 +268,29 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("Bob",p.value());
         assertEquals(wintx,p.<Integer>value("sig").intValue());
         p = getOnlyElement(v.properties("value"));
-        assertEquals(rs[2].getLongId(),getId(p));
+        assertEquals(rs[2].longId(),getId(p));
         assertEquals(wintx,p.<Integer>value("sig").intValue());
         assertCount(2,v.properties("valuef"));
-        for (VertexProperty pp : v.getProperties("valuef")) {
-            assertNotEquals(rs[3].getLongId(),getId(pp));
+        for (VertexProperty pp : v.properties("valuef").toList()) {
+            assertNotEquals(rs[3].longId(),getId(pp));
             assertEquals(2,pp.value());
         }
 
         Edge e = getOnlyElement(v.outE("es"));
         assertEquals(wintx,e.<Integer>value("sig").intValue());
-        assertNotEquals(rs[6].getLongId(),getId(e));
+        assertNotEquals(rs[6].longId(),getId(e));
 
         e = getOnlyElement(v.outE("o2o"));
         assertEquals(wintx,e.<Integer>value("sig").intValue());
-        assertNotEquals(rs[7].getLongId(),getId(e));
+        assertNotEquals(rs[7].longId(),getId(e));
         e = getOnlyElement(v.outE("o2m"));
         assertEquals(wintx,e.<Integer>value("sig").intValue());
-        assertNotEquals(rs[8].getLongId(),getId(e));
+        assertNotEquals(rs[8].longId(),getId(e));
         e = getOnlyElement(v.outE("em"));
         assertEquals(wintx,e.<Integer>value("sig").intValue());
-        assertNotEquals(rs[4].getLongId(),getId(e));
+        assertNotEquals(rs[4].longId(),getId(e));
         for (Edge ee : v.outE("emf").toList()) {
-            assertNotEquals(rs[5].getLongId(),getId(ee));
+            assertNotEquals(rs[5].longId(),getId(ee));
             assertEquals(uid,getOnlyElement(ee.inV()).id());
         }
     }

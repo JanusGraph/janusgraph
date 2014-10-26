@@ -15,10 +15,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.*;
@@ -39,7 +36,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         if (tx.isOpen())
             return this;
 
-        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(getLongId());
+        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(longId());
         if (next == null) throw InvalidElementException.removedException(this);
         else return next;
     }
@@ -51,8 +48,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public long getCompareId() {
-        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(getLongId());
-        else return getLongId();
+        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(longId());
+        else return longId();
     }
 
     @Override
@@ -61,8 +58,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Object getId() {
-        return getLongId();
+    public Object id() {
+        return longId();
     }
 
     @Override
@@ -100,8 +97,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     @Override
-    public String getLabel() {
-        return getVertexLabel().name();
+    public String label() {
+        return vertexLabel().name();
     }
 
     protected Vertex getVertexLabelInternal() {
@@ -109,7 +106,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public VertexLabel getVertexLabel() {
+    public VertexLabel vertexLabel() {
         Vertex label = getVertexLabelInternal();
         if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)label;
@@ -122,127 +119,37 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Set<String> getPropertyKeys() {
-        Set<String> result = new HashSet<String>();
-        for (TitanVertexProperty p : getProperties()) {
-            result.add(p.getPropertyKey().name());
-        }
-        return result;
-    }
-
-    @Override
-    public <O> O getProperty(PropertyKey key) {
+    public <O> O value(PropertyKey key) {
         if (!((InternalRelationType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
-            getProperties().iterator().hasNext();
+            properties().count().next();
         }
         Iterator<TitanVertexProperty> iter = query().type(key).properties().iterator();
-        if (key.getCardinality()== Cardinality.SINGLE) {
-            if (iter.hasNext()) return (O)iter.next().getValue();
+        if (key.cardinality()== Cardinality.SINGLE) {
+            if (iter.hasNext()) return (O)iter.next().value();
             else return null;
         } else {
             List<Object> result = new ArrayList<Object>();
             while (iter.hasNext()) {
-                result.add(iter.next().getValue());
+                result.add(iter.next().value());
             }
             return (O)result;
         }
     }
 
     @Override
-    public <O> O getProperty(String key) {
+    public <O> O value(String key) {
         if (!tx().containsRelationType(key)) return null;
-        else return getProperty(tx().getPropertyKey(key));
+        else return value(tx().getPropertyKey(key));
     }
 
-    @Override
-    public Iterable<TitanVertexProperty> getProperties() {
-        return query().properties();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties(PropertyKey key) {
-        return query().type(key).properties();
-    }
-
-    @Override
-    public Iterable<TitanVertexProperty> getProperties(String key) {
-        return query().keys(key).properties();
-    }
-
-
-    @Override
-    public Iterable<TitanEdge> getEdges() {
-        return query().titanEdges();
-    }
-
-
-    @Override
-    public Iterable<TitanEdge> getTitanEdges(Direction dir, EdgeLabel... labels) {
-        return query().direction(dir).types(labels).titanEdges();
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction dir, String... labels) {
-        return query().direction(dir).labels(labels).edges();
-    }
-
-    @Override
-    public Iterable<TitanRelation> getRelations() {
-        return query().relations();
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String... labels) {
-        return query().direction(direction).labels(labels).vertices();
-    }
-
-	
-	/* ---------------------------------------------------------------
-	 * TitanRelation Counts
-	 * ---------------------------------------------------------------
-	 */
-
-
-    @Override
-    public long getPropertyCount() {
-        return query().propertyCount();
-    }
-
-
-    @Override
-    public long getEdgeCount() {
-        return query().count();
-    }
-
-    @Override
-    public boolean isConnected() {
-        return !Iterables.isEmpty(getEdges());
-    }
-
-	
 	/* ---------------------------------------------------------------
 	 * Convenience Methods for TitanElement Creation
 	 * ---------------------------------------------------------------
 	 */
 
     @Override
-    public TitanVertexProperty addProperty(PropertyKey key, Object attribute) {
-        return tx().addProperty(it(), key, attribute);
-    }
-
-    @Override
-    public TitanVertexProperty addProperty(String key, Object attribute) {
-        return addProperty(tx().getPropertyKey(key), attribute);
-    }
-
-    @Override
-    public void setProperty(String key, Object value) {
-        setProperty(tx().getOrCreatePropertyKey(key),value);
-    }
-
-    @Override
-    public void setProperty(final PropertyKey key, Object value) {
-        tx().setProperty(it(),key,value);
+    public<V> TitanVertexProperty<V> property(String key, V value) {
+        return tx().addProperty(it(), tx().getPropertyKey(key), value);
     }
 
     @Override
@@ -253,38 +160,11 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex) {
-        return tx().addEdge(it(), vertex, label);
-    }
-
-    @Override
-    public TitanEdge addEdge(String label, TitanVertex vertex) {
-        return addEdge(tx().getEdgeLabel(label),vertex);
-    }
-
-    @Override
-    public Edge addEdge(String label, Vertex vertex, Object... keyValues) {
-        TitanEdge edge = addEdge(label,(TitanVertex)vertex);
+    public TitanEdge addEdge(String label, Vertex vertex, Object... keyValues) {
+        Preconditions.checkArgument(vertex instanceof TitanVertex,"Invalid vertex provided: %s",vertex);
+        TitanEdge edge = tx().addEdge(it(), (TitanVertex) vertex, tx().getEdgeLabel(label));
         ElementHelper.attachProperties(edge,keyValues);
         return edge;
-    }
-
-    @Override
-    public <O> O removeProperty(RelationType key) {
-        assert key.isPropertyKey();
-
-        Object result = null;
-        for (TitanVertexProperty p : query().type(key).properties()) {
-            result = p.getValue();
-            p.remove();
-        }
-        return (O) result;
-    }
-
-    @Override
-    public <O> O removeProperty(String key) {
-        if (!tx().containsRelationType(key)) return null;
-        else return removeProperty(tx().getPropertyKey(key));
     }
 
 	/* ---------------------------------------------------------------
@@ -299,12 +179,12 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
-        return query().direction(direction).limit(i).labels(strings).edges().iterator();
+        return (Iterator)query().direction(direction).limit(i).labels(strings).edges().iterator();
     }
 
     @Override
     public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
-        return query().direction(direction).limit(i).labels(strings).vertices().iterator();
+        return (Iterator)query().direction(direction).limit(i).labels(strings).vertices().iterator();
     }
 
     @Override

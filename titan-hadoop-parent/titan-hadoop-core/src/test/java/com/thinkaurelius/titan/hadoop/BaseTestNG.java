@@ -76,9 +76,9 @@ public abstract class BaseTestNG {
             vertices = new ArrayList<FaunusVertex>();
             FaunusVertex saturn = new FaunusVertex(mc, 4l);
             vertices.add(saturn);
-            saturn.setProperty("name", "saturn");
-            saturn.setProperty("age", 10000);
-            saturn.setProperty("type", "titan");
+            saturn.property("name", "saturn");
+            saturn.property("age", 10000);
+            saturn.property("type", "titan");
 
             FaunusVertex sky = new FaunusVertex(mc, 8l);
             vertices.add(sky);
@@ -127,11 +127,11 @@ public abstract class BaseTestNG {
             // edges
 
             jupiter.addEdge("father", saturn);
-            jupiter.addEdge("lives", sky).setProperty("reason", "loves fresh breezes");
+            jupiter.addEdge("lives", sky).property("reason", "loves fresh breezes");
             jupiter.addEdge("brother", neptune);
             jupiter.addEdge("brother", pluto);
 
-            neptune.addEdge("lives", sea).setProperty("reason", "loves waves");
+            neptune.addEdge("lives", sea).property("reason", "loves waves");
             neptune.addEdge("brother", jupiter);
             neptune.addEdge("brother", pluto);
 
@@ -143,7 +143,7 @@ public abstract class BaseTestNG {
 
             pluto.addEdge("brother", jupiter);
             pluto.addEdge("brother", neptune);
-            pluto.addEdge("lives", tartarus).setProperty("reason", "no fear of death");
+            pluto.addEdge("lives", tartarus).property("reason", "no fear of death");
             pluto.addEdge("pet", cerberus);
 
             cerberus.addEdge("lives", tartarus);
@@ -159,7 +159,7 @@ public abstract class BaseTestNG {
 
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final FaunusVertex vertex : vertices) {
-            map.put(vertex.getLongId(), vertex);
+            map.put(vertex.longId(), vertex);
         }
         return map;
     }
@@ -201,7 +201,7 @@ public abstract class BaseTestNG {
 
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final Object pair : driver.run()) {
-            map.put(((Pair<NullWritable, FaunusVertex>) pair).getSecond().getLongId(), ((Pair<NullWritable, FaunusVertex>) pair).getSecond());
+            map.put(((Pair<NullWritable, FaunusVertex>) pair).getSecond().longId(), ((Pair<NullWritable, FaunusVertex>) pair).getSecond());
         }
         return map;
     }
@@ -220,7 +220,7 @@ public abstract class BaseTestNG {
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final Object object : driver.run()) {
             Pair<NullWritable, FaunusVertex> pair = (Pair<NullWritable, FaunusVertex>) object;
-            map.put(pair.getSecond().getLongId(), pair.getSecond());
+            map.put(pair.getSecond().longId(), pair.getSecond());
         }
         return map;
     }
@@ -249,7 +249,7 @@ public abstract class BaseTestNG {
 
             assertEquals(v1.getPropertyCollection().size(), v2.getPropertyCollection().size());
             for (final String key : v1.getPropertyKeys()) {
-                assertEquals(v1.getProperty(key), v2.getProperty(key));
+                assertEquals(v1.value(key), v2.value(key));
             }
             if (exampleGraph != ExampleGraph.GRAPH_OF_THE_GODS_2) {
 
@@ -260,7 +260,7 @@ public abstract class BaseTestNG {
                 log.debug("{}: inE dump end", v2);
 
 
-                assertEquals(v2.getProperty("name").toString() + " in edge count", asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
+                assertEquals(v2.value("name").toString() + " in edge count", asList(v1.getEdges(Direction.IN)).size(), asList(v2.getEdges(Direction.IN)).size());
 
                 log.debug("{}: outE dump start", v2);
                 for (Edge outE : v1.getEdges(Direction.OUT)) {
@@ -268,8 +268,8 @@ public abstract class BaseTestNG {
                 }
                 log.debug("{}: outE dump end", v2);
 
-                assertEquals(v2.getProperty("name").toString() + " out edge count", asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
-                assertEquals(v2.getProperty("name").toString() + " edge count", asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
+                assertEquals(v2.value("name").toString() + " out edge count", asList(v1.getEdges(Direction.OUT)).size(), asList(v2.getEdges(Direction.OUT)).size());
+                assertEquals(v2.value("name").toString() + " edge count", asList(v1.getEdges(Direction.BOTH)).size(), asList(v2.getEdges(Direction.BOTH)).size());
 
 
                 assertEquals(v1.getEdgeLabels(Direction.BOTH).size(), v2.getEdgeLabels(Direction.BOTH).size());

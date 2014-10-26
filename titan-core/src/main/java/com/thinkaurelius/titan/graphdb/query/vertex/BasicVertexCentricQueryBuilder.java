@@ -112,7 +112,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         for (String typeName : types) {
             InternalRelationType type = QueryUtil.getType(tx, typeName);
             if (type==null) continue;
-            if (!type.getMultiplicity().isUnique(dir)) return false;
+            if (!type.multiplicity().isUnique(dir)) return false;
         }
         return true;
     }
@@ -127,14 +127,14 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             @Nullable
             @Override
             public TitanVertex apply(@Nullable TitanEdge titanEdge) {
-                return titanEdge.getOtherVertex(other);
+                return titanEdge.otherVertex(other);
             }
         });
     }
 
     protected VertexList edges2VertexIds(final Iterable<TitanEdge> edges, final TitanVertex other) {
         VertexArrayList vertices = new VertexArrayList(tx);
-        for (TitanEdge edge : edges) vertices.add(edge.getOtherVertex(other));
+        for (TitanEdge edge : edges) vertices.add(edge.otherVertex(other));
         return vertices;
     }
 
@@ -545,8 +545,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      */
     private static RelationType[] getExtendedSortKey(InternalRelationType type, Direction dir, StandardTitanTx tx) {
         int additional = 0;
-        if (!type.getMultiplicity().isUnique(dir)) {
-            if (!type.getMultiplicity().isConstrained()) additional++;
+        if (!type.multiplicity().isUnique(dir)) {
+            if (!type.multiplicity().isConstrained()) additional++;
             if (type.isEdgeLabel()) additional++;
         }
         RelationType[] entireKey = new RelationType[type.getSortKey().length+additional];
@@ -554,8 +554,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         for (i=0;i<type.getSortKey().length;i++) {
             entireKey[i]=tx.getExistingRelationType(type.getSortKey()[i]);
         }
-        if (type.isEdgeLabel() && !type.getMultiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
-        if (!type.getMultiplicity().isConstrained()) entireKey[i++]=ImplicitKey.TITANID;
+        if (type.isEdgeLabel() && !type.multiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
+        if (!type.multiplicity().isConstrained()) entireKey[i++]=ImplicitKey.TITANID;
         return entireKey;
     }
 
@@ -588,7 +588,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             isFitted = isFitted && fittedSub;
         }
         if (adjacentVertex!=null) {
-            if (adjacentVertex.hasId()) constraintMap.put(ImplicitKey.ADJACENT_ID,new ProperInterval(adjacentVertex.getLongId()));
+            if (adjacentVertex.hasId()) constraintMap.put(ImplicitKey.ADJACENT_ID,new ProperInterval(adjacentVertex.longId()));
             else isFitted=false;
         }
         return isFitted;

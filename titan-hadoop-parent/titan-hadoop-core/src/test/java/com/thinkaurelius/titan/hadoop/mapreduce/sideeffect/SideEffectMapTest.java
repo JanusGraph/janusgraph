@@ -60,12 +60,12 @@ public class SideEffectMapTest extends BaseTest {
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).getProperty("degree"), 3l);
-        assertEquals(results.get(2l).getProperty("degree"), 0l);
-        assertEquals(results.get(3l).getProperty("degree"), 0l);
-        assertEquals(results.get(4l).getProperty("degree"), 2l);
-        assertEquals(results.get(5l).getProperty("degree"), 0l);
-        assertEquals(results.get(6l).getProperty("degree"), 1l);
+        assertEquals(results.get(1l).value("degree"), 3l);
+        assertEquals(results.get(2l).value("degree"), 0l);
+        assertEquals(results.get(3l).value("degree"), 0l);
+        assertEquals(results.get(4l).value("degree"), 2l);
+        assertEquals(results.get(5l).value("degree"), 0l);
+        assertEquals(results.get(6l).value("degree"), 1l);
 
         assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.VERTICES_PROCESSED), 6);
         assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.OUT_EDGES_PROCESSED), 0);
@@ -80,12 +80,12 @@ public class SideEffectMapTest extends BaseTest {
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
-        assertEquals(results.get(1l).getProperty("degree"), 0l);
-        assertEquals(results.get(2l).getProperty("degree"), 1l);
-        assertEquals(results.get(3l).getProperty("degree"), 3l);
-        assertEquals(results.get(4l).getProperty("degree"), 1l);
-        assertEquals(results.get(5l).getProperty("degree"), 1l);
-        assertEquals(results.get(6l).getProperty("degree"), 0l);
+        assertEquals(results.get(1l).value("degree"), 0l);
+        assertEquals(results.get(2l).value("degree"), 1l);
+        assertEquals(results.get(3l).value("degree"), 3l);
+        assertEquals(results.get(4l).value("degree"), 1l);
+        assertEquals(results.get(5l).value("degree"), 1l);
+        assertEquals(results.get(6l).value("degree"), 0l);
 
         assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.VERTICES_PROCESSED), 6);
         assertEquals(DEFAULT_COMPAT.getCounter(mapReduceDriver, SideEffectMap.Counters.OUT_EDGES_PROCESSED), 0);

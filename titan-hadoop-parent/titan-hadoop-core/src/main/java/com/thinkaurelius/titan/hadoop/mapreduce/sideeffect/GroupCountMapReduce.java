@@ -98,7 +98,7 @@ public class GroupCountMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object object = (null == this.keyClosure) ? new FaunusVertex.MicroVertex(value.getLongId()) : this.keyClosure.call(value);
+                    final Object object = (null == this.keyClosure) ? new FaunusVertex.MicroVertex(value.longId()) : this.keyClosure.call(value);
                     final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_PROCESSED, 1L);
@@ -108,7 +108,7 @@ public class GroupCountMapReduce {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final StandardFaunusEdge edge = (StandardFaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Object object = (null == this.keyClosure) ? new StandardFaunusEdge.MicroEdge(edge.getLongId()) : this.keyClosure.call(edge);
+                        final Object object = (null == this.keyClosure) ? new StandardFaunusEdge.MicroEdge(edge.longId()) : this.keyClosure.call(edge);
                         final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(edge);
                         this.map.incr(object, number.longValue() * edge.pathCount());
                         edgesProcessed++;

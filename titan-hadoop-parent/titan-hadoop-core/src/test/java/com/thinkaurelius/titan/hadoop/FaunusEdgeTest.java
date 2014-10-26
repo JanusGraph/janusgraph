@@ -38,8 +38,8 @@ public class FaunusEdgeTest extends TestCase {
 
         StandardFaunusEdge edge1 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "knows");
         assertEquals(edge1.getLabel(), "knows");
-        assertEquals(edge1.getVertex(Direction.OUT).getLongId(), 1l);
-        assertEquals(edge1.getVertex(Direction.IN).getLongId(), 2l);
+        assertEquals(edge1.getVertex(Direction.OUT).longId(), 1l);
+        assertEquals(edge1.getVertex(Direction.IN).longId(), 2l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
@@ -51,23 +51,23 @@ public class FaunusEdgeTest extends TestCase {
 
         StandardFaunusEdge edge2 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(edge1, edge2);
-        assertNull(edge2.getId());
-        assertEquals(edge2.getLongId(), -1l);
+        assertNull(edge2.id());
+        assertEquals(edge2.longId(), -1l);
         assertEquals(edge2.getLabel(), "knows");
-        assertEquals(edge2.getVertex(Direction.OUT).getLongId(), 1l);
-        assertEquals(edge2.getVertex(Direction.IN).getLongId(), 2l);
+        assertEquals(edge2.getVertex(Direction.OUT).longId(), 1l);
+        assertEquals(edge2.getVertex(Direction.IN).longId(), 2l);
 
     }
 
     public void testRelationIdentifier() {
         StandardFaunusEdge edge1 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 11, 12, "knows");
-        RelationIdentifier eid = (RelationIdentifier) edge1.getId();
+        RelationIdentifier eid = (RelationIdentifier) edge1.id();
         assertNotNull(eid);
         long[] eidl = eid.getLongRepresentation();
         assertEquals(4,eidl.length);
         assertEquals(1,eidl[0]);
         assertEquals(11,eidl[1]);
-        assertEquals(typeManager.getRelationType("knows").getLongId(),eidl[2]);
+        assertEquals(typeManager.getRelationType("knows").longId(),eidl[2]);
         assertEquals(12,eidl[3]);
 
     }
@@ -75,15 +75,15 @@ public class FaunusEdgeTest extends TestCase {
     public void testSerializationWithProperties() throws IOException {
 
         StandardFaunusEdge edge1 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), 1, 2, "knows");
-        edge1.setProperty("weight", 0.5f);
-        edge1.setProperty("type", "coworker");
-        edge1.setProperty("alive", true);
-        edge1.setProperty("bigLong", Long.MAX_VALUE);
-        edge1.setProperty("age", 1);
+        edge1.property("weight", 0.5f);
+        edge1.property("type", "coworker");
+        edge1.property("alive", true);
+        edge1.property("bigLong", Long.MAX_VALUE);
+        edge1.property("age", 1);
         assertEquals(edge1.getLabel(), "knows");
-        assertEquals(edge1.getVertex(Direction.OUT).getLongId(), 1l);
-        assertEquals(edge1.getVertex(Direction.IN).getLongId(), 2l);
-        assertEquals(edge1.getProperty("weight"), 0.5f);
+        assertEquals(edge1.getVertex(Direction.OUT).longId(), 1l);
+        assertEquals(edge1.getVertex(Direction.IN).longId(), 2l);
+        assertEquals(edge1.value("weight"), 0.5f);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
@@ -92,15 +92,15 @@ public class FaunusEdgeTest extends TestCase {
         StandardFaunusEdge edge2 = new StandardFaunusEdge(new ModifiableHadoopConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(edge1, edge2);
-        assertEquals(edge2.getLongId(), -1l);
+        assertEquals(edge2.longId(), -1l);
         assertEquals(edge2.getLabel(), "knows");
-        assertEquals(edge2.getVertex(Direction.OUT).getLongId(), 1l);
-        assertEquals(edge2.getVertex(Direction.IN).getLongId(), 2l);
-        assertEquals(edge2.getProperty("weight"), 0.5f);
-        assertEquals(edge2.getProperty("type"), "coworker");
-        assertEquals(edge2.getProperty("alive"), true);
-        assertEquals(edge2.getProperty("bigLong"), Long.MAX_VALUE);
-        assertEquals(edge2.getProperty("age"), 1);
+        assertEquals(edge2.getVertex(Direction.OUT).longId(), 1l);
+        assertEquals(edge2.getVertex(Direction.IN).longId(), 2l);
+        assertEquals(edge2.value("weight"), 0.5f);
+        assertEquals(edge2.value("type"), "coworker");
+        assertEquals(edge2.value("alive"), true);
+        assertEquals(edge2.value("bigLong"), Long.MAX_VALUE);
+        assertEquals(edge2.value("age"), 1);
         assertEquals(edge2.getPropertyKeys().size(), 5);
 
     }

@@ -59,7 +59,7 @@ public class AllEdgesIterator implements Iterator<Edge> {
         while (rel == null) {
             if (currentEdges.hasNext()) {
                 rel = (TitanEdge)currentEdges.next();
-                if (vertices != null && !vertices.contains(rel.getVertex(Direction.IN)))
+                if (vertices != null && !vertices.contains(rel.vertex(Direction.IN)))
                     rel = null;
             } else {
                 if (vertexIter.hasNext()) {

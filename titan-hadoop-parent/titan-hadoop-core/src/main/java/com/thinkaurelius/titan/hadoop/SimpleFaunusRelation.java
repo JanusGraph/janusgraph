@@ -52,12 +52,12 @@ public abstract class SimpleFaunusRelation extends LifeCycleElement implements F
     //##################################
 
     @Override
-    public Object getId() {
-        return getLongId();
+    public Object id() {
+        return longId();
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return FaunusElement.NO_ID;
     }
 
@@ -72,22 +72,22 @@ public abstract class SimpleFaunusRelation extends LifeCycleElement implements F
     }
 
     @Override
-    public void setProperty(String key, Object value) {
+    public void property(String key, Object value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setProperty(PropertyKey key, Object value) {
+    public void property(PropertyKey key, Object value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <O> O getProperty(PropertyKey key) {
+    public <O> O value(PropertyKey key) {
         return null;
     }
 
     @Override
-    public <O> O getProperty(String key) {
+    public <O> O value(String key) {
         return null;
     }
 
@@ -117,7 +117,7 @@ public abstract class SimpleFaunusRelation extends LifeCycleElement implements F
     }
 
     @Override
-    public Direction getDirection(TitanVertex vertex) {
+    public Direction direction(TitanVertex vertex) {
         throw new UnsupportedOperationException();
     }
 

@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQueryBuilder;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 import javax.annotation.Nullable;
@@ -199,12 +198,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
     //######### PROXY ############
 
     @Override
-    public Iterable<Edge> edges() {
-        return (Iterable)getRelations(RelationCategory.EDGE);
-    }
-
-    @Override
-    public Iterable<TitanEdge> titanEdges() {
+    public Iterable<TitanEdge> edges() {
         return (Iterable)getRelations(RelationCategory.EDGE);
     }
 
@@ -220,15 +214,15 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
     }
 
     @Override
-    public Iterable<Vertex> vertices() {
-        return Iterables.transform(titanEdges(),new Function<TitanEdge, Vertex>() {
+    public Iterable<TitanVertex> vertices() {
+        return Iterables.transform(edges(),new Function<TitanEdge, Vertex>() {
             @Nullable
             @Override
             public Vertex apply(@Nullable TitanEdge edge) {
-                if (dir!=Direction.BOTH) return edge.getVertex(dir.opposite());
+                if (dir!=Direction.BOTH) return edge.vertex(dir.opposite());
                 else {
                     assert (baseElement instanceof FaunusVertex);
-                    return edge.getOtherVertex((FaunusVertex)baseElement);
+                    return edge.otherVertex((FaunusVertex) baseElement);
                 }
             }
         });
@@ -237,13 +231,13 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
     @Override
     public VertexList vertexIds() {
         FaunusVertexList list = new FaunusVertexList();
-        for (Vertex v : vertices()) list.add((FaunusVertex)v);
+        for (TitanVertex v : vertices()) list.add((FaunusVertex)v);
         return list;
     }
 
     @Override
     public long count() {
-        return Iterables.size(titanEdges());
+        return Iterables.size(edges());
     }
 
     @Override
@@ -292,13 +286,13 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
         @Override
         public LongArrayList getIDs() {
             LongArrayList arr = new LongArrayList(size());
-            for (FaunusVertex v : list) arr.add(v.getLongId());
+            for (FaunusVertex v : list) arr.add(v.longId());
             return arr;
         }
 
         @Override
         public long getID(int pos) {
-            return get(pos).getLongId();
+            return get(pos).longId();
         }
 
         @Override

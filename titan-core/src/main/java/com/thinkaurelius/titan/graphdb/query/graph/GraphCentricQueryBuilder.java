@@ -78,11 +78,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return this;
     }
 
-    @Override
     public GraphCentricQueryBuilder has(PropertyKey key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
-        Preconditions.checkNotNull(predicate);
-        return has(key.name(), predicate, condition);
+        return has(key.name(),predicate,condition);
     }
 
     @Override
@@ -119,17 +117,13 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder orderBy(String key, Order order) {
-        Preconditions.checkArgument(tx.containsPropertyKey(key),"Provided key does not exist: %s",key);
-        return orderBy(tx.getPropertyKey(key), order);
-    }
-
-    @Override
-    public GraphCentricQueryBuilder orderBy(PropertyKey key, Order order) {
+    public GraphCentricQueryBuilder orderBy(String keyName, Order order) {
+        Preconditions.checkArgument(tx.containsPropertyKey(keyName),"Provided key does not exist: %s",keyName);
+        PropertyKey key = tx.getPropertyKey(keyName);
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
-        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
-                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.getDataType());
-        Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
+        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.dataType()),
+                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
+        Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!orders.containsKey(key));
         orders.add(key, order);
         return this;
@@ -141,15 +135,15 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 	 */
 
     @Override
-    public Iterable<Vertex> vertices() {
+    public Iterable<TitanVertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanVertex.class);
     }
 
     @Override
-    public Iterable<Edge> edges() {
+    public Iterable<TitanEdge> edges() {
         GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanEdge.class);
     }
 
     @Override

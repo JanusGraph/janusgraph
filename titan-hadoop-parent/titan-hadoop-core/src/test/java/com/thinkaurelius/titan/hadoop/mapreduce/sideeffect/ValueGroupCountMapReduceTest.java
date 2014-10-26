@@ -5,7 +5,6 @@ import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_C
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -170,7 +169,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
         for (long i = 0; i < 15; i++) {
             FaunusVertex v = new FaunusVertex(new ModifiableHadoopConfiguration(), i);
-            v.setProperty("age", i);
+            v.property("age", i);
             vertices.put(i, v);
             v.startPath();
         }
@@ -188,7 +187,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
         Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
         for (long i = 0; i < 15; i++) {
             FaunusVertex v = new FaunusVertex(new ModifiableHadoopConfiguration(), i);
-            v.setProperty("age", i);
+            v.property("age", i);
             vertices.put(i, v);
             v.startPath();
         }

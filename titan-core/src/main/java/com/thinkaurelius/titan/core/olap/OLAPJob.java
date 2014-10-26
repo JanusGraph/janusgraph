@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
  * The program can only inspect the vertex's adjacency list through the pre-computed properties declared in the {@link OLAPJobBuilder} through
  * {@link OLAPQueryBuilder} accessible via {@link com.thinkaurelius.titan.core.olap.OLAPJobBuilder#addQuery()}.
  * In other words, the adjacency list and neighboring vertex's state information is aggregated as declared in {@link OLAPJobBuilder} and
- * then made available as a vertex property retrievable via {@link TitanVertex#getProperty(String)} where the key is equal to the name
+ * then made available as a vertex property retrievable via {@link TitanVertex#value(String)} where the key is equal to the name
  * of the declared query (see {@link OLAPQueryBuilder#setName(String)}. The vertex can also access it's own state which is also
  * a property under the defined key in {@link OLAPJobBuilder#setStateKey(String)}.
  * <p/>

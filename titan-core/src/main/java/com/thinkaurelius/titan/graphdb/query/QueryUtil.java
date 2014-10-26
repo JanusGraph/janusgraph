@@ -43,6 +43,26 @@ public class QueryUtil {
         return (InternalRelationType) t;
     }
 
+    public static Iterable<TitanVertex> getVertices(StandardTitanTx tx,
+                                                    PropertyKey key, Object equalityCondition) {
+        return tx.query().has(key,Cmp.EQUAL,equalityCondition).vertices();
+    }
+
+    public static Iterable<TitanVertex> getVertices(StandardTitanTx tx,
+                                                    String key, Object equalityCondition) {
+        return tx.query().has(key,Cmp.EQUAL,equalityCondition).vertices();
+    }
+
+    public static Iterable<TitanEdge> getEdges(StandardTitanTx tx,
+                                                    PropertyKey key, Object equalityCondition) {
+        return tx.query().has(key,Cmp.EQUAL,equalityCondition).edges();
+    }
+
+    public static Iterable<TitanEdge> getEdges(StandardTitanTx tx,
+                                               String key, Object equalityCondition) {
+        return tx.query().has(key,Cmp.EQUAL,equalityCondition).edges();
+    }
+
     /**
      * Query-normal-form (QNF) for Titan is a variant of CNF (conjunctive normal form) with negation inlined where possible
      *
@@ -145,7 +165,7 @@ public class QueryUtil {
             if (type.isPropertyKey()) {
                 PropertyKey key = (PropertyKey) type;
                 assert predicate.isValidCondition(value);
-                Preconditions.checkArgument(key.getDataType()==Object.class || predicate.isValidValueType(key.getDataType()), "Data type of key is not compatible with condition");
+                Preconditions.checkArgument(key.dataType()==Object.class || predicate.isValidValueType(key.dataType()), "Data type of key is not compatible with condition");
             } else { //its a label
                 Preconditions.checkArgument(((EdgeLabel) type).isUnidirected());
                 Preconditions.checkArgument(predicate.isValidValueType(TitanVertex.class), "Data type of key is not compatible with condition");

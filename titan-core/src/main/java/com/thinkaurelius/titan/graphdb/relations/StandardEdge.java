@@ -44,7 +44,7 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
     }
 
     @Override
-    public <O> O getPropertyDirect(RelationType type) {
+    public <O> O getValueDirect(RelationType type) {
         return (O) properties.get(type);
     }
 

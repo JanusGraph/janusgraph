@@ -20,7 +20,7 @@ public enum LogTxMeta {
         @Override
         public void setValue(TransactionBuilder builder, Object value) {
             Preconditions.checkArgument(value!=null && (value instanceof String));
-            builder.setGroupName((String)value);
+            builder.groupName((String) value);
         }
 
         @Override
@@ -39,7 +39,7 @@ public enum LogTxMeta {
         @Override
         public void setValue(TransactionBuilder builder, Object value) {
             Preconditions.checkArgument(value!=null && (value instanceof String));
-            builder.setLogIdentifier((String) value);
+            builder.logIdentifier((String) value);
         }
         @Override
         public Class dataType() {

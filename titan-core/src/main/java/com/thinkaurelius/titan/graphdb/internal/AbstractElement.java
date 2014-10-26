@@ -43,7 +43,7 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
         if (other instanceof AbstractElement) {
             if (getCompareId()!=((AbstractElement)other).getCompareId()) return false;
         } else if (other instanceof TitanElement) {
-            if (getCompareId()!=((TitanElement)other).getLongId()) return false;
+            if (getCompareId()!=((TitanElement)other).longId()) return false;
         } else return false;
 
         if (this instanceof TitanVertex && other instanceof TitanVertex)
@@ -62,8 +62,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
     }
 
     public static int compare(TitanElement e1, TitanElement e2) {
-        long e1id = (e1 instanceof AbstractElement)?((AbstractElement)e1).getCompareId():e1.getLongId();
-        long e2id = (e2 instanceof AbstractElement)?((AbstractElement)e2).getCompareId():e2.getLongId();
+        long e1id = (e1 instanceof AbstractElement)?((AbstractElement)e1).getCompareId():e1.longId();
+        long e2id = (e2 instanceof AbstractElement)?((AbstractElement)e2).getCompareId():e2.longId();
         return Longs.compare(e1id,e2id);
     }
 
@@ -78,22 +78,22 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
 	 */
 
     /**
-     * Long identifier used to compare elements. Often, this is the same as {@link #getLongId()}
+     * Long identifier used to compare elements. Often, this is the same as {@link #longId()}
      * but some instances of elements may be considered the same even if their ids differ. In that case,
      * this method should be overwritten to return an id that can be used for comparison.
      * @return
      */
     protected long getCompareId() {
-        return getLongId();
+        return longId();
     }
 
     @Override
-    public long getLongId() {
+    public long longId() {
         return id;
     }
 
     public boolean hasId() {
-        return !isTemporaryId(getLongId());
+        return !isTemporaryId(longId());
     }
 
     @Override

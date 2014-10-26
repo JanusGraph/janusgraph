@@ -24,7 +24,7 @@ public class IncidenceCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public boolean evaluate(E relation) {
-        return relation.isEdge() && ((TitanEdge) relation).getOtherVertex(baseVertex).equals(otherVertex);
+        return relation.isEdge() && ((TitanEdge) relation).otherVertex(baseVertex).equals(otherVertex);
     }
 
     @Override

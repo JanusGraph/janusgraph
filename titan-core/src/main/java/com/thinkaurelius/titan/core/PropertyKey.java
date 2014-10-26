@@ -24,12 +24,12 @@ public interface PropertyKey extends RelationType {
      *
      * @return Data type for this property key.
      */
-    public Class<?> getDataType();
+    public Class<?> dataType();
 
     /**
      * The {@link Cardinality} of this property key.
      * @return
      */
-    public Cardinality getCardinality();
+    public Cardinality cardinality();
 
 }

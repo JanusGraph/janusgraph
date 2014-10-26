@@ -87,8 +87,8 @@ public class TitanGraphOutputMapReduce {
 
     //UTILITY METHODS
     private static Object getValue(TitanRelation relation, TitanGraph graph) {
-        if (relation.isProperty()) return ((TitanVertexProperty)relation).getValue();
-        else return graph.getVertex(((TitanEdge) relation).getVertex(IN).getLongId());
+        if (relation.isProperty()) return ((TitanVertexProperty)relation).value();
+        else return graph.v(((TitanEdge) relation).vertex(IN).longId());
     }
 
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES
@@ -122,18 +122,18 @@ public class TitanGraphOutputMapReduce {
                 final TitanVertex titanVertex = this.getCreateOrDeleteVertex(value, context);
                 if (null != titanVertex) { // the vertex was state != deleted (if it was we know incident edges are deleted too)
                     // Propagate shell vertices with Titan ids
-                    final FaunusVertex shellVertex = new FaunusVertex(faunusConf, value.getLongId());
-                    shellVertex.setProperty(TITAN_ID, titanVertex.getLongId());
+                    final FaunusVertex shellVertex = new FaunusVertex(faunusConf, value.longId());
+                    shellVertex.property(TITAN_ID, titanVertex.longId());
                     for (final TitanEdge edge : value.query().direction(OUT).titanEdges()) {
                         if (!trackState || edge.isNew()) { //Only need to propagate ids for new edges
-                            this.longWritable.set(edge.getVertex(IN).getLongId());
+                            this.longWritable.set(edge.vertex(IN).longId());
                             context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                         }
                     }
 
-                    this.longWritable.set(value.getLongId());
+                    this.longWritable.set(value.longId());
 //                    value.getPropertiesWithState().clear();  // no longer needed in reduce phase
-                    value.setProperty(TITAN_ID, titanVertex.getLongId()); // need this for id resolution in edge-map phase
+                    value.property(TITAN_ID, titanVertex.longId()); // need this for id resolution in edge-map phase
 //                    value.removeEdges(Tokens.Action.DROP, OUT); // no longer needed in reduce phase
                     context.write(this.longWritable, this.vertexHolder.set('v', value));
                 }
@@ -161,7 +161,7 @@ public class TitanGraphOutputMapReduce {
 
         public TitanVertex getCreateOrDeleteVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
             if (this.trackState && faunusVertex.isRemoved()) {
-                final Vertex titanVertex = graph.getVertex(faunusVertex.getLongId());
+                final Vertex titanVertex = graph.v(faunusVertex.longId());
                 if (null == titanVertex)
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.NULL_VERTICES_IGNORED, 1L);
                 else {
@@ -175,7 +175,7 @@ public class TitanGraphOutputMapReduce {
                     // Vertex is new to this faunus run, but might already exist in Titan
                     titanVertex = getTitanVertex(faunusVertex, context);
                 } else {
-                    titanVertex = (TitanVertex) graph.getVertex(faunusVertex.getLongId());
+                    titanVertex = (TitanVertex) graph.v(faunusVertex.longId());
                     if (titanVertex==null) {
                         DEFAULT_COMPAT.incrementContextCounter(context, Counters.NULL_VERTICES_IGNORED, 1L);
                         return null;
@@ -201,7 +201,7 @@ public class TitanGraphOutputMapReduce {
                 return loaderScript.getVertex(faunusVertex, graph, context);
             } else {
                 VertexLabel titanLabel = BaseVertexLabel.DEFAULT_VERTEXLABEL;
-                FaunusVertexLabel faunusLabel = faunusVertex.getVertexLabel();
+                FaunusVertexLabel faunusLabel = faunusVertex.vertexLabel();
                 if (!faunusLabel.isDefault()) titanLabel = graph.getOrCreateVertexLabel(faunusLabel.name());
                 TitanVertex tv = graph.addVertexWithLabel(titanLabel);
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTICES_ADDED, 1L);
@@ -247,7 +247,7 @@ public class TitanGraphOutputMapReduce {
             } else {
                 StandardFaunusVertexProperty faunusProperty = (StandardFaunusVertexProperty)faunusRelation;
                 assert dir==OUT;
-                titanRelation = titanVertex.addProperty(faunusProperty.getTypeName(),faunusProperty.getValue());
+                titanRelation = titanVertex.property(faunusProperty.getTypeName(), faunusProperty.value());
                 DEFAULT_COMPAT.incrementContextCounter(context, Counters.VERTEX_PROPERTIES_ADDED, 1L);
             }
         }
@@ -264,7 +264,7 @@ public class TitanGraphOutputMapReduce {
         if (faunusRelation.isModified()  || faunusRelation.isNew()) { //Synchronize incident properties + unidirected edges
             for (TitanRelation faunusProp : faunusRelation.query().queryAll().relations()) {
                 if (faunusProp.isRemoved()) {
-                    titanRelation.removeProperty(faunusProp.getType().name());
+                    titanRelation.property(faunusProp.getType().name()).remove();
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGE_PROPERTIES_REMOVED, 1L);
                 }
             }
@@ -272,12 +272,12 @@ public class TitanGraphOutputMapReduce {
                 if (faunusProp.isNew()) {
                     Object value;
                     if (faunusProp.isProperty()) {
-                        value = ((FaunusVertexProperty)faunusProp).getValue();
+                        value = ((FaunusVertexProperty)faunusProp).value();
                     } else {
                         //TODO: ensure that the adjacent vertex has been previous assigned an id since ids don't propagate along unidirected edges
-                        value = graph.getVertex(((FaunusEdge)faunusProp).getVertexId(IN));
+                        value = graph.v(((FaunusEdge) faunusProp).getVertexId(IN));
                     }
-                    titanRelation.setProperty(faunusProp.getType().name(),value);
+                    titanRelation.property(faunusProp.getType().name(), value);
                     DEFAULT_COMPAT.incrementContextCounter(context, Counters.EDGE_PROPERTIES_ADDED, 1L);
                 }
             }
@@ -292,13 +292,13 @@ public class TitanGraphOutputMapReduce {
         Long othervertexid = faunusEdge.getVertexId(otherDir);
         if (null != idMap && idMap.containsKey(othervertexid))
             othervertexid = idMap.get(othervertexid);
-        TitanVertex otherVertex = (TitanVertex)graph.getVertex(othervertexid);
+        TitanVertex otherVertex = graph.v(othervertexid);
         //TODO: check that other vertex has valid id assignment for unidirected edges
         return otherVertex;
     }
 
     private static Map<Long, Long> getIdMap(final FaunusVertex faunusVertex) {
-        Map<Long, Long> idMap = faunusVertex.getProperty(ID_MAP_KEY);
+        Map<Long, Long> idMap = faunusVertex.value(ID_MAP_KEY);
         if (null == idMap)
             idMap = ImmutableMap.of();
         return idMap;
@@ -310,10 +310,10 @@ public class TitanGraphOutputMapReduce {
         if (faunusRelation.isEdge()) {
             TitanVertex otherVertex;
             if (otherTitanVertexId!=null) {
-                otherVertex = (TitanVertex)graph.getVertex(otherTitanVertexId);
+                otherVertex = (TitanVertex)graph.v(otherTitanVertexId);
             } else {
                 StandardFaunusEdge edge = (StandardFaunusEdge)faunusRelation;
-                otherVertex = (TitanVertex) graph.getVertex(edge.getVertexId(dir.opposite()));
+                otherVertex = (TitanVertex) graph.v(edge.getVertexId(dir.opposite()));
             }
             if (otherVertex!=null) qb.adjacent(otherVertex);
             else return null;
@@ -322,10 +322,10 @@ public class TitanGraphOutputMapReduce {
         TitanRelation titanRelation = (TitanRelation)Iterables.getFirst(Iterables.filter(faunusRelation.isEdge()?qb.titanEdges():qb.properties(),new Predicate<TitanRelation>() {
             @Override
             public boolean apply(@Nullable TitanRelation rel) {
-                return rel.getLongId()==faunusRelation.getLongId();
+                return rel.longId()==faunusRelation.longId();
             }
         }),null);
-        assert titanRelation==null || titanRelation.getLongId()==faunusRelation.getLongId();
+        assert titanRelation==null || titanRelation.longId()==faunusRelation.longId();
         return titanRelation;
     }
 
@@ -339,13 +339,13 @@ public class TitanGraphOutputMapReduce {
             final java.util.Map<Long, Object> idMap = new HashMap<Long, Object>();
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
-                    idMap.put(holder.get().getLongId(), holder.get().getProperty(TITAN_ID));
+                    idMap.put(holder.get().longId(), holder.get().value(TITAN_ID));
                 } else {
                     faunusVertex = holder.get();
                 }
             }
             if (null != faunusVertex) {
-                faunusVertex.setProperty(ID_MAP_KEY, idMap);
+                faunusVertex.property(ID_MAP_KEY, idMap);
                 context.write(NullWritable.get(), faunusVertex);
             } else {
                 LOGGER.warn("No source vertex: hadoopVertex[" + key.get() + "]");
@@ -406,7 +406,7 @@ public class TitanGraphOutputMapReduce {
         public TitanEdge getCreateOrDeleteEdge(final FaunusVertex faunusVertex, final StandardFaunusEdge faunusEdge, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws InterruptedException {
 
             final Direction dir = IN;
-            final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getProperty(TITAN_ID));
+            final TitanVertex titanVertex = this.graph.v(faunusVertex.value(TITAN_ID));
 
             if (null != loaderScript && loaderScript.hasEdgeMethod()) {
                 TitanEdge te = loaderScript.getEdge(faunusEdge, titanVertex, getOtherTitanVertex(faunusVertex, faunusEdge, dir.opposite(), graph), graph, context);
