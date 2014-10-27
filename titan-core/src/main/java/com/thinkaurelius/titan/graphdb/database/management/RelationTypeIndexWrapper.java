@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Order;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -42,7 +42,7 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public Order getSortOrder() {
-        return type.getSortOrder();
+        return type.getSortOrder().getTP();
 
     }
 

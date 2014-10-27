@@ -4,7 +4,10 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
@@ -26,8 +29,11 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
 
     public static void checkName(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
+        Preconditions.checkArgument(!Token.isSystemName(name),
+                "Name is reserved by system and cannot be used: %s",name);
         for (char c : StandardRelationTypeMaker.RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);
+
     }
 
     public StandardVertexLabelMaker name(String name) {

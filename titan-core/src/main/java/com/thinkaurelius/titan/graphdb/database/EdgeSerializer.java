@@ -20,10 +20,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
@@ -138,7 +135,7 @@ public class EdgeSerializer implements RelationReader {
             int keyLength = endKeyPos-startKeyPos; //after reading the ids, we are on the last byte of the key
             in.movePositionTo(startKeyPos);
             ReadBuffer inkey = in;
-            if (def.getSortOrder()==Order.DESC) inkey = in.subrange(keyLength,true);
+            if (def.getSortOrder()== Order.DESC) inkey = in.subrange(keyLength,true);
             readInlineTypes(keysig, properties, inkey, tx, InlineType.KEY);
             in.movePositionTo(currentPos);
         }

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
+import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -9,8 +10,6 @@ import org.apache.commons.lang.StringUtils;
 public class Token {
 
     public static final char SEPARATOR_CHAR = '%';
-
-    public static final char SPECIAL_TYPE_CHAR = '$';
 
     public static final String getSeparatedName(String... components) {
         for (String component : components) verifyName(component);
@@ -27,6 +26,14 @@ public class Token {
     }
 
     public static final String INTERNAL_INDEX_NAME = "internalindex";
+
+    public static boolean isSystemName(String name) {
+        return Graph.System.isSystem(name);
+    }
+
+    public static String makeSystemName(String name) {
+        return Graph.System.system(name);
+    }
 
 
 

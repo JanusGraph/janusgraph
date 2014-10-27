@@ -24,7 +24,7 @@ public enum Mapping {
      * Returns the mapping as a parameter so that it can be passed to {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}
      * @return
      */
-    public Parameter getParameter() {
+    public Parameter asParameter() {
         return ParameterType.MAPPING.getParameter(this);
     }
 

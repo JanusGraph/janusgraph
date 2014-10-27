@@ -16,13 +16,8 @@ import java.util.List;
  */
 public interface InternalVertex extends TitanVertex, InternalElement {
 
+    @Override
     public InternalVertex it();
-
-	/* ---------------------------------------------------------------
-	 * Incident TitanRelation Operations - Package level only
-	 * ---------------------------------------------------------------
-	 */
-
 
     /**
      * Deleted relation e from the adjacency list of this vertex and updates the state of the vertex to reflect
@@ -78,6 +73,7 @@ public interface InternalVertex extends TitanVertex, InternalElement {
      */
     public boolean hasAddedRelations();
 
+    @Override
     public VertexCentricQueryBuilder query();
 
 

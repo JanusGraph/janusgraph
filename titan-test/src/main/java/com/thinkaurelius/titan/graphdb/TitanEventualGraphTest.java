@@ -94,12 +94,12 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         v2 = tx2.v(id2);
         for (VertexProperty prop : v1.properties(name).toList()) {
             if (features.hasTimestamps()) {
-                Timestamp t = prop.value("$timestamp");
+                Timestamp t = prop.value("^timestamp");
                 assertEquals(100,t.sinceEpoch(unit));
                 assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
             }
             if (features.hasCellTTL()) {
-                Duration d = prop.value("$ttl");
+                Duration d = prop.value("^ttl");
                 assertEquals(0l,d.getLength(unit));
                 assertTrue(d.isZeroLength());
             }
@@ -327,7 +327,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         e.remove();
         sign(v.addEdge("o2m",u),txid);
         for (String label : new String[]{"em","emf"}) {
-            e = getOnlyElement(v.outE("label"));
+            e = getOnlyElement(v.outE(label));
             assertEquals(1,e.<Integer>value("sig").intValue());
             sign((TitanEdge)e,txid);
         }

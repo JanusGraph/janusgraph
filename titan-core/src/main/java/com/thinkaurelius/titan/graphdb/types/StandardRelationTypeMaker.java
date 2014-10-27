@@ -8,9 +8,11 @@ import com.thinkaurelius.titan.core.schema.RelationTypeMaker;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -19,7 +21,7 @@ import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
-    static final char[] RESERVED_CHARS = {'{', '}', '"', '$', Token.SEPARATOR_CHAR};
+    static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
@@ -66,12 +68,11 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     public static void checkName(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
+        Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase())
+                && !Token.isSystemName(name),
+                "Name is reserved by system and cannot be used: %s",name);
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
-        Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
-                "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
-        Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase()),
-                "Name is reserved by system and cannot be used: %s",name);
     }
 
     private void checkGeneralArguments() {
@@ -169,8 +170,8 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     /**
-     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link com.thinkaurelius.titan.core.Order#ASC}) or
-     * decreasing ({@link com.thinkaurelius.titan.core.Order#DESC}).
+     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link com.thinkaurelius.titan.graphdb.internal.Order#ASC}) or
+     * decreasing ({@link com.thinkaurelius.titan.graphdb.internal.Order#DESC}).
      *
      * Note, that only one sort order can be specified and that a sort key must be defined to use a sort order.
      *

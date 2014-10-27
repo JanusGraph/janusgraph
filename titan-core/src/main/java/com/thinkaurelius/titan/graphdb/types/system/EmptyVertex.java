@@ -79,8 +79,6 @@ public class EmptyVertex implements InternalVertex {
         else return value(tx().getPropertyKey(key));
     }
 
-
-
 	/* ---------------------------------------------------------------
 	 * Convenience Methods for TitanElement Creation
 	 * ---------------------------------------------------------------

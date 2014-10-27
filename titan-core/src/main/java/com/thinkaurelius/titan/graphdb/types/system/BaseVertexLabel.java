@@ -1,13 +1,14 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel {
 
-    public static final BaseVertexLabel DEFAULT_VERTEXLABEL = new BaseVertexLabel("_default");
+    public static final BaseVertexLabel DEFAULT_VERTEXLABEL = new BaseVertexLabel(Vertex.DEFAULT_LABEL);
 
     private final String name;
 

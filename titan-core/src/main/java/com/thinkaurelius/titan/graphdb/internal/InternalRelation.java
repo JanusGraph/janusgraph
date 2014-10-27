@@ -19,6 +19,7 @@ public interface InternalRelation extends TitanRelation, InternalElement {
      *
      * @return
      */
+    @Override
     public InternalRelation it();
 
     /**

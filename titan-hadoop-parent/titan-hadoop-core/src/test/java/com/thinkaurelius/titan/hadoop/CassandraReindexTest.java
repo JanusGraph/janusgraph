@@ -27,7 +27,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.schema.SchemaAction;

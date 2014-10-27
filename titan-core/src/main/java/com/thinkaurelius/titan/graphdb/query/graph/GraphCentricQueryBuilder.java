@@ -11,14 +11,13 @@ import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +116,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder orderBy(String keyName, Order order) {
+    public GraphCentricQueryBuilder orderBy(String keyName, com.tinkerpop.gremlin.structure.Order order) {
         Preconditions.checkArgument(tx.containsPropertyKey(keyName),"Provided key does not exist: %s",keyName);
         PropertyKey key = tx.getPropertyKey(keyName);
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");
@@ -125,7 +124,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.name(), key.dataType());
         Preconditions.checkArgument(key.cardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.name());
         Preconditions.checkArgument(!orders.containsKey(key));
-        orders.add(key, order);
+        orders.add(key, Order.convert(order));
         return this;
     }
 

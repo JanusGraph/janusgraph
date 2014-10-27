@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core.log;
 
 import com.thinkaurelius.titan.core.*;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
@@ -42,18 +43,8 @@ public interface ChangeState {
      * @param labels
      * @return
      */
-    public Iterable<TitanEdge> getEdges(TitanVertex vertex, Change change, Direction dir, String... labels);
+    public Iterable<TitanEdge> getEdges(Vertex vertex, Change change, Direction dir, String... labels);
 
-    /**
-     * Returns all edges incident on the given vertex in the given direction that match the provided change state and edge labels.
-     *
-     * @param vertex
-     * @param change
-     * @param dir
-     * @param labels
-     * @return
-     */
-    public Iterable<TitanEdge> getTitanEdges(TitanVertex vertex, Change change, Direction dir, EdgeLabel... labels);
 
     /**
      * Returns all properties incident for the given vertex that match the provided change state and property keys.
@@ -63,17 +54,8 @@ public interface ChangeState {
      * @param keys
      * @return
      */
-    public Iterable<TitanVertexProperty> getProperties(TitanVertex vertex, Change change, String... keys);
+    public Iterable<TitanVertexProperty> getProperties(Vertex vertex, Change change, String... keys);
 
-    /**
-     * Returns all properties incident for the given vertex that match the provided change state and property keys.
-     *
-     * @param vertex
-     * @param change
-     * @param keys
-     * @return
-     */
-    public Iterable<TitanVertexProperty> getTitanProperties(TitanVertex vertex, Change change, PropertyKey... keys);
 
 
 }

@@ -18,10 +18,13 @@ import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
@@ -43,6 +46,9 @@ import static org.junit.Assert.assertTrue;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class TitanGraphBaseTest {
+
+    public static final String LABEL_NAME = T.label.getAccessor();
+    public static final String ID_NAME = T.id.getAccessor();
 
     public WriteConfiguration config;
     public ModifiableConfiguration adjustedConfig;

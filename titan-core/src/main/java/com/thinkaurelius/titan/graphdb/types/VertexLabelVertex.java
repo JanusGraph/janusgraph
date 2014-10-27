@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;

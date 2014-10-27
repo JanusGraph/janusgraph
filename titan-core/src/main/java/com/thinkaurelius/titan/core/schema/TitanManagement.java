@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Order;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -34,8 +35,8 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
-     * with default sort order {@link Order#ASC}.
+     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
      *
      * @param label
      * @param name
@@ -62,8 +63,8 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys);
 
     /**
-     * Identical to {@link #buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.thinkaurelius.titan.core.Order, com.thinkaurelius.titan.core.RelationType...)}
-     * with default sort order {@link Order#ASC}.
+     * Identical to {@link #buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
      *
      * @param key
      * @param name

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.graphdb.internal;
 
 /**
  * Constants to specify the ordering of a result set in queries.
@@ -44,6 +44,14 @@ public enum Order {
         switch (this) {
             case ASC :return com.tinkerpop.gremlin.structure.Order.incr;
             case DESC: return com.tinkerpop.gremlin.structure.Order.decr;
+            default: throw new AssertionError();
+        }
+    }
+
+    public static Order convert(com.tinkerpop.gremlin.structure.Order order) {
+        switch(order) {
+            case incr: return ASC;
+            case decr: return DESC;
             default: throw new AssertionError();
         }
     }

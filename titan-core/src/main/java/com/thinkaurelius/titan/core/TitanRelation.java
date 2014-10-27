@@ -33,7 +33,7 @@ public interface TitanRelation extends TitanElement {
      * @param key string identifying a key
      * @return value or list of values associated with key
      */
-    public <V> V value(String key); //TODO: rename to value()
+    public <V> V value(String key);
 
     /**
      * Returns the type of this relation.

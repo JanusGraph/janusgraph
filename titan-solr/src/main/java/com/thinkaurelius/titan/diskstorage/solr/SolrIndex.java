@@ -4,7 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
-import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.schema.Mapping;

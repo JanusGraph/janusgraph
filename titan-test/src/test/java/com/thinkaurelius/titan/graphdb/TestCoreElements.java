@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
 

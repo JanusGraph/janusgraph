@@ -30,8 +30,8 @@ public enum ParameterType {
     public<V> V findParameter(Parameter[] parameters, V defaultValue) {
         V result = null;
         for (Parameter p : parameters) {
-            if (p.getKey().equalsIgnoreCase(name)) {
-                Object value = p.getValue();
+            if (p.key().equalsIgnoreCase(name)) {
+                Object value = p.value();
                 Preconditions.checkArgument(value!=null,"Invalid mapping specified: %s",value);
                 Preconditions.checkArgument(result==null,"Multiple mappings specified");
                 result = (V)value;

@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.internal.*;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.StringUtils;
 import static com.thinkaurelius.titan.graphdb.internal.Token.*;
@@ -24,23 +25,25 @@ import java.util.concurrent.TimeUnit;
  */
 public class ImplicitKey extends EmptyRelationType implements SystemRelationType, PropertyKey {
 
-    public static final ImplicitKey ID = new ImplicitKey(1001,"id",Object.class);
+    public static final ImplicitKey ID = new ImplicitKey(1001, T.id.getAccessor() ,Object.class);
 
-    public static final ImplicitKey TITANID = new ImplicitKey(1002,SPECIAL_TYPE_CHAR+"titanid",Long.class);
+    public static final ImplicitKey TITANID = new ImplicitKey(1002,Token.makeSystemName("nid"),Long.class);
 
-    public static final ImplicitKey LABEL = new ImplicitKey(11,"label",String.class);
+    public static final ImplicitKey LABEL = new ImplicitKey(11, T.label.getAccessor() ,String.class);
 
-//    public static final ImplicitKey KEY = new ImplicitKey("key",Long.class);
+    public static final ImplicitKey KEY = new ImplicitKey(12, T.key.getAccessor(), String.class);
 
-    public static final ImplicitKey ADJACENT_ID = new ImplicitKey(1003,SPECIAL_TYPE_CHAR+"adjacent",Long.class);
+    public static final ImplicitKey VALUE = new ImplicitKey(13, T.value.getAccessor(), Object.class);
+
+    public static final ImplicitKey ADJACENT_ID = new ImplicitKey(1003,Token.makeSystemName("adjacent"),Long.class);
 
     //######### IMPLICIT KEYS WITH ID ############
 
-    public static final ImplicitKey TIMESTAMP = new ImplicitKey(5,SPECIAL_TYPE_CHAR+"timestamp",Timestamp.class);
+    public static final ImplicitKey TIMESTAMP = new ImplicitKey(5,Token.makeSystemName("timestamp"),Timestamp.class);
 
-    public static final ImplicitKey VISIBILITY = new ImplicitKey(6,SPECIAL_TYPE_CHAR+"visibility",String.class);
+    public static final ImplicitKey VISIBILITY = new ImplicitKey(6,Token.makeSystemName("visibility"),String.class);
 
-    public static final ImplicitKey TTL = new ImplicitKey(7,SPECIAL_TYPE_CHAR+"ttl",Duration.class);
+    public static final ImplicitKey TTL = new ImplicitKey(7,Token.makeSystemName("ttl"),Duration.class);
 
 
     public static final Map<EntryMetaData,ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
@@ -54,6 +57,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
 
     private ImplicitKey(final long id, final String name, final Class<?> datatype) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name) && datatype!=null && id>0);
+        assert Token.isSystemName(name);
         this.datatype=datatype;
         this.name=name;
         this.id= BaseRelationType.getSystemTypeId(id, TitanSchemaCategory.PROPERTYKEY);
@@ -67,6 +71,12 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
             return (O)Long.valueOf(e.longId());
         } else if (this==LABEL) {
             return (O)e.label();
+        } else if (this==KEY) {
+            if (e instanceof TitanProperty) return (O)((TitanProperty)e).key();
+            else return null;
+        } else if (this==VALUE) {
+            if (e instanceof TitanProperty) return (O)((TitanProperty)e).value();
+            else return null;
         } else if (this==TIMESTAMP || this==VISIBILITY) {
             if (e instanceof InternalRelation) {
                 InternalRelation r = (InternalRelation) e;

@@ -74,7 +74,7 @@ public class CassandraESReindexTest extends TitanGraphBaseTest {
         mgmt.makePropertyKey("desc").dataType(String.class).make();
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         // Declare a mixed index
-        TitanGraphIndex mixedIndex = mgmt.buildIndex("mixedTest",Vertex.class).addKey(name, Mapping.TEXT.getParameter()).buildMixedIndex(INDEX_NAME);
+        TitanGraphIndex mixedIndex = mgmt.buildIndex("mixedTest",Vertex.class).addKey(name, Mapping.TEXT.asParameter()).buildMixedIndex(INDEX_NAME);
         finishSchema();
 
         // Create some named vertices

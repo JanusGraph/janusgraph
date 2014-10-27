@@ -39,10 +39,7 @@ import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
@@ -272,22 +269,22 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys) {
-        return buildEdgeIndex(label, name, direction, Order.ASC, sortKeys);
+        return buildRelationTypeIndex(label, name, direction, Order.ASC, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
-        return buildRelationTypeIndex(label, name, direction, sortOrder, sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, com.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
+        return buildRelationTypeIndex(label, name, direction, Order.convert(sortOrder), sortKeys);
     }
 
     @Override
     public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, RelationType... sortKeys) {
-        return buildPropertyIndex(key, name, Order.ASC, sortKeys);
+        return buildRelationTypeIndex(key, name, Direction.OUT, Order.ASC, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys) {
-        return buildRelationTypeIndex(key, name, Direction.OUT, sortOrder, sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, com.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
+        return buildRelationTypeIndex(key, name, Direction.OUT, Order.convert(sortOrder), sortKeys);
     }
 
     private RelationTypeIndex buildRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
@@ -826,8 +823,8 @@ public class ManagementSystem implements TitanManagement {
             TypeDefinitionDescription desc = edge.value(BaseKey.SchemaDefinitionDesc);
             assert desc.getCategory()==TypeDefinitionCategory.INDEX_FIELD;
             Parameter[] parameters = (Parameter[])desc.getModifier();
-            assert parameters[parameters.length-1].getKey().equals(ParameterType.STATUS.getName());
-            if (parameters[parameters.length-1].getValue().equals(status)) continue;
+            assert parameters[parameters.length-1].key().equals(ParameterType.STATUS.getName());
+            if (parameters[parameters.length-1].value().equals(status)) continue;
 
             Parameter[] paraCopy = Arrays.copyOf(parameters,parameters.length);
             paraCopy[parameters.length-1]=ParameterType.STATUS.getParameter(status);

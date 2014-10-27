@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.core;
 
 
+import com.thinkaurelius.titan.graphdb.internal.InternalElement;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.datastructures.Removable;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Property;
@@ -93,9 +95,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @param key key
      * @return value or list of values associated with key
      */
-    public default <V> V value(PropertyKey key) {
-        return value(key.name());
-    }
+    public <V> V value(PropertyKey key);
 
     //########### LifeCycle Status ##########
 

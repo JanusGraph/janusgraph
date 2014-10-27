@@ -6,8 +6,10 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Order;
 import com.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.File;
@@ -55,7 +57,7 @@ public class GraphOfTheGodsFactory {
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
         EdgeLabel battled = mgmt.makeEdgeLabel("battled").signature(time).make();
-        mgmt.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.DESC, time);
+        mgmt.buildEdgeIndex(battled, "battlesByTime", Direction.BOTH, Order.decr, time);
         mgmt.makeEdgeLabel("lives").signature(reason).make();
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();
@@ -72,29 +74,29 @@ public class GraphOfTheGodsFactory {
         TitanTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertex("label","titan","name", "saturn","age", 10000);
+        Vertex saturn = tx.addVertex(T.label,"titan","name", "saturn","age", 10000);
 
-        Vertex sky = tx.addVertex("label","location","name", "sky");
+        Vertex sky = tx.addVertex(T.label,"location","name", "sky");
 
-        Vertex sea = tx.addVertex("label","location", "name", "sea");
+        Vertex sea = tx.addVertex(T.label,"location", "name", "sea");
 
-        Vertex jupiter = tx.addVertex("label","god", "name", "jupiter", "age", 5000);
+        Vertex jupiter = tx.addVertex(T.label,"god", "name", "jupiter", "age", 5000);
 
-        Vertex neptune = tx.addVertex("label","god", "name", "neptune", "age", 4500);
+        Vertex neptune = tx.addVertex(T.label,"god", "name", "neptune", "age", 4500);
 
-        Vertex hercules = tx.addVertex("label","demigod", "name", "hercules", "age", 30);
+        Vertex hercules = tx.addVertex(T.label,"demigod", "name", "hercules", "age", 30);
 
-        Vertex alcmene = tx.addVertex("label","human", "name", "alcmene", "age", 45);
+        Vertex alcmene = tx.addVertex(T.label,"human", "name", "alcmene", "age", 45);
 
-        Vertex pluto = tx.addVertex("label","god", "name", "pluto", "age", 4000);
+        Vertex pluto = tx.addVertex(T.label,"god", "name", "pluto", "age", 4000);
 
-        Vertex nemean = tx.addVertex("label","monster", "name", "nemean");
+        Vertex nemean = tx.addVertex(T.label,"monster", "name", "nemean");
 
-        Vertex hydra = tx.addVertex("label","monster", "name", "hydra");
+        Vertex hydra = tx.addVertex(T.label,"monster", "name", "hydra");
 
-        Vertex cerberus = tx.addVertex("label","monster", "name", "cerberus");
+        Vertex cerberus = tx.addVertex(T.label,"monster", "name", "cerberus");
 
-        Vertex tartarus = tx.addVertex("label","location", "name", "tartarus");
+        Vertex tartarus = tx.addVertex(T.label,"location", "name", "tartarus");
 
         // edges
 

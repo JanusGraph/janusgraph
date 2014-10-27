@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.log.ChangeState;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
@@ -81,7 +82,7 @@ class StandardChangeState implements ChangeState {
     }
 
     @Override
-    public Iterable<TitanEdge> getEdges(final TitanVertex vertex, final Change change, final Direction dir, final String... labels) {
+    public Iterable<TitanEdge> getEdges(final Vertex vertex, final Change change, final Direction dir, final String... labels) {
         final Set<String> stypes = toSet(labels);
         return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
             @Override
@@ -93,21 +94,9 @@ class StandardChangeState implements ChangeState {
         });
     }
 
-    @Override
-    public Iterable<TitanEdge> getTitanEdges(final TitanVertex vertex, final Change change, final Direction dir, final EdgeLabel... labels) {
-        final Set<EdgeLabel> stypes = toSet(labels);
-        return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
-            @Override
-            public boolean apply(@Nullable TitanRelation titanRelation) {
-                return titanRelation.isEdge() && titanRelation.isIncidentOn(vertex) &&
-                        (dir==Direction.BOTH || ((TitanEdge)titanRelation).vertex(dir).equals(vertex)) &&
-                        (stypes.isEmpty() || stypes.contains(titanRelation.getType()));
-            }
-        });
-    }
 
     @Override
-    public Iterable<TitanVertexProperty> getProperties(final TitanVertex vertex, final Change change, final String... keys) {
+    public Iterable<TitanVertexProperty> getProperties(final Vertex vertex, final Change change, final String... keys) {
         final Set<String> stypes = toSet(keys);
         return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
             @Override
@@ -118,15 +107,4 @@ class StandardChangeState implements ChangeState {
         });
     }
 
-    @Override
-    public Iterable<TitanVertexProperty> getTitanProperties(final TitanVertex vertex, final Change change, final PropertyKey... keys) {
-        final Set<PropertyKey> stypes = toSet(keys);
-        return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
-            @Override
-            public boolean apply(@Nullable TitanRelation titanRelation) {
-                return titanRelation.isProperty() && titanRelation.isIncidentOn(vertex) &&
-                        (stypes.isEmpty() || stypes.contains(titanRelation.getType()));
-            }
-        });
-    }
 }

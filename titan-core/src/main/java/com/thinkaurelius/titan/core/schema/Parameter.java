@@ -27,11 +27,11 @@ public class Parameter<V> {
         return new Parameter(key,value);
     }
 
-    public String getKey() {
+    public String key() {
         return key;
     }
 
-    public V getValue() {
+    public V value() {
         return value;
     }
 
