@@ -1128,7 +1128,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 return (Iterator) addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
-                        return query.getResultType().isInstance(relation) && !relation.isHidden() && query.matches(relation);
+                        return query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation);
                     }
                 }).iterator();
             } else return Iterators.emptyIterator();

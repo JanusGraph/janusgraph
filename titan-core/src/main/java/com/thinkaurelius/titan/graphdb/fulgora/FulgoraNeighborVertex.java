@@ -119,7 +119,7 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public boolean isHidden() {
+    public boolean isInvisible() {
         return false;
     }
 

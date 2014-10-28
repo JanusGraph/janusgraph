@@ -65,7 +65,7 @@ public class TitanHadoopGraph {
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
                 final RelationType type = typeManager.getExistingRelationType(relation.typeId);
-                if (((InternalRelationType)type).isHiddenType()) continue; //Ignore hidden types
+                if (((InternalRelationType)type).isInvisibleType()) continue; //Ignore hidden types
 
                 StandardFaunusRelation frel;
                 if (type.isPropertyKey()) {

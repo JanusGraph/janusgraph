@@ -103,8 +103,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
     }
 
     @Override
-    public boolean isHidden() {
-        return IDManager.VertexIDType.Hidden.is(id);
+    public boolean isInvisible() {
+        return IDManager.VertexIDType.Invisible.is(id);
     }
 
     @Override

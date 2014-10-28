@@ -412,8 +412,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(link.isDirected());
         assertFalse(child.isUnidirected());
         assertTrue(spouse.isDirected());
-        assertFalse(((InternalRelationType) friend).isHiddenType());
-        assertTrue(((InternalRelationType) friend).isHidden());
+        assertFalse(((InternalRelationType) friend).isInvisibleType());
+        assertTrue(((InternalRelationType) friend).isInvisible());
         assertEquals(0, ((InternalRelationType) friend).getSignature().length);
         sig = ((InternalRelationType)connect).getSignature();
         assertEquals(2,sig.length);
@@ -547,8 +547,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(link.isDirected());
         assertFalse(child.isUnidirected());
         assertTrue(spouse.isDirected());
-        assertFalse(((InternalRelationType) friend).isHiddenType());
-        assertTrue(((InternalRelationType) friend).isHidden());
+        assertFalse(((InternalRelationType) friend).isInvisibleType());
+        assertTrue(((InternalRelationType) friend).isInvisible());
         assertEquals(0, ((InternalRelationType) friend).getSignature().length);
         sig = ((InternalRelationType)connect).getSignature();
         assertEquals(2, sig.length);
@@ -1403,7 +1403,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(v.id(),v.value(ID_NAME));
         assertEquals(eid,e.value(ID_NAME));
         assertEquals("knows",e.value(LABEL_NAME));
-        assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(),v.value(LABEL_NAME));
+        assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(), v.value(LABEL_NAME));
         assertCount(1, v.bothE("knows").has(ID_NAME, eid));
         assertCount(0, v.bothE("knows").has(ID_NAME, RelationIdentifier.get(new long[]{4, 5, 6, 7})));
         assertCount(1, v.bothE("knows").has("^nid", eid.getRelationId()));

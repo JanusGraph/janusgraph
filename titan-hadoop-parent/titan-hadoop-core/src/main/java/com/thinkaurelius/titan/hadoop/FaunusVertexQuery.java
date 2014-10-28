@@ -308,7 +308,7 @@ public class FaunusVertexQuery extends BaseVertexCentricQueryBuilder<FaunusVerte
         @Override
         public boolean evaluate(TitanRelation relation) {
             FaunusRelation rel = (FaunusRelation)relation;
-            return !rel.getType().isHiddenType() && !rel.isRemoved();
+            return !rel.getType().isInvisibleType() && !rel.isRemoved();
         }
     }
 

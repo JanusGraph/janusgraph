@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
@@ -9,6 +11,7 @@ import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.relations.SimpleTitanProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
@@ -17,8 +20,11 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import com.tinkerpop.gremlin.util.StreamFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
+import java.util.stream.Stream;
 
 public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex.Iterators {
 
@@ -120,7 +126,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O value(PropertyKey key) {
-        if (!((InternalRelationType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
+        if (!((InternalRelationType)key).isInvisibleType() && tx().getConfiguration().hasPropertyPrefetching()) {
             properties().count().next();
         }
         Iterator<TitanVertexProperty> iter = query().type(key).properties().iterator();
@@ -187,14 +193,25 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return (Iterator)query().direction(direction).limit(i).labels(strings).vertices().iterator();
     }
 
+    public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... strings) {
+        if (strings==null) strings=new String[0];
+        return (Iterator)com.google.common.collect.Iterators.filter(query().keys(strings).properties().iterator(),
+                new Predicate<TitanVertexProperty>() {
+                    @Override
+                    public boolean apply(@Nullable TitanVertexProperty prop) {
+                        return hidden ^ !prop.isHidden();
+                    }
+                });
+    }
+
     @Override
     public <V> Iterator<VertexProperty<V>> propertyIterator(String... strings) {
-        return (Iterator)query().keys(strings).properties().iterator();
+        return propertyIterator(false,strings);
     }
 
     @Override
     public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
-        return (Iterator)query().keys(strings).system().properties().iterator();
+        return propertyIterator(true,strings);
     }
 
 }

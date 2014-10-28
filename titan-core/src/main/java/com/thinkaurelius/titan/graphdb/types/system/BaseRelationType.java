@@ -44,7 +44,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
     @Override
-    public boolean isHiddenType() {
+    public boolean isInvisibleType() {
         return true;
     }
 

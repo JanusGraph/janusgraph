@@ -15,6 +15,7 @@ import com.tinkerpop.gremlin.util.StreamFactory;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation, Edge.Iterators, VertexProperty.Iterators {
 
@@ -66,8 +67,12 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
+    public boolean isInvisible() {
+        return type.isInvisibleType();
+    }
+
     public boolean isHidden() {
-        return type.isHiddenType();
+        return Graph.Key.isHidden(type.name());
     }
 
     @Override
@@ -150,15 +155,14 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... strings) {
-        Iterator<RelationType> keys;
+        Stream<RelationType> keys;
         if (strings==null || strings.length==0) {
-            keys = getPropertyKeysDirect().iterator();
+            keys = StreamFactory.stream(getPropertyKeysDirect());
         } else {
-            keys = Arrays.asList(strings).stream().map(s -> tx().getRelationType(s)).filter(rt -> rt!=null).iterator();
+            keys = Arrays.asList(strings).stream().filter(s -> hidden ^ !Graph.Key.isHidden(s))
+                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null);
         }
-        return StreamFactory.stream(keys)
-                .filter( relationType -> hidden ^ !((InternalRelationType)relationType).isHiddenType())
-                .map( relationType -> (Property<V>)new SimpleTitanProperty<V>(this,relationType,value(relationType.name()))).iterator();
+        return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,value(rt.name()))).iterator();
     }
 
     @Override

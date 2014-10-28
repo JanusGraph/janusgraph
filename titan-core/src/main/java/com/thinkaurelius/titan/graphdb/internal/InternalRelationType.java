@@ -14,7 +14,7 @@ import com.tinkerpop.gremlin.structure.Direction;
  */
 public interface InternalRelationType extends RelationType, InternalVertex {
 
-    public boolean isHiddenType();
+    public boolean isInvisibleType();
 
     public long[] getSignature();
 

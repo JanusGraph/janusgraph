@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.gremlin.structure.Direction;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.HIDDEN;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.INVISIBLE;
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
 
 /**
@@ -69,8 +69,8 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     }
 
     @Override
-    public StandardEdgeLabelMaker hidden() {
-        super.hidden();
+    public StandardEdgeLabelMaker invisible() {
+        super.invisible();
         return this;
     }
 
@@ -82,7 +82,7 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
         Preconditions.checkArgument(unidirectionality==Direction.BOTH || !hasSortKey() ||
                 !getMultiplicity().isUnique(unidirectionality),
                 "Unidirectional labels with restricted multiplicity cannot have a sort key");
-        Preconditions.checkArgument(unidirectionality!=Direction.IN || definition.getValue(HIDDEN,Boolean.class));
+        Preconditions.checkArgument(unidirectionality!=Direction.IN || definition.getValue(INVISIBLE,Boolean.class));
 
 
         definition.setValue(UNIDIRECTIONAL, unidirectionality);

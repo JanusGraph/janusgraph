@@ -26,7 +26,7 @@ public class VisibilityFilterCondition<E extends TitanElement> extends Literal<E
     @Override
     public boolean evaluate(E element) {
         switch(visibility) {
-            case NORMAL: return !((InternalElement)element).isHidden();
+            case NORMAL: return !((InternalElement)element).isInvisible();
             case SYSTEM: return (element instanceof TitanRelation &&
                                     ((TitanRelation)element).getType() instanceof SystemRelationType)
                     || (element instanceof TitanVertex && element instanceof TitanSchemaElement);

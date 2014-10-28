@@ -103,6 +103,7 @@ public class Backend implements LockerProvider {
     private KCVSCache txLogStore;
     private IDAuthority idAuthority;
     private KCVSConfiguration systemConfig;
+    private KCVSConfiguration userConfig;
     private boolean hasAttemptedClose;
 
     private final KCVSLogManager mgmtLogManager;
@@ -278,7 +279,17 @@ public class Backend implements LockerProvider {
                     //Do nothing, storeManager is closed explicitly by Backend
                 }
             },systemConfigStore,configuration);
+            userConfig = getConfiguration(new BackendOperation.TransactionalProvider() {
+                @Override
+                public StoreTransaction openTx() throws BackendException {
+                    return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER)));
+                }
 
+                @Override
+                public void close() throws BackendException {
+                    //Do nothing, storeManager is closed explicitly by Backend
+                }
+            },systemConfigStore,USER_CONFIGURATION_IDENTIFIER,configuration);
 
         } catch (BackendException e) {
             throw new TitanException("Could not initialize backend", e);
@@ -330,6 +341,10 @@ public class Backend implements LockerProvider {
         return systemConfig;
     }
 
+    public KCVSConfiguration getUserConfiguration() {
+        return userConfig;
+    }
+
     private String getMetricsStoreName(String storeName) {
         return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_STORE : storeName;
     }
@@ -375,8 +390,14 @@ public class Backend implements LockerProvider {
     private static KCVSConfiguration getGlobalConfiguration(final BackendOperation.TransactionalProvider txProvider,
                                                                      final KeyColumnValueStore store,
                                                                      final Configuration config) {
+        return getConfiguration(txProvider,store,SYSTEM_CONFIGURATION_IDENTIFIER,config);
+    }
+
+    private static KCVSConfiguration getConfiguration(final BackendOperation.TransactionalProvider txProvider,
+                                                            final KeyColumnValueStore store, final String identifier,
+                                                            final Configuration config) {
         try {
-            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,config.get(TIMESTAMP_PROVIDER),store,SYSTEM_CONFIGURATION_IDENTIFIER);
+            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,config.get(TIMESTAMP_PROVIDER),store,identifier);
             kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
             return kcvsConfig;
         } catch (BackendException e) {
@@ -493,6 +514,7 @@ public class Backend implements LockerProvider {
             indexStore.close();
             idAuthority.close();
             systemConfig.close();
+            userConfig.close();
             storeManager.close();
             if(threadPool != null) {
             	threadPool.shutdown();
@@ -522,6 +544,7 @@ public class Backend implements LockerProvider {
             indexStore.close();
             idAuthority.close();
             systemConfig.close();
+            userConfig.close();
             storeManager.clearStorage();
             storeManager.close();
             //Indexes

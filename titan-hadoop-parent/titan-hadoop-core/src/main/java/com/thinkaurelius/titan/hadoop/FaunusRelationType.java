@@ -57,7 +57,7 @@ public abstract class FaunusRelationType extends EmptyRelationType implements In
     }
 
     @Override
-    public boolean isHiddenType() {
+    public boolean isInvisibleType() {
         return isHidden;
     }
 

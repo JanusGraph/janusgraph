@@ -1202,6 +1202,7 @@ public class GraphDatabaseConfiguration {
 
     public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
     public static final String SYSTEM_CONFIGURATION_IDENTIFIER = "configuration";
+    public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
 
 
     private final Configuration configuration;

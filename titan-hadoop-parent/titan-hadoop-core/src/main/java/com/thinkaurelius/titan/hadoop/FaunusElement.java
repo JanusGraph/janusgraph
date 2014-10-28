@@ -100,7 +100,7 @@ public abstract class FaunusElement extends LifeCycleElement implements Internal
     }
 
     @Override
-    public boolean isHidden() {
+    public boolean isInvisible() {
         return false;
     }
 

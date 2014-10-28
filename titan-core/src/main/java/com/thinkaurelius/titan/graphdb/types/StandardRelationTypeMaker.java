@@ -12,7 +12,6 @@ import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -28,7 +27,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     protected final AttributeHandling attributeHandler;
 
     private String name;
-    private boolean isHidden;
+    private boolean isInvisible;
     private List<RelationType> sortKey;
     private Order sortOrder;
     private List<RelationType> signature;
@@ -46,7 +45,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
         //Default assignments
         name = null;
-        isHidden = false;
+        isInvisible = false;
         sortKey = new ArrayList<RelationType>(4);
         sortOrder = Order.ASC;
         signature = new ArrayList<RelationType>(4);
@@ -114,7 +113,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         checkGeneralArguments();
 
         TypeDefinitionMap def = new TypeDefinitionMap();
-        def.setValue(HIDDEN, isHidden);
+        def.setValue(INVISIBLE, isInvisible);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
         def.setValue(SORT_ORDER, sortOrder);
         def.setValue(SIGNATURE, checkSignature(signature));
@@ -191,8 +190,8 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         return this;
     }
 
-    public StandardRelationTypeMaker hidden() {
-        this.isHidden = true;
+    public StandardRelationTypeMaker invisible() {
+        this.isInvisible = true;
         return this;
     }
 

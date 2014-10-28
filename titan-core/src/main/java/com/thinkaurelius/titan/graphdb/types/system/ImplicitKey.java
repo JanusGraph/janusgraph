@@ -131,7 +131,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public boolean isHiddenType() {
+    public boolean isInvisibleType() {
         return false;
     }
 

@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 
@@ -110,7 +111,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     public static void assertGraphOfTheGods(TitanGraph gotg) {
         assertCount(12, gotg.V());
-        assertCount(3, gotg.V().has(LABEL_NAME, "god"));
+        assertCount(3, gotg.V().has(T.label, "god"));
         Vertex h = getOnlyElement(gotg.V().has("name", "hercules"));
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod",h.label());

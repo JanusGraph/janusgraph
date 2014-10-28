@@ -208,7 +208,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                         ((StandardVertex)rel.getVertex(0)).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                     }
                     changes.addVertex(rel.getVertex(0), state);
-                } else if (!rel.isHidden()) {
+                } else if (!rel.isInvisible()) {
                     changes.addRelation(rel,state);
                 }
             }

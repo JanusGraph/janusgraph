@@ -176,11 +176,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return TitanFeatures.getFeatures(getConfiguration(), backend.getStoreFeatures());
     }
 
-    @Override
-    public Variables variables() {
-        //Implement against KCVS that stores the configuration
-        return null;
-    }
 
     public IndexSerializer getIndexSerializer() {
         return indexSerializer;

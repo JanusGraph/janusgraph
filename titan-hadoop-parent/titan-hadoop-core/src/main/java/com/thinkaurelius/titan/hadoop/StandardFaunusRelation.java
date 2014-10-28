@@ -86,8 +86,8 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
     }
 
     @Override
-    public boolean isHidden() {
-        return type.isHiddenType();
+    public boolean isInvisible() {
+        return type.isInvisibleType();
     }
 
     @Override

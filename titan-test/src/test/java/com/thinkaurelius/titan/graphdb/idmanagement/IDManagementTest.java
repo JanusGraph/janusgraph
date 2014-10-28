@@ -125,9 +125,9 @@ public class IDManagementTest {
             id = IDManager.getTemporaryRelationID(count);
             assertTrue(eid.isTemporary(id));
 
-            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.HiddenVertex,count);
+            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.InvisibleVertex,count);
             assertTrue(eid.isTemporary(id));
-            assertTrue(IDManager.VertexIDType.Hidden.is(id));
+            assertTrue(IDManager.VertexIDType.Invisible.is(id));
 
         }
     }
@@ -247,9 +247,9 @@ public class IDManagementTest {
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.EDGE_IN_DIR, IDHandler.DirectionID.EDGE_OUT_DIR}:
                     new IDHandler.DirectionID[]{IDHandler.DirectionID.PROPERTY_DIR};
         RelationCategory relCat = IDManager.VertexIDType.EdgeLabel.is(etid)?RelationCategory.EDGE:RelationCategory.PROPERTY;
-        boolean hidden = IDManager.isSystemRelationTypeId(etid);
+        boolean invisible = IDManager.isSystemRelationTypeId(etid);
         for (IDHandler.DirectionID d : dir) {
-            StaticBuffer b = IDHandler.getEdgeType(etid,d,hidden);
+            StaticBuffer b = IDHandler.getEdgeType(etid,d,invisible);
             IDHandler.EdgeTypeParse parse = IDHandler.readEdgeType(b.asReadBuffer());
             assertEquals(d,parse.dirID);
             assertEquals(etid,parse.typeId);

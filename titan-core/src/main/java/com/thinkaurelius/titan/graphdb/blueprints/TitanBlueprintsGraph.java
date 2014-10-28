@@ -103,6 +103,14 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return StringFactory.graphString(this,config.getBackendDescription());
     }
 
+
+
+    @Override
+    public Variables variables() {
+        //Implement against KCVS that stores the configuration
+        return null;
+    }
+
     // ########## TRANSACTIONAL FORWARDING ###########################
 
     @Override

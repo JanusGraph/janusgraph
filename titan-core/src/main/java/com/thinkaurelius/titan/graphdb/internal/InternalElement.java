@@ -32,9 +32,9 @@ public interface InternalElement extends TitanElement {
     public byte getLifeCycle();
 
     /**
-     * Whether this element is hidden and should only be returned to queries that explicitly ask for hidden elements.
+     * Whether this element is invisible and should only be returned to queries that explicitly ask for invisible elements.
      * @return
      */
-    public boolean isHidden();
+    public boolean isInvisible();
 
 }

@@ -240,7 +240,7 @@ public class EdgeSerializer implements RelationReader {
 
         DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
         int valuePosition;
-        IDHandler.writeEdgeType(out, typeid, dirID, type.isHiddenType());
+        IDHandler.writeEdgeType(out, typeid, dirID, type.isInvisibleType());
         Multiplicity multiplicity = type.multiplicity();
 
         long[] sortKey = type.getSortKey();
@@ -395,8 +395,8 @@ public class EdgeSerializer implements RelationReader {
         RelationCategory rt = type.isPropertyKey() ? RelationCategory.PROPERTY : RelationCategory.EDGE;
         if (dir == Direction.BOTH) {
             assert type.isEdgeLabel();
-            sliceStart = IDHandler.getEdgeType(type.longId(), getDirID(Direction.OUT, rt),type.isHiddenType());
-            sliceEnd = IDHandler.getEdgeType(type.longId(), getDirID(Direction.IN, rt),type.isHiddenType());
+            sliceStart = IDHandler.getEdgeType(type.longId(), getDirID(Direction.OUT, rt),type.isInvisibleType());
+            sliceEnd = IDHandler.getEdgeType(type.longId(), getDirID(Direction.IN, rt),type.isInvisibleType());
             assert sliceStart.compareTo(sliceEnd)<0;
             sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
@@ -404,8 +404,8 @@ public class EdgeSerializer implements RelationReader {
 
             DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
             DataOutput colEnd = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
-            IDHandler.writeEdgeType(colStart, type.longId(), dirID, type.isHiddenType());
-            IDHandler.writeEdgeType(colEnd, type.longId(), dirID, type.isHiddenType());
+            IDHandler.writeEdgeType(colStart, type.longId(), dirID, type.isInvisibleType());
+            IDHandler.writeEdgeType(colEnd, type.longId(), dirID, type.isInvisibleType());
 
             long[] sortKeyIDs = type.getSortKey();
             Preconditions.checkArgument(sortKey.length >= sortKeyIDs.length);

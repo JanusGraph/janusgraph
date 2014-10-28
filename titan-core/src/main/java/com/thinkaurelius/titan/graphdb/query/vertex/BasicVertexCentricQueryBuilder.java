@@ -402,7 +402,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new VisibilityFilterCondition<TitanRelation>(  //Need this to filter out newly created hidden relations in the transaction
+            conditions.add(new VisibilityFilterCondition<TitanRelation>(  //Need this to filter out newly created invisible relations in the transaction
                     querySystem? VisibilityFilterCondition.Visibility.SYSTEM: VisibilityFilterCondition.Visibility.NORMAL));
         } else {
             Set<RelationType> ts = new HashSet<RelationType>(types.length);

@@ -110,7 +110,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
     }
 
     S getVertexState(long vertexId) {
-        if (IDManager.VertexIDType.Hidden.is(vertexId)) return null;
+        if (IDManager.VertexIDType.Invisible.is(vertexId)) return null;
         if (idManager.isPartitionedVertex(vertexId)) vertexId=idManager.getCanonicalVertexId(vertexId);
         S state = vertexStates.get(vertexId);
         if (state==null) {
@@ -391,7 +391,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                     StaticBuffer key = keyIter.next();
                     RecordIterator<Entry> entries = keyIter.getEntries();
                     long vertexId = idManager.getKeyID(key);
-                    if (IDManager.VertexIDType.Hidden.is(vertexId)) continue;
+                    if (IDManager.VertexIDType.Invisible.is(vertexId)) continue;
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
                     try {
                         queue.put(new QueryResult(queryName,vertexId,entryList));

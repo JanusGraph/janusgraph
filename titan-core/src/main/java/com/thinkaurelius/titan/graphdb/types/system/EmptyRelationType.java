@@ -14,7 +14,7 @@ import java.util.Collections;
 public abstract class EmptyRelationType extends EmptyVertex implements InternalRelationType {
 
     @Override
-    public boolean isHidden() {
+    public boolean isInvisible() {
         return true;
     }
 

@@ -63,9 +63,9 @@ public class IDHandler {
             }
         }
 
-        private int getPrefix(boolean hidden, boolean systemType) {
-            assert !systemType || hidden; // systemType implies hidden
-            return ((systemType?0:hidden?2:1)<<1) + getRelationType();
+        private int getPrefix(boolean invisible, boolean systemType) {
+            assert !systemType || invisible; // systemType implies invisible
+            return ((systemType?0:invisible?2:1)<<1) + getRelationType();
         }
 
         private static DirectionID getDirectionID(int relationType, int direction) {
@@ -92,7 +92,7 @@ public class IDHandler {
     }
 
     /**
-     * The edge type is written as follows: [ Hidden & System (2 bit) | Relation-Type-ID (1 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * The edge type is written as follows: [ Invisible & System (2 bit) | Relation-Type-ID (1 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
      * Would only need 1 bit to store relation-type-id, but using two so we can upper bound.
      *
      *
@@ -100,16 +100,16 @@ public class IDHandler {
      * @param etid
      * @param dirID
      */
-    public static void writeEdgeType(WriteBuffer out, long etid, DirectionID dirID, boolean hidden) {
+    public static void writeEdgeType(WriteBuffer out, long etid, DirectionID dirID, boolean invisible) {
         assert etid > 0 && (etid << 1) > 0; //Check positive and no-overflow
 
         long strippedId = (IDManager.stripEntireRelationTypePadding(etid) << 1) + dirID.getDirectionInt();
-        VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(hidden, IDManager.isSystemRelationTypeId(etid)), PREFIX_BIT_LEN);
+        VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(invisible, IDManager.isSystemRelationTypeId(etid)), PREFIX_BIT_LEN);
     }
 
-    public static StaticBuffer getEdgeType(long etid, DirectionID dirID, boolean hidden) {
+    public static StaticBuffer getEdgeType(long etid, DirectionID dirID, boolean invisible) {
         WriteBuffer b = new WriteByteBuffer(edgeTypeLength(etid));
-        IDHandler.writeEdgeType(b, etid, dirID, hidden);
+        IDHandler.writeEdgeType(b, etid, dirID, invisible);
         return b.getStaticBuffer();
     }
 

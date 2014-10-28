@@ -312,7 +312,7 @@ public class ManagementSystem implements TitanManagement {
             maker = lm;
         }
         maker.status(type.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
-        maker.hidden();
+        maker.invisible();
         maker.multiplicity(Multiplicity.MULTI);
         maker.sortKey(sortKeys);
         maker.sortOrder(sortOrder);

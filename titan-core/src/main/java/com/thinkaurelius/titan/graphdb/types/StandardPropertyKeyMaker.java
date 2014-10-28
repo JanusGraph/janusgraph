@@ -44,8 +44,8 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
 
 
     @Override
-    public StandardPropertyKeyMaker hidden() {
-        super.hidden();
+    public StandardPropertyKeyMaker invisible() {
+        super.invisible();
         return this;
     }
 

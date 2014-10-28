@@ -48,7 +48,7 @@ public class TestBed {
         System.out.println(ep.typeId + " "+ BaseLabel.VertexLabelEdge.longId());
 
         WriteBuffer out = new WriteByteBuffer(20);
-        IDHandler.writeEdgeType(out, BaseKey.VertexExists.longId(),IDHandler.DirectionID.PROPERTY_DIR, BaseKey.VertexExists.isHiddenType());
+        IDHandler.writeEdgeType(out, BaseKey.VertexExists.longId(),IDHandler.DirectionID.PROPERTY_DIR, BaseKey.VertexExists.isInvisibleType());
         StaticBuffer b = out.getStaticBuffer();
         System.exit(0);
 

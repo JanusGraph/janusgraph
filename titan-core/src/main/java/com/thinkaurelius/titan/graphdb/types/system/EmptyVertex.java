@@ -173,7 +173,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public boolean isHidden() {
+    public boolean isInvisible() {
         return false;
     }
 

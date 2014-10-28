@@ -42,8 +42,8 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
     }
 
     @Override
-    public boolean isHiddenType() {
-        return getDefinition().getValue(TypeDefinitionCategory.HIDDEN, Boolean.class);
+    public boolean isInvisibleType() {
+        return getDefinition().getValue(TypeDefinitionCategory.INVISIBLE, Boolean.class);
     }
 
     @Override
