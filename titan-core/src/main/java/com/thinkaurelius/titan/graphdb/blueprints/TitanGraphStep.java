@@ -37,11 +37,9 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> {
         TitanTransaction tx = (TitanTransaction)this.traversal.sideEffects().getGraph();
         TitanGraphQuery query = tx.query();
         for (HasContainer condition : hasContainers) {
-            Preconditions.checkArgument(condition.predicate instanceof TitanPredicate,"" +
-                    "Expected a Titan predicate but found: %s",condition.predicate);
-            query.has(condition.key,(TitanPredicate)condition.predicate,condition.value);
+            query.has(condition.key,TitanPredicate.Converter.convert(condition.predicate),condition.value);
         }
-        this.start = Vertex.class.isAssignableFrom(this.returnClass) ? query.vertices() : query.edges();
+        this.start = Vertex.class.isAssignableFrom(this.returnClass) ? query.vertices().iterator() : query.edges().iterator();
         super.generateTraverserIterator(trackPaths);
     }
 

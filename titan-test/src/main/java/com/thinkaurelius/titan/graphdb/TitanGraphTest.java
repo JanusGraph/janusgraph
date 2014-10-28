@@ -247,7 +247,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             for (int k : knowsOff) {
                 Vertex n2 = nodes[wrapAround(i + k, noNodes)];
                 Edge r = n.addEdge("knows", n2,
-                        "uid", ((Number) n.property("uid")).intValue() + ((Number) n2.property("uid")).intValue(),
+                        "uid", ((Number) n.value("uid")).intValue() + ((Number) n2.value("uid")).intValue(),
                         "weight", k * 1.5,
                         "name", i + "-" + k);
                 nodeEdges[i].add(r);
@@ -271,7 +271,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         for (int i = 0; i < noNodes; i++) {
             TitanVertex n = getVertex("uid", ids[i]);
             assertEquals(n, getVertex("name", names[i]));
-            assertEquals(names[i], n.property("name"));
+            assertEquals(names[i], n.value("name"));
             nodes[i] = n;
             assertEquals(nodeIds[i], n.longId());
         }
@@ -286,11 +286,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertCount(2, n.properties());
             for (Edge r : n.outE("knows").toList()) {
                 Vertex n2 = r.inV().next();
-                int idsum = ((Number) n.property("uid")).intValue() + ((Number) n2.property("uid")).intValue();
-                assertEquals(idsum, r.property("uid"));
-                double k = ((Number) r.property("weight")).doubleValue() / 1.5;
+                int idsum = ((Number) n.value("uid")).intValue() + ((Number) n2.value("uid")).intValue();
+                assertEquals(idsum, ((Number)r.value("uid")).intValue());
+                double k = ((Number) r.value("weight")).doubleValue() / 1.5;
                 int ki = (int) k;
-                assertEquals(i + "-" + ki, r.property("name"));
+                assertEquals(i + "-" + ki, r.value("name"));
             }
 
             Set edgeIds = new HashSet(10);

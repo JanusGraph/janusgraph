@@ -7,7 +7,7 @@ import java.util.Map;
 
 public abstract class SystemTypeManager {
 
-    public static final String systemETprefix = "^internal$";
+    public static final String systemETprefix = "%&%T$";
 
     private volatile static Map<Long, SystemRelationType> SYSTEM_TYPES_BY_ID;
     private volatile static Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
