@@ -67,7 +67,7 @@ public class HBaseAuthHelper {
                 Object user = getCurrent.invoke(null);
                 Method obtainAuthTokenForJob = clazz.getMethod("obtainAuthTokenForJob", Configuration.class, Job.class);
                 obtainAuthTokenForJob.invoke(user, configuration, job);
-                log.error("Obtained HBase Auth Token from ZooKeeper quorum {} for job {}", configuration.get(quorumCfgKey), job.getJobName());
+                log.info("Obtained HBase Auth Token from ZooKeeper quorum {} for job {}", configuration.get(quorumCfgKey), job.getJobName());
             } catch (ClassNotFoundException e) {
                 log.error("Failed to generate or store HBase auth token", e);
             } catch (InvocationTargetException e) {
@@ -81,7 +81,7 @@ public class HBaseAuthHelper {
             }
 
         } else {
-            log.error("Not obtaining HBase Auth Token for MapReduce job " + job.getJobName());
+            log.info("Not obtaining HBase Auth Token for MapReduce job " + job.getJobName());
         }
     }
 }
