@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -46,8 +47,8 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
     }
 
     @Override
-    public <E extends Element> E getElement() {
-        return (E) relation;
+    public TitanElement element() {
+        return relation;
     }
 
     @Override

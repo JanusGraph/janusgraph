@@ -14,6 +14,7 @@ import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,6 +141,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
                 config.remove(s);
             }
         };
+    }
+
+    @Override
+    public Configuration configuration() {
+        GraphDatabaseConfiguration config = ((StandardTitanGraph) this).getConfiguration();
+        return config.getLocalConfiguration();
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################

@@ -12,13 +12,8 @@ public class TitanGraphTraversal<S, E> extends DefaultGraphTraversal<S, E> {
 
     public TitanGraphTraversal(final TitanTransaction graph, final Class<? extends Element> elementClass) {
         super(graph);
-        this.strategies().register(TitanGraphStepStrategy.instance());
-        this.addStep(new TitanGraphStep(this, elementClass));
+        getStrategies().register(TitanGraphStepStrategy.instance());
+        addStep(new TitanGraphStep<>(this, elementClass));
     }
 
-    @Override
-    public void prepareForGraphComputer() {
-        super.prepareForGraphComputer();
-        this.strategies().unregister(TitanGraphStepStrategy.class);
-    }
 }

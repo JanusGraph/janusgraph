@@ -1098,11 +1098,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             return keys.contains(relation.getType());
                         }
                     })) {
-                        vertexSet.add(((TitanVertexProperty) r).getElement());
+                        vertexSet.add(((TitanVertexProperty) r).element());
                     }
                     for (TitanRelation r : deletedRelations.values()) {
                         if (keys.contains(r.getType())) {
-                            TitanVertex v = ((TitanVertexProperty) r).getElement();
+                            TitanVertex v = ((TitanVertexProperty) r).element();
                             if (!v.isRemoved()) vertexSet.add(v);
                         }
                     }
@@ -1112,7 +1112,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                         @Nullable
                         @Override
                         public TitanVertex apply(@Nullable TitanVertexProperty o) {
-                            return o.getElement();
+                            return o.element();
                         }
                     });
                 }

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
 import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.core.TitanGraphTransaction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 
 /**
@@ -22,6 +23,12 @@ public interface InternalElement extends TitanElement {
      * @return
      */
     public StandardTitanTx tx();
+
+
+    @Override
+    public default TitanGraphTransaction graph() {
+        return tx();
+    }
 
     public void setId(long id);
 

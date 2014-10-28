@@ -145,7 +145,7 @@ public class TitanIndexRepairMapper extends Mapper<NullWritable, FaunusVertex, N
         } else {
             assert faunusRelation.isProperty();
             StandardFaunusVertexProperty faunusProperty = (StandardFaunusVertexProperty)faunusRelation;
-            InternalVertex v = tx.getInternalVertex(faunusProperty.getElement().longId());
+            InternalVertex v = tx.getInternalVertex(faunusProperty.element().longId());
             if (v==null) return null;
             titanRelation = new StandardVertexProperty(faunusProperty.longId(),tx.getOrCreatePropertyKey(indexType),v,faunusProperty.value(), ElementLifeCycle.Loaded);
         }

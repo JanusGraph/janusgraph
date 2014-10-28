@@ -19,7 +19,10 @@ public interface TitanVertexProperty<V> extends TitanRelation, VertexProperty<V>
      * @return The vertex of this property.
      */
     @Override
-    public TitanVertex getElement();
+    public TitanVertex element();
+
+    @Override
+    public TitanGraphTransaction graph();
 
     /**
      * Returns the {@link PropertyKey} for this property

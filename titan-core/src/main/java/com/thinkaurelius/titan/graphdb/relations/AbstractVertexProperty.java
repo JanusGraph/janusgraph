@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
@@ -45,6 +42,11 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     }
 
     @Override
+    public TitanGraphTransaction graph() {
+        return vertex.graph();
+    }
+
+    @Override
     public final int getArity() {
         return 1;
     }
@@ -55,7 +57,7 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     }
 
     @Override
-    public TitanVertex getElement() {
+    public TitanVertex element() {
         return vertex;
     }
 

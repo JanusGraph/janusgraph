@@ -22,7 +22,7 @@ public class SimpleFaunusVertexProperty extends SimpleFaunusRelation implements 
     }
 
     @Override
-    public TitanVertex getElement() {
+    public TitanVertex element() {
         throw new UnsupportedOperationException();
     }
 

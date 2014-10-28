@@ -74,7 +74,7 @@ public class StandardFaunusVertexProperty extends StandardFaunusRelation impleme
     }
 
     @Override
-    public TitanVertex getElement() {
+    public TitanVertex element() {
         return getVertex(0);
     }
 
@@ -121,7 +121,7 @@ public class StandardFaunusVertexProperty extends StandardFaunusRelation impleme
         else if (oth == null || !(oth instanceof TitanVertexProperty)) return false;
         TitanVertexProperty p = (TitanVertexProperty) oth;
         if (hasId() || p.hasId()) return longId()==p.longId();
-        return getType().equals(p.propertyKey()) && value.equals(p.value()) && vertexid==p.getElement().longId();
+        return getType().equals(p.propertyKey()) && value.equals(p.value()) && vertexid==p.element().longId();
     }
 
     @Override

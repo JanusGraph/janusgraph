@@ -107,7 +107,7 @@ public abstract class StandardFaunusRelation extends FaunusPathElement implement
         ids[0]= longId();
         ids[2]=type.longId();
         if (isProperty()) {
-            ids[1]=((StandardFaunusVertexProperty)this).getElement().longId();
+            ids[1]=((StandardFaunusVertexProperty)this).element().longId();
         } else {
             StandardFaunusEdge edge = (StandardFaunusEdge)this;
             ids[1]=edge.getVertex(Direction.OUT).longId();

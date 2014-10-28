@@ -30,6 +30,9 @@ import com.tinkerpop.gremlin.structure.Property;
  */
 public interface TitanElement extends Element, Idfiable, Removable {
 
+    @Override
+    public TitanGraphTransaction graph();
+
     /**
      * Returns a unique identifier for this entity.
      * <p/>

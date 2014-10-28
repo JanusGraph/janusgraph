@@ -12,6 +12,7 @@ import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Variables variables() {
         return getGraph().variables();
+    }
+
+    @Override
+    public Configuration configuration() {
+        return getGraph().configuration();
     }
 
     /**

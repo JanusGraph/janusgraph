@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
@@ -44,7 +45,7 @@ import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
 
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.*;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1207,6 +1208,7 @@ public class GraphDatabaseConfiguration {
 
     private final Configuration configuration;
     private final String uniqueGraphId;
+    private final ModifiableConfiguration localConfiguration;
 
 
     private boolean readOnly;
@@ -1235,6 +1237,10 @@ public class GraphDatabaseConfiguration {
         final StoreFeatures storeFeatures = storeManager.getFeatures();
         KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager,localbc);
         ReadConfiguration globalConfig=null;
+
+        //Copy over local config options
+        localConfiguration = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
+        localConfiguration.setAll(getLocalSubset(localbc.getAll()));
 
         //Read out global configuration
         try {
@@ -1382,6 +1388,16 @@ public class GraphDatabaseConfiguration {
             public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
                 assert entry.getKey().element.isOption();
                 return ((ConfigOption)entry.getKey().element).isGlobal();
+            }
+        });
+    }
+
+    private static Map<ConfigElement.PathIdentifier, Object> getLocalSubset(Map<ConfigElement.PathIdentifier, Object> m) {
+        return Maps.filterEntries(m, new Predicate<Map.Entry<ConfigElement.PathIdentifier, Object>>() {
+            @Override
+            public boolean apply(@Nullable Map.Entry<ConfigElement.PathIdentifier, Object> entry) {
+                assert entry.getKey().element.isOption();
+                return ((ConfigOption)entry.getKey().element).isLocal();
             }
         });
     }
@@ -1730,6 +1746,10 @@ public class GraphDatabaseConfiguration {
     public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {
         if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedSchemaCache(retriever);
         else return new StandardSchemaCache(retriever);
+    }
+
+    public org.apache.commons.configuration.Configuration getLocalConfiguration() {
+        return ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
     }
 
 

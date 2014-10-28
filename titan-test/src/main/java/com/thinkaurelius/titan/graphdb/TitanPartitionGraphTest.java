@@ -163,7 +163,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertEquals(canonicalPartition,getPartitionID(p,idManager));
             Set<Integer> propPartitions = Sets.newHashSet();
             for (VertexProperty n : g.properties("name").toList()) {
-                propPartitions.add(getPartitionID((TitanVertex)n.getElement(),idManager));
+                propPartitions.add(getPartitionID((TitanVertex)n.element(),idManager));
             }
             //Verify spread across partitions; this number is a pessimistic lower bound but might fail since it is probabilistic
             assertTrue(propPartitions.size()>=3);
