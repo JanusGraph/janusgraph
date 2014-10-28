@@ -583,6 +583,13 @@
                 <version>${sesame.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.esotericsoftware.kryo</groupId>
+                <artifactId>kryo</artifactId>
+                <version>2.24.0</version>
+            </dependency>
+
+
             <!-- asm 3.x -->
             <dependency>
                 <groupId>asm</groupId>
