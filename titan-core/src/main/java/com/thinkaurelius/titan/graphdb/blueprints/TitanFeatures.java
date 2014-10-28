@@ -30,7 +30,7 @@ public class TitanFeatures implements Graph.Features {
         variableFeatures = new VariableFeatures() {
             @Override
             public boolean supportsVariables() {
-                return false;
+                return true;
             }
         };
         graphFeatures = new GraphFeatures() {

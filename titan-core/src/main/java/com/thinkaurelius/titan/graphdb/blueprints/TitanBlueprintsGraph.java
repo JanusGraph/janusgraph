@@ -1,21 +1,27 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -103,12 +109,37 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return StringFactory.graphString(this,config.getBackendDescription());
     }
 
-
-
     @Override
     public Variables variables() {
-        //Implement against KCVS that stores the configuration
-        return null;
+        final WriteConfiguration config = ((StandardTitanGraph)this).getBackend().getUserConfiguration();
+        return new Variables() {
+
+            @Override
+            public Set<String> keys() {
+                return Sets.newHashSet(config.getKeys(""));
+            }
+
+            @Override
+            public <R> Optional<R> get(String s) {
+                if (StringUtils.isEmpty(s)) throw Exceptions.variableKeyCanNotBeEmpty();
+                Object value = config.get(s,Object.class);
+                if (value==null) return Optional.empty();
+                else return Optional.of((R)value);
+            }
+
+            @Override
+            public void set(String s, Object o) {
+                if (StringUtils.isEmpty(s)) throw Exceptions.variableKeyCanNotBeEmpty();
+                if (o==null) throw Exceptions.variableValueCanNotBeNull();
+                config.set(s,o);
+            }
+
+            @Override
+            public void remove(String s) {
+                if (StringUtils.isEmpty(s)) throw Exceptions.variableKeyCanNotBeEmpty();
+                config.remove(s);
+            }
+        };
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################
