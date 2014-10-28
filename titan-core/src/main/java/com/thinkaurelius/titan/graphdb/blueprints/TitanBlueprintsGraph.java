@@ -176,8 +176,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {
-        //TODO
-        throw new UnsupportedOperationException();
+        throw Exceptions.graphComputerNotSupported();
     }
 
     @Override
