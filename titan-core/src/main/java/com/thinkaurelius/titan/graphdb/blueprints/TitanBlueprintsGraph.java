@@ -77,8 +77,9 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     private TitanBlueprintsTransaction startNewTx() {
-        if (txs.get()!=null) throw Transaction.Exceptions.transactionAlreadyOpen();
-        TitanBlueprintsTransaction tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
+        TitanBlueprintsTransaction tx = txs.get();
+        if (tx!=null && tx.isOpen()) throw Transaction.Exceptions.transactionAlreadyOpen();
+        tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
         txs.set(tx);
         openTx.put(tx, Boolean.TRUE);
         log.debug("Created new thread-bound transaction {}", tx);

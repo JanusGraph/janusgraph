@@ -38,6 +38,11 @@ public class TitanFeatures implements Graph.Features {
             public VariableFeatures variables() {
                 return variableFeatures;
             }
+
+            @Override
+            public boolean supportsComputer() {
+                return false; //TODO: set to true
+            }
         };
         vertexFeatures = new VertexFeatures() { //Default works
         };

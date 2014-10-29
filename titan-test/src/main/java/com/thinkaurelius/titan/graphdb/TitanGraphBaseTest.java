@@ -30,6 +30,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.lang.reflect.Array;
@@ -51,7 +52,7 @@ public abstract class TitanGraphBaseTest {
     public static final String ID_NAME = T.id.getAccessor();
 
     public WriteConfiguration config;
-    public ModifiableConfiguration adjustedConfig;
+    public BasicConfiguration readConfig;
     public StandardTitanGraph graph;
     public StoreFeatures features;
     public TitanTransaction tx;
@@ -68,17 +69,22 @@ public abstract class TitanGraphBaseTest {
         return new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
     }
 
-    @Before
-    public void setUp() throws Exception {
-        this.config = getConfiguration();
-        TestGraphConfigs.applyOverrides(config);
-        Preconditions.checkNotNull(config);
-        adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+    public static void clearGraph(WriteConfiguration config) throws BackendException {
+        ModifiableConfiguration adjustedConfig = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
         adjustedConfig.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP, "tmp");
         adjustedConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
         Backend backend = new Backend(adjustedConfig);
         backend.initialize(adjustedConfig);
         backend.clearStorage();
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        this.config = getConfiguration();
+        TestGraphConfigs.applyOverrides(config);
+        Preconditions.checkNotNull(config);
+        clearGraph(config);
+        readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
         open(config);
         logManagers = new HashMap<String,LogManager>();
     }
@@ -121,19 +127,24 @@ public abstract class TitanGraphBaseTest {
         tx = graph.newTransaction();
     }
 
+    public static Map<TestConfigOption,Object> validateConfigOptions(Object... settings) {
+        //Parse settings
+        Preconditions.checkArgument(settings.length%2==0,"Expected even number of settings: %s",settings);
+        Map<TestConfigOption,Object> options = Maps.newHashMap();
+        for (int i=0;i<settings.length;i=i+2) {
+            Preconditions.checkArgument(settings[i] instanceof TestConfigOption,"Expected configuration option but got: %s",settings[i]);
+            Preconditions.checkNotNull(settings[i+1],"Null setting at position [%s]",i+1);
+            options.put((TestConfigOption)settings[i],settings[i+1]);
+        }
+        return options;
+    }
+
     public void clopen(Object... settings) {
         config = getConfiguration();
         if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
         if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
-            //Parse settings
-            Preconditions.checkArgument(settings.length%2==0,"Expected even number of settings: %s",settings);
-            Map<TestConfigOption,Object> options = Maps.newHashMap();
-            for (int i=0;i<settings.length;i=i+2) {
-                Preconditions.checkArgument(settings[i] instanceof TestConfigOption,"Expected configuration option but got: %s",settings[i]);
-                Preconditions.checkNotNull(settings[i+1],"Null setting at position [%s]",i+1);
-                options.put((TestConfigOption)settings[i],settings[i+1]);
-            }
+            Map<TestConfigOption,Object> options = validateConfigOptions(settings);
             TitanManagement gconf = null;
             ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
@@ -341,6 +352,13 @@ public abstract class TitanGraphBaseTest {
         E result = traversal.next();
         if (traversal.hasNext()) throw new IllegalArgumentException("Traversal contains more than 1 element: " + traversal.count().next());
         return result;
+    }
+
+    public static void assertMissing(TitanGraphTransaction g, Object vid) {
+        try {
+            g.v(vid);
+            Assert.fail();
+        } catch (NoSuchElementException e) {}
     }
 
     public static String n(Object obj) {

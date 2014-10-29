@@ -155,7 +155,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public<V> TitanVertexProperty<V> property(String key, V value) {
-        return tx().addProperty(it(), tx().getPropertyKey(key), value);
+        return tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
     }
 
     @Override
@@ -168,7 +168,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public TitanEdge addEdge(String label, Vertex vertex, Object... keyValues) {
         Preconditions.checkArgument(vertex instanceof TitanVertex,"Invalid vertex provided: %s",vertex);
-        TitanEdge edge = tx().addEdge(it(), (TitanVertex) vertex, tx().getEdgeLabel(label));
+        TitanEdge edge = tx().addEdge(it(), (TitanVertex) vertex, tx().getOrCreateEdgeLabel(label));
         ElementHelper.attachProperties(edge,keyValues);
         return edge;
     }

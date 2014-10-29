@@ -119,12 +119,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         uid = tx.getPropertyKey("name");
         assertTrue(tx.v(nid) != null);
         assertTrue(tx.v(uid.longId())!=null);
-        assertFalse(tx.v(nid + 64)!=null);
+        assertMissing(tx,nid+64);
         uid = tx.getPropertyKey(uid.name());
         n1 = tx.v(nid);
         assertEquals(n1,tx.V().has(uid.name(),"abcd").next());
         assertEquals(1, Iterables.size(n1.query().relations())); //TODO: how to expose relations?
-        assertEquals("abcd",n1.property(uid.name()));
+        assertEquals("abcd",n1.value(uid.name()));
         assertCount(1,tx.V());
         close();
         TitanCleanup.clear(graph);
@@ -164,7 +164,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(0,graph.V().has(namen,"v2"));
         graph.tx().commit();
 
-        assertNull(graph.v(v2));
+        assertMissing(graph,v2);
         assertCount(1,graph.V());
         assertCount(1,graph.V().has(namen,"v1"));
         assertCount(0,graph.V().has(namen,"v2"));
@@ -197,7 +197,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(numE, tx.E());
         assertCount(numE, tx.E());
 
-        tx.V().range(0,deleteV).remove();
+        tx.V().range(0,deleteV-1).remove();
 
         for (int i=0;i<10;i++) { //Repeated vertex counts
             assertCount(numV - deleteV, tx.V());
@@ -295,9 +295,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
             Set edgeIds = new HashSet(10);
             for (Edge r : n.outE().toList()) {
-                edgeIds.add(r.id());
+                edgeIds.add(((TitanEdge)r).longId());
             }
-            assertTrue(edgeIds.equals(nodeEdgeIds[i]));
+            assertTrue(edgeIds + " vs " + nodeEdgeIds[i], edgeIds.equals(nodeEdgeIds[i]));
         }
         newTx();
         //Bulk vertex retrieval
@@ -726,8 +726,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (SchemaViolationException e) {
         }
         assertCount(2, v.inE("parent"));
-        assertEquals(1, v12.outE("parent").has("weight",Cmp.EQUAL,4.5));
-        assertEquals(1, v13.outE("parent").has("weight",Cmp.EQUAL,4.5));
+        assertCount(1, v12.outE("parent").has("weight"));
+        assertCount(1, v13.outE("parent").has("weight"));
         assertEquals(v12,getOnlyElement(v.out("spouse")));
         edge = getOnlyElement(v.bothE("connect"));
         assertEquals(2,edge.keys().size());
@@ -741,7 +741,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         //Make sure "link" is unidirected
         assertCount(1, v.bothE("link"));
-        assertEquals(0, v13.bothE("link"));
+        assertCount(0, v13.bothE("link"));
         //Assert we can add more friendships
         v.addEdge("friend",v12);
         v2 = getOnlyElement(v12.out("connect"));
@@ -824,8 +824,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (SchemaViolationException e) {
         }
         assertCount(2, v.inE("parent"));
-        assertEquals(1, v12.outE("parent").has("weight", Cmp.EQUAL, 4.5));
-        assertEquals(1, v13.outE("parent").has("weight", Cmp.EQUAL, 4.5));
+        assertCount(1, v12.outE("parent").has("weight"));
+        assertCount(1, v13.outE("parent").has("weight"));
         assertEquals(v12,getOnlyElement(v.out("spouse")));
         edge = getOnlyElement(v.bothE("connect"));
         assertEquals(2,edge.keys().size());
@@ -839,7 +839,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         //Make sure "link" is unidirected
         assertCount(1, v.bothE("link"));
-        assertEquals(0, v13.bothE("link"));
+        assertCount(0, v13.bothE("link"));
         //Assert we can add more friendships
         v.addEdge("friend",v12);
         v2 = getOnlyElement(v12.out("connect"));
@@ -1180,7 +1180,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
         v = getOnlyElement(tx.V().has("time",5));
         assertNotNull(v);
-        assertEquals("people", v.label());
+        assertEquals("person", v.label());
         assertEquals(5,v.<Integer>value("time").intValue());
         assertCount(1, v.inE("know"));
         assertCount(0,v.inE("knows"));
@@ -1395,7 +1395,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      */
     @Test
     public void testImplicitKey() {
-        Vertex v = graph.addVertex("name","Dan"), u = graph.addVertex();
+        TitanVertex v = graph.addVertex("name","Dan"), u = graph.addVertex();
         Edge e = v.addEdge("knows",u);
         graph.tx().commit();
         RelationIdentifier eid = (RelationIdentifier)e.id();
@@ -1408,17 +1408,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(0, v.bothE("knows").has(ID_NAME, RelationIdentifier.get(new long[]{4, 5, 6, 7})));
         assertCount(1, v.bothE("knows").has("^nid", eid.getRelationId()));
         assertCount(0, v.bothE("knows").has("^nid", 110111));
-        assertCount(1, v.bothE().has("^adjacent", u.id()));
-        assertCount(1, v.bothE().has("^adjacent", (int) u.id()));
+        //Test edge retrieval
+        assertNotNull(graph.e(eid));
+        assertEquals(eid,graph.e(eid).id());
+        //Test adjacent constraint
+        assertEquals(1, v.query().direction(BOTH).has("^adjacent", u.id()).count());
+        assertCount(1, v.bothE().has("^adjacent", (int)getId(u)));
         try {
             //Not a valid vertex
              assertCount(0,v.bothE().has("^adjacent",110111));
             fail();
         } catch (IllegalArgumentException ex) {}
-        assertNotNull(graph.e(eid));
-        assertEquals(eid,graph.e(eid).id());
 
-        //Test edge retrieval
     }
 
     /**
@@ -1499,9 +1500,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         graph.tx().commit();
 
         VertexProperty prop = v1.properties().next();
-        assertTrue(((Long)prop.id())>0);
+        assertTrue(getId(prop)>0);
         prop = (VertexProperty) ((Iterable)graph.multiQuery((TitanVertex)v1).properties().values().iterator().next()).iterator().next();
-        assertTrue(((Long)prop.id())>0);
+        assertTrue(getId(prop)>0);
 
         assertEquals(45, e3.<Integer>value("time").intValue());
         assertEquals(5, e1.<Integer>value("time").intValue());
@@ -1543,8 +1544,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         graph.tx().commit();
 
-        VertexProperty p = cartman.properties().next();
-        assertTrue(((Long)p.id())>0);
+        TitanVertexProperty p = (TitanVertexProperty)cartman.properties().next();
+        assertTrue(((Long)p.longId())>0);
         graph.tx().commit();
     }
 
@@ -3161,12 +3162,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         .addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
-                assertEquals(instanceid,txId.getInstanceId());
-                assertTrue(txId.getTransactionId()>0 && txId.getTransactionId()<100); //Just some reasonable upper bound
+                assertEquals(instanceid, txId.getInstanceId());
+                assertTrue(txId.getTransactionId() > 0 && txId.getTransactionId() < 100); //Just some reasonable upper bound
                 final long txTime = txId.getTransactionTime().sinceEpoch(TimeUnit.MILLISECONDS);
                 assertTrue(String.format("tx timestamp %s not between start %s and end time %s",
-                        txTime,startTime,endTime),
-                        txTime>=startTime && txTime<=endTime); //Times should be within a second
+                                txTime, startTime, endTime),
+                        txTime >= startTime && txTime <= endTime); //Times should be within a second
 
                 assertTrue(tx.containsRelationType("knows"));
                 assertTrue(tx.containsRelationType("weight"));
@@ -3176,91 +3177,91 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 long txTimeMicro = txId.getTransactionTime().sinceEpoch(TimeUnit.MICROSECONDS);
 
                 int txNo;
-                if (txTimeMicro<txTimes[1].getTimestamp(TimeUnit.MICROSECONDS)) {
-                    txNo=1;
+                if (txTimeMicro < txTimes[1].getTimestamp(TimeUnit.MICROSECONDS)) {
+                    txNo = 1;
                     //v1 addition transaction
                     assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
                     assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
-                    assertEquals(1,Iterables.size(changes.getVertices(Change.ANY)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.ADDED)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, knows)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, weight)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
-                    assertEquals(0,Iterables.size(changes.getRelations(Change.REMOVED)));
+                    assertEquals(1, Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.ADDED, knows)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.ADDED, weight)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.ANY)));
+                    assertEquals(0, Iterables.size(changes.getRelations(Change.REMOVED)));
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ADDED));
-                    assertEquals(v1id,getId(v));
-                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v,Change.ADDED,"weight"));
-                    assertEquals(111.1,p.value().doubleValue(),0.0001);
-                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
-                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
-                } else if (txTimeMicro<txTimes[2].getTimestamp(TimeUnit.MICROSECONDS)) {
-                    txNo=2;
+                    assertEquals(v1id, getId(v));
+                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v, Change.ADDED, "weight"));
+                    assertEquals(111.1, p.value().doubleValue(), 0.0001);
+                    assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
+                    assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
+                } else if (txTimeMicro < txTimes[2].getTimestamp(TimeUnit.MICROSECONDS)) {
+                    txNo = 2;
                     //v2 addition transaction
                     assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
                     assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
-                    assertEquals(2,Iterables.size(changes.getVertices(Change.ANY)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.ADDED)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, knows)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, weight)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
-                    assertEquals(0,Iterables.size(changes.getRelations(Change.REMOVED)));
+                    assertEquals(2, Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.ADDED, knows)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.ADDED, weight)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.ANY)));
+                    assertEquals(0, Iterables.size(changes.getRelations(Change.REMOVED)));
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ADDED));
-                    assertEquals(v2id,getId(v));
-                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v,Change.ADDED,"weight"));
-                    assertEquals(222.2,p.value().doubleValue(),0.0001);
-                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
-                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
-                } else if (txTimeMicro<txTimes[3].getTimestamp(TimeUnit.MICROSECONDS)) {
-                    txNo=3;
+                    assertEquals(v2id, getId(v));
+                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v, Change.ADDED, "weight"));
+                    assertEquals(222.2, p.value().doubleValue(), 0.0001);
+                    assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
+                    assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
+                } else if (txTimeMicro < txTimes[3].getTimestamp(TimeUnit.MICROSECONDS)) {
+                    txNo = 3;
                     //v2 deletion transaction
                     assertEquals(0, Iterables.size(changes.getVertices(Change.ADDED)));
                     assertEquals(1, Iterables.size(changes.getVertices(Change.REMOVED)));
-                    assertEquals(2,Iterables.size(changes.getVertices(Change.ANY)));
-                    assertEquals(0,Iterables.size(changes.getRelations(Change.ADDED)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.REMOVED)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED, knows)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED, weight)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+                    assertEquals(2, Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(0, Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.REMOVED)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.REMOVED, knows)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.REMOVED, weight)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.ANY)));
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.REMOVED));
-                    assertEquals(v2id,getId(v));
-                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v,Change.REMOVED,"weight"));
-                    assertEquals(222.2,p.value().doubleValue(),0.0001);
-                    assertEquals(1,Iterables.size(changes.getEdges(v, Change.REMOVED, OUT)));
-                    assertEquals(0,Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
+                    assertEquals(v2id, getId(v));
+                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v, Change.REMOVED, "weight"));
+                    assertEquals(222.2, p.value().doubleValue(), 0.0001);
+                    assertEquals(1, Iterables.size(changes.getEdges(v, Change.REMOVED, OUT)));
+                    assertEquals(0, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
                 } else {
-                    txNo=4;
+                    txNo = 4;
                     //v1 edge modification
                     assertEquals(0, Iterables.size(changes.getVertices(Change.ADDED)));
                     assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
-                    assertEquals(1,Iterables.size(changes.getVertices(Change.ANY)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED)));
-                    assertEquals(1,Iterables.size(changes.getRelations(Change.REMOVED, knows)));
-                    assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+                    assertEquals(1, Iterables.size(changes.getVertices(Change.ANY)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.ADDED)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.REMOVED)));
+                    assertEquals(1, Iterables.size(changes.getRelations(Change.REMOVED, knows)));
+                    assertEquals(2, Iterables.size(changes.getRelations(Change.ANY)));
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ANY));
-                    assertEquals(v1id,getId(v));
-                    TitanEdge e = Iterables.getOnlyElement(changes.getEdges(v,Change.REMOVED,Direction.OUT,"knows"));
+                    assertEquals(v1id, getId(v));
+                    TitanEdge e = Iterables.getOnlyElement(changes.getEdges(v, Change.REMOVED, Direction.OUT, "knows"));
                     assertNull(e.value("weight"));
-                    assertEquals(v,e.vertex(Direction.IN));
-                    e = Iterables.getOnlyElement(changes.getEdges(v,Change.ADDED,Direction.OUT,"knows"));
-                    assertEquals(44.4,e.<Decimal>value("weight").doubleValue(),0.0);
-                    assertEquals(v,e.vertex(Direction.IN));
+                    assertEquals(v, e.vertex(Direction.IN));
+                    e = Iterables.getOnlyElement(changes.getEdges(v, Change.ADDED, Direction.OUT, "knows"));
+                    assertEquals(44.4, e.<Decimal>value("weight").doubleValue(), 0.0);
+                    assertEquals(v, e.vertex(Direction.IN));
                 }
 
                 //See only current state of graph in transaction
                 TitanVertex v1 = tx.v(v1id);
                 assertNotNull(v1);
                 assertTrue(v1.isLoaded());
-                TitanVertex v2 = tx.v(v2id);
-                if (txNo!=2) {
+                if (txNo != 2) {
                     //In the transaction that adds v2, v2 will be considered "loaded"
-                    assertTrue(txNo+ " - " + v2,v2==null || v2.isRemoved());
+                    assertMissing(tx,v2id);
+//                    assertTrue(txNo + " - " + v2, v2 == null || v2.isRemoved());
                 }
-                assertEquals(111.1,v1.<Decimal>value("weight").doubleValue(),0.0);
+                assertEquals(111.1, v1.<Decimal>value("weight").doubleValue(), 0.0);
                 assertCount(1, v1.outE());
 
                 userLogCount.incrementAndGet();
@@ -3938,7 +3939,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         e2.property("weight", 2.0);
 
         assertEquals(1,e2.<Integer>value("uid").intValue());
-        assertEquals(2.0, e2.<Double>value("weight").doubleValue());
+        assertEquals(2.0, e2.<Double>value("weight").doubleValue(),0.0001);
 
 
         clopen();

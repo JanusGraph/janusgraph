@@ -848,7 +848,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ,option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
                 ,option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
                 ,option(STORAGE_WRITE_WAITTIME), new StandardDuration(300, TimeUnit.MILLISECONDS)
-                ,option(TestMockIndexProvider.INDEX_BACKEND_PROXY,INDEX), adjustedConfig.get(INDEX_BACKEND,INDEX)
+                ,option(TestMockIndexProvider.INDEX_BACKEND_PROXY,INDEX), readConfig.get(INDEX_BACKEND,INDEX)
                 ,option(INDEX_BACKEND,INDEX), TestMockIndexProvider.class.getName()
                 ,option(TestMockIndexProvider.INDEX_MOCK_FAILADD,INDEX), true
         );
