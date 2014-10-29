@@ -4,9 +4,7 @@ import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseCompatLoader;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
-import com.tinkerpop.blueprints.Graph;
 
 import java.io.IOException;
 
@@ -47,7 +45,7 @@ public class HBaseBlueprintsTest extends TitanBlueprintsTest {
     }
 
     @Override
-    protected TitanGraph openGraph(String uid) {
+    public TitanGraph openGraph(String uid) {
         return TitanFactory.open(HBaseStorageSetup.getHBaseGraphConfiguration());
     }
 }
