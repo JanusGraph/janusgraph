@@ -110,13 +110,16 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <module>titan-hadoop-parent</module>
+        <!-- TODO titan-hadoop reintegration -->
+        <!-- <module>titan-hadoop-parent</module> -->
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
-        <module>titan-rexster</module>
+        <!-- TODO gremlin-server integration -->
+        <!-- <module>titan-rexster</module> -->
         <module>titan-all</module>
-        <module>titan-dist</module>
+        <!-- TODO titan-hadoop, gremlin-server (re)integration -->
+        <!-- <module>titan-dist</module> -->
         <module>titan-solr</module>
     </modules>
     <build>
