@@ -21,21 +21,21 @@ public class TitanGraphTraversal<S, E> extends DefaultGraphTraversal<S, E> {
     public TitanGraphTraversal(final TitanTransaction graph, final Class<? extends Element> elementClass) {
         super(graph);
         getStrategies().register(TitanGraphStepStrategy.instance());
-        getStrategies().register(TitanVertexStepStrategy.instance());
+//        getStrategies().register(TitanVertexStepStrategy.instance());
         addStep(new TitanGraphStep<>(this, elementClass));
     }
 
-    @Override
-    public <E2> GraphTraversal<S, E2> addStep(final Step<?, E2> step) {
-        if (this.getStrategies().complete()) throw Exceptions.traversalIsLocked();
-        TraversalHelper.insertStep((step instanceof VertexStep && ((VertexStep)step).getReturnClass().equals(Edge.class) ? new TitanVertexStep(this,(VertexStep)step) : step, this);
-        return (GraphTraversal) this;
-    }
+//    @Override
+//    public <E2> GraphTraversal<S, E2> addStep(final Step<?, E2> step) {
+//        if (this.getStrategies().complete()) throw Exceptions.traversalIsLocked();
+//        TraversalHelper.insertStep((step instanceof VertexStep && ((VertexStep)step).getReturnClass().equals(Edge.class) ? new TitanVertexStep(this,(VertexStep)step) : step, this);
+//        return (GraphTraversal) this;
+//    }
 
-    @Override
-    public default GraphTraversal<S, Edge> toE(final Direction direction, final int branchFactor, final String... edgeLabels) {
-        return this.addStep(new TitanVertexStep<>(this, Edge.class, direction, branchFactor, edgeLabels));
-    }
+//    @Override
+//    public default GraphTraversal<S, Edge> toE(final Direction direction, final int branchFactor, final String... edgeLabels) {
+//        return this.addStep(new TitanVertexStep<>(this, Edge.class, direction, branchFactor, edgeLabels));
+//    }
 
 
 }

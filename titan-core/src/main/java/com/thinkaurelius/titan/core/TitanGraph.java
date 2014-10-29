@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.tinkerpop.gremlin.structure.Graph;
 
 
 import java.util.Collection;
@@ -13,6 +14,10 @@ import java.util.Collection;
  * @see TitanFactory
  * @see TitanTransaction
  */
+@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
+@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

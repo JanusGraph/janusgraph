@@ -28,6 +28,7 @@ import com.thinkaurelius.titan.graphdb.database.cache.StandardSchemaCache;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
+import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
@@ -47,6 +48,7 @@ import javax.management.MBeanServerFactory;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.*;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,7 +199,14 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
-            return s!=null && preregisteredAutoType.containsKey(s);
+            if (s==null) return false;
+            if (preregisteredAutoType.containsKey(s)) return true;
+            try {
+                Class clazz = ClassUtils.getClass(s);
+                return DefaultSchemaMaker.class.isAssignableFrom(clazz);
+            } catch (ClassNotFoundException e) {
+                return false;
+            }
         }
     });
 
@@ -1470,7 +1479,10 @@ public class GraphDatabaseConfiguration {
         flushIDs = configuration.get(IDS_FLUSH);
         forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
-        defaultSchemaMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
+        String autoTypeMakerName = configuration.get(AUTO_TYPE);
+        if (preregisteredAutoType.containsKey(autoTypeMakerName))
+            defaultSchemaMaker = preregisteredAutoType.get(autoTypeMakerName);
+        else defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
         if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 

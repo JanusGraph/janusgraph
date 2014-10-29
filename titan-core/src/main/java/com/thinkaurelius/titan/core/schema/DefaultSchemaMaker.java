@@ -53,4 +53,5 @@ public interface DefaultSchemaMaker {
      * in queries results in an {@link IllegalArgumentException}.
      */
     public boolean ignoreUndefinedQueryTypes();
+
 }

@@ -44,9 +44,19 @@ public class TitanFeatures implements Graph.Features {
                 return false; //TODO: set to true
             }
         };
-        vertexFeatures = new VertexFeatures() { //Default works
+        vertexFeatures = new VertexFeatures() {
+            @Override
+            public boolean supportsUserSuppliedIds() {
+                return false;
+            }
+
         };
-        edgeFeatures = new EdgeFeatures() { //Default works
+        edgeFeatures = new EdgeFeatures() {
+            @Override
+            public boolean supportsUserSuppliedIds() {
+                return false;
+            }
+
         };
 
     }

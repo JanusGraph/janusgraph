@@ -19,14 +19,14 @@ public class TitanVertexStepStrategy implements TraversalStrategy.NoDependencies
 
     @Override
     public void apply(final Traversal<?, ?> traversal, final TraversalEngine engine) {
-        TraversalHelper.getStepsOfClass(TitanVertexStep.class, traversal).forEach(step -> {
-            Step temp = step.getNextStep();
-            while (temp instanceof HasContainerHolder) {
-                step.addHasContainers(((HasContainerHolder) temp).getHasContainers());
-                TraversalHelper.removeStep(temp, traversal);
-                temp = step.getNextStep();
-            }
-        });
+//        TraversalHelper.getStepsOfClass(TitanVertexStep.class, traversal).forEach(step -> {
+//            Step temp = step.getNextStep();
+//            while (temp instanceof HasContainerHolder) {
+//                step.addHasContainers(((HasContainerHolder) temp).getHasContainers());
+//                TraversalHelper.removeStep(temp, traversal);
+//                temp = step.getNextStep();
+//            }
+//        });
     }
 
     public static TitanVertexStepStrategy instance() {
