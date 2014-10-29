@@ -48,11 +48,13 @@
             <artifactId>hbase-client</artifactId>
             <version>0.98.2-hadoop2</version>
         </dependency>
+        <!-- TODO titan-hadoop reintegration
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>titan-hadoop</artifactId>
             <version>${project.version}</version>
         </dependency>
+        -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
@@ -68,11 +70,13 @@
             <artifactId>titan-lucene</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- TODO titan-hadoop reintegration
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>titan-rexster</artifactId>
             <version>${project.version}</version>
         </dependency>
+        -->
 
         <!-- Override Jackson versions in our transitive dependencies.
              Without these deps, titan-all users can end up with
