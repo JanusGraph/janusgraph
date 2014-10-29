@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import org.reflections.Reflections;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
+import org.reflections.vfs.Vfs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,9 +210,16 @@ public enum ReflectiveConfigOptionLoader {
         Collection<URL> scanUrls = ClasspathHelper.forClassLoader(loaderList.toArray(new ClassLoader[loaderList.size()]));
         Iterator<URL> i = scanUrls.iterator();
         while (i.hasNext()) {
-            File f = new File(i.next().getPath());
-            if (!f.exists() || !f.canRead()) {
-                log.trace("Skipping nonexistent or unreadable classpath element {}", f);
+            URL u = i.next();
+            File f;
+            try {
+                f = Vfs.getFile(u);
+            } catch (Throwable t) {
+                log.debug("Error invoking Vfs.getFile on URL {}", u, t);
+                f = new File(u.getPath());
+            }
+            if (f == null || !f.exists() || !f.isDirectory() || !f.canRead()) {
+                log.trace("Skipping nonexistent, non-directory, or unreadable classpath element {}", f);
                 i.remove();
             }
             log.trace("Retaining classpath element {}", f);
