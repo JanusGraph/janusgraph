@@ -100,8 +100,6 @@
             <groupId>com.esotericsoftware.kryo</groupId>
             <artifactId>kryo</artifactId>
             <!-- Kryo version managed by top-level pom -->
-            <!--<classifier>shaded</classifier>-->
-            
             <!--
             http://code.google.com/p/kryo/wiki/MavenShadedJAR
             
@@ -120,10 +118,6 @@
                 <exclusion>
                     <groupId>com.esotericsoftware.reflectasm</groupId>
                     <artifactId>reflectasm</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.esotericsoftware.minlog</groupId>
-                    <artifactId>minlog</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.objenesis</groupId>
