@@ -49,6 +49,6 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
         String bdbtmp = Joiner.on(File.separator).join("target", "gotgfactory");
         TitanGraph gotg = GraphOfTheGodsFactory.create(bdbtmp);
         TitanIndexTest.assertGraphOfTheGods(gotg);
-        gotg.shutdown();
+        gotg.close();
     }
 }
