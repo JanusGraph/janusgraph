@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.blueprints.Tp3DefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
@@ -187,6 +188,11 @@ public class GraphDatabaseConfiguration {
                     "expensive for vertices with many properties",
             ConfigOption.Type.MASKABLE, Boolean.class);
 
+    public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<Boolean>(QUERY_NS,"batch",
+            "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
+                    "performance improvement if there is a non-trivial latency to the backend.",
+            ConfigOption.Type.MASKABLE, Boolean.class);
+
     // ################ SCHEMA #######################
     // ################################################
 
@@ -213,6 +219,7 @@ public class GraphDatabaseConfiguration {
     private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
         put("none", DisableDefaultSchemaMaker.INSTANCE);
         put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
+        put("tp3", Tp3DefaultSchemaMaker.INSTANCE);
     }};
 
 
@@ -1228,6 +1235,7 @@ public class GraphDatabaseConfiguration {
     private int txDirtyVertexSize;
     private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
+    private Boolean useMultiQuery;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
     private String metricsPrefix;
@@ -1499,6 +1507,9 @@ public class GraphDatabaseConfiguration {
         if (configuration.has(PROPERTY_PREFETCHING))
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
+        if (configuration.has(USE_MULTIQUERY))
+            useMultiQuery = configuration.get(USE_MULTIQUERY);
+        else useMultiQuery = null;
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
@@ -1651,6 +1662,16 @@ public class GraphDatabaseConfiguration {
             return propertyPrefetching;
         }
     }
+
+    public boolean useMultiQuery() {
+        if (useMultiQuery == null) {
+            return getStoreFeatures().isDistributed();
+        } else {
+            return useMultiQuery;
+        }
+    }
+
+
 
     public String getUnknownIndexKeyName() {
         return unknownIndexKeyName;

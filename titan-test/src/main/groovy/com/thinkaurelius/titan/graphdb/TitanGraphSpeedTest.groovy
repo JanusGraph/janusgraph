@@ -346,7 +346,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         // Preconditions failure because Query.isQueryNormalForm returns false
         int n = 0
         for (int i = 0; i < schema.edgeLabels; i++) {
-            Map<TitanVertex, Iterable<TitanEdge>> m = tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).titanEdges()
+            Map<TitanVertex, Iterable<TitanEdge>> m = tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).edges()
             for (Iterable<TitanEdge> iter : m.values()) {
                 for (TitanEdge e : iter) {
                     n++
@@ -359,7 +359,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
     private void singleVertexQueryTask(TitanTransaction tx, TitanVertex v) {
         int n = 0
         for (int i = 0; i < schema.edgeLabels; i++) {
-            for (TitanEdge iter : v.query().labels(schema.edgeLabelNames[i]).titanEdges()) {
+            for (TitanEdge iter : v.query().labels(schema.edgeLabelNames[i]).edges()) {
                 n++
             }
         }

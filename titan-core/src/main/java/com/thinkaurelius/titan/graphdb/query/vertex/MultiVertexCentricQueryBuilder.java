@@ -109,7 +109,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
-    public Map<TitanVertex, Iterable<TitanEdge>> titanEdges() {
+    public Map<TitanVertex, Iterable<TitanEdge>> edges() {
         return (Map) execute(RelationCategory.EDGE, new RelationConstructor());
     }
 

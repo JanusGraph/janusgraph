@@ -2,7 +2,10 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.blueprints.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.VertexProperty;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
@@ -79,6 +82,11 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     @Override
     public boolean isPresent() {
         return true;
+    }
+
+    @Override
+    public GraphTraversal<VertexProperty, VertexProperty> start() {
+        return new TitanElementTraversal<>(it(), tx());
     }
 
     @Override

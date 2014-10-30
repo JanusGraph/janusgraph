@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -66,10 +67,10 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     public static void checkName(String name) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
-        Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase())
-                && !Token.isSystemName(name),
-                "Name is reserved by system and cannot be used: %s",name);
+        if (name==null) throw Element.Exceptions.labelCanNotBeNull();
+        if (StringUtils.isBlank(name)) throw Element.Exceptions.labelCanNotBeEmpty();
+        if (SystemTypeManager.isSystemType(name.toLowerCase())
+                || Token.isSystemName(name)) throw Element.Exceptions.labelCanNotBeASystemKey(name);
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
     }
@@ -185,7 +186,6 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     public StandardRelationTypeMaker name(String name) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = name;
         return this;
     }

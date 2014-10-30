@@ -724,30 +724,34 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanVertexProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
         verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
-        if (key.cardinality()!=Cardinality.SINGLE) throw new UnsupportedOperationException("Not a single key: "+key+". Use addProperty instead");
-
-        TransactionLock uniqueLock = FakeLock.INSTANCE;
-        try {
-            if (config.hasVerifyUniqueness()) {
-                //Acquire uniqueness lock, remove and add
-                uniqueLock = getLock(vertex, key, Direction.OUT);
-                uniqueLock.lock(LOCK_TIMEOUT);
-                vertex.property(key.name()).remove();
-            } else {
-                //Only delete in-memory
-                InternalVertex v = (InternalVertex) vertex;
-                for (InternalRelation r : v.it().getAddedRelations(new Predicate<InternalRelation>() {
-                    @Override
-                    public boolean apply(@Nullable InternalRelation p) {
-                        return p.getType().equals(key);
+        InternalVertex v = (InternalVertex) vertex;
+        if (key.cardinality()==Cardinality.SINGLE) {
+            TransactionLock uniqueLock = FakeLock.INSTANCE;
+            try {
+                if (config.hasVerifyUniqueness()) {
+                    //Acquire uniqueness lock, remove and add
+                    uniqueLock = getLock(vertex, key, Direction.OUT);
+                    uniqueLock.lock(LOCK_TIMEOUT);
+                    vertex.property(key.name()).remove();
+                } else {
+                    //Only delete in-memory
+                    for (InternalRelation r : v.it().getAddedRelations(new Predicate<InternalRelation>() {
+                        @Override
+                        public boolean apply(@Nullable InternalRelation p) {
+                            return p.getType().equals(key);
+                        }
+                    })) {
+                        r.remove();
                     }
-                })) {
-                    r.remove();
                 }
+                return addPropertyInternal(vertex, key, value);
+            } finally {
+                uniqueLock.unlock();
             }
-            return addPropertyInternal(vertex, key, value);
-        } finally {
-            uniqueLock.unlock();
+        } else {
+            //Remove all other properties
+            for (TitanVertexProperty property : v.it().query().types(key).properties()) property.remove();
+            return addPropertyInternal(vertex,key,value);
         }
     }
 

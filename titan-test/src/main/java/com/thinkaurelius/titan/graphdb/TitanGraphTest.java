@@ -674,11 +674,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v.property("name","John");
             fail();
         } catch (SchemaViolationException e) {}
-        try {
-            //setProperty not supported for multi-properties
-            v.singleProperty("name","Don");
-            fail();
-        } catch (UnsupportedOperationException e) {}
+
 
         //Only one property for weight allowed
         v.singleProperty("weight", 1.0);
@@ -772,11 +768,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v.property("name", "John");
             fail();
         } catch (SchemaViolationException e) {}
-        try {
-            //setProperty not supported for multi-properties
-            v.singleProperty("name", "Don");
-            fail();
-        } catch (UnsupportedOperationException e) {}
 
         //Only one property for weight allowed
         v.singleProperty("weight", 1.0);
@@ -1386,6 +1377,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
    /* ==================================================================================
                             ADVANCED
      ==================================================================================*/
+
+    @Test
+    public void testHiddenProperties() {
+        Vertex v = graph.addVertex(Graph.Key.hide("acl"),"all","name","Dan");
+        Vertex u = graph.addVertex(Graph.Key.hide("acl"),"none","name","Daniel");
+        Edge e = v.addEdge("knows",u, Graph.Key.hide("acl"), "some", "weight", 5);
+
+        assertEquals(1,Iterators.size(e.iterators().hiddenPropertyIterator()));
+        assertEquals(1,Iterators.size(e.iterators().propertyIterator()));
+        assertEquals(1,Iterators.size(e.iterators().hiddenPropertyIterator("acl")));
+        assertEquals(1,Iterators.size(e.iterators().propertyIterator("weight")));
+
+        assertEquals(1,Iterators.size(v.iterators().hiddenPropertyIterator()));
+        assertEquals(1,Iterators.size(v.iterators().propertyIterator()));
+        assertEquals(1,Iterators.size(v.iterators().hiddenPropertyIterator("acl")));
+        assertEquals(1,Iterators.size(v.iterators().propertyIterator("name")));
+    }
 
     /**
      * Test the correct application of {@link com.thinkaurelius.titan.graphdb.types.system.ImplicitKey}
@@ -2361,13 +2369,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(1, size(v.query().keys("name").properties()));
 
        //MultiQueries
-       results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+       results = tx.multiQuery(qvs).direction(IN).labels("connect").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, size(result));
-       results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
+       results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, size(result));
-       results = tx.multiQuery(qvs).labels("knows").titanEdges();
+       results = tx.multiQuery(qvs).labels("knows").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(0, size(result));
-       results = tx.multiQuery(qvs).titanEdges();
+       results = tx.multiQuery(qvs).edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(4, size(result));
        results2 = tx.multiQuery(qvs).properties();
        for (Iterable<TitanVertexProperty> result : results2.values()) assertEquals(1, size(result));
@@ -2469,13 +2477,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(1, size(v.query().keys("name").properties()));
 
        //MultiQueries
-       results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+       results = tx.multiQuery(qvs).direction(IN).labels("connect").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, size(result));
-       results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
+       results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, size(result));
-       results = tx.multiQuery(qvs).labels("knows").titanEdges();
+       results = tx.multiQuery(qvs).labels("knows").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(0, size(result));
-       results = tx.multiQuery(qvs).titanEdges();
+       results = tx.multiQuery(qvs).edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(4, size(result));
        results2 = tx.multiQuery(qvs).properties();
        for (Iterable<TitanVertexProperty> result : results2.values()) assertEquals(1, size(result));
@@ -2509,7 +2517,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        qvs2[qvs2.length-1]=tx.addVertex();
        qvs2[0].addEdge("connect",qvs2[qvs2.length-1]);
        qvs2[qvs2.length-1].addEdge("connect", qvs2[0]);
-       results = tx.multiQuery(qvs2).direction(IN).labels("connect").titanEdges();
+       results = tx.multiQuery(qvs2).direction(IN).labels("connect").edges();
        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, size(result));
 
    }

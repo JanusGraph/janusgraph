@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.graphdb.blueprints.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -18,6 +19,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
@@ -126,26 +128,12 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O value(PropertyKey key) {
-        if (!((InternalRelationType)key).isInvisibleType() && tx().getConfiguration().hasPropertyPrefetching()) {
-            properties().count().next();
-        }
-        Iterator<TitanVertexProperty> iter = query().type(key).properties().iterator();
-        if (key.cardinality()== Cardinality.SINGLE) {
-            if (iter.hasNext()) return (O)iter.next().value();
-            else return null;
-        } else {
-            List<Object> result = new ArrayList<Object>();
-            while (iter.hasNext()) {
-                result.add(iter.next().value());
-            }
-            return (O)result;
-        }
+        return value(key.name());
     }
 
     @Override
-    public <O> O value(String key) {
-        if (!tx().containsRelationType(key)) return null;
-        else return value(tx().getPropertyKey(key));
+    public GraphTraversal<Vertex, Vertex> start() {
+        return new TitanElementTraversal<>(it(), tx());
     }
 
 	/* ---------------------------------------------------------------
@@ -194,7 +182,15 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... strings) {
+        if (!Stream.of(strings).map(s -> tx().getPropertyKey(s)).filter(k -> k!=null && ((InternalRelationType)k).isInvisibleType()).findAny().isPresent()
+                && tx().getConfiguration().hasPropertyPrefetching()) {
+            properties().count().next();
+        }
+
         if (strings==null) strings=new String[0];
+        if (hidden) for (int i = 0; i < strings.length; i++) {
+            strings[i]=Graph.Key.hide(strings[i]);
+        }
         return (Iterator)com.google.common.collect.Iterators.filter(query().keys(strings).properties().iterator(),
                 new Predicate<TitanVertexProperty>() {
                     @Override

@@ -72,7 +72,7 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
          * @return A TitanPredicate equivalent to the given predicate
          * @throws IllegalArgumentException if the given Predicate is unknown
          */
-        public static final TitanPredicate convert(BiPredicate p) {
+        public static final TitanPredicate convertInternal(BiPredicate p) {
             if (p instanceof TitanPredicate) {
                 return (TitanPredicate)p;
             } else if (p instanceof Compare) {
@@ -94,9 +94,18 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
                     default: throw new IllegalArgumentException("Unexpected container: " + con);
 
                 }
-            } else throw new IllegalArgumentException("Titan does not support the given predicate: " + p);
+            } else return null;
         }
 
+        public static final TitanPredicate convert(BiPredicate p) {
+            TitanPredicate titanPred = convertInternal(p);
+            if (titanPred==null) throw new IllegalArgumentException("Titan does not support the given predicate: " + p);
+            return titanPred;
+        }
+
+        public static final boolean supports(BiPredicate p) {
+            return convert(p)!=null;
+        }
     }
 
 }

@@ -15,6 +15,7 @@ import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.structure.BatchTest;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
@@ -29,11 +30,14 @@ import java.util.Set;
 public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     @Override
-    public void clear(final Graph g, final Configuration configuration) throws Exception {
+    public void clear(Graph g, final Configuration configuration) throws Exception {
         if (null != g) {
-            if (g.features().graph().supportsTransactions())
+            while (g instanceof WrappedGraph) g = ((WrappedGraph<? extends Graph>)g).getBaseGraph();
+            TitanGraph graph = (TitanGraph)g;
+            if (graph.isOpen()) {
                 g.tx().rollback();
-            g.close();
+                g.close();
+            }
         }
 
         WriteConfiguration config = new CommonsConfiguration(configuration);
@@ -68,9 +72,9 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
             VertexLabel artist = mgmt.makeVertexLabel("artist").make();
             VertexLabel song = mgmt.makeVertexLabel("song").make();
 
-            PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-            PropertyKey songType = mgmt.makePropertyKey("songType").dataType(String.class).make();
-            PropertyKey performances = mgmt.makePropertyKey("performances").dataType(Integer.class).make();
+            PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
+            PropertyKey songType = mgmt.makePropertyKey("songType").cardinality(Cardinality.LIST).dataType(String.class).make();
+            PropertyKey performances = mgmt.makePropertyKey("performances").cardinality(Cardinality.LIST).dataType(Integer.class).make();
 
             mgmt.buildIndex("artistByName",Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex();
             mgmt.buildIndex("songByName",Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex();
@@ -82,7 +86,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
             VertexLabel software = mgmt.makeVertexLabel("software").make();
 
             PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey lang = mgmt.makePropertyKey("lang").dataType(String.class).make();
+            PropertyKey lang = mgmt.makePropertyKey("lang").cardinality(Cardinality.LIST).dataType(String.class).make();
             PropertyKey age = mgmt.makePropertyKey("age").cardinality(Cardinality.LIST).dataType(Integer.class).make();
 
             mgmt.buildIndex("personByName",Vertex.class).addKey(name).indexOnly(person).buildCompositeIndex();
@@ -92,7 +96,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
         } else if (graphData.equals(LoadGraphWith.GraphData.CLASSIC)) {
             PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
-            PropertyKey lang = mgmt.makePropertyKey("lang").dataType(String.class).make();
+            PropertyKey lang = mgmt.makePropertyKey("lang").cardinality(Cardinality.LIST).dataType(String.class).make();
             PropertyKey age = mgmt.makePropertyKey("age").cardinality(Cardinality.LIST).dataType(Integer.class).make();
 
             mgmt.buildIndex("byName",Vertex.class).addKey(name).buildCompositeIndex();
@@ -108,9 +112,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     }
 
     private void initializeSchema(ModifiableConfiguration conf, Class<?> test, String testMethodName) {
-        if (test.equals(BatchTest.class)) {
-            conf.set(GraphDatabaseConfiguration.AUTO_TYPE,Tp3TestSchema.class.getName());
-        }
+        conf.set(GraphDatabaseConfiguration.AUTO_TYPE,"tp3");
     }
 
     public static class Tp3TestSchema implements DefaultSchemaMaker {

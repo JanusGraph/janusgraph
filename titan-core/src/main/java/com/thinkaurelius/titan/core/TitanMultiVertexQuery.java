@@ -99,7 +99,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      *
      * @return Iterable over all incident edges that match this query for each vertex
      */
-    public Map<TitanVertex, Iterable<TitanEdge>> titanEdges();
+    public Map<TitanVertex, Iterable<TitanEdge>> edges();
 
     /**
      * Returns an iterable over all incident properties that match this query for each vertex

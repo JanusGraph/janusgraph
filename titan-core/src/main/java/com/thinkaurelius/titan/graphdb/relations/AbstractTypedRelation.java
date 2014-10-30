@@ -157,12 +157,13 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... strings) {
         Stream<RelationType> keys;
         if (strings==null || strings.length==0) {
-            keys = StreamFactory.stream(getPropertyKeysDirect());
+            keys = StreamFactory.stream(it().getPropertyKeysDirect());
         } else {
-            keys = Arrays.asList(strings).stream().filter(s -> hidden ^ !Graph.Key.isHidden(s))
+            keys = Stream.of(strings).map(s -> hidden?Graph.Key.hide(s):s)
                     .map(s -> tx().getRelationType(s)).filter(rt -> rt != null);
         }
-        return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,value(rt.name()))).iterator();
+        return keys.filter(rt -> hidden ^ !Graph.Key.isHidden(rt.name()))
+                .map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,value(rt.name()))).iterator();
     }
 
     @Override
