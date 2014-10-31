@@ -87,6 +87,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         } else if (type.equals(ImplicitKey.ID.name())) {
             Preconditions.checkArgument(value instanceof RelationIdentifier,"Expected valid relation id: %s",value);
             return addConstraint(ImplicitKey.TITANID.name(),rel,((RelationIdentifier)value).getRelationId());
+        } else {
+            Preconditions.checkArgument(rel.isValidCondition(value),"Invalid condition provided: " + value);
         }
         if (constraints==NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, TitanRelation>>(5);
         constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));

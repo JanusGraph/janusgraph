@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
@@ -10,8 +13,12 @@ import com.tinkerpop.gremlin.process.graph.step.map.OrderByStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Contains;
 import com.tinkerpop.gremlin.structure.Order;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
+
+import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -23,6 +30,8 @@ public interface HasStepFolder<S,E> extends Step<S,E> {
     public void orderBy(String key, Order order);
 
     public void setLimit(int limit);
+
+    public int getLimit();
 
     public static boolean validTitanHas(HasContainer has) {
         return TitanPredicate.Converter.supports(has.predicate);
@@ -39,37 +48,26 @@ public interface HasStepFolder<S,E> extends Step<S,E> {
 
     public static void foldInHasContainer(final HasStepFolder titanStep, final Traversal<?, ?> traversal) {
         Step currentStep = titanStep.getNextStep();
-        boolean skippedSteps = false;
+        boolean skippedOrders = false;
         while (true) {
             if (currentStep == EmptyStep.instance() || TraversalHelper.isLabeled(currentStep)) break;
 
             if (currentStep instanceof HasContainerHolder) {
-                HasContainerHolder hasHolder = (HasContainerHolder) currentStep;
-                if (validTitanHas(hasHolder)) {
-                    titanStep.addAll(hasHolder.getHasContainers());
+                Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
+                if (validTitanHas(containers)) {
+                    titanStep.addAll(containers);
                     TraversalHelper.removeStep(currentStep, traversal);
-                } else skippedSteps = true;
-            } else if (currentStep instanceof OrderByStep) {
+                }
+            } else if (currentStep instanceof OrderByStep && !skippedOrders) {
                 OrderByStep ostep = (OrderByStep)currentStep;
-                if (ostep.getComparator() instanceof Order) {
-                    titanStep.orderBy(ostep.getElementKey(),(Order)ostep.getComparator());
+                if (ostep.getElementValueComparator() instanceof Order) {
+                    titanStep.orderBy(ostep.getElementKey(),(Order)ostep.getElementValueComparator());
                     TraversalHelper.removeStep(currentStep, traversal);
-                } else skippedSteps = true;
-            } else if (currentStep instanceof RangeStep && !skippedSteps) {
-            //can only apply limit if we haven't skipped any filters or orders
-                RangeStep rstep = (RangeStep)currentStep;
-                long high = rstep.getHighRange();
-
-                //TODO: remove +1 once semantics is updated
-                if (high>=Integer.MAX_VALUE || high+1>=Integer.MAX_VALUE) titanStep.setLimit(Integer.MAX_VALUE);
-                else titanStep.setLimit((int)high+1);
-
-                if (rstep.getLowRange()==0) TraversalHelper.removeStep(currentStep, traversal);
-                break; //Cannot optimize beyond limit
+                } else skippedOrders = true;
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else if (currentStep instanceof FilterStep) {
-                skippedSteps = true;
+                // do nothing
             } else {
                 break;
             }

@@ -191,7 +191,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<Boolean>(QUERY_NS,"batch",
             "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
                     "performance improvement if there is a non-trivial latency to the backend.",
-            ConfigOption.Type.MASKABLE, Boolean.class);
+            ConfigOption.Type.MASKABLE, false);
 
     // ################ SCHEMA #######################
     // ################################################
@@ -1507,9 +1507,7 @@ public class GraphDatabaseConfiguration {
         if (configuration.has(PROPERTY_PREFETCHING))
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
-        if (configuration.has(USE_MULTIQUERY))
-            useMultiQuery = configuration.get(USE_MULTIQUERY);
-        else useMultiQuery = null;
+        useMultiQuery = configuration.get(USE_MULTIQUERY);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
@@ -1664,11 +1662,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public boolean useMultiQuery() {
-        if (useMultiQuery == null) {
-            return getStoreFeatures().isDistributed();
-        } else {
-            return useMultiQuery;
-        }
+        return useMultiQuery;
     }
 
 

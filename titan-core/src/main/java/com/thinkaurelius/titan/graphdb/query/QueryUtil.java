@@ -35,6 +35,17 @@ public class QueryUtil {
         return limit;
     }
 
+    public static int convertLimit(long limit) {
+        assert limit>=0;
+        if (limit>=Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        else return (int)limit;
+    }
+
+    public static int mergeLimits(int limit1, int limit2) {
+        assert limit1>=0 && limit2>=0;
+        return Math.min(limit1,limit2);
+    }
+
     public static InternalRelationType getType(StandardTitanTx tx, String typeName) {
         RelationType t = tx.getRelationType(typeName);
         if (t == null && !tx.getConfiguration().getAutoSchemaMaker().ignoreUndefinedQueryTypes()) {

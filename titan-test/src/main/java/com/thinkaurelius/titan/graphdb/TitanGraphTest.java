@@ -4,6 +4,8 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.blueprints.TitanGraphStep;
+import com.thinkaurelius.titan.graphdb.blueprints.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Duration;
@@ -63,6 +65,10 @@ import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import com.tinkerpop.gremlin.process.Step;
+import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraversalEngine;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.structure.*;
 
 import static com.thinkaurelius.titan.testutil.TitanAssert.*;
@@ -197,7 +203,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(numE, tx.E());
         assertCount(numE, tx.E());
 
-        tx.V().range(0,deleteV-1).remove();
+        tx.V().range(0,deleteV).remove();
 
         for (int i=0;i<10;i++) { //Repeated vertex counts
             assertCount(numV - deleteV, tx.V());
@@ -2989,6 +2995,90 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Run the same check one more time.
         // This fails! (Expected: 19999. Actual: 20000.)
         assertCount(numEdges - 1, parentVertex.outE());
+    }
+
+    @Test
+    public void testTinkerPopOptimizationStrategies() {
+        PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        PropertyKey weight = mgmt.makePropertyKey("weight").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+
+        mgmt.buildIndex("byId",Vertex.class).addKey(id).buildCompositeIndex();
+        mgmt.buildIndex("byWeight",Vertex.class).addKey(weight).buildCompositeIndex();
+        mgmt.buildIndex("byIdWeight",Vertex.class).addKey(id).addKey(weight).buildCompositeIndex();
+
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").make();
+        mgmt.buildEdgeIndex(knows,"byWeightDecr",Direction.OUT,decr,weight);
+        mgmt.buildEdgeIndex(knows,"byWeightIncr",Direction.OUT,incr,weight);
+
+        finishSchema();
+
+
+        int numV = 100;
+        Vertex[] vs = new Vertex[numV];
+        for (int i=0;i<numV;i++) {
+            vs[i]=graph.addVertex("id",i,"weight",i%5);
+        }
+        int superV = 10;
+        int sid = -1;
+        Vertex[] sv = new Vertex[superV];
+        for (int i=0;i<superV;i++) {
+            sv[i]=graph.addVertex("id",sid);
+            for (int j=0;j<numV;j++) {
+                sv[i].addEdge("knows",vs[j],"weight",j%5);
+            }
+        }
+
+        assertNumStep(numV/5, 1, sv[0].outE("knows").has("weight",1), TitanVertexStep.class);
+        assertNumStep(numV, 1, sv[0].outE("knows"), TitanVertexStep.class);
+        assertNumStep(numV, 1, sv[0].out("knows"), TitanVertexStep.class);
+        assertNumStep(10, 1, sv[0].out(10,"knows"), TitanVertexStep.class);
+        assertNumStep(5, 1, sv[0].outE(5,"knows"), TitanVertexStep.class);
+        assertNumStep(numV, 1, sv[0].outE("knows").orderBy("weight",decr), TitanVertexStep.class);
+        assertNumStep(10, 1, sv[0].outE(10,"knows").orderBy("weight",incr), TitanVertexStep.class);
+        assertNumStep(numV/5, 1, sv[0].outE("knows").has("weight").orderBy("weight",incr).has("weight",1), TitanVertexStep.class);
+        assertNumStep(10, 1, sv[0].outE(10,"knows").orderBy("weight",incr).interval("weight",0,10), TitanVertexStep.class);
+        assertNumStep(5, 1, sv[0].outE(5, "knows").orderBy("weight",incr).interval("weight",0,10), TitanVertexStep.class);
+
+        //Global graph queries
+        assertNumStep(1, 1, graph.V().has("id", numV / 5), TitanGraphStep.class);
+        assertNumStep(1, 1, graph.V().has("id", numV / 5).has("weight", (numV / 5) % 5), TitanGraphStep.class);
+        assertNumStep(numV / 5, 1, graph.V().has("weight", 1), TitanGraphStep.class);
+        assertNumStep(10, 1, graph.V().has("weight", 1).range(0, 10), TitanGraphStep.class);
+
+        assertNumStep(superV, 1, graph.V().has("id",sid), TitanGraphStep.class);
+
+        assertNumStep(superV*(numV/5), 2, graph.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
+
+
+        clopen(option(USE_MULTIQUERY),true);
+
+        assertNumStep(superV*(numV/5), 2, graph.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, graph.V().has("id",sid).outE("knows").interval("weight",1,3), TitanGraphStep.class, TitanVertexStep.class);
+
+
+
+    }
+
+    private static void assertNumStep(int expectedResults, int expectedSteps, Traversal traversal, Class<? extends Step>... expectedStepTypes) {
+        int num = 0;
+        while (traversal.hasNext()) {
+            traversal.next();
+            num++;
+        }
+        assertEquals(expectedResults,num);
+
+//        traversal.getStrategies().apply(TraversalEngine.STANDARD);
+        List<Step> steps = traversal.getSteps();
+        Set<Class<? extends Step>> expSteps = Sets.newHashSet(expectedStepTypes);
+        int numSteps = 0;
+        for (Step s : steps) {
+//            System.out.println(s.getClass());
+            if (s.getClass().equals(StartStep.class)) continue;
+
+            assertTrue(s.getClass().getName(),expSteps.contains(s.getClass()));
+            numSteps++;
+        }
+        assertEquals(expectedSteps,numSteps);
     }
 
 

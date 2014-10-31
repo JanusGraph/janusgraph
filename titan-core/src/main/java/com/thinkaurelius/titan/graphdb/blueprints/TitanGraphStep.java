@@ -38,7 +38,12 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
         TitanTransaction tx = (TitanTransaction)this.traversal.sideEffects().getGraph();
         TitanGraphQuery query = tx.query();
         for (HasContainer condition : hasContainers) {
-            query.has(condition.key,TitanPredicate.Converter.convert(condition.predicate),condition.value);
+            if (condition.predicate instanceof Contains && condition.value==null) {
+                if (condition.predicate==Contains.within) query.has(condition.key);
+                else query.hasNot(condition.key);
+            } else {
+                query.has(condition.key, TitanPredicate.Converter.convert(condition.predicate), condition.value);
+            }
         }
         for (OrderEntry order : orders) query.orderBy(order.key,order.order);
         if (limit!=BaseQuery.NO_LIMIT) query.limit(limit);
@@ -63,6 +68,11 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     @Override
     public void setLimit(int limit) {
         this.limit = limit;
+    }
+
+    @Override
+    public int getLimit() {
+        return this.limit;
     }
 }
 

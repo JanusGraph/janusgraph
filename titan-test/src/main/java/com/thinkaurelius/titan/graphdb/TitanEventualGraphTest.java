@@ -60,7 +60,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx1.commit();
         tx2.commit();
 
-        assertEquals("v", getOnlyElement(tx.V().has("value",11).value("uid")));
+        assertEquals("v", getOnlyElement(tx.V().has("value",11).values("uid")));
 
     }
 
