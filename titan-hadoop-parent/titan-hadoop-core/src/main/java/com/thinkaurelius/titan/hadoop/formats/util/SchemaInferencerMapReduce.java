@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.tinkerpop.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;

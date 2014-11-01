@@ -3,16 +3,14 @@ package com.thinkaurelius.titan.graphdb.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.graphdb.blueprints.TitanElementTraversal;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
-import com.thinkaurelius.titan.graphdb.relations.SimpleTitanProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
@@ -22,7 +20,6 @@ import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
-import com.tinkerpop.gremlin.util.StreamFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -172,26 +169,24 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
-        return (Iterator)query().direction(direction).limit(i).labels(strings).edges().iterator();
+    public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
+        return (Iterator)query().direction(direction).labels(strings).edges().iterator();
     }
 
     @Override
-    public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
-        return (Iterator)query().direction(direction).limit(i).labels(strings).vertices().iterator();
+    public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
+        return (Iterator)query().direction(direction).labels(strings).vertices().iterator();
     }
 
-    public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... strings) {
-        if (!Stream.of(strings).map(s -> tx().getPropertyKey(s)).filter(k -> k!=null && ((InternalRelationType)k).isInvisibleType()).findAny().isPresent()
+    public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... keys) {
+        if (!Stream.of(keys).map(s -> tx().getPropertyKey(s)).filter(k -> k!=null && ((InternalRelationType)k).isInvisibleType()).findAny().isPresent()
                 && tx().getConfiguration().hasPropertyPrefetching()) {
             properties().count().next();
         }
 
-        if (strings==null) strings=new String[0];
-        if (hidden) for (int i = 0; i < strings.length; i++) {
-            strings[i]=Graph.Key.hide(strings[i]);
-        }
-        return (Iterator)com.google.common.collect.Iterators.filter(query().keys(strings).properties().iterator(),
+        if (keys==null) keys=new String[0];
+        if (hidden) keys = QueryUtil.hideKeys(keys);
+        return (Iterator)com.google.common.collect.Iterators.filter(query().keys(keys).properties().iterator(),
                 new Predicate<TitanVertexProperty>() {
                     @Override
                     public boolean apply(@Nullable TitanVertexProperty prop) {
@@ -201,13 +196,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public <V> Iterator<VertexProperty<V>> propertyIterator(String... strings) {
-        return propertyIterator(false,strings);
+    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+        return propertyIterator(false,keys);
     }
 
     @Override
-    public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
-        return propertyIterator(true,strings);
+    public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... keys) {
+        return propertyIterator(true,keys);
     }
 
 }

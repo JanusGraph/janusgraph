@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.blueprints;
+package com.thinkaurelius.titan.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;

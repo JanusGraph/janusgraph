@@ -189,12 +189,12 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
+    public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
         throw getAccessException();
     }
 
     @Override
-    public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
+    public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
         throw getAccessException();
     }
 

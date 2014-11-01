@@ -116,12 +116,12 @@ public class EmptyVertex implements InternalVertex {
         private Iterators() {}
 
         @Override
-        public Iterator<Edge> edgeIterator(Direction direction, int i, String... strings) {
+        public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
             return com.google.common.collect.Iterators.emptyIterator();
         }
 
         @Override
-        public Iterator<Vertex> vertexIterator(Direction direction, int i, String... strings) {
+        public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
             return com.google.common.collect.Iterators.emptyIterator();
         }
 

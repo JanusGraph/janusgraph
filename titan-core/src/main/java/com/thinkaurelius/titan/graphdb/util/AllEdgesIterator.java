@@ -64,7 +64,7 @@ public class AllEdgesIterator implements Iterator<Edge> {
             } else {
                 if (vertexIter.hasNext()) {
                     Vertex nextVertex = vertexIter.next();
-                    currentEdges = nextVertex.iterators().edgeIterator(Direction.OUT,Integer.MAX_VALUE);
+                    currentEdges = nextVertex.iterators().edgeIterator(Direction.OUT);
                 } else break;
             }
         }

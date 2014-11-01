@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.blueprints.TitanElementTraversal;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;

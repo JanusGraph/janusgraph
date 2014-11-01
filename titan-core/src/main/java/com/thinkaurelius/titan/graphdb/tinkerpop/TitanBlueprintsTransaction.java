@@ -1,10 +1,11 @@
-package com.thinkaurelius.titan.graphdb.blueprints;
+package com.thinkaurelius.titan.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphTraversal;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversal;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;

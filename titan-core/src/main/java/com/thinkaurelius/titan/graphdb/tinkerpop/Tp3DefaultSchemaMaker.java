@@ -1,21 +1,22 @@
-package com.thinkaurelius.titan.graphdb.blueprints;
+package com.thinkaurelius.titan.graphdb.tinkerpop;
 
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 
 /**
- * {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker} implementation for Blueprints graphs
- *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BlueprintsDefaultSchemaMaker implements DefaultSchemaMaker {
+public class Tp3DefaultSchemaMaker implements DefaultSchemaMaker {
 
-    public static final DefaultSchemaMaker INSTANCE = new BlueprintsDefaultSchemaMaker();
+    public static final DefaultSchemaMaker INSTANCE = new Tp3DefaultSchemaMaker();
 
-    private BlueprintsDefaultSchemaMaker() {
+    private Tp3DefaultSchemaMaker() {
     }
 
     @Override
@@ -25,7 +26,7 @@ public class BlueprintsDefaultSchemaMaker implements DefaultSchemaMaker {
 
     @Override
     public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
-        return factory.dataType(Object.class).make();
+        return factory.cardinality(Cardinality.LIST).dataType(Object.class).make();
     }
 
     @Override
@@ -37,4 +38,5 @@ public class BlueprintsDefaultSchemaMaker implements DefaultSchemaMaker {
     public boolean ignoreUndefinedQueryTypes() {
         return true;
     }
+
 }

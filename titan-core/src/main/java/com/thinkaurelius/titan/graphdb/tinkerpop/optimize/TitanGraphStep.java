@@ -1,10 +1,8 @@
-package com.thinkaurelius.titan.graphdb.blueprints;
+package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.process.Traversal;
@@ -14,11 +12,7 @@ import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

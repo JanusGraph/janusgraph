@@ -1,58 +1,48 @@
-package com.thinkaurelius.titan.graphdb.blueprints;
+package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.Query;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.Traverser;
-import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.step.map.PropertiesStep;
 import com.tinkerpop.gremlin.process.util.FastNoSuchElementException;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex,E> {
+public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element,E> {
 
-    public TitanVertexStep(Traversal traversal, Class<E> returnClass, Direction direction, int branchFactor, String... edgeLabels) {
-        super(traversal, returnClass, direction, branchFactor, edgeLabels);
+    public TitanPropertiesStep(PropertiesStep<E> copy) {
+        super(copy.getTraversal(), copy.getReturnType(), copy.getPropertyKeys());
         this.multiQuery = ((StandardTitanTx)traversal.sideEffects().getGraph()).getGraph().getConfiguration().useMultiQuery();
         this.hasContainers = new ArrayList<>();
-        this.branchFactor = branchFactor;
-    }
-
-    private TitanVertexStep(TitanVertexStep copy, Class<E> returnClass) {
-        super(copy.getTraversal(), returnClass, copy.getDirection(), copy.getBranchFactor(), copy.getEdgeLabels());
-        this.multiQuery = copy.multiQuery;
-        this.hasContainers = copy.hasContainers;
-        this.orders = copy.orders;
-        this.branchFactor = copy.branchFactor;
-    }
-
-    TitanVertexStep<Vertex> makeVertexStep() {
-        assert isEdgeStep();
-        return new TitanVertexStep<Vertex>(this,Vertex.class);
-    }
-
-    public boolean isEdgeStep() {
-        return Edge.class.isAssignableFrom(getReturnClass());
+        this.limit = Query.NO_LIMIT;
     }
 
     private final boolean multiQuery;
     private boolean initialized = false;
 
     private<Q extends BaseVertexQuery> Q makeQuery(Q query) {
-        query.labels(getEdgeLabels());
-        query.direction(getDirection());
+        String[] keys = getPropertyKeys();
+        if (getReturnType().forHiddens()) {
+            keys = QueryUtil.hideKeys(keys);
+        }
+        query.keys(keys);
         for (HasContainer condition : hasContainers) {
             if (condition.predicate instanceof Contains && condition.value==null) {
                 if (condition.predicate==Contains.within) query.has(condition.key);
@@ -62,30 +52,40 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
             }
         }
         for (OrderEntry order : orders) query.orderBy(order.key,order.order);
-        if (branchFactor!=BaseQuery.NO_LIMIT) query.limit(branchFactor);
+        if (limit !=BaseQuery.NO_LIMIT) query.limit(limit);
         return query;
+    }
+
+    private Iterator<E> convertIterator(Iterable<? extends TitanProperty> iterable) {
+        if (getReturnType().forProperties()) return (Iterator<E>)iterable.iterator();
+        assert getReturnType().forValues();
+        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> p.value());
     }
 
     private void initialize() {
         assert !initialized;
         initialized = true;
+
         if (multiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
-            TitanMultiVertexQuery mquery = ((TitanTransaction)traversal.sideEffects().getGraph()).multiQuery();
-            List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
-            starts.forEachRemaining(v -> { vertices.add(v); mquery.addVertex(v.get()); });
-            starts.add(vertices.iterator());
-            assert vertices.size()>0;
+            List<Traverser.Admin<Element>> elements = new ArrayList<>();
+            starts.forEachRemaining(v -> elements.add(v));
+            starts.add(elements.iterator());
+            assert elements.size()>0;
+
+            TitanMultiVertexQuery mquery = ((TitanTransaction) traversal.sideEffects().getGraph()).multiQuery();
+            if (elements.stream().anyMatch(e -> !(e instanceof Vertex))) throw new IllegalStateException("Step should only be used against vertices");
+            elements.forEach( e -> mquery.addVertex((Vertex)e.get()));
             makeQuery(mquery);
 
-            final Map<TitanVertex, Iterable<? extends TitanElement>> results =
-                    (Vertex.class.isAssignableFrom(getReturnClass())) ? mquery.vertices() : mquery.edges();
-            super.setFunction(v -> (Iterator<E>)results.get(v.get()).iterator());
+            final Map<TitanVertex, Iterable<? extends TitanProperty>> results = mquery.properties();
+            super.setFunction(v -> convertIterator(results.get(v.get())));
         } else {
-            super.setFunction( v -> {
+            super.setFunction(v -> {
+                if (!(v.get() instanceof Vertex)) throw new IllegalStateException("Step should only be used against vertices");
                 TitanVertexQuery query = makeQuery(((TitanVertex) v.get()).query());
-                return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
-            } );
+                return convertIterator(query.properties());
+            });
         }
     }
 
@@ -101,10 +101,13 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         this.initialized = false;
     }
 
+    /*
+    ===== HOLDER =====
+     */
 
     private final List<HasContainer> hasContainers;
-    private int branchFactor = BaseQuery.NO_LIMIT;
-    private List<OrderEntry> orders = new ArrayList<>();
+    private int limit = BaseQuery.NO_LIMIT;
+    private List<HasStepFolder.OrderEntry> orders = new ArrayList<>();
 
 
     @Override
@@ -114,31 +117,22 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     @Override
     public void orderBy(String key, Order order) {
-        orders.add(new OrderEntry(key,order));
+        orders.add(new HasStepFolder.OrderEntry(key,order));
     }
 
     @Override
     public void setLimit(int limit) {
-        this.branchFactor = limit;
+        this.limit = limit;
     }
 
     @Override
     public int getLimit() {
-        return getBranchFactor();
-    }
-
-    public boolean hasLimit() {
-        return branchFactor!= Query.NO_LIMIT;
+        return this.limit;
     }
 
     @Override
     public String toString() {
         return this.hasContainers.isEmpty() ? super.toString() : TraversalHelper.makeStepString(this, this.hasContainers);
-    }
-
-    @Override
-    public int getBranchFactor() {
-        return this.branchFactor;
     }
 
 }

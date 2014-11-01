@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -33,6 +34,15 @@ public class QueryUtil {
             limit += Math.min(Integer.MAX_VALUE - limit, 5);
 
         return limit;
+    }
+
+    public static String[] hideKeys(String[] keys) {
+        if (keys==null) return null;
+        keys = Arrays.copyOf(keys,keys.length);
+        for (int i = 0; i < keys.length; i++) {
+            keys[i]= Graph.Key.hide(keys[i]);
+        }
+        return keys;
     }
 
     public static int convertLimit(long limit) {
