@@ -36,6 +36,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     private final boolean multiQuery;
     private boolean initialized = false;
+    private boolean isVertexProperties = false;
 
     private<Q extends BaseVertexQuery> Q makeQuery(Q query) {
         String[] keys = getPropertyKeys();
@@ -62,9 +63,17 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> p.value());
     }
 
+    void makeVertrexProperties() {
+        this.isVertexProperties = true;
+    }
+
     private void initialize() {
         assert !initialized;
         initialized = true;
+        if (!isVertexProperties) { //For edges, we leave the pipeline as is and execute the behavior of parent PropertiesStep
+            assert hasContainers.isEmpty() && limit== Query.NO_LIMIT && orders.isEmpty();
+            return;
+        }
 
         if (multiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();

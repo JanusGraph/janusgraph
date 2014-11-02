@@ -32,6 +32,7 @@ import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
+import com.tinkerpop.gremlin.structure.Graph;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -1776,7 +1777,9 @@ public class GraphDatabaseConfiguration {
     }
 
     public org.apache.commons.configuration.Configuration getLocalConfiguration() {
-        return ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
+        org.apache.commons.configuration.Configuration config = ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
+        config.setProperty(Graph.GRAPH, TitanFactory.class.getName());
+        return config;
     }
 
 

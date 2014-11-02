@@ -34,8 +34,7 @@ public class TitanGraphStepStrategy implements TraversalStrategy.NoDependencies 
 
     @Override
     public int compareTo(TraversalStrategy ts) {
-        if (ts instanceof LocalRangeStrategy) return -1;
-        return ts instanceof NoDependencies ? 0 : 1;
+        return -1;
     }
 
 

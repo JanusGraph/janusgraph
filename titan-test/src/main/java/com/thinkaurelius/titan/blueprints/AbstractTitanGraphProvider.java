@@ -10,11 +10,13 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.structure.BatchTest;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.io.kryo.GremlinKryo;
 import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
@@ -28,6 +30,13 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
+
+    @Override
+    public GremlinKryo createConfiguredGremlinKryo() {
+        return GremlinKryo.build()
+                .addCustom(RelationIdentifier.class)
+                .create();
+    }
 
     @Override
     public void clear(Graph g, final Configuration configuration) throws Exception {

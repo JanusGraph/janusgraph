@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.graphdb.database.management.ModifierType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Element;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +24,11 @@ public class TypeUtil {
     public static boolean hasSimpleInternalVertexKeyIndex(TitanRelation rel) {
         if (!(rel instanceof TitanVertexProperty)) return false;
         else return hasSimpleInternalVertexKeyIndex((TitanVertexProperty)rel);
+    }
+
+    public static void checkTypeName(String name) {
+        if (name==null) throw Element.Exceptions.labelCanNotBeNull();
+        if (StringUtils.isBlank(name)) throw Element.Exceptions.labelCanNotBeEmpty();
     }
 
     public static boolean hasSimpleInternalVertexKeyIndex(TitanVertexProperty prop) {

@@ -67,8 +67,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     public static void checkName(String name) {
-        if (name==null) throw Element.Exceptions.labelCanNotBeNull();
-        if (StringUtils.isBlank(name)) throw Element.Exceptions.labelCanNotBeEmpty();
+        TypeUtil.checkTypeName(name);
         if (SystemTypeManager.isSystemType(name.toLowerCase())
                 || Token.isSystemName(name)) throw Element.Exceptions.labelCanNotBeASystemKey(name);
         for (char c : RESERVED_CHARS)

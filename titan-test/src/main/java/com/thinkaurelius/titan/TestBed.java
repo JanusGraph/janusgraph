@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan;
 
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
@@ -44,6 +45,8 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        System.out.println(TitanFactory.class.getName());
+
         IDHandler.EdgeTypeParse ep = IDHandler.readEdgeType(StaticArrayBuffer.of(new byte[]{36}).asReadBuffer());
         System.out.println(ep.typeId + " "+ BaseLabel.VertexLabelEdge.longId());
 

@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
+import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -32,7 +34,8 @@ public enum TitanSchemaCategory {
     }
 
     public String getSchemaName(String name) {
-        Preconditions.checkArgument(hasName() && StringUtils.isNotBlank(name));
+        Preconditions.checkState(hasName());
+        TypeUtil.checkTypeName(name);
         String prefix;
         switch(this) {
             case EDGELABEL:

@@ -59,7 +59,7 @@ public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
             Step previousStep = step;
             while ((previousStep=previousStep.getPreviousStep())!= EmptyStep.instance()) {
                 if (previousStep instanceof FilterStep || previousStep instanceof OrderStep ||
-                        previousStep instanceof OrderByStep || previousStep instanceof SideEffectStep ||
+                        previousStep instanceof OrderByStep ||
                         previousStep instanceof IdentityStep) {
                     continue; //we can skip over those since they don't alter the element type
                 }
@@ -79,6 +79,7 @@ public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
             }
 
             if (isVertexProperties) {
+                step.makeVertrexProperties();
                 HasStepFolder.foldInHasContainer(step,traversal);
                 OrderByStep ostep = HasStepFolder.foldInLastOrderBy(step,traversal);
                 boolean hasLocalRange = HasStepFolder.foldInRange(step, traversal, LocalRangeStep.class);
@@ -93,8 +94,7 @@ public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
 
     @Override
     public int compareTo(TraversalStrategy ts) {
-        if (ts instanceof LocalRangeStrategy) return -1;
-        return ts instanceof NoDependencies ? 0 : 1;
+        return -1;
     }
 
 }
