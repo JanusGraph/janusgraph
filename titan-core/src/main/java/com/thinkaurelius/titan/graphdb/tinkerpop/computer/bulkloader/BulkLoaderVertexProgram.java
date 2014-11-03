@@ -14,6 +14,7 @@ import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,6 +99,8 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
         }
 
         public Builder titan(final String location) {
+            //File propertiesFile = new File(location);
+
             this.configuration.setProperty(TITAN_CONFIGURATION_LOCATION, location);
             return this;
         }
