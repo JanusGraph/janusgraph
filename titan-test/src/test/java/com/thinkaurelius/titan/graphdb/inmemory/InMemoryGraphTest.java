@@ -47,6 +47,9 @@ public class InMemoryGraphTest extends TitanGraphTest {
     public void testTransactionConfiguration() {}
 
     @Override
+    public void testTinkerPopOptimizationStrategies() {}
+
+    @Override
     public void testDataTypes() {}
 
     @Override

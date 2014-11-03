@@ -48,7 +48,7 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
     }
 
     @Override
-    public <O> O value(PropertyKey key) {
+    public <O> O valueOrNull(RelationType key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         throw getAccessException();
     }

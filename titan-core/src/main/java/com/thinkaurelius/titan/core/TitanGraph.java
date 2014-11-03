@@ -18,6 +18,7 @@ import java.util.Collection;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
+
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

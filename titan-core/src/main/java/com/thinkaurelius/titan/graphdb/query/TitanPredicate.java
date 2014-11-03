@@ -104,7 +104,7 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
         }
 
         public static final boolean supports(BiPredicate p) {
-            return convert(p)!=null;
+            return convertInternal(p)!=null;
         }
     }
 

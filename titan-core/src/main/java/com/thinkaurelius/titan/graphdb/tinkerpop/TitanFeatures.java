@@ -31,6 +31,9 @@ public class TitanFeatures implements Graph.Features {
             public boolean supportsVariables() {
                 return true;
             }
+
+            @Override
+            public boolean supportsSerializableValues() { return false; }
         };
         graphFeatures = new GraphFeatures() {
             @Override
@@ -49,11 +52,32 @@ public class TitanFeatures implements Graph.Features {
                 return false;
             }
 
+            @Override
+            public VertexPropertyFeatures properties() {
+                return new VertexPropertyFeatures() {
+                    @Override
+                    public boolean supportsUserSuppliedIds() {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean supportsSerializableValues() { return false; }
+                };
+            }
+
         };
         edgeFeatures = new EdgeFeatures() {
             @Override
             public boolean supportsUserSuppliedIds() {
                 return false;
+            }
+
+            @Override
+            public EdgePropertyFeatures properties() {
+                return new EdgePropertyFeatures() {
+                    @Override
+                    public boolean supportsSerializableValues() { return false; }
+                };
             }
 
         };

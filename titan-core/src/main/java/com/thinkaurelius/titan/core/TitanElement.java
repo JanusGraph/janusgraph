@@ -98,7 +98,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @param key key
      * @return value or list of values associated with key
      */
-    public <V> V value(PropertyKey key);
+    public <V> V valueOrNull(RelationType key);
 
     //########### LifeCycle Status ##########
 

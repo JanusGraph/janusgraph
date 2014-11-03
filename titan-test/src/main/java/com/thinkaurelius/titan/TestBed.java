@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,12 +41,17 @@ public class TestBed {
 
     }
 
+    private static final ArrayList<Object> mixedList = new ArrayList<Object>() {{
+        add("try1");
+        add(2);
+    }};
+
     /**
      * @param args
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        System.out.println(TitanFactory.class.getName());
+        System.out.println(mixedList.getClass());
 
         IDHandler.EdgeTypeParse ep = IDHandler.readEdgeType(StaticArrayBuffer.of(new byte[]{36}).asReadBuffer());
         System.out.println(ep.typeId + " "+ BaseLabel.VertexLabelEdge.longId());

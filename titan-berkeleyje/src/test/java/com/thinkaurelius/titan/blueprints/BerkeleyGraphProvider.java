@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.BerkeleyStorageSetup;
+import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 
@@ -15,7 +16,7 @@ public class BerkeleyGraphProvider extends AbstractTitanGraphProvider {
 
     @Override
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
-        return BerkeleyStorageSetup.getBerkeleyJEConfiguration(graphName);
+        return BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName));
     }
 
 }

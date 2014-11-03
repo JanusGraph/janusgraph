@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -10,13 +9,11 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.gremlin.structure.*;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 public class EmptyVertex implements InternalVertex {
 
@@ -68,15 +65,17 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public <O> O value(PropertyKey key) {
+    public <O> O valueOrNull(RelationType key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return null;
     }
 
     @Override
     public <O> O value(String key) {
-        if (!tx().containsRelationType(key)) return null;
-        else return value(tx().getPropertyKey(key));
+        if (!tx().containsPropertyKey(key)) throw Property.Exceptions.propertyDoesNotExist(key);
+        O val = valueOrNull(tx().getPropertyKey(key));
+        if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
+        return val;
     }
 
 	/* ---------------------------------------------------------------

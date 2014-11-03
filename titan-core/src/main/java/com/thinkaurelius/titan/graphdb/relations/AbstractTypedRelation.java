@@ -7,12 +7,12 @@ import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.util.StreamFactory;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -118,17 +118,24 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public <O> O value(PropertyKey key) {
+    public <O> O valueOrNull(RelationType key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return it().getValueDirect(key);
     }
 
     @Override
     public <O> O value(String key) {
-        RelationType type = tx().getRelationType(key);
-        if (type==null) return null;
-        else if (type.isPropertyKey()) return value((PropertyKey) type);
-        else {
+        O val = valueInternal(tx().getRelationType(key));
+        if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
+        return val;
+    }
+
+    private <O> O valueInternal(RelationType type) {
+        if (type==null) {
+            return null;
+        } else if (type.isPropertyKey()) {
+            return valueOrNull((PropertyKey) type);
+        } else {
             assert type.isEdgeLabel();
             Object val = it().getValueDirect(type);
             if (val==null) return null;
@@ -154,16 +161,17 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         return vertices.iterator();
     }
 
-    public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... strings) {
+    public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... keyNames) {
         Stream<RelationType> keys;
-        if (strings==null || strings.length==0) {
-            keys = StreamFactory.stream(it().getPropertyKeysDirect());
+
+        if (keyNames==null || keyNames.length==0) {
+            keys = StreamFactory.stream(it().getPropertyKeysDirect()).filter( rt -> hidden ^ !Graph.Key.isHidden(rt.name()));
         } else {
-            keys = Stream.of(strings).map(s -> hidden?Graph.Key.hide(s):s)
-                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null);
+            if (hidden) keyNames = QueryUtil.hideKeys(keyNames);
+            keys = Stream.of(keyNames)
+                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
         }
-        return keys.filter(rt -> hidden ^ !Graph.Key.isHidden(rt.name()))
-                .map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,value(rt.name()))).iterator();
+        return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
     }
 
     @Override

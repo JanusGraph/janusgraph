@@ -120,7 +120,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
                 g.property("name", n);
             }
             assertEquals(i,g.<Integer>value("gid").intValue());
-            assertEquals(0,g.<Integer>value("sid").intValue());
+            assertEquals(0,g.<Integer>value("sig").intValue());
             assertEquals("group",g.label());
             assertCount(names.size(), g.properties("name"));
             assertTrue(getId(g)>0);
@@ -261,9 +261,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertEquals(0, g1.<Integer>value("gid").intValue());
             assertEquals("group", g1.label());
             assertTrue(names.size() >= g1.properties("name").count().next());
-            assertEquals(numV, g1.outE("knows"));
-            assertEquals(numV, g1.inE("knows"));
-            assertEquals(numV * 2, g1.bothE("knows"));
+            assertCount(numV, g1.outE("knows"));
+            assertCount(numV, g1.inE("knows"));
+            assertCount(numV * 2, g1.bothE("knows"));
 
             //Test local intersection
             TitanVertex g2 = tx2.v(gids[1]);

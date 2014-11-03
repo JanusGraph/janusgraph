@@ -18,7 +18,7 @@ public class ElementHelper {
 
     public static Iterable<Object> getValues(TitanElement element, PropertyKey key) {
         if (element instanceof TitanRelation) {
-            Object value = element.value(key);
+            Object value = element.valueOrNull(key);
             if (value==null) return Collections.EMPTY_LIST;
             else return ImmutableList.of(value);
         } else {

@@ -35,7 +35,7 @@ public enum TitanSchemaCategory {
 
     public String getSchemaName(String name) {
         Preconditions.checkState(hasName());
-        TypeUtil.checkTypeName(name);
+        TypeUtil.checkTypeName(this,name);
         String prefix;
         switch(this) {
             case EDGELABEL:

@@ -44,7 +44,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
             while (g instanceof WrappedGraph) g = ((WrappedGraph<? extends Graph>)g).getBaseGraph();
             TitanGraph graph = (TitanGraph)g;
             if (graph.isOpen()) {
-                g.tx().rollback();
+                if (g.tx().isOpen()) g.tx().rollback();
                 g.close();
             }
         }
@@ -124,34 +124,5 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE,"tp3");
     }
 
-    public static class Tp3TestSchema implements DefaultSchemaMaker {
-
-        private final Set<String> multiProperties = ImmutableSet.of("age","name");
-
-        @Override
-        public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
-            return factory.make();
-        }
-
-        @Override
-        public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
-            System.out.println("Auto-maker: " + factory.getName());
-            if (multiProperties.contains(factory.getName().toLowerCase())) {
-                factory.cardinality(Cardinality.LIST);
-            }
-            factory.dataType(Object.class);
-            return factory.make();
-        }
-
-        @Override
-        public VertexLabel makeVertexLabel(VertexLabelMaker factory) {
-            return factory.make();
-        }
-
-        @Override
-        public boolean ignoreUndefinedQueryTypes() {
-            return true;
-        }
-    }
 
 }

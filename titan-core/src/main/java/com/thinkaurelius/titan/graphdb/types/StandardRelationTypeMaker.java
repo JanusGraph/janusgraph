@@ -9,10 +9,12 @@ import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.internal.Order;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -66,17 +68,25 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         return multiplicity;
     }
 
-    public static void checkName(String name) {
-        TypeUtil.checkTypeName(name);
+    abstract TitanSchemaCategory getSchemaCategory();
+
+    public static void checkName(TitanSchemaCategory category, String name) {
+        TypeUtil.checkTypeName(category,name);
         if (SystemTypeManager.isSystemType(name.toLowerCase())
-                || Token.isSystemName(name)) throw Element.Exceptions.labelCanNotBeASystemKey(name);
+                || Token.isSystemName(name)) {
+            if (category==TitanSchemaCategory.EDGELABEL) {
+                throw Element.Exceptions.labelCanNotBeASystemKey(name);
+            } else {
+                throw Property.Exceptions.propertyKeyCanNotBeASystemKey(name);
+            }
+        }
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
     }
 
     private void checkGeneralArguments() {
         //Verify name
-        checkName(name);
+        checkName(getSchemaCategory(),name);
         checkSortKey(sortKey);
         Preconditions.checkArgument(sortOrder==Order.ASC || hasSortKey(),"Must define a sort key to use ordering");
         checkSignature(signature);
