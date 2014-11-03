@@ -10,17 +10,14 @@ import com.tinkerpop.gremlin.process.graph.step.filter.FilterStep;
 import com.tinkerpop.gremlin.process.graph.step.map.OrderByStep;
 import com.tinkerpop.gremlin.process.graph.step.map.OrderStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Order;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 
-import java.util.function.Function;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface HasStepFolder<S,E> extends Step<S,E> {
+public interface HasStepFolder<S, E> extends Step<S, E> {
 
     public void addAll(Iterable<HasContainer> hasContainers);
 
@@ -35,7 +32,9 @@ public interface HasStepFolder<S,E> extends Step<S,E> {
     }
 
     public static boolean validTitanHas(Iterable<HasContainer> has) {
-        for (HasContainer h : has) { if (!validTitanHas(h)) return false; }
+        for (HasContainer h : has) {
+            if (!validTitanHas(h)) return false;
+        }
         return true;
     }
 
@@ -79,14 +78,14 @@ public interface HasStepFolder<S,E> extends Step<S,E> {
                 break;
             }
             currentStep = currentStep.getNextStep();
-            if (lastOrder!=null) TraversalHelper.removeStep(lastOrder,traversal);
+            if (lastOrder != null) TraversalHelper.removeStep(lastOrder, traversal);
             lastOrder = newOrder;
         }
 
         if (lastOrder instanceof OrderByStep) {
-            OrderByStep ostep = (OrderByStep) lastOrder;
-            if (ostep.getElementValueComparator() instanceof Order) {
-                titanStep.orderBy(ostep.getElementKey(),(Order)ostep.getElementValueComparator());
+            OrderByStep<?, ?> ostep = (OrderByStep) lastOrder;
+            if (ostep.getPropertyValueComparators()[0] instanceof Order) {
+                titanStep.orderBy(ostep.getPropertyKey().get(), (Order) ostep.getPropertyValueComparators()[0]);
                 TraversalHelper.removeStep(ostep, traversal);
                 return ostep;
             }
@@ -95,14 +94,14 @@ public interface HasStepFolder<S,E> extends Step<S,E> {
     }
 
 
-    public static<E extends Ranging> boolean foldInRange(final HasStepFolder titanStep, final Traversal<?,?> traversal,
-                                      Class<E> rangeStepType) {
+    public static <E extends Ranging> boolean foldInRange(final HasStepFolder titanStep, final Traversal<?, ?> traversal,
+                                                          Class<E> rangeStepType) {
         Step nextStep = titanStep.getNextStep();
         if (rangeStepType.isInstance(nextStep)) {
-            Ranging range = (Ranging)nextStep;
+            Ranging range = (Ranging) nextStep;
             int limit = QueryUtil.convertLimit(range.getHighRange());
-            titanStep.setLimit(QueryUtil.mergeLimits(limit,titanStep.getLimit()));
-            if (range.getLowRange()==0) TraversalHelper.removeStep(nextStep, traversal);
+            titanStep.setLimit(QueryUtil.mergeLimits(limit, titanStep.getLimit()));
+            if (range.getLowRange() == 0) TraversalHelper.removeStep(nextStep, traversal);
             return true;
         } else return false;
     }
