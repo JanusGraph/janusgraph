@@ -139,8 +139,8 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
 
         @Override
         public int compare(TitanElement o1, TitanElement o2) {
-            Object v1 = o1.value(key);
-            Object v2 = o2.value(key);
+            Object v1 = o1.valueOrNull(key);
+            Object v2 = o2.valueOrNull(key);
             if (v1 == null || v2 == null) {
                 if (v1 == null && v2 == null) return 0;
                 else if (v1 == null) return 1;

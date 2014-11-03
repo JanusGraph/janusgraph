@@ -71,7 +71,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
                 ps = query().type(BaseKey.SchemaDefinitionProperty).properties();
             }
             for (TitanVertexProperty property : ps) {
-                TypeDefinitionDescription desc = property.value(BaseKey.SchemaDefinitionDesc);
+                TypeDefinitionDescription desc = property.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
                 def.setValue(desc.getCategory(), property.value());
             }
@@ -104,7 +104,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             for (TitanEdge edge: edges) {
                 TitanVertex oth = edge.vertex(dir.opposite());
                 assert oth instanceof TitanSchemaVertex;
-                TypeDefinitionDescription desc = edge.value(BaseKey.SchemaDefinitionDesc);
+                TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 Object modifier = null;
                 if (desc.getCategory().hasDataType()) {
                     assert desc.getModifier()!=null && desc.getModifier().getClass().equals(desc.getCategory().getDataType());
@@ -141,7 +141,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         return Iterables.filter(query.edges(),new Predicate<TitanEdge>() {
             @Override
             public boolean apply(@Nullable TitanEdge edge) {
-                TypeDefinitionDescription desc = edge.value(BaseKey.SchemaDefinitionDesc);
+                TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 return desc.getCategory()==def;
             }
         });

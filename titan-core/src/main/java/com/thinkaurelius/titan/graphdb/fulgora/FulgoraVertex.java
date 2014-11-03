@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -13,6 +14,7 @@ import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import com.tinkerpop.gremlin.structure.Property;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,8 +39,7 @@ public class FulgoraVertex<S> extends CacheVertex {
         this.processedProperties=processedProperties;
     }
 
-    @Override
-    public<A> A value(String key) {
+    public<A> A valueInternal(String key) {
         if (key.equals(executor.stateKey)) {
             return (A)executor.getVertexState(longId());
         } else if (processedProperties.containsKey(key)) {
@@ -47,8 +48,15 @@ public class FulgoraVertex<S> extends CacheVertex {
     }
 
     @Override
-    public<A> A value(PropertyKey key) {
-        return value(key.name());
+    public<A> A value(String key) {
+        A val = valueInternal(key);
+        if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
+        return val;
+    }
+
+    @Override
+    public<A> A valueOrNull(RelationType key) {
+        return valueInternal(key.name());
     }
 
     @Override

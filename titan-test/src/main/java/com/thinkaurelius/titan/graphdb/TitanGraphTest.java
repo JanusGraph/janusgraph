@@ -1539,7 +1539,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         graph.tx().commit();
         v3 = graph.addVertex();
         Edge e = v1.addEdge("knows",v3);
-        assertNull(e.value("age"));
+        assertFalse(e.property("age").isPresent());
     }
 
     @Test
@@ -3053,7 +3053,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(superV*10, 2, graph.V().has("id",sid).outE("knows").interval("weight", 1, 3).localLimit(10), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV*10, 2, graph.V().has("id",sid).outE("knows").interval("weight", 1, 3).orderBy("weight",decr).localLimit(10), TitanGraphStep.class, TitanVertexStep.class);
 
-
         clopen(option(USE_MULTIQUERY),true);
 
         assertNumStep(superV*(numV/5), 2, graph.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
@@ -3161,7 +3160,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1 = tx2.v(v1id);
         assertEquals(111.1,v1.<Decimal>value("weight").doubleValue(),0.0);
         Edge e = getOnlyElement(v1.outE("knows"));
-        assertNull(e.value("weight"));
+        assertFalse(e.property("weight").isPresent());
         e.property("weight", 44.4);
         tx2.commit();
         close();
@@ -3350,7 +3349,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ANY));
                     assertEquals(v1id, getId(v));
                     TitanEdge e = Iterables.getOnlyElement(changes.getEdges(v, Change.REMOVED, Direction.OUT, "knows"));
-                    assertNull(e.value("weight"));
+                    assertFalse(e.property("weight").isPresent());
                     assertEquals(v, e.vertex(Direction.IN));
                     e = Iterables.getOnlyElement(changes.getEdges(v, Change.ADDED, Direction.OUT, "knows"));
                     assertEquals(44.4, e.<Decimal>value("weight").doubleValue(), 0.0);
@@ -4010,6 +4009,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     //................................................
 
 
+    @Test
+    public void testDoubleHidden() {
+        final Vertex v = graph.addVertex(Graph.Key.hide("age"), 34, Graph.Key.hide("age"), 29, "age", 16, "name", "marko", "food", "taco", Graph.Key.hide("color"), "purple");
+        assertEquals(0,Iterators.size(v.iterators().hiddenPropertyIterator(Graph.Key.hide("age"))));
+    }
 
     //Add more removal operations, different transaction contexts
     @Test

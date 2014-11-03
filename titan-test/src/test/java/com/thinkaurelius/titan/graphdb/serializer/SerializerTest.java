@@ -60,6 +60,18 @@ public class SerializerTest extends SerializerTestCommon {
     }
 
     @Test
+    public void testListSerialization() {
+        DataOutput out = serialize.getDataOutput(128);
+        ArrayList<Object> mixed = new ArrayList<>();
+        mixed.add("try1"); mixed.add(2);
+        out.writeClassAndObject(mixed);
+        StaticBuffer b = out.getStaticBuffer();
+        ReadBuffer r = b.asReadBuffer();
+        List res = (List) serialize.readClassAndObject(r);
+        assertEquals(mixed.size(),res.size());
+    }
+
+    @Test
     public void classSerialization() {
         DataOutput out = serialize.getDataOutput(128);
         out.writeObjectNotNull(Boolean.class);

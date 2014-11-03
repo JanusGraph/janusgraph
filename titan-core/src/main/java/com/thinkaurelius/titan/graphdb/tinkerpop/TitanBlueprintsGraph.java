@@ -122,6 +122,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
             @Override
             public <R> Optional<R> get(String s) {
+                if (s==null) throw Exceptions.variableKeyCanNotBeNull();
                 if (StringUtils.isEmpty(s)) throw Exceptions.variableKeyCanNotBeEmpty();
                 Object value = config.get(s,Object.class);
                 if (value==null) return Optional.empty();
@@ -130,6 +131,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
             @Override
             public void set(String s, Object o) {
+                if (s==null) throw Exceptions.variableKeyCanNotBeNull();
                 if (StringUtils.isEmpty(s)) throw Exceptions.variableKeyCanNotBeEmpty();
                 if (o==null) throw Exceptions.variableValueCanNotBeNull();
                 config.set(s,o);
@@ -137,8 +139,14 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
             @Override
             public void remove(String s) {
+                if (s==null) throw Exceptions.variableKeyCanNotBeNull();
                 if (StringUtils.isEmpty(s)) throw Exceptions.variableKeyCanNotBeEmpty();
                 config.remove(s);
+            }
+
+            @Override
+            public String toString() {
+                return StringFactory.graphVariablesString(this);
             }
         };
     }

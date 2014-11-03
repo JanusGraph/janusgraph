@@ -29,8 +29,7 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
     }
 
     public static void checkName(String name) {
-        if (name==null) throw Element.Exceptions.labelCanNotBeNull();
-        if (StringUtils.isBlank(name)) throw Element.Exceptions.labelCanNotBeEmpty();
+        TypeUtil.checkTypeName(TitanSchemaCategory.VERTEXLABEL,name);
         if (Token.isSystemName(name)) throw Element.Exceptions.labelCanNotBeASystemKey(name);
         for (char c : StandardRelationTypeMaker.RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);

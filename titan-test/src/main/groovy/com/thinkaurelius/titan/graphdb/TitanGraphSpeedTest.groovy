@@ -225,7 +225,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         sequentialUidTask(50, { tx, v ->
             int c = 0
             for (int i = 0; i < schema.getVertexPropKeys(); i++) {
-                if (v.value(schema.getVertexPropertyName(i)) != null) {
+                if (v.valueOrNull(schema.getVertexPropertyName(i)) != null) {
                     c++
                 }
             }
@@ -238,7 +238,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
     @Test
     public void testSingleVertexProperty() {
         sequentialUidTask(50, { tx, v ->
-            assertNotNull(v.value(Schema.UID_PROP));
+            assertNotNull(v.valueOrNull(Schema.UID_PROP));
         })
     }
 
@@ -258,7 +258,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
             for (p in ElementHelper.getPropertyKeys(v)) {
                 if (p.equals(Schema.UID_PROP))
                     continue
-                int old = vertex.value(p)
+                int old = vertex.valueOrNull(p)
                 vertex.property(p).remove()
                 vertex.property(p, old * n)
                 n *= n

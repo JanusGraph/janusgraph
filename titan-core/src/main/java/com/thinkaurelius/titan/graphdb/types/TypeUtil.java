@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
@@ -7,8 +8,10 @@ import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.database.management.ModifierType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -26,9 +29,22 @@ public class TypeUtil {
         else return hasSimpleInternalVertexKeyIndex((TitanVertexProperty)rel);
     }
 
-    public static void checkTypeName(String name) {
-        if (name==null) throw Element.Exceptions.labelCanNotBeNull();
-        if (StringUtils.isBlank(name)) throw Element.Exceptions.labelCanNotBeEmpty();
+    public static void checkTypeName(TitanSchemaCategory category, String name) {
+        switch (category) {
+            case EDGELABEL:
+            case VERTEXLABEL:
+                if (name == null) throw Element.Exceptions.labelCanNotBeNull();
+                if (StringUtils.isBlank(name)) throw Element.Exceptions.labelCanNotBeEmpty();
+                break;
+            case PROPERTYKEY:
+                if (name == null) throw Property.Exceptions.propertyKeyCanNotBeNull();
+                if (StringUtils.isBlank(name)) throw Property.Exceptions.propertyKeyCanNotBeEmpty();
+                break;
+            case GRAPHINDEX:
+                Preconditions.checkArgument(StringUtils.isNotBlank(name),"Index name cannot be empty: %s",name);
+                break;
+            default: throw new AssertionError(category);
+        }
     }
 
     public static boolean hasSimpleInternalVertexKeyIndex(TitanVertexProperty prop) {

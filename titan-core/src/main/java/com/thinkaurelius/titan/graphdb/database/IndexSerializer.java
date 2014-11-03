@@ -266,9 +266,9 @@ public class IndexSerializer {
                     if (record==null) continue;
                     update = new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,relation), relation);
                 } else {
-                    assert relation.value(key)!=null;
+                    assert relation.valueOrNull(key)!=null;
                     if (((MixedIndexType)index).getField(key).getStatus()== SchemaStatus.DISABLED) continue;
-                    update = getMixedIndexUpdate(relation, key, relation.value(key), (MixedIndexType) index, updateType);
+                    update = getMixedIndexUpdate(relation, key, relation.valueOrNull(key), (MixedIndexType) index, updateType);
                 }
                 if (ttl>0) update.setTTL(ttl);
                 updates.add(update);
@@ -386,7 +386,7 @@ public class IndexSerializer {
         RecordEntry[] match = new RecordEntry[fields.length];
         for (int i = 0; i <fields.length; i++) {
             IndexField f = fields[i];
-            Object value = relation.value(f.getFieldKey());
+            Object value = relation.valueOrNull(f.getFieldKey());
             if (value==null) return null; //No match
             match[i] = new RecordEntry(relation.longId(),value,f.getFieldKey());
         }

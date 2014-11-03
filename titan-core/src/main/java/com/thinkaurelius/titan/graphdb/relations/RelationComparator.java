@@ -125,7 +125,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
     }
 
     private int compareOnKey(TitanRelation r1, TitanRelation r2, RelationType type, Order order) {
-        Object v1 = r1.value(type.name()), v2 = r2.value(type.name());
+        Object v1 = r1.valueOrNull(type), v2 = r2.valueOrNull(type);
         return compareValues(v1, v2,order);
     }
 }

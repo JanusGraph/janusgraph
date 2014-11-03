@@ -124,8 +124,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public <O> O value(PropertyKey key) {
-        return value(key.name());
+    public <O> O valueOrNull(RelationType key) {
+        return (O)property(key.name()).orElse(null);
     }
 
     @Override

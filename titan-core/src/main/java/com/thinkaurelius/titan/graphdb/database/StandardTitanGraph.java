@@ -152,16 +152,17 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (!isOpen) return;
         try {
             //Unregister instance
-            ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
-            globalConfig.remove(REGISTRATION_TIME,config.getUniqueGraphId());
-
-            super.close();
-            idAssigner.close();
-            backend.close();
-            queryCache.close();
-
-            // Remove shutdown hook to avoid reference retention
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            try {
+                ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+                globalConfig.remove(REGISTRATION_TIME, config.getUniqueGraphId());
+                super.close();
+            } finally {
+                idAssigner.close();
+                backend.close();
+                queryCache.close();
+                // Remove shutdown hook to avoid reference retention
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            }
         } catch (BackendException e) {
             throw new TitanException("Could not close storage backend", e);
         } finally {

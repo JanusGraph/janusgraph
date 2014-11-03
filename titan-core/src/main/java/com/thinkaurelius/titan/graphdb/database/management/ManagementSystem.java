@@ -805,7 +805,7 @@ public class ManagementSystem implements TitanManagement {
 
         //Delete current status
         for (TitanVertexProperty p : vertex.query().types(BaseKey.SchemaDefinitionProperty).properties()) {
-            if (p.<TypeDefinitionDescription>value(BaseKey.SchemaDefinitionDesc).getCategory()==TypeDefinitionCategory.STATUS) {
+            if (p.<TypeDefinitionDescription>valueOrNull(BaseKey.SchemaDefinitionDesc).getCategory()==TypeDefinitionCategory.STATUS) {
                 if (p.value().equals(status)) return;
                 else p.remove();
             }
@@ -820,7 +820,7 @@ public class ManagementSystem implements TitanManagement {
 
         for (TitanEdge edge : vertex.getEdges(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT)) {
             if (!keys.contains(edge.vertex(Direction.IN))) continue; //Only address edges with matching keys
-            TypeDefinitionDescription desc = edge.value(BaseKey.SchemaDefinitionDesc);
+            TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
             assert desc.getCategory()==TypeDefinitionCategory.INDEX_FIELD;
             Parameter[] parameters = (Parameter[])desc.getModifier();
             assert parameters[parameters.length-1].key().equals(ParameterType.STATUS.getName());
@@ -842,7 +842,7 @@ public class ManagementSystem implements TitanManagement {
         TitanSchemaVertex schemaVertex = getSchemaVertex(element);
         if (schemaVertex.name().equals(newName)) return;
 
-        TitanSchemaCategory schemaCategory = schemaVertex.value(BaseKey.SchemaCategory);
+        TitanSchemaCategory schemaCategory = schemaVertex.valueOrNull(BaseKey.SchemaCategory);
         Preconditions.checkArgument(schemaCategory.hasName(),"Invalid schema element: %s",element);
 
         if (schemaVertex instanceof RelationType) {
@@ -850,7 +850,9 @@ public class ManagementSystem implements TitanManagement {
             if (relType.getBaseType()!=null) {
                 newName = composeRelationTypeIndexName(relType.getBaseType(),newName);
             } else assert !(element instanceof RelationTypeIndex);
-            StandardRelationTypeMaker.checkName(newName);
+            StandardRelationTypeMaker.checkName(
+                    relType.isEdgeLabel()?TitanSchemaCategory.EDGELABEL:TitanSchemaCategory.PROPERTYKEY
+                    ,newName);
         } else if (element instanceof VertexLabel) {
             StandardVertexLabelMaker.checkName(newName);
         } else if (element instanceof TitanGraphIndex) {

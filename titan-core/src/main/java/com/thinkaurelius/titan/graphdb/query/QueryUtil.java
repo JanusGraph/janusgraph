@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.Nullable;
@@ -40,7 +41,10 @@ public class QueryUtil {
         if (keys==null) return null;
         keys = Arrays.copyOf(keys,keys.length);
         for (int i = 0; i < keys.length; i++) {
-            keys[i]= Graph.Key.hide(keys[i]);
+            if (Graph.Key.isHidden(keys[i])) {
+                //Key that definitely does not exist
+                keys[i]= SystemTypeManager.NON_EXISTANT_TYPE;
+            } else keys[i]= Graph.Key.hide(keys[i]);
         }
         return keys;
     }
