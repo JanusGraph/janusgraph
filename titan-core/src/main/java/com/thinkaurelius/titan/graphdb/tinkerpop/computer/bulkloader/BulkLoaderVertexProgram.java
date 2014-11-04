@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.computer.bulkloader;
 
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.Memory;
 import com.tinkerpop.gremlin.process.computer.MessageType;
@@ -20,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -34,15 +35,11 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
 
     private static final String CONFIGURATION_PREFIX = "titan.bulkLoaderVertexProgram.";
     private static final String TITAN_ID = Graph.Key.hide("titan.id");
-    private static final Set<String> elementComputeKeys = new HashSet<>();
+    private static final ImmutableSet<String> elementComputeKeys = ImmutableSet.of(TITAN_ID);
 
-    static {
-        elementComputeKeys.add(TITAN_ID);
-    }
-
-    private MessageType.Local messageType = MessageType.Local.to(() -> GraphTraversal.<Vertex>of().outE());
-    private static ThreadLocal<TitanGraph> graphThreadLocal = new ThreadLocal<>();
+    private MessageType.Local messageType = MessageType.Local.of(() -> GraphTraversal.<Vertex>of().outE());
     private Configuration configuration;  // TODO: TitanGraph.configuration() needs to be implemented
+    private TitanGraph graph;
 
     private BulkLoaderVertexProgram() {
 
@@ -70,19 +67,34 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     }
 
     @Override
-    public void execute(final Vertex vertex, final Messenger<Long[]> messenger, final Memory memory) {
-        if (null == graphThreadLocal.get()) {
-            LOGGER.info("Creating a Titan connection on execute() of " + vertex);
-            graphThreadLocal.set(TitanFactory.open(this.configuration));
+    public void workerIterationStart(final Memory memory) {
+        if (null == graph) {
+            graph = TitanFactory.open(configuration);
+            LOGGER.info("Opened TitanGraph instance: {}", graph);
+        } else {
+            LOGGER.warn("Leaked TitanGraph instance: {}", graph);
         }
-        final Graph g = graphThreadLocal.get();
+    }
 
+    @Override
+    public void workerIterationEnd(final Memory memory) {
+        if (null != graph) {
+            LOGGER.info("Committing transaction on TitanGraph instance: {}", graph);
+            graph.tx().commit(); // TODO will Giraph/MR restart the program and re-run execute if this fails?
+            LOGGER.debug("Committed transaction on TitanGraph instance: {}", graph);
+            IOUtils.closeQuietly(graph);
+            LOGGER.info("Closed TitanGraph instance: {}", graph);
+            graph = null;
+        }
+    }
+
+    @Override
+    public void execute(final Vertex vertex, final Messenger<Long[]> messenger, final Memory memory) {
         if (memory.isInitialIteration()) {
             // create the vertex in titan
-            final Vertex titanVertex = g.addVertex(T.label, vertex.label());
+            final Vertex titanVertex = graph.addVertex(T.label, vertex.label());
             // write all the properties of the vertex to the newly created titan vertex
             vertex.properties().forEachRemaining(vertexProperty -> titanVertex.<Object>property(vertexProperty.key(), vertexProperty.value()));
-            g.tx().commit();
             //LOGGER.info("Committing a transaction in vertex writing: " + vertex);
             // vertex.properties().remove();  TODO: optimization to drop data that is not needed in second iteration
             // set a dummy property that is the titan id of this particular vertex
@@ -95,16 +107,15 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             final Map<Long, Long> idPairs = new HashMap<>();
             messenger.receiveMessages(this.messageType).forEach(idPair -> idPairs.put(idPair[0], idPair[1]));
             // get the titan vertex out of titan given the dummy id property
-            final Vertex titanVertex = g.v(vertex.value(TITAN_ID));
+            final Vertex titanVertex = graph.v(vertex.value(TITAN_ID));
             // for all the incoming edges of the vertex, get the incoming adjacent vertex and write the edge and its properties
             vertex.inE().forEachRemaining(edge -> {
-                final Vertex incomingAdjacent = g.v(idPairs.get(Long.valueOf(edge.outV().id().next().toString())));
+                final Vertex incomingAdjacent = graph.v(idPairs.get(Long.valueOf(edge.outV().id().next().toString())));
                 final Edge titanEdge = incomingAdjacent.addEdge(edge.label(), titanVertex);
                 edge.properties().forEachRemaining(property -> titanEdge.<Object>property(property.key(), property.value()));
             });
             // vertex.bothE().remove(); TODO: optimization to drop data that is not needed any longer
             // vertex.properties().remove(); TODO: optimization to drop data that is not needed any longer
-            g.tx().commit();
             //LOGGER.info("Committing a transaction in edge writing: " + vertex);
         }
     }
