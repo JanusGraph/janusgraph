@@ -1,1 +1,1 @@
-com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanPlugin
+com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanGremlinPlugin

@@ -14,9 +14,10 @@ import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
 
-import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -25,6 +26,11 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
 
     private static final String TITAN_CONFIGURATION_LOCATION = "titan.configuration.location";
     private static final String TITAN_ID = Graph.Key.hide("titan.id");
+    private static final Set<String> elementComputeKeys = new HashSet<>();
+
+    static {
+        elementComputeKeys.add(TITAN_ID);
+    }
 
     private MessageType.Local messageType = MessageType.Local.to(() -> GraphTraversal.<Vertex>of().outE());
     private TitanGraph graph;
@@ -56,22 +62,22 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             final Vertex titanVertex = this.graph.addVertex(T.label, vertex.label());
             // write all the properties of the vertex to the newly created titan vertex
             vertex.properties().forEachRemaining(vertexProperty -> titanVertex.<Object>property(vertexProperty.key(), vertexProperty.value()));
-            // set a dummy property that is the titan id of this particular vertex
-            // vertex.properties().remove();  TODO: optimization to drop data that is not needed in second iteration
-            vertex.property(TITAN_ID, titanVertex.id());
             this.graph.tx().commit();
+            // vertex.properties().remove();  TODO: optimization to drop data that is not needed in second iteration
+            // set a dummy property that is the titan id of this particular vertex
+            vertex.property(TITAN_ID, titanVertex.id());
             // create an id/titan_id pair and send it to all the vertex's outgoing adjacent vertices
-            final Long[] idPair = {(Long) vertex.id(), (Long) titanVertex.id()};
+            final Long[] idPair = {Long.valueOf(vertex.id().toString()), (Long) titanVertex.id()};
             messenger.sendMessage(this.messageType, idPair);
         } else {
             // create a id/titan_id map and populate it with all the incoming messages
             final Map<Long, Long> idPairs = new HashMap<>();
             messenger.receiveMessages(this.messageType).forEach(idPair -> idPairs.put(idPair[0], idPair[1]));
             // get the titan vertex out of titan given the dummy id property
-            final Vertex titanVertex = this.graph.v(vertex.property(TITAN_ID));
+            final Vertex titanVertex = this.graph.v(vertex.value(TITAN_ID));
             // for all the incoming edges of the vertex, get the incoming adjacent vertex and write the edge and its properties
             vertex.inE().forEachRemaining(edge -> {
-                final Vertex incomingAdjacent = this.graph.v(idPairs.get(edge.outV().id().next()));
+                final Vertex incomingAdjacent = this.graph.v(idPairs.get(Long.valueOf(edge.outV().id().next().toString())));
                 final Edge titanEdge = incomingAdjacent.addEdge(edge.label(), titanVertex);
                 edge.properties().forEachRemaining(property -> titanEdge.<Object>property(property.key(), property.value()));
             });
@@ -83,7 +89,12 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() >= 2;  // TODO: this may need to be >= 1... I dunno, can't remember.
+        return memory.getIteration() >= 1;
+    }
+
+    @Override
+    public Set<String> getElementComputeKeys() {
+        return elementComputeKeys;
     }
 
     ////////////////////////
@@ -99,8 +110,6 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
         }
 
         public Builder titan(final String location) {
-            //File propertiesFile = new File(location);
-
             this.configuration.setProperty(TITAN_CONFIGURATION_LOCATION, location);
             return this;
         }
