@@ -12,6 +12,7 @@ import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -29,6 +30,8 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
+
+    // TODO: Be sure to accont for hidden properties --- though we may be changing the TP3 API soon for this.
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BulkLoaderVertexProgram.class);
 
@@ -81,7 +84,10 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             // create the vertex in titan
             final Vertex titanVertex = g.addVertex(T.label, vertex.label());
             // write all the properties of the vertex to the newly created titan vertex
-            vertex.properties().forEachRemaining(vertexProperty -> titanVertex.<Object>property(vertexProperty.key(), vertexProperty.value()));
+            vertex.properties().forEachRemaining(vertexProperty -> {
+                VertexProperty titanVertexProperty = titanVertex.<Object>property(vertexProperty.key(), vertexProperty.value());
+                vertexProperty.properties().forEachRemaining(metaProperty -> titanVertexProperty.<Object>property(metaProperty.key(), metaProperty.value()));
+            });
             g.tx().commit();
             //LOGGER.info("Committing a transaction in vertex writing: " + vertex);
             // vertex.properties().remove();  TODO: optimization to drop data that is not needed in second iteration
