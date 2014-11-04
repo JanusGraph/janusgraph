@@ -23,6 +23,13 @@ public final class RelationIdentifier {
     private final long relationId;
     private final long inVertexId;
 
+    private RelationIdentifier() {
+        outVertexId = 0;
+        typeId = 0;
+        relationId = 0;
+        inVertexId = 0;
+    }
+
     private RelationIdentifier(final long outVertexId, final long typeId, final long relationId, final long inVertexId) {
         this.outVertexId = outVertexId;
         this.typeId = typeId;
