@@ -40,7 +40,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
         elementComputeKeys.add(TITAN_ID);
     }
 
-    private MessageType.Local messageType = MessageType.Local.to(() -> GraphTraversal.<Vertex>of().outE());
+    private MessageType.Local messageType = MessageType.Local.of(() -> GraphTraversal.<Vertex>of().outE());
     private static ThreadLocal<TitanGraph> graphThreadLocal = new ThreadLocal<>();
     private Configuration configuration;  // TODO: TitanGraph.configuration() needs to be implemented
 
