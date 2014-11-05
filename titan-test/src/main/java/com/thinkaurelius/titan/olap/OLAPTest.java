@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
@@ -243,8 +244,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         builder.setJob(new OLAPJob() {
             @Override
             public PageRank process(TitanVertex vertex) {
-                Long degree = vertex.<Long>value("degree");
-                return new PageRank(degree==null?0:degree,1.0d/numVertices);
+                Long degree = vertex.value("degree");
+                return new PageRank(degree!=null?degree:0,1.0d/numVertices);
             }
         });
         OLAPResult<PageRank> ranks;

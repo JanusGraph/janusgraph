@@ -32,7 +32,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
         elementComputeKeys.add(TITAN_ID);
     }
 
-    private MessageType.Local messageType = MessageType.Local.to(() -> GraphTraversal.<Vertex>of().outE());
+    private MessageType.Local messageType = MessageType.Local.of(() -> GraphTraversal.<Vertex>of().outE());
     private TitanGraph graph;
     private String location;
 

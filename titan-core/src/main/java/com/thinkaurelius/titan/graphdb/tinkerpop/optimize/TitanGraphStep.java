@@ -29,7 +29,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
 
     @Override
     public void generateTraverserIterator(final boolean trackPaths) {
-        TitanTransaction tx = (TitanTransaction)this.traversal.sideEffects().getGraph();
+        TitanTransaction tx = TitanTraversal.getTx(traversal);
         TitanGraphQuery query = tx.query();
         for (HasContainer condition : hasContainers) {
             if (condition.predicate instanceof Contains && condition.value==null) {

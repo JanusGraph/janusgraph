@@ -24,7 +24,7 @@ public class TitanGraphStepStrategy implements TraversalStrategy.NoDependencies 
 
         final TitanGraphStep titanGraphStep = (TitanGraphStep) TraversalHelper.getStart(traversal);
         HasStepFolder.foldInHasContainer(titanGraphStep,traversal);
-        HasStepFolder.foldInLastOrderBy(titanGraphStep,traversal);
+        HasStepFolder.foldInLastOrderBy(titanGraphStep,traversal,titanGraphStep.returnsVertices());
         HasStepFolder.foldInRange(titanGraphStep,traversal,RangeStep.class);
     }
 

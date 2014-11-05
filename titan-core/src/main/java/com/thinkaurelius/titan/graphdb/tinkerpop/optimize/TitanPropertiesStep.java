@@ -100,7 +100,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     @Override
     protected Traverser<E> processNextStart() {
-        if (!initialized) initialize();
+        //if (!initialized) initialize();
         return super.processNextStart();
     }
 

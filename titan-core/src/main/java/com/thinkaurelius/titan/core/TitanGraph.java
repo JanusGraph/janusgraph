@@ -18,7 +18,10 @@ import java.util.Collection;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
-
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldExecuteWithCompetingThreads",
+        reason = "Need to initialize Titan schema to avoid locking conflicts when creating new keys in concurrent transactions.")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

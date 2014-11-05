@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.process.Step;
@@ -38,6 +41,18 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return true;
     }
 
+    public static boolean validTitanOrder(OrderByStep ostep, Traversal traversal,
+                                                boolean isVertexOrder) {
+        if (!ostep.usesPropertyKey() || ostep.getPropertyValueComparators().length>1
+                || !(ostep.getPropertyValueComparators()[0] instanceof Order)) return false;
+        TitanTransaction tx = TitanTraversal.getTx(traversal);
+        String key = (String)ostep.getPropertyKey().get();
+        PropertyKey pkey = tx.getPropertyKey(key);
+        if (pkey==null || !(Comparable.class.isAssignableFrom(pkey.dataType())) ) return false;
+        if (isVertexOrder && pkey.cardinality()!=Cardinality.SINGLE) return false;
+        return true;
+    }
+
     public static void foldInHasContainer(final HasStepFolder titanStep, final Traversal<?, ?> traversal) {
         Step currentStep = titanStep.getNextStep();
         while (true) {
@@ -49,7 +64,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     titanStep.addAll(containers);
                     TraversalHelper.removeStep(currentStep, traversal);
                 }
-            } else if (currentStep instanceof OrderByStep) {
+            } else if (currentStep instanceof OrderByStep || currentStep instanceof OrderStep) {
                 //do nothing, we can pull filters over those
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing, has no impact
@@ -62,7 +77,8 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    public static OrderByStep foldInLastOrderBy(final HasStepFolder titanStep, final Traversal<?, ?> traversal) {
+    public static OrderByStep foldInLastOrderBy(final HasStepFolder titanStep, final Traversal<?, ?> traversal,
+                                                boolean isVertexOrder) {
         Step currentStep = titanStep.getNextStep();
         Step lastOrder = null;
         while (true) {
@@ -70,10 +86,6 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             Step newOrder = null;
             if (currentStep instanceof OrderByStep || currentStep instanceof OrderStep) {
                 newOrder = currentStep;
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof FilterStep) {
-                // do nothing, we can go over filters
             } else {
                 break;
             }
@@ -84,7 +96,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
         if (lastOrder instanceof OrderByStep) {
             OrderByStep<?, ?> ostep = (OrderByStep) lastOrder;
-            if (ostep.getPropertyValueComparators()[0] instanceof Order) {
+            if (validTitanOrder(ostep,traversal,isVertexOrder)) {
                 titanStep.orderBy(ostep.getPropertyKey().get(), (Order) ostep.getPropertyValueComparators()[0]);
                 TraversalHelper.removeStep(ostep, traversal);
                 return ostep;
