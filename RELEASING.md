@@ -173,6 +173,11 @@ git push origin refs/tags/$RELEASE_VERSION
 #git push origin gh-pages
 ```
 
+Update these pages on the Github wiki:
+
+* Home
+* Downloads
+
 ### Deploy a New Snapshot
 
 To kickoff the next round of development, deploy a copy of the new
