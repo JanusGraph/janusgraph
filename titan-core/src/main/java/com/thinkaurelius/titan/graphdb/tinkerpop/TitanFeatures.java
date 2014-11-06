@@ -33,7 +33,7 @@ public class TitanFeatures implements Graph.Features {
             }
 
             @Override
-            public boolean supportsSerializableValues() { return false; }
+            public boolean supportsSerializableValues() { return true; }
         };
         graphFeatures = new GraphFeatures() {
             @Override

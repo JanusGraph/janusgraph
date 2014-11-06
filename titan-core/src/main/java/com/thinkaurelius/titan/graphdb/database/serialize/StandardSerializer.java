@@ -19,12 +19,15 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     private static final Logger log = LoggerFactory.getLogger(StandardSerializer.class);
 
     private final KryoSerializer backupSerializer;
+    private final boolean allowCustomSerialization;
 
     public StandardSerializer(boolean allowCustomSerialization, int maxOutputSize) {
+        this.allowCustomSerialization = allowCustomSerialization;
         backupSerializer = new KryoSerializer(getDefaultRegistrations(), !allowCustomSerialization, maxOutputSize);
     }
 
     public StandardSerializer(boolean allowCustomSerialization) {
+        this.allowCustomSerialization = allowCustomSerialization;
         backupSerializer = new KryoSerializer(getDefaultRegistrations(), !allowCustomSerialization);
     }
 
@@ -40,6 +43,12 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     private boolean supportsNullSerialization(Class type) {
         return getSerializer(type) instanceof SupportsNullSerializer;
     }
+
+    @Override
+    public boolean validDataType(Class datatype) {
+        if (!allowCustomSerialization) return super.validDataType(datatype);
+        return true;
+     }
 
     @Override
     public <T> T readObjectByteOrder(ReadBuffer buffer, Class<T> type) {

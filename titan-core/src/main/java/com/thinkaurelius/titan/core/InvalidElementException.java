@@ -1,5 +1,10 @@
 package com.thinkaurelius.titan.core;
 
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
+
 /**
  * Exception thrown when an element is invalid for the executing operation or when an operation could not be performed
  * on an element.
@@ -34,7 +39,9 @@ public class InvalidElementException extends TitanException {
     }
 
     public static IllegalStateException removedException(TitanElement element) {
-        return new IllegalStateException("Element has been removed");
+        Class elementClass = Vertex.class.isAssignableFrom(element.getClass())?Vertex.class:
+                (Edge.class.isAssignableFrom(element.getClass())?Edge.class:VertexProperty.class);
+        return Element.Exceptions.elementAlreadyRemoved(elementClass, element.id());
     }
 
 }

@@ -82,7 +82,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public synchronized void remove() {
-        if (isRemoved()) throw InvalidElementException.removedException(this);
+        if (isRemoved()) return; //Remove() is idempotent
         Iterator<TitanRelation> iter = it().query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();
@@ -119,7 +119,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public VertexCentricQueryBuilder query() {
-        Preconditions.checkArgument(!isRemoved(), "Cannot access a removed vertex: %s", this);
+        verifyAccess();
         return tx().query(this);
     }
 

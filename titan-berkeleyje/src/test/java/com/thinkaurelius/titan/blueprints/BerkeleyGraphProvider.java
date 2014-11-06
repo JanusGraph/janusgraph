@@ -9,6 +9,10 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.buildConfiguration;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */

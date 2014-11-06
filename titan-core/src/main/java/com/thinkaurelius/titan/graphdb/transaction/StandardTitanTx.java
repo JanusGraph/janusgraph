@@ -62,6 +62,7 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 
 import org.apache.commons.lang.StringUtils;
@@ -523,10 +524,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      * ------------------------------------ Adding and Removing Relations ------------------------------------
      */
 
+    public final boolean validDataType(Class datatype) {
+        return attributeHandler.validDataType(datatype);
+    }
+
     public final Object verifyAttribute(PropertyKey key, Object attribute) {
         if (attribute==null) throw new SchemaViolationException("Property value cannot be null");
         Class<?> datatype = key.dataType();
         if (datatype.equals(Object.class)) {
+            if (!attributeHandler.validDataType(attribute.getClass())) {
+                throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(attribute);
+            }
             return attribute;
         } else {
             if (!attribute.getClass().equals(datatype)) {
@@ -542,7 +550,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                         key.name(), datatype, attribute.getClass());
                 attribute = converted;
             }
-            Preconditions.checkState(attribute.getClass().equals(datatype));
+            assert (attribute.getClass().equals(datatype));
             attributeHandler.verifyAttribute(datatype, attribute);
             return attribute;
         }

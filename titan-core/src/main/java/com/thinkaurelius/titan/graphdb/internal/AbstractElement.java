@@ -3,6 +3,10 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * AbstractElement is the base class for all elements in Titan.
@@ -71,6 +75,13 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
     public InternalVertex clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
+
+    protected void verifyAccess() {
+        if (isRemoved()) {
+            throw InvalidElementException.removedException(this);
+        }
+    }
+
 
     /* ---------------------------------------------------------------
 	 * ID and LifeCycle methods
