@@ -4,9 +4,10 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.util.TitanInputFormat;
 
+import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
+import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -32,8 +33,17 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat = new ColumnFamilyInputFormat();
+    private ColumnFamilyRecordReader columnFamilyRecordReader;
     private TitanCassandraHadoopGraph graph;
     private Configuration config;
+
+    public TitanCassandraHadoopGraph getGraph() {
+        return graph;
+    }
+
+    public ColumnFamilyRecordReader getCFRR() {
+        return columnFamilyRecordReader;
+    }
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -41,11 +51,11 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext)
+    public RecordReader<NullWritable, GiraphComputeVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext)
             throws IOException, InterruptedException {
-
-        return new TitanCassandraRecordReader(this.graph, this.vertexQuery,
-                (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
+        columnFamilyRecordReader =
+                (ColumnFamilyRecordReader)columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+        return new TitanCassandraRecordReader(graph, columnFamilyRecordReader);
     }
 
     @Override
@@ -71,7 +81,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         // Set the column slice bounds via Faunus's vertex query filter
         final SlicePredicate predicate = new SlicePredicate();
         final int rangeBatchSize = config.getInt(RANGE_BATCH_SIZE_CONFIG, Integer.MAX_VALUE);
-        predicate.setSlice_range(getSliceRange(titanSetup.inputSlice(vertexQuery), rangeBatchSize));
+        predicate.setSlice_range(getSliceRange(titanSetup.inputSlice(), rangeBatchSize));
         ConfigHelper.setInputSlicePredicate(config, predicate);
 
         this.config = config;

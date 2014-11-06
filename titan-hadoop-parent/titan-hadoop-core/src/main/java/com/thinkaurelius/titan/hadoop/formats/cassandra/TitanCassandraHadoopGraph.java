@@ -2,13 +2,12 @@ package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.util.TitanHadoopGraph;
-import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 
+import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
+import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.apache.cassandra.db.Column;
 
 import java.nio.ByteBuffer;
@@ -26,8 +25,8 @@ public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
         super(setup);
     }
 
-    public FaunusVertex readHadoopVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
-        return super.readHadoopVertex(configuration, StaticArrayBuffer.of(key), new CassandraMapIterable(value));
+    public TinkerVertex readHadoopVertex(final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
+        return super.readHadoopVertex(StaticArrayBuffer.of(key), new CassandraMapIterable(value));
     }
 
     private static class CassandraMapIterable implements Iterable<Entry> {

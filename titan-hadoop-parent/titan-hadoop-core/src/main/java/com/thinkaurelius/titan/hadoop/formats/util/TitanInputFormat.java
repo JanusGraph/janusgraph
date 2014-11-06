@@ -4,13 +4,12 @@ import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.PIP
 import static com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.TITAN_INPUT_VERSION;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputFormat;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.FaunusVertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
@@ -19,12 +18,11 @@ import com.thinkaurelius.titan.util.system.ConfigurationUtil;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
+public abstract class TitanInputFormat extends InputFormat<NullWritable, GiraphComputeVertex> implements Configurable {
 
     private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.util.input.";
     private static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
 
-    protected FaunusVertexQueryFilter vertexQuery;
     protected boolean trackPaths;
     protected TitanHadoopSetup titanSetup;
     protected ModifiableHadoopConfiguration faunusConf;
@@ -35,7 +33,6 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     public void setConf(final Configuration config) {
 
         this.faunusConf = ModifiableHadoopConfiguration.of(config);
-        this.vertexQuery = FaunusVertexQueryFilter.create(faunusConf);
         this.inputConf = faunusConf.getInputConf();
         final String titanVersion = faunusConf.get(TITAN_INPUT_VERSION);
         this.trackPaths = faunusConf.get(PIPELINE_TRACK_PATHS);

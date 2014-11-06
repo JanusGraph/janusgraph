@@ -6,8 +6,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
-
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
 
 /**
@@ -23,15 +21,6 @@ import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
  * to update it when upgrading to a newer Titan release.
  */
 public interface HadoopCompat {
-
-    /**
-     * Instantiate and return a HadoopCompiler instance that uses the supplied
-     * graph
-     *
-     * @param g data source/sink for the task compiler
-     * @return new compiler
-     */
-    public HadoopCompiler newCompiler(HadoopGraph g);
 
     /**
      * Instantiate a new TaskAttemptContext using the given attempt ID and configuration.

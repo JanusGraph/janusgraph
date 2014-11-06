@@ -5,11 +5,8 @@ import com.google.common.base.Predicates;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
-import org.apache.hadoop.conf.Configuration;
-
-import com.google.common.base.Preconditions;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Element;
 
 import javax.annotation.Nullable;
 

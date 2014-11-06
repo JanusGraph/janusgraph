@@ -9,9 +9,7 @@ import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
-import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
 
 public class Hadoop2Compat implements HadoopCompat {
@@ -20,11 +18,6 @@ public class Hadoop2Compat implements HadoopCompat {
     private static final String CFG_SPECULATIVE_MAPS = "mapreduce.map.speculative";
     private static final String CFG_SPECULATIVE_REDUCES = "mapreduce.reduce.speculative";
     private static final String CFG_JOB_JAR = "mapreduce.job.jar";
-
-    @Override
-    public HadoopCompiler newCompiler(HadoopGraph g) {
-        return new Hadoop2Compiler(g);
-    }
 
     @Override
     public TaskAttemptContext newTask(Configuration c, TaskAttemptID t) {
