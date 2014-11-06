@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
@@ -40,7 +41,8 @@ public class StandardAttributeHandling implements AttributeHandling {
                     Parameter.class, Parameter[].class, ParameterType.class, RelationCategory.class,
                     Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
                     ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
-                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class, StandardTimestamp.class
+                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class, StandardTimestamp.class,
+                    Timestamps.class
             );
 
     private final Map<Class,AttributeHandler> handlers;
@@ -96,6 +98,12 @@ public class StandardAttributeHandling implements AttributeHandling {
             defaultRegistrations.add(datatype);
         }
         handlers.put(datatype,handler);
+    }
+
+    @Override
+    public boolean validDataType(Class datatype) {
+        return defaultRegistrations.contains(datatype);
+
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
@@ -67,7 +68,7 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
 
     @Override
     public Iterable<RelationType> getPropertyKeysDirect() {
-        return properties.keySet();
+        return Lists.newArrayList(properties.keySet());
     }
 
     @Override

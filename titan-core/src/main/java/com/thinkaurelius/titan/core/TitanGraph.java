@@ -18,7 +18,22 @@ import java.util.Collection;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
-
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldExecuteWithCompetingThreads",
+        reason = "Need to initialize Titan schema to avoid locking conflicts when creating new keys in concurrent transactions.")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
+        method = "shouldFilterMixedCriteria",
+        reason = "Subgraph strategy conflicts with Titan strategy and there is currently no way to fix that.")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
+        method = "testVertexCriterion",
+        reason = "Subgraph strategy conflicts with Titan strategy and there is currently no way to fix that.")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
+        method = "shouldFilterEdgeCriterion",
+        reason = "Subgraph strategy conflicts with Titan strategy and there is currently no way to fix that.")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

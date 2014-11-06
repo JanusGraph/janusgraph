@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.NoSuchElementException;
 
@@ -55,5 +56,10 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
     public void remove() {
         Preconditions.checkArgument(!relation.isRemoved(), "Cannot modified removed relation");
         relation.it().removePropertyDirect(type);
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.propertyString(this);
     }
 }

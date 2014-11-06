@@ -24,10 +24,15 @@ public class TitanTraversal<S, E> extends DefaultGraphTraversal<S, E> {
             return new TitanVertexStep(vstep);
         } else if (step instanceof PropertiesStep) {
             PropertiesStep sstep = (PropertiesStep)step;
-            return new TitanPropertiesStep<>(sstep);
+            return sstep;
+//            return new TitanPropertiesStep<>(sstep);
         } else {
             return step;
         }
+    }
+
+    public static TitanTransaction getTx(Traversal traversal) {
+        return (TitanTransaction)traversal.sideEffects().getGraph();
     }
 
 }

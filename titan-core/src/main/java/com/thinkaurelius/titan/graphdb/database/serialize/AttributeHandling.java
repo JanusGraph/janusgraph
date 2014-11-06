@@ -5,10 +5,11 @@ import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface AttributeHandling {
 
     public <T> void registerClass(Class<T> type, AttributeHandler<T> attributeHandler);
+
+    public boolean validDataType(Class datatype);
 
     public<V> void verifyAttribute(Class<V> datatype, Object value);
 

@@ -5,7 +5,7 @@ package com.thinkaurelius.titan.core;
  * in the representable space of longs are valid.  This exception can
  * be thrown when an invalid long ID is encountered.
  */
-public class SchemaViolationException extends TitanException {
+public class SchemaViolationException extends IllegalArgumentException {
 
     public SchemaViolationException(String msg) {
         super(msg);

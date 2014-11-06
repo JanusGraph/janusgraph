@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +51,7 @@ public class FulgoraVertex<S> extends CacheVertex {
     @Override
     public<A> A value(String key) {
         A val = valueInternal(key);
-        if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
+        if (val==null) return null;// throw Property.Exceptions.propertyDoesNotExist(key);
         return val;
     }
 

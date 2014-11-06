@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -17,6 +18,8 @@ public class KCVSConfigTest extends WritableConfigurationTest {
     @Override
     public WriteConfiguration getConfig() {
         final KeyColumnValueStoreManager manager = new InMemoryStoreManager(Configuration.EMPTY);
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER,Timestamps.MICRO);
         try {
             return new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
@@ -28,7 +31,7 @@ public class KCVSConfigTest extends WritableConfigurationTest {
                 public void close() throws BackendException {
                     manager.close();
                 }
-            }, Timestamps.MICRO,manager.openDatabase("titan"),"general");
+            }, config, manager.openDatabase("titan"),"general");
         } catch (BackendException e) {
             throw new RuntimeException(e);
         }

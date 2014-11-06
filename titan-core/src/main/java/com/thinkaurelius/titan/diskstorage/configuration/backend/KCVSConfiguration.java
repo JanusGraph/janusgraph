@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.time.ZeroDuration;
@@ -24,6 +25,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 
+import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
@@ -34,6 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ATTRIBUTE_ALLOW_ALL_SERIALIZABLE;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -50,16 +55,16 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private Duration maxOperationWaitTime = new StandardDuration(10000L, TimeUnit.MILLISECONDS);
 
 
-    public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, TimestampProvider times,
+    public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, Configuration config,
                              KeyColumnValueStore store, String identifier) throws BackendException {
-        Preconditions.checkArgument(txProvider!=null && store!=null && times!=null);
+        Preconditions.checkArgument(txProvider!=null && store!=null && config!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
         this.txProvider = txProvider;
-        this.times = times;
+        this.times = config.get(TIMESTAMP_PROVIDER);
         this.store = store;
         this.identifier = identifier;
         this.rowKey = string2StaticBuffer(this.identifier);
-        this.serializer = new StandardSerializer();
+        this.serializer = new StandardSerializer(); //config.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE)
     }
 
     public void setMaxOperationWaitTime(Duration waitTime) {
@@ -235,6 +240,8 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     }
 
     private<O> StaticBuffer object2StaticBuffer(final O value) {
+        if (value==null) throw Graph.Variables.Exceptions.variableValueCanNotBeNull();
+        if (!serializer.validDataType(value.getClass())) throw Graph.Variables.Exceptions.dataTypeOfVariableValueNotSupported(value);
         DataOutput out = serializer.getDataOutput(128);
         out.writeClassAndObject(value);
         return out.getStaticBuffer();

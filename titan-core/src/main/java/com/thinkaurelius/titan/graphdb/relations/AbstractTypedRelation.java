@@ -35,7 +35,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
         InternalRelation next = (InternalRelation) RelationIdentifier.get(this).findRelation(tx());
         if (next == null)
-            throw new InvalidElementException("Relation has been removed", this);
+            throw InvalidElementException.removedException(this);
 
         return next;
     }
@@ -97,7 +97,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public <V> Property<V> property(final String key, final V value) {
-        Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
+        verifyAccess();
 
         RelationType type = tx().getRelationType(key);
         if (type==null) {
@@ -119,12 +119,14 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public <O> O valueOrNull(RelationType key) {
+        verifyAccess();
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return it().getValueDirect(key);
     }
 
     @Override
     public <O> O value(String key) {
+        verifyAccess();
         O val = valueInternal(tx().getRelationType(key));
         if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
         return val;
@@ -152,6 +154,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public Iterator<Vertex> vertexIterator(Direction direction) {
+        verifyAccess();
+
         List<Vertex> vertices;
         if (direction==Direction.BOTH) {
             vertices = ImmutableList.of((Vertex)getVertex(0),getVertex(1));
@@ -162,6 +166,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... keyNames) {
+        verifyAccess();
+
         Stream<RelationType> keys;
 
         if (keyNames==null || keyNames.length==0) {

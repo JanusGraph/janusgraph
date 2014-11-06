@@ -39,7 +39,7 @@ public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
         TraversalHelper.getStepsOfClass(TitanVertexStep.class, traversal).forEach(step -> {
             if (step.isEdgeStep()) {
                 HasStepFolder.foldInHasContainer(step,traversal);
-                OrderByStep ostep = HasStepFolder.foldInLastOrderBy(step,traversal);
+                OrderByStep ostep = HasStepFolder.foldInLastOrderBy(step,traversal,false);
                 boolean hasLocalRange = HasStepFolder.foldInRange(step, traversal, LocalRangeStep.class);
                 if (ostep!=null && !hasLocalRange) TraversalHelper.insertAfterStep(ostep,step,traversal);
             } else {
@@ -81,7 +81,7 @@ public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
             if (isVertexProperties) {
                 step.makeVertrexProperties();
                 HasStepFolder.foldInHasContainer(step,traversal);
-                OrderByStep ostep = HasStepFolder.foldInLastOrderBy(step,traversal);
+                OrderByStep ostep = HasStepFolder.foldInLastOrderBy(step,traversal,false);
                 boolean hasLocalRange = HasStepFolder.foldInRange(step, traversal, LocalRangeStep.class);
                 if (ostep!=null && !hasLocalRange) TraversalHelper.insertAfterStep(ostep,step,traversal);
             }
