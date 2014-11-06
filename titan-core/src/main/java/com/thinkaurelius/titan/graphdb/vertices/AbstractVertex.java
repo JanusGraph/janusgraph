@@ -181,7 +181,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... keys) {
         if (!Stream.of(keys).map(s -> tx().getPropertyKey(s)).filter(k -> k!=null && ((InternalRelationType)k).isInvisibleType()).findAny().isPresent()
                 && tx().getConfiguration().hasPropertyPrefetching()) {
-            properties().count().next();
+            Iterables.size(query().properties());
         }
 
         if (keys==null) keys=new String[0];
