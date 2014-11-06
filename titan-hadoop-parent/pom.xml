@@ -48,18 +48,15 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.tinkerpop.blueprints</groupId>
-            <artifactId>blueprints-core</artifactId>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>tinkergraph-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+
+        <!-- TODO replace this with a TP3 MapReduce dependency -->
         <dependency>
-            <groupId>com.tinkerpop.blueprints</groupId>
-            <artifactId>blueprints-sail-graph</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.tinkerpop.gremlin</groupId>
-            <artifactId>gremlin-groovy</artifactId>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>giraph-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
 

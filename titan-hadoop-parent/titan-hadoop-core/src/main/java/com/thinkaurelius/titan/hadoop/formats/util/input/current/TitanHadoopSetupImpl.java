@@ -1,9 +1,5 @@
 package com.thinkaurelius.titan.hadoop.formats.util.input.current;
 
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import org.apache.hadoop.conf.Configuration;
-
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -13,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
@@ -20,10 +17,12 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon;
 import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
-import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -35,16 +34,16 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
     public TitanHadoopSetupImpl(final Configuration config) {
         BasicConfiguration bc = ModifiableHadoopConfiguration.of(config).getInputConf();
-        graph = (StandardTitanGraph)TitanFactory.open(bc);
+        graph = (StandardTitanGraph) TitanFactory.open(bc);
 
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().vertexCacheSize(200).start();
-   }
+    }
 
     @Override
     public TypeInspector getTypeInspector() {
         //Pre-load schema
         for (TitanSchemaCategory sc : TitanSchemaCategory.values()) {
-            for (TitanVertex k : QueryUtil.getVertices(tx,BaseKey.SchemaCategory, sc)) {
+            for (TitanVertex k : QueryUtil.getVertices(tx, BaseKey.SchemaCategory, sc)) {
                 assert k instanceof TitanSchemaVertex;
                 TitanSchemaVertex s = (TitanSchemaVertex)k;
                 if (sc.hasName()) {
@@ -107,6 +106,6 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     @Override
     public void close() {
         tx.rollback();
-        graph.shutdown();
+        graph.close();
     }
 }

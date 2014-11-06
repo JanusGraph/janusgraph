@@ -7,8 +7,6 @@ import org.apache.hadoop.util.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.hadoop.HadoopGraph;
-
 public class HadoopCompatLoader {
 
     private static final Logger log =

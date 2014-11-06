@@ -111,7 +111,7 @@
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
         <!-- TODO titan-hadoop reintegration -->
-        <!-- <module>titan-hadoop-parent</module> -->
+        <module>titan-hadoop-parent</module>
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
