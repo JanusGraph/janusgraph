@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.plugin;
 
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.tinkerpop.computer.bulkloader.BulkLoaderVertexProgram;
@@ -42,6 +43,8 @@ public class TitanGremlinPlugin implements GremlinPlugin {
 
     @Override
     public Optional<Set<Artifact>> additionalDependencies() {
-        return Optional.of(new HashSet<>(Arrays.asList(new Artifact("com.thinkaurelius.titan", "titan-cassandra", TitanConstants.VERSION))));
+        return Optional.of(ImmutableSet.of(
+                new Artifact("com.thinkaurelius.titan", "titan-cassandra", TitanConstants.VERSION),
+                new Artifact("com.thinkaurelius.titan", "titan-hadoop", TitanConstants.VERSION)));
     }
 }
