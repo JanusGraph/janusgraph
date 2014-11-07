@@ -23,21 +23,35 @@ import java.util.Collection;
         method = "shouldExecuteWithCompetingThreads",
         reason = "Need to initialize Titan schema to avoid locking conflicts when creating new keys in concurrent transactions.")
 @Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.EdgeTest.ExceptionConsistencyWhenEdgeRemovedTest",
+        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
         method = "shouldThrowExceptionIfEdgeWasRemoved",
+        specific = "e.remove()",
         reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
 @Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.VertexPropertyTest.ExceptionConsistencyWhenVertexPropertyRemovedTest",
-        method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
+        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
+        method = "shouldThrowExceptionIfEdgeWasRemoved",
+        specific = "property(k)",
         reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
 @Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.VertexPropertyTest.ExceptionConsistencyWhenVertexPropertyRemovedTest",
+        test = "com.tinkerpop.gremlin.structure.VertexPropertyTest$ExceptionConsistencyWhenVertexPropertyRemovedTest",
         method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
+        specific = "property(k)",
         reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-
-
-
-
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
+        method = "shouldHandleHiddenVertexProperties",
+        specific = "e.properties(Graph.Key.hide(\"age\")).count().next() == 0",
+        reason = "Difference in 'hide' semantics between Titan and TP3")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
+        method = "shouldHandleHiddenVertexProperties",
+        specific = "StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"color\"))).count() == 0",
+        reason = "Difference in 'hide' semantics between Titan and TP3")
+@Graph.OptOut(
+        test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
+        method = "shouldHandleHiddenVertexProperties",
+        specific = "StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"age\"))).count() == 0",
+        reason = "Difference in 'hide' semantics between Titan and TP3")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------
