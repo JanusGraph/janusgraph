@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.tinkerpop.gremlin.process.graph.strategy.GraphTraversalStrategyRegistry;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        System.out.println(mixedList.getClass());
+        GraphTraversalStrategyRegistry.instance().getTraversalStrategies().forEach(s -> System.out.println(s.getClass()));
 
         IDHandler.EdgeTypeParse ep = IDHandler.readEdgeType(StaticArrayBuffer.of(new byte[]{36}).asReadBuffer());
         System.out.println(ep.typeId + " "+ BaseLabel.VertexLabelEdge.longId());

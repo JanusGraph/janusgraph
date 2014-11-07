@@ -45,6 +45,17 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         return getVertex(0).tx();
     }
 
+    /**
+     * Cannot currently throw exception when removed since internal logic relies on access to the edge
+     * beyond its removal. TODO: re-concile with access validation logic
+     */
+    protected final void verifyAccess() {
+        return;
+//        if (isRemoved()) {
+//            throw InvalidElementException.removedException(this);
+//        }
+    }
+
 	/* ---------------------------------------------------------------
 	 * Immutable Aspects of Relation
 	 * ---------------------------------------------------------------

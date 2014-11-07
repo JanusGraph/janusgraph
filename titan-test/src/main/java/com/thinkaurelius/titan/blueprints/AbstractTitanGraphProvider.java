@@ -79,7 +79,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName) {
         ModifiableConfiguration conf = getTitanConfiguration(graphName,test,testMethodName);
-        conf.set(GraphDatabaseConfiguration.ATTRIBUTE_ALLOW_ALL_SERIALIZABLE,false);
+//        conf.set(GraphDatabaseConfiguration.ATTRIBUTE_ALLOW_ALL_SERIALIZABLE,false);
         initializeSchema(conf,test,testMethodName);
         Map<String,Object> result = new HashMap<>();
         conf.getAll().entrySet().stream().forEach( e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements),e.getValue()));

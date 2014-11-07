@@ -165,7 +165,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         try {
             assertCount(0,v2.bothE());
             fail();
-        } catch (IllegalArgumentException ex) {}
+        } catch (IllegalStateException ex) {}
         assertCount(1,graph.V());
         assertCount(1,graph.V().has(namen,"v1"));
         assertCount(0,graph.V().has(namen,"v2"));

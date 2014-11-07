@@ -76,13 +76,6 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
         throw new CloneNotSupportedException();
     }
 
-    protected void verifyAccess() {
-        if (isRemoved()) {
-            throw InvalidElementException.removedException(this);
-        }
-    }
-
-
     /* ---------------------------------------------------------------
 	 * ID and LifeCycle methods
 	 * ---------------------------------------------------------------

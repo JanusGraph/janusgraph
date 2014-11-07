@@ -4,13 +4,15 @@ import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.step.filter.RangeStep;
-import com.tinkerpop.gremlin.process.graph.strategy.LocalRangeStrategy;
+import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
+
+import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStepStrategy implements TraversalStrategy.NoDependencies {
+public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
 
     private static final TitanGraphStepStrategy INSTANCE = new TitanGraphStepStrategy();
 
@@ -33,8 +35,13 @@ public class TitanGraphStepStrategy implements TraversalStrategy.NoDependencies 
     }
 
     @Override
-    public int compareTo(TraversalStrategy ts) {
-        return -1;
+    public Set<Class<? extends TraversalStrategy>> applyPrior() {
+        return TitanTraversal.PRIORS;
+    }
+
+    @Override
+    public Set<Class<? extends TraversalStrategy>> applyPost() {
+        return TitanTraversal.POSTS;
     }
 
 

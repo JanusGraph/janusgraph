@@ -72,8 +72,11 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return ElementLifeCycle.isModified(it().getLifeCycle());
     }
 
-
-
+    protected final void verifyAccess() {
+        if (isRemoved()) {
+            throw InvalidElementException.removedException(this);
+        }
+    }
 
 	/* ---------------------------------------------------------------
      * Changing Edges
@@ -82,7 +85,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public synchronized void remove() {
-        if (isRemoved()) return; //Remove() is idempotent
+        verifyAccess();
+//        if (isRemoved()) return; //Remove() is idempotent
         Iterator<TitanRelation> iter = it().query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();

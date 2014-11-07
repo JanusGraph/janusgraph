@@ -14,17 +14,18 @@ import com.tinkerpop.gremlin.process.graph.step.map.OrderStep;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.SideEffectStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
-import com.tinkerpop.gremlin.process.graph.strategy.LocalRangeStrategy;
+import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Set;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
+public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy {
 
     private static final TitanLocalQueryOptimizerStrategy INSTANCE = new TitanLocalQueryOptimizerStrategy();
 
@@ -93,8 +94,14 @@ public class TitanLocalQueryOptimizerStrategy implements TraversalStrategy {
     }
 
     @Override
-    public int compareTo(TraversalStrategy ts) {
-        return -1;
+    public Set<Class<? extends TraversalStrategy>> applyPrior() {
+        return TitanTraversal.PRIORS;
     }
+
+    @Override
+    public Set<Class<? extends TraversalStrategy>> applyPost() {
+        return TitanTraversal.POSTS;
+    }
+
 
 }

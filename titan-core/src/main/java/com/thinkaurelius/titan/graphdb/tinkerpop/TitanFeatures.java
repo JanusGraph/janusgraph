@@ -61,7 +61,7 @@ public class TitanFeatures implements Graph.Features {
                     }
 
                     @Override
-                    public boolean supportsSerializableValues() { return false; }
+                    public boolean supportsSerializableValues() { return true; }
                 };
             }
 
@@ -76,7 +76,7 @@ public class TitanFeatures implements Graph.Features {
             public EdgePropertyFeatures properties() {
                 return new EdgePropertyFeatures() {
                     @Override
-                    public boolean supportsSerializableValues() { return false; }
+                    public boolean supportsSerializableValues() { return true; }
                 };
             }
 
