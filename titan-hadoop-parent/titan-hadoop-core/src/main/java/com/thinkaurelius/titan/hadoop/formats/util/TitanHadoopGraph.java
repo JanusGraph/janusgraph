@@ -16,6 +16,7 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import com.tinkerpop.gremlin.tinkergraph.structure.TinkerProperty;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,41 +96,20 @@ public class TitanHadoopGraph {
                     // Decode property
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    // TODO set relation ID as a hidden property on the property
-                    tv.property(type.name(), value);
-//                    final StandardFaunusVertexProperty fprop = new StandardFaunusVertexProperty(relation.relationId, vertex, type.name(), value);
-//                    vertex.addProperty(fprop);
-//                    frel = fprop;
+                    tv.property(type.name(), value, T.id, relation.relationId);
                 } else {
                     TinkerEdge te;
 
                     // Decode edge
                     assert type.isEdgeLabel();
                     if (relation.direction.equals(Direction.IN)) {
-                        // Calling DetachedVertex.addEdge throws UnsupportedOperationException
-//                        DetachedVertex outV = new DetachedVertex(relation.getOtherVertexId(),
-//                                Vertex.DEFAULT_LABEL /* We don't know the label of the other vertex, but one must be provided */,
-//                                null /* No properties */,
-//                                null /* No hidden properties */);
-//                        // TODO set relation ID as a hidden property on the edge
-//                        te = (TinkerEdge)outV.addEdge(type.name(), tv);
-
-                        //TinkerVertex outV = (TinkerVertex)tg.addVertex(T.id, relation.getOtherVertexId()); // Default label is the best we can do
+                        // We don't know the label of the other vertex, but one must be provided
                         TinkerVertex outV = getOrCreateVertex(relation.getOtherVertexId(), null, tg);
-                        te = (TinkerEdge)outV.addEdge(type.name(), tv);
-                        //fedge = new StandardFaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.name());
+                        te = (TinkerEdge)outV.addEdge(type.name(), tv, T.id, relation.relationId);
                     } else if (relation.direction.equals(Direction.OUT)) {
-                        // Calling TinkerVertex.addEdge(label, DetachedVertex instance) throws a ClassCastException
-//                        DetachedVertex inV = new DetachedVertex(relation.getOtherVertexId(),
-//                                Vertex.DEFAULT_LABEL /* We don't know the label of the other vertex, but one must be provided */,
-//                                null /* No properties */,
-//                                null /* No hidden properties */);
-//                        te = (TinkerEdge)tv.addEdge(type.name(), inV);
-                        //TinkerVertex inV = (TinkerVertex)tg.addVertex(T.id, relation.getOtherVertexId());
+                        // We don't know the label of the other vertex, but one must be provided
                         TinkerVertex inV = getOrCreateVertex(relation.getOtherVertexId(), null, tg);
-                        te = (TinkerEdge)tv.addEdge(type.name(), inV);
-                        // TODO set relation ID as a hidden property on the edge
-                        //fedge = new StandardFaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.name());
+                        te = (TinkerEdge)tv.addEdge(type.name(), inV, T.id, relation.relationId);
                     } else {
                         throw new RuntimeException("Direction.BOTH is not supported");
                     }
