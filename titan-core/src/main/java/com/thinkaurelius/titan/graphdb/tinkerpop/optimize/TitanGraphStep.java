@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraverserGenerator;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
@@ -28,7 +29,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     }
 
     @Override
-    public void generateTraverserIterator(final boolean trackPaths) {
+    public void generateTraversers(final TraverserGenerator traverserGenerator) {
         TitanTransaction tx = TitanTraversal.getTx(traversal);
         TitanGraphQuery query = tx.query();
         for (HasContainer condition : hasContainers) {
@@ -42,7 +43,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
         for (OrderEntry order : orders) query.orderBy(order.key,order.order);
         if (limit!=BaseQuery.NO_LIMIT) query.limit(limit);
         this.start = Vertex.class.isAssignableFrom(this.returnClass) ? query.vertices().iterator() : query.edges().iterator();
-        super.generateTraverserIterator(trackPaths);
+        super.generateTraversers(traverserGenerator);
     }
 
     public String toString() {

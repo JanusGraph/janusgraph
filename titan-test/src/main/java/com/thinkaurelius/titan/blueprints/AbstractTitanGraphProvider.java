@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.*;
@@ -11,9 +12,12 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfigur
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.structure.BatchTest;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.io.kryo.GremlinKryo;
@@ -36,6 +40,22 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         return GremlinKryo.build()
                 .addCustom(RelationIdentifier.class)
                 .create();
+    }
+
+    @Override
+    public SimpleModule createConfiguredGraphSONModule() {
+        return new TitanGraphSONModule();
+    }
+
+    @Override
+    public <ID> ID reconstituteGraphSONIdentifier(final Class<? extends Element> clazz, final Object id) {
+        if (Edge.class.isAssignableFrom(clazz)) {
+            // TitanGraphSONModule toStrings the edgeid - expect a String value for the id
+            if (!(id instanceof String)) throw new RuntimeException("Expected a String value for the RelationIdentifier");
+            return (ID) RelationIdentifier.parse((String) id);
+        } else {
+            return (ID) id;
+        }
     }
 
     @Override
