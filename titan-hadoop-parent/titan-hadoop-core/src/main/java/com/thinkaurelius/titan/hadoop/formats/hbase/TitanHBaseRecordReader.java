@@ -1,38 +1,37 @@
-package com.thinkaurelius.titan.hadoop.formats.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.hbase;
 
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
-
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
-import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
+import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanCassandraRecordReader extends RecordReader<NullWritable, GiraphComputeVertex> {
+public class TitanHBaseRecordReader extends RecordReader<NullWritable, GiraphComputeVertex> {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(TitanCassandraRecordReader.class);
-
-    private ColumnFamilyRecordReader reader;
-    private TitanCassandraHadoopGraph graph;
+    private TableRecordReader reader;
+    private TitanHBaseHadoopGraph graph;
     //private Configuration configuration;
     private GiraphComputeVertex vertex;
 
-    public TitanCassandraRecordReader(final TitanCassandraHadoopGraph graph, final ColumnFamilyRecordReader reader) {
+    private final byte[] edgestoreFamilyBytes;
+
+    public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final TableRecordReader reader, final byte[] edgestoreFamilyBytes) {
         this.graph = graph;
         this.reader = reader;
+        this.edgestoreFamilyBytes = edgestoreFamilyBytes;
     }
 
     @Override
@@ -44,9 +43,9 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Girap
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (reader.nextKeyValue()) {
-            // TODO titan05 integration -- the duplicate() call may be unnecessary
+            final byte[] rawKey = reader.getCurrentKey().copyBytes();
             final TinkerVertex maybeNullTinkerVertex =
-                    graph.readHadoopVertex(reader.getCurrentKey().duplicate(), reader.getCurrentValue());
+                    graph.readHadoopVertex(rawKey, reader.getCurrentValue().getMap().get(edgestoreFamilyBytes));
             if (null != maybeNullTinkerVertex) {
                 vertex = new GiraphComputeVertex(maybeNullTinkerVertex);
                 //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertexquery filtering
@@ -63,17 +62,17 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Girap
 
     @Override
     public GiraphComputeVertex getCurrentValue() throws IOException, InterruptedException {
-        return vertex;
+        return this.vertex;
     }
 
     @Override
     public void close() throws IOException {
-        graph.close();
-        reader.close();
+        this.graph.close();
+        this.reader.close();
     }
 
     @Override
     public float getProgress() {
-        return reader.getProgress();
+        return this.reader.getProgress();
     }
 }

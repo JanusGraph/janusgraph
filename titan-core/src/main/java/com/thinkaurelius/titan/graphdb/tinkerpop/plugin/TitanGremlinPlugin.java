@@ -45,6 +45,10 @@ public class TitanGremlinPlugin implements GremlinPlugin {
     public Optional<Set<Artifact>> additionalDependencies() {
         return Optional.of(ImmutableSet.of(
                 new Artifact("com.thinkaurelius.titan", "titan-cassandra", TitanConstants.VERSION),
+                new Artifact("com.thinkaurelius.titan", "titan-hbase", TitanConstants.VERSION),
+                new Artifact("org.apache.hbase", "hbase-client", "0.98.3-hadoop1"),
+                new Artifact("org.apache.hbase", "hbase-common", "0.98.3-hadoop1"),
+                new Artifact("org.apache.hbase", "hbase-server", "0.98.3-hadoop1"), /* For TableInputFormat */
                 new Artifact("com.thinkaurelius.titan", "titan-hadoop", TitanConstants.VERSION)));
     }
 }
