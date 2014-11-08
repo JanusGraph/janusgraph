@@ -40,17 +40,17 @@ import java.util.Collection;
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
         method = "shouldHandleHiddenVertexProperties",
-        specific = "e.properties(Graph.Key.hide(\"age\")).count().next() == 0",
+        specific = "6: e.properties(Graph.Key.hide(\"age\")).count().next() == 0",
         reason = "Difference in 'hide' semantics between Titan and TP3")
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
         method = "shouldHandleHiddenVertexProperties",
-        specific = "StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"color\"))).count() == 0",
+        specific = "22: StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"color\"))).count() == 0",
         reason = "Difference in 'hide' semantics between Titan and TP3")
 @Graph.OptOut(
         test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
         method = "shouldHandleHiddenVertexProperties",
-        specific = "StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"age\"))).count() == 0",
+        specific = "23: StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"age\"))).count() == 0",
         reason = "Difference in 'hide' semantics between Titan and TP3")
 public interface TitanGraph extends TitanGraphTransaction {
 
