@@ -616,7 +616,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         System.out.println(round(timecoldglobal) + "\t" + round(timewarmglobal) + "\t" + round(timehotglobal));
         assertTrue(timecoldglobal + " vs " + timewarmglobal, timecoldglobal>timewarmglobal*2);
-        assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal*1.2);
+        assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal);
     }
 
     private double testAllVertices(long vid, int numV) {
