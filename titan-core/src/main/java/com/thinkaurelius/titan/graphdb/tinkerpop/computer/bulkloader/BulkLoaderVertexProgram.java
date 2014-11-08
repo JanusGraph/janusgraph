@@ -40,8 +40,8 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     private static final String TITAN_ID = Graph.Key.hide("titan.id");
     private static final ImmutableSet<String> elementComputeKeys = ImmutableSet.of(TITAN_ID);
 
-    private MessageType.Local messageType = MessageType.Local.of(() -> GraphTraversal.<Vertex>of().outE());
-    private Configuration configuration;  // TODO: TitanGraph.configuration() needs to be implemented
+    private MessageType.Local messageType = MessageType.Local.of(() -> GraphTraversal.<Vertex>of().inE());
+    private Configuration configuration;
     private TitanGraph graph;
 
     private BulkLoaderVertexProgram() {
@@ -117,9 +117,9 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             // get the titan vertex out of titan given the dummy id property
             final Vertex titanVertex = graph.v(vertex.value(TITAN_ID));
             // for all the incoming edges of the vertex, get the incoming adjacent vertex and write the edge and its properties
-            vertex.inE().forEachRemaining(edge -> {
-                final Vertex incomingAdjacent = graph.v(idPairs.get(Long.valueOf(edge.outV().id().next().toString())));
-                final Edge titanEdge = incomingAdjacent.addEdge(edge.label(), titanVertex);
+            vertex.outE().forEachRemaining(edge -> {
+                final Vertex outgoingAdjacent = graph.v(idPairs.get(Long.valueOf(edge.inV().id().next().toString())));
+                final Edge titanEdge = titanVertex.addEdge(edge.label(), outgoingAdjacent);
                 edge.properties().forEachRemaining(property -> titanEdge.<Object>property(property.key(), property.value()));
             });
             // vertex.bothE().remove(); TODO: optimization to drop data that is not needed any longer
