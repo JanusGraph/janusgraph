@@ -16,14 +16,13 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerProperty;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.NoSuchElementException;
 
-public class TitanHadoopGraph {
+public class TitanVertexDeserializer {
 
     private final TitanHadoopSetup setup;
     private final TypeInspector typeManager;
@@ -32,9 +31,9 @@ public class TitanHadoopGraph {
     private final boolean verifyVertexExistence = false;
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanHadoopGraph.class);
+            LoggerFactory.getLogger(TitanVertexDeserializer.class);
 
-    public TitanHadoopGraph(final TitanHadoopSetup setup) {
+    public TitanVertexDeserializer(final TitanHadoopSetup setup) {
         this.setup = setup;
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
@@ -43,7 +42,7 @@ public class TitanHadoopGraph {
 
     // Read a single row from the edgestore and create a TinkerVertex corresponding to the row
     // The neighboring vertices are represented by DetachedVertex instances
-    protected TinkerVertex readHadoopVertex(final StaticBuffer key, Iterable<Entry> entries) {
+    public TinkerVertex readHadoopVertex(final StaticBuffer key, Iterable<Entry> entries) {
 
         // Convert key to a vertex ID
         final long vertexId = vertexReader.getVertexId(key);

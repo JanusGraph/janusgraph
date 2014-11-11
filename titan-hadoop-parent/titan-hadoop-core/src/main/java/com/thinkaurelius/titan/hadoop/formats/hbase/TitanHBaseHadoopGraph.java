@@ -2,10 +2,9 @@ package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.formats.util.TitanHadoopGraph;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanVertexDeserializer;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 
@@ -17,7 +16,7 @@ import java.util.NavigableMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TitanHBaseHadoopGraph extends TitanHadoopGraph {
+public class TitanHBaseHadoopGraph extends TitanVertexDeserializer {
 
     public TitanHBaseHadoopGraph(TitanHadoopSetup setup) {
         super(setup);

@@ -2,31 +2,68 @@ package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.formats.util.TitanHadoopGraph;
-
-import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
+import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.apache.cassandra.db.Column;
+import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
 
 /**
- * (c) Matthias Broecheler (me@matthiasb.com)
+ * Wraps a ColumnFamilyRecordReader and converts CFRR's binary types to Titan binary types.
  */
+public class CassandraBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<Entry>> {
 
-public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
+    private static final Logger log =
+            LoggerFactory.getLogger(CassandraBinaryRecordReader.class);
 
-    public TitanCassandraHadoopGraph(TitanHadoopSetup setup) {
-        super(setup);
+    private ColumnFamilyRecordReader reader;
+
+    public CassandraBinaryRecordReader(final ColumnFamilyRecordReader reader) {
+        this.reader = reader;
     }
 
-    public TinkerVertex readHadoopVertex(final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
-        return super.readHadoopVertex(StaticArrayBuffer.of(key), new CassandraMapIterable(value));
+    @Override
+    public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+        reader.initialize(inputSplit, taskAttemptContext);
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+        return reader.nextKeyValue();
+    }
+
+    @Override
+    public StaticBuffer getCurrentKey() throws IOException, InterruptedException {
+        return StaticArrayBuffer.of(reader.getCurrentKey());
+    }
+
+    @Override
+    public Iterable<Entry> getCurrentValue() throws IOException, InterruptedException {
+        return new CassandraMapIterable(reader.getCurrentValue());
+    }
+
+    @Override
+    public void close() throws IOException {
+        reader.close();
+    }
+
+    @Override
+    public float getProgress() {
+        return reader.getProgress();
     }
 
     private static class CassandraMapIterable implements Iterable<Entry> {
@@ -71,6 +108,4 @@ public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
             throw new UnsupportedOperationException();
         }
     }
-
 }
-

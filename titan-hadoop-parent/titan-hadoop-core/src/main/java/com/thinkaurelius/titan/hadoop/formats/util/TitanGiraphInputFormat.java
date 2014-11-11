@@ -18,7 +18,7 @@ import com.thinkaurelius.titan.util.system.ConfigurationUtil;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanInputFormat extends InputFormat<NullWritable, GiraphComputeVertex> implements Configurable {
+public abstract class TitanGiraphInputFormat extends InputFormat<NullWritable, GiraphComputeVertex> implements Configurable {
 
     private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.util.input.";
     private static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";

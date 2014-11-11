@@ -1,5 +1,6 @@
-package com.thinkaurelius.titan.hadoop.formats.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.cassandra.giraph;
 
+import com.thinkaurelius.titan.hadoop.formats.cassandra.tp3.CassandraTP3InputFormat;
 import com.tinkerpop.gremlin.giraph.structure.io.GiraphGremlinInputFormat;
 import org.apache.giraph.io.VertexInputFormat;
 import org.apache.giraph.io.VertexReader;
@@ -11,17 +12,19 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import java.io.IOException;
 import java.util.List;
 
-public class TitanCassandraVertexInputFormat extends VertexInputFormat implements GiraphGremlinInputFormat {
+public class CassandraGiraphVertexInputFormat extends VertexInputFormat implements GiraphGremlinInputFormat {
 
-    private final TitanCassandraInputFormat inputFormat;
+    private final CassandraTP3InputFormat inputFormat;
 
-    public TitanCassandraVertexInputFormat() {
-        inputFormat = new TitanCassandraInputFormat();
+    public CassandraGiraphVertexInputFormat() {
+        inputFormat = new CassandraTP3InputFormat();
     }
 
+    // This is required by TP3's GiraphGremlinInputFormat
+    // It's not documented, but TP3 requires the InputFormat to have generic types <NullWritable, GiraphComputeVertex>
     @Override
     public Class<InputFormat> getInputFormatClass() {
-        return (Class)TitanCassandraInputFormat.class;
+        return (Class)CassandraTP3InputFormat.class;
     }
 
     @Override
@@ -32,12 +35,12 @@ public class TitanCassandraVertexInputFormat extends VertexInputFormat implement
 
     @Override
     public VertexReader createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
+        VertexReader reader;
         try {
-            inputFormat.createRecordReader(split, context);
+            reader = new CassandraGiraphVertexReader(inputFormat.createRecordReader(split, context));
         } catch (InterruptedException e) {
             throw new IOException(e);
         }
-        VertexReader reader = new TitanCassandraVertexReader(inputFormat.getGraph(), inputFormat.getCFRR());
         try {
             reader.initialize(split, context);
         } catch (InterruptedException e) {

@@ -3,11 +3,10 @@ package com.thinkaurelius.titan.hadoop.formats.hbase;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.util.TitanInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.util.TitanGiraphInputFormat;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 
 import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
@@ -31,7 +30,7 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanHBaseInputFormat extends TitanInputFormat {
+public class TitanHBaseInputFormat extends TitanGiraphInputFormat {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanHBaseInputFormat.class);

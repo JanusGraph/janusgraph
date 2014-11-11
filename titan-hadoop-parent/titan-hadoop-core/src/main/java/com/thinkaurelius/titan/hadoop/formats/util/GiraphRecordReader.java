@@ -1,13 +1,9 @@
-package com.thinkaurelius.titan.hadoop.formats.cassandra;
+package com.thinkaurelius.titan.hadoop.formats.util;
 
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
-
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
-import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -20,17 +16,16 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanCassandraRecordReader extends RecordReader<NullWritable, GiraphComputeVertex> {
+public class GiraphRecordReader extends RecordReader<NullWritable, GiraphComputeVertex> {
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanCassandraRecordReader.class);
+            LoggerFactory.getLogger(GiraphRecordReader.class);
 
-    private ColumnFamilyRecordReader reader;
-    private TitanCassandraHadoopGraph graph;
-    //private Configuration configuration;
+    private RecordReader<StaticBuffer, Iterable<Entry>> reader;
+    private TitanVertexDeserializer graph;
     private GiraphComputeVertex vertex;
 
-    public TitanCassandraRecordReader(final TitanCassandraHadoopGraph graph, final ColumnFamilyRecordReader reader) {
+    public GiraphRecordReader(final TitanVertexDeserializer graph, final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
         this.graph = graph;
         this.reader = reader;
     }
@@ -38,7 +33,6 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Girap
     @Override
     public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         reader.initialize(inputSplit, taskAttemptContext);
-        //configuration = ModifiableHadoopConfiguration.of(DEFAULT_COMPAT.getContextConfiguration(taskAttemptContext));
     }
 
     @Override
@@ -46,7 +40,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Girap
         while (reader.nextKeyValue()) {
             // TODO titan05 integration -- the duplicate() call may be unnecessary
             final TinkerVertex maybeNullTinkerVertex =
-                    graph.readHadoopVertex(reader.getCurrentKey().duplicate(), reader.getCurrentValue());
+                    graph.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
             if (null != maybeNullTinkerVertex) {
                 vertex = new GiraphComputeVertex(maybeNullTinkerVertex);
                 //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertexquery filtering
@@ -73,7 +67,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Girap
     }
 
     @Override
-    public float getProgress() {
+    public float getProgress() throws IOException, InterruptedException {
         return reader.getProgress();
     }
 }
