@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.fulgora;
+package com.thinkaurelius.titan.graphdb.olap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;

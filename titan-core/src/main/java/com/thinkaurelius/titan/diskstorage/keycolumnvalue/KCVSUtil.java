@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -44,35 +45,18 @@ public class KCVSUtil {
         else return result.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
     }
 
-    /**
-     * If the store supports unordered scans, then call {#link
-     * {@link KeyColumnValueStore#getKeys(SliceQuery, StoreTransaction)}. The
-     * {@code SliceQuery} bounds are a binary all-zeros with an all-ones buffer.
-     * The limit is 1.
-     * <p>
-     * If the store supports ordered scans, then call {#link
-     * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}. The
-     * key and columns slice bounds are the same as those described above. The
-     * column limit is 1.
-     *
-     * @param store the store to query
-     * @param features the store's features
-     * @param keyLength length of the zero/one buffers that form the key limits
-     * @param sliceLength length of the zero/one buffers that form the col limits
-     * @param txh transaction to use with getKeys
-     * @return keys returned by the store.getKeys call
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException unexpected failure
-     */
     public static KeyIterator getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws BackendException {
-        SliceQuery slice = new SliceQuery(BufferUtil.zeroBuffer(sliceLength), BufferUtil.oneBuffer(sliceLength)).setLimit(1);
+        return getKeys(store,new SliceQuery(BufferUtil.zeroBuffer(sliceLength), BufferUtil.oneBuffer(sliceLength)).setLimit(1),
+                features,keyLength,txh);
+    }
+
+    public static KeyIterator getKeys(KeyColumnValueStore store, SliceQuery slice, StoreFeatures features, int keyLength, StoreTransaction txh) throws BackendException {
         if (features.hasUnorderedScan()) {
             return store.getKeys(slice, txh);
         } else if (features.hasOrderedScan()) {
             return store.getKeys(new KeyRangeQuery(BufferUtil.zeroBuffer(keyLength), BufferUtil.oneBuffer(keyLength), slice), txh);
-        } else throw new UnsupportedOperationException("Scan not supported by this store");
+        } else throw new UnsupportedOperationException("Provided stores does not support scan operations: " + store);
     }
-
-
 
     /**
      * Returns true if the specified key-column pair exists in the store.

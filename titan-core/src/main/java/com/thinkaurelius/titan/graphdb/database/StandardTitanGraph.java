@@ -186,10 +186,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return backend;
     }
 
-    public IDInspector getIDInspector() {
-        return idManager.getIdInspector();
-    }
-
     public IDManager getIDManager() {
         return idManager;
     }

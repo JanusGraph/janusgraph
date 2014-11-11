@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.fulgora;
+package com.thinkaurelius.titan.graphdb.olap;
 
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.*;
@@ -17,7 +17,6 @@ import com.tinkerpop.gremlin.structure.*;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,7 +1,6 @@
-package com.thinkaurelius.titan.graphdb.fulgora;
+package com.thinkaurelius.titan.graphdb.olap;
 
 import com.google.common.base.Predicate;
-import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -14,8 +13,6 @@ import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.List;

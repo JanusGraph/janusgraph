@@ -25,6 +25,15 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
 
 
     /**
+     * Whether the incident relation data on vertices is being externally pre-loaded.
+     * This causes the transaction to only return stub vertices and leave any data loading
+     * up to the caller.
+     * @return
+     */
+    public boolean hasPreloadedData();
+
+
+    /**
      * Whether this transaction should be optimized for batch-loading, i.e. ingestion of lots of data.
      *
      * @return

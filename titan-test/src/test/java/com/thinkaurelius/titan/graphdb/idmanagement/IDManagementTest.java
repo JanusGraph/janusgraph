@@ -67,7 +67,6 @@ public class IDManagementTest {
 
     public void testEntityID(int partitionBits, int partition, long minCount, long maxCount) {
         IDManager eid = new IDManager(partitionBits);
-        IDInspector isp = eid.getIdInspector();
 
         assertTrue(eid.getPartitionBound()>0);
         assertTrue(eid.getPartitionBound()<=1l+Integer.MAX_VALUE);
@@ -86,7 +85,7 @@ public class IDManagementTest {
                 if (partitionBits==0 && vtype== IDManager.VertexIDType.PartitionedVertex) continue;
                 if (vtype== IDManager.VertexIDType.PartitionedVertex) partition=IDManager.PARTITIONED_VERTEX_PARTITION;
                 long id = eid.getVertexID(count, partition,vtype);
-                assertTrue(isp.isUserVertexId(id));
+                assertTrue(eid.isUserVertexId(id));
                 assertTrue(vtype.is(id));
                 if (vtype != IDManager.VertexIDType.PartitionedVertex) assertEquals(eid.getPartitionId(id), partition);
                 assertEquals(id, eid.getKeyID(eid.getKey(id)));
@@ -96,21 +95,21 @@ public class IDManagementTest {
             assertTrue(id>=partition);
 
             id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
-            assertTrue(isp.isPropertyKeyId(id));
-            assertTrue(isp.isRelationTypeId(id));
-            assertFalse(isp.isSystemRelationTypeId(id));
+            assertTrue(eid.isPropertyKeyId(id));
+            assertTrue(eid.isRelationTypeId(id));
+            assertFalse(eid.isSystemRelationTypeId(id));
 
             assertEquals(id, eid.getKeyID(eid.getKey(id)));
 
             id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
-            assertTrue(isp.isPropertyKeyId(id));
-            assertTrue(isp.isRelationTypeId(id));
-            assertTrue(isp.isSystemRelationTypeId(id));
+            assertTrue(eid.isPropertyKeyId(id));
+            assertTrue(eid.isRelationTypeId(id));
+            assertTrue(eid.isSystemRelationTypeId(id));
 
 
             id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
-            assertTrue(isp.isEdgeLabelId(id));
-            assertTrue(isp.isRelationTypeId(id));
+            assertTrue(eid.isEdgeLabelId(id));
+            assertTrue(eid.isRelationTypeId(id));
 
             assertEquals(id, eid.getKeyID(eid.getKey(id)));
 
@@ -136,7 +135,6 @@ public class IDManagementTest {
     public void edgeTypeIDTest() {
         int partitionBits = 16;
         IDManager eid = new IDManager(partitionBits);
-        IDInspector isp = eid.getIdInspector();
         int trails = 1000000;
         assertEquals(eid.getPartitionBound(), (1l << partitionBits));
 
@@ -148,8 +146,8 @@ public class IDManagementTest {
             RelationCategory type;
             if (Math.random() < 0.5) {
                 id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
-                assertTrue(isp.isEdgeLabelId(id));
-                assertFalse(isp.isSystemRelationTypeId(id));
+                assertTrue(eid.isEdgeLabelId(id));
+                assertFalse(eid.isSystemRelationTypeId(id));
                 type = RelationCategory.EDGE;
                 if (Math.random() < 0.5)
                     dirID = IDHandler.DirectionID.EDGE_IN_DIR;
@@ -158,11 +156,11 @@ public class IDManagementTest {
             } else {
                 type = RelationCategory.PROPERTY;
                 id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
-                assertTrue(isp.isPropertyKeyId(id));
-                assertFalse(isp.isSystemRelationTypeId(id));
+                assertTrue(eid.isPropertyKeyId(id));
+                assertFalse(eid.isSystemRelationTypeId(id));
                 dirID = IDHandler.DirectionID.PROPERTY_DIR;
             }
-            assertTrue(isp.isRelationTypeId(id));
+            assertTrue(eid.isRelationTypeId(id));
 
             StaticBuffer b = IDHandler.getEdgeType(id, dirID, false);
 //            System.out.println(dirID);

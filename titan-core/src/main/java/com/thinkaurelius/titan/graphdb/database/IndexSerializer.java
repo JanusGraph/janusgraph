@@ -728,6 +728,11 @@ public class IndexSerializer {
         return key;
     }
 
+    public long getIndexIdFromKey(StaticBuffer key) {
+        if (hashKeys) key = HashingUtil.getKey(hashLength,key);
+        return VariableLong.readPositive(key.asReadBuffer());
+    }
+
     private final Entry getIndexEntry(CompositeIndexType index, RecordEntry[] record, TitanElement element) {
         DataOutput out = serializer.getDataOutput(1+8+8*record.length+4*8);
         out.putByte(FIRST_INDEX_COLUMN_BYTE);
