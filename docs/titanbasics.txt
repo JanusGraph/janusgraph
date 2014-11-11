@@ -194,12 +194,12 @@ mgmt.commit()
 Changing Offline Options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Changing configuration options does not affect running instances and only applies to newly started ones. Changing _GLOBAL_OFFLINE_ configuration options requires restarting the cluster so that the changes take effect immediately for all instances. 
+Changing configuration options does not affect running instances and only applies to newly started ones. Changing _GLOBAL_OFFLINE_ configuration options requires restarting the cluster so that the changes take effect immediately for all instances.
 To change _GLOBAL_OFFLINE_ options follow these steps:
 
 * Close all but one Titan instance in the cluster
 * Connect to the single instance
-* Ensure all running transactions are closed 
+* Ensure all running transactions are closed
 * Ensure no new transactions are started (i.e. the cluster must be offline)
 * Open the management API
 * Change the configuration option(s)
@@ -222,7 +222,7 @@ Beyond the schema definition options explained in this section, schema types pro
 Defining Edge Labels
 ~~~~~~~~~~~~~~~~~~~~
 
-Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals. 
+Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals.
 
 To define an edge label, call `makeEdgeLabel(String)` on an open graph or management transaction and provide the name of the edge label as the argument. Edge label names must be unique in the graph. This method returns a builder for edge labels that allows to define its multiplicity. The *multiplicity* of an edge label defines a multiplicity constraint on all edges of this label, that is, a maximum number of edges between pairs of vertices. Titan recognizes the following multiplicity settings.
 
@@ -254,7 +254,7 @@ To define a property key, call `makePropertyKey(String)` on an open graph or man
 Property Key Data Type
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Use `dataType(Class)` to define the data type of a property key. Titan will enforce that all values associated with the key have the configured data type and thereby ensures that data added to the graph is valid. For instance, one can define that the `name` key has a String data type. 
+Use `dataType(Class)` to define the data type of a property key. Titan will enforce that all values associated with the key have the configured data type and thereby ensures that data added to the graph is valid. For instance, one can define that the `name` key has a String data type.
 
 Define the data type as `Object.class` in order to allow any (serializable) value to be associated with a key. However, it is encouraged to use concrete data types whenever possible.
 Configured data types must be concrete classes and not interfaces or abstract classes. Titan enforces class equality, so adding a sub-class of a configured data type is not allowed.
@@ -362,7 +362,7 @@ Note, that schema name changes may not be immediately visible in currently runni
 * The renamed label or key is not currently in active use (i.e. written or read) and will not be in use until all Titan instances are aware of the name change.
 * Running transactions actively accomodate the brief intermediate period where either the old or new name is valid based on the specific Titan instance and status of the name-change announcement. For instance, that could mean transactions query for both names simultaneously.
 
-Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one. 
+Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one.
 However, note that this would not affect vertices, edges, or properties previously written with the existing type. Redefining existing graph elements is not supported online and must be accomplished through a batch graph transformation.
 
 
@@ -372,7 +372,7 @@ Gremlin Query Language
 
 image:https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png[link="http://gremlin.tinkerpop.com"]
 
-http://gremlin.tinkerpop.com[Gremlin] is Titan's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name." 
+http://gremlin.tinkerpop.com[Gremlin] is Titan's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
 
 Gremlin is developed independently from Titan and supported by most graph databases. By building applications on top of Titan through the Gremlin query language users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
 
@@ -407,7 +407,7 @@ The query above can be read:
 Taken together, these steps form a path-like traversal query. Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
 
 [source,gremlin]
-gremlin> g                                                            
+gremlin> g
 ==>titangraph[cassandrathrift:127.0.0.1]
 gremlin> g.V.has('name','hercules')
 ==>v[24]
@@ -421,14 +421,14 @@ gremlin> g.V.has('name','hercules').out('father').out('father').name
 For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.
 
 [source,gremlin]
-gremlin> g.V.has('name','hercules').name                            
+gremlin> g.V.has('name','hercules').name
 ==>hercules
-gremlin> g.V.has('name','hercules').out('father').name              
+gremlin> g.V.has('name','hercules').out('father').name
 ==>jupiter
 gremlin> g.V.has('name','hercules').out('father').out('father').name
 ==>saturn
 
-Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure. 
+Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure.
 
 [source,gremlin]
 gremlin> g.V.has('name','hercules').out('father').loop(1){true}{true}.name
@@ -438,7 +438,7 @@ gremlin> g.V.has('name','hercules').out('father').loop(1){true}{true}.name
 Some more traversal examples are provided below.
 
 [source,gremlin]
-gremlin> hercules = g.V.has('name','hercules').next() 
+gremlin> hercules = g.V.has('name','hercules').next()
 ==>v[24]
 gremlin> hercules.out('father','mother').type
 ==>god
@@ -447,12 +447,12 @@ gremlin> hercules.out('battled').type
 ==>monster
 ==>monster
 ==>monster
-gremlin> hercules.out('battled').map    
+gremlin> hercules.out('battled').map
 ==>{name=nemean, type=monster}
 ==>{name=hydra, type=monster}
 ==>{name=cerberus, type=monster}
 
-Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies"). 
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
 
 Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
 
@@ -493,9 +493,9 @@ Titan Server
 
 image:https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png[link="http://rexster.tinkerpop.com"]
 
-Titan uses the http://rexster.tinkerpop.com[Rexster] engine as the server component to process and answer client queries. 
+Titan uses the http://rexster.tinkerpop.com[Rexster] engine as the server component to process and answer client queries.
 
-Rexster exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers. 
+Rexster exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.
 
 The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes preconfigured with a script, `titan.sh`, which starts Cassandra, Elasticsearch, and Titan with Rexster.  Alternatively, Rexster one can https://github.com/tinkerpop/rexster/wiki/Downloads[Download Rexster] separately and then install Titan as a Rexster extension.
 
@@ -518,7 +518,7 @@ The following is a list of the https://github.com/tinkerpop/rexster/wiki/The-Ben
 * Extend with more RESTful endpoints by adding https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension[Kibbles] to Rexster.
 ** See https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Rexster-Kibbles] provided by TinkerPop.
 * Remote Gremlin traversals via the https://github.com/tinkerpop/rexster/wiki/Gremlin-Extension[Gremlin extensions] and the https://github.com/tinkerpop/rexster/wiki/Rexster-Console[Rexster console].
-* https://github.com/tinkerpop/rexster/wiki/Rexster-Security[Security support] via user authentification.
+* https://github.com/tinkerpop/rexster/wiki/Rexster-Security[Security support] via user authentication.
 
 Downloading and Starting Rexster with Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -626,7 +626,7 @@ Access the Titan graph at the following URI:
 http://localhost:8182/graphs/titanexample
 
 [NOTE]
-For those using ElasticSearch, Rexster includes lucene-core-3.5.0.jar (a neo4j dependency).  Assuming Neo4j is not being utilized in the Rexster instance, simply delete that file from the rexster `lib` directory.  Removing it will eliminate a conflict with Titan and allow ElasticSearch to start.  
+For those using ElasticSearch, Rexster includes lucene-core-3.5.0.jar (a neo4j dependency).  Assuming Neo4j is not being utilized in the Rexster instance, simply delete that file from the rexster `lib` directory.  Removing it will eliminate a conflict with Titan and allow ElasticSearch to start.
 
 Connecting to Rexster
 ~~~~~~~~~~~~~~~~~~~~~
@@ -640,7 +640,7 @@ Start https://github.com/tinkerpop/rexster/wiki/Rexster-Console[Rexster Console]
 
 [source,text]
 ----
-$  bin/rexster-console.sh 
+$  bin/rexster-console.sh
         (l_(l
 (_______( 0 0
 (        (-Y-) <woof>
@@ -738,7 +738,7 @@ In the absence of an index, Titan will default to a full graph scan in order to 
 Composite Index
 ^^^^^^^^^^^^^^^
 
-Composite indexes retrieve vertices or edges by one or a (fixed) composition of multiple keys. 
+Composite indexes retrieve vertices or edges by one or a (fixed) composition of multiple keys.
 Consider the following composite index definitions.
 
 [source,gremlin]
@@ -778,7 +778,7 @@ A composite index may comprise just one or multiple keys. A composite index with
 Index Uniqueness
 ++++++++++++++++
 
-Composite indexes can also be used to enforce property uniqueness in the graph. If a composite graph index is defined as `unique()` there can be at most one vertex or edge for any given concatenation of property values associated with the keys of that index. 
+Composite indexes can also be used to enforce property uniqueness in the graph. If a composite graph index is defined as `unique()` there can be at most one vertex or edge for any given concatenation of property values associated with the keys of that index.
 For instance, to enforce that names are unique across the entire graph the following composite graph index would be defined.
 
 [source,gremlin]
@@ -845,7 +845,7 @@ Ordering
 
 The order in which the results of a graph query are returned can be defined using the `orderBy()` method available on the graph query builder returned by `TitanGraph.query()`. The graph query builder is more verbose than previous examples but provides more features to define the desired result set. The `orderBy()` method expects two parameters:
 
-* The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key. 
+* The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
 * The sort order: either increasing `Order.ASC` or decreasing `Order.DESC`
 
 For example, the query `g.query().has('name',CONTAINS,'hercules').orderBy('age',Order.DESC).limit(10).vertices()` retrieves the ten oldest individuals with 'hercules' in their name.
@@ -970,7 +970,7 @@ juno.setProperty("name", "juno");
 g.commit(); //Commits transaction
 ----
 
-In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practie, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
+In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
 
 Transactional Scope
 ~~~~~~~~~~~~~~~~~~~
@@ -1009,7 +1009,7 @@ try {
 
 The example above demonstrates a simplified user signup implementation where `name` is the name of the user who wishes to register. First, it is checked whether a user with that name already exists. If not, a new user vertex is created and the name assigned. Finally, the transaction is committed.
 
-If the transaction fails, a `TitanException` is thrown. There are a variety of reasons why a transaction may fail. Titan differentiates between _potentially temporary_ and _permanent_ failures. 
+If the transaction fails, a `TitanException` is thrown. There are a variety of reasons why a transaction may fail. Titan differentiates between _potentially temporary_ and _permanent_ failures.
 
 Potentially temporary failures are those related to resource unavailability and IO hickups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<titan-config-ref>>).
 
@@ -1082,7 +1082,7 @@ Common Transaction Handling Problems
 
 Transactions are started automatically with the first operation executed against the graph. One does NOT have to start a transaction manually. The method `newTransaction` is used to start <<multi-thread-tx,multi-threaded transactions>> only.
 
-Transactions are automatically started under the Blueprints semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary. 
+Transactions are automatically started under the Blueprints semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary.
 A transaction will attempt to maintain its state from the beginning of the transaction. This might lead to unexpected behavior in multi-threaded applications as illustrated in the following artificial example::
 
 [source,java]
@@ -1168,7 +1168,7 @@ The database level cache retains adjacency lists (or subsets thereof) across mul
 
 <<titan-config-ref>> lists all of the configuration options that pertain to Titan's database level cache. This page attempts to explain their usage.
 
-Most importantly, the database level cache is disabled by default in the current release version of Titan. To enable it, set `cache.db-cache=true`. 
+Most importantly, the database level cache is disabled by default in the current release version of Titan. To enable it, set `cache.db-cache=true`.
 
 Cache Expiration Time
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1256,16 +1256,16 @@ logProcessor.addLogProcessor("addedPerson")
         })
         .build();
 
-In this example, a *log processor* is built for the user transaction log named `addedPerson` to process the changes made in transactions which used the `addedPerson` log identifier. Two *change processors* are added to this log processor. The first processor counts the number of humans added and the second counts the number of gods added to the graph. 
+In this example, a *log processor* is built for the user transaction log named `addedPerson` to process the changes made in transactions which used the `addedPerson` log identifier. Two *change processors* are added to this log processor. The first processor counts the number of humans added and the second counts the number of gods added to the graph.
 
 When a log processor is built against a particular log, such as the `addedPerson` log in the example above, it will start reading transactional change records from the log immediately upon successful construction and initialization up to the head of the log. The start time specified in the builder marks the time point in the log where the log processor will start reading records. Optionally, one can specify an identifier for the log processor in the builder. The log processor will use the identifier to regularly persist its state of processing, i.e. it will maintain a marker on the last read log record. If the log processor is later restarted with the same identifier, it will continue reading from the last read record. This is particularly useful when the log processor is supposed to run for long periods of time and is therefore likely to fail. In such failure situations, the log processor can simply be restarted with the same identifier.
 It must be ensured that log processor identifiers are unique in a Titan cluster in order to avoid conflicts on the persisted read markers.
 
 A change processor must implement the `ChangeProcessor` interface. It's `process()` method is invoked for each change record read from the log with a `TitanTransaction` handle, the id of the transaction that caused the change, and a `ChangeState` container which holds the transactional changes. The change state container can be queried to retrieve individual elements that were part of the change state. In the example, all added vertices are retrieved. Refer to the http://thinkaurelius.github.io/titan/javadoc/current/[API documentation] for a description of all the query methods on `ChangeState`. The provided transaction id can be used to investigate the origin of the transaction which is uniquely identified by the combination of the id of the Titan instance that executed the transaction (`txId.getInstanceId()`) and the instance specific transaction id (`txId.getTransactionId()`). In addition, the time of the transaction is available through `txId.getTransactionTime()`.
- 
-Change processors are executed individually and in multiple threads. If a change processor accesses global state it must be ensured that such state allows concurrent access. While the log processor reads log records sequentially, the changes are processed in multiple threads so it cannot be guaranteed that the log order is preserved in the change processors. 
 
-Note, that log processors run each registered change processor at least once for each record in the log which means that a single transactional change record may be processed multiple times under certain failure conditions. 
+Change processors are executed individually and in multiple threads. If a change processor accesses global state it must be ensured that such state allows concurrent access. While the log processor reads log records sequentially, the changes are processed in multiple threads so it cannot be guaranteed that the log order is preserved in the change processors.
+
+Note, that log processors run each registered change processor at least once for each record in the log which means that a single transactional change record may be processed multiple times under certain failure conditions.
 One cannot add or remove change processor from a running log processor. In other words, a log processor is immutable after it is built. To change log processing, start a new log processor and shut down an existing one.
 
 [source,java]
@@ -1283,8 +1283,8 @@ userlogs.addLogProcessor("battle")
             }
         })
         .build();
-        
-The log processor above processes transactions for the `battle` log identifier with a single change processor which evaluates `battled` edges that were added to Hercules. This example demonstrates that the transaction handle passed into the change processor is a normal `TitanTransaction` which query the Titan graph and make changes to it. 
+
+The log processor above processes transactions for the `battle` log identifier with a single change processor which evaluates `battled` edges that were added to Hercules. This example demonstrates that the transaction handle passed into the change processor is a normal `TitanTransaction` which query the Titan graph and make changes to it.
 
 Transaction Log Use Cases
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1309,7 +1309,7 @@ The user transaction log provides the basic infrastructure to implement triggers
 Log Configuration
 ~~~~~~~~~~~~~~~~~
 
-There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<titan-config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL). 
+There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<titan-config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL).
 
 include::configref.txt[]
 
@@ -1464,4 +1464,3 @@ Batch Loading Speed
 Titan provides a batch loading mode that can be enabled through the <<titan-config-ref,graph configuration>>. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in Titan.
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
-
