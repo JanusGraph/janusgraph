@@ -26,8 +26,6 @@ import java.util.List;
 
 public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
-    public static final boolean DEFAULT_STATIC = false;
-
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
 
@@ -103,6 +101,10 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
             else break;
         }
         return StaticArrayEntryList.of(result);
+    }
+
+    public boolean contains(StaticBuffer buffer) {
+        return sliceStart.compareTo(buffer)<=0 && sliceEnd.compareTo(buffer)>0;
     }
 
     public static StaticBuffer pointRange(StaticBuffer point) {

@@ -57,6 +57,7 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.IndexHelper;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.thinkaurelius.titan.util.stats.MetricManager;
@@ -91,7 +92,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private final StandardTitanGraph graph;
     private final TransactionConfiguration config;
     private final IDManager idManager;
-    private final IDInspector idInspector;
+    private final IDManager idInspector;
     private final AttributeHandling attributeHandler;
     private BackendTransaction txHandle;
     private final EdgeSerializer edgeSerializer;
@@ -161,8 +162,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      */
     private boolean isOpen;
 
-    private final Retriever<Long, InternalVertex> existingVertexRetriever = new VertexConstructor(false);
-
+    private final Retriever<Long, InternalVertex> existingVertexRetriever;
     private final Retriever<Long, InternalVertex> externalVertexRetriever;
     private final Retriever<Long, InternalVertex> internalVertexRetriever;
 
@@ -174,7 +174,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         this.times = graph.getConfiguration().getTimestampProvider();
         this.config = config;
         this.idManager = graph.getIDManager();
-        this.idInspector = idManager.getIdInspector();
+        this.idInspector = idManager;
+//        this.idInspector = idManager.getIdInspector();
         this.attributeHandler = graph.getDataSerializer();
         this.edgeSerializer = graph.getEdgeSerializer();
         this.indexSerializer = graph.getIndexSerializer();
@@ -207,8 +208,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
 
-        externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence());
-        internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence());
+        boolean preloadedData = config.hasPreloadedData();
+        externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence(), preloadedData);
+        internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence(), preloadedData);
+        existingVertexRetriever = new VertexConstructor(false, preloadedData);
 
         vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel,config.getDirtyVertexSize());
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<JointIndexQuery.Subquery, List<Object>>() {
@@ -295,7 +298,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return edgeSerializer;
     }
 
-    public IDInspector getIdInspector() {
+    public IDManager getIdInspector() {
         return idInspector;
     }
 
@@ -408,9 +411,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private class VertexConstructor implements Retriever<Long, InternalVertex> {
 
         private final boolean verifyExistence;
+        private final boolean createStubVertex;
 
-        private VertexConstructor(boolean verifyExistence) {
+        private VertexConstructor(boolean verifyExistence, boolean createStubVertex) {
             this.verifyExistence = verifyExistence;
+            this.createStubVertex = createStubVertex;
         }
 
         @Override
@@ -451,7 +456,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
                 vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
             } else if (idInspector.isUserVertexId(vertexid)) {
-                vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
+                if (createStubVertex) vertex = new PreloadedVertex(StandardTitanTx.this, vertexid, lifecycle);
+                else vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
             return vertex;
         }

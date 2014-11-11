@@ -82,6 +82,8 @@ public class GraphDatabaseConfiguration {
 
     public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Titan Graph Database");
 
+    public static ConfigNamespace JOB_NS = new ConfigNamespace(ROOT_NS,"job","Root Configuration Namespace for Titan OLAP jobs");
+
     // ########## Graph-level Config Options ##########
     // ################################################
 

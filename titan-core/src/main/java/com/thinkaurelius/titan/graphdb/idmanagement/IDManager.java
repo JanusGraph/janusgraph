@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.InvalidIDException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
@@ -452,14 +451,14 @@ public class IDManager {
         return type;
     }
 
-    private boolean isUserVertex(long vertexid) {
+    public final boolean isUserVertexId(long vertexid) {
         return (VertexIDType.NormalVertex.is(vertexid) || VertexIDType.PartitionedVertex.is(vertexid) || VertexIDType.UnmodifiableVertex.is(vertexid))
                 && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
     }
 
     public long getPartitionId(long vertexid) {
         if (VertexIDType.Schema.is(vertexid)) return SCHEMA_PARTITION;
-        assert isUserVertex(vertexid) && getUserVertexIDType(vertexid)!=null;
+        assert isUserVertexId(vertexid) && getUserVertexIDType(vertexid)!=null;
         long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
         assert partition>=0;
         return partition;
@@ -470,7 +469,7 @@ public class IDManager {
             //No partition for schema vertices
             return BufferUtil.getLongBuffer(vertexid);
         } else {
-            assert isUserVertex(vertexid);
+            assert isUserVertexId(vertexid);
             VertexIDType type = getUserVertexIDType(vertexid);
             assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
             long partition = getPartitionId(vertexid);
@@ -556,7 +555,7 @@ public class IDManager {
     }
 
     public boolean isPartitionedVertex(long id) {
-        return isUserVertex(id) && VertexIDType.PartitionedVertex.is(id);
+        return isUserVertexId(id) && VertexIDType.PartitionedVertex.is(id);
     }
 
     public long getRelationCountBound() {
@@ -642,75 +641,112 @@ public class IDManager {
         return SCHEMA_COUNT_BOUND;
     }
 
+    //ID inspection ------------------------------
 
-    /* ########################################################
-               Inspector
-   ########################################################  */
-
-
-    private final IDInspector inspector = new IDInspector() {
-
-        @Override
-        public final boolean isSchemaVertexId(long id) {
-            return isRelationTypeId(id) || isVertexLabelVertexId(id) || isGenericSchemaVertexId(id);
-        }
-
-        @Override
-        public final boolean isRelationTypeId(long id) {
-            return VertexIDType.RelationType.is(id);
-        }
-
-        @Override
-        public final boolean isEdgeLabelId(long id) {
-            return VertexIDType.EdgeLabel.is(id);
-        }
-
-        @Override
-        public final boolean isPropertyKeyId(long id) {
-            return VertexIDType.PropertyKey.is(id);
-        }
-
-        @Override
-        public boolean isSystemRelationTypeId(long id) {
-            return IDManager.isSystemRelationTypeId(id);
-        }
-
-        @Override
-        public boolean isGenericSchemaVertexId(long id) {
-            return VertexIDType.GenericSchemaType.is(id);
-        }
-
-        @Override
-        public boolean isVertexLabelVertexId(long id) {
-            return VertexIDType.VertexLabel.is(id);
-        }
-
-
-
-        @Override
-        public final boolean isUserVertexId(long id) {
-            return IDManager.this.isUserVertex(id);
-        }
-
-        @Override
-        public boolean isUnmodifiableVertex(long id) {
-            return isUserVertex(id) && VertexIDType.UnmodifiableVertex.is(id);
-        }
-
-        @Override
-        public boolean isPartitionedVertex(long id) {
-            return IDManager.this.isPartitionedVertex(id);
-        }
-
-        @Override
-        public long getCanonicalVertexId(long partitionedVertexId) {
-            return IDManager.this.getCanonicalVertexId(partitionedVertexId);
-        }
-
-    };
-
-    public IDInspector getIdInspector() {
-        return inspector;
+    public final boolean isSchemaVertexId(long id) {
+        return isRelationTypeId(id) || isVertexLabelVertexId(id) || isGenericSchemaVertexId(id);
     }
+
+    public final boolean isRelationTypeId(long id) {
+        return VertexIDType.RelationType.is(id);
+    }
+
+    public final boolean isEdgeLabelId(long id) {
+        return VertexIDType.EdgeLabel.is(id);
+    }
+
+    public final boolean isPropertyKeyId(long id) {
+        return VertexIDType.PropertyKey.is(id);
+    }
+
+    public boolean isGenericSchemaVertexId(long id) {
+        return VertexIDType.GenericSchemaType.is(id);
+    }
+
+    public boolean isVertexLabelVertexId(long id) {
+        return VertexIDType.VertexLabel.is(id);
+    }
+
+    public boolean isUnmodifiableVertex(long id) {
+        return isUserVertexId(id) && VertexIDType.UnmodifiableVertex.is(id);
+    }
+
+//    public boolean isPartitionedVertex(long id) {
+//        return IDManager.this.isPartitionedVertex(id);
+//    }
+//
+//    public long getCanonicalVertexId(long partitionedVertexId) {
+//        return IDManager.this.getCanonicalVertexId(partitionedVertexId);
+//    }
+
+//    /* ########################################################
+//               Inspector
+//   ########################################################  */
+//
+//
+//    private final IDInspector inspector = new IDInspector() {
+//
+//        @Override
+//        public final boolean isSchemaVertexId(long id) {
+//            return isRelationTypeId(id) || isVertexLabelVertexId(id) || isGenericSchemaVertexId(id);
+//        }
+//
+//        @Override
+//        public final boolean isRelationTypeId(long id) {
+//            return VertexIDType.RelationType.is(id);
+//        }
+//
+//        @Override
+//        public final boolean isEdgeLabelId(long id) {
+//            return VertexIDType.EdgeLabel.is(id);
+//        }
+//
+//        @Override
+//        public final boolean isPropertyKeyId(long id) {
+//            return VertexIDType.PropertyKey.is(id);
+//        }
+//
+//        @Override
+//        public boolean isSystemRelationTypeId(long id) {
+//            return IDManager.isSystemRelationTypeId(id);
+//        }
+//
+//        @Override
+//        public boolean isGenericSchemaVertexId(long id) {
+//            return VertexIDType.GenericSchemaType.is(id);
+//        }
+//
+//        @Override
+//        public boolean isVertexLabelVertexId(long id) {
+//            return VertexIDType.VertexLabel.is(id);
+//        }
+//
+//
+//
+//        @Override
+//        public final boolean isUserVertexId(long id) {
+//            return IDManager.this.isUserVertex(id);
+//        }
+//
+//        @Override
+//        public boolean isUnmodifiableVertex(long id) {
+//            return isUserVertex(id) && VertexIDType.UnmodifiableVertex.is(id);
+//        }
+//
+//        @Override
+//        public boolean isPartitionedVertex(long id) {
+//            return IDManager.this.isPartitionedVertex(id);
+//        }
+//
+//        @Override
+//        public long getCanonicalVertexId(long partitionedVertexId) {
+//            return IDManager.this.getCanonicalVertexId(partitionedVertexId);
+//        }
+//
+//    };
+//
+//    public IDInspector getIdInspector() {
+//        return inspector;
+//    }
 
 }

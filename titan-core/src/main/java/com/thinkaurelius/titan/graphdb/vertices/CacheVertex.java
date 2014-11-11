@@ -31,6 +31,10 @@ public class CacheVertex extends StandardVertex {
         }
     }
 
+    protected int getQueryCacheSize() {
+        return queryCache.size();
+    }
+
     @Override
     public EntryList loadRelations(final SliceQuery query, final Retriever<SliceQuery, EntryList> lookup) {
         if (isNew())
