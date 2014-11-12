@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCa
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
@@ -325,7 +326,10 @@ public class Backend implements LockerProvider {
         } catch (BackendException e) {
             throw new TitanException("Could not re-open management log", e);
         }
+    }
 
+    public StandardScanner getScanner() {
+        return new StandardScanner(storeManager);
     }
 
     public Log getUserLog(String identifier) throws BackendException {
@@ -390,7 +394,7 @@ public class Backend implements LockerProvider {
     private static KCVSConfiguration getGlobalConfiguration(final BackendOperation.TransactionalProvider txProvider,
                                                                      final KeyColumnValueStore store,
                                                                      final Configuration config) {
-        return getConfiguration(txProvider,store,SYSTEM_CONFIGURATION_IDENTIFIER,config);
+        return getConfiguration(txProvider, store, SYSTEM_CONFIGURATION_IDENTIFIER, config);
     }
 
     private static KCVSConfiguration getConfiguration(final BackendOperation.TransactionalProvider txProvider,

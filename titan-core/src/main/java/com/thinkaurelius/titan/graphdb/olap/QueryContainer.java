@@ -33,6 +33,7 @@ public class QueryContainer {
     private SetMultimap<SliceQuery,Query> inverseQueries;
 
     public QueryContainer(StandardTitanTx tx) {
+        Preconditions.checkArgument(tx!=null);
         this.tx = tx;
         queries = new HashMap<>(6);
         inverseQueries = HashMultimap.create();
@@ -105,26 +106,24 @@ public class QueryContainer {
                 else if (!requiresName) name = QUERY_NAME_PREFIX + queries.size();
                 else throw new IllegalStateException("Need to specify an explicit name for this query");
             }
-            try {
-                BaseVertexCentricQuery vq = super.constructQuery(returnType);
-                List<SliceQuery> slices = new ArrayList<>(vq.numSubQueries());
-                for (int i = 0; i < vq.numSubQueries(); i++) {
-                    BackendQueryHolder<SliceQuery> bq = vq.getSubQuery(i);
-                    SliceQuery sq = bq.getBackendQuery();
-                    slices.add(sq.updateLimit(bq.isFitted() ? vq.getLimit() : hardQueryLimit));
-                }
-                Query q = new Query(name,slices,returnType);
-                synchronized (queries) {
-                    Preconditions.checkArgument(!queries.containsKey(name),"Query name already in use: %s",name);
-                    queries.put(name,q);
-                    for (SliceQuery sq : slices) {
-                        inverseQueries.put(sq,q);
-                    }
-                }
-                return q;
-            } finally {
-                tx.rollback();
+
+            BaseVertexCentricQuery vq = super.constructQuery(returnType);
+            List<SliceQuery> slices = new ArrayList<>(vq.numSubQueries());
+            for (int i = 0; i < vq.numSubQueries(); i++) {
+                BackendQueryHolder<SliceQuery> bq = vq.getSubQuery(i);
+                SliceQuery sq = bq.getBackendQuery();
+                slices.add(sq.updateLimit(bq.isFitted() ? vq.getLimit() : hardQueryLimit));
             }
+            Query q = new Query(name,slices,returnType);
+            synchronized (queries) {
+                Preconditions.checkArgument(!queries.containsKey(name),"Query name already in use: %s",name);
+                queries.put(name,q);
+                for (SliceQuery sq : slices) {
+                    inverseQueries.put(sq,q);
+                }
+            }
+            return q;
+
         }
 
         @Override

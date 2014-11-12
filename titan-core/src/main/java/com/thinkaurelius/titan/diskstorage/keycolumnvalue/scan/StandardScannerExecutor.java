@@ -35,14 +35,16 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     private final StoreTransaction storeTx;
     private final KeyColumnValueStore store;
     private final int numProcessors;
-    private final List<SliceQuery> queries;
-    private final int numQueries;
     private final Configuration configuration;
+    private final ScanMetrics metrics;
+
     private boolean hasCompleted = false;
 
-    private final List<BlockingQueue<SliceResult>> dataQueues;
-    private final DataPuller[] pullThreads;
-    private final ScanMetrics metrics;
+    private List<SliceQuery> queries;
+    private int numQueries;
+    private List<BlockingQueue<SliceResult>> dataQueues;
+    private DataPuller[] pullThreads;
+
 
     StandardScannerExecutor(final ScanJob job, final KeyColumnValueStore store, final StoreTransaction storeTx,
                             final StoreFeatures storeFeatures,
@@ -53,26 +55,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
         this.storeFeatures = storeFeatures;
         this.numProcessors = numProcessors;
         this.configuration = config;
-
-        queries = job.getQueries();
-        numQueries = queries.size();
-        Preconditions.checkArgument(numQueries>0,"Must at least specify one query for job: %s",job);
-        if (numQueries>1) {
-            //It is assumed that the first query is the grounding query if multiple queries exist
-            SliceQuery ground = queries.get(0);
-            StaticBuffer start = ground.getSliceStart();
-            Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(start.length())),
-                    "Expected start of first query to be all 0s: %s",start);
-            StaticBuffer end = ground.getSliceEnd();
-            Preconditions.checkArgument(end.equals(BufferUtil.oneBuffer(end.length())),
-                    "Expected end of first query to be all 1s: %s",end);
-        }
-        dataQueues = new ArrayList<BlockingQueue<SliceResult>>(numQueries);
-        pullThreads = new DataPuller[numQueries];
-
-        for (int pos=0;pos<numQueries;pos++) {
-            pullThreads[pos]=addDataPuller(queries.get(pos),storeTx);
-        }
 
         metrics = new StandardScanMetrics();
 
@@ -92,9 +74,31 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     public void run() {
         try {
             job.setup(configuration,metrics);
+
+            queries = job.getQueries();
+            numQueries = queries.size();
+            Preconditions.checkArgument(numQueries>0,"Must at least specify one query for job: %s",job);
+            if (numQueries>1) {
+                //It is assumed that the first query is the grounding query if multiple queries exist
+                SliceQuery ground = queries.get(0);
+                StaticBuffer start = ground.getSliceStart();
+                Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(start.length())),
+                        "Expected start of first query to be all 0s: %s",start);
+                StaticBuffer end = ground.getSliceEnd();
+                Preconditions.checkArgument(end.equals(BufferUtil.oneBuffer(end.length())),
+                        "Expected end of first query to be all 1s: %s",end);
+            }
+            dataQueues = new ArrayList<BlockingQueue<SliceResult>>(numQueries);
+            pullThreads = new DataPuller[numQueries];
+
+            for (int pos=0;pos<numQueries;pos++) {
+                pullThreads[pos]=addDataPuller(queries.get(pos),storeTx);
+            }
         }  catch (Throwable e) {
             log.error("Exception trying to setup the job: {}", e);
+            cleanupSilent();
             setException(e);
+            return;
         }
 
         ThreadPoolExecutor processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
@@ -145,11 +149,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
             setException(e);
         } finally {
             processor.shutdownNow();
-            try {
-                cleanup();
-            } catch (BackendException ex) {
-                log.error("Encountered exception when trying to clean up after failure",ex);
-            }
+            cleanupSilent();
         }
     }
 
@@ -158,6 +158,14 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
             hasCompleted = true;
             storeTx.rollback();
             store.close();
+        }
+    }
+
+    private void cleanupSilent() {
+        try {
+            cleanup();
+        } catch (BackendException ex) {
+            log.error("Encountered exception when trying to clean up after failure",ex);
         }
     }
 

@@ -21,6 +21,13 @@ import java.util.List;
  */
 public class PreloadedVertex extends CacheVertex {
 
+    private static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
+        @Override
+        public EntryList get(SliceQuery input) {
+            return EntryList.EMPTY_LIST;
+        }
+    };
+
     public PreloadedVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
         assert lifecycle == ElementLifeCycle.Loaded : "Invalid lifecycle encountered: " + lifecycle;
@@ -59,7 +66,7 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
-        throw stubVertexException();
+        return super.loadRelations(query,EMPTY_RETRIEVER);
     }
 
     @Override

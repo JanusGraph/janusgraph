@@ -30,8 +30,7 @@ public class VertexJobConverter implements ScanJob {
 
     private static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
 
-    private StandardTitanGraph graph;
-    private final boolean graphProvided;
+    private final GraphProvider graph;
     private final VertexScanJob job;
 
     private StandardTitanTx tx;
@@ -39,9 +38,9 @@ public class VertexJobConverter implements ScanJob {
 
     private VertexJobConverter(TitanGraph graph, VertexScanJob job) {
         Preconditions.checkArgument(job!=null);
-        this.graph = (StandardTitanGraph)graph;
+        this.graph = new GraphProvider();
+        this.graph.setGraph(graph);
         this.job = job;
-        this.graphProvided = (graph!=null);
     }
 
     public static ScanJob convert(TitanGraph graph, VertexScanJob vertexJob) {
@@ -54,14 +53,14 @@ public class VertexJobConverter implements ScanJob {
 
     @Override
     public void setup(Configuration config, ScanMetrics metrics) {
-        if (!graphProvided) this.graph = (StandardTitanGraph) TitanFactory.open((BasicConfiguration) config);
-        idManager = graph.getIDManager();
-        StandardTransactionBuilder txb = graph.buildTransaction().readOnly();
-        txb.hasPreloadedData();
+        graph.initializeGraph(config);
+        idManager = graph.get().getIDManager();
+        StandardTransactionBuilder txb = graph.get().buildTransaction().readOnly();
+        txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
         try {
             tx = (StandardTitanTx)txb.start();
-            job.setup(graph, config, metrics);
+            job.setup(graph.get(), config, metrics);
         } catch (Throwable e) {
             close();
             throw e;
@@ -71,8 +70,7 @@ public class VertexJobConverter implements ScanJob {
     private void close() {
         if (null != tx && tx.isOpen())
             tx.rollback();
-        if (!graphProvided && null != graph && graph.isOpen())
-            graph.close();
+        graph.close();
     }
 
     @Override
@@ -95,13 +93,18 @@ public class VertexJobConverter implements ScanJob {
 
     @Override
     public List<SliceQuery> getQueries() {
-        QueryContainer qc = new QueryContainer(tx);
-        job.getQueries(qc);
+        try {
+            QueryContainer qc = new QueryContainer(tx);
+            job.getQueries(qc);
 
-        List<SliceQuery> slices = new ArrayList<>();
-        slices.add(VERTEX_EXISTS_QUERY);
-        slices.addAll(qc.getSliceQueries());
-        return slices;
+            List<SliceQuery> slices = new ArrayList<>();
+            slices.add(VERTEX_EXISTS_QUERY);
+            slices.addAll(qc.getSliceQueries());
+            return slices;
+        } catch (Throwable e) {
+            close();
+            throw e;
+        }
     }
 
     @Override
@@ -115,6 +118,36 @@ public class VertexJobConverter implements ScanJob {
 
     private long getVertexId(StaticBuffer key) {
         return idManager.getKeyID(key);
+    }
+
+    public static class GraphProvider {
+
+        private StandardTitanGraph graph=null;
+        private boolean provided=false;
+
+        public void setGraph(TitanGraph graph) {
+            Preconditions.checkArgument(graph!=null && graph.isOpen(),"Need to provide open graph");
+            this.graph = (StandardTitanGraph)graph;
+            provided = true;
+        }
+
+        public void initializeGraph(Configuration config) {
+            if (!provided) {
+                this.graph = (StandardTitanGraph) TitanFactory.open((BasicConfiguration) config);
+            }
+        }
+
+        public void close() {
+            if (!provided && null != graph && graph.isOpen())
+                graph.close();
+        }
+
+        public final StandardTitanGraph get() {
+            Preconditions.checkState(graph!=null);
+            return graph;
+        }
+
+
     }
 
 }

@@ -6,11 +6,22 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.*;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
+import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
+import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Before;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -20,6 +31,7 @@ import static com.thinkaurelius.titan.testutil.TitanAssert.*;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,14 +46,33 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     private static final Random random = new Random();
 
-    @Test
-    public void degreeCount() throws Exception {
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    private ScanMetrics executeScanJob(VertexScanJob job) throws Exception {
+        return executeScanJob(VertexJobConverter.convert(graph,job));
+    }
+
+    private ScanMetrics executeScanJob(ScanJob job) throws Exception {
+        Configuration config = graph.getConfiguration().getConfiguration();
+        StandardScanner scanner = graph.getBackend().getScanner();
+        return scanner.build()
+                .setNumProcessingThreads(2)
+                .setStoreName(Backend.EDGESTORE_NAME)
+                .setConfiguration(config)
+                .setTimestampProvider(config.get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER))
+                .setJob(job)
+                .execute().get();
+    }
+
+    private int generateRandomGraph(int numV) {
         mgmt.makePropertyKey("uid").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
         mgmt.makePropertyKey("values").cardinality(Cardinality.LIST).dataType(Integer.class).make();
         mgmt.makePropertyKey("numvals").dataType(Integer.class).make();
         finishSchema();
-        int numV = 300;
         int numE = 0;
         Vertex[] vs = new Vertex[numV];
         for (int i=0;i<numV;i++) {
@@ -62,6 +93,40 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             }
         }
         assertEquals(numV*(numV+1),numE*2);
+        return numE;
+    }
+
+    @Test
+    public void testVertexScan() throws Exception {
+        int numV = 100;
+        int numE = generateRandomGraph(numV);
+        final String DEGREE_COUNT = "degree";
+        final String VERTEX_COUNT = "numV";
+        clopen();
+
+        ScanMetrics result1 = executeScanJob(new VertexScanJob() {
+
+            @Override
+            public void process(TitanVertex vertex, ScanMetrics metrics) {
+                long outDegree = vertex.outE("knows").count().next();
+                metrics.incrementCustom(DEGREE_COUNT,outDegree);
+                metrics.incrementCustom(VERTEX_COUNT);
+            }
+
+            @Override
+            public void getQueries(QueryContainer queries) {
+                queries.addQuery().labels("knows").direction(Direction.OUT).edges();
+            }
+        });
+
+        assertEquals(numV,result1.getCustom(VERTEX_COUNT));
+        assertEquals(numE,result1.getCustom(DEGREE_COUNT));
+    }
+
+    @Test
+    public void degreeCount() throws Exception {
+        int numV = 300;
+        int numE = generateRandomGraph(numV);
         clopen();
 
         Stopwatch w = new Stopwatch().start();

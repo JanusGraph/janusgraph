@@ -1293,7 +1293,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
                             new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(1))
                     )));
             fail();
-        } catch (IllegalArgumentException e) {}
+        } catch (Exception e) {
+            assertTrue(e.getCause() instanceof IllegalArgumentException);
+        }
 
     }
 

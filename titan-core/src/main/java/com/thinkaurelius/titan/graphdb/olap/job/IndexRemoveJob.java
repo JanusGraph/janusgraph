@@ -24,6 +24,7 @@ import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
+import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
@@ -41,20 +42,32 @@ import java.util.function.Predicate;
  */
 public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
+    private final VertexJobConverter.GraphProvider graph = new VertexJobConverter.GraphProvider();
+
+    private IndexSerializer indexSerializer;
     private long graphIndexId;
 
-    public IndexRemoveJob(final String indexName, final String indexType) {
+    public IndexRemoveJob(final TitanGraph graph, final String indexName, final String indexType) {
         super(indexName,indexType);
+        this.graph.setGraph(graph);
     }
 
     @Override
     public void teardown(ScanMetrics metrics) {
         super.teardown(metrics);
+        graph.close();
     }
 
     @Override
-    public void setup(TitanGraph graph, Configuration config, ScanMetrics metrics) {
-        super.setup(graph, config, metrics);
+    public void setup(Configuration config, ScanMetrics metrics) {
+        graph.initializeGraph(config);
+        indexSerializer = graph.get().getIndexSerializer();
+        try {
+            super.setup(graph.get(), config, metrics);
+        } catch (Throwable e) {
+            graph.close();
+            throw e;
+        }
     }
 
     @Override
@@ -114,17 +127,21 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             for (Direction dir : Direction.values()) if (wrappedType.isUnidirected(dir)) direction=dir;
             assert direction!=null;
 
-            StandardTitanTx tx = (StandardTitanTx)graph.newTransaction();
-            QueryContainer qc = new QueryContainer(tx);
-            qc.addQuery().type(wrappedType).direction(direction).relations();
-            return qc.getSliceQueries();
+            StandardTitanTx tx = (StandardTitanTx)graph.get().buildTransaction().readOnly().start();
+            try {
+                QueryContainer qc = new QueryContainer(tx);
+                qc.addQuery().type(wrappedType).direction(direction).relations();
+                return qc.getSliceQueries();
+            } finally {
+                tx.rollback();
+            }
         }
     }
 
     @Override
     public Predicate<StaticBuffer> getKeyFilter() {
         if (isGlobalGraphIndex()) {
-            final IndexSerializer indexSerializer = graph.getIndexSerializer();
+
             assert graphIndexId>0;
             return (k -> indexSerializer.getIndexIdFromKey(k)==graphIndexId);
         } else return (k -> true);
