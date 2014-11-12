@@ -36,8 +36,8 @@ import java.util.*;
  */
 public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
-    public IndexRepairJob(final TitanGraph graph, final String indexName, final String indexType) {
-        super(graph,indexName,indexType);
+    public IndexRepairJob(final String indexName, final String indexType) {
+        super(indexName,indexType);
     }
 
     @Override
@@ -46,8 +46,8 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     }
 
     @Override
-    public void setup(Configuration config, ScanMetrics metrics) {
-        super.setup(config,metrics);
+    public void setup(final TitanGraph graph, Configuration config, ScanMetrics metrics) {
+        super.setup(graph, config,metrics);
     }
 
     /**

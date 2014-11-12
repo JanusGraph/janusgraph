@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
+import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
@@ -191,7 +192,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {
-        throw Exceptions.graphComputerNotSupported();
+        throw Graph.Exceptions.graphComputerNotSupported();
+//        GraphComputerHelper.validateComputeArguments(graphComputerClass);
+//        if (graphComputerClass.length == 0 || graphComputerClass[0].equals(TinkerGraphComputer.class))
+//            return new TinkerGraphComputer(this);
+//        else
+//            throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass[0]);
     }
 
     @Override

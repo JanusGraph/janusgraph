@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 
@@ -15,24 +16,18 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class StandardScanner  {
 
     private final KeyColumnValueStoreManager manager;
-    private final Configuration config;
 
-    public StandardScanner(final KeyColumnValueStoreManager manager,
-                           final Configuration configuration) {
-        Preconditions.checkArgument(manager!=null && configuration!=null);
+    public StandardScanner(final KeyColumnValueStoreManager manager) {
+        Preconditions.checkArgument(manager!=null);
         Preconditions.checkArgument(manager.getFeatures().hasScan(),"Provided data store does not support scans: %s",manager);
 
         this.manager = manager;
-        this.config = configuration;
     }
 
     public Builder build() {
@@ -43,15 +38,15 @@ public class StandardScanner  {
     public class Builder {
 
         private ScanJob job;
-        private Map<String,Object> txOptions;
         private int numProcessingThreads;
+        private TimestampProvider times;
         private Configuration configuration;
         private String dbName;
 
         private Builder() {
             numProcessingThreads = 1;
             job = null;
-            txOptions = new HashMap<>(4);
+            times = null;
             configuration = Configuration.EMPTY;
             dbName = null;
         }
@@ -63,13 +58,13 @@ public class StandardScanner  {
             return this;
         }
 
-        public Builder setCustomTxOptions(String key, Object value) {
-            Preconditions.checkArgument(StringUtils.isNotBlank(key) && value!=null);
-            txOptions.put(key,value);
+        public Builder setTimestampProvider(TimestampProvider times) {
+            Preconditions.checkArgument(times!=null);
+            this.times=times;
             return this;
         }
 
-        public Builder setDatabaseName(String name) {
+        public Builder setStoreName(String name) {
             Preconditions.checkArgument(StringUtils.isNotBlank(name),"Invalid name: %s",name);
             this.dbName = name;
             return this;
@@ -90,29 +85,39 @@ public class StandardScanner  {
         public Future<ScanMetrics> execute() throws BackendException {
             Preconditions.checkArgument(job!=null,"Need to specify a job to execute");
             Preconditions.checkArgument(StringUtils.isNotBlank(dbName),"Need to specify a database to execute against");
+            Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
             StandardBaseTransactionConfig.Builder txBuilder = new StandardBaseTransactionConfig.Builder();
-            txBuilder.timestampProvider(config.get(TIMESTAMP_PROVIDER));
-            if (!txOptions.isEmpty()) {
-                ModifiableConfiguration writeConf = GraphDatabaseConfiguration.buildConfiguration();
-                for (Map.Entry<String,Object> confEntry : txOptions.entrySet()) {
-                    writeConf.set(
-                            (ConfigOption<Object>) ConfigElement.parse(ROOT_NS, confEntry.getKey()).element,
-                            confEntry.getValue());
-                }
-                //TODO: Merge in graph database configuration based custom options?
-                Configuration customConf = writeConf;
-                if (configuration!=Configuration.EMPTY) {
-                    customConf = new MergedConfiguration(writeConf, configuration);
+            txBuilder.timestampProvider(times);
+            if (configuration!=Configuration.EMPTY) {
+                txBuilder.customOptions(configuration);
 
-                }
-                txBuilder.customOptions(customConf);
             }
+//            if (!txOptions.isEmpty()) {
+//                ModifiableConfiguration writeConf = GraphDatabaseConfiguration.buildConfiguration();
+//                for (Map.Entry<String,Object> confEntry : txOptions.entrySet()) {
+//                    writeConf.set(
+//                            (ConfigOption<Object>) ConfigElement.parse(ROOT_NS, confEntry.getKey()).element,
+//                            confEntry.getValue());
+//                }
+//                Configuration customConf = writeConf;
+//                if (configuration!=Configuration.EMPTY) {
+//                    customConf = new MergedConfiguration(writeConf, configuration);
+//
+//                }
+//                txBuilder.customOptions(customConf);
+//            }
             StoreTransaction storeTx = manager.beginTransaction(txBuilder.build());
             KeyColumnValueStore kcvs = manager.openDatabase(dbName);
-            StandardScannerExecutor executor = new StandardScannerExecutor(job,kcvs,storeTx,
-                            manager.getFeatures(),numProcessingThreads, configuration);
-            new Thread(executor).start();
-            return executor;
+            try {
+                StandardScannerExecutor executor = new StandardScannerExecutor(job, kcvs, storeTx,
+                        manager.getFeatures(), numProcessingThreads, configuration);
+                new Thread(executor).start();
+                return executor;
+            } catch (Throwable e) {
+                storeTx.rollback();
+                kcvs.close();
+                throw e;
+            }
         }
 
     }

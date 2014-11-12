@@ -44,24 +44,18 @@ public abstract class IndexUpdateJob {
 
     protected StandardTitanGraph graph;
     protected ManagementSystem mgmt = null;
-    protected String indexName;
-    protected String indexRelationTypeName;
-
-    protected final boolean graphProvided;
+    protected String indexName = null;
+    protected String indexRelationTypeName = null;
 
     protected TitanIndex index;
     protected RelationType indexRelationType;
 
 
-    public IndexUpdateJob() {
-        graphProvided = false;
-    }
+    public IndexUpdateJob() { }
 
-    public IndexUpdateJob(final TitanGraph graph, final String indexName, final String indexRelationTypeName) {
-        this.graph = (StandardTitanGraph)graph;
+    public IndexUpdateJob(final String indexName, final String indexRelationTypeName) {
         this.indexName = indexName;
         this.indexRelationTypeName = indexRelationTypeName;
-        graphProvided = true;
     }
 
     public boolean isGlobalGraphIndex() {
@@ -72,16 +66,16 @@ public abstract class IndexUpdateJob {
         return !isGlobalGraphIndex();
     }
 
-    public void setup(Configuration config, ScanMetrics metrics) {
-        if (!graphProvided) {
+    public void setup(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+        this.graph = (StandardTitanGraph)graph;
+        if (indexName == null) {
             Preconditions.checkArgument(config.has(INDEX_NAME), "Need to configure the name of the index to be repaired");
-            this.indexName = config.get(INDEX_NAME);
-            this.indexRelationTypeName = config.get(INDEX_RELATION_TYPE);
+            indexName = config.get(INDEX_NAME);
+            indexRelationTypeName = config.get(INDEX_RELATION_TYPE);
             log.info("Read index information: name={} type={}", indexName, indexRelationTypeName);
         }
 
         try {
-            if (!graphProvided) this.graph = (StandardTitanGraph) TitanFactory.open((BasicConfiguration) config);
             this.mgmt = (ManagementSystem)graph.openManagement();
 
             if (isGlobalGraphIndex()) {
@@ -97,8 +91,6 @@ public abstract class IndexUpdateJob {
         } catch (final Exception e) {
             if (null != mgmt && mgmt.isOpen())
                 mgmt.rollback();
-            if (!graphProvided && null != graph && graph.isOpen())
-                graph.close();
             metrics.incrementCustom(FAILED_TX);
             throw new TitanException(e.getMessage(), e);
         }
@@ -113,13 +105,6 @@ public abstract class IndexUpdateJob {
             log.error("Transaction commit threw runtime exception:", e);
             metrics.incrementCustom(FAILED_TX);
             throw e;
-        } finally {
-            try {
-                if (!graphProvided && null != graph && graph.isOpen())
-                    graph.close();
-            } catch (RuntimeException ex) {
-                log.error("Could not close graph:",ex);
-            }
         }
     }
 

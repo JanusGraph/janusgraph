@@ -92,8 +92,8 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     @Override
     public KeyIterator getKeys(final KeyRangeQuery keyQuery, final StoreTransaction txh) throws BackendException {
         KVQuery query = new KVQuery(
-                concatenatePrefix(keyQuery.getKeyStart(), keyQuery.getSliceStart()),
-                concatenatePrefix(keyQuery.getKeyEnd(), keyQuery.getSliceEnd()),
+                concatenatePrefix(adjustToLength(keyQuery.getKeyStart()), keyQuery.getSliceStart()),
+                concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()),
                 new Predicate<StaticBuffer>() {
                     @Override
                     public boolean apply(@Nullable StaticBuffer keycolumn) {
@@ -106,6 +106,18 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
         return new KeyIteratorImpl(keyQuery,store.getSlice(query,txh));
     }
+
+    private final StaticBuffer adjustToLength(StaticBuffer key) {
+        if (hasFixedKeyLength() && key.length()!=keyLength) {
+            if (key.length()>keyLength) {
+                return key.subrange(0,keyLength);
+            } else { //Append 0s
+                return BufferUtil.padBuffer(key,keyLength);
+            }
+        }
+        return key;
+    }
+
 
 
     @Override

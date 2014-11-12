@@ -38,6 +38,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     private final List<SliceQuery> queries;
     private final int numQueries;
     private final Configuration configuration;
+    private boolean hasCompleted = false;
 
     private final List<BlockingQueue<SliceResult>> dataQueues;
     private final DataPuller[] pullThreads;
@@ -115,14 +116,12 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
                     currentResults[i]=qr;
                 }
                 SliceResult conditionQuery = currentResults[0];
-                currentResults[0]=null;
                 if (conditionQuery==null) break; //Termination condition - primary query has no more data
-
                 final StaticBuffer key = conditionQuery.key;
 
                 Map<SliceQuery,EntryList> queryResults = new HashMap<>(numQueries);
                 for (int i=0;i<currentResults.length;i++) {
-                    if (currentResults[i]!=null && currentResults[i].key==key) {
+                    if (currentResults[i]!=null && currentResults[i].key.equals(key)) {
                         queryResults.put(currentResults[i].query, currentResults[i].entries);
                         currentResults[i]=null;
                     }
@@ -138,23 +137,29 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
                 if (pullThreads[i].isAlive()) throw new TemporaryBackendException("Could not join data pulling thread");
             }
 
-            storeTx.rollback();
+            cleanup();
+            job.teardown(metrics);
             set(metrics);
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
             setException(e);
         } finally {
             processor.shutdownNow();
-
             try {
-                job.teardown(metrics);
-            }  catch (Throwable e) {
-                log.error("Exception occured during tear down of job: {}", e);
+                cleanup();
+            } catch (BackendException ex) {
+                log.error("Encountered exception when trying to clean up after failure",ex);
             }
         }
     }
 
-
+    private void cleanup() throws BackendException {
+        if (!hasCompleted) {
+            hasCompleted = true;
+            storeTx.rollback();
+            store.close();
+        }
+    }
 
     private class RowProcessor implements Runnable {
 

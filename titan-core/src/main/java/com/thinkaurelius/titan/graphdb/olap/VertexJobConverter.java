@@ -1,16 +1,21 @@
 package com.thinkaurelius.titan.graphdb.olap;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 
 import java.util.ArrayList;
@@ -25,28 +30,55 @@ public class VertexJobConverter implements ScanJob {
 
     private static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
 
-    private final StandardTitanTx tx;
+    private StandardTitanGraph graph;
+    private final boolean graphProvided;
     private final VertexScanJob job;
-    private final IDManager idManager;
 
-    private VertexJobConverter(StandardTitanTx tx, VertexScanJob job) {
-        this.tx = tx;
+    private StandardTitanTx tx;
+    private IDManager idManager;
+
+    private VertexJobConverter(TitanGraph graph, VertexScanJob job) {
+        Preconditions.checkArgument(job!=null);
+        this.graph = (StandardTitanGraph)graph;
         this.job = job;
-        this.idManager = tx.getIdInspector();
+        this.graphProvided = (graph!=null);
     }
 
-    public static ScanJob convert(StandardTitanTx tx, VertexScanJob vertexJob) {
-        return new VertexJobConverter(tx,vertexJob);
+    public static ScanJob convert(TitanGraph graph, VertexScanJob vertexJob) {
+        return new VertexJobConverter(graph,vertexJob);
+    }
+
+    public static ScanJob convert(VertexScanJob vertexJob) {
+        return new VertexJobConverter(null,vertexJob);
     }
 
     @Override
     public void setup(Configuration config, ScanMetrics metrics) {
-        job.setup(config,metrics);
+        if (!graphProvided) this.graph = (StandardTitanGraph) TitanFactory.open((BasicConfiguration) config);
+        idManager = graph.getIDManager();
+        StandardTransactionBuilder txb = graph.buildTransaction().readOnly();
+        txb.hasPreloadedData();
+        txb.checkInternalVertexExistence(false);
+        try {
+            tx = (StandardTitanTx)txb.start();
+            job.setup(graph, config, metrics);
+        } catch (Throwable e) {
+            close();
+            throw e;
+        }
+    }
+
+    private void close() {
+        if (null != tx && tx.isOpen())
+            tx.rollback();
+        if (!graphProvided && null != graph && graph.isOpen())
+            graph.close();
     }
 
     @Override
     public void teardown(ScanMetrics metrics) {
         job.teardown(metrics);
+        close();
     }
 
     @Override

@@ -43,8 +43,8 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
     private long graphIndexId;
 
-    public IndexRemoveJob(final TitanGraph graph, final String indexName, final String indexType) {
-        super(graph,indexName,indexType);
+    public IndexRemoveJob(final String indexName, final String indexType) {
+        super(indexName,indexType);
     }
 
     @Override
@@ -53,8 +53,8 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     }
 
     @Override
-    public void setup(Configuration config, ScanMetrics metrics) {
-        super.setup(config, metrics);
+    public void setup(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+        super.setup(graph, config, metrics);
     }
 
     @Override

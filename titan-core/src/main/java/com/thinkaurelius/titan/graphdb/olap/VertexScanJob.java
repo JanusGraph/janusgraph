@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.olap;
 
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -9,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
  */
 public interface VertexScanJob {
 
-    public default void setup(Configuration config, ScanMetrics metrics) {}
+    public default void setup(TitanGraph graph, Configuration config, ScanMetrics metrics) {}
 
     public default void teardown(ScanMetrics metrics) {}
 
