@@ -157,7 +157,6 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
         if (!hasCompleted) {
             hasCompleted = true;
             storeTx.rollback();
-            store.close();
         }
     }
 

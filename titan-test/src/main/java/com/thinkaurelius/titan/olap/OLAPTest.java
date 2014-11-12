@@ -56,13 +56,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     }
 
     private ScanMetrics executeScanJob(ScanJob job) throws Exception {
-        Configuration config = graph.getConfiguration().getConfiguration();
-        StandardScanner scanner = graph.getBackend().getScanner();
-        return scanner.build()
+        return graph.getBackend().buildEdgeScanJob()
                 .setNumProcessingThreads(2)
-                .setStoreName(Backend.EDGESTORE_NAME)
-                .setConfiguration(config)
-                .setTimestampProvider(config.get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER))
                 .setJob(job)
                 .execute().get();
     }
@@ -109,6 +104,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             @Override
             public void process(TitanVertex vertex, ScanMetrics metrics) {
                 long outDegree = vertex.outE("knows").count().next();
+                assertEquals(0,vertex.inE("knows").count().next().longValue());
+                assertEquals(1,vertex.properties("uid").count().next().longValue());
+                assertTrue(vertex.<Integer>value("uid",0) > 0);
                 metrics.incrementCustom(DEGREE_COUNT,outDegree);
                 metrics.incrementCustom(VERTEX_COUNT);
             }
@@ -116,11 +114,30 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             @Override
             public void getQueries(QueryContainer queries) {
                 queries.addQuery().labels("knows").direction(Direction.OUT).edges();
+                queries.addQuery().keys("uid").properties();
             }
         });
-
         assertEquals(numV,result1.getCustom(VERTEX_COUNT));
         assertEquals(numE,result1.getCustom(DEGREE_COUNT));
+
+        ScanMetrics result2 = executeScanJob(new VertexScanJob() {
+
+            @Override
+            public void process(TitanVertex vertex, ScanMetrics metrics) {
+                metrics.incrementCustom(VERTEX_COUNT);
+                assertEquals(1,vertex.properties("numvals").count().next().longValue());
+                int numvals = vertex.value("numvals");
+                assertEquals(numvals,vertex.properties("values").count().next().longValue());
+            }
+
+            @Override
+            public void getQueries(QueryContainer queries) {
+                queries.addQuery().keys("values").properties();
+                queries.addQuery().keys("numvals").properties();
+            }
+        });
+        assertEquals(numV,result2.getCustom(VERTEX_COUNT));
+
     }
 
     @Test

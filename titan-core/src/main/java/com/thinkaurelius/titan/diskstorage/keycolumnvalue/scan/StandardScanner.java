@@ -12,7 +12,9 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -22,16 +24,22 @@ import java.util.concurrent.atomic.AtomicLong;
 public class StandardScanner  {
 
     private final KeyColumnValueStoreManager manager;
+    private final Set<KeyColumnValueStore> openStores;
 
     public StandardScanner(final KeyColumnValueStoreManager manager) {
         Preconditions.checkArgument(manager!=null);
         Preconditions.checkArgument(manager.getFeatures().hasScan(),"Provided data store does not support scans: %s",manager);
 
         this.manager = manager;
+        this.openStores = new HashSet<>(4);
     }
 
     public Builder build() {
         return new Builder();
+    }
+
+    public void close() throws BackendException {
+        for (KeyColumnValueStore kcvs : openStores) kcvs.close();
     }
 
 
@@ -108,6 +116,7 @@ public class StandardScanner  {
 //            }
             StoreTransaction storeTx = manager.beginTransaction(txBuilder.build());
             KeyColumnValueStore kcvs = manager.openDatabase(dbName);
+            openStores.add(kcvs);
             try {
                 StandardScannerExecutor executor = new StandardScannerExecutor(job, kcvs, storeTx,
                         manager.getFeatures(), numProcessingThreads, configuration);
@@ -115,7 +124,6 @@ public class StandardScanner  {
                 return executor;
             } catch (Throwable e) {
                 storeTx.rollback();
-                kcvs.close();
                 throw e;
             }
         }

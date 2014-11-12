@@ -138,8 +138,10 @@ public class VertexJobConverter implements ScanJob {
         }
 
         public void close() {
-            if (!provided && null != graph && graph.isOpen())
+            if (!provided && null != graph && graph.isOpen()) {
                 graph.close();
+                graph=null;
+            }
         }
 
         public final StandardTitanGraph get() {
