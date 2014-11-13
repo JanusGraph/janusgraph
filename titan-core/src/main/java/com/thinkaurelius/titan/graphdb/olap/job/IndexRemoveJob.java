@@ -47,6 +47,10 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     private IndexSerializer indexSerializer;
     private long graphIndexId;
 
+    public IndexRemoveJob() {
+        super();
+    }
+
     public IndexRemoveJob(final TitanGraph graph, final String indexName, final String indexType) {
         super(indexName,indexType);
         this.graph.setGraph(graph);

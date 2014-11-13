@@ -15,8 +15,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -25,6 +29,8 @@ public class StandardScanner  {
 
     private final KeyColumnValueStoreManager manager;
     private final Set<KeyColumnValueStore> openStores;
+    private final ConcurrentMap<Object,StandardScannerExecutor> runningJobs;
+    private final AtomicLong jobCounter;
 
     public StandardScanner(final KeyColumnValueStoreManager manager) {
         Preconditions.checkArgument(manager!=null);
@@ -32,6 +38,8 @@ public class StandardScanner  {
 
         this.manager = manager;
         this.openStores = new HashSet<>(4);
+        this.runningJobs = new ConcurrentHashMap<>();
+        this.jobCounter = new AtomicLong(0);
     }
 
     public Builder build() {
@@ -39,9 +47,26 @@ public class StandardScanner  {
     }
 
     public void close() throws BackendException {
+        //Interrupt running jobs
+        for (StandardScannerExecutor exe : runningJobs.values()) {
+            if (exe.isCancelled() || exe.isDone()) continue;
+            exe.cancel(true);
+        }
         for (KeyColumnValueStore kcvs : openStores) kcvs.close();
     }
 
+    private void addJob(Object jobId, StandardScannerExecutor executor) {
+        for (Map.Entry<Object,StandardScannerExecutor> jobs : runningJobs.entrySet()) {
+            StandardScannerExecutor exe = jobs.getValue();
+            if (exe.isDone() || exe.isCancelled()) runningJobs.remove(jobId,executor);
+        }
+        runningJobs.putIfAbsent(jobId,executor);
+        Preconditions.checkArgument(runningJobs.get(jobId)==executor,"Another job with the same id is already running: %s",jobId);
+    }
+
+    public ScanResult getRunningJob(Object jobId) {
+        return runningJobs.get(jobId);
+    }
 
     public class Builder {
 
@@ -50,6 +75,8 @@ public class StandardScanner  {
         private TimestampProvider times;
         private Configuration configuration;
         private String dbName;
+        private Consumer<ScanMetrics> finishJob;
+        private Object jobId;
 
         private Builder() {
             numProcessingThreads = 1;
@@ -57,6 +84,8 @@ public class StandardScanner  {
             times = null;
             configuration = Configuration.EMPTY;
             dbName = null;
+            jobId = Long.valueOf(jobCounter.incrementAndGet());
+            finishJob = m -> {} ;
         }
 
         public Builder setNumProcessingThreads(int numThreads) {
@@ -78,6 +107,16 @@ public class StandardScanner  {
             return this;
         }
 
+        public Object getJobId() {
+            return jobId;
+        }
+
+        public Builder setJobId(Object id) {
+            Preconditions.checkArgument(id!=null,"Need to provide a valid id: %s",id);
+            this.jobId = id;
+            return this;
+        }
+
         public Builder setJob(ScanJob job) {
             Preconditions.checkArgument(job!=null);
             this.job = job;
@@ -90,7 +129,13 @@ public class StandardScanner  {
             return this;
         }
 
-        public Future<ScanMetrics> execute() throws BackendException {
+        public Builder setFinishJob(Consumer<ScanMetrics> finishJob) {
+            Preconditions.checkArgument(finishJob != null);
+            this.finishJob = finishJob;
+            return this;
+        }
+
+        public ScanResult execute() throws BackendException {
             Preconditions.checkArgument(job!=null,"Need to specify a job to execute");
             Preconditions.checkArgument(StringUtils.isNotBlank(dbName),"Need to specify a database to execute against");
             Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
@@ -118,8 +163,9 @@ public class StandardScanner  {
             KeyColumnValueStore kcvs = manager.openDatabase(dbName);
             openStores.add(kcvs);
             try {
-                StandardScannerExecutor executor = new StandardScannerExecutor(job, kcvs, storeTx,
+                StandardScannerExecutor executor = new StandardScannerExecutor(job, finishJob, kcvs, storeTx,
                         manager.getFeatures(), numProcessingThreads, configuration);
+                addJob(jobId,executor);
                 new Thread(executor).start();
                 return executor;
             } catch (Throwable e) {
@@ -127,6 +173,12 @@ public class StandardScanner  {
                 throw e;
             }
         }
+
+    }
+
+    public interface ScanResult extends Future<ScanMetrics> {
+
+        public ScanMetrics getIntermediateResult();
 
     }
 

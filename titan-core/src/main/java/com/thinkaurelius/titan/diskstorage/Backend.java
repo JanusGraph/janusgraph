@@ -346,6 +346,10 @@ public class Backend implements LockerProvider {
                 .setNumProcessingThreads(1);
     }
 
+    public StandardScanner.ScanResult getScanJobStatus(Object jobId) {
+        return scanner.getRunningJob(jobId);
+    }
+
     public Log getUserLog(String identifier) throws BackendException {
         return userLogManager.openLog(getUserLogName(identifier));
     }

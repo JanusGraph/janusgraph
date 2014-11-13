@@ -16,12 +16,13 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Runnable {
+class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements StandardScanner.ScanResult, Runnable {
 
     private static final Logger log =
             LoggerFactory.getLogger(StandardScannerExecutor.class);
@@ -31,6 +32,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     private static final int MAX_KEY_LENGTH = 128; //in bytes
 
     private final ScanJob job;
+    private final Consumer<ScanMetrics> finishJob;
     private final StoreFeatures storeFeatures;
     private final StoreTransaction storeTx;
     private final KeyColumnValueStore store;
@@ -39,6 +41,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     private final ScanMetrics metrics;
 
     private boolean hasCompleted = false;
+    private boolean interrupted = false;
 
     private List<SliceQuery> queries;
     private int numQueries;
@@ -46,10 +49,12 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     private DataPuller[] pullThreads;
 
 
-    StandardScannerExecutor(final ScanJob job, final KeyColumnValueStore store, final StoreTransaction storeTx,
+    StandardScannerExecutor(final ScanJob job, final Consumer<ScanMetrics> finishJob,
+                            final KeyColumnValueStore store, final StoreTransaction storeTx,
                             final StoreFeatures storeFeatures,
                             final int numProcessors, final Configuration config) throws BackendException {
         this.job = job;
+        this.finishJob = finishJob;
         this.store = store;
         this.storeTx = storeTx;
         this.storeFeatures = storeFeatures;
@@ -105,7 +110,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
         processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         try {
             SliceResult[] currentResults = new SliceResult[numQueries];
-            while (true) {
+            while (!interrupted) {
                 for (int i = 0; i < numQueries; i++) {
                     if (currentResults[i]!=null) continue;
                     BlockingQueue<SliceResult> queue = dataQueues.get(i);
@@ -133,17 +138,27 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
                 processor.submit(new RowProcessor(key, queryResults));
 
             }
-            processor.shutdown();
-            processor.awaitTermination(TIMEOUT_MS,TimeUnit.MILLISECONDS);
-            if (!processor.isTerminated()) throw new TemporaryBackendException("Timed out waiting for vertex processors");
+
             for (int i = 0; i < pullThreads.length; i++) {
                 pullThreads[i].join(10);
-                if (pullThreads[i].isAlive()) throw new TemporaryBackendException("Could not join data pulling thread");
+                if (pullThreads[i].isAlive()) {
+                    log.warn("Data pulling thread [{}] did not terminate. Forcing termination",i);
+                    pullThreads[i].interrupt();
+                }
             }
+
+            processor.shutdown();
+            processor.awaitTermination(TIMEOUT_MS,TimeUnit.MILLISECONDS);
+            if (!processor.isTerminated()) log.error("Processor did not terminate in time");
 
             cleanup();
             job.teardown(metrics);
-            set(metrics);
+            if (interrupted) {
+                setException(new InterruptedException("Scanner got interrupted"));
+            } else {
+                finishJob.accept(metrics);
+                set(metrics);
+            }
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
             setException(e);
@@ -153,9 +168,19 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
         }
     }
 
+    @Override
+    protected void interruptTask() {
+        interrupted = true;
+    }
+
     private void cleanup() throws BackendException {
         if (!hasCompleted) {
             hasCompleted = true;
+            for (int i = 0; i < pullThreads.length; i++) {
+                if (pullThreads[i].isAlive()) {
+                    pullThreads[i].interrupt();
+                }
+            }
             storeTx.rollback();
         }
     }
@@ -166,6 +191,11 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
         } catch (BackendException ex) {
             log.error("Encountered exception when trying to clean up after failure",ex);
         }
+    }
+
+    @Override
+    public ScanMetrics getIntermediateResult() {
+        return metrics;
     }
 
     private class RowProcessor implements Runnable {
@@ -215,14 +245,11 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
                     RecordIterator<Entry> entries = keyIter.getEntries();
                     if (!keyFilter.test(key)) continue;
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
-                    try {
-                        queue.put(new SliceResult(query,key,entryList));
-                    } catch (InterruptedException e) {
-                        log.error("Data-pulling thread interrupted while waiting on queue",e);
-                        break;
-                    }
+                    queue.put(new SliceResult(query, key, entryList));
                 }
                 finished = true;
+            } catch (InterruptedException e) {
+                log.error("Data-pulling thread interrupted while waiting on queue or data", e);
             } catch (Throwable e) {
                 log.error("Could not load data from storage: {}",e);
             } finally {

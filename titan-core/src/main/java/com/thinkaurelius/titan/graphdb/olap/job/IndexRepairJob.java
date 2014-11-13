@@ -71,6 +71,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
             TitanGraphIndex gindex = (TitanGraphIndex)index;
             Preconditions.checkArgument(gindex.isMixedIndex());
             Map<String, SchemaStatus> invalidKeyStatuses = new HashMap<>();
+            int acceptableFields = 0;
             for (PropertyKey key : gindex.getFieldKeys()) {
                 SchemaStatus status = gindex.getIndexStatus(key);
                 if (status!=SchemaStatus.DISABLED && !acceptableStatuses.contains(status)) {
@@ -78,10 +79,15 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     invalidKeyStatuses.put(key.name(), status);
                     log.warn("Index {} has key {} in an invalid status {}",index,key,status);
                 }
+                if (acceptableStatuses.contains(status)) acceptableFields++;
             }
             invalidIndexHint = String.format(
                     "The following index keys have invalid status: %s (status must be one of %s)",
                     Joiner.on(",").withKeyValueSeparator(" has status ").join(invalidKeyStatuses), acceptableStatuses);
+            if (isValidIndex && acceptableFields==0) {
+                isValidIndex = false;
+                invalidIndexHint = "The index does not contain any valid keys";
+            }
         }
         Preconditions.checkArgument(isValidIndex, "The index %s is in an invalid state and cannot be indexed. %s", indexName, invalidIndexHint);
         // TODO consider retrieving the current Job object and calling killJob() if !isValidIndex -- would be more efficient than throwing an exception on the first pair processed by each mapper

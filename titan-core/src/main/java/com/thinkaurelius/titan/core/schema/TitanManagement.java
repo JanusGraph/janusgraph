@@ -273,6 +273,33 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
     public void updateIndex(TitanIndex index, SchemaAction updateAction);
 
+
+    /**
+     * This method blocks and waits until the provided index has been updated across the entire Titan cluster
+     * and reached a stable state.
+     * This method will wait for the given period of time and throw an exception if the index did not reach a
+     * final state within that time. The method simply returns when the index has reached the final state
+     * prior to the time period expiring.
+     *
+     * This is a utility method to be invoked between two {@link #updateIndex(TitanIndex, SchemaAction)} calls
+     * to ensure that the previous update has successfully persisted.
+     *
+     * @param index
+     * @param time
+     * @param unit
+     */
+    public void awaitIndexUpdate(TitanIndex index, long time, TimeUnit unit);
+
+    /**
+     * If an index update job was triggered through {@link #updateIndex(TitanIndex, SchemaAction)} with schema actions
+     * {@link com.thinkaurelius.titan.core.schema.SchemaAction#REINDEX} or {@link com.thinkaurelius.titan.core.schema.SchemaAction#REMOVE_INDEX}
+     * then this method can be used to track the status of this asynchronous process.
+     *
+     * @param index
+     * @return A message that reflects the status of the index job
+     */
+    public String getIndexJobStatus(TitanIndex index);
+
     /*
     ##################### CLUSTER MANAGEMENT ##########################
      */
