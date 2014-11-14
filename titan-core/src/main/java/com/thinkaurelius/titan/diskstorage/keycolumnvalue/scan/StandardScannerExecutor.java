@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 /**
@@ -35,7 +34,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     private final StoreTransaction storeTx;
     private final KeyColumnValueStore store;
     private final int numProcessors;
-    private final Configuration configuration;
+    private final Configuration jobConfiguration;
     private final ScanMetrics metrics;
 
     private boolean hasCompleted = false;
@@ -48,13 +47,13 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
 
     StandardScannerExecutor(final ScanJob job, final KeyColumnValueStore store, final StoreTransaction storeTx,
                             final StoreFeatures storeFeatures,
-                            final int numProcessors, final Configuration config) throws BackendException {
+                            final int numProcessors, final Configuration jobConfiguration) throws BackendException {
         this.job = job;
         this.store = store;
         this.storeTx = storeTx;
         this.storeFeatures = storeFeatures;
         this.numProcessors = numProcessors;
-        this.configuration = config;
+        this.jobConfiguration = jobConfiguration;
 
         metrics = new StandardScanMetrics();
 
@@ -73,7 +72,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Run
     @Override
     public void run() {
         try {
-            job.setup(configuration,metrics);
+            job.setup(jobConfiguration,metrics);
 
             queries = job.getQueries();
             numQueries = queries.size();

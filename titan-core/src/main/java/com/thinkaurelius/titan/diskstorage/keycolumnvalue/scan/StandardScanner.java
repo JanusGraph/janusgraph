@@ -40,14 +40,16 @@ public class StandardScanner  {
         private ScanJob job;
         private int numProcessingThreads;
         private TimestampProvider times;
-        private Configuration configuration;
+        private Configuration graphConfiguration;
+        private Configuration jobConfiguration;
         private String dbName;
 
         private Builder() {
             numProcessingThreads = 1;
             job = null;
             times = null;
-            configuration = Configuration.EMPTY;
+            graphConfiguration = Configuration.EMPTY;
+            jobConfiguration = Configuration.EMPTY;
             dbName = null;
         }
 
@@ -76,9 +78,15 @@ public class StandardScanner  {
             return this;
         }
 
-        public Builder setConfiguration(Configuration config) {
+        public Builder setGraphConfiguration(Configuration config) {
             Preconditions.checkArgument(config!=null);
-            this.configuration = config;
+            this.graphConfiguration = config;
+            return this;
+        }
+
+        public Builder setJobConfiguration(Configuration config) {
+            Preconditions.checkArgument(config!=null);
+            this.jobConfiguration = config;
             return this;
         }
 
@@ -88,8 +96,8 @@ public class StandardScanner  {
             Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
             StandardBaseTransactionConfig.Builder txBuilder = new StandardBaseTransactionConfig.Builder();
             txBuilder.timestampProvider(times);
-            if (configuration!=Configuration.EMPTY) {
-                txBuilder.customOptions(configuration);
+            if (graphConfiguration!=Configuration.EMPTY) {
+                txBuilder.customOptions(graphConfiguration);
 
             }
 //            if (!txOptions.isEmpty()) {
@@ -110,7 +118,7 @@ public class StandardScanner  {
             KeyColumnValueStore kcvs = manager.openDatabase(dbName);
             try {
                 StandardScannerExecutor executor = new StandardScannerExecutor(job, kcvs, storeTx,
-                        manager.getFeatures(), numProcessingThreads, configuration);
+                        manager.getFeatures(), numProcessingThreads, jobConfiguration);
                 new Thread(executor).start();
                 return executor;
             } catch (Throwable e) {

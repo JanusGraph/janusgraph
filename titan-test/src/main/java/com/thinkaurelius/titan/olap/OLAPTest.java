@@ -61,7 +61,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         return scanner.build()
                 .setNumProcessingThreads(2)
                 .setStoreName(Backend.EDGESTORE_NAME)
-                .setConfiguration(config)
+                .setGraphConfiguration(config)
                 .setTimestampProvider(config.get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER))
                 .setJob(job)
                 .execute().get();

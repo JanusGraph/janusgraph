@@ -1,15 +1,18 @@
 package com.thinkaurelius.titan.hadoop.compat.h1;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import com.thinkaurelius.titan.hadoop.formats.cassandra.CassandraBinaryInputFormat;
+import com.thinkaurelius.titan.hadoop.scan.HadoopVertexScanMapper;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
-import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
+
+import java.io.IOException;
 
 public class Hadoop1Compat implements HadoopCompat {
 
@@ -38,18 +41,19 @@ public class Hadoop1Compat implements HadoopCompat {
     }
 
     @Override
-    public void incrementContextCounter(TaskInputOutputContext context, Enum<?> counter, long incr) {
-        context.getCounter(counter).increment(incr);
+    public long getContextCounter(TaskInputOutputContext context, String group, String name) {
+        return context.getCounter(group, name).getValue();
+    }
+
+    @Override
+    public void incrementContextCounter(TaskInputOutputContext context,
+                                        String group, String name, long incr) {
+        context.getCounter(group, name).increment(incr);
     }
 
     @Override
     public Configuration getContextConfiguration(TaskAttemptContext context) {
         return context.getConfiguration();
-    }
-
-    @Override
-    public long getCounter(MapReduceDriver counters, Enum<?> e) {
-        return counters.getCounters().findCounter(e).getValue();
     }
 
     @Override
@@ -70,5 +74,10 @@ public class Hadoop1Compat implements HadoopCompat {
     @Override
     public Configuration newImmutableConfiguration(Configuration base) {
         return new ImmutableConfiguration(base);
+    }
+
+    @Override
+    public ScanMetrics getMetrics(Counters c) {
+        return new Hadoop1CountersScanMetrics(c);
     }
 }

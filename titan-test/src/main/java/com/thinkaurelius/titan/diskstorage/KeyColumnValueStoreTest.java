@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -102,47 +104,16 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public void loadValues(String[][] values) throws BackendException {
-        loadValues(store,values);
+        KeyColumnValueStoreUtil.loadValues(store, tx, values);
     }
 
-    public void loadValues(KeyColumnValueStore store, String[][] values) throws BackendException {
-        loadValues(store, values, -1, -1);
-    }
-
-    public void loadValues(String[][] values, int shiftEveryNthRow,
-                           int shiftSliceLength) throws BackendException {
-        loadValues(store, values, shiftEveryNthRow, shiftSliceLength);
+    public void loadValues(String[][] values, int shiftEveryNthRow, int shiftSliceLength) throws BackendException {
+        KeyColumnValueStoreUtil.loadValues(store, tx, values, shiftEveryNthRow, shiftSliceLength);
     }
 
     public void loadValues(KeyColumnValueStore store, String[][] values, int shiftEveryNthRow,
                            int shiftSliceLength) throws BackendException {
-        for (int i = 0; i < values.length; i++) {
-
-            List<Entry> entries = new ArrayList<Entry>();
-            for (int j = 0; j < values[i].length; j++) {
-                StaticBuffer col;
-                if (0 < shiftEveryNthRow && 0 == i/* +1 */ % shiftEveryNthRow) {
-                    ByteBuffer bb = ByteBuffer.allocate(shiftSliceLength + 9);
-                    for (int s = 0; s < shiftSliceLength; s++) {
-                        bb.put((byte) -1);
-                    }
-                    bb.put(KeyValueStoreUtil.getBuffer(j + 1).asByteBuffer());
-                    bb.flip();
-                    col = StaticArrayBuffer.of(bb);
-
-                    // col = KeyValueStoreUtil.getBuffer(j + values[i].length +
-                    // 100);
-                } else {
-                    col = KeyValueStoreUtil.getBuffer(j);
-                }
-                entries.add(StaticArrayEntry.of(col, KeyValueStoreUtil
-                        .getBuffer(values[i][j])));
-            }
-            if (!entries.isEmpty()) {
-                store.mutate(KeyValueStoreUtil.getBuffer(i), entries,
-                        KeyColumnValueStore.NO_DELETIONS, tx);
-            }
-        }
+        KeyColumnValueStoreUtil.loadValues(store, tx, values, shiftEveryNthRow, shiftSliceLength);
     }
 
     /**
@@ -1199,11 +1170,6 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         Assert.assertEquals(expectedNumKeys, count);
     }
 
-    private static final String TOTAL_COUNT = "total";
-    private static final String KEY_COUNT = "keys";
-    private static final String SETUP_COUNT = "setup";
-    private static final String TEARDOWN_COUNT = "teardown";
-
     @Test
     public void scanTestWithSimpleJob() throws Exception {
         int keys = 1000, columns = 40;
@@ -1217,148 +1183,15 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         clopen();
 
         StandardScanner scanner = new StandardScanner(manager);
-        ScanMetrics result1 = runSimpleJob(scanner,
-                new SimpleScanJob(new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128))));
-        assertEquals(keys,result1.getCustom(KEY_COUNT));
-        assertEquals(keys*columns/4*3,result1.getCustom(TOTAL_COUNT));
-        assertEquals(1,result1.getCustom(SETUP_COUNT));
-        assertEquals(1, result1.getCustom(TEARDOWN_COUNT));
+        SimpleScanJobRunner runner = (ScanJob job, Configuration jobConf, ConfigNamespace rootNS, String rootNSName) -> runSimpleJob(scanner, job, jobConf);
 
-        ScanMetrics result2 = runSimpleJob(scanner,
-                new SimpleScanJob(new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128)).setLimit(5)));
-        assertEquals(keys,result2.getCustom(KEY_COUNT));
-        assertEquals(keys*5,result2.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result3 = runSimpleJob(scanner,
-                new SimpleScanJob(new SliceQuery(KeyValueStoreUtil.getBuffer(0),KeyValueStoreUtil.getBuffer(5))));
-        assertEquals(keys,result3.getCustom(KEY_COUNT));
-        assertEquals(keys*5,result3.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result4 = runSimpleJob(scanner,
-                new SimpleScanJob(ImmutableList.of(
-                        new SliceQuery(BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)).setLimit(1),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(0), KeyValueStoreUtil.getBuffer(5))
-                )));
-        assertEquals(keys,result4.getCustom(KEY_COUNT));
-        assertEquals(keys*6,result4.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result5 = runSimpleJob(scanner,
-                new SimpleScanJob(ImmutableList.of(
-                        new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128)).setLimit(1),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(2),KeyValueStoreUtil.getBuffer(4)),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(6),KeyValueStoreUtil.getBuffer(8)),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(10),KeyValueStoreUtil.getBuffer(20)).setLimit(4)
-                )));
-        assertEquals(keys,result5.getCustom(KEY_COUNT));
-        assertEquals(keys*9,result5.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result6 = runSimpleJob(scanner,
-                new SimpleScanJob(new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128)).setLimit(5),
-                        k -> KeyValueStoreUtil.getID(k)%2==0));
-        assertEquals(keys/2,result6.getCustom(KEY_COUNT));
-        assertEquals(keys/2*5,result6.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result7 = runSimpleJob(scanner,
-                new SimpleScanJob(ImmutableList.of(
-                        new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128)).setLimit(1),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(2),KeyValueStoreUtil.getBuffer(4)),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(31),KeyValueStoreUtil.getBuffer(35)),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(36),KeyValueStoreUtil.getBuffer(40)).setLimit(1)
-                )));
-        assertEquals(keys,result7.getCustom(KEY_COUNT));
-        assertEquals(keys*3+keys/2*5,result7.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result8 = runSimpleJob(scanner,
-                new SimpleScanJob(ImmutableList.of(
-                        new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128)).setLimit(1),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(31),KeyValueStoreUtil.getBuffer(35))
-                ),
-                k -> KeyValueStoreUtil.getID(k)%2==1 ));
-        assertEquals(keys/2,result8.getCustom(KEY_COUNT));
-        assertEquals(keys/2*5,result8.getCustom(TOTAL_COUNT));
-
-        ScanMetrics result9 = runSimpleJob(scanner,
-                new SimpleScanJob(ImmutableList.of(
-                        new SliceQuery(BufferUtil.zeroBuffer(128),BufferUtil.oneBuffer(128)).setLimit(1),
-                        new SliceQuery(KeyValueStoreUtil.getBuffer(31),KeyValueStoreUtil.getBuffer(35))
-                ),
-                        k -> KeyValueStoreUtil.getID(k)%2==0 ));
-        assertEquals(keys/2,result9.getCustom(KEY_COUNT));
-        assertEquals(keys/2,result9.getCustom(TOTAL_COUNT));
-
-        try {
-            runSimpleJob(scanner,
-                    new SimpleScanJob(ImmutableList.of(
-                            new SliceQuery(StaticArrayBuffer.of(new byte[]{(byte)2}),BufferUtil.oneBuffer(1)),
-                            new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(1))
-                    )));
-            fail();
-        } catch (Exception e) {
-            assertTrue(e.getCause() instanceof IllegalArgumentException);
-        }
-
+        SimpleScanJob.runBasicTests(keys, columns, runner);
     }
 
-    private static class SimpleScanJob implements ScanJob {
-
-        private final List<SliceQuery> qs;
-        private final Predicate<StaticBuffer> keyFilter;
-
-        private SimpleScanJob(List<SliceQuery> qs, Predicate<StaticBuffer> keyFilter) {
-            this.qs = qs;
-            this.keyFilter = keyFilter;
-        }
-
-        private SimpleScanJob(List<SliceQuery> qs) {
-            this(qs,k -> true);
-        }
-
-        private SimpleScanJob(SliceQuery q) {
-            this(ImmutableList.of(q),k -> true);
-        }
-
-        private SimpleScanJob(SliceQuery q, Predicate<StaticBuffer> keyFilter) {
-            this(ImmutableList.of(q),keyFilter);
-        }
-
-        public void setup(Configuration config, ScanMetrics metrics) {
-            assertNotNull(config);
-            metrics.incrementCustom(SETUP_COUNT);
-        }
-
-        public void teardown(ScanMetrics metrics) {
-            metrics.incrementCustom(TEARDOWN_COUNT);
-        }
-
-
-        @Override
-        public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-            assertNotNull(key);
-            assertTrue(keyFilter.test(key));
-            metrics.incrementCustom(KEY_COUNT);
-            assertNotNull(entries);
-            assertTrue(qs.size()>=entries.size());
-            for (SliceQuery q : qs) {
-                if (!entries.containsKey(q)) continue;
-                EntryList result = entries.get(q);
-                metrics.incrementCustom(TOTAL_COUNT,result.size());
-            }
-        }
-
-        @Override
-        public List<SliceQuery> getQueries() {
-            return qs;
-        }
-
-        @Override
-        public Predicate<StaticBuffer> getKeyFilter() {
-            return keyFilter;
-        }
-    }
-
-    private ScanMetrics runSimpleJob(StandardScanner scanner, ScanJob job) throws Exception {
+    private ScanMetrics runSimpleJob(StandardScanner scanner, ScanJob job, Configuration jobConf) throws BackendException, ExecutionException, InterruptedException {
         StandardScanner.Builder jobBuilder = scanner.build();
         jobBuilder.setStoreName(store.getName());
+        jobBuilder.setJobConfiguration(jobConf);
         jobBuilder.setNumProcessingThreads(2);
         jobBuilder.setTimestampProvider(times);
         jobBuilder.setJob(job);
