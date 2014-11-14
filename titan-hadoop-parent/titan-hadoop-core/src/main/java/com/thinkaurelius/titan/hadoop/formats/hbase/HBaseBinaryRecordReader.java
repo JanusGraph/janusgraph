@@ -2,28 +2,61 @@ package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.formats.util.TitanVertexDeserializer;
-import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
+import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
+import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 
-/**
- * (c) Matthias Broecheler (me@matthiasb.com)
- */
+public class HBaseBinaryRecordReader  extends RecordReader<StaticBuffer, Iterable<Entry>> {
 
-public class TitanHBaseHadoopGraph extends TitanVertexDeserializer {
+    private TableRecordReader reader;
 
-    public TitanHBaseHadoopGraph(TitanHadoopSetup setup) {
-        super(setup);
+    private final byte[] edgestoreFamilyBytes;
+
+    public HBaseBinaryRecordReader(final TableRecordReader reader, final byte[] edgestoreFamilyBytes) {
+        this.reader = reader;
+        this.edgestoreFamilyBytes = edgestoreFamilyBytes;
     }
 
-    public TinkerVertex readHadoopVertex(byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
-        return super.readHadoopVertex(new StaticArrayBuffer(key), new HBaseMapIterable(rowMap));
+    @Override
+    public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+        reader.initialize(inputSplit, taskAttemptContext);
+    }
+
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+        return reader.nextKeyValue();
+    }
+
+    @Override
+    public StaticBuffer getCurrentKey() throws IOException, InterruptedException {
+        return StaticArrayBuffer.of(reader.getCurrentKey().copyBytes());
+    }
+
+    @Override
+    public Iterable<Entry> getCurrentValue() throws IOException, InterruptedException {
+        return new HBaseMapIterable(reader.getCurrentValue().getMap().get(edgestoreFamilyBytes));
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.reader.close();
+    }
+
+    @Override
+    public float getProgress() {
+        return this.reader.getProgress();
     }
 
     private static class HBaseMapIterable implements Iterable<Entry> {
@@ -68,6 +101,5 @@ public class TitanHBaseHadoopGraph extends TitanVertexDeserializer {
             throw new UnsupportedOperationException();
         }
     }
-
 }
 

@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.hadoop.formats.hbase;
 
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.util.TitanGiraphInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.util.AbstractBinaryInputFormat;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
-
-import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
@@ -15,7 +15,6 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -27,18 +26,14 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * @author Marko A. Rodriguez (http://markorodriguez.com)
- */
-public class TitanHBaseInputFormat extends TitanGiraphInputFormat {
+public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(TitanHBaseInputFormat.class);
+    private static final Logger log = LoggerFactory.getLogger(HBaseBinaryInputFormat.class);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
-    private TitanHBaseHadoopGraph graph;
-    private byte[] edgestoreFamily;
     private TableRecordReader tableReader;
+    private byte[] edgestoreFamily;
+    private RecordReader<StaticBuffer, Iterable<Entry>> titanRecordReader;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -46,15 +41,17 @@ public class TitanHBaseInputFormat extends TitanGiraphInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, GiraphComputeVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        tableReader = (TableRecordReader) tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        return new TitanHBaseRecordReader(graph, tableReader, edgestoreFamily);
+    public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+        tableReader =
+                (TableRecordReader) tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+        titanRecordReader =
+                new HBaseBinaryRecordReader(tableReader, edgestoreFamily);
+        return titanRecordReader;
     }
 
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        this.graph = new TitanHBaseHadoopGraph(titanSetup);
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
         config.set(TableInputFormat.INPUT_TABLE, inputConf.get(HBaseStoreManager.HBASE_TABLE));
@@ -94,10 +91,6 @@ public class TitanHBaseInputFormat extends TitanGiraphInputFormat {
 
     public byte[] getEdgeStoreFamily() {
         return edgestoreFamily;
-    }
-
-    public TitanHBaseHadoopGraph getGraph() {
-        return graph;
     }
 
     private Filter getColumnFilter(SliceQuery query) {

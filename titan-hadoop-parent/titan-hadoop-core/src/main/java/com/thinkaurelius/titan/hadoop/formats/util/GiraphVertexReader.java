@@ -1,9 +1,5 @@
-package com.thinkaurelius.titan.hadoop.formats.cassandra.giraph;
+package com.thinkaurelius.titan.hadoop.formats.util;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.hadoop.formats.util.GiraphRecordReader;
-import com.thinkaurelius.titan.hadoop.formats.util.TitanVertexDeserializer;
 import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
 import org.apache.giraph.graph.Vertex;
 import org.apache.giraph.io.VertexReader;
@@ -14,11 +10,11 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class CassandraGiraphVertexReader extends VertexReader {
+public class GiraphVertexReader extends VertexReader {
 
     private final RecordReader<NullWritable, GiraphComputeVertex> recordReader;
 
-    public CassandraGiraphVertexReader(RecordReader<NullWritable, GiraphComputeVertex> recordReader) {
+    public GiraphVertexReader(RecordReader<NullWritable, GiraphComputeVertex> recordReader) {
         this.recordReader = recordReader;
     }
 
