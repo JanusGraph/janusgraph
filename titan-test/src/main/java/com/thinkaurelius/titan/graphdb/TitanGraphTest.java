@@ -1401,7 +1401,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 "Indexing Job completed for index");
         while (true) {
             String msg = mgmt.getIndexJobStatus(index);
-            System.out.println("Index ["+index+"] job status: " + msg);
+            System.out.println("Index ["+index.name()+(index instanceof RelationTypeIndex?"@"+((RelationTypeIndex)index).getType().name():"")+"] job status: " + msg);
             if (finishMsg.contains(msg)) break;
             try {
                 Thread.sleep(500);
