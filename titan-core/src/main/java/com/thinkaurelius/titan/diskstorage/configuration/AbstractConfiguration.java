@@ -58,12 +58,16 @@ public abstract class AbstractConfiguration implements Configuration {
     protected Map<String,Object> getSubset(ReadConfiguration config, ConfigNamespace umbrella, String... umbrellaElements) {
         verifyElement(umbrella);
 
-        String prefix = ConfigElement.getPath(umbrella,umbrellaElements);
+        String prefix = umbrella.isRoot() ? "" : ConfigElement.getPath(umbrella, umbrellaElements);
         Map<String,Object> result = Maps.newHashMap();
 
         for (String key : config.getKeys(prefix)) {
             Preconditions.checkArgument(key.startsWith(prefix));
-            String sub = key.substring(prefix.length()+1).trim();
+            // A zero-length prefix is a root.  A positive-length prefix
+            // is not a root and we should tack on an additional character
+            // to consume the dot between the prefix and the rest of the key.
+            int startIndex = umbrella.isRoot() ? prefix.length() : prefix.length() + 1;
+            String sub = key.substring(startIndex).trim();
             if (!sub.isEmpty()) {
                 result.put(sub,config.get(key,Object.class));
             }

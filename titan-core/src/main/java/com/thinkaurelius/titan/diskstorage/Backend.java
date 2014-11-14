@@ -334,7 +334,7 @@ public class Backend implements LockerProvider {
         return scanner.build()
                 .setStoreName(EDGESTORE_NAME)
                 .setTimestampProvider(configuration.get(TIMESTAMP_PROVIDER))
-                .setConfiguration(configuration)
+                .setGraphConfiguration(configuration)
                 .setNumProcessingThreads(1);
     }
 
@@ -342,7 +342,7 @@ public class Backend implements LockerProvider {
         return scanner.build()
                 .setStoreName(INDEXSTORE_NAME)
                 .setTimestampProvider(configuration.get(TIMESTAMP_PROVIDER))
-                .setConfiguration(configuration)
+                .setGraphConfiguration(configuration)
                 .setNumProcessingThreads(1);
     }
 

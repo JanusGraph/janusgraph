@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+
+import java.io.IOException;
 
 /**
  * This interface encapsulates both API and bytecode-level
@@ -49,14 +51,27 @@ public interface HadoopCompat {
 
     public String getMapredJarConfigKey();
 
+//    public boolean runVertexScan(String vertexScanJobClass, Configuration jobConf) throws IOException, ClassNotFoundException, InterruptedException;
+
     /**
      * Add {@code incr} to the counter designated by {@code counter} on {@code context}.
      *
      * @param context Hadoop task IO context containing counter state
-     * @param counter name of the counter
+     * @param group the Hadoop counter group (heading under which the counter is displayed)
+     * @param name the Hadoop counter name (the identifier for this counter within the group)
      * @param incr amount to add to the counter's current value
      */
-    public void incrementContextCounter(TaskInputOutputContext context, Enum<?> counter, long incr);
+    public void incrementContextCounter(TaskInputOutputContext context, String group, String name, long incr);
+
+    /**
+     * Return the current value of counter designated by {@code counter} on {@code context}.
+     *
+     * @param context Hadoop task IO context containing counter state
+     * @param group the Hadoop counter group (heading under which the counter is displayed)
+     * @param name the Hadoop counter name (the identifier for this counter within the group)
+     * @return current counter value
+     */
+    public long getContextCounter(TaskInputOutputContext context, String group, String name);
 
     /**
      * Get configuration from the supplied task attempt context and return it.
@@ -73,15 +88,6 @@ public interface HadoopCompat {
      * @return configuration on supplied {@code context}
      */
     public Configuration getJobContextConfiguration(JobContext context);
-
-    /**
-     * Get the value of the counter specified by {@code e} on {@code counters}.
-     *
-     * @param counters MRUnit test driver containing counter state
-     * @param e the name of the counter whose value should be retrieved
-     * @return current value
-     */
-    public long getCounter(MapReduceDriver counters, Enum<?> e);
 
     /**
      * Construct a {@link com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer}
@@ -111,4 +117,6 @@ public interface HadoopCompat {
      * @return an immutable forwarder class that encapsulates {@code base}
      */
     public Configuration newImmutableConfiguration(Configuration base);
+
+    public ScanMetrics getMetrics(Counters c);
 }

@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.diskstorage;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
@@ -32,6 +34,41 @@ public class KeyColumnValueStoreUtil {
         StaticBuffer c = stringToByteBuffer(col);
         StaticBuffer v = stringToByteBuffer(val);
         store.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
+    }
+
+    public static void loadValues(KeyColumnValueStore store, StoreTransaction tx, String[][] values) throws BackendException {
+        loadValues(store, tx, values, -1, -1);
+    }
+
+    public static void loadValues(KeyColumnValueStore store, StoreTransaction tx, String[][] values, int shiftEveryNthRow,
+                           int shiftSliceLength) throws BackendException {
+        for (int i = 0; i < values.length; i++) {
+
+            List<Entry> entries = new ArrayList<Entry>();
+            for (int j = 0; j < values[i].length; j++) {
+                StaticBuffer col;
+                if (0 < shiftEveryNthRow && 0 == i/* +1 */ % shiftEveryNthRow) {
+                    ByteBuffer bb = ByteBuffer.allocate(shiftSliceLength + 9);
+                    for (int s = 0; s < shiftSliceLength; s++) {
+                        bb.put((byte) -1);
+                    }
+                    bb.put(KeyValueStoreUtil.getBuffer(j + 1).asByteBuffer());
+                    bb.flip();
+                    col = StaticArrayBuffer.of(bb);
+
+                    // col = KeyValueStoreUtil.getBuffer(j + values[i].length +
+                    // 100);
+                } else {
+                    col = KeyValueStoreUtil.getBuffer(j);
+                }
+                entries.add(StaticArrayEntry.of(col, KeyValueStoreUtil
+                        .getBuffer(values[i][j])));
+            }
+            if (!entries.isEmpty()) {
+                store.mutate(KeyValueStoreUtil.getBuffer(i), entries,
+                        KeyColumnValueStore.NO_DELETIONS, tx);
+            }
+        }
     }
 
     // TODO rename as "bufferToString" after syntax errors are resolved

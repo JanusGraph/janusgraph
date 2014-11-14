@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.hadoop.compat.h2;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
@@ -40,19 +38,19 @@ public class Hadoop2Compat implements HadoopCompat {
     }
 
     @Override
-    public void incrementContextCounter(TaskInputOutputContext context, Enum<?> counter,
-            long incr) {
-        context.getCounter(counter).increment(incr);
+    public void incrementContextCounter(TaskInputOutputContext context,
+            String group, String name, long incr) {
+        context.getCounter(group, name).increment(incr);
+    }
+
+    @Override
+    public long getContextCounter(TaskInputOutputContext context, String group, String name) {
+        return context.getCounter(group, name).getValue();
     }
 
     @Override
     public Configuration getContextConfiguration(TaskAttemptContext context) {
         return context.getConfiguration();
-    }
-
-    @Override
-    public long getCounter(MapReduceDriver counters, Enum<?> e) {
-        return counters.getCounters().findCounter(e).getValue();
     }
 
     @Override
@@ -79,5 +77,10 @@ public class Hadoop2Compat implements HadoopCompat {
     @Override
     public Configuration newImmutableConfiguration(Configuration base) {
         return new ImmutableConfiguration(base);
+    }
+
+    @Override
+    public ScanMetrics getMetrics(Counters c) {
+        return new Hadoop2CountersScanMetrics(c);
     }
 }

@@ -36,6 +36,10 @@ import java.util.*;
  */
 public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
+    public IndexRepairJob() {
+        super();
+    }
+
     public IndexRepairJob(final String indexName, final String indexType) {
         super(indexName,indexType);
     }

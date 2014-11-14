@@ -27,9 +27,6 @@ import java.util.SortedMap;
  */
 public class CassandraBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<Entry>> {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(CassandraBinaryRecordReader.class);
-
     private ColumnFamilyRecordReader reader;
 
     public CassandraBinaryRecordReader(final ColumnFamilyRecordReader reader) {
