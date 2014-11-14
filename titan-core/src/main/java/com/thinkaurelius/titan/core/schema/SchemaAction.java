@@ -49,4 +49,21 @@ public enum SchemaAction {
         }
     }
 
+    public Set<SchemaStatus> getFailureStatus() {
+        switch(this) {
+            case REGISTER_INDEX: return ImmutableSet.of(SchemaStatus.DISABLED);
+            case REINDEX: return ImmutableSet.of(SchemaStatus.INSTALLED, SchemaStatus.DISABLED);
+            case ENABLE_INDEX: return ImmutableSet.of(SchemaStatus.INSTALLED, SchemaStatus.DISABLED);
+            case DISABLE_INDEX: return ImmutableSet.of();
+            case REMOVE_INDEX: return ImmutableSet.of(SchemaStatus.REGISTERED,SchemaStatus.INSTALLED,SchemaStatus.ENABLED);
+            default: throw new IllegalArgumentException("Action is invalid: " + this);
+        }
+    }
+
+    public boolean isApplicableStatus(SchemaStatus status) {
+        if (getFailureStatus().contains(status))
+            throw new IllegalArgumentException(String.format("Update action [%s] cannot be invoked for index with status [%s]",this,status));
+        return getApplicableStatus().contains(status);
+    }
+
 }

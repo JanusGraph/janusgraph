@@ -30,16 +30,18 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.configuration.TransactionalConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.internal.*;
+import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
+import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
+import com.thinkaurelius.titan.graphdb.olap.job.IndexRepairJob;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
@@ -69,6 +71,7 @@ import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Element;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +84,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
@@ -105,7 +109,6 @@ public class ManagementSystem implements TitanManagement {
     private final ModifiableConfiguration modifyConfig;
     private final UserModifiableConfiguration userConfig;
     private final SchemaCache schemaCache;
-
 
     private final StandardTitanTx transaction;
 
@@ -653,23 +656,21 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     @Override
-    public void updateIndex(TitanIndex index, SchemaAction updateAction) {
+    public boolean updateIndex(TitanIndex index, SchemaAction updateAction) {
+        Preconditions.checkArgument(index!=null,"Need to provide an index");
         Preconditions.checkArgument(updateAction!=null,"Need to provide update action");
-        Preconditions.checkArgument(updateAction!=SchemaAction.REMOVE_INDEX);
 
         TitanSchemaVertex schemaVertex = getSchemaVertex(index);
         Set<TitanSchemaVertex> dependentTypes;
         Set<PropertyKeyVertex> keySubset = ImmutableSet.of();
         if (index instanceof RelationTypeIndex) {
             dependentTypes = ImmutableSet.of((TitanSchemaVertex)((InternalRelationType)schemaVertex).getBaseType());
-            Preconditions.checkArgument(updateAction.getApplicableStatus().contains(schemaVertex.getStatus()),
-                    "Update action [%s] does not apply for index with status [%s]",updateAction,schemaVertex.getStatus());
+            if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) return false;
         } else if (index instanceof TitanGraphIndex) {
             IndexType indexType = schemaVertex.asIndexType();
             dependentTypes = Sets.newHashSet();
             if (indexType.isCompositeIndex()) {
-                Preconditions.checkArgument(updateAction.getApplicableStatus().contains(schemaVertex.getStatus()),
-                        "Update action [%s] does not apply for index with status [%s]",updateAction,schemaVertex.getStatus());
+                if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) return false;
                 for (PropertyKey key : ((TitanGraphIndex)index).getFieldKeys()) {
                     dependentTypes.add((PropertyKeyVertex)key);
                 }
@@ -680,11 +681,13 @@ public class ManagementSystem implements TitanManagement {
                 for (ParameterIndexField field : cindexType.getFieldKeys()) {
                     if (applicableStatus.contains(field.getStatus())) keySubset.add((PropertyKeyVertex)field.getFieldKey());
                 }
-                Preconditions.checkArgument(!keySubset.isEmpty(),"Update action [%s] does not apply to any fields for index [%s]",updateAction,index);
+                if (keySubset.isEmpty()) return false;
                 dependentTypes.addAll(keySubset);
             }
         } else throw new UnsupportedOperationException("Updates not supported for index: " + index);
 
+        IndexIdentifier indexId = new IndexIdentifier(index);
+        StandardScanner.Builder builder;
         switch(updateAction) {
             case REGISTER_INDEX:
                 setStatus(schemaVertex,SchemaStatus.INSTALLED,keySubset);
@@ -693,7 +696,14 @@ public class ManagementSystem implements TitanManagement {
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
                 break;
             case REINDEX:
-                throw new UnsupportedOperationException(updateAction + " requires a manual step: run a MapReduce reindex on index name \"" + index.name() + "\"");
+                builder = graph.getBackend().buildEdgeScanJob();
+                builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
+                builder.setJobId(indexId);
+                builder.setJob(VertexJobConverter.convert(graph,new IndexRepairJob(indexId.indexName,indexId.relationTypeName)));
+                try {
+                    builder.execute();
+                } catch (BackendException e) { throw new TitanException(e); }
+                break;
             case ENABLE_INDEX:
                 setStatus(schemaVertex,SchemaStatus.ENABLED,keySubset);
                 updatedTypes.add(schemaVertex);
@@ -706,9 +716,23 @@ public class ManagementSystem implements TitanManagement {
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.DISABLED, keySubset));
                 break;
             case REMOVE_INDEX:
-                throw new UnsupportedOperationException("Removing indexes is not yet supported");
+                if (index instanceof RelationTypeIndex) {
+                    builder = graph.getBackend().buildEdgeScanJob();
+                } else {
+                    TitanGraphIndex gindex = (TitanGraphIndex)index;
+                    if (gindex.isMixedIndex()) throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
+                    builder = graph.getBackend().buildGraphIndexScanJob();
+                }
+                builder.setFinishJob(indexId.getIndexJobFinisher());
+                builder.setJobId(indexId);
+                builder.setJob(new IndexRemoveJob(graph,indexId.indexName,indexId.relationTypeName));
+                try {
+                    builder.execute();
+                } catch (BackendException e) { throw new TitanException(e); }
+                break;
             default: throw new UnsupportedOperationException("Update action not supported: " + updateAction);
         }
+        return true;
     }
 
     private static class UpdateStatusTrigger implements Callable<Boolean> {
@@ -833,6 +857,88 @@ public class ManagementSystem implements TitanManagement {
         }
 
         for (PropertyKeyVertex prop : keys) prop.resetCache();
+    }
+
+    @Override
+    public String getIndexJobStatus(TitanIndex index) {
+        IndexIdentifier indexId = new IndexIdentifier(index);
+        StandardScanner.ScanResult result = graph.getBackend().getScanJobStatus(indexId);
+        if (result==null) return "There is currently no active indexing job for index";
+        if (result.isDone()) return "Indexing Job completed for index";
+        if (result.isCancelled()) return "Indexing Job was canceled for index";
+        ScanMetrics metrics = result.getIntermediateResult();
+        return String.format("Indexing Job processed %s records successfully and failed on %s records",
+                metrics.get(ScanMetrics.Metric.SUCCESS),metrics.get(ScanMetrics.Metric.FAILURE));
+    }
+
+    private static class IndexIdentifier {
+
+        private final String indexName;
+        private final String relationTypeName;
+        private final int hashcode;
+
+        private IndexIdentifier(TitanIndex index) {
+            Preconditions.checkArgument(index!=null);
+            indexName = index.name();
+            if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex)index).getType().name();
+            else relationTypeName = null;
+            Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
+            hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).hashCode();
+        }
+
+        private TitanIndex retrieve(ManagementSystem mgmt) {
+            if (relationTypeName==null) return mgmt.getGraphIndex(indexName);
+            else return mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName),indexName);
+        }
+
+        @Override
+        public String toString() {
+            String s =  indexName;
+            if (relationTypeName!=null) s+= "[" + relationTypeName + "]";
+            return s;
+        }
+
+        @Override
+        public int hashCode() {
+            return hashcode;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this==other) return true;
+            else if (other==null || !getClass().isInstance(other)) return false;
+            IndexIdentifier oth = (IndexIdentifier)other;
+            return indexName.equals(oth.indexName) &&
+                    (relationTypeName==oth.relationTypeName || (relationTypeName!=null && relationTypeName.equals(oth.relationTypeName)));
+        }
+
+        public Consumer<ScanMetrics> getIndexJobFinisher() {
+            return getIndexJobFinisher(null,null);
+        }
+
+        public Consumer<ScanMetrics> getIndexJobFinisher(final TitanGraph graph, final SchemaAction action) {
+            Preconditions.checkArgument((graph!=null && action!=null) || (graph==null && action==null));
+            return metrics -> {
+                try {
+                    if (metrics.get(ScanMetrics.Metric.FAILURE) == 0) {
+                        if (action!=null) {
+                            ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
+                            try {
+                                TitanIndex index = retrieve(mgmt);
+                                mgmt.updateIndex(index, action);
+                            } finally {
+                                mgmt.commit();
+                            }
+                        }
+                        LOGGER.info("Index update job successful for [{}]",IndexIdentifier.this.toString());
+                    } else {
+                        LOGGER.error("Index update job unsuccessful for [{}]. Check logs",IndexIdentifier.this.toString());
+                    }
+                } catch (Throwable e) {
+                    LOGGER.error("Error encountered when updating index after job finished ["+ IndexIdentifier.this.toString() + "]: ",e);
+                }
+            };
+        }
     }
 
 
@@ -1074,11 +1180,11 @@ public class ManagementSystem implements TitanManagement {
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
-        return Iterables.filter(Iterables.filter(types, clazz),new Predicate<T>() {
+        return Iterables.filter(Iterables.filter(types, clazz), new Predicate<T>() {
             @Override
             public boolean apply(@Nullable T t) {
                 //Filter out all relation type indexes
-                return ((InternalRelationType)t).getBaseType()==null;
+                return ((InternalRelationType) t).getBaseType() == null;
             }
         });
     }

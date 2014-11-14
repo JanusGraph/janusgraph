@@ -107,6 +107,8 @@ public class Backend implements LockerProvider {
     private KCVSConfiguration userConfig;
     private boolean hasAttemptedClose;
 
+    private final StandardScanner scanner;
+
     private final KCVSLogManager mgmtLogManager;
     private final KCVSLogManager txLogManager;
     private final LogManager userLogManager;
@@ -177,7 +179,7 @@ public class Backend implements LockerProvider {
         // to connsistentkey impl if none is specified
         Preconditions.checkNotNull(lockerCreator);
 
-
+        scanner = new StandardScanner(storeManager);
     }
 
 
@@ -328,8 +330,24 @@ public class Backend implements LockerProvider {
         }
     }
 
-    public StandardScanner getScanner() {
-        return new StandardScanner(storeManager);
+    public StandardScanner.Builder buildEdgeScanJob() {
+        return scanner.build()
+                .setStoreName(EDGESTORE_NAME)
+                .setTimestampProvider(configuration.get(TIMESTAMP_PROVIDER))
+                .setGraphConfiguration(configuration)
+                .setNumProcessingThreads(1);
+    }
+
+    public StandardScanner.Builder buildGraphIndexScanJob() {
+        return scanner.build()
+                .setStoreName(INDEXSTORE_NAME)
+                .setTimestampProvider(configuration.get(TIMESTAMP_PROVIDER))
+                .setGraphConfiguration(configuration)
+                .setNumProcessingThreads(1);
+    }
+
+    public StandardScanner.ScanResult getScanJobStatus(Object jobId) {
+        return scanner.getRunningJob(jobId);
     }
 
     public Log getUserLog(String identifier) throws BackendException {
@@ -514,6 +532,7 @@ public class Backend implements LockerProvider {
             txLogManager.close();
             userLogManager.close();
 
+            scanner.close();
             edgeStore.close();
             indexStore.close();
             idAuthority.close();
@@ -544,6 +563,7 @@ public class Backend implements LockerProvider {
             txLogManager.close();
             userLogManager.close();
 
+            scanner.close();
             edgeStore.close();
             indexStore.close();
             idAuthority.close();

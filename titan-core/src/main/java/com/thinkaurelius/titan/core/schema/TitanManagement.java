@@ -270,8 +270,19 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      *
      * @param index
      * @param updateAction
+     * @return true, if an update operation was triggered or false, if the action did not have any impact
      */
-    public void updateIndex(TitanIndex index, SchemaAction updateAction);
+    public boolean updateIndex(TitanIndex index, SchemaAction updateAction);
+
+    /**
+     * If an index update job was triggered through {@link #updateIndex(TitanIndex, SchemaAction)} with schema actions
+     * {@link com.thinkaurelius.titan.core.schema.SchemaAction#REINDEX} or {@link com.thinkaurelius.titan.core.schema.SchemaAction#REMOVE_INDEX}
+     * then this method can be used to track the status of this asynchronous process.
+     *
+     * @param index
+     * @return A message that reflects the status of the index job
+     */
+    public String getIndexJobStatus(TitanIndex index);
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################

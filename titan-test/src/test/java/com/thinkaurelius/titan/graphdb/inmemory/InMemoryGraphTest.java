@@ -65,7 +65,7 @@ public class InMemoryGraphTest extends TitanGraphTest {
     public void simpleLogTestWithFailure() {}
 
     @Override
-    public void testIndexUpdatesWithoutReindex() {}
+    public void testIndexUpdatesWithReindexAndRemove() {}
 
     @Override
     public void testIndexUpdateSyncWithMultipleInstances() {}

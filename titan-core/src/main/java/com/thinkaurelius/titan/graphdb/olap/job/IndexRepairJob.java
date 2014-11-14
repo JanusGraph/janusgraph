@@ -75,6 +75,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
             TitanGraphIndex gindex = (TitanGraphIndex)index;
             Preconditions.checkArgument(gindex.isMixedIndex());
             Map<String, SchemaStatus> invalidKeyStatuses = new HashMap<>();
+            int acceptableFields = 0;
             for (PropertyKey key : gindex.getFieldKeys()) {
                 SchemaStatus status = gindex.getIndexStatus(key);
                 if (status!=SchemaStatus.DISABLED && !acceptableStatuses.contains(status)) {
@@ -82,10 +83,15 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     invalidKeyStatuses.put(key.name(), status);
                     log.warn("Index {} has key {} in an invalid status {}",index,key,status);
                 }
+                if (acceptableStatuses.contains(status)) acceptableFields++;
             }
             invalidIndexHint = String.format(
                     "The following index keys have invalid status: %s (status must be one of %s)",
                     Joiner.on(",").withKeyValueSeparator(" has status ").join(invalidKeyStatuses), acceptableStatuses);
+            if (isValidIndex && acceptableFields==0) {
+                isValidIndex = false;
+                invalidIndexHint = "The index does not contain any valid keys";
+            }
         }
         Preconditions.checkArgument(isValidIndex, "The index %s is in an invalid state and cannot be indexed. %s", indexName, invalidIndexHint);
         // TODO consider retrieving the current Job object and calling killJob() if !isValidIndex -- would be more efficient than throwing an exception on the first pair processed by each mapper
@@ -168,20 +174,20 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     @Override
     public void getQueries(QueryContainer queries) {
         if (index instanceof RelationTypeIndex) {
-            queries.addQuery().types(indexRelationTypeName).direction(Direction.OUT).relations();
+            queries.addQuery().setName("data").types(indexRelationTypeName).direction(Direction.OUT).relations();
         } else if (index instanceof TitanGraphIndex) {
             IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
             switch (indexType.getElement()) {
                 case PROPERTY:
-                    addIndexSchemaConstraint(queries.addQuery(),indexType).properties();
+                    addIndexSchemaConstraint(queries.addQuery().setName("data"),indexType).properties();
                     break;
                 case VERTEX:
-                    queries.addQuery().properties();
-                    queries.addQuery().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).edges();
+                    queries.addQuery().setName("data").properties();
+                    queries.addQuery().setName("label").type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).edges();
                     break;
                 case EDGE:
                     indexType.hasSchemaTypeConstraint();
-                    addIndexSchemaConstraint(queries.addQuery().direction(Direction.OUT),indexType).edges();
+                    addIndexSchemaConstraint(queries.addQuery().setName("data").direction(Direction.OUT),indexType).edges();
                     break;
                 default: throw new AssertionError("Unexpected category: " + indexType.getElement());
             }

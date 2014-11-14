@@ -4,6 +4,7 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.util.ManagementUtil;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.internal.Order;
@@ -1186,7 +1187,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testIndexUpdatesWithoutReindex() throws InterruptedException {
+    public void testIndexUpdatesWithReindexAndRemove() throws InterruptedException {
         clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
@@ -1197,6 +1198,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
         PropertyKey sensor = mgmt.makePropertyKey("sensor").dataType(Double.class).cardinality(Cardinality.LIST).make();
         finishSchema();
+
+        RelationTypeIndex pindex, eindex;
+        TitanGraphIndex gindex;
 
         //Add some sensor & friend data
         TitanVertex v = tx.addVertex();
@@ -1244,30 +1248,56 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         tx.commit();
         //Should not yet be able to enable since not yet registered
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
+        gindex = mgmt.getGraphIndex("bySensorReading");
         try {
-            mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
+            mgmt.updateIndex(pindex, SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         try {
-            mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
+            mgmt.updateIndex(eindex, SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         try {
-            mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
+            mgmt.updateIndex(gindex, SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
-        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.REGISTER_INDEX);
-        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.REGISTER_INDEX);
-        mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(pindex, SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(eindex, SchemaAction.REGISTER_INDEX);
+        mgmt.updateIndex(gindex, SchemaAction.REGISTER_INDEX);
         mgmt.commit();
 
 
-        Thread.sleep(10000L); // why is this necessary?
+        ManagementUtil.awaitVertexIndexUpdate(graph,"byTime","sensor", 10, TimeUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph,"bySensorReading", 5, TimeUnit.SECONDS);
+
         finishSchema();
-        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"), SchemaAction.ENABLE_INDEX);
-        mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"), SchemaAction.ENABLE_INDEX);
-        mgmt.updateIndex(mgmt.getGraphIndex("bySensorReading"), SchemaAction.ENABLE_INDEX);
+        //Verify new status
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
+        gindex = mgmt.getGraphIndex("bySensorReading");
+        assertEquals(SchemaStatus.REGISTERED, pindex.getIndexStatus());
+        assertEquals(SchemaStatus.REGISTERED, eindex.getIndexStatus());
+        assertEquals(SchemaStatus.REGISTERED, gindex.getIndexStatus(gindex.getFieldKeys()[0]));
+
+        //Simply enable without reindex
+        mgmt.updateIndex(eindex, SchemaAction.ENABLE_INDEX);
+        //Reindex the other two
+        mgmt.updateIndex(pindex, SchemaAction.REINDEX);
+        waitForReindex(pindex, mgmt);
+        mgmt.updateIndex(gindex, SchemaAction.REINDEX);
+        waitForReindex(gindex, mgmt);
         finishSchema();
+
+        //Every index should now be enabled
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
+        gindex = mgmt.getGraphIndex("bySensorReading");
+        assertEquals(SchemaStatus.ENABLED, eindex.getIndexStatus());
+        assertEquals(SchemaStatus.ENABLED, pindex.getIndexStatus());
+        assertEquals(SchemaStatus.ENABLED, gindex.getIndexStatus(gindex.getFieldKeys()[0]));
+
 
         //Add some more sensor & friend data
         newTx();
@@ -1279,10 +1309,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v.addEdge("friend", o, "time", i);
         }
         newTx();
-        //Use indexes now but only see new data
+        //Use indexes now but only see new data for property and graph index
         v = (TitanVertex)tx.v(v);
         evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", decr),
-                PROPERTY,0,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+                PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", decr),
                 PROPERTY,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", decr),
@@ -1294,12 +1324,89 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
                 EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
-                ElementCategory.VERTEX,0,new boolean[]{true,true},"bySensorReading");
+                ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v105"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
         evaluateQuery(tx.query().has("name","v205"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
 
+        finishSchema();
+        eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
+        mgmt.updateIndex(eindex, SchemaAction.REINDEX);
+        waitForReindex(eindex,mgmt);
+
+        finishSchema();
+        newTx();
+        //It should now have all the answers
+        v = (TitanVertex)tx.v(v);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", decr),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", decr),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        gindex = mgmt.getGraphIndex("bySensorReading");
+        mgmt.updateIndex(pindex,SchemaAction.DISABLE_INDEX);
+        mgmt.updateIndex(gindex,SchemaAction.DISABLE_INDEX);
+        mgmt.commit();
+        tx.commit();
+
+        ManagementUtil.awaitVertexIndexUpdate(graph,"byTime","sensor", 10, TimeUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph,"bySensorReading", 5, TimeUnit.SECONDS);
+
+        finishSchema();
+
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        gindex = mgmt.getGraphIndex("bySensorReading");
+        assertEquals(SchemaStatus.DISABLED, pindex.getIndexStatus());
+        assertEquals(SchemaStatus.DISABLED, gindex.getIndexStatus(gindex.getFieldKeys()[0]));
+        finishSchema();
+
+        newTx();
+        //The two disabled indexes should force full scans
+        v = (TitanVertex)tx.v(v);
+        evaluateQuery(v.query().keys("sensor").interval("time", 1, 5).orderBy("time", decr),
+                PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 101, 105).orderBy("time", decr),
+                PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().keys("sensor").interval("time", 201, 205).orderBy("time", decr),
+                PROPERTY,4,1,new boolean[]{false,false},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 1, 5).orderBy("time", decr),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 101, 105).orderBy("time", decr),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
+                EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
+//        evaluateQuery(tx.query().has("name","v5"),
+//                ElementCategory.VERTEX,1,new boolean[]{false,true},"bySensorReading");
+//        evaluateQuery(tx.query().has("name","v105"),
+//                ElementCategory.VERTEX,1,new boolean[]{false,true},"bySensorReading");
+//        evaluateQuery(tx.query().has("name","v205"),
+//                ElementCategory.VERTEX,1,new boolean[]{false,true},"bySensorReading");
+
+//        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+//        gindex = mgmt.getGraphIndex("bySensorReading");
+//        mgmt.updateIndex(pindex,SchemaAction.REMOVE_INDEX);
+//        waitForReindex(pindex, mgmt);
+//        mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX);
+//        waitForReindex(gindex,mgmt);
+
+
+    }
+
+    public static void waitForReindex(TitanIndex index, TitanManagement mgmt) {
+        Set<String> finishMsg = ImmutableSet.of("There is currently no active indexing job for index",
+                "Indexing Job completed for index");
+        while (true) {
+            String msg = mgmt.getIndexJobStatus(index);
+            System.out.println("Index ["+index.name()+(index instanceof RelationTypeIndex?"@"+((RelationTypeIndex)index).getType().name():"")+"] job status: " + msg);
+            if (finishMsg.contains(msg)) break;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) { throw new RuntimeException(e); }
+        }
     }
 
     @Test
