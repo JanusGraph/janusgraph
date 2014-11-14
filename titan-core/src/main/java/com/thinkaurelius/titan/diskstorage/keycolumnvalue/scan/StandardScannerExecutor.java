@@ -102,6 +102,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
         }  catch (Throwable e) {
             log.error("Exception trying to setup the job:", e);
             cleanupSilent();
+            job.teardown(metrics);
             setException(e);
             return;
         }
@@ -153,6 +154,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
 
             cleanup();
             job.teardown(metrics);
+
             if (interrupted) {
                 setException(new InterruptedException("Scanner got interrupted"));
             } else {
@@ -161,6 +163,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
             }
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
+            job.teardown(metrics);
             setException(e);
         } finally {
             processor.shutdownNow();

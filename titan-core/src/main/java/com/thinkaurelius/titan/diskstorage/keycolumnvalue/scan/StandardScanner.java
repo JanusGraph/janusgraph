@@ -58,7 +58,9 @@ public class StandardScanner  {
     private void addJob(Object jobId, StandardScannerExecutor executor) {
         for (Map.Entry<Object,StandardScannerExecutor> jobs : runningJobs.entrySet()) {
             StandardScannerExecutor exe = jobs.getValue();
-            if (exe.isDone() || exe.isCancelled()) runningJobs.remove(jobId,executor);
+            if (exe.isDone() || exe.isCancelled()) {
+                runningJobs.remove(jobs.getKey(),exe);
+            }
         }
         runningJobs.putIfAbsent(jobId,executor);
         Preconditions.checkArgument(runningJobs.get(jobId)==executor,"Another job with the same id is already running: %s",jobId);

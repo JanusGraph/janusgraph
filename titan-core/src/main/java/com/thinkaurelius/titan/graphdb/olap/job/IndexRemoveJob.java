@@ -22,6 +22,7 @@ import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
@@ -46,6 +47,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
     private IndexSerializer indexSerializer;
     private long graphIndexId;
+    private IDManager idManager;
 
     public IndexRemoveJob() {
         super();
@@ -66,6 +68,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public void setup(Configuration config, ScanMetrics metrics) {
         graph.initializeGraph(config);
         indexSerializer = graph.get().getIndexSerializer();
+        idManager = graph.get().getIDManager();
         try {
             super.setup(graph.get(), config, metrics);
         } catch (Throwable e) {
@@ -145,9 +148,14 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     @Override
     public Predicate<StaticBuffer> getKeyFilter() {
         if (isGlobalGraphIndex()) {
-
             assert graphIndexId>0;
             return (k -> indexSerializer.getIndexIdFromKey(k)==graphIndexId);
-        } else return (k -> true);
+        } else {
+            return buffer -> {
+                long vertexId = idManager.getKeyID(buffer);
+                if (IDManager.VertexIDType.Invisible.is(vertexId)) return false;
+                else return true;
+            };
+        }
     }
 }

@@ -470,7 +470,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                         for (InternalRelationType candidate : type.getRelationIndexes()) {
                             //Filter out those that don't apply
                             if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) continue;
-                            if (candidate.getStatus()!= SchemaStatus.ENABLED) continue;
+                            if (!candidate.equals(type) && candidate.getStatus()!= SchemaStatus.ENABLED) continue;
 
                             boolean supportsOrder = orders.isEmpty()?true:orders.getCommonOrder()==candidate.getSortOrder();
                             int currentOrder = 0;
