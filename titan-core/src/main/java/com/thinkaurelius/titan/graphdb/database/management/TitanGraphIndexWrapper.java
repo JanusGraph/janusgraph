@@ -81,4 +81,11 @@ public class TitanGraphIndexWrapper implements TitanGraphIndex {
     public boolean isMixedIndex() {
         return index.isMixedIndex();
     }
+
+    @Override
+    public String toString() {
+        return name();
+    }
+
 }
+

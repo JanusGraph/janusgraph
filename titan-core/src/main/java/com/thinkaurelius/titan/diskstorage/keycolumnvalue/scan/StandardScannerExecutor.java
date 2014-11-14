@@ -100,7 +100,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
                 pullThreads[pos]=addDataPuller(queries.get(pos),storeTx);
             }
         }  catch (Throwable e) {
-            log.error("Exception trying to setup the job: {}", e);
+            log.error("Exception trying to setup the job:", e);
             cleanupSilent();
             setException(e);
             return;
@@ -176,9 +176,11 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     private void cleanup() throws BackendException {
         if (!hasCompleted) {
             hasCompleted = true;
-            for (int i = 0; i < pullThreads.length; i++) {
-                if (pullThreads[i].isAlive()) {
-                    pullThreads[i].interrupt();
+            if (pullThreads!=null) {
+                for (int i = 0; i < pullThreads.length; i++) {
+                    if (pullThreads[i].isAlive()) {
+                        pullThreads[i].interrupt();
+                    }
                 }
             }
             storeTx.rollback();

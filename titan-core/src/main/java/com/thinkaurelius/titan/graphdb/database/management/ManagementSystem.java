@@ -656,7 +656,7 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     @Override
-    public void updateIndex(TitanIndex index, SchemaAction updateAction) {
+    public boolean updateIndex(TitanIndex index, SchemaAction updateAction) {
         Preconditions.checkArgument(index!=null,"Need to provide an index");
         Preconditions.checkArgument(updateAction!=null,"Need to provide update action");
 
@@ -665,14 +665,12 @@ public class ManagementSystem implements TitanManagement {
         Set<PropertyKeyVertex> keySubset = ImmutableSet.of();
         if (index instanceof RelationTypeIndex) {
             dependentTypes = ImmutableSet.of((TitanSchemaVertex)((InternalRelationType)schemaVertex).getBaseType());
-            Preconditions.checkArgument(updateAction.getApplicableStatus().contains(schemaVertex.getStatus()),
-                    "Update action [%s] does not apply for index with status [%s]",updateAction,schemaVertex.getStatus());
+            if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) return false;
         } else if (index instanceof TitanGraphIndex) {
             IndexType indexType = schemaVertex.asIndexType();
             dependentTypes = Sets.newHashSet();
             if (indexType.isCompositeIndex()) {
-                Preconditions.checkArgument(updateAction.getApplicableStatus().contains(schemaVertex.getStatus()),
-                        "Update action [%s] does not apply for index with status [%s]",updateAction,schemaVertex.getStatus());
+                if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) return false;
                 for (PropertyKey key : ((TitanGraphIndex)index).getFieldKeys()) {
                     dependentTypes.add((PropertyKeyVertex)key);
                 }
@@ -683,7 +681,7 @@ public class ManagementSystem implements TitanManagement {
                 for (ParameterIndexField field : cindexType.getFieldKeys()) {
                     if (applicableStatus.contains(field.getStatus())) keySubset.add((PropertyKeyVertex)field.getFieldKey());
                 }
-                Preconditions.checkArgument(!keySubset.isEmpty(),"Update action [%s] does not apply to any fields for index [%s]",updateAction,index);
+                if (keySubset.isEmpty()) return false;
                 dependentTypes.addAll(keySubset);
             }
         } else throw new UnsupportedOperationException("Updates not supported for index: " + index);
@@ -734,6 +732,7 @@ public class ManagementSystem implements TitanManagement {
                 break;
             default: throw new UnsupportedOperationException("Update action not supported: " + updateAction);
         }
+        return true;
     }
 
     private static class UpdateStatusTrigger implements Callable<Boolean> {
@@ -861,48 +860,14 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public void awaitIndexUpdate(TitanIndex index, long time, TimeUnit unit) {
-        TimestampProvider times = graph.getConfiguration().getTimestampProvider();
-        Timepoint end = times.getTime().add(new StandardDuration(time,unit));
-        boolean isStable = false;
-        while (times.getTime().compareTo(end)<0) {
-            TitanManagement mgmt = graph.openManagement();
-            try {
-                if (index instanceof RelationTypeIndex) {
-                    RelationTypeIndex rindex = (RelationTypeIndex)index;
-                    RelationTypeIndex idx = mgmt.getRelationIndex(mgmt.getRelationType(rindex.getType().name())
-                            ,rindex.name());
-                    isStable = idx.getIndexStatus().isStable();
-                } else if (index instanceof TitanGraphIndex) {
-                    TitanGraphIndex idx = mgmt.getGraphIndex(index.name());
-                    isStable = true;
-                    for (PropertyKey key : idx.getFieldKeys()) {
-                        if (!idx.getIndexStatus(key).isStable()) isStable = false;
-                    }
-                }
-            } finally {
-                mgmt.rollback();
-            }
-            if (isStable) break;
-            try {
-                times.sleepFor(new StandardDuration(500, TimeUnit.MILLISECONDS));
-            } catch (InterruptedException e) {
-
-            }
-        }
-        if (!isStable) throw new TitanException("Index did not stabilize within the given amount of time. For sufficiently long " +
-                "wait periods this is most likely caused by a failed/incorrectly shut down Titan instance or a lingering transaction.");
-    }
-
-    @Override
     public String getIndexJobStatus(TitanIndex index) {
         IndexIdentifier indexId = new IndexIdentifier(index);
         StandardScanner.ScanResult result = graph.getBackend().getScanJobStatus(indexId);
-        if (result==null) return "There is currently no active indexing job for index: " + index;
-        if (result.isDone()) return "Indexing Job completed for index: " + index;
-        if (result.isCancelled()) return "Indexing Job was canceled for index: " + index;
+        if (result==null) return "There is currently no active indexing job for index";
+        if (result.isDone()) return "Indexing Job completed for index";
+        if (result.isCancelled()) return "Indexing Job was canceled for index";
         ScanMetrics metrics = result.getIntermediateResult();
-        return String.format("Indexing Job [%s] processed %s records successfully and failed on % records",index,
+        return String.format("Indexing Job processed %s records successfully and failed on %s records",
                 metrics.get(ScanMetrics.Metric.SUCCESS),metrics.get(ScanMetrics.Metric.FAILURE));
     }
 
