@@ -799,11 +799,21 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private void checkExpectedClientVersion() {
-        if (!Version.CURRENT.equals(ElasticSearchConstants.ES_VERSION_EXPECTED)) {
-            log.warn("ES client version {} does not match the version with which Titan was compiled {}.  This might cause problems.",
-                    Version.CURRENT, ElasticSearchConstants.ES_VERSION_EXPECTED);
-        } else {
-            log.debug("Found expected ES client version: {} (OK)", Version.CURRENT);
+        /*
+         * This is enclosed in a catch block to prevent an unchecked exception
+         * from killing the startup thread.  This check is just advisory -- the
+         * most it does is log a warning -- so there's no reason to allow it to
+         * emit a exception and potentially block graph startup.
+         */
+        try {
+            if (!Version.CURRENT.toString().equals(ElasticSearchConstants.ES_VERSION_EXPECTED)) {
+                log.warn("ES client version ({}) does not match the version with which Titan was compiled ({}).  This might cause problems.",
+                        Version.CURRENT, ElasticSearchConstants.ES_VERSION_EXPECTED);
+            } else {
+                log.debug("Found ES client version matching Titan's compile-time version: {} (OK)", Version.CURRENT);
+            }
+        } catch (RuntimeException e) {
+            log.warn("Unable to check expected ES client version", e);
         }
     }
 }
