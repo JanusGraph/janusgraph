@@ -5,6 +5,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.util.ManagementUtil;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.internal.Order;
@@ -1264,9 +1266,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             mgmt.updateIndex(gindex, SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
-        mgmt.updateIndex(pindex, SchemaAction.REGISTER_INDEX);
+        //This call is not strictly necessary - we are just doing it to ensure that a redundant call doesn't mess anything up
         mgmt.updateIndex(eindex, SchemaAction.REGISTER_INDEX);
-        mgmt.updateIndex(gindex, SchemaAction.REGISTER_INDEX);
         mgmt.commit();
 
 
@@ -1292,7 +1293,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         gindex = mgmt.getGraphIndex("bySensorReading");
         mgmt.updateIndex(gindex, SchemaAction.REINDEX);
         finishSchema();
-        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"));
+        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"));
         waitForReindex(graph, mgmt -> mgmt.getGraphIndex("bySensorReading"));
 
         //Every index should now be enabled
@@ -1398,23 +1399,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         gindex = mgmt.getGraphIndex("bySensorReading");
         mgmt.updateIndex(pindex,SchemaAction.REMOVE_INDEX);
         mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX);
+        ManagementSystem.IndexJobStatus pmetrics = (ManagementSystem.IndexJobStatus) mgmt.getIndexJobStatus(pindex);
+        ManagementSystem.IndexJobStatus gmetrics = (ManagementSystem.IndexJobStatus) mgmt.getIndexJobStatus(gindex);
         finishSchema();
-        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime"));
+        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"));
         waitForReindex(graph, mgmt -> mgmt.getGraphIndex("bySensorReading"));
-
-
+        assertEquals(30,pmetrics.getMetrics().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+        assertEquals(30,gmetrics.getMetrics().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
     public static void waitForReindex(TitanGraph graph, Function<TitanManagement,TitanIndex> indexRetriever) {
-        Set<String> finishMsg = ImmutableSet.of("There is currently no active indexing job for index",
-                "Indexing Job completed for index");
         while (true) {
             TitanManagement mgmt = graph.openManagement();
             try {
                 TitanIndex index = indexRetriever.apply(mgmt);
-                String msg = mgmt.getIndexJobStatus(index);
-                System.out.println("Index [" + index.name() + (index instanceof RelationTypeIndex ? "@" + ((RelationTypeIndex) index).getType().name() : "") + "] job status: " + msg);
-                if (finishMsg.contains(msg)) break;
+                JobStatus status = mgmt.getIndexJobStatus(index);
+                System.out.println("Index [" + index.name() + (index instanceof RelationTypeIndex ? "@" + ((RelationTypeIndex) index).getType().name() : "") + "] job status: " + status);
+                if (status.isDone()) break;
             } finally {
                 mgmt.rollback();
             }

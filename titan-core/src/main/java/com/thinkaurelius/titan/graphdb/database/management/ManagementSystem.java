@@ -9,20 +9,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
-import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
-import com.thinkaurelius.titan.core.schema.SchemaAction;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.core.schema.TitanConfiguration;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.core.schema.TitanSchemaElement;
-import com.thinkaurelius.titan.core.schema.TitanSchemaType;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
+import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -860,15 +847,41 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public String getIndexJobStatus(TitanIndex index) {
+    public IndexJobStatus getIndexJobStatus(TitanIndex index) {
         IndexIdentifier indexId = new IndexIdentifier(index);
         StandardScanner.ScanResult result = graph.getBackend().getScanJobStatus(indexId);
-        if (result==null) return "There is currently no active indexing job for index";
-        if (result.isDone()) return "Indexing Job completed for index";
-        if (result.isCancelled()) return "Indexing Job was canceled for index";
-        ScanMetrics metrics = result.getIntermediateResult();
-        return String.format("Indexing Job processed %s records successfully and failed on %s records",
-                metrics.get(ScanMetrics.Metric.SUCCESS),metrics.get(ScanMetrics.Metric.FAILURE));
+        JobStatus.State state = JobStatus.State.UNKNOWN;
+        ScanMetrics metrics = null;
+        if (result!=null) {
+            if (result.isDone()) state = JobStatus.State.DONE;
+            else if (result.isCancelled()) state = JobStatus.State.FAILED;
+            else state = JobStatus.State.RUNNING;
+            metrics = result.getIntermediateResult();
+        }
+        return new IndexJobStatus(state,metrics);
+    }
+
+    public static class IndexJobStatus extends JobStatus {
+
+        private final ScanMetrics metrics;
+
+        public IndexJobStatus(State state, ScanMetrics metrics) {
+            super(state, metrics==null?0:metrics.get(ScanMetrics.Metric.SUCCESS));
+            this.metrics = metrics;
+        }
+
+        public ScanMetrics getMetrics() {
+            return metrics;
+        }
+
+        @Override
+        public String toString() {
+            String msg = "Job status: " + getState().toString() + ". ";
+            if (metrics!=null) msg += String.format("Processed %s records successfully and failed on %s records.",
+                    metrics.get(ScanMetrics.Metric.SUCCESS),metrics.get(ScanMetrics.Metric.FAILURE));
+            return msg;
+        }
+
     }
 
     private static class IndexIdentifier {

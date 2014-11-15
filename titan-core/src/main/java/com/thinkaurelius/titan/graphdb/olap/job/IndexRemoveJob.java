@@ -45,6 +45,8 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
 
     private final VertexJobConverter.GraphProvider graph = new VertexJobConverter.GraphProvider();
 
+    public static final String DELETED_RECORDS_COUNT = "deletes";
+
     private IndexSerializer indexSerializer;
     private long graphIndexId;
     private IDManager idManager;
@@ -109,7 +111,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 deletions = new ArrayList<>(size);
                 entries.values().forEach(e -> deletions.addAll(e));
             }
-
+            metrics.incrementCustom(DELETED_RECORDS_COUNT,deletions.size());
             if (isRelationTypeIndex()) {
                 mutator.mutateEdges(key, KCVSCache.NO_ADDITIONS, deletions);
             } else {

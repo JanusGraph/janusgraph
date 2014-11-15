@@ -3,13 +3,11 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.util.ManagementUtil;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.schema.SchemaAction;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
@@ -959,16 +957,15 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         addVertex(defTime,defText,defHeight);
         tx.commit();
         //Should not yet be able to enable since not yet registered
-        try {
-            mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
-            fail();
-        } catch (IllegalArgumentException e) {}
-//        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX);
+        assertFalse(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
+        //This call is redundant and just here to make sure it doesn't mess anything up
+        assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX));
         mgmt.commit();
 
-        Thread.sleep(2000);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, TimeUnit.SECONDS);
+
         finishSchema();
-        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
+        assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
         finishSchema();
 
         //Add more data
@@ -999,10 +996,16 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         tx.commit();
         mgmt.commit();
 
-        Thread.sleep(2000);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, TimeUnit.SECONDS);
+
         finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
         finishSchema();
+
+        index = mgmt.getGraphIndex("theIndex");
+        for (PropertyKey key : index.getFieldKeys()) {
+            assertEquals(SchemaStatus.ENABLED, index.getIndexStatus(key));
+        }
 
         //Add more data
         addVertex(defTime,defText,defHeight);
@@ -1020,6 +1023,45 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
         newTx();
+        finishSchema();
+
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REINDEX);
+        mgmt.commit();
+
+        TitanGraphTest.waitForReindex(graph, mgmt -> mgmt.getGraphIndex("theIndex"));
+
+        finishSchema();
+
+        //All the data should now be in the index
+        clopen(settings);
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
+                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("time",5),
+                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().interval("height",100,200),
+                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
+                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
+                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+
+        assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"),SchemaAction.DISABLE_INDEX));
+        tx.commit();
+        mgmt.commit();
+
+        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, TimeUnit.SECONDS);
+        finishSchema();
+
+        index = mgmt.getGraphIndex("theIndex");
+        for (PropertyKey key : index.getFieldKeys()) {
+            assertEquals(SchemaStatus.DISABLED, index.getIndexStatus(key));
+        }
+
+        newTx();
+        //This now requires a full graph scan
+        evaluateQuery(tx.query().has("time",5),
+                ElementCategory.VERTEX,5,new boolean[]{false,true});
+
     }
 
     private void addVertex(int time, String text, double height) {

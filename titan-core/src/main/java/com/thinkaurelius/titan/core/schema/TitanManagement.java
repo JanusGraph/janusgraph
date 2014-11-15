@@ -282,7 +282,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param index
      * @return A message that reflects the status of the index job
      */
-    public String getIndexJobStatus(TitanIndex index);
+    public JobStatus getIndexJobStatus(TitanIndex index);
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################
