@@ -14,8 +14,10 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 
 import java.util.ArrayList;
@@ -28,15 +30,17 @@ import java.util.function.Predicate;
  */
 public class VertexJobConverter implements ScanJob {
 
-    private static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
+    protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
 
-    private final GraphProvider graph;
+    public static final String GHOST_VERTEX_COUNT = "ghost-vertices";
+
+    protected final GraphProvider graph;
     private final VertexScanJob job;
 
-    private StandardTitanTx tx;
+    protected StandardTitanTx tx;
     private IDManager idManager;
 
-    private VertexJobConverter(TitanGraph graph, VertexScanJob job) {
+    protected VertexJobConverter(TitanGraph graph, VertexScanJob job) {
         Preconditions.checkArgument(job!=null);
         this.graph = new GraphProvider();
         this.graph.setGraph(graph);
@@ -81,7 +85,13 @@ public class VertexJobConverter implements ScanJob {
 
     @Override
     public void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics) {
-        TitanVertex vertex = tx.getInternalVertex(getVertexId(key));
+        long vertexId = getVertexId(key);
+        assert entries.get(VERTEX_EXISTS_QUERY)!=null;
+        if (isGhostVertex(vertexId, entries.get(VERTEX_EXISTS_QUERY))) {
+            metrics.incrementCustom(GHOST_VERTEX_COUNT);
+            return;
+        }
+        TitanVertex vertex = tx.getInternalVertex(vertexId);
         Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                 "The bounding transaction is not configured correctly");
         PreloadedVertex v = (PreloadedVertex)vertex;
@@ -89,6 +99,14 @@ public class VertexJobConverter implements ScanJob {
             v.addToQueryCache(entry.getKey(),entry.getValue());
         }
         job.process(v,metrics);
+    }
+
+    protected boolean isGhostVertex(long vertexId, EntryList firstEntries) {
+        if (idManager.isPartitionedVertex(vertexId) && !idManager.isCanonicalVertexId(vertexId)) return false;
+
+        RelationCache relCache = tx.getEdgeSerializer().parseRelation(
+                firstEntries.get(0),true,tx);
+        return relCache.typeId != BaseKey.VertexExists.longId();
     }
 
     @Override
@@ -116,7 +134,7 @@ public class VertexJobConverter implements ScanJob {
         };
     }
 
-    private long getVertexId(StaticBuffer key) {
+    protected long getVertexId(StaticBuffer key) {
         return idManager.getKeyID(key);
     }
 

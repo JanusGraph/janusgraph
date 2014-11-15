@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
+import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -30,6 +31,7 @@ import static org.junit.Assert.*;
 import static com.thinkaurelius.titan.testutil.TitanAssert.*;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -137,7 +139,52 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             }
         });
         assertEquals(numV,result2.getCustom(VERTEX_COUNT));
+    }
 
+    @Test
+    public void removeGhostVertices() throws Exception {
+        Vertex v1 = tx.addVertex("person");
+        v1.property("name","stephen");
+        Vertex v2 = tx.addVertex("person");
+        v1.property("name","marko");
+        Vertex v3 = tx.addVertex("person");
+        v1.property("name","dan");
+        v2.addEdge("knows",v3);
+        v1.addEdge("knows",v2);
+        newTx();
+        long v3id = getId(v3);
+        long v1id = getId(v1);
+        assertTrue(v3id>0);
+
+        v3 = tx.v(v3id);
+        assertNotNull(v3);
+        v3.remove();
+        tx.commit();
+
+        TitanTransaction xx = graph.buildTransaction().checkExternalVertexExistence(false).start();
+        v3 = xx.v(v3id);
+        assertNotNull(v3);
+        v1 = xx.v(v1id);
+        assertNotNull(v1);
+        v3.property("name","deleted");
+        v3.addEdge("knows",v1);
+        xx.commit();
+
+        newTx();
+        try {
+            v3 = tx.v(v3id);
+            fail();
+        } catch (NoSuchElementException e) {}
+        v1 = tx.v(v1id);
+        assertNotNull(v1);
+        assertEquals(v3id,v1.in("knows").next().id());
+        tx.commit();
+        mgmt.commit();
+
+        ScanMetrics result = executeScanJob(new GhostVertexRemover(graph));
+        assertEquals(1,result.getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
+        assertEquals(2,result.getCustom(GhostVertexRemover.REMOVED_RELATION_COUNT));
+        assertEquals(0,result.getCustom(GhostVertexRemover.SKIPPED_GHOST_LIMIT_COUNT));
     }
 
     @Test
