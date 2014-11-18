@@ -1,0 +1,53 @@
+[[hadoop-s3]]
+S3 Integration
+--------------
+
+HDFS provides the `FileSystem` API. There are other `FileSystem` implementations such as `LocalFileSystem`, `S3FileSystem` and `NativeS3FileSystem`. Faunus is able to leverage these file systems like another other file system in Hadoop.
+
+Interacting with S3 via the Gremlin REPL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,gremlin]
+----
+gremlin> import org.apache.hadoop.fs.s3native.*
+...
+gremlin> id = // AWS_ACCESS_KEY_ID as a String
+==>*******
+gremlin> key = // AWS_SECRET_ACCESS_KEY as a String
+==>*******
+gremlin> s3fs = new NativeS3FileSystem()
+==>org.apache.hadoop.fs.s3native.NativeS3FileSystem@7433c78b
+gremlin> s3fs.initialize(new URI("s3n://${id}:${key}@aurelius-data"), new Configuration())
+==>null
+gremlin> s3fs.ls('/friendster')
+==>rwxrwxrwx   0 _SUCCESS
+==>rwxrwxrwx   0 (D) _logs
+==>rwxrwxrwx   71400361 part-m-00000
+==>rwxrwxrwx   70471619 part-m-00001
+==>rwxrwxrwx   69870835 part-m-00002
+==>rwxrwxrwx   69452656 part-m-00003
+...
+gremlin> s3fs.ls('/friendster')._().count()
+==>962
+----
+
+At this point, `s3fs` is like any other file system and can be used to store and retrive data. In fact, it is possible to set up S3 as the source and sink of Faunus jobs (see http://wiki.apache.org/hadoop/AmazonS3[Hadoop's S3 documentation] for more information). Given that http://gremlin.tinkerpop.com[Gremlin] provides full access to the Java/Groovy API, connecting to arbitrary `FileSystem` implementations is relatively simple. 
+
+Parallel Uploading and Downloading
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The parallel copy tool `DistCp` can be used from the command line to execute a parallel copy from any source filesystem to any destination filesystem. An example is provided below.
+
+[source,bourne]
+----
+$ hadoop distcp s3n://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@aurelius-data/friendster hdfs://ec2-204-236-188-243.us-west-1.compute.amazonaws.com:8020/user/ubuntu/
+13/04/25 14:32:38 INFO tools.DistCp: srcPaths=[s3n://*****:*****@aurelius-data/friendster]
+13/04/25 14:32:38 INFO tools.DistCp: destPath=hdfs://ec2-204-236-188-243.us-west-1.compute.amazonaws.com:8020/user/ubuntu
+13/04/25 14:32:45 INFO tools.DistCp: sourcePathsCount=966
+13/04/25 14:32:45 INFO tools.DistCp: filesToCopyCount=963
+13/04/25 14:32:45 INFO tools.DistCp: bytesToCopyCount=60.0g
+13/04/25 14:32:46 INFO mapred.JobClient: Running job: job_201304251356_0003
+13/04/25 14:32:47 INFO mapred.JobClient:  map 0% reduce 0%
+13/04/25 14:33:28 INFO mapred.JobClient:  map 1% reduce 0%
+...
+----
