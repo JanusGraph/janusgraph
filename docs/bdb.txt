@@ -24,9 +24,9 @@ Since BerkeleyDB runs in the same JVM as Titan, connecting the two only requires
 
 [source,java]
 TitanGraph g = TitanFactory.build()
-	.set("storage.backend", "berkeleyje");
-	.set("storage.directory", "/tmp/graph");
-	.open()
+	.set("storage.backend", "berkeleyje")
+	.set("storage.directory", "/tmp/graph")
+	.open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration. 
 

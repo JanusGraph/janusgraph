@@ -32,7 +32,7 @@ Now, you can create an HBase TitanGraph as follows:
 [source,java]
 TitanGraph g = TitanFactory.build()
 	.set("storage.backend","hbase")
-	.open()
+	.open();
 
 Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
@@ -49,7 +49,7 @@ For example, suppose we have a running HBase cluster with a ZooKeeper quorum com
 TitanGraph g = TitanFactory.build()
 	.set("storage.backend","hbase")
 	.set("storage.hostname","77.77.77.77,77.77.77.78,77.77.77.79")
-	.open()
+	.open();
 
 `storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 

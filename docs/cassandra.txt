@@ -35,7 +35,7 @@ Now, you can create a Cassandra TitanGraph as follows::
 TitanGraph g = TitanFactory.build()
 	.set("storage.backend","cassandra")
 	.set("storage.hostname","127.0.0.1")
-	.open()
+	.open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
@@ -52,7 +52,7 @@ For example, suppose we have a running Cassandra cluster where one of the machin
 TitanGraph g = TitanFactory.build()
 	.set("storage.backend","cassandra")
 	.set("storage.hostname","77.77.77.77")
-	.open()
+	.open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
