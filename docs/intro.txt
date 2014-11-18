@@ -159,7 +159,7 @@ _______
 Unbeknownst to the Gods, there still lived one Titan. This Titan can not be seen, has no name, and is only apparent in the fact that reality exists. Upon the shoulders of this lost Titan, all of reality hangs together in an undulating web of relations.
 _______
 
-Titan can be downloaded from the http://TODO/[Downloads] section of the project repository.  Once retrieved and unpacked, a http://gremlin.tinkerpop.com[Gremlin] terminal can be started. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and differs slightly from the main http://www.tinkerpop.com[TinkerPop] Gremlin distribution in that is comes preloaded with Titan-specific `imports` and helper methods. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
+Titan can be downloaded from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads] section of the project repository.  Once retrieved and unpacked, a http://gremlin.tinkerpop.com[Gremlin] terminal can be started. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and differs slightly from the main http://www.tinkerpop.com[TinkerPop] Gremlin distribution in that is comes preloaded with Titan-specific `imports` and helper methods. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
 
 
 // The default shell highlighting is so awful that I'd rather
