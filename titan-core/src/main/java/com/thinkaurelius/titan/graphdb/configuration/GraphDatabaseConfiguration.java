@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.StandardIndexProvider;
+import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.tinkerpop.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
@@ -360,7 +362,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<String>(STORAGE_NS,"backend",
             "The primary persistence provider used by Titan.  This is required.  It should be set one of " +
             "Titan's built-in shorthand names for its standard storage backends " +
-            "(shorthands: " + Joiner.on(", ").join(Backend.getRegisteredStoreManagers().keySet()) + ") " +
+            "(shorthands: " + Joiner.on(", ").join(StandardStoreManager.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party StoreManager implementation.",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_BACKEND_KEY = "backend";
@@ -790,7 +792,7 @@ public class GraphDatabaseConfiguration {
             "\"" + INDEX_NS.getName() + "\" and \"backend\" is unique among appearances." +
             "Similar to the storage backend, this should be set to one of " +
             "Titan's built-in shorthand names for its standard index backends " +
-            "(shorthands: " + Joiner.on(", ").join(Backend.REGISTERED_INDEX_PROVIDERS.keySet()) + ") " +
+            "(shorthands: " + Joiner.on(", ").join(StandardIndexProvider.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party IndexProvider implementation.",
             ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
 //    public static final String INDEX_BACKEND_KEY = "backend";

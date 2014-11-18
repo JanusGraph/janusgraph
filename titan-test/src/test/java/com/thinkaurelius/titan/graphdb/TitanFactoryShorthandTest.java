@@ -16,6 +16,6 @@ public class TitanFactoryShorthandTest {
     @Test
     public void testTitanFactoryShorthand() {
         TitanGraph g = TitanFactory.open("inmemory");
-        g.shutdown();
+        g.close();
     }
 }
