@@ -26,7 +26,7 @@ public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
      */
     @Test
     public void testOpenAndQueryCompatibleDatabaseFiles() throws Exception {
-        String compatManifest = Joiner.on(File.separator).join("target", "classes", "compat.csv");
+        String compatManifest = Joiner.on(File.separator).join("target", "test-classes", "compat.csv");
         BufferedReader compatReader = null;
         int lineNumber = 0;
         int tested = 0;

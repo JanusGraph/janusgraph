@@ -855,7 +855,7 @@
                                                 <filtering>true</filtering>
                                             </resource>
                                         </resources>
-                                        <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                        <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
                                     </configuration>
                                 </execution>
                                 <execution>

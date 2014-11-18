@@ -2,8 +2,10 @@ package com.thinkaurelius.titan.pkgtest;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.*;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +21,7 @@ import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanFactory;
 
@@ -34,7 +37,9 @@ public abstract class AbstractTitanAssemblyIT {
 
         try {
             props = new Properties();
-            props.load(TitanFactory.class.getClassLoader().getResourceAsStream("target.properties"));
+            java.io.FileReader fr = new FileReader(Joiner.on(File.separator).join(new String[] { "target", "test-classes", "target.properties" }));;
+            props.load(fr);
+            fr.close();
         } catch (IOException e) {
             throw new AssertionError(e);
         }
