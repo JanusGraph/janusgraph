@@ -800,7 +800,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<String> INDEX_DIRECTORY = new ConfigOption<String>(INDEX_NS,"directory",
             "Directory to store index data locally",
-            ConfigOption.Type.GLOBAL_OFFLINE, String.class);
+            ConfigOption.Type.MASKABLE, String.class);
 
     public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(INDEX_NS,"index-name",
             "Name of the index if required by the indexing backend",
