@@ -599,8 +599,18 @@ public class Backend implements LockerProvider {
         STORE_SHORTHAND_OPTIONS = Maps.immutableEnumMap(m);
     }
 
-    public static ImmutableMap<StandardStoreManager, ConfigOption<?>> getStoreShorthandOptions() {
-        return STORE_SHORTHAND_OPTIONS;
+    public static ConfigOption<?> getOptionForShorthand(String shorthand) {
+        if (null == shorthand)
+            return null;
+
+        shorthand = shorthand.toLowerCase();
+
+        for (StandardStoreManager m : STORE_SHORTHAND_OPTIONS.keySet()) {
+            if (m.getShorthands().contains(shorthand))
+                return STORE_SHORTHAND_OPTIONS.get(m);
+        }
+
+        return null;
     }
 
     public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{

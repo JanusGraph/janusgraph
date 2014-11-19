@@ -54,11 +54,11 @@ public enum StandardStoreManager {
         ALL_MANAGER_CLASSES = ImmutableMap.copyOf(tempClassMap);
     }
 
-    public static final List<String> getAllShorthands() {
+    public static List<String> getAllShorthands() {
         return ALL_SHORTHANDS;
     }
 
-    public static final Map<String, String> getAllManagerClasses() {
+    public static Map<String, String> getAllManagerClasses() {
         return ALL_MANAGER_CLASSES;
     }
 }

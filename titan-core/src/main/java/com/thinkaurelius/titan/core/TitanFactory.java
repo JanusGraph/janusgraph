@@ -176,7 +176,7 @@ public class TitanFactory {
             BaseConfiguration config = new BaseConfiguration();
             ModifiableConfiguration writeConfig = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(config), BasicConfiguration.Restriction.NONE);
             writeConfig.set(STORAGE_BACKEND,backend);
-            ConfigOption option = Backend.getStoreShorthandOptions().get(backend.toLowerCase());
+            ConfigOption option = Backend.getOptionForShorthand(backend);
             if (option==null) {
                 Preconditions.checkArgument(secondArg==null);
             } else if (option==STORAGE_DIRECTORY || option==STORAGE_CONF_FILE) {
