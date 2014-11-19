@@ -70,6 +70,11 @@
         <httpcomponents.version>4.2.5</httpcomponents.version>
         <hadoop1.version>1.2.1</hadoop1.version>
         <hadoop2.version>2.2.0</hadoop2.version>
+        <hbase094.version>0.94.25</hbase094.version>
+        <hbase096.core.version>0.96.2</hbase096.core.version>
+        <hbase096.version>${hbase096.core.version}-hadoop2</hbase096.version>
+        <hbase098.core.version>0.98.8</hbase098.core.version>
+        <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.2.3</jackson2.version>
         <!-- ES depends on Lucene.  This ES dependency can affect the

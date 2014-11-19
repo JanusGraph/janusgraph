@@ -50,14 +50,14 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
-            <version>0.98.3-hadoop2</version>
+            <version>${hbase098.version}</version>
             <optional>true</optional>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>0.98.3-hadoop2</version>
+            <version>${hbase098.version}</version>
             <optional>true</optional>
             <scope>test</scope>
         </dependency>

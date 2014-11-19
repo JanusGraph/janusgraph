@@ -24,13 +24,13 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>0.98.2-hadoop2</version>
+            <version>${hbase098.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
             <!-- Need the -server artifact for hbase.mapreduce.TableInputFormat (Faunus) -->
-            <version>0.98.2-hadoop2</version>
+            <version>${hbase098.version}</version>
         </dependency>
     </dependencies>
 
