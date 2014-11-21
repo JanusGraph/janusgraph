@@ -420,8 +420,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         @Override
         public InternalVertex get(Long vertexid) {
-            Preconditions.checkNotNull(vertexid);
-            Preconditions.checkArgument(vertexid > 0);
+            Preconditions.checkArgument(vertexid!=null && vertexid > 0, "Invalid vertex id: %s",vertexid);
             Preconditions.checkArgument(idInspector.isSchemaVertexId(vertexid) || idInspector.isUserVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
 
             byte lifecycle = ElementLifeCycle.Loaded;

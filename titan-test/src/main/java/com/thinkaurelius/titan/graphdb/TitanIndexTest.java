@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
+import com.thinkaurelius.titan.graphdb.query.vertex.VertexLongList;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testcategory.BrittleTests;
@@ -34,6 +35,8 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
@@ -107,12 +110,6 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public void testGraphOfTheGods() {
         GraphOfTheGodsFactory.load(graph);
         assertGraphOfTheGods(graph);
-        TitanVertex h = (TitanVertex) Iterables.getOnlyElement(graph.query().has("name", "hercules").vertices());
-        Iterable<TitanVertex> vertices = h.query().labels("battled").direction(Direction.OUT).
-                orderBy("time",com.tinkerpop.gremlin.structure.Order.decr).limit(10).vertices();
-        for (TitanVertex v : vertices) {
-            System.out.println(v.property("name"));
-        }
     }
 
 
@@ -123,6 +120,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod",h.label());
         assertCount(5, h.bothE());
+        gotg.tx().commit();
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * An implementation of {@link VertexListInternal} that stores only the vertex ids
@@ -124,6 +125,7 @@ public class VertexLongList implements VertexListInternal {
 
             @Override
             public TitanVertex next() {
+                if (!hasNext()) throw new NoSuchElementException();
                 pos++;
                 return get(pos);
             }
