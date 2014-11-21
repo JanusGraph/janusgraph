@@ -107,7 +107,14 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public void testGraphOfTheGods() {
         GraphOfTheGodsFactory.load(graph);
         assertGraphOfTheGods(graph);
+        TitanVertex h = (TitanVertex) Iterables.getOnlyElement(graph.query().has("name", "hercules").vertices());
+        Iterable<TitanVertex> vertices = h.query().labels("battled").direction(Direction.OUT).
+                orderBy("time",com.tinkerpop.gremlin.structure.Order.decr).limit(10).vertices();
+        for (TitanVertex v : vertices) {
+            System.out.println(v.property("name"));
+        }
     }
+
 
     public static void assertGraphOfTheGods(TitanGraph gotg) {
         assertCount(12, gotg.V());

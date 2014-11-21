@@ -2475,6 +2475,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
        assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
+       assertEquals(1, v.query().labels("knows").direction(IN).adjacent(vs[11]).count());
+       assertEquals(2, v.query().labels("knows").direction(BOTH).adjacent(vs[11]).count());
        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
        assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
        assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());

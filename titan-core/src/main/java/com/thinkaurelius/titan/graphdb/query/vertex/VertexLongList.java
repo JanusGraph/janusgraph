@@ -25,6 +25,10 @@ public class VertexLongList implements VertexListInternal {
     private LongArrayList vertices;
     private boolean sorted;
 
+    public VertexLongList(StandardTitanTx tx) {
+        this(tx,new LongArrayList(10),true);
+    }
+
     public VertexLongList(StandardTitanTx tx, LongArrayList vertices, boolean sorted) {
         assert !sorted || AbstractLongListUtil.isSorted(vertices);
         this.tx = tx;
