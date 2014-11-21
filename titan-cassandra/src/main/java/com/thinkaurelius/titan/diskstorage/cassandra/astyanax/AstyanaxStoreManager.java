@@ -235,6 +235,15 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             "Astyanax's connection pool \"retryMaxDelaySlice\" parameter",
             ConfigOption.Type.MASKABLE, ConnectionPoolConfigurationImpl.DEFAULT_RETRY_SUSPEND_WINDOW);
 
+    public static final ConfigOption<String> LOCAL_DATACENTER =
+            new ConfigOption<String>(ASTYANAX_NS, "local-datacenter",
+            "The name of the local or closest Cassandra datacenter.  When set and not whitespace, " +
+            "this value will be passed into ConnectionPoolConfigurationImpl.setLocalDatacenter. " +
+            "When unset or set to whitespace, setLocalDatacenter will not be invoked.",
+            /* It's between either LOCAL or MASKABLE.  MASKABLE could be useful for cases where
+               all the Titan instances are closest to the same Cassandra DC. */
+            ConfigOption.Type.MASKABLE, String.class);
+
     private final String clusterName;
 
     private final AstyanaxContext<Keyspace> keyspaceContext;
@@ -246,6 +255,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     private final int retryMaxDelaySlice;
     private final int retrySuspendWindow;
     private final RetryBackoffStrategy retryBackoffStrategy;
+
+    private final String localDatacenter;
 
     private final Map<String, AstyanaxKeyColumnValueStore> openStores;
 
@@ -259,6 +270,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         retrySuspendWindow = config.get(RETRY_SUSPEND_WINDOW);
         retryBackoffStrategy = getRetryBackoffStrategy(config.get(RETRY_BACKOFF_STRATEGY));
         retryPolicy = getRetryPolicy(config.get(RETRY_POLICY));
+
+        localDatacenter = config.has(LOCAL_DATACENTER) ?
+                config.get(LOCAL_DATACENTER) : "";
 
         final int maxConnsPerHost = config.get(MAX_CONNECTIONS_PER_HOST);
 
@@ -469,6 +483,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             log.debug("Custom RetryBackoffStrategy {}", cpool.getRetryBackoffStrategy());
         } else {
             log.debug("Default RetryBackoffStrategy {}", cpool.getRetryBackoffStrategy());
+        }
+
+        if (StringUtils.isNotBlank(localDatacenter)) {
+            cpool.setLocalDatacenter(localDatacenter);
+            log.debug("Set local datacenter: {}", cpool.getLocalDatacenter());
         }
 
         AstyanaxConfigurationImpl aconf =
