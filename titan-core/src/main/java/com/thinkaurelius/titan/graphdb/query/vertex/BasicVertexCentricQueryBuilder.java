@@ -16,8 +16,10 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.thinkaurelius.titan.util.datastructures.Interval;
+import com.thinkaurelius.titan.util.datastructures.PointInterval;
+import com.thinkaurelius.titan.util.datastructures.RangeInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -407,9 +409,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         } else {
             Set<RelationType> ts = new HashSet<RelationType>(types.length);
             queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
-            Map<RelationType,ProperInterval> intervalConstraints = new HashMap<RelationType, ProperInterval>(conditions.size());
+            Map<RelationType,Interval> intervalConstraints = new HashMap<RelationType, Interval>(conditions.size());
             final boolean isIntervalFittedConditions = compileConstraints(conditions,intervalConstraints);
-            for (ProperInterval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
+            for (Interval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
             }
 
@@ -465,7 +467,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                         of this query.
                         */
                         InternalRelationType bestCandidate = null;
-                        int bestScore = Integer.MIN_VALUE;
+                        double bestScore = Double.NEGATIVE_INFINITY;
                         boolean bestCandidateSupportsOrder = false;
                         for (InternalRelationType candidate : type.getRelationIndexes()) {
                             //Filter out those that don't apply
@@ -475,20 +477,20 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                             boolean supportsOrder = orders.isEmpty()?true:orders.getCommonOrder()==candidate.getSortOrder();
                             int currentOrder = 0;
 
-                            int score = 0;
+                            double score = 0.0;
                             RelationType[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
 
                             for (int i=0;i<extendedSortKey.length;i++) {
                                 RelationType keyType = extendedSortKey[i];
                                 if (currentOrder<orders.size() && orders.getKey(currentOrder).equals(keyType)) currentOrder++;
 
-                                ProperInterval interval = intervalConstraints.get(keyType);
-                                if (interval==null || !interval.isPoint()) {
+                                Interval interval = intervalConstraints.get(keyType);
+                                if (interval==null || !interval.isPoints()) {
                                     if (interval!=null) score+=1;
                                     break;
                                 } else {
-                                    assert interval.isPoint();
-                                    score+=5;
+                                    assert interval.isPoints();
+                                    score+=5.0/interval.getPoints().size();
                                 }
                             }
                             if (supportsOrder && currentOrder==orders.size()) score+=3;
@@ -504,23 +506,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                         //that is wrapped into a BackendQueryHolder
                         RelationType[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
                         EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[extendedSortKey.length];
-                        int coveredTypes = 0;
-                        for (int i = 0; i < extendedSortKey.length; i++) {
-                            RelationType keyType = extendedSortKey[i];
-                            ProperInterval interval = intervalConstraints.get(keyType);
-                            if (interval!=null) {
-                                sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,interval);
-                                coveredTypes++;
-                            }
-                            if (interval==null || !interval.isPoint()) break;
-                        }
-
-                        boolean isFitted = isIntervalFittedConditions && coveredTypes==intervalConstraints.size();
-                        SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
-                        q.setLimit(computeLimit(intervalConstraints.size()-coveredTypes, sliceLimit));
-                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder, null));
-
-
+                        constructSliceQueries(extendedSortKey,sortKeyConstraints,0,bestCandidate,direction,intervalConstraints,
+                                sliceLimit,isIntervalFittedConditions,bestCandidateSupportsOrder,queries);
                     }
                 }
             }
@@ -532,6 +519,41 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
         return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, orders, limit);
     }
+
+    private void constructSliceQueries(RelationType[] extendedSortKey, EdgeSerializer.TypedInterval[] sortKeyConstraints,
+                                       int position,
+                                       InternalRelationType bestCandidate, Direction direction,
+                                       Map<RelationType,Interval> intervalConstraints, int sliceLimit,
+                                       boolean isIntervalFittedConditions, boolean bestCandidateSupportsOrder,
+                                       List<BackendQueryHolder<SliceQuery>> queries) {
+        if (position<extendedSortKey.length) {
+            RelationType keyType = extendedSortKey[position];
+            Interval interval = intervalConstraints.get(keyType);
+            if (interval!=null) {
+                sortKeyConstraints[position]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,interval);
+                position++;
+            }
+            if (interval!=null && interval.isPoints()) {
+                //Keep invoking recursively to see if we can satisfy more constraints...
+                for (Object point : interval.getPoints()) {
+                    EdgeSerializer.TypedInterval[] clonedSKC = Arrays.copyOf(sortKeyConstraints,sortKeyConstraints.length);
+                    clonedSKC[position-1]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,new PointInterval(point));
+                    constructSliceQueries(extendedSortKey, clonedSKC, position,
+                            bestCandidate, direction, intervalConstraints, sliceLimit,
+                            isIntervalFittedConditions, bestCandidateSupportsOrder, queries);
+                }
+                return;
+            }
+        }
+        //...otherwise this is it and we can construct the slicequery
+
+        boolean isFitted = isIntervalFittedConditions && position==intervalConstraints.size();
+        EdgeSerializer serializer = tx.getEdgeSerializer();
+        SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
+        q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
+        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder, null));
+    }
+
 
     /**
      * Returns the extended sort key of the given type. The extended sort key extends the type's primary sort key
@@ -572,70 +594,61 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @param constraintMap
      * @return
      */
-    private boolean compileConstraints(And<TitanRelation> conditions, Map<RelationType,ProperInterval> constraintMap) {
+    private boolean compileConstraints(And<TitanRelation> conditions, Map<RelationType,Interval> constraintMap) {
         boolean isFitted = true;
         for (Condition<TitanRelation> condition : conditions.getChildren()) {
-            if (!(condition instanceof PredicateCondition)) continue; //TODO: Should we optimize OR clauses?
-            PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)condition;
-            RelationType type = atom.getKey();
-            assert type!=null;
-            ProperInterval pi = constraintMap.get(type);
-            if (pi==null) {
-                pi = new ProperInterval();
-                constraintMap.put(type,pi);
+            RelationType type=null;
+            Interval newInterval=null;
+            if (condition instanceof Or) {
+                Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)condition);
+                if (orEqual!=null) {
+                    type = orEqual.getKey();
+                    newInterval = new PointInterval(orEqual.getValue());
+                }
+            } else if (condition instanceof PredicateCondition) {
+                PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)condition;
+                type = atom.getKey();
+                Interval interval = constraintMap.get(type);
+                newInterval = intersectConstraints(interval, type, atom.getPredicate(), atom.getValue());
             }
-            boolean fittedSub = compileConstraint(pi,type,atom.getPredicate(),atom.getValue());
-            isFitted = isFitted && fittedSub;
+            if (newInterval!=null) {
+                constraintMap.put(type,newInterval);
+            } else isFitted = false;
         }
         if (adjacentVertex!=null) {
-            if (adjacentVertex.hasId()) constraintMap.put(ImplicitKey.ADJACENT_ID,new ProperInterval(adjacentVertex.longId()));
+            if (adjacentVertex.hasId()) constraintMap.put(ImplicitKey.ADJACENT_ID,new PointInterval(adjacentVertex.longId()));
             else isFitted=false;
         }
         return isFitted;
     }
 
-    private static boolean compileConstraint(ProperInterval pint, RelationType type, TitanPredicate predicate, Object value) {
+    private static Interval intersectConstraints(Interval pint, RelationType type, TitanPredicate predicate, Object value) {
+        Interval newInt;
         if (predicate instanceof Cmp) {
-            Cmp cmp = (Cmp)predicate;
-            if (cmp==Cmp.EQUAL) {
-                if (value==null) return false;
-                boolean fitted=pint.contains(value);
-                pint.setPoint(value);
-                return fitted;
-            }
-            if (cmp==Cmp.NOT_EQUAL) {
-                return false;
-            }
-            assert value!=null && value instanceof Comparable;
-            Comparable v = (Comparable)value;
             switch ((Cmp) predicate) {
+                case EQUAL:
+                    if (value==null) return null;
+                    newInt = new PointInterval(value);
+                    break;
+                case NOT_EQUAL:
+                    return null;
                 case LESS_THAN:
-                    if (pint.getEnd() == null || v.compareTo(pint.getEnd()) <= 0) {
-                        pint.setEnd(v);
-                        pint.setEndInclusive(false);
-                    }
-                    return true;
+                    newInt = new RangeInterval().setEnd(value, false);
+                    break;
                 case LESS_THAN_EQUAL:
-                    if (pint.getEnd() == null || v.compareTo(pint.getEnd()) < 0) {
-                        pint.setEnd(v);
-                        pint.setEndInclusive(true);
-                    }
-                    return true;
+                    newInt = new RangeInterval().setEnd(value, true);
+                    break;
                 case GREATER_THAN:
-                    if (pint.getStart() == null || v.compareTo(pint.getStart()) >= 0) {
-                        pint.setStart(v);
-                        pint.setStartInclusive(false);
-                    }
-                    return true;
+                    newInt = new RangeInterval().setStart(value, false);
+                    break;
                 case GREATER_THAN_EQUAL:
-                    if (pint.getStart() == null || v.compareTo(pint.getStart()) > 0) {
-                        pint.setStart(v);
-                        pint.setStartInclusive(true);
-                    }
-                    return true;
+                    newInt = new RangeInterval().setStart(value, true);
+                    break;
                 default: throw new AssertionError();
             }
-        } else return false;
+        } else return null;
+        assert newInt!=null;
+        return pint!=null?pint.intersect(newInt):newInt;
     }
 
     /**

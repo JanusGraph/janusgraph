@@ -4,17 +4,13 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.util.ManagementUtil;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.core.attribute.Decimal;
-import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Precision;
-import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.*;
@@ -2444,7 +2440,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        }
 
        evaluateQuery(v.query().labels("connect").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
-       evaluateQuery(v.query().labels("connect").direction(OUT).has("time",15).has("weight",3.5),EDGE,1,1,new boolean[]{false,true});
+       evaluateQuery(v.query().labels("connect").direction(OUT).has("time", 15).has("weight", 3.5),EDGE,1,1,new boolean[]{false,true});
        evaluateQuery(u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
        assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
        assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
@@ -2453,8 +2449,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Cmp.GREATER_THAN, 31).count());
        assertEquals(10, size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
        assertEquals(3, v.query().labels("friend").direction(OUT).limit(3).count());
-       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3), EDGE, 3, 1, new boolean[]{true, true});
        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", Contain.IN, ImmutableList.of(0.5)),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5,2.5)).interval("time", 3, 33),EDGE,7,3,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5)),EDGE,1667,2,new boolean[]{true,true});
        assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
        assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
        assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
@@ -2554,7 +2553,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        }
 
        evaluateQuery(v.query().labels("connect").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
-       evaluateQuery(v.query().labels("connect").direction(OUT).has("time",15).has("weight",3.5),EDGE,1,1,new boolean[]{false,true});
+       evaluateQuery(v.query().labels("connect").direction(OUT).has("time", 15).has("weight", 3.5),EDGE,1,1,new boolean[]{false,true});
        evaluateQuery(u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
        assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
        assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
@@ -2563,8 +2562,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Cmp.GREATER_THAN, 31).count());
        assertEquals(10, size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
        assertEquals(3, v.query().labels("friend").direction(OUT).limit(3).count());
-       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3), EDGE, 3, 1, new boolean[]{true, true});
        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", Contain.IN, ImmutableList.of(0.5)),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5,2.5)).interval("time", 3, 33),EDGE,7,3,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5)),EDGE,1667,2,new boolean[]{true,true});
        assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
        assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
        assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
@@ -2585,6 +2587,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
        assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
+       assertEquals(1, v.query().labels("knows").direction(IN).adjacent(vs[11]).count());
+       assertEquals(2, v.query().labels("knows").direction(BOTH).adjacent(vs[11]).count());
        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
        assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
        assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
