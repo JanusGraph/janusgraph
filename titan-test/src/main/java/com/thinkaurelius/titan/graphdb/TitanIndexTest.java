@@ -1267,7 +1267,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testIndexQueryWithScore() {
+    public void testIndexQueryWithScore() throws InterruptedException {
         PropertyKey textKey = mgmt.makePropertyKey("text").dataType(String.class).make();
         mgmt.buildIndex("store1", Vertex.class).addKey(textKey).buildMixedIndex(INDEX);
         mgmt.commit();
@@ -1281,6 +1281,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         v3.property("text", "Hello");
 
         tx.commit();
+
+        Thread.sleep(5000);
 
         Set<Double> scores = new HashSet<Double>();
         for (TitanIndexQuery.Result<TitanVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
