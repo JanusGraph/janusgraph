@@ -39,7 +39,8 @@ fi
 
 # Create gh-pages branch in the source repo if it doesn't exist.
 # This command assumes the github remote is named "origin".
-if [ ! -e .git/refs/heads/"$PAGE_BRANCH" ]; then
+git show-ref --verify --quiet refs/heads/"$PAGE_BRANCH"
+if [ $? -ne 0 ]; then
     git branch "$PAGE_BRANCH" origin/"$PAGE_BRANCH"
 fi
 
@@ -81,8 +82,8 @@ git add index.html
 git commit -m "Page updates for $GIT_TAG"
 
 cat <<EOF
-Locally committed new javadoc, wikidoc, and index.html reflecting release
-version $GIT_TAG into gh-pages.
+Locally committed javadoc dirs (current and $GIT_TAG) and index.html
+for release version $GIT_TAG on branch gh-pages.
 
   Clone directory = $CLONE_DIR
   Parent repo     = $GIT_DIR
