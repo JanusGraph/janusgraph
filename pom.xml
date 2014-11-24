@@ -1508,7 +1508,7 @@
             <id>disable-javadoclint</id>
 
             <activation>
-                <jdk>[1.8,</jdk>
+                <jdk>1.8</jdk>
             </activation>
 
             <build>
