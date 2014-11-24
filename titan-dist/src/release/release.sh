@@ -81,7 +81,7 @@ RELEASE_VERSION=`sed -nr 's/^scm\.tag=//p' release.properties`
 echo RELEASE_VERSION: $RELEASE_VERSION
 
 git_cmd="git checkout refs/tags/$RELEASE_VERSION"
-mvn_cmd="mvn clean javadoc:jar deploy -Paurelius-release -DskipTests=true"
+mvn_cmd="mvn clean javadoc:jar deploy -Paurelius-release,s3doc -DskipTests=true"
 echo "About to deploy artifacts to S3 and Sonatype Staging."
 echo "Commands that will be run:"
 echo "  $git_cmd"
