@@ -93,7 +93,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final ManagementLogger mgmtLogger;
 
     //Shutdown hook
-    private final ShutdownThread shutdownHook;
+    private volatile ShutdownThread shutdownHook;
 
     private volatile boolean isOpen = true;
     private AtomicLong txCounter;
@@ -149,6 +149,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public synchronized void close() throws TitanException {
+        try {
+            closeInternal();
+        } finally {
+            removeHook();
+        }
+    }
+
+    private synchronized void closeInternal() {
+
         if (!isOpen) return;
         try {
             //Unregister instance
@@ -169,6 +178,21 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             isOpen = false;
         }
     }
+
+private synchronized void removeHook() {
+    if (null == shutdownHook)
+            return;
+
+    ShutdownThread tmp = shutdownHook;
+    shutdownHook = null;
+    // Remove shutdown hook to avoid reference retention
+    try {
+        Runtime.getRuntime().removeShutdownHook(tmp);
+    } catch (IllegalStateException e) {
+        log.warn("Failed to remove shutdown hook", e);
+    }
+}
+
 
     // ################### Simple Getters #########################
 
@@ -710,7 +734,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (graph.isOpen && log.isDebugEnabled())
                 log.debug("Shutting down graph {} using built-in shutdown hook.", graph);
 
-            graph.close();
+            graph.closeInternal();
         }
     }
 }
