@@ -202,8 +202,4 @@ public class FulgoraNeighborVertex implements InternalVertex, Vertex.Iterators {
         throw getAccessException();
     }
 
-    @Override
-    public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
-        throw getAccessException();
-    }
 }

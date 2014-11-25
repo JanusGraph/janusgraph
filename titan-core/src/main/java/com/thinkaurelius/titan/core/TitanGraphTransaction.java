@@ -80,12 +80,14 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
      * @return
      * @see TitanGraph#multiQuery(com.thinkaurelius.titan.core.TitanVertex...)
      */
+    @Deprecated
     public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(TitanVertex... vertices);
 
     /**
      * @return
      * @see TitanGraph#multiQuery(java.util.Collection)
      */
+    @Deprecated
     public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(Collection<TitanVertex> vertices);
 
     @Override
