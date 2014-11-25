@@ -182,9 +182,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         Stream<RelationType> keys;
 
         if (keyNames==null || keyNames.length==0) {
-            keys = StreamFactory.stream(it().getPropertyKeysDirect()).filter( rt -> hidden ^ !Graph.Key.isHidden(rt.name()));
+            keys = StreamFactory.stream(it().getPropertyKeysDirect());
         } else {
-            if (hidden) keyNames = QueryUtil.hideKeys(keyNames);
             keys = Stream.of(keyNames)
                     .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
         }
@@ -195,14 +194,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <V> Iterator<Property<V>> propertyIterator(String... strings) {
         return propertyIterator(false,strings);
     }
-
-    @Override
-    public <V> Iterator<Property<V>> hiddenPropertyIterator(String... strings) {
-        return propertyIterator(true,strings);
-    }
-
-
-
 
 
 }

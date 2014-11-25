@@ -182,31 +182,26 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return (Iterator)query().direction(direction).labels(strings).vertices().iterator();
     }
 
-    public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... keys) {
-        if (!Stream.of(keys).map(s -> tx().getPropertyKey(s)).filter(k -> k!=null && ((InternalRelationType)k).isInvisibleType()).findAny().isPresent()
-                && tx().getConfiguration().hasPropertyPrefetching()) {
-            Iterables.size(query().properties());
-        }
-
-        if (keys==null) keys=new String[0];
-        if (hidden) keys = QueryUtil.hideKeys(keys);
-        return (Iterator)com.google.common.collect.Iterators.filter(query().keys(keys).properties().iterator(),
-                new Predicate<TitanVertexProperty>() {
-                    @Override
-                    public boolean apply(@Nullable TitanVertexProperty prop) {
-                        return hidden ^ !prop.isHidden();
-                    }
-                });
-    }
+//    public <V> Iterator<VertexProperty<V>> propertyIterator(boolean hidden, String... keys) {
+//        if (!Stream.of(keys).map(s -> tx().getPropertyKey(s)).filter(k -> k!=null && ((InternalRelationType)k).isInvisibleType()).findAny().isPresent()
+//                && tx().getConfiguration().hasPropertyPrefetching()) {
+//            Iterables.size(query().properties());
+//        }
+//
+//        if (keys==null) keys=new String[0];
+//        if (hidden) keys = QueryUtil.hideKeys(keys);
+//        return (Iterator)com.google.common.collect.Iterators.filter(query().keys(keys).properties().iterator(),
+//                new Predicate<TitanVertexProperty>() {
+//                    @Override
+//                    public boolean apply(@Nullable TitanVertexProperty prop) {
+//                        return hidden ^ !prop.isHidden();
+//                    }
+//                });
+//    }
 
     @Override
     public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
-        return propertyIterator(false,keys);
-    }
-
-    @Override
-    public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... keys) {
-        return propertyIterator(true,keys);
+        return (Iterator)query().direction(Direction.OUT).keys(keys).properties().iterator();
     }
 
 }

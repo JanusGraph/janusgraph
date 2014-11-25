@@ -37,21 +37,6 @@ import java.util.Collection;
         method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
         specific = "property(k)",
         reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
-        method = "shouldHandleHiddenVertexProperties",
-        specific = "6: e.properties(Graph.Key.hide(\"age\")).count().next() == 0",
-        reason = "Difference in 'hide' semantics between Titan and TP3")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
-        method = "shouldHandleHiddenVertexProperties",
-        specific = "22: StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"color\"))).count() == 0",
-        reason = "Difference in 'hide' semantics between Titan and TP3")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.PropertyTest$EdgePropertiesShouldHideCorrectly",
-        method = "shouldHandleHiddenVertexProperties",
-        specific = "23: StreamFactory.stream(v.iterators().propertyIterator(Graph.Key.hide(\"age\"))).count() == 0",
-        reason = "Difference in 'hide' semantics between Titan and TP3")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

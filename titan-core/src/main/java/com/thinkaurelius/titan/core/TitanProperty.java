@@ -12,7 +12,7 @@ public interface TitanProperty<V> extends Property<V> {
 
     @Override
     public default String key() {
-        return Graph.Key.unHide(getType().name());
+        return getType().name();
     }
 
 }

@@ -1510,23 +1510,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                             ADVANCED
      ==================================================================================*/
 
-    @Test
-    public void testHiddenProperties() {
-        Vertex v = graph.addVertex(Graph.Key.hide("acl"),"all","name","Dan");
-        Vertex u = graph.addVertex(Graph.Key.hide("acl"),"none","name","Daniel");
-        Edge e = v.addEdge("knows",u, Graph.Key.hide("acl"), "some", "weight", 5);
-
-        assertEquals(1,Iterators.size(e.iterators().hiddenPropertyIterator()));
-        assertEquals(1,Iterators.size(e.iterators().propertyIterator()));
-        assertEquals(1,Iterators.size(e.iterators().hiddenPropertyIterator("acl")));
-        assertEquals(1,Iterators.size(e.iterators().propertyIterator("weight")));
-
-        assertEquals(1,Iterators.size(v.iterators().hiddenPropertyIterator()));
-        assertEquals(1,Iterators.size(v.iterators().propertyIterator()));
-        assertEquals(1,Iterators.size(v.iterators().hiddenPropertyIterator("acl")));
-        assertEquals(1,Iterators.size(v.iterators().propertyIterator("name")));
-    }
-
     /**
      * Test the correct application of {@link com.thinkaurelius.titan.graphdb.types.system.ImplicitKey}
      * to vertices, edges, and properties.
@@ -4133,12 +4116,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     //................................................
 
-
-    @Test
-    public void testDoubleHidden() {
-        final Vertex v = graph.addVertex(Graph.Key.hide("age"), 34, Graph.Key.hide("age"), 29, "age", 16, "name", "marko", "food", "taco", Graph.Key.hide("color"), "purple");
-        assertEquals(0,Iterators.size(v.iterators().hiddenPropertyIterator(Graph.Key.hide("age"))));
-    }
 
     //Add more removal operations, different transaction contexts
     @Test

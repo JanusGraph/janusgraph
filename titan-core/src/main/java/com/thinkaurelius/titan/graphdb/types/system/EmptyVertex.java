@@ -129,11 +129,6 @@ public class EmptyVertex implements InternalVertex {
             return com.google.common.collect.Iterators.emptyIterator();
         }
 
-        @Override
-        public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(String... strings) {
-            return com.google.common.collect.Iterators.emptyIterator();
-        }
-
     }
 
 	/* ---------------------------------------------------------------
