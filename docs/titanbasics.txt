@@ -1322,6 +1322,8 @@ Accidental type creation
 
 By default, Titan will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly schemata as documented in <<schema>> before loading any data and disable automatic type creation by setting the option `schema.default = none`.
 
+Automatic type creation can cause problems in multi-threaded or highly concurrent environments. Since Titan needs to ensure that types are unique, multiple attempts at creating the same type will lead to locking or other exceptions. It is generally recommended to create all needed types up front or in one batch when new property keys and edge labels are needed.
+
 Custom Class Datatype
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -1450,6 +1452,11 @@ Unable to Drop Indices
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Once a graph or vertex-centric index has been created it cannot be removed from the graph, only disabled.
+
+Limited Mixed Index Support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mixed indexes only support a subset of the data types that Titan supports. See <<mixeddatatypes,Mixed Index Data Types>> for a current listing. Also, mixed indexes do not currently support property keys with SET or LIST cardinality.
 
 Batch Loading Speed
 ^^^^^^^^^^^^^^^^^^^

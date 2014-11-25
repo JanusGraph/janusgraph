@@ -1,6 +1,6 @@
 [[search-predicates]]
-Search Predicates
------------------
+Search Predicates and Data Types
+--------------------------------
 
 This page lists all of the comparison predicates that Titan supports in global graph search and local traversals.
 
@@ -64,3 +64,22 @@ g.query().has("reason",CONTAINS_REGEX,"br[ez]*s").edges()
 // 5) Find all vertices older than a thousand years and named "saturn"
 g.query().has("age",GREATER_THAN,1000).has("name",EQUAL,"saturn").vertices()
 
+
+[[mixeddatatypes]]
+Data Type Support
+~~~~~~~~~~~~~~~~~
+
+While Titan's composite indexes support any data type that can be stored in Titan, the mixed indexes are limited to the following data types.
+
+ * Byte
+ * Short
+ * Integer
+ * Long
+ * Float
+ * Double
+ * Decimal
+ * Precision
+ * String
+ * Geoshape
+ 
+Additional data types will be supported in the future.

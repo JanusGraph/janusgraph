@@ -17,3 +17,5 @@ include::cassandra.txt[]
 include::hbase.txt[]
 
 include::bdb.txt[]
+
+include::inmemorybackend.txt[]
