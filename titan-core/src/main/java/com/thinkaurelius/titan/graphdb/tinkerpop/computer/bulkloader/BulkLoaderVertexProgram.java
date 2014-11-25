@@ -139,8 +139,8 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     }
 
     @Override
-    public Set<MessageScope> getMessageScopes(int i) {
-        return ImmutableSet.of(messageScope); // TODO is this correct? optimal?
+    public Set<MessageScope> getMessageScopes(final Memory memory) {
+        return ImmutableSet.of(messageScope);
     }
 
     @Override
