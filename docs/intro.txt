@@ -285,10 +285,10 @@ gremlin> hercules.out('father','mother')
 gremlin> hercules.out('father','mother').name
 ==>jupiter
 ==>alcmene
-gremlin> hercules.out('father','mother').type
+gremlin> hercules.out('father','mother')*.getVertexLabel()
 ==>god
 ==>human
-gremlin> hercules.type
+gremlin> hercules.getVertexLabel()
 ==>demigod
 
 The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.
