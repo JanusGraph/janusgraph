@@ -172,9 +172,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 	 * ---------------------------------------------------------------
 	 */
 
-    private static final int DEFAULT_NO_LIMIT = 100;
+    private static final int DEFAULT_NO_LIMIT = 1000;
     private static final int MAX_BASE_LIMIT = 20000;
-    private static final int HARD_MAX_LIMIT = 50000;
+    private static final int HARD_MAX_LIMIT = 100000;
 
     private static final double EQUAL_CONDITION_SCORE = 4;
     private static final double OTHER_CONDITION_SCORE = 1;
@@ -299,7 +299,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {
-            int indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
+            int indexLimit = limit == Query.NO_LIMIT ? HARD_MAX_LIMIT : limit;
+            if (tx.getGraph().getConfiguration().adjustQueryLimit()) {
+                indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
+            }
             indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             jointQuery.setLimit(indexLimit);
             query = new BackendQueryHolder<JointIndexQuery>(jointQuery, coveredClauses.size()==conditions.numChildren(), isSorted, null);

@@ -198,6 +198,11 @@ public class GraphDatabaseConfiguration {
                     "expensive for vertices with many properties",
             ConfigOption.Type.MASKABLE, Boolean.class);
 
+    public static final ConfigOption<Boolean> ADJUST_LIMIT = new ConfigOption<Boolean>(QUERY_NS,"smart-limit",
+            "Whether the query optimizer should try to guess a smart limit for the query to ensure responsiveness in " +
+                    "light of possibly large result sets. Those will be loaded incrementally if this option is enabled.",
+            ConfigOption.Type.MASKABLE, true);
+
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<Boolean>(QUERY_NS,"batch",
             "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
                     "performance improvement if there is a non-trivial latency to the backend.",
@@ -1257,6 +1262,7 @@ public class GraphDatabaseConfiguration {
     private int txDirtyVertexSize;
     private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
+    private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
@@ -1530,6 +1536,7 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
         useMultiQuery = configuration.get(USE_MULTIQUERY);
+        adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
@@ -1687,7 +1694,9 @@ public class GraphDatabaseConfiguration {
         return useMultiQuery;
     }
 
-
+    public boolean adjustQueryLimit() {
+        return adjustQueryLimit;
+    }
 
     public String getUnknownIndexKeyName() {
         return unknownIndexKeyName;
