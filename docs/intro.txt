@@ -229,9 +229,10 @@ Given that there is a unique index on `name` property, the Saturn vertex can be 
 
 [source,gremlin]
 gremlin> saturn = g.V.has('name','saturn').next()
-==>v[4]
+==>v[256]
 gremlin> saturn.map()
-==>{name=saturn, age=10000}
+==>name=saturn
+==>age=10000
 gremlin> saturn.in('father').in('father').name
 ==>hercules
 
@@ -239,8 +240,8 @@ The property `place` is also in a graph index. The property `place` is an edge p
 
 [source,gremlin]
 gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
-==>e[2T-o-2F0LaTPQBM][24-battled->40]
-==>e[2R-o-2F0LaTPQBM][24-battled->36]
+==>e[75s-16o-iz9-1z4][1536-battled->2560]
+==>e[74w-16o-iz9-1s0][1536-battled->2304]
 gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect {
    it.bothV.name.next(2)
 }
@@ -274,14 +275,14 @@ In the previous section, it was demonstrated that Saturn's grandchild was Hercul
 
 [source,gremlin]
 gremlin> hercules = saturn.as('x').in('father').loop('x'){it.loops < 3}.next()
-==>v[24]
+==>v[1536]
 
 Hercules is a demigod. To prove that Hercules is half human and half god, his parent's origins must be examined. It is possible to traverse from the Hercules vertex to his mother and father. Finally, it is possible to determine the `type` of each of them -- yielding "god" and "human."
 
 [source,gremlin]
 gremlin> hercules.out('father','mother')
-==>v[16]
-==>v[28]
+==>v[1024]
+==>v[1792]
 gremlin> hercules.out('father','mother').name
 ==>jupiter
 ==>alcmene
@@ -295,16 +296,16 @@ The examples thus far have been with respect to the genetic lines of the various
 
 [source,gremlin]
 gremlin> hercules.out('battled')
-==>v[36]
-==>v[40]
-==>v[44]
+==>v[2304]
+==>v[2560]
+==>v[2816]
 gremlin> hercules.out('battled').map
-==>{name=nemean, type=monster}
-==>{name=hydra, type=monster}
-==>{name=cerberus, type=monster}
+==>{name=nemean}
+==>{name=hydra}
+==>{name=cerberus}
 gremlin> hercules.outE('battled').has('time',T.gt,1).inV.name
-==>hydra
 ==>cerberus
+==>hydra
 
 The edge property `time` on `battled` edges is indexed by the vertex-centric indices of a vertex. Retrieving `battled` edges incident to Hercules according to a constraint/filter on `time` is faster than doing a linear scan of all edges and filtering  (typically `O(log n)`, where `n` is the number incident edges). Gremlin is intelligent enough to use vertex-centric indices when available. A `toString()` of a Gremlin expression shows the underlying http://pipes.tinkerpop.com[query pipeline].
 
@@ -328,7 +329,7 @@ Cohabiters of Tartarus
 
 [source,gremlin]
 gremlin> pluto = g.V('name','pluto').next()
-==>v[32]
+==>v[2048]
 gremlin> // who are pluto's cohabitants?
 gremlin> pluto.out('lives').in('lives').name
 ==>pluto
@@ -349,8 +350,8 @@ gremlin> pluto.out('brother').out('lives').name
 ==>sea
 gremlin> // which brother lives in which place?
 gremlin> pluto.out('brother').as('god').out('lives').as('place').select
-==>[god:v[16], place:v[8]]
-==>[god:v[20], place:v[12]]
+==>[god:v[1024], place:v[512]]
+==>[god:v[1280], place:v[768]]
 gremlin> // what is the name of the brother and the name of the place?
 gremlin> pluto.out('brother').as('god').out('lives').as('place').select{it.name}
 ==>[god:jupiter, place:sky]
@@ -362,8 +363,8 @@ Finally, Pluto lives in Tartarus because he shows no concern for death. His brot
 gremlin> pluto.outE('lives').reason
 ==>no fear of death
 gremlin> g.query().has('reason',CONTAINS,'loves').edges()
-==>e[2B-g-2F0LaTPQBU][16-lives->8]
-==>e[2H-k-2F0LaTPQBU][20-lives->12]
+==>e[6xs-sg-m51-e8][1024-lives->512]
+==>e[70g-zk-m51-lc][1280-lives->768]
 gremlin> g.query().has('reason',CONTAINS,'loves').edges().collect{
   [it.outV.name.next(),it.reason,it.inV.name.next()]
 }
