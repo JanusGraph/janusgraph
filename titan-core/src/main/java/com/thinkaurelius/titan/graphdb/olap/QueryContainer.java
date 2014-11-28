@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
@@ -39,6 +40,10 @@ public class QueryContainer {
         inverseQueries = HashMultimap.create();
         hardQueryLimit = DEFAULT_HARD_QUERY_LIMIT;
         requiresName = true;
+    }
+
+    public TitanTransaction getTransaction() {
+        return tx;
     }
 
     public QueryBuilder addQuery() {

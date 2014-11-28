@@ -35,7 +35,7 @@ public class VertexJobConverter implements ScanJob {
     public static final String GHOST_VERTEX_COUNT = "ghost-vertices";
 
     protected final GraphProvider graph;
-    private final VertexScanJob job;
+    protected final VertexScanJob job;
 
     protected StandardTitanTx tx;
     private IDManager idManager;
@@ -62,6 +62,8 @@ public class VertexJobConverter implements ScanJob {
         StandardTransactionBuilder txb = graph.get().buildTransaction().readOnly();
         txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
+        txb.dirtyVertexSize(0);
+        txb.vertexCacheSize(500);
         try {
             tx = (StandardTitanTx)txb.start();
             job.setup(graph.get(), config, metrics);

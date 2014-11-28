@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
@@ -10,10 +11,14 @@ import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
+import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -28,14 +33,38 @@ public class PreloadedVertex extends CacheVertex {
         }
     };
 
+    private static final Retriever<SliceQuery, EntryList> EXCEPTION_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
+        @Override
+        public EntryList get(SliceQuery input) {
+            throw new UnsupportedOperationException("Cannot retrieve edges or properties on this vertex");
+        }
+    };
+
+    private PropertyMixing mixin = NO_MIXIN;
+    private boolean swallowRetrievals = true;
+
     public PreloadedVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
         assert lifecycle == ElementLifeCycle.Loaded : "Invalid lifecycle encountered: " + lifecycle;
     }
 
+    public void setPropertyMixing(PropertyMixing mixin) {
+        Preconditions.checkNotNull(mixin);
+        Preconditions.checkArgument(this.mixin==null,"A property mixing has already been set");
+        this.mixin=mixin;
+    }
+
+    public void setExceptionOnRetrieve(boolean exceptionOnRetrieve) {
+        swallowRetrievals = !exceptionOnRetrieve;
+    }
+
     @Override
     public void addToQueryCache(final SliceQuery query, final EntryList entries) {
         super.addToQueryCache(query,entries);
+    }
+
+    public EntryList getFromCache(final SliceQuery query) {
+        return queryCache.get(query);
     }
 
     @Override
@@ -66,12 +95,35 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
-        return super.loadRelations(query,EMPTY_RETRIEVER);
+        return super.loadRelations(query,swallowRetrievals?EMPTY_RETRIEVER:EXCEPTION_RETRIEVER);
     }
 
     @Override
-    public<V> TitanVertexProperty<V> property(String key, V attribute) {
+    public<V> TitanVertexProperty<V> property(String key, V value) {
+        if (mixin.supports(key)) return mixin.property(key,value);
         throw stubVertexException();
+    }
+
+    @Override
+    public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
+        if (mixin.supports(key)) {
+            TitanVertexProperty<V> p = mixin.singleProperty(key,value);
+            ElementHelper.attachProperties(p,keyValues);
+            return p;
+        }
+        throw stubVertexException();
+    }
+
+    @Override
+    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+        if (mixin==NO_MIXIN) return super.propertyIterator(keys);
+        if (keys!=null && keys.length>0) {
+            int count=0;
+            for (int i = 0; i < keys.length; i++) if (mixin.supports(keys[i])) count++;
+            if (count==0) return super.propertyIterator(keys);
+            else if (count==keys.length) return mixin.propertyIterator(keys);
+        }
+        return (Iterator)com.google.common.collect.Iterators.concat(super.propertyIterator(keys),mixin.propertyIterator(keys));
     }
 
     @Override
@@ -98,5 +150,39 @@ public class PreloadedVertex extends CacheVertex {
         return new UnsupportedOperationException("Operation not supported on a stub vertex");
     }
 
+
+    public interface PropertyMixing {
+
+        public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys);
+
+        public boolean supports(String key);
+
+        public <V>  TitanVertexProperty<V> property(String key, V value);
+
+        public <V>  TitanVertexProperty<V> singleProperty(String key, V value);
+
+    }
+
+    private static PropertyMixing NO_MIXIN = new PropertyMixing() {
+        @Override
+        public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+            return Collections.emptyIterator();
+        }
+
+        @Override
+        public boolean supports(String key) {
+            return false;
+        }
+
+        @Override
+        public <V> TitanVertexProperty<V> property(String key, V value) {
+            return singleProperty(key,value);
+        }
+
+        @Override
+        public <V> TitanVertexProperty<V> singleProperty(String key, V value) {
+            throw new UnsupportedOperationException("Provided key is not supported: " + key);
+        }
+    };
 
 }

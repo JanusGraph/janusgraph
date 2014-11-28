@@ -35,7 +35,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     private final boolean multiQuery;
     private boolean initialized = false;
 
-    private<Q extends BaseVertexQuery> Q makeQuery(Q query) {
+    public<Q extends BaseVertexQuery> Q makeQuery(Q query) {
         query.labels(getEdgeLabels());
         query.direction(getDirection());
         for (HasContainer condition : hasContainers) {

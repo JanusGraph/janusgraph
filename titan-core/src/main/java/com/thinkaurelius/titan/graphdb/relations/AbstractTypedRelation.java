@@ -176,7 +176,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         return vertices.iterator();
     }
 
-    public <V> Iterator<Property<V>> propertyIterator(boolean hidden, String... keyNames) {
+    @Override
+    public <V> Iterator<Property<V>> propertyIterator(String... keyNames) {
         verifyAccess();
 
         Stream<RelationType> keys;
@@ -188,11 +189,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
                     .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
         }
         return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
-    }
-
-    @Override
-    public <V> Iterator<Property<V>> propertyIterator(String... strings) {
-        return propertyIterator(false,strings);
     }
 
 

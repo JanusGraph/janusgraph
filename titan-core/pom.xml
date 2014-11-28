@@ -32,6 +32,11 @@
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>tinkergraph-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
         <!-- Utility -->
         <dependency>
             <groupId>org.glassfish</groupId>

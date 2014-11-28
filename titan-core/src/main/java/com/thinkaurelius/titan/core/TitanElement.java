@@ -47,7 +47,9 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @see #hasId
      */
     @Override
-    public Object id();
+    public default Object id() {
+        return longId();
+    }
 
     /**
      * Unique identifier for this entity. This id can be temporarily assigned and might change.
