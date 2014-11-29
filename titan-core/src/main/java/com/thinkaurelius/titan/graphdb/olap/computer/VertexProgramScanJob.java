@@ -122,7 +122,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     }
 
     //Query for all system properties+edges and normal properties
-    private static final SliceQuery SYSTEM_PROPS_QUERY = new SliceQuery(
+    static final SliceQuery SYSTEM_PROPS_QUERY = new SliceQuery(
             IDHandler.getBounds(RelationCategory.PROPERTY, true)[0],
             IDHandler.getBounds(RelationCategory.PROPERTY,false)[1]);
 

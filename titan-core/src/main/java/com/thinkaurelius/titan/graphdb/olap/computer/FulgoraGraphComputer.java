@@ -1,21 +1,19 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanGraphComputer;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.tinkerpop.gremlin.process.computer.ComputerResult;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.computer.MapReduce;
 import com.tinkerpop.gremlin.process.computer.VertexProgram;
 import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +103,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
         return CompletableFuture.<ComputerResult>supplyAsync(() -> {
             final long time = System.currentTimeMillis();
             if (null != vertexProgram) {
+                // ##### Execute vertex program
                 vertexMemory = new FulgoraVertexMemory(expectedNumVertices,graph.getIDManager(),vertexProgram);
                 // execute the vertex program
                 vertexProgram.setup(memory);
@@ -124,11 +123,11 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         ScanMetrics jobResult = scanBuilder.execute().get();
                         long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
                         if (failures>0) {
-                            throw new TitanException("Failed to process ["+failures+"] vertices. Computer is aborting.");
+                            throw new TitanException("Failed to process ["+failures+"] vertices in vertex program iteration ["+iteration+"]. Computer is aborting.");
                         }
                         long pfailures = jobResult.getCustom(VertexProgramScanJob.PARTITION_VERTEX_POSTFAIL);
                         if (pfailures>0) {
-                            throw new TitanException("Failed to process ["+failures+"] partitioned vertices. Computer is aborting.");
+                            throw new TitanException("Failed to process ["+failures+"] partitioned vertices in vertex program iteration ["+iteration+"]. Computer is aborting.");
                         }
                     } catch (Exception e) {
                         throw new TitanException(e);
@@ -145,29 +144,47 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 }
             }
 
-            // execute mapreduce jobs
-            for (final MapReduce mapReduce : this.mapReduces) {
+            // ##### Execute mapreduce jobs
+            // Collect map jobs
+            Map<MapReduce,FulgoraMapEmitter> mapJobs = new HashMap<>(mapReduces.size());
+            for (MapReduce mapReduce : mapReduces) {
                 if (mapReduce.doStage(MapReduce.Stage.MAP)) {
-                    final TinkerMapEmitter<?, ?> mapEmitter = new TinkerMapEmitter<>(mapReduce.doStage(MapReduce.Stage.REDUCE));
-                    TinkerHelper.getVertices(this.graph).stream().forEach(vertex -> mapReduce.map(vertex, mapEmitter));
-                    mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
-                    // no need to run combiners as this is single machine
-                    if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
-                        final TinkerReduceEmitter<?, ?> reduceEmitter = new TinkerReduceEmitter<>();
-                        mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
-                        reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
-                        mapReduce.addResultToMemory(this.memory, reduceEmitter.reduceQueue.iterator());
-                    } else {
-                        mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
-                    }
+                    FulgoraMapEmitter mapEmitter = new FulgoraMapEmitter<>(mapReduce.doStage(MapReduce.Stage.REDUCE));
+                    mapJobs.put(mapReduce,mapEmitter);
                 }
             }
-            // update runtime and return the newly computed graph
-            this.memory.setRuntime(System.currentTimeMillis() - time);
-            this.memory.complete();
+            // Execute map jobs
+            jobId = name + "#map";
+            VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph,vertexMemory,mapJobs);
+            StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
+            scanBuilder.setJobId(jobId);
+            scanBuilder.setNumProcessingThreads(numThreads);
+            scanBuilder.setJob(job);
+            try {
+                ScanMetrics jobResult = scanBuilder.execute().get();
+                long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
+                if (failures>0) {
+                    throw new TitanException("Failed to process ["+failures+"] vertices in map phase. Computer is aborting.");
+                }
+            } catch (Exception e) {
+                throw new TitanException(e);
+            }
+            // Execute reduce phase and add to memory
+            for (Map.Entry<MapReduce,FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+                FulgoraMapEmitter mapEmitter = mapJob.getValue();
+                MapReduce mapReduce = mapJob.getKey();
+                mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
+                if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
+                    final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
+                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
+                    reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
+                    mapReduce.addResultToMemory(this.memory, reduceEmitter.getQueue().iterator());
+                } else {
+                    mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
+                }
+            }
 
-
-            //Write mutated properties back into graph
+            // #### Write mutated properties back into graph
             ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
             processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
             AtomicInteger failures = new AtomicInteger(0);
@@ -192,6 +209,10 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 processor.shutdownNow();
             }
 
+
+            // update runtime and return the newly computed graph
+            this.memory.setRuntime(System.currentTimeMillis() - time);
+            this.memory.complete();
             return new ComputerResult(this.graph, this.memory);
         });
     }
