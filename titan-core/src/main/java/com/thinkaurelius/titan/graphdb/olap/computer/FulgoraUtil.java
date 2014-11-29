@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class FulgoraUtil {
 
-    public static TitanElementTraversal<Vertex,Edge> getTitanTraversal(final MessageScope.Local scope,
+    public static TitanElementTraversal<Vertex,Edge> getTitanTraversal(final MessageScope.Local<?> scope,
                                                                        final TitanTransaction graph) {
         Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
         TitanElementTraversal<Vertex,Edge> result = TitanElementTraversal.of(graph);
@@ -35,7 +35,7 @@ public class FulgoraUtil {
         return result;
     }
 
-    public static TitanElementTraversal<Vertex,Edge> getReverseElementTraversal(final MessageScope.Local scope,
+    public static TitanElementTraversal<Vertex,Edge> getReverseElementTraversal(final MessageScope.Local<?> scope,
                                                                        final Vertex start,
                                                                        final TitanTransaction graph) {
         Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();

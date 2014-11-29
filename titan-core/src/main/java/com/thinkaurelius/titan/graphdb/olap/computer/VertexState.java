@@ -99,15 +99,22 @@ public class VertexState<M> {
         return true;
     }
 
-    static final VertexState EMPTY_STATE = new VertexState() {
+    static final VertexState EMPTY_STATE = new EmptyState();
+
+    private static class EmptyState<M> extends VertexState<M> {
 
         @Override
-        public void setProperty(String key, Object value, Map<String,Integer> keyMap) {
+        public<V> void setProperty(String key, V value, Map<String,Integer> keyMap) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Object getProperty(String key, Map<String,Integer> keyMap) {
+        public<V> V getProperty(String key, Map<String,Integer> keyMap) {
+            return null;
+        }
+
+        @Override
+        public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
             return null;
         }
 
@@ -123,15 +130,11 @@ public class VertexState<M> {
         }
 
         @Override
-        public M getMessage(MessageScope scope, Map<MessageScope,Integer> scopeMap) {
-            return null;
-        }
-
-        @Override
         public synchronized void completeIteration() {
             throw new UnsupportedOperationException();
         }
 
-    };
+
+    }
 
 }

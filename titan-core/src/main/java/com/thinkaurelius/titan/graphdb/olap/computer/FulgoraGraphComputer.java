@@ -171,7 +171,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             }
             // Execute reduce phase and add to memory
             for (Map.Entry<MapReduce,FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
-                FulgoraMapEmitter mapEmitter = mapJob.getValue();
+                FulgoraMapEmitter<?,?> mapEmitter = mapJob.getValue();
                 MapReduce mapReduce = mapJob.getKey();
                 mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
                 if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
