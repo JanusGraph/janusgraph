@@ -12,7 +12,7 @@ http://hadoop.apache.org[Hadoop's] native binary data file is the http://wiki.ap
 Titan-Hadoop Compression
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following is a list of compression techniques used by Titan-HAdoop within a SequenceFile.
+The following is a list of compression techniques used by Titan-Hadoop within a SequenceFile.
 
 * http://en.wikipedia.org/wiki/Variable-width_encoding[Variable-width encoding] of all ints and longs.
 * Edge's sorted by direction to reduce the number of direction encodings.

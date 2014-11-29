@@ -275,7 +275,7 @@ background-color: #EEE;
 }
 
 /* Change link color */
-a.link {
+a.link,a.xref {
     color:#e10707 !important;
 }
 a.link:hover {

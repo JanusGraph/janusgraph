@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.Memory;
-import com.tinkerpop.gremlin.process.computer.MessageType;
+import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.Messenger;
 import com.tinkerpop.gremlin.process.computer.VertexProgram;
 import com.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
@@ -40,7 +40,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     private static final String TITAN_ID = Graph.Key.hide("titan.id");
     private static final ImmutableSet<String> elementComputeKeys = ImmutableSet.of(TITAN_ID);
 
-    private MessageType.Local messageType = MessageType.Local.of(() -> GraphTraversal.<Vertex>of().inE());
+    private MessageScope.Local messageScope = MessageScope.Local.of(() -> GraphTraversal.<Vertex>of().inE());
     private Configuration configuration;
     private TitanGraph graph;
 
@@ -109,11 +109,11 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             vertex.property(TITAN_ID, titanVertex.id());
             // create an id/titan_id pair and send it to all the vertex's outgoing adjacent vertices
             final Long[] idPair = {Long.valueOf(vertex.id().toString()), (Long) titanVertex.id()};
-            messenger.sendMessage(this.messageType, idPair);
+            messenger.sendMessage(this.messageScope, idPair);
         } else {
             // create a id/titan_id map and populate it with all the incoming messages
             final Map<Long, Long> idPairs = new HashMap<>();
-            messenger.receiveMessages(this.messageType).forEach(idPair -> idPairs.put(idPair[0], idPair[1]));
+            messenger.receiveMessages(this.messageScope).forEach(idPair -> idPairs.put(idPair[0], idPair[1]));
             // get the titan vertex out of titan given the dummy id property
             final Vertex titanVertex = graph.v(vertex.value(TITAN_ID));
             // for all the incoming edges of the vertex, get the incoming adjacent vertex and write the edge and its properties
@@ -136,6 +136,11 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     @Override
     public Set<String> getElementComputeKeys() {
         return elementComputeKeys;
+    }
+
+    @Override
+    public Set<MessageScope> getMessageScopes(final Memory memory) {
+        return ImmutableSet.of(messageScope);
     }
 
     @Override

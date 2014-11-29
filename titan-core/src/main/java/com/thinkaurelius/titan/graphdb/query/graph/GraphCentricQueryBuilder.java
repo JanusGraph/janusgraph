@@ -18,6 +18,8 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.thinkaurelius.titan.util.datastructures.Interval;
+import com.thinkaurelius.titan.util.datastructures.PointInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,9 +174,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 	 * ---------------------------------------------------------------
 	 */
 
-    private static final int DEFAULT_NO_LIMIT = 100;
+    private static final int DEFAULT_NO_LIMIT = 1000;
     private static final int MAX_BASE_LIMIT = 20000;
-    private static final int HARD_MAX_LIMIT = 50000;
+    private static final int HARD_MAX_LIMIT = 100000;
 
     private static final double EQUAL_CONDITION_SCORE = 4;
     private static final double OTHER_CONDITION_SCORE = 1;
@@ -237,14 +239,16 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
                     TitanSchemaType type = index.getSchemaTypeConstraint();
-                    boolean matchesTypeConstraint = false;
-                    for (PredicateCondition<RelationType, TitanElement> atom : getEqualityPredicateConditions(conditions)) {
-                        if (atom.getKey().equals(ImplicitKey.LABEL) && type.name().equals((String)atom.getValue())) {
-                            matchesTypeConstraint = true;
-                            subcover.add(atom);
-                        }
+                    Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
+                    if (equalCon==null) continue;
+                    Collection<Object> labels = equalCon.getValue();
+                    assert labels.size()>=1;
+                    if (labels.size()>1) {
+                        log.warn("The query optimizer currently does not support multiple label constraints in query: {}",this);
+                        continue;
                     }
-                    if (!matchesTypeConstraint) continue;
+                    if (!type.name().equals((String)Iterables.getOnlyElement(labels))) continue;
+                    subcover.add(equalCon.getKey());
                 }
 
                 if (index.isCompositeIndex()) {
@@ -282,7 +286,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 coveredClauses.addAll(candidateSubcover);
                 if (bestCandidate.isCompositeIndex()) {
                     jointQuery.add((CompositeIndexType)bestCandidate,
-                            serializer.getQuery((CompositeIndexType)bestCandidate,(Object[])candidateSubcondition));
+                            serializer.getQuery((CompositeIndexType)bestCandidate,(List<Object[]>)candidateSubcondition));
                 } else {
                     jointQuery.add((MixedIndexType)bestCandidate,
                             serializer.getQuery((MixedIndexType)bestCandidate,(Condition)candidateSubcondition,orders));
@@ -299,7 +303,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
         BackendQueryHolder<JointIndexQuery> query;
         if (!coveredClauses.isEmpty()) {
-            int indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
+            int indexLimit = limit == Query.NO_LIMIT ? HARD_MAX_LIMIT : limit;
+            if (tx.getGraph().getConfiguration().adjustQueryLimit()) {
+                indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
+            }
             indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             jointQuery.setLimit(indexLimit);
             query = new BackendQueryHolder<JointIndexQuery>(jointQuery, coveredClauses.size()==conditions.numChildren(), isSorted, null);
@@ -317,37 +324,59 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return true;
     }
 
-    public static final Object[] indexCover(final CompositeIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
+    public static List<Object[]> indexCover(final CompositeIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
         IndexField[] fields = index.getFieldKeys();
-        Object[] indexCover = new Object[fields.length];
-        Condition[] coveredClauses = new Condition[fields.length];
-        for (int i = 0; i < fields.length; i++) {
-            IndexField field = fields[i];
-            for (PredicateCondition<RelationType, TitanElement> atom : getEqualityPredicateConditions(condition)) {
-                if (atom.getKey().equals(field.getFieldKey())) {
-                    indexCover[i]=atom.getValue();
-                    coveredClauses[i]=atom;
-                }
-            }
-            if (indexCover[i]==null) return null; //Couldn't find a match
-        }
-        assert indexCover!=null;
-        covered.addAll(Arrays.asList(coveredClauses));
-        return indexCover;
+        Object[] indexValues = new Object[fields.length];
+        Set<Condition> coveredClauses = new HashSet<Condition>(fields.length);
+        List<Object[]> indexCovers = new ArrayList<Object[]>(4);
+
+        constructIndexCover(indexValues,0,fields,condition,indexCovers,coveredClauses);
+        if (!indexCovers.isEmpty()) {
+            covered.addAll(coveredClauses);
+            return indexCovers;
+        } else return null;
     }
 
-    private static final Iterable<PredicateCondition<RelationType,TitanElement>> getEqualityPredicateConditions(Condition<TitanElement> condition) {
-        return (Iterable)Iterables.filter(condition.getChildren(),new Predicate<Condition<TitanElement>>() {
-            @Override
-            public boolean apply(@Nullable Condition<TitanElement> subclause) {
-                if (!(subclause instanceof PredicateCondition)) return false;
-                PredicateCondition<RelationType, TitanElement> atom = (PredicateCondition) subclause;
-                return atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null;
+    private static void constructIndexCover(Object[] indexValues, int position, IndexField[] fields,
+                                            Condition<TitanElement> condition,
+                                            List<Object[]> indexCovers, Set<Condition> coveredClauses) {
+        if (position>=fields.length) {
+            indexCovers.add(indexValues);
+        } else {
+            IndexField field = fields[position];
+            Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(condition,field.getFieldKey());
+            if (equalCon!=null) {
+                coveredClauses.add(equalCon.getKey());
+                assert equalCon.getValue().size()>0;
+                for (Object value : equalCon.getValue()) {
+                    Object[] newValues = Arrays.copyOf(indexValues,fields.length);
+                    newValues[position]=value;
+                    constructIndexCover(newValues,position+1,fields,condition,indexCovers,coveredClauses);
+                }
+            } else return;
+        }
+
+    }
+
+    private static final Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<TitanElement> condition, RelationType type) {
+        for (Condition c : condition.getChildren()) {
+            if (c instanceof Or) {
+                Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
+                if (orEqual!=null && orEqual.getKey().equals(type) && !orEqual.getValue().isEmpty()) {
+                    return new AbstractMap.SimpleImmutableEntry(c,orEqual.getValue());
+                }
+            } else if (c instanceof PredicateCondition) {
+                PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)c;
+                if (atom.getKey().equals(type) && atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null) {
+                    return new AbstractMap.SimpleImmutableEntry(c,ImmutableList.of(atom.getValue()));
+                }
             }
-        });
+
+        }
+        return null;
     }
 
     public static final Condition<TitanElement> indexCover(final MixedIndexType index, Condition<TitanElement> condition,

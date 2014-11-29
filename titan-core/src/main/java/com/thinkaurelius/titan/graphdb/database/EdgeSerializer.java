@@ -6,7 +6,6 @@ import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -423,7 +422,7 @@ public class EdgeSerializer implements RelationReader {
                     assert t!=ImplicitKey.TITANID || (!type.multiplicity().isConstrained() &&
                                                   (i==sortKeyIDs.length && t.isPropertyKey() || i==sortKeyIDs.length+1 && t.isEdgeLabel() ));
                     assert colStart.getPosition()==colEnd.getPosition();
-                    assert interval==null || interval.isPoint();
+                    assert interval==null || interval.isPoints();
                     keyEndPos = colStart.getPosition();
 
                 } else {
@@ -434,7 +433,7 @@ public class EdgeSerializer implements RelationReader {
                 if (interval == null || interval.isEmpty()) {
                     break;
                 }
-                if (interval.isPoint()) {
+                if (interval.isPoints()) {
                     if (t==ImplicitKey.TITANID || t==ImplicitKey.ADJACENT_ID) {
                         assert !type.multiplicity().isUnique(dir);
                         VariableLong.writePositiveBackward(colStart, (Long)interval.getStart());

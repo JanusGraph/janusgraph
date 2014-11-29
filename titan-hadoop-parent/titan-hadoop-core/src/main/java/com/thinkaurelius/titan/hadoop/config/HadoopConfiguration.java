@@ -1,13 +1,11 @@
 package com.thinkaurelius.titan.hadoop.config;
 
 import java.lang.reflect.Constructor;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Predicate;
 import org.apache.hadoop.conf.Configuration;
-import org.elasticsearch.common.collect.Iterators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

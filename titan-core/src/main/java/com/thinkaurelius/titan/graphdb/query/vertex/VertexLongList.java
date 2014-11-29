@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * An implementation of {@link VertexListInternal} that stores only the vertex ids
@@ -24,6 +25,10 @@ public class VertexLongList implements VertexListInternal {
     private final StandardTitanTx tx;
     private LongArrayList vertices;
     private boolean sorted;
+
+    public VertexLongList(StandardTitanTx tx) {
+        this(tx,new LongArrayList(10),true);
+    }
 
     public VertexLongList(StandardTitanTx tx, LongArrayList vertices, boolean sorted) {
         assert !sorted || AbstractLongListUtil.isSorted(vertices);
@@ -120,6 +125,7 @@ public class VertexLongList implements VertexListInternal {
 
             @Override
             public TitanVertex next() {
+                if (!hasNext()) throw new NoSuchElementException();
                 pos++;
                 return get(pos);
             }

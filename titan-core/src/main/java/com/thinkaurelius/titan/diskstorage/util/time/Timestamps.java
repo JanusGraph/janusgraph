@@ -166,7 +166,7 @@ public enum Timestamps implements TimestampProvider {
 
     @Override
     public String toString() {
-        return "Timestamps[" + Durations.abbreviate(getUnit()) + "]";
+        return name();
     }
 
     @Override

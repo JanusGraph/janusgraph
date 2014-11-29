@@ -106,7 +106,7 @@
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
-                        <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                        <excludedGroups>${test.excluded.groups},com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>

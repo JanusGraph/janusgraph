@@ -7,9 +7,9 @@ image:titan-elasticsearch.png[]
 
 While Titan's composite graph indexes are natively supported through the primary storage backend, mixed graph indexes require that an indexing backend is configured. Mixed indexes provide support for geo, numeric range, and full-text search.
 
-The choice of index backend determines which search features are supported, as well as the performance and scalability of the index. Titan currently supports two index backends: <<elasticsearch,Elasticsearch>> and <<lucene,Lucene>>.
+The choice of index backend determines which search features are supported, as well as the performance and scalability of the index. Titan currently supports three index backends: <<elasticsearch,Elasticsearch>>, <<solr,Solr>> and <<lucene,Lucene>>.
 
-Use <<elasticsearch,Elasticsearch>> when there is an expectation that Titan will be distributed across multiple machines. <<lucene,Lucene>> performs better in small scale, single machine applications. It performs better in unit tests, for instance.
+Use <<elasticsearch,Elasticsearch>> or <<solr,Solr>> when there is an expectation that Titan will be distributed across multiple machines. <<lucene,Lucene>> performs better in small scale, single machine applications. It performs better in unit tests, for instance.
 
 include::searchpredicates.txt[]
 
@@ -18,6 +18,8 @@ include::textsearch.txt[]
 include::directindex.txt[]
 
 include::elasticsearch.txt[]
+
+include::solr.txt[]
 
 include::lucene.txt[]
 

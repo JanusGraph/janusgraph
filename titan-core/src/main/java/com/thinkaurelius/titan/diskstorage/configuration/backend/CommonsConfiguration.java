@@ -69,12 +69,13 @@ public class CommonsConfiguration implements WriteConfiguration {
         } else if (datatype==Boolean.class) {
             return (O)new Boolean(config.getBoolean(key));
         } else if (datatype.isEnum()) {
-            O[] constants = datatype.getEnumConstants();
+            Enum[] constants = (Enum[])datatype.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
+
             String estr = config.getProperty(key).toString();
-            for (O c : constants)
-                if (c.toString().equals(estr))
-                    return c;
+            for (Enum ec : constants)
+                if (ec.toString().equals(estr))
+                    return (O)ec;
             throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
         } else if (datatype==Object.class) {
             return (O)config.getProperty(key);

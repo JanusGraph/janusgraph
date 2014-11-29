@@ -11,7 +11,6 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>
-        <hbase.version>0.94.21</hbase.version>
         <hadoop.version>${hadoop1.version}</hadoop.version>
         <jruby.version>1.6.5</jruby.version>
         <hadoop.profile>1.0</hadoop.profile>
@@ -40,7 +39,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase094.version}</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -309,7 +308,7 @@
             </activation>
 
             <properties>
-                <hbase.version>0.94.12-mapr-1310</hbase.version>
+                <hbase094.version>0.94.12-mapr-1310</hbase094.version>
                 <hadoop.version>1.0.3-mapr-3.0.2</hadoop.version>
                 <zookeeper.version>3.4.5</zookeeper.version>
                 <titan.hbase.mvn.opts.extra>-Dzookeeper.version=${zookeeper.version}</titan.hbase.mvn.opts.extra>
@@ -338,7 +337,7 @@
                     <dependency>
                         <groupId>org.apache.hbase</groupId>
                         <artifactId>hbase</artifactId>
-                        <version>${hbase.version}</version>
+                        <version>${hbase094.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>org.apache.zookeeper</groupId>

@@ -5,16 +5,11 @@ import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.apache.cassandra.db.Column;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

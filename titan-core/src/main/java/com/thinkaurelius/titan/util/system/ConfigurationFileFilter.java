@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.util.system;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -16,28 +17,38 @@ import java.util.regex.Pattern;
 
 public class ConfigurationFileFilter {
 
-    private static final Pattern P = Pattern.compile("^#TITANCFG\\{((.+)=(.*))\\}$");
+    private static final Pattern REPLACEMENT_PATTERN = Pattern.compile("^#TITANCFG\\{((.+)=(.*))\\}$");
 
     private static final Logger log =
             LoggerFactory.getLogger(ConfigurationFileFilter.class);
 
+    private static final int WRAP_COLUMNS = 72;
+
     public static void main(String args[]) throws IOException {
+        int errors = filter(args[0], args[1]);
+        System.exit(Math.min(errors, 127));
+    }
+
+    public static int filter(String inputContextDirPath, String outputContextDirPath) throws IOException {
 
         // Read args[0] as a dirname and iterate recursively over its file contents
-        File inputContextDir = new File(args[0]);
-        File outputContextDir = new File(args[1]);
-        Preconditions.checkArgument(inputContextDir.isDirectory());
-        Preconditions.checkArgument(inputContextDir.canRead());
+        File inputContextDir = new File(inputContextDirPath);
+        File outputContextDir = new File(outputContextDirPath);
+
+        log.info("Input context dir:  {}", inputContextDir);
+        log.info("Output context dir: {}", outputContextDir);
+        Preconditions.checkArgument(inputContextDir.isDirectory(),
+                "Input context dir %s is not a directory", inputContextDir);
+        Preconditions.checkArgument(inputContextDir.canRead(),
+                "Input context dir %s is not readable", inputContextDir);
 
         if (!outputContextDir.exists()) {
             outputContextDir.mkdirs(); // may fail if path exists as a file
         }
 
-        log.info("Input context dir:  {}", inputContextDir);
-        log.info("Output context dir: {}", outputContextDir);
-
         Queue<InputRecord> dirQueue = new LinkedList<InputRecord>();
         dirQueue.add(new InputRecord(inputContextDir, File.separator));
+        int parseErrors = 0;
         int visitedDirs = 0;
         int processedFiles = 0;
         InputRecord rec;
@@ -71,14 +82,22 @@ public class ConfigurationFileFilter {
                         outputDir.mkdirs();
                     }
 
-                    processFile(f, new File(outputContextDir.getPath() + contextPath + f.getName()));
+                    parseErrors += processFile(f, new File(outputContextDir.getPath() + contextPath + f.getName()));
 
                     processedFiles++;
                 }
             }
         }
 
-        log.info("Summary: visited {} dirs and processed {} files.", visitedDirs, processedFiles);
+        String summaryTemplate = "Summary: visited {} dir(s) and processed {} file(s) with {} parse error(s).";
+
+        if (0 == parseErrors) {
+            log.info(summaryTemplate, visitedDirs, processedFiles, parseErrors);
+        } else {
+            log.error(summaryTemplate, visitedDirs, processedFiles, parseErrors);
+        }
+
+        return parseErrors;
     }
 
     private static class InputRecord {
@@ -99,40 +118,96 @@ public class ConfigurationFileFilter {
         }
     }
 
-    public static void processFile(File inputFile, File outputFile) throws IOException {
+    private static int processFile(File inputFile, File outputFile) throws IOException {
         BufferedReader in = null;
         PrintStream out = null;
 
         int inputLines = 0;
         int replacements = 0;
+        int parseErrors = 0;
 
         try {
             in = new BufferedReader(new FileReader(inputFile));
             out = new PrintStream(outputFile);
 
             String line;
+
             while (null != (line = in.readLine())) {
                 inputLines++;
-                Matcher m = P.matcher(line);
+                Matcher m = REPLACEMENT_PATTERN.matcher(line);
                 if (m.matches()) {
                     String cfgKey = m.group(2).trim();
                     String cfgVal = m.group(3);
                     try {
                         ConfigElement.PathIdentifier pid = ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, cfgKey);
                         ConfigOption<?> opt = (ConfigOption<?>) pid.element;
+                        //opt.verify(cfgVal);
                         String kvPair = m.group(1);
-                        String descr = "# "  + WordUtils.wrap(opt.getDescription(), 72, "\n# ", false);
+                        String descr = "# " + WordUtils.wrap(opt.getDescription(), WRAP_COLUMNS, "\n# ", false);
+                        String dt = "# Data Type:  ";
+                        if (opt.getDatatype().isArray()) {
+                            dt += opt.getDatatype().getComponentType().toString() + "[]";
+                        } else if (opt.getDatatype().isEnum()) {
+                            Enum[] enums = (Enum[])opt.getDatatype().getEnumConstants();
+                            String[] names = new String[enums.length];
+                            for (int i = 0; i < names.length; i++)
+                                names[i] = enums[i].name();
+                            dt += opt.getDatatype().getSimpleName() + " enum:";
+                            String s = "\n#             " + "{ " + Joiner.on(", ").join(names) + " }";
+                            dt += WordUtils.wrap(s, WRAP_COLUMNS, "\n#               ", false);
+                        } else {
+                            dt += opt.getDatatype().getSimpleName();
+                        }
+                        String defval = "# Default:    ";
+                        if (null == opt.getDefaultValue()) {
+                            defval += "(no default value)";
+                        } else if (opt.getDatatype().isArray()) {
+                            defval += Joiner.on(", ").join((Object[]) opt.getDefaultValue());
+                        } else if (opt.getDatatype().isEnum()) {
+                            defval += ((Enum)opt.getDefaultValue()).name();
+                        } else {
+                            defval += opt.getDefaultValue();
+                        }
                         String mut = "# Mutability: " + opt.getType();
                         if (opt.isManaged()) {
-                            mut += "\n# Use the ManagementSystem to modify this after bootstrapping Titan.";
+                            mut += "\n#\n# ";
+                            if (opt.getType().equals(ConfigOption.Type.FIXED)) {
+                                mut += "This setting is " + opt.getType() +
+                                        " and cannot be changed after bootstrapping Titan.";
+                            } else {
+                                final String warning =
+                                    "Settings with mutability " + opt.getType() + " are centrally managed in " +
+                                    "Titan's storage backend.  After starting the database for the first time, " +
+                                    "this file's copy of this setting is ignored.  Use Titan's Management " +
+                                    "System to read or modify this value after bootstrapping.";
+                                mut += WordUtils.wrap(warning, WRAP_COLUMNS, "\n# ", false);
+                            }
                         }
+                        String umbrella = null;
+                        // This background info on umbrellas isn't critical when getting started with an Titan config
+//                        if (pid.hasUmbrellaElements() && 1 == pid.umbrellaElements.length) {
+//                            String s = "# " +
+//                                    "This setting is under an umbrella namespace.  " +
+//                                    "The string \"" + pid.umbrellaElements[0] + "\" in this setting groups " +
+//                                    "it with other elements under the same umbrella. " +
+//                                    "See the Configuration Reference in the manual for more info.";
+//                            umbrella = WordUtils.wrap(s, WRAP_COLUMNS, "\n# ", false);
+//                        }
+
                         out.println(descr);
+                        out.println("#");
+                        out.println(defval);
+                        out.println(dt);
                         out.println(mut);
+                        if (null != umbrella)
+                            out.println(umbrella);
                         out.println(kvPair);
                         replacements++;
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         out.println(line);
-                        continue;
+
+                        log.warn("Exception on {}:{}", inputFile, line, e);
+                        parseErrors++;
                     }
                 } else {
                     out.println(line);
@@ -144,5 +219,14 @@ public class ConfigurationFileFilter {
             IOUtils.closeQuietly(out);
             IOUtils.closeQuietly(in);
         }
+
+        // Read what we just wrote.  Make sure it validates as a Titan config.
+        ConfigurationLint.Status stat = ConfigurationLint.validate(outputFile.getAbsolutePath());
+        if (0 != stat.getErrorSettingCount())
+            log.error("Output file {} failed to validate", outputFile);
+
+        parseErrors += stat.getErrorSettingCount();
+
+        return parseErrors;
     }
 }

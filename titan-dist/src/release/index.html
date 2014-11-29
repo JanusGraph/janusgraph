@@ -16,12 +16,13 @@
     <!-- HEADER -->
     <div id="header_wrap" class="outer">
         <header class="inner">
-          <a id="forkme_banner" href="https://github.com/thinkaurelius/titan/wiki">View Documentation</a>
+          <a id="left_banner" class="top_banner" href="http://s3.thinkaurelius.com/docs/titan/$MAVEN{project.version}/">View Documentation</a>
+          <a id="right_banner" class="top_banner" href="https://github.com/thinkaurelius/titan/">On Github</a>
 	      <!--<img src="images/titan-banner.gif" />-->
           <h1 id="project_title">TITAN</h1>
           <h2 id="project_tagline">Distributed Graph Database</h2>
           <section id="downloads">                                                                                                                  
-              <a class="zip_download_link" href="http://s3.thinkaurelius.com/downloads/titan/titan-all-$MAVEN{project.version}.zip">Download this project as a .zip file</a>              
+              <a class="zip_download_link" href="http://s3.thinkaurelius.com/downloads/titan/titan-$MAVEN{project.version}-hadoop2.zip">Download this project as a .zip file</a>              
           </section>
         </header>
     </div>
@@ -33,7 +34,7 @@
 <img id="titanlogo" src="images/titan-logo2.png" />
 
 <p>Titan is a scalable <a href="http://en.wikipedia.org/wiki/Graph_database">graph database</a> optimized for storing and querying graphs containing hundreds of billions of vertices and edges distributed across a multi-machine cluster. 
-Titan is a transactional database that can support <a href="http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/">thousands of concurrent users</a> executing <a href="http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/">complex graph traversals</a>.</p>
+Titan is a transactional database that can support <a href="http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/">thousands of concurrent users</a> executing <a href="http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/">complex graph traversals</a> in real time.</p>
 
 <p>In addition, Titan provides the following features:</p>
 
@@ -46,18 +47,22 @@ Titan is a transactional database that can support <a href="http://thinkaurelius
 
 <li>Support for <a href="http://en.wikipedia.org/wiki/ACID">ACID</a> and <a href="http://en.wikipedia.org/wiki/Eventual_consistency">eventual consistency</a>.</li>
 
-<li>Support for various <a href="https://github.com/thinkaurelius/titan/wiki/Storage-Backend-Overview">storage backends</a>:
+<li>Support for various <a href="http://s3.thinkaurelius.com/docs/titan/$MAVEN{project.version}/storage-backends.html">storage backends</a>:
 <ul>
 <li><a href="http://cassandra.apache.org/">Apache Cassandra</a></li>
 <li><a href="http://hbase.apache.org/">Apache HBase</a></li>
 <li><a href="http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html">Oracle BerkeleyDB</a></li>
+<!--<li><a href="http://www.foundationdb.com">FoundationDB</a></li>-->
 </ul>
 </li>
+
+<li>Support for global <a href="http://thinkaurelius.com/2012/11/11/faunus-provides-big-graph-data-analytics/">graph data analytics</a>, reporting, and ETL through <a href="http://hadoop.apache.org/">Apache Hadoop</a> integration.</li>
 
 <li>Support for geo, numeric range, and full-text search via:
 <ul>
 <li><a href="http://www.elasticsearch.org/">ElasticSearch</a></li>
-<li><a href="http://lucene.apache.org/">Apache Lucene</a></li>
+<li><a href="http://lucene.apache.org/solr/">Solr</a></li>
+<li><a href="http://lucene.apache.org/">Lucene</a></li>
 </ul>
 </li>
 
@@ -74,7 +79,7 @@ Titan is a transactional database that can support <a href="http://thinkaurelius
 </ul>
 
 <p><a href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a> Titan or <a href="https://github.com/thinkaurelius/titan">clone</a> from GitHub.
-Read the <a href="https://github.com/thinkaurelius/titan/wiki">Titan documentation</a> and join the <a href="https://groups.google.com/forum/#!forum/aureliusgraphs">mailing list</a>.<br />
+Read the <a href="http://s3.thinkaurelius.com/docs/titan/$MAVEN{project.version}/">Titan documentation</a> and join the <a href="https://groups.google.com/forum/#!forum/aureliusgraphs">mailing list</a>.<br />
 
 <p>For <a href="http://thinkaurelius.com/subscription/">commercial Titan support</a>, please <a href="mailto:info@thinkaurelius.com">contact</a> the graph experts at <a href="http://thinkaurelius.com">Aurelius</a>.</p>
 
@@ -91,10 +96,10 @@ Read the <a href="https://github.com/thinkaurelius/titan/wiki">Titan documentati
 
 <br>
 <div class="highlight"><pre><span class="c1">// who is hercules' grandfather?</span>
-<span class="n">g</span><span class="o">.</span><span class="na">V</span><span class="o">(</span><span class="s1">'name'</span><span class="o">,</span><span class="s1">'hercules'</span><span class="o">).</span><span class="na">out</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">out</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">name</span>
+<span class="n">g</span><span class="o">.</span><span class="na">V</span><span class="o">.</span><span class="na">has</span><span class="o">(</span><span class="s1">'name'</span><span class="o">,</span><span class="s1">'hercules'</span><span class="o">).</span><span class="na">out</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">out</span><span class="o">(</span><span class="s1">'father'</span><span class="o">).</span><span class="na">name</span>
 </pre></div>
 
-<p>Continue with the <a href="https://github.com/thinkaurelius/titan/wiki/Getting-Started">Getting Started with Titan</a> guide for a step-by-step introduction.</p>
+<p>Continue with the <a href="http://s3.thinkaurelius.com/docs/titan/$MAVEN{project.version}/getting-started.html">Getting Started with Titan</a> guide for a step-by-step introduction.</p>
 
 
 </section>

@@ -32,7 +32,7 @@ public class TestMockIndexProvider implements IndexProvider {
 
     public TestMockIndexProvider(Configuration config) {
         this.index = Backend.getImplementationClass(config, config.get(INDEX_BACKEND_PROXY),
-                Backend.REGISTERED_INDEX_PROVIDERS);
+                StandardIndexProvider.getAllProviderClasses());
         this.failAdds = config.get(INDEX_MOCK_FAILADD);
     }
 

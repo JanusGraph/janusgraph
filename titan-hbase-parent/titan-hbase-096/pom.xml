@@ -13,9 +13,6 @@
     <properties>
         <hadoop.profile>2.0</hadoop.profile>
         <hadoop.version>2.2.0</hadoop.version>
-        <hbase.version.base>0.96.1.1</hbase.version.base>
-        <hbase.version>${hbase.version.base}-hadoop2</hbase.version>
-        <!-- <hadoop.version>2.2.0</hadoop.version> -->
         <jruby.version>1.6.8</jruby.version>
         <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
     </properties>
@@ -35,7 +32,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase096.version}</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -55,7 +52,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
-            <version>${hbase.version}</version>
+            <version>${hbase096.version}</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -149,7 +146,7 @@
             </activation>
             
             <properties>
-                <hbase.version>${hbase.version.base}-hadoop1</hbase.version>
+                <hbase.version>${hbase096.core.version}-hadoop1</hbase.version>
                 <hadoop.version>1.0.4</hadoop.version>
             </properties>
 

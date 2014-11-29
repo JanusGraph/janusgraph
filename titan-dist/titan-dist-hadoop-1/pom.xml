@@ -14,8 +14,9 @@
     <properties>
         <hadoop.version.tag>hadoop1</hadoop.version.tag>
         <assembly.descriptor.dir>${project.parent.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
-        <assembly.resources.dir>${project.parent.basedir}/src/assembly/resources</assembly.resources.dir>
         <assembly.static.dir>${project.parent.basedir}/src/assembly/static</assembly.static.dir>
+        <assembly.resources.dir>${project.parent.basedir}/src/assembly/resources</assembly.resources.dir>
+        <assembly.cfilter.out.dir>${project.parent.build.directory}/cfilter</assembly.cfilter.out.dir>
         <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
     </properties>
 
@@ -34,12 +35,17 @@
                     <groupId>org.apache.hbase</groupId>
                     <artifactId>hbase-client</artifactId>
                 </exclusion>
+                <!-- Solr depends on Hadoop2 -->
+                <exclusion>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-solr</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
-            <version>0.94.21</version>
+            <version>${hbase094.version}</version>
             <exclusions>
                 <!-- This includes an unshaded copy of Snakeyaml
                      that's binary-incompatible with Cassandra 2.0.
@@ -56,7 +62,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
-            <version>1.2.1</version>
+            <version>${hadoop1.version}</version>
         </dependency>
     </dependencies>
 
@@ -119,6 +125,10 @@
                             </execution>
                             <execution>
                                 <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>copy-test-cfiles</id>
                                 <phase>process-test-resources</phase>
                             </execution>
                         </executions>

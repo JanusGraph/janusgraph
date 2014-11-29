@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.graphdb;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -19,12 +17,14 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
  * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
@@ -53,7 +53,10 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        executor = Executors.newFixedThreadPool(THREAD_COUNT);
+    }
 
+    private void initializeGraph() {
         //Create schema
         for (int i = 0; i < REL_COUNT; i++) {
             makeLabel("rel" + i);
@@ -73,8 +76,6 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
                 }
             }
         }
-
-        executor = Executors.newFixedThreadPool(THREAD_COUNT);
 
         // Get a new transaction
         clopen();
@@ -140,6 +141,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
      */
     @Test
     public void concurrentReadsOnSingleTransaction() throws Exception {
+        initializeGraph();
+
         PropertyKey id = tx.getPropertyKey("uid");
 
         // Tail many concurrent readers on a single transaction
@@ -167,6 +170,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
      */
     @Test
     public void concurrentReadWriteOnSingleTransaction() throws Exception {
+        initializeGraph();
+
         mgmt.getPropertyKey("uid");
         makeVertexIndexedUniqueKey("dummyProperty",String.class);
         makeLabel("dummyRelationship");
@@ -191,6 +196,79 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
         propFuture.cancel(true);
         relFuture.cancel(true);
+    }
+
+    @Test
+    public void concurrentIndexReadWriteTest() throws Exception {
+        clopen(option(GraphDatabaseConfiguration.ADJUST_LIMIT),false);
+
+        PropertyKey k = mgmt.makePropertyKey("k").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey q = mgmt.makePropertyKey("q").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("byK",Vertex.class).addKey(k).buildCompositeIndex();
+        finishSchema();
+
+        final AtomicBoolean run = new AtomicBoolean(true);
+        final int batchV = 10;
+        final int batchR = 10;
+        final int maxK = 5;
+        final int maxQ = 2;
+        final Random random = new Random();
+        final AtomicInteger duplicates = new AtomicInteger(0);
+
+        Thread writer = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (run.get()) {
+                    TitanTransaction tx = graph.newTransaction();
+                    try {
+                        for (int i = 0; i < batchV; i++) {
+                            Vertex v = tx.addVertex();
+                            v.property("k", random.nextInt(maxK));
+                            v.property("q", random.nextInt(maxQ));
+                        }
+                        tx.commit();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (tx.isOpen()) tx.rollback();
+                    }
+                }
+            }
+        });
+        Thread reader = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (run.get()) {
+                    TitanTransaction tx = graph.newTransaction();
+                    try {
+                        for (int i = 0; i < batchR; i++) {
+                            Set<Vertex> vs = new HashSet<Vertex>();
+                            Iterable<TitanVertex> vertices = tx.query().has("k",random.nextInt(maxK)).has("q",random.nextInt(maxQ)).vertices();
+                            for (TitanVertex v : vertices) {
+                                if (!vs.add(v)) {
+                                    duplicates.incrementAndGet();
+                                    System.err.println("Duplicate vertex: " + v);
+                                }
+                            }
+                        }
+                        tx.commit();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (tx.isOpen()) tx.rollback();
+                    }
+                }
+            }
+        });
+        writer.start();
+        reader.start();
+
+        Thread.sleep(10000);
+        run.set(false);
+        writer.join();
+        reader.join();
+
+        assertEquals(0,duplicates.get());
     }
 
     /**

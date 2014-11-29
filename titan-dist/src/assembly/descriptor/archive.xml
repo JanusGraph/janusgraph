@@ -1,87 +1,15 @@
-<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
-  
-    <!--
-    Relics from when this was a descriptor and not a component...
-    <id>titan-${project.version}-${hadoop.version.tag}</id>
-    <baseDirectory>titan-${project.version}-${hadoop.version.tag}</baseDirectory>
-    -->
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
 
-    <fileSets>
-        <fileSet>
-            <directory>${assembly.static.dir}</directory>
-            <outputDirectory>/</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>${assembly.resources.dir}/conf</directory>
-            <outputDirectory>/conf</outputDirectory>
-            <filtered>true</filtered>
-            <includes>
-                <include>rexster*xml</include>
-            </includes>
-        </fileSet>
-        <!-- No AsciiDoc-generated HTML for milestone release
-        <fileSet>
-            <directory>target/docs/chunk</directory>
-            <outputDirectory>/docs</outputDirectory>
-            <filtered>false</filtered>
-        </fileSet>
-        -->
-    </fileSets>
+    <id>archive</id>
 
-    <files>
-        <file>
-            <source>${assembly.txtfile.dir}/CHANGELOG.asc</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>${assembly.txtfile.dir}/LICENSE.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>${assembly.txtfile.dir}/NOTICE.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>${assembly.txtfile.dir}/UPGRADE.asc</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-    </files>
+    <formats>
+        <format>zip</format>
+    </formats>
 
-    <dependencySets>
-        <!-- Entire jar dependency graph -->
-        <dependencySet>
-            <outputDirectory>/lib</outputDirectory>
-            <unpack>false</unpack>
-            <scope>runtime</scope>
-            <useProjectArtifact>false</useProjectArtifact>
-            <includes>
-                <include>*:*:jar:*</include>
-            </includes>
-            <excludes>
-                <exclude>${project.groupId}:titan-core:jar:javadoc:${project.version}</exclude>
-            </excludes>
-        </dependencySet>
-
-        <!-- HTML copy of core Javadoc -->
-        <dependencySet>
-            <unpack>true</unpack>
-            <!-- Dump into /javadocs instead of /docs/javadocs for milestone release -->
-            <outputDirectory>/javadocs</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-            <includes>
-                <include>${project.groupId}:titan-core:jar:javadoc:${project.version}</include>
-            </includes>
-        </dependencySet>
-
-        <!-- Example data (from titan-hadoop/faunus) -->
-        <dependencySet>
-            <unpack>true</unpack>
-            <outputDirectory>/examples</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-            <includes>
-                <include>${project.groupId}:titan-hadoop-core:zip:example-data:${project.version}</include>
-            </includes>
-        </dependencySet>
-    </dependencySets>
-</component>
+    <componentDescriptors>
+        <componentDescriptor>${assembly.descriptor.dir}/common.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/htmldocs.component.xml</componentDescriptor>
+        <componentDescriptor>${assembly.descriptor.dir}/readmes.component.xml</componentDescriptor>
+    </componentDescriptors>
+</assembly>

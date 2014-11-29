@@ -159,7 +159,7 @@ _______
 Unbeknownst to the Gods, there still lived one Titan. This Titan can not be seen, has no name, and is only apparent in the fact that reality exists. Upon the shoulders of this lost Titan, all of reality hangs together in an undulating web of relations.
 _______
 
-Titan can be downloaded from the http://TODO/[Downloads] section of the project repository.  Once retrieved and unpacked, a http://gremlin.tinkerpop.com[Gremlin] terminal can be started. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and differs slightly from the main http://www.tinkerpop.com[TinkerPop] Gremlin distribution in that is comes preloaded with Titan-specific `imports` and helper methods. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
+Titan can be downloaded from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads] section of the project repository.  Once retrieved and unpacked, a http://gremlin.tinkerpop.com[Gremlin] terminal can be started. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and differs slightly from the main http://www.tinkerpop.com[TinkerPop] Gremlin distribution in that is comes preloaded with Titan-specific `imports` and helper methods. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
 
 
 // The default shell highlighting is so awful that I'd rather
@@ -210,7 +210,7 @@ The `TitanFactory.open() and GraphOfTheGodsFactory.load()` methods do the follow
 . Adds all the vertices to the graph along with their properties.
 . Adds all the edges to the graph along with their properties.
 
-Please see the https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java[GraphOfTheGodsFactory source code] for details.
+Please see the https://github.com/thinkaurelius/titan/blob/titan09/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java[GraphOfTheGodsFactory source code] for details.
 
 For those using Titan/Cassandra (or Titan/HBase), be sure to make use of `conf/titan-cassandra-es.properties` (or `conf/titan-hbase-es.properties`) and `GraphOfTheGodsFactory.load()`.
 
@@ -285,10 +285,10 @@ gremlin> hercules.out('father','mother')
 gremlin> hercules.out('father','mother').name
 ==>jupiter
 ==>alcmene
-gremlin> hercules.out('father','mother').type
+gremlin> hercules.out('father','mother')*.getVertexLabel()
 ==>god
 ==>human
-gremlin> hercules.type
+gremlin> hercules.getVertexLabel()
 ==>demigod
 
 The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.

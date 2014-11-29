@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,12 +42,19 @@ public class ElasticSearchConfigTest {
 
     private static final String INDEX_NAME = "escfg";
 
+    @BeforeClass
+    public static void killElasticsearch() {
+        ElasticsearchRunner esr = new ElasticsearchRunner();
+        esr.stop();
+    }
+
     @Test
     public void testTransportClient() throws BackendException, InterruptedException {
         ElasticsearchRunner esr = new ElasticsearchRunner();
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT, INDEX_NAME);
+        config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
         simpleWriteAndQuery(idx);

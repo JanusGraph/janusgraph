@@ -20,18 +20,20 @@ import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
-
-import com.tinkerpop.gremlin.structure.Vertex;
+import junit.framework.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
@@ -107,6 +109,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertGraphOfTheGods(graph);
     }
 
+
     public static void assertGraphOfTheGods(TitanGraph gotg) {
         assertCount(12, gotg.V());
         assertCount(3, gotg.V().has(T.label, "god"));
@@ -114,6 +117,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod",h.label());
         assertCount(5, h.bothE());
+        gotg.tx().commit();
     }
 
     @Test
@@ -837,6 +841,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 1,new boolean[]{true,true},"mixed");
     }
 
+    @Category({ BrittleTests.class })
     @Test
     public void testIndexReplay() throws Exception {
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
@@ -1259,6 +1264,32 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testDeleteVertexThenModifyProperty() throws BackendException {
         testNestedWrites("x", "y");
+    }
+
+    @Test
+    public void testIndexQueryWithScore() throws InterruptedException {
+        PropertyKey textKey = mgmt.makePropertyKey("text").dataType(String.class).make();
+        mgmt.buildIndex("store1", Vertex.class).addKey(textKey).buildMixedIndex(INDEX);
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex();
+        Vertex v2 = tx.addVertex();
+        Vertex v3 = tx.addVertex();
+
+        v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello");
+        v2.property("text", "Hello abab abab fsdfsd sfdfsd sdffs fsdsdf fdf fsdfsd aera fsad abab abab fsdfsd sfdf");
+        v3.property("text", "Hello");
+
+        tx.commit();
+
+        Thread.sleep(5000);
+
+        Set<Double> scores = new HashSet<Double>();
+        for (TitanIndexQuery.Result<TitanVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
+            scores.add(r.getScore());
+        }
+
+        Assert.assertEquals(3, scores.size());
     }
 
     private void testNestedWrites(String initialValue, String updatedValue) throws BackendException {

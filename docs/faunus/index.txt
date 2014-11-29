@@ -22,6 +22,8 @@ include::cli.txt[]
 
 include::hdfs.txt[]
 
+include::s3.txt[]
+
 //include::rexster.txt[]
 
 include::vertex_query.txt[]

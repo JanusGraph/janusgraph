@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop.formats.util;
 
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.tinkerpop.gremlin.giraph.process.computer.GiraphComputeVertex;
+import com.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -16,14 +16,14 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GiraphRecordReader extends RecordReader<NullWritable, GiraphComputeVertex> {
+public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritable> {
 
     private static final Logger log =
             LoggerFactory.getLogger(GiraphRecordReader.class);
 
     private RecordReader<StaticBuffer, Iterable<Entry>> reader;
     private TitanVertexDeserializer graph;
-    private GiraphComputeVertex vertex;
+    private VertexWritable vertex;
 
     public GiraphRecordReader(final TitanVertexDeserializer graph, final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
         this.graph = graph;
@@ -42,7 +42,7 @@ public class GiraphRecordReader extends RecordReader<NullWritable, GiraphCompute
             final TinkerVertex maybeNullTinkerVertex =
                     graph.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
             if (null != maybeNullTinkerVertex) {
-                vertex = new GiraphComputeVertex(maybeNullTinkerVertex);
+                vertex = new VertexWritable(maybeNullTinkerVertex);
                 //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertexquery filtering
                 return true;
             }
@@ -56,7 +56,7 @@ public class GiraphRecordReader extends RecordReader<NullWritable, GiraphCompute
     }
 
     @Override
-    public GiraphComputeVertex getCurrentValue() throws IOException, InterruptedException {
+    public VertexWritable getCurrentValue() throws IOException, InterruptedException {
         return vertex;
     }
 

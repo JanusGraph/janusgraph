@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.graph.MultiKeySliceQuery;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -505,19 +506,21 @@ public class IndexSerializer {
     public List<Object> query(final JointIndexQuery.Subquery query, final BackendTransaction tx) {
         IndexType index = query.getIndex();
         if (index.isCompositeIndex()) {
-            KeySliceQuery sq = query.getCompositeQuery();
-            EntryList r = tx.indexQuery(sq);
-            List<Object> results = new ArrayList<Object>(r.size());
-            for (java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {
-                Entry entry = iterator.next();
-                ReadBuffer entryValue = entry.asReadBuffer();
-                entryValue.movePositionTo(entry.getValuePosition());
-                switch(index.getElement()) {
-                    case VERTEX:
-                        results.add(VariableLong.readPositive(entryValue));
-                        break;
-                    default:
-                        results.add(bytebuffer2RelationId(entryValue));
+            MultiKeySliceQuery sq = query.getCompositeQuery();
+            List<EntryList> rs = sq.execute(tx);
+            List<Object> results = new ArrayList<Object>(rs.get(0).size());
+            for (EntryList r : rs) {
+                for (java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {
+                    Entry entry = iterator.next();
+                    ReadBuffer entryValue = entry.asReadBuffer();
+                    entryValue.movePositionTo(entry.getValuePosition());
+                    switch(index.getElement()) {
+                        case VERTEX:
+                            results.add(VariableLong.readPositive(entryValue));
+                            break;
+                        default:
+                            results.add(bytebuffer2RelationId(entryValue));
+                    }
                 }
             }
             boolean hasCardinalitySize = ((CompositeIndexType)index).getCardinality()!= Cardinality.SINGLE || results.size() <= 1;
@@ -531,8 +534,12 @@ public class IndexSerializer {
         }
     }
 
-    public KeySliceQuery getQuery(final CompositeIndexType index, Object[] values) {
-        return new KeySliceQuery(getIndexKey(index,values), BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(1));
+    public MultiKeySliceQuery getQuery(final CompositeIndexType index, List<Object[]> values) {
+        List<KeySliceQuery> ksqs = new ArrayList<KeySliceQuery>(values.size());
+        for (Object[] value : values) {
+            ksqs.add(new KeySliceQuery(getIndexKey(index,value), BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(1)));
+        }
+        return new MultiKeySliceQuery(ksqs);
     }
 
     public IndexQuery getQuery(final MixedIndexType index, final Condition condition, final OrderList orders) {

@@ -46,7 +46,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>0.98.2-hadoop2</version>
+            <version>${hbase098.version}</version>
         </dependency>
         <!-- TODO titan-hadoop reintegration
         <dependency>
@@ -63,6 +63,11 @@
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-solr</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

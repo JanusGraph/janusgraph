@@ -400,7 +400,7 @@ public class SolrIndex implements IndexProvider {
         List<String> result;
         String collection = query.getStore();
         String keyIdField = getKeyFieldId(collection);
-        SolrQuery solrQuery = newQuery(collection);
+        SolrQuery solrQuery = newQuery(collection, "*:*");
         String queryFilter = buildQueryFilter(query.getCondition(), informations.get(collection));
         solrQuery.addFilterQuery(queryFilter);
         if (!query.getOrder().isEmpty()) {
@@ -447,10 +447,9 @@ public class SolrIndex implements IndexProvider {
         List<RawQuery.Result<String>> result;
         String collection = query.getStore();
         String keyIdField = getKeyFieldId(collection);
-        SolrQuery solrQuery = newQuery(collection)
-                                .addFilterQuery(query.getQuery())
+        SolrQuery solrQuery = newQuery(collection, query.getQuery())
                                 .addField(keyIdField)
-                                .addField("score")
+                                .setIncludeScore(true)
                                 .setStart(query.getOffset())
                                 .setRows(query.hasLimit() ? query.getLimit() : maxResults);
 
@@ -465,6 +464,7 @@ public class SolrIndex implements IndexProvider {
             }
             result = new ArrayList<RawQuery.Result<String>>(totalHits);
 
+            System.out.println(solrQuery);
             for (SolrDocument hit : response.getResults()) {
                 double score = Double.parseDouble(hit.getFieldValue("score").toString());
                 result.add(new RawQuery.Result<String>(hit.getFieldValue(keyIdField).toString(), score));
@@ -755,8 +755,8 @@ public class SolrIndex implements IndexProvider {
         return req;
     }
 
-    private static SolrQuery newQuery(String collection) {
-        return new SolrQuery().setParam(COLLECTION_PARAM, collection).setQuery("*:*");
+    private static SolrQuery newQuery(String collection, String query) {
+        return new SolrQuery().setParam(COLLECTION_PARAM, collection).setQuery(query);
     }
 
     private BackendException storageException(Exception solrException) {

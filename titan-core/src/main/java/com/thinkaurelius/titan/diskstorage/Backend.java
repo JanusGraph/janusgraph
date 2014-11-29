@@ -401,7 +401,7 @@ public class Backend implements LockerProvider {
 
     public static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
         StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
-                REGISTERED_STORAGE_MANAGERS);
+                StandardStoreManager.getAllManagerClasses());
         if (manager instanceof OrderedKeyValueStoreManager) {
             manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager, STATIC_KEY_LENGTHS);
         }
@@ -453,7 +453,7 @@ public class Backend implements LockerProvider {
             Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);
             log.info("Configuring index [{}]", index);
             IndexProvider provider = getImplementationClass(config.restrictTo(index), config.get(INDEX_BACKEND,index),
-                    REGISTERED_INDEX_PROVIDERS);
+                    StandardIndexProvider.getAllProviderClasses());
             Preconditions.checkNotNull(provider);
             builder.put(index, provider);
         }
@@ -583,36 +583,36 @@ public class Backend implements LockerProvider {
 
     //############ Registered Storage Managers ##############
 
-    private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
-        put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
-        put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
-        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
-        put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
-        put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
-        put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
-        put("inmemory", "com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");
-    }};
+    private static final ImmutableMap<StandardStoreManager, ConfigOption<?>> STORE_SHORTHAND_OPTIONS;
 
-    public static final Map<String, ConfigOption> REGISTERED_STORAGE_MANAGERS_SHORTHAND = new HashMap<String, ConfigOption>() {{
-        put("berkeleyje", STORAGE_DIRECTORY);
-        put("hazelcast", STORAGE_DIRECTORY);
-        put("hazelcastcache", STORAGE_DIRECTORY);
-        put("infinispan", STORAGE_DIRECTORY);
-        put("cassandra", STORAGE_HOSTS);
-        put("cassandrathrift", STORAGE_HOSTS);
-        put("astyanax", STORAGE_HOSTS);
-        put("hbase", STORAGE_HOSTS);
-        put("embeddedcassandra", STORAGE_CONF_FILE);
-        put("inmemory", null);
-    }};
+    static {
+        Map<StandardStoreManager, ConfigOption<?>> m =
+                new HashMap<StandardStoreManager, ConfigOption<?>>();
 
-    public static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
-        put("lucene", "com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex");
-        put("elasticsearch", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
-        put("es", "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
-        put("solr", "com.thinkaurelius.titan.diskstorage.solr.SolrIndex");
-    }};
+        m.put(StandardStoreManager.BDB_JE, STORAGE_DIRECTORY);
+        m.put(StandardStoreManager.CASSANDRA_ASTYANAX, STORAGE_HOSTS);
+        m.put(StandardStoreManager.CASSANDRA_EMBEDDED, STORAGE_CONF_FILE);
+        m.put(StandardStoreManager.CASSANDRA_THRIFT, STORAGE_HOSTS);
+        m.put(StandardStoreManager.HBASE, STORAGE_HOSTS);
+        //m.put(StandardStorageBackend.IN_MEMORY, null);
+
+        //STORE_SHORTHAND_OPTIONS = Maps.immutableEnumMap(m);
+        STORE_SHORTHAND_OPTIONS = ImmutableMap.copyOf(m);
+    }
+
+    public static ConfigOption<?> getOptionForShorthand(String shorthand) {
+        if (null == shorthand)
+            return null;
+
+        shorthand = shorthand.toLowerCase();
+
+        for (StandardStoreManager m : STORE_SHORTHAND_OPTIONS.keySet()) {
+            if (m.getShorthands().contains(shorthand))
+                return STORE_SHORTHAND_OPTIONS.get(m);
+        }
+
+        return null;
+    }
 
     public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
         put("default","com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager");
@@ -708,8 +708,8 @@ public class Backend implements LockerProvider {
         } catch (IOException e) {
             throw new AssertionError(e);
         }
-        registerShorthands(props, "storage.", REGISTERED_STORAGE_MANAGERS);
-        registerShorthands(props, "index.", REGISTERED_INDEX_PROVIDERS);
+        registerShorthands(props, "storage.", StandardStoreManager.getAllManagerClasses());
+        registerShorthands(props, "index.", StandardIndexProvider.getAllProviderClasses());
     }
 
     public static final void registerShorthands(Properties props, String prefix, Map<String, String> shorthands) {

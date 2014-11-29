@@ -3,27 +3,27 @@
 
     <fileSets>
         <fileSet>
-            <directory>${assembly.static.dir}/bin</directory>
-            <outputDirectory>/bin</outputDirectory>
+            <directory>${assembly.static.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <filtered>false</filtered>
             <excludes>
-                <exclude>upgrade010to020.bat</exclude>
-                <exclude>upgrade010to020.sh</exclude>
+                <exclude>README.txt</exclude>
             </excludes>
         </fileSet>
         <fileSet>
-            <directory>${assembly.static.dir}/ext</directory>
-            <outputDirectory>/ext</outputDirectory>
+            <directory>${assembly.resources.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <filtered>true</filtered>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.cfilter.out.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <filtered>false</filtered>
         </fileSet>
     </fileSets>
 
-    <files>
-        <file>
-            <source>${assembly.static.dir}/conf/log4j-gremlin.properties</source>
-            <outputDirectory>/conf</outputDirectory>
-        </file>
-    </files>
-
     <dependencySets>
+        <!-- Code jars -->
         <dependencySet>
             <outputDirectory>/lib</outputDirectory>
             <unpack>false</unpack>
@@ -31,6 +31,19 @@
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
                 <include>*:*:jar:*</include>
+            </includes>
+            <excludes>
+                <exclude>${project.groupId}:titan-core:jar:javadoc:${project.version}</exclude>
+            </excludes>
+        </dependencySet>
+
+        <!-- Example data (from titan-hadoop/faunus) -->
+        <dependencySet>
+            <unpack>true</unpack>
+            <outputDirectory>/examples</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>${project.groupId}:titan-hadoop-core:zip:example-data:${project.version}</include>
             </includes>
         </dependencySet>
     </dependencySets>

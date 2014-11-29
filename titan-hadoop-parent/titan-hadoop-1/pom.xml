@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
-            <version>0.94.12</version>
+            <version>${hbase094.version}</version>
             <optional>true</optional>
             <scope>test</scope>
             <exclusions>

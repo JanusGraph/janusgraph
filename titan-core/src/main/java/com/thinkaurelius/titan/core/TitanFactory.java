@@ -5,8 +5,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.log.LogProcessorFramework;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
-import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
@@ -170,13 +170,13 @@ public class TitanFactory {
             int pos = shortcutOrFile.indexOf(':');
             if (pos<0) pos = shortcutOrFile.length();
             String backend = shortcutOrFile.substring(0,pos);
-            Preconditions.checkArgument(Backend.REGISTERED_STORAGE_MANAGERS_SHORTHAND.containsKey(backend.toLowerCase()), "Backend shorthand unknown: %s", backend);
+            Preconditions.checkArgument(StandardStoreManager.getAllManagerClasses().containsKey(backend.toLowerCase()), "Backend shorthand unknown: %s", backend);
             String secondArg = null;
             if (pos+1<shortcutOrFile.length()) secondArg = shortcutOrFile.substring(pos + 1).trim();
             BaseConfiguration config = new BaseConfiguration();
             ModifiableConfiguration writeConfig = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(config), BasicConfiguration.Restriction.NONE);
             writeConfig.set(STORAGE_BACKEND,backend);
-            ConfigOption option = Backend.REGISTERED_STORAGE_MANAGERS_SHORTHAND.get(backend.toLowerCase());
+            ConfigOption option = Backend.getOptionForShorthand(backend);
             if (option==null) {
                 Preconditions.checkArgument(secondArg==null);
             } else if (option==STORAGE_DIRECTORY || option==STORAGE_CONF_FILE) {

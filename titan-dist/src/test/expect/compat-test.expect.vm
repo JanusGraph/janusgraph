@@ -26,6 +26,18 @@ send "g = TitanFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
 expect gremlin>
 
+# Update the storage directory
+send "m = g.getManagementSystem()\r"
+expect gremlin>
+send "m.set('index.search.directory', '${indexDirectory}')\r"
+expect gremlin>
+send "m.commit()\r"
+expect gremlin>
+send "g.shutdown()\r"
+send "g = TitanFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+expect gremlin>
+
 # Run queries from the Getting Started chapter of the documentation
 
 send "saturn = g.V('name','saturn').next()\r"

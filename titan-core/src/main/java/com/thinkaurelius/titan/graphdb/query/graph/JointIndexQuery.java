@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.query.graph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
@@ -43,7 +42,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         queries.add(new Subquery(index, query));
     }
 
-    public void add(CompositeIndexType index, KeySliceQuery query) {
+    public void add(CompositeIndexType index, MultiKeySliceQuery query) {
         queries.add(new Subquery(index, query));
     }
 
@@ -91,7 +90,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         private final BackendQuery query;
 
         private Subquery(IndexType index, BackendQuery query) {
-            assert index!=null && query!=null && (query instanceof KeySliceQuery || query instanceof IndexQuery);
+            assert index!=null && query!=null && (query instanceof MultiKeySliceQuery || query instanceof IndexQuery);
             this.index = index;
             this.query = query;
         }
@@ -105,9 +104,9 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
             return (IndexQuery)query;
         }
 
-        public KeySliceQuery getCompositeQuery() {
-            Preconditions.checkArgument(index.isCompositeIndex() && query instanceof KeySliceQuery);
-            return (KeySliceQuery)query;
+        public MultiKeySliceQuery getCompositeQuery() {
+            Preconditions.checkArgument(index.isCompositeIndex() && query instanceof MultiKeySliceQuery);
+            return (MultiKeySliceQuery)query;
         }
 
         @Override

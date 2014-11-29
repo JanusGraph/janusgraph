@@ -58,3 +58,7 @@ case "`uname`" in
 esac
 
 export JVM_OPTS="$JVM_OPTS -Dtitan.logdir=$logdir"
+
+# Change to $CASSANDRA_HOME
+# (typically the directory containing bin/)
+cd "$CASSANDRA_HOME"

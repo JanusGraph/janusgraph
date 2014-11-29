@@ -6,7 +6,7 @@ Acknowledgements
 [.tss-center]
 image:titan-logo.png[]
 
-Titan is an ongoing effort by various developers, contributors, and organizations. Along with this explicit list of contributors, please also refer to the special thanks for individual contributions to each release in <<changelog>>. Titan would not be possible without the excellent open source products that compose Titan. Please see a list of these projects in the Titan https://github.com/thinkaurelius/titan/blob/master/NOTICE.txt[NOTICE.txt].
+Titan is an ongoing effort by various developers, contributors, and organizations. Along with this explicit list of contributors, please also refer to the special thanks for individual contributions to each release in <<changelog>>. Titan would not be possible without the excellent open source products that compose Titan. Please see a list of these projects in the Titan https://github.com/thinkaurelius/titan/blob/titan09/NOTICE.txt[NOTICE.txt].
 
 People
 ~~~~~~

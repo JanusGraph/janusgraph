@@ -53,10 +53,9 @@
             <version>${tinkerpop.version}</version>
         </dependency>
 
-        <!-- TODO replace this with a TP3 MapReduce dependency -->
         <dependency>
             <groupId>com.tinkerpop</groupId>
-            <artifactId>giraph-gremlin</artifactId>
+            <artifactId>hadoop-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
 

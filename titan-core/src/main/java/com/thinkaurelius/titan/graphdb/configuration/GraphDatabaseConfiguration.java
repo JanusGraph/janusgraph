@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.StandardIndexProvider;
+import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
 import com.thinkaurelius.titan.graphdb.tinkerpop.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
@@ -98,8 +100,13 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.FIXED, false);
 
     public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(GRAPH_NS, "timestamps",
-            "The timestamp resolution to use when writing to storage and indices. Sets the time source for the entire graph cluster. " +
-                    "To avoid potential inaccuracies the configured time resolution should match those of the backend systems",
+            "The timestamp resolution to use when writing to storage and indices. Sets the time granularity for the " +
+            "entire graph cluster. To avoid potential inaccuracies, the configured time resolution should match " +
+            "those of the backend systems. Some Titan storage backends declare a preferred timestamp resolution that " +
+            "reflects design constraints in the underlying service. When the backend provides " +
+            "a preferred default, and when this setting is not explicitly declared in the config file, the backend " +
+            "default is used and the general default associated with this setting is ignored.  An explicit " +
+            "declaration of this setting overrides both the general and backend-specific defaults.",
             ConfigOption.Type.FIXED, Timestamps.class, Timestamps.MICRO);
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(GRAPH_NS,"unique-instance-id",
@@ -191,6 +198,11 @@ public class GraphDatabaseConfiguration {
                     "expensive for vertices with many properties",
             ConfigOption.Type.MASKABLE, Boolean.class);
 
+    public static final ConfigOption<Boolean> ADJUST_LIMIT = new ConfigOption<Boolean>(QUERY_NS,"smart-limit",
+            "Whether the query optimizer should try to guess a smart limit for the query to ensure responsiveness in " +
+                    "light of possibly large result sets. Those will be loaded incrementally if this option is enabled.",
+            ConfigOption.Type.MASKABLE, true);
+
     public static final ConfigOption<Boolean> USE_MULTIQUERY = new ConfigOption<Boolean>(QUERY_NS,"batch",
             "Whether traversal queries should be batched when executed against the storage backend. This can lead to significant " +
                     "performance improvement if there is a non-trivial latency to the backend.",
@@ -261,7 +273,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_CLEAN_WAIT_KEY = "db-cache-clean-wait";
 //    public static final long DB_CACHE_CLEAN_WAIT_DEFAULT = 50;
     public static final ConfigOption<Integer> DB_CACHE_CLEAN_WAIT = new ConfigOption<Integer>(CACHE_NS,"db-cache-clean-wait",
-            "How long, in milliseconds, database-level cache will keep entries after flushing them." +
+            "How long, in milliseconds, database-level cache will keep entries after flushing them.  " +
             "This option is only useful on distributed storage backends that are capable of acknowledging writes " +
             "without necessarily making them immediately visible.",
             ConfigOption.Type.GLOBAL_OFFLINE, 50);
@@ -277,7 +289,8 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Long> DB_CACHE_TIME = new ConfigOption<Long>(CACHE_NS,"db-cache-time",
             "Default expiration time, in milliseconds, for entries in the database-level cache. " +
             "Entries are evicted when they reach this age even if the cache has room to spare. " +
-            "Set to 0 to disable expiration (cache entries live forever).",
+            "Set to 0 to disable expiration (cache entries live forever or until memory pressure " +
+            "triggers eviction when set to 0).",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
 
     /**
@@ -344,7 +357,7 @@ public class GraphDatabaseConfiguration {
      * require/support a separate config file
      */
     public static final ConfigOption<String> STORAGE_CONF_FILE = new ConfigOption<String>(STORAGE_NS,"conf-file",
-            "Path to a configuration file for those storage backends that require/support a separate config file",
+            "Path to a configuration file for those storage backends which require/support a single separate config file.",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_CONF_FILE_KEY = "conffile";
 
@@ -352,8 +365,10 @@ public class GraphDatabaseConfiguration {
      * Define the storage backed to use for persistence
      */
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<String>(STORAGE_NS,"backend",
-            "Either the package and classname of a StoreManager implementation or one of " +
-            "Titan's built-in shorthand names for its standard storage backends.",
+            "The primary persistence provider used by Titan.  This is required.  It should be set one of " +
+            "Titan's built-in shorthand names for its standard storage backends " +
+            "(shorthands: " + Joiner.on(", ").join(StandardStoreManager.getAllShorthands()) + ") " +
+            "or to the full package and classname of a custom/third-party StoreManager implementation.",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_BACKEND_KEY = "backend";
 //    public static final String STORAGE_BACKEND_DEFAULT = "local";
@@ -451,7 +466,8 @@ public class GraphDatabaseConfiguration {
 //    public static final String INSTANCE_RID_RAW_KEY = "machine-id";
 
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<String[]>(STORAGE_NS,"hostname",
-            "Configuration key for the hostname or list of hostname of remote storage backend servers to connect to",
+            "The hostname or comma-separated list of hostnames of storage backend servers.  " +
+            "This is only applicable to some storage backends, such as cassandra and hbase.",
             ConfigOption.Type.LOCAL, new String[]{NetworkUtil.getLoopbackAddress()});
 
     /**
@@ -460,7 +476,7 @@ public class GraphDatabaseConfiguration {
      * Value = {@value}
      */
     public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
-            "Configuration key for the port on which to connect to remote storage backend servers",
+            "The port on which to connect to storage backend servers.",
             ConfigOption.Type.LOCAL, Integer.class);
 
     /**
@@ -775,25 +791,33 @@ public class GraphDatabaseConfiguration {
      * Define the indexing backed to use for index support
      */
     public static final ConfigOption<String> INDEX_BACKEND = new ConfigOption<String>(INDEX_NS,"backend",
-            "Define the indexing backed to use for index support",
+            "The indexing backend used to extend and optimize Titan's query functionality. " +
+            "This setting is optional.  Titan can use multiple heterogeneous index backends.  " +
+            "Hence, this option can appear more than once, so long as the user-defined name between " +
+            "\"" + INDEX_NS.getName() + "\" and \"backend\" is unique among appearances." +
+            "Similar to the storage backend, this should be set to one of " +
+            "Titan's built-in shorthand names for its standard index backends " +
+            "(shorthands: " + Joiner.on(", ").join(StandardIndexProvider.getAllShorthands()) + ") " +
+            "or to the full package and classname of a custom/third-party IndexProvider implementation.",
             ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
 //    public static final String INDEX_BACKEND_KEY = "backend";
 //    public static final String INDEX_BACKEND_DEFAULT = "lucene";
 
     public static final ConfigOption<String> INDEX_DIRECTORY = new ConfigOption<String>(INDEX_NS,"directory",
             "Directory to store index data locally",
-            ConfigOption.Type.GLOBAL_OFFLINE, String.class);
+            ConfigOption.Type.MASKABLE, String.class);
 
     public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(INDEX_NS,"index-name",
             "Name of the index if required by the indexing backend",
             ConfigOption.Type.GLOBAL_OFFLINE, "titan");
 
     public static final ConfigOption<String[]> INDEX_HOSTS = new ConfigOption<String[]>(INDEX_NS,"hostname",
-            "Hostname of the indexing backend",
+            "The hostname or comma-separated list of hostnames of index backend servers.  " +
+            "This is only applicable to some index backends, such as elasticsearch and solr.",
             ConfigOption.Type.GLOBAL, new String[]{NetworkUtil.getLoopbackAddress()});
 
     public static final ConfigOption<Integer> INDEX_PORT = new ConfigOption<Integer>(INDEX_NS,"port",
-            "Configuration key for the port on which to connect to remote indexing backend servers",
+            "The port on which to connect to index backend servers",
             ConfigOption.Type.MASKABLE, Integer.class);
 
     public static final ConfigOption<String> INDEX_CONF_FILE = new ConfigOption<String>(INDEX_NS,"conf-file",
@@ -1238,6 +1262,7 @@ public class GraphDatabaseConfiguration {
     private int txDirtyVertexSize;
     private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
+    private boolean adjustQueryLimit;
     private Boolean useMultiQuery;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
@@ -1511,6 +1536,7 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
         useMultiQuery = configuration.get(USE_MULTIQUERY);
+        adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
@@ -1668,7 +1694,9 @@ public class GraphDatabaseConfiguration {
         return useMultiQuery;
     }
 
-
+    public boolean adjustQueryLimit() {
+        return adjustQueryLimit;
+    }
 
     public String getUnknownIndexKeyName() {
         return unknownIndexKeyName;
