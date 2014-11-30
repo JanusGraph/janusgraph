@@ -54,7 +54,7 @@ public class VertexState<M> {
 
     public synchronized void setMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap) {
         assert message!=null && scope!=null;
-        assert scopeMap.containsKey(scope);
+        Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
         initializeCurrentMessages(scopeMap);
         if (scopeMap.size()==1) currentMessages = message;
         else ((Object[])currentMessages)[scopeMap.get(scope)]=message;
@@ -63,6 +63,7 @@ public class VertexState<M> {
     public synchronized void addMessage(M message, MessageScope scope, Map<MessageScope,Integer> scopeMap,
                                         MessageCombiner<M> combiner) {
         assert message!=null && scope!=null && combiner!=null;
+        Preconditions.checkArgument(scopeMap.containsKey(scope),"Provided scope was not declared in the VertexProgram: %s",scope);
         assert scopeMap.containsKey(scope);
         initializeCurrentMessages(scopeMap);
         if (scopeMap.size()==1) {

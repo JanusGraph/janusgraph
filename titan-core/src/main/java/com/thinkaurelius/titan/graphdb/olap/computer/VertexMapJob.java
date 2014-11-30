@@ -62,8 +62,10 @@ public class VertexMapJob implements VertexScanJob {
     @Override
     public void process(TitanVertex vertex, ScanMetrics metrics) {
         PreloadedVertex v = (PreloadedVertex)vertex;
-        VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory,v);
-        v.setPropertyMixing(vh);
+        if (vertexMemory!=null) {
+            VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory,v);
+            v.setPropertyMixing(vh);
+        }
         v.setExceptionOnRetrieve(true);
         if (idManager.isPartitionedVertex(v.longId()) && !idManager.isCanonicalVertexId(v.longId())) {
             return; //Only consider the canonical partition vertex representative

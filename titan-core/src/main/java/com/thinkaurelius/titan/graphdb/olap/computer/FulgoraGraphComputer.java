@@ -41,7 +41,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private FulgoraVertexMemory vertexMemory;
     private boolean executed = false;
 
-    private int numThreads = Math.max(1,Runtime.getRuntime().availableProcessors());
+    private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
     private int writeBatchSize;
     private boolean persistElementKeys = true;
 
@@ -138,13 +138,16 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         throw new TitanException(e);
                     }
 
-                    vertexProgram.workerIterationEnd(this.memory);
+                    vertexProgram.workerIterationEnd(memory.asImmutable());
                     vertexMemory.completeIteration();
                     memory.completeSubRound();
-                    memory.incrIteration();
-                    memory.completeSubRound();
-                    if (this.vertexProgram.terminate(this.memory)) {
-                        break;
+                    try {
+                        if (this.vertexProgram.terminate(this.memory)) {
+                            break;
+                        }
+                    } finally {
+                        memory.incrIteration();
+                        memory.completeSubRound();
                     }
                 }
             }
@@ -194,12 +197,12 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             }
 
             // #### Write mutated properties back into graph
-            if (persistElementKeys) {
+            if (persistElementKeys && vertexProgram!=null && !vertexProgram.getElementComputeKeys().isEmpty()) {
                 //First, create property keys if they don't already exist
                 TitanManagement mgmt = graph.openManagement();
                 try {
                     for (String key : vertexProgram.getElementComputeKeys()) {
-                        if (!mgmt.containsPropertyKey(key)) log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.");
+                        if (!mgmt.containsPropertyKey(key)) log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.",key);
                         mgmt.getOrCreatePropertyKey(key);
                     }
                     mgmt.commit();

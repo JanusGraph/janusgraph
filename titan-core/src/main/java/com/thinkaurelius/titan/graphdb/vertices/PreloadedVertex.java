@@ -100,18 +100,14 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public<V> TitanVertexProperty<V> property(String key, V value) {
-        if (mixin.supports(key)) return mixin.property(key,value);
-        throw stubVertexException();
+        return mixin.property(key,value);
     }
 
     @Override
     public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
-        if (mixin.supports(key)) {
-            TitanVertexProperty<V> p = mixin.singleProperty(key,value);
-            ElementHelper.attachProperties(p,keyValues);
-            return p;
-        }
-        throw stubVertexException();
+        TitanVertexProperty<V> p = mixin.singleProperty(key,value);
+        ElementHelper.attachProperties(p,keyValues);
+        return p;
     }
 
     @Override

@@ -109,6 +109,7 @@ public class VertexJobConverter implements ScanJob {
         PreloadedVertex v = (PreloadedVertex)vertex;
         for (Map.Entry<SliceQuery,EntryList> entry : entries.entrySet()) {
             SliceQuery sq = entry.getKey();
+            if (sq.equals(VERTEX_EXISTS_QUERY)) continue;
             EntryList entryList = entry.getValue();
             if (entryList.size()>=sq.getLimit()) metrics.incrementCustom(TRUNCATED_ENTRY_LISTS);
             v.addToQueryCache(sq.updateLimit(Query.NO_LIMIT),entryList);

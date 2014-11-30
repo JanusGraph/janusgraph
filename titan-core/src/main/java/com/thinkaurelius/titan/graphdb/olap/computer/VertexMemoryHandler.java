@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.Messenger;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -68,7 +69,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
     @Override
     public <V> TitanVertexProperty<V> singleProperty(String key, V value) {
-        assert supports(key);
+        if (!supports(key)) throw GraphComputer.Exceptions.providedKeyIsNotAnElementComputeKey(key);
         Preconditions.checkArgument(value != null);
         vertexMemory.setProperty(vertexId, key, value);
         return constructProperty(key,value);

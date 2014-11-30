@@ -7,7 +7,9 @@ import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
+import com.tinkerpop.gremlin.process.computer.MessageCombiner;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
+import com.tinkerpop.gremlin.process.computer.VertexProgram;
 import com.tinkerpop.gremlin.process.graph.step.filter.FilterStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.LocalRangeStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.RangeStep;
@@ -65,5 +67,20 @@ public class FulgoraUtil {
         }
     }
 
+    public static<M> MessageCombiner<M> getMessageCombiner(VertexProgram<M> program) {
+        return program.getMessageCombiner().orElse(DEFAULT_COMBINER);
+    }
+
+
+    private static final MessageCombiner DEFAULT_COMBINER = new ThrowingCombiner<>();
+
+    private static class ThrowingCombiner<M> implements MessageCombiner<M> {
+
+        @Override
+        public M combine(M messageA, M messageB) {
+            throw new IllegalArgumentException("The VertexProgram needs to define a message combiner in order " +
+                    "to preserve memory and handle partitioned vertices");
+        }
+    }
 
 }

@@ -269,7 +269,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         @Override
         public boolean terminate(Memory memory) {
-            return memory.getIteration()>=length+1;
+            return memory.getIteration()>=length;
         }
 
         @Override

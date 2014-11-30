@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -22,6 +23,10 @@ import java.util.*;
  */
 public class FulgoraVertexMemory<M> {
 
+    private static final MessageScope.Global GLOBAL_SCOPE = MessageScope.Global.instance();
+
+
+
     private NonBlockingHashMapLong<VertexState<M>> vertexStates;
     private final IDManager idManager;
     final Map<String,Integer> elementKeyMap;
@@ -33,11 +38,10 @@ public class FulgoraVertexMemory<M> {
 
     public FulgoraVertexMemory(int numVertices, final IDManager idManager, final VertexProgram<M> vertexProgram) {
         Preconditions.checkArgument(numVertices>=0 && vertexProgram!=null && idManager!=null);
-        Preconditions.checkArgument(vertexProgram.getMessageCombiner().isPresent(),"A message combiner needs to be provided to conserve memory.");
         vertexStates = new NonBlockingHashMapLong<>(numVertices);
         partitionVertices = new NonBlockingHashMapLong<>(64);
         this.idManager = idManager;
-        this.combiner = vertexProgram.getMessageCombiner().get();
+        this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
         this.elementKeyMap = getIdMap(vertexProgram.getElementComputeKeys());
         this.previousScopes = ImmutableMap.of();
     }
@@ -72,12 +76,12 @@ public class FulgoraVertexMemory<M> {
 
     void sendMessage(long vertexId, M message, MessageScope scope) {
         VertexState<M> state = get(vertexId,true);
-        if (scope instanceof MessageScope.Global) state.addMessage(message,scope,currentScopes,combiner);
+        if (scope instanceof MessageScope.Global) state.addMessage(message,GLOBAL_SCOPE,currentScopes,combiner);
         else state.setMessage(message,scope,currentScopes);
     }
 
     M getMessage(long vertexId, MessageScope scope) {
-        return get(vertexId,false).getMessage(scope,previousScopes);
+        return get(vertexId,false).getMessage(normalizeScope(scope),previousScopes);
     }
 
     void completeIteration() {
@@ -87,7 +91,7 @@ public class FulgoraVertexMemory<M> {
     }
 
     void nextIteration(Set<MessageScope> scopes) {
-        currentScopes = getIdMap(scopes);
+        currentScopes = getIdMap(normalizeScopes(scopes));
         partitionVertices.clear();
     }
 
@@ -100,6 +104,15 @@ public class FulgoraVertexMemory<M> {
             }
             return map;
         });
+    }
+
+    private static MessageScope normalizeScope(MessageScope scope) {
+        if (scope instanceof MessageScope.Global) return GLOBAL_SCOPE;
+        else return scope;
+    }
+
+    private static Iterable<MessageScope> normalizeScopes(Iterable<MessageScope> scopes) {
+        return Iterables.transform(scopes, s -> normalizeScope(s));
     }
 
 
@@ -121,11 +134,11 @@ public class FulgoraVertexMemory<M> {
     }
 
     public void aggregateMessage(long vertexId, M message, MessageScope scope) {
-        getPartitioned(vertexId).addMessage(message,scope,previousScopes,combiner);
+        getPartitioned(vertexId).addMessage(message,normalizeScope(scope),previousScopes,combiner);
     }
 
     public M getAggregateMessage(long vertexId, MessageScope scope) {
-        return getPartitioned(vertexId).getMessage(scope,previousScopes);
+        return getPartitioned(vertexId).getMessage(normalizeScope(scope),previousScopes);
     }
 
     public Map<Long,EntryList> retrievePartitionAggregates() {
@@ -133,7 +146,7 @@ public class FulgoraVertexMemory<M> {
         return Maps.transformValues(partitionVertices, s -> s.getLoadedProperties());
     }
 
-    public static <K> Map<K,Integer> getIdMap(Set<K> elements) {
+    public static <K> Map<K,Integer> getIdMap(Iterable<K> elements) {
         ImmutableMap.Builder<K,Integer> b = ImmutableMap.builder();
         int size = 0;
         for (K key : elements) {

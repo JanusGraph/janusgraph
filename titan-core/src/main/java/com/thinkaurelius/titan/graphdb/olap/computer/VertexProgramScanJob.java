@@ -64,8 +64,9 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         this.memory = memory;
         this.vertexMemory = vertexMemory;
         this.vertexProgram = vertexProgram;
-        this.combiner = vertexProgram.getMessageCombiner().get();
+        this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
         this.scopes = vertexProgram.getMessageScopes(memory);
+
     }
 
     @Override
