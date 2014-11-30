@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
@@ -52,7 +53,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     /**
      * ThreadLocal transactions used behind the scenes in
-     * {@link TransactionalGraph} methods. Transactions started through
+     * {@link TitanGraphTransaction} methods. Transactions started through
      * {@code ThreadedTransactionalGraph#newTransaction()} aren't included in
      * this map. Contrary to the javadoc comment above
      * {@code ThreadedTransactionalGraph#newTransaction()}, the caller is
@@ -191,13 +192,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public GraphComputer compute(final Class... graphComputerClass) {
-        throw Graph.Exceptions.graphComputerNotSupported();
-//        GraphComputerHelper.validateComputeArguments(graphComputerClass);
-//        if (graphComputerClass.length == 0 || graphComputerClass[0].equals(TinkerGraphComputer.class))
-//            return new TinkerGraphComputer(this);
-//        else
-//            throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass[0]);
+    public TitanGraphComputer compute(final Class... graphComputerClass) {
+        GraphComputerHelper.validateComputeArguments(graphComputerClass);
+        if (graphComputerClass.length == 0 || graphComputerClass[0].equals(FulgoraGraphComputer.class))
+            return new FulgoraGraphComputer((StandardTitanGraph)this);
+        else
+            throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass[0]);
     }
 
     @Override

@@ -9,6 +9,6 @@ public interface TitanGraphComputer extends GraphComputer {
 
     public TitanGraphComputer setNumProcessingThreads(int threads);
 
-    public TitanGraphComputer writeBatchSize(int size);
+    public TitanGraphComputer persistElementKeys(boolean persist);
 
 }

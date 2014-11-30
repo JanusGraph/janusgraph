@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -48,14 +47,14 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     private final StandardTitanGraph graph;
     private final IDManager idManager;
     private final FulgoraMemory memory;
-    private final FulgoraVertexMemory vertexMemory;
+    private final FulgoraVertexMemory<M> vertexMemory;
     private final VertexProgram<M> vertexProgram;
 
     private final MessageCombiner<M> combiner;
     private final Set<MessageScope> scopes;
 
-    public static final String INVALID_PARTITION_VERTEX = "partition-ghost";
-    public static final String PARTITION_VERTEX_POSTPROCESS = "partition-post";
+    public static final String GHOTST_PARTITION_VERTEX = "partition-ghost";
+    public static final String PARTITION_VERTEX_POSTSUCCESS = "partition-success";
     public static final String PARTITION_VERTEX_POSTFAIL = "partition-fail";
 
     private VertexProgramScanJob(StandardTitanGraph graph, FulgoraMemory memory,
@@ -99,7 +98,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     @Override
     public void getQueries(QueryContainer queries) {
-        for (MessageScope scope : vertexProgram.getMessageScopes(memory)) {
+        for (MessageScope scope : vertexMemory.getPreviousScopes()) {
             if (scope instanceof MessageScope.Global) {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
@@ -108,7 +107,9 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 incident.applyStrategies(TraversalEngine.STANDARD);
                 TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>) TraversalHelper.getStart(incident);
                 startStep.reverse();
-                startStep.makeQuery(queries.addQuery());
+                QueryContainer.QueryBuilder qb = queries.addQuery();
+                startStep.makeQuery(qb);
+                qb.edges();
             }
         }
     }
@@ -158,7 +159,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             } finally {
                 processor.shutdownNow();
             }
-
             super.teardown(metrics);
         }
 
@@ -168,7 +168,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         Map<Long,EntryList> pVertexAggregates = vertexMemory.retrievePartitionAggregates();
         for (Map.Entry<Long,EntryList> pvertices : pVertexAggregates.entrySet()) {
             if (pvertices.getValue()==null) {
-                metrics.incrementCustom(INVALID_PARTITION_VERTEX);
+                metrics.incrementCustom(GHOTST_PARTITION_VERTEX);
                 continue;
             }
             exeuctor.submit(new PartitionedVertexProcessor(pvertices.getKey(),pvertices.getValue(),tx,metrics));
@@ -203,7 +203,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<M>(vertexMemory,v);
                 v.setPropertyMixing(vh);
                 vertexProgram.execute(v,vh,memory);
-                metrics.incrementCustom(PARTITION_VERTEX_POSTPROCESS);
+                metrics.incrementCustom(PARTITION_VERTEX_POSTSUCCESS);
             } catch (Throwable e) {
                 metrics.incrementCustom(PARTITION_VERTEX_POSTFAIL);
                 log.error("Error post-processing partition vertex: " + vertexId,e);

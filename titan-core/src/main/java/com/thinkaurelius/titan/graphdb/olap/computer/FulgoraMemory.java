@@ -15,7 +15,6 @@ public class FulgoraMemory extends TinkerMemory {
         super(vertexProgram, mapReducers);
     }
 
-
     protected void completeSubRound() {
         super.completeSubRound();
     }

@@ -41,6 +41,7 @@ public class FulgoraUtil {
         Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
         TitanElementTraversal<Vertex,Edge> result = new TitanElementTraversal<>(start,graph);
         for (Step step : incident.getSteps()) {
+            step.setTraversal(result);
             if (step instanceof VertexStep) ((VertexStep) step).reverse();
             result.addStep(step);
         }
@@ -53,7 +54,7 @@ public class FulgoraUtil {
         List<Step> steps = traversal.getSteps();
         Step<Vertex,?> startStep = TraversalHelper.getStart(traversal);
         Preconditions.checkArgument(startStep instanceof TitanVertexStep &&
-                !((TitanVertexStep)startStep).isEdgeStep(),"Expected first step to be a vertex step but found: %s",startStep);
+                ((TitanVertexStep)startStep).isEdgeStep(),"Expected first step to be an edge step but found: %s",startStep);
         for (int i = 1; i < steps.size(); i++) {
             Step step = steps.get(i);
             if (step instanceof OrderByStep || step instanceof OrderStep ||

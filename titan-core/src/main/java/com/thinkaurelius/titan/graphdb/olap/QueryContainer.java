@@ -30,13 +30,13 @@ public class QueryContainer {
     private int hardQueryLimit;
     private final boolean requiresName;
 
-    private Map<String,Query> queries;
+    private Set<Query> queries;
     private SetMultimap<SliceQuery,Query> inverseQueries;
 
     public QueryContainer(StandardTitanTx tx) {
         Preconditions.checkArgument(tx!=null);
         this.tx = tx;
-        queries = new HashMap<>(6);
+        queries = new HashSet<>(6);
         inverseQueries = HashMultimap.create();
         hardQueryLimit = DEFAULT_HARD_QUERY_LIMIT;
         requiresName = true;
@@ -50,16 +50,16 @@ public class QueryContainer {
         return new QueryBuilder();
     }
 
-    Query getQuery(String name) {
-        return queries.get(name);
-    }
+//    Query getQuery(String name) {
+//        return queries.get(name);
+//    }
 
     Set<Query> getQueries(SliceQuery slice) {
         return inverseQueries.get(slice);
     }
 
     Iterable<Query> getQueries() {
-        return queries.values();
+        return queries;
     }
 
     public List<SliceQuery> getSliceQueries() {
@@ -75,12 +75,12 @@ public class QueryContainer {
     static class Query {
 
         private final List<SliceQuery> slices;
-        private final String name;
+//        private final String name;
         private final RelationCategory returnType;
 
-        public Query(String name, List<SliceQuery> slices, RelationCategory returnType) {
+        public Query(List<SliceQuery> slices, RelationCategory returnType) {
             this.slices = slices;
-            this.name = name;
+//            this.name = name;
             this.returnType = returnType;
         }
 
@@ -88,9 +88,9 @@ public class QueryContainer {
             return slices;
         }
 
-        public String getName() {
-            return name;
-        }
+//        public String getName() {
+//            return name;
+//        }
 
         public RelationCategory getReturnType() {
             return returnType;
@@ -99,18 +99,18 @@ public class QueryContainer {
 
     public class QueryBuilder extends BasicVertexCentricQueryBuilder<QueryBuilder> {
 
-        private String name = null;
+//        private String name = null;
 
         private QueryBuilder() {
             super(QueryContainer.this.tx);
         }
 
         private Query relations(RelationCategory returnType) {
-            if (name==null) {
-                if (hasSingleType()) name = getSingleType().name();
-                else if (!requiresName) name = QUERY_NAME_PREFIX + queries.size();
-                else throw new IllegalStateException("Need to specify an explicit name for this query");
-            }
+//            if (name==null) {
+//                if (hasSingleType()) name = getSingleType().name();
+//                else if (!requiresName) name = QUERY_NAME_PREFIX + queries.size();
+//                else throw new IllegalStateException("Need to specify an explicit name for this query");
+//            }
 
             BaseVertexCentricQuery vq = super.constructQuery(returnType);
             List<SliceQuery> slices = new ArrayList<>(vq.numSubQueries());
@@ -119,10 +119,10 @@ public class QueryContainer {
                 SliceQuery sq = bq.getBackendQuery();
                 slices.add(sq.updateLimit(bq.isFitted() ? vq.getLimit() : hardQueryLimit));
             }
-            Query q = new Query(name,slices,returnType);
+            Query q = new Query(slices,returnType);
             synchronized (queries) {
-                Preconditions.checkArgument(!queries.containsKey(name),"Query name already in use: %s",name);
-                queries.put(name,q);
+                Preconditions.checkArgument(!queries.contains(q),"Query has already been added: %s",q);
+                queries.add(q);
                 for (SliceQuery sq : slices) {
                     inverseQueries.put(sq,q);
                 }
@@ -136,16 +136,16 @@ public class QueryContainer {
             return this;
         }
 
-        /**
-         * Sets the name for this query
-         * @param name
-         * @return
-         */
-        public QueryBuilder setName(String name) {
-            Preconditions.checkArgument(StringUtils.isNotBlank(name), "Invalid name provided: %s", name);
-            this.name=name;
-            return getThis();
-        }
+//        /**
+//         * Sets the name for this query
+//         * @param name
+//         * @return
+//         */
+//        public QueryBuilder setName(String name) {
+//            Preconditions.checkArgument(StringUtils.isNotBlank(name), "Invalid name provided: %s", name);
+//            this.name=name;
+//            return getThis();
+//        }
 
         public void edges() {
             relations(RelationCategory.EDGE);

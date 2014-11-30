@@ -5,8 +5,10 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraphComputer;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.gremlin.process.computer.ComputerResult;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -30,7 +32,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             LoggerFactory.getLogger(FulgoraGraphComputer.class);
 
     private Isolation isolation = Isolation.BSP;
-    private VertexProgram vertexProgram;
+    private VertexProgram<?> vertexProgram;
     private final Set<MapReduce> mapReduces = new HashSet<>();
 
     private final StandardTitanGraph graph;
@@ -39,14 +41,18 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private FulgoraVertexMemory vertexMemory;
     private boolean executed = false;
 
-    private int numThreads = Math.max(1,Runtime.getRuntime().availableProcessors()/2);
+    private int numThreads = Math.max(1,Runtime.getRuntime().availableProcessors());
+    private int writeBatchSize;
+    private boolean persistElementKeys = true;
+
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
-    private String name = "compute" + computerCounter.incrementAndGet();
+    private String name;
     private String jobId;
-    private int writeBatchSize = 100;
 
     public FulgoraGraphComputer(final StandardTitanGraph graph) {
         this.graph = graph;
+        this.writeBatchSize = graph.getConfiguration().getConfiguration().get(GraphDatabaseConfiguration.BUFFER_SIZE);
+        this.name = "compute" + computerCounter.incrementAndGet();
     }
 
     @Override
@@ -63,9 +69,8 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     }
 
     @Override
-    public TitanGraphComputer writeBatchSize(int size) {
-        Preconditions.checkArgument(size>0,"Invalid batch size: %s",size);
-        writeBatchSize = size;
+    public TitanGraphComputer persistElementKeys(boolean persist) {
+        this.persistElementKeys=persist;
         return this;
     }
 
@@ -125,8 +130,8 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         if (failures>0) {
                             throw new TitanException("Failed to process ["+failures+"] vertices in vertex program iteration ["+iteration+"]. Computer is aborting.");
                         }
-                        long pfailures = jobResult.getCustom(VertexProgramScanJob.PARTITION_VERTEX_POSTFAIL);
-                        if (pfailures>0) {
+                        failures = jobResult.getCustom(VertexProgramScanJob.PARTITION_VERTEX_POSTFAIL);
+                        if (failures>0) {
                             throw new TitanException("Failed to process ["+failures+"] partitioned vertices in vertex program iteration ["+iteration+"]. Computer is aborting.");
                         }
                     } catch (Exception e) {
@@ -155,7 +160,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             }
             // Execute map jobs
             jobId = name + "#map";
-            VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph,vertexMemory,mapJobs);
+            VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs);
             StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
             scanBuilder.setJobId(jobId);
             scanBuilder.setNumProcessingThreads(numThreads);
@@ -165,6 +170,10 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
                 if (failures>0) {
                     throw new TitanException("Failed to process ["+failures+"] vertices in map phase. Computer is aborting.");
+                }
+                failures = jobResult.getCustom(VertexMapJob.MAP_JOB_FAILURE);
+                if (failures>0) {
+                    throw new TitanException("Failed to process ["+failures+"] individual map jobs. Computer is aborting.");
                 }
             } catch (Exception e) {
                 throw new TitanException(e);
@@ -185,30 +194,46 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             }
 
             // #### Write mutated properties back into graph
-            ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
-            processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            AtomicInteger failures = new AtomicInteger(0);
-            try {
-                Map<Long,Map<String,Object>> mutatedProperties = vertexMemory.getMutableVertexProperties();
-                List<Map.Entry<Long,Map<String,Object>>> subset = new ArrayList<>(writeBatchSize);
-                for (Map.Entry<Long,Map<String,Object>> entry : mutatedProperties.entrySet()) {
-                    subset.add(entry);
-                    if (subset.size()>=writeBatchSize) {
-                        processor.submit(new VertexPropertyWriter(subset,failures));
-                        subset = new ArrayList<>(writeBatchSize);
+            if (persistElementKeys) {
+                //First, create property keys if they don't already exist
+                TitanManagement mgmt = graph.openManagement();
+                try {
+                    for (String key : vertexProgram.getElementComputeKeys()) {
+                        if (!mgmt.containsPropertyKey(key)) log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.");
+                        mgmt.getOrCreatePropertyKey(key);
                     }
+                    mgmt.commit();
+                } finally {
+                    if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
                 }
-                if (!subset.isEmpty()) processor.submit(new VertexPropertyWriter(subset,failures));
-                processor.shutdown();
-                processor.awaitTermination(10,TimeUnit.SECONDS);
-                if (!processor.isTerminated()) log.error("Processor did not terminate in time");
-                if (failures.get()>0) throw new TitanException("Could not persist program results to graph. Check log for details.");
-            } catch (InterruptedException ex) {
-                throw new TitanException("Got interrupted while attempting to persist program results");
-            } finally {
-                processor.shutdownNow();
-            }
 
+                ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
+                processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+                AtomicInteger failures = new AtomicInteger(0);
+                try {
+                    Map<Long,Map<String,Object>> mutatedProperties = vertexMemory.getMutableVertexProperties();
+                    List<Map.Entry<Long,Map<String,Object>>> subset = new ArrayList<>(writeBatchSize/vertexProgram.getElementComputeKeys().size());
+                    int currentSize = 0;
+                    for (Map.Entry<Long,Map<String,Object>> entry : mutatedProperties.entrySet()) {
+                        subset.add(entry);
+                        currentSize+=entry.getValue().size();
+                        if (currentSize>=writeBatchSize) {
+                            processor.submit(new VertexPropertyWriter(subset,failures));
+                            subset = new ArrayList<>(subset.size());
+                            currentSize = 0;
+                        }
+                    }
+                    if (!subset.isEmpty()) processor.submit(new VertexPropertyWriter(subset,failures));
+                    processor.shutdown();
+                    processor.awaitTermination(10,TimeUnit.SECONDS);
+                    if (!processor.isTerminated()) log.error("Processor did not terminate in time");
+                    if (failures.get()>0) throw new TitanException("Could not persist program results to graph. Check log for details.");
+                } catch (InterruptedException ex) {
+                    throw new TitanException("Got interrupted while attempting to persist program results");
+                } finally {
+                    processor.shutdownNow();
+                }
+            }
 
             // update runtime and return the newly computed graph
             this.memory.setRuntime(System.currentTimeMillis() - time);

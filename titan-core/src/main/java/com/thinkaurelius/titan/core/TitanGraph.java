@@ -77,6 +77,9 @@ public interface TitanGraph extends TitanGraphTransaction {
      */
     public TitanManagement openManagement();
 
+    @Override
+    public TitanGraphComputer compute(final Class... graphComputerClass);
+
     /**
      * Checks whether the graph is open.
      *

@@ -58,6 +58,10 @@ public class FulgoraVertexMemory<M> {
         else return idManager.getCanonicalVertexId(vertexId);
     }
 
+    public Set<MessageScope> getPreviousScopes() {
+        return previousScopes.keySet();
+    }
+
     public<V> void setProperty(long vertexId, String key, V value) {
         get(vertexId,true).setProperty(key,value,elementKeyMap);
     }
@@ -66,7 +70,7 @@ public class FulgoraVertexMemory<M> {
         return get(vertexId,false).getProperty(key,elementKeyMap);
     }
 
-    void setMessage(long vertexId, M message, MessageScope scope) {
+    void sendMessage(long vertexId, M message, MessageScope scope) {
         VertexState<M> state = get(vertexId,true);
         if (scope instanceof MessageScope.Global) state.addMessage(message,scope,currentScopes,combiner);
         else state.setMessage(message,scope,currentScopes);
@@ -126,7 +130,7 @@ public class FulgoraVertexMemory<M> {
 
     public Map<Long,EntryList> retrievePartitionAggregates() {
         for (PartitionVertexAggregate agg : partitionVertices.values()) agg.completeIteration();
-        return Maps.transformValues(partitionVertices, s-> s.getLoadedProperties());
+        return Maps.transformValues(partitionVertices, s -> s.getLoadedProperties());
     }
 
     public static <K> Map<K,Integer> getIdMap(Set<K> elements) {

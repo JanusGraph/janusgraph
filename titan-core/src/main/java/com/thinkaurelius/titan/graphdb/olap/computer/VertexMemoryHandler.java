@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.Messenger;
-import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
@@ -99,10 +98,10 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     @Override
     public void sendMessage(MessageScope messageScope, M m) {
         if (messageScope instanceof MessageScope.Local) {
-            vertexMemory.setMessage(vertexId,m,messageScope);
+            vertexMemory.sendMessage(vertexId, m, messageScope);
         } else {
             ((MessageScope.Global) messageScope).vertices().forEach(v -> {
-                vertexMemory.setMessage(vertexMemory.getCanonicalId(((TitanVertex)v).longId()),m,messageScope);
+                vertexMemory.sendMessage(vertexMemory.getCanonicalId(((TitanVertex) v).longId()), m, messageScope);
             });
         }
     }

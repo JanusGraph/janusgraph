@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.olap;
+package com.thinkaurelius.titan.graphdb.olap.oldfulgora;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;

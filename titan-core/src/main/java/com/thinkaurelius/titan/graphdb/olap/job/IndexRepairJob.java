@@ -174,20 +174,20 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     @Override
     public void getQueries(QueryContainer queries) {
         if (index instanceof RelationTypeIndex) {
-            queries.addQuery().setName("data").types(indexRelationTypeName).direction(Direction.OUT).relations();
+            queries.addQuery().types(indexRelationTypeName).direction(Direction.OUT).relations();
         } else if (index instanceof TitanGraphIndex) {
             IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
             switch (indexType.getElement()) {
                 case PROPERTY:
-                    addIndexSchemaConstraint(queries.addQuery().setName("data"),indexType).properties();
+                    addIndexSchemaConstraint(queries.addQuery(),indexType).properties();
                     break;
                 case VERTEX:
-                    queries.addQuery().setName("data").properties();
-                    queries.addQuery().setName("label").type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).edges();
+                    queries.addQuery().properties();
+                    queries.addQuery().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).edges();
                     break;
                 case EDGE:
                     indexType.hasSchemaTypeConstraint();
-                    addIndexSchemaConstraint(queries.addQuery().setName("data").direction(Direction.OUT),indexType).edges();
+                    addIndexSchemaConstraint(queries.addQuery().direction(Direction.OUT),indexType).edges();
                     break;
                 default: throw new AssertionError("Unexpected category: " + indexType.getElement());
             }

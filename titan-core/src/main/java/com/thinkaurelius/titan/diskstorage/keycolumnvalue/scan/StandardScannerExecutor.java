@@ -130,10 +130,14 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
 
                 Map<SliceQuery,EntryList> queryResults = new HashMap<>(numQueries);
                 for (int i=0;i<currentResults.length;i++) {
+                    SliceQuery query = queries.get(i);
+                    EntryList entries = EntryList.EMPTY_LIST;
                     if (currentResults[i]!=null && currentResults[i].key.equals(key)) {
-                        queryResults.put(currentResults[i].query, currentResults[i].entries);
+                        assert query.equals(currentResults[i].query);
+                        entries = currentResults[i].entries;
                         currentResults[i]=null;
                     }
+                    queryResults.put(query,entries);
                 }
                 processor.submit(new RowProcessor(key, queryResults));
 
