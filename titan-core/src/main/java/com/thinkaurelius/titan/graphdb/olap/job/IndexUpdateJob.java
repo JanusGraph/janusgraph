@@ -3,20 +3,23 @@ package com.thinkaurelius.titan.graphdb.olap.job;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -44,11 +47,13 @@ public abstract class IndexUpdateJob {
 
     protected StandardTitanGraph graph;
     protected ManagementSystem mgmt = null;
+    protected StandardTitanTx writeTx;
     protected String indexName = null;
     protected String indexRelationTypeName = null;
 
     protected TitanIndex index;
     protected RelationType indexRelationType;
+    protected long jobStartTimeMS;
 
 
     public IndexUpdateJob() { }
@@ -68,6 +73,8 @@ public abstract class IndexUpdateJob {
 
     public void setup(TitanGraph graph, Configuration config, ScanMetrics metrics) {
         this.graph = (StandardTitanGraph)graph;
+        Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
+        this.jobStartTimeMS = config.get(GraphDatabaseConfiguration.JOB_START_TIME);
         if (indexName == null) {
             Preconditions.checkArgument(config.has(INDEX_NAME), "Need to configure the name of the index to be repaired");
             indexName = config.get(INDEX_NAME);
@@ -88,9 +95,15 @@ public abstract class IndexUpdateJob {
             Preconditions.checkArgument(index!=null,"Could not find index: %s [%s]",indexName,indexRelationTypeName);
             log.info("Found index {}", indexName);
             validateIndexStatus();
+
+            StandardTransactionBuilder txb = this.graph.buildTransaction();
+            txb.commitTime(jobStartTimeMS, TimeUnit.MILLISECONDS);
+            writeTx = (StandardTitanTx)txb.start();
         } catch (final Exception e) {
             if (null != mgmt && mgmt.isOpen())
                 mgmt.rollback();
+            if (writeTx!=null && writeTx.isOpen())
+                writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new TitanException(e.getMessage(), e);
         }
@@ -100,6 +113,8 @@ public abstract class IndexUpdateJob {
         try {
             if (null != mgmt && mgmt.isOpen())
                 mgmt.commit();
+            if (writeTx!=null && writeTx.isOpen())
+                writeTx.commit();
             metrics.incrementCustom(SUCCESS_TX);
         } catch (RuntimeException e) {
             log.error("Transaction commit threw runtime exception:", e);

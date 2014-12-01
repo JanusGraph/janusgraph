@@ -27,7 +27,7 @@ public abstract class KCVSLogTest extends LogTest {
     @Override
     public LogManager openLogManager(String senderId) throws BackendException {
         storeManager = openStorageManager();
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,senderId);
         config.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, new StandardDuration(500L, TimeUnit.MILLISECONDS), LOG_NAME);
         return new KCVSLogManager(storeManager,config.restrictTo(LOG_NAME));

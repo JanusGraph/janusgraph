@@ -85,7 +85,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.writableCustomOptions = GraphDatabaseConfiguration.buildConfiguration();
+        this.writableCustomOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
         this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
         vertexCacheSize(graphConfig.getTxVertexCacheSize());
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());

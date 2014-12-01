@@ -20,7 +20,7 @@ public class SerializerGraphConfiguration {
 
     @Before
     public void initialize() {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
         config.set(GraphDatabaseConfiguration.ATTRIBUTE_ALLOW_ALL_SERIALIZABLE,false);
         graph = (StandardTitanGraph) TitanFactory.open(config);

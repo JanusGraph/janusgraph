@@ -84,8 +84,6 @@ public class GraphDatabaseConfiguration {
 
     public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Titan Graph Database");
 
-    public static ConfigNamespace JOB_NS = new ConfigNamespace(ROOT_NS,"job","Root Configuration Namespace for Titan OLAP jobs");
-
     // ########## Graph-level Config Options ##########
     // ################################################
 
@@ -146,6 +144,15 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
             "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class).hide();
+
+
+    // ########## OLAP Style Processing ##########
+    // ################################################
+
+    public static ConfigNamespace JOB_NS = new ConfigNamespace(null,"job","Root Configuration Namespace for Titan OLAP jobs");
+
+    public static final ConfigOption<Long> JOB_START_TIME = new ConfigOption<Long>(JOB_NS,"start-time",
+            "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class).hide();
 
 
     // ################ Transaction #######################
@@ -1494,8 +1501,14 @@ public class GraphDatabaseConfiguration {
         return uid;
     }
 
-    public static final ModifiableConfiguration buildConfiguration() {
+    public static final ModifiableConfiguration buildGraphConfiguration() {
         return new ModifiableConfiguration(ROOT_NS,
+                new CommonsConfiguration(new BaseConfiguration()),
+                BasicConfiguration.Restriction.NONE);
+    }
+
+    public static final ModifiableConfiguration buildJobConfiguration() {
+        return new ModifiableConfiguration(JOB_NS,
                 new CommonsConfiguration(new BaseConfiguration()),
                 BasicConfiguration.Restriction.NONE);
     }

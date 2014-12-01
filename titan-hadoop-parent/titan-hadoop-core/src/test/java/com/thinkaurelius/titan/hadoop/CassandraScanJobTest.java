@@ -43,7 +43,7 @@ public class CassandraScanJobTest extends TitanGraphBaseTest {
         }
         log.debug("Loading values: " + keys + "x" + cols);
 
-        KeyColumnValueStoreManager mgr = new CassandraThriftStoreManager(GraphDatabaseConfiguration.buildConfiguration());
+        KeyColumnValueStoreManager mgr = new CassandraThriftStoreManager(GraphDatabaseConfiguration.buildGraphConfiguration());
         KeyColumnValueStore store = mgr.openDatabase("edgestore");
         StoreTransaction tx = mgr.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MICRO));
         KeyColumnValueStoreUtil.loadValues(store, tx, values);

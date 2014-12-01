@@ -47,7 +47,7 @@ public class SolrIndexTest extends IndexProviderTest {
 
     private Configuration getLocalSolrTestConfig() {
         final String index = "solr";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), index);
 

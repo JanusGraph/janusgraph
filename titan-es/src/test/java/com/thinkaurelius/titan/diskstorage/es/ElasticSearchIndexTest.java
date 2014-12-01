@@ -41,7 +41,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     public static final Configuration getLocalESTestConfig() {
         final String index = "es";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
         config.set(CLIENT_ONLY, false, index);
         config.set(TTL_INTERVAL, "5s", index);
@@ -95,7 +95,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     public void testConfiguration() throws BackendException {
         // Test that local-mode has precedence over hostname
         final String index = "es";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
         config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_HOSTS, new String[] { "10.0.0.1" }, index);
@@ -105,7 +105,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         IndexProvider idx = new ElasticSearchIndex(indexConfig); // Shouldn't throw exception
         idx.close();
 
-        config = GraphDatabaseConfiguration.buildConfiguration();
+        config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, false, index);
         config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_HOSTS, new String[] { "10.0.0.1" }, index);
@@ -125,7 +125,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     @Test
     public void testConfigurationFile() throws BackendException {
         final String index = "es";
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
         config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_CONF_FILE, Joiner.on(File.separator).join("target", "test-classes", "es_nodename_foo.yml"), index);
@@ -137,7 +137,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
         assertEquals("foo", idx.getNode().settings().get("node.name"));
 
-        config = GraphDatabaseConfiguration.buildConfiguration();
+        config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(LOCAL_MODE, true, index);
         config.set(CLIENT_ONLY, true, index);
         config.set(INDEX_CONF_FILE, Joiner.on(File.separator).join("target", "test-classes", "es_nodename_bar.yml"), index);

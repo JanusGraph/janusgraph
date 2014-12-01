@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import java.util.*;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -213,12 +212,12 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
         if (features == null) {
 
-            Configuration global = GraphDatabaseConfiguration.buildConfiguration()
+            Configuration global = GraphDatabaseConfiguration.buildGraphConfiguration()
                     .set(CASSANDRA_READ_CONSISTENCY, "QUORUM")
                     .set(CASSANDRA_WRITE_CONSISTENCY, "QUORUM")
                     .set(METRICS_PREFIX, GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT);
 
-            Configuration local = GraphDatabaseConfiguration.buildConfiguration()
+            Configuration local = GraphDatabaseConfiguration.buildGraphConfiguration()
                     .set(CASSANDRA_READ_CONSISTENCY, "LOCAL_QUORUM")
                     .set(CASSANDRA_WRITE_CONSISTENCY, "LOCAL_QUORUM")
                     .set(METRICS_PREFIX, GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT);

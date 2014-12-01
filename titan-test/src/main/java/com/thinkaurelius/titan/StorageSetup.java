@@ -55,7 +55,7 @@ public class StorageSetup {
     }
 
     public static TitanGraph getInMemoryGraph() {
-        return TitanFactory.open(buildConfiguration().set(STORAGE_BACKEND,"inmemory"));
+        return TitanFactory.open(buildGraphConfiguration().set(STORAGE_BACKEND,"inmemory"));
     }
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {

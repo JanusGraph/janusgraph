@@ -86,9 +86,9 @@ public class ExpectedValueCheckingTest {
         // Setup some config mocks and objects
         backingManager = ctrl.createMock(KeyColumnValueStoreManager.class);
         lockerProvider = ctrl.createMock(LockerProvider.class);
-        globalConfig = GraphDatabaseConfiguration.buildConfiguration();
-        localConfig = GraphDatabaseConfiguration.buildConfiguration();
-        defaultConfig = GraphDatabaseConfiguration.buildConfiguration();
+        globalConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        localConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
+        defaultConfig = GraphDatabaseConfiguration.buildGraphConfiguration();
         // Set some properties on the configs, just so that global/local/default can be easily distinguished
         globalConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "global");
         localConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "local");

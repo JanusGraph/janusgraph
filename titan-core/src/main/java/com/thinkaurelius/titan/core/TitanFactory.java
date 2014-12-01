@@ -108,7 +108,7 @@ public class TitanFactory {
     public static class Builder extends UserModifiableConfiguration {
 
         private Builder() {
-            super(GraphDatabaseConfiguration.buildConfiguration());
+            super(GraphDatabaseConfiguration.buildGraphConfiguration());
         }
 
         /**

@@ -378,7 +378,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @Override
     public StoreFeatures getFeatures() {
 
-        Configuration c = GraphDatabaseConfiguration.buildConfiguration();
+        Configuration c = GraphDatabaseConfiguration.buildGraphConfiguration();
 
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
                 .orderedScan(true).unorderedScan(true).batchMutation(true)

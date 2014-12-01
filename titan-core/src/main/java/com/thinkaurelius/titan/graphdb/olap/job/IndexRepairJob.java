@@ -102,12 +102,11 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     @Override
     public void process(TitanVertex vertex, ScanMetrics metrics) {
         try {
-            StandardTitanTx tx = mgmt.getWrappedTx();
-            BackendTransaction mutator = tx.getTxHandle();
+            BackendTransaction mutator = writeTx.getTxHandle();
             if (index instanceof RelationTypeIndex) {
                 RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
                 InternalRelationType wrappedType = wrapper.getWrappedType();
-                EdgeSerializer edgeSerializer = tx.getEdgeSerializer();
+                EdgeSerializer edgeSerializer = writeTx.getEdgeSerializer();
                 List<Entry> additions = new ArrayList<>();
 
                 for (TitanRelation relation : vertex.query().types(indexRelationTypeName).direction(Direction.OUT).relations()) {
@@ -115,11 +114,11 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     for (int pos = 0; pos < titanRelation.getArity(); pos++) {
                         if (!wrappedType.isUnidirected(Direction.BOTH) && !wrappedType.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        Entry entry = edgeSerializer.writeRelation(titanRelation, wrappedType, pos, tx);
+                        Entry entry = edgeSerializer.writeRelation(titanRelation, wrappedType, pos, writeTx);
                         additions.add(entry);
                     }
                 }
-                StaticBuffer vertexKey = tx.getIdInspector().getKey(vertex.longId());
+                StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.longId());
                 mutator.mutateEdges(vertexKey, additions, KCVSCache.NO_DELETIONS);
             } else if (index instanceof TitanGraphIndex) {
                 IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
@@ -166,6 +165,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
             } else throw new UnsupportedOperationException("Unsupported index found: "+index);
         } catch (final Exception e) {
             mgmt.rollback();
+            writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new TitanException(e.getMessage(), e);
         }

@@ -37,7 +37,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
             .orderedScan(true)
             .unorderedScan(true)
             .keyOrdered(true)
-            .keyConsistent(GraphDatabaseConfiguration.buildConfiguration())
+            .keyConsistent(GraphDatabaseConfiguration.buildGraphConfiguration())
             .build();
 
 //        features = new StoreFeatures();

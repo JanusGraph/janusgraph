@@ -11,18 +11,19 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
-import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -38,6 +39,7 @@ public class GhostVertexRemover extends VertexJobConverter {
     public static final String SKIPPED_GHOST_LIMIT_COUNT = "skipped-ghosts";
 
     private final SliceQuery everythingQueryLimit = EVERYTHING_QUERY.updateLimit(RELATION_COUNT_LIMIT);
+    private long jobStartTimeMS;
 
     public GhostVertexRemover(TitanGraph graph) {
         super(graph, new NoOpJob());
@@ -50,9 +52,13 @@ public class GhostVertexRemover extends VertexJobConverter {
     @Override
     public void setup(Configuration config, ScanMetrics metrics) {
         super.setup(config,metrics);
+        Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
+        this.jobStartTimeMS = config.get(GraphDatabaseConfiguration.JOB_START_TIME);
+
         assert tx!=null && tx.isOpen();
         tx.rollback();
         StandardTransactionBuilder txb = graph.get().buildTransaction();
+        txb.commitTime(jobStartTimeMS, TimeUnit.MILLISECONDS);
         txb.checkExternalVertexExistence(false);
         txb.checkInternalVertexExistence(false);
         tx = (StandardTitanTx)txb.start();

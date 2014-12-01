@@ -110,7 +110,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
-            ModifiableConfiguration sc = GraphDatabaseConfiguration.buildConfiguration();
+            ModifiableConfiguration sc = GraphDatabaseConfiguration.buildGraphConfiguration();
             sc.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP,concreteClassName + i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);

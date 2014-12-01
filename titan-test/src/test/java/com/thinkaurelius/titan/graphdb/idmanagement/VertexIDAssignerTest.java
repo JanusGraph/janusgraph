@@ -58,7 +58,7 @@ public class VertexIDAssignerTest {
         }
         StoreFeatures features = fb.build();
 
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,partition);
         config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,1024);
         idAssigner = new VertexIDAssigner(config, idAuthority, features);
@@ -68,7 +68,7 @@ public class VertexIDAssignerTest {
     }
 
     private static TitanGraph getInMemoryGraph() {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         config.set(GraphDatabaseConfiguration.IDS_FLUSH, false);
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, new StandardDuration(1L, TimeUnit.MILLISECONDS));
