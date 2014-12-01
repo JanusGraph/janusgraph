@@ -1185,7 +1185,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         clopen();
 
         StandardScanner scanner = new StandardScanner(manager);
-        SimpleScanJobRunner runner = (ScanJob job, Configuration jobConf, ConfigNamespace rootNS, String rootNSName) -> runSimpleJob(scanner, job, jobConf);
+        SimpleScanJobRunner runner = (ScanJob job, Configuration jobConf, String rootNSName) -> runSimpleJob(scanner, job, jobConf);
 
         SimpleScanJob.runBasicTests(keys, columns, runner);
     }

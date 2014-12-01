@@ -4,7 +4,6 @@ package com.thinkaurelius.titan.hadoop;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -49,9 +48,9 @@ public class CassandraScanJobTest extends TitanGraphBaseTest {
         KeyColumnValueStoreUtil.loadValues(store, tx, values);
         tx.commit(); // noop on Cassandra, but harmless
 
-        SimpleScanJobRunner runner = (ScanJob job, Configuration jobConf, ConfigNamespace rootNS, String rootNSName) -> {
+        SimpleScanJobRunner runner = (ScanJob job, Configuration jobConf, String rootNSName) -> {
             try {
-                return HadoopScanRunner.run(job, jobConf, rootNS, rootNSName);
+                return HadoopScanRunner.run(job, jobConf, rootNSName);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
