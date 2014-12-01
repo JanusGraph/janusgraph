@@ -20,7 +20,7 @@ import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.javatuples.Pair;
+import com.tinkerpop.gremlin.process.computer.KeyValue;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -319,11 +319,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         @Override
-        public Map<Long, Integer> generateFinalResult(Iterator<Pair<Long, Integer>> keyValues) {
+        public Map<Long, Integer> generateFinalResult(Iterator<KeyValue<Long, Integer>> keyValues) {
             Map<Long,Integer> result = new HashMap<>();
             for (; keyValues.hasNext(); ) {
-                Pair<Long, Integer> r =  keyValues.next();
-                result.put(r.getValue0(),r.getValue1());
+                KeyValue<Long, Integer> r =  keyValues.next();
+                result.put(r.getKey(),r.getValue());
             }
             return result;
         }
