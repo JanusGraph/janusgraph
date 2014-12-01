@@ -76,7 +76,6 @@ public class HadoopScanRunner {
 
         scanConf.getHadoopConfiguration().set("cassandra.input.partitioner.class","org.apache.cassandra.dht.Murmur3Partitioner");
 
-        // TODO the following is probably not compatible across Hadoop 1/2
         Job job = Job.getInstance(scanConf.getHadoopConfiguration());
 
         job.setJarByClass(HadoopScanMapper.class);
