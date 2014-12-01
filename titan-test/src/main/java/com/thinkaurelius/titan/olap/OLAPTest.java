@@ -4,24 +4,23 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.*;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
+import com.tinkerpop.gremlin.process.computer.*;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.util.StreamFactory;
+import org.javatuples.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,10 +29,7 @@ import javax.annotation.Nullable;
 import static org.junit.Assert.*;
 import static com.thinkaurelius.titan.testutil.TitanAssert.*;
 
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Random;
-import java.util.concurrent.Future;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -188,10 +184,164 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     }
 
     @Test
+    public void degreeCounting() throws Exception {
+        int numV = 200;
+        int numE = generateRandomGraph(numV);
+        clopen();
+
+        final TitanGraphComputer computer = graph.compute();
+        computer.persistElementKeys(false);
+        computer.setNumProcessingThreads(4);
+        computer.program(new DegreeCounter());
+        computer.mapReduce(new DegreeMapper());
+        ComputerResult result = computer.submit().get();
+        System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
+        assertTrue(result.memory().exists(DegreeMapper.DEGREE_RESULT));
+        Map<Long,Integer> degrees = result.memory().get(DegreeMapper.DEGREE_RESULT);
+        assertNotNull(degrees);
+        assertEquals(numV,degrees.size());
+        int totalCount = 0;
+        for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
+            int degree = entry.getValue();
+            Vertex v = tx.v(entry.getKey().longValue());
+            int count = v.value("uid");
+            assertEquals(count,degree);
+            totalCount+= degree;
+        }
+        assertEquals(numV*(numV+1)/2,totalCount);
+        assertEquals(1,result.memory().getIteration());
+    }
+
+    @Test
+    public void degreeCountingDistance() throws Exception {
+        int numV = 100;
+        int numE = generateRandomGraph(numV);
+        clopen();
+
+        final TitanGraphComputer computer = graph.compute();
+        computer.persistElementKeys(true);
+        computer.setNumProcessingThreads(1);
+        computer.program(new DegreeCounter(2));
+        ComputerResult result = computer.submit().get();
+        System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
+        assertEquals(2,result.memory().getIteration());
+
+        newTx();
+        for (Vertex v : tx.V().toList()) {
+            long degree2 = ((Integer)v.value(DegreeCounter.DEGREE)).longValue();
+            long actualDegree2 = v.out().out().count().next();
+            assertEquals(actualDegree2,degree2);
+        }
+    }
+
+    public static class DegreeCounter implements VertexProgram<Integer> {
+
+        public static final String DEGREE = "degree";
+        public static final MessageCombiner<Integer> ADDITION = (a,b) -> a+b;
+        public static final MessageScope.Local<Integer> DEG_MSG = MessageScope.Local.of(() -> GraphTraversal.<Vertex>of().inE());
+
+        private final int length;
+
+        DegreeCounter() {
+            this(1);
+        }
+
+        DegreeCounter(int length) {
+            Preconditions.checkArgument(length>0);
+            this.length = length;
+        }
+
+        @Override
+        public void setup(Memory memory) {
+            return;
+        }
+
+        @Override
+        public void execute(Vertex vertex, Messenger<Integer> messenger, Memory memory) {
+            if (memory.isInitialIteration()) {
+                messenger.sendMessage(DEG_MSG, 1);
+            } else {
+                int degree = StreamFactory.stream(messenger.receiveMessages(DEG_MSG)).reduce(0, (a, b) -> a + b);
+                vertex.singleProperty(DEGREE, degree);
+                if (memory.getIteration()<length) messenger.sendMessage(DEG_MSG, degree);
+            }
+        }
+
+        @Override
+        public boolean terminate(Memory memory) {
+            return memory.getIteration()>=length;
+        }
+
+        @Override
+        public Set<String> getElementComputeKeys() {
+            return ImmutableSet.of(DEGREE);
+        }
+
+        @Override
+        public Optional<MessageCombiner<Integer>> getMessageCombiner() {
+            return Optional.of(ADDITION);
+        }
+
+        @Override
+        public Set<MessageScope> getMessageScopes(Memory memory) {
+            if (memory.getIteration()<length) return ImmutableSet.of((MessageScope)DEG_MSG);
+            else return Collections.EMPTY_SET;
+        }
+
+        @Override
+        public Features getFeatures() {
+            return new Features() {
+                @Override
+                public boolean requiresLocalMessageScopes() {
+                    return true;
+                }
+
+                @Override
+                public boolean requiresVertexPropertyAddition() {
+                    return true;
+                }
+            };
+        }
+    }
+
+    public static class DegreeMapper implements MapReduce<Long,Integer,Long,Integer,Map<Long,Integer>> {
+
+        public static final String DEGREE_RESULT = "degrees";
+
+        @Override
+        public boolean doStage(Stage stage) {
+            return stage==Stage.MAP;
+        }
+
+        @Override
+        public void map(Vertex vertex, MapEmitter<Long, Integer> emitter) {
+            emitter.emit((Long)vertex.id(),vertex.value(DegreeCounter.DEGREE));
+        }
+
+        @Override
+        public Map<Long, Integer> generateFinalResult(Iterator<Pair<Long, Integer>> keyValues) {
+            Map<Long,Integer> result = new HashMap<>();
+            for (; keyValues.hasNext(); ) {
+                Pair<Long, Integer> r =  keyValues.next();
+                result.put(r.getValue0(),r.getValue1());
+            }
+            return result;
+        }
+
+        @Override
+        public String getMemoryKey() {
+            return DEGREE_RESULT;
+        }
+    }
+
+
+    @Test
     public void degreeCount() throws Exception {
         int numV = 300;
         int numE = generateRandomGraph(numV);
         clopen();
+
+
 
         Stopwatch w = new Stopwatch().start();
         final OLAPJobBuilder<Degree> builder = getOLAPBuilder(graph,Degree.class);

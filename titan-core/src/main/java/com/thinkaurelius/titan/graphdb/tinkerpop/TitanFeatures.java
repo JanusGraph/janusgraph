@@ -43,7 +43,7 @@ public class TitanFeatures implements Graph.Features {
 
             @Override
             public boolean supportsComputer() {
-                return false; //TODO: set to true
+                return true;
             }
         };
         vertexFeatures = new VertexFeatures() {

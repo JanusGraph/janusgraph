@@ -14,7 +14,7 @@ import org.junit.Test;
 public class InMemoryGraphTest extends TitanGraphTest {
 
     public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
         return config.getConfiguration();
     }

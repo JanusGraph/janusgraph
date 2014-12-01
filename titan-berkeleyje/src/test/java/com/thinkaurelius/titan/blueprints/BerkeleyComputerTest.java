@@ -9,7 +9,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-@Ignore
 @RunWith(ProcessComputerSuite.class)
 @ProcessComputerSuite.GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = TitanGraph.class)
 public class BerkeleyComputerTest {

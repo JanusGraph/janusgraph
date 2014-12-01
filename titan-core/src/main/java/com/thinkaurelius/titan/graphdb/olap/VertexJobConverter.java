@@ -14,11 +14,14 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +33,19 @@ import java.util.function.Predicate;
  */
 public class VertexJobConverter implements ScanJob {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(VertexJobConverter.class);
+
     protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
 
     public static final String GHOST_VERTEX_COUNT = "ghost-vertices";
+    /**
+     * Number of result sets that got (possibly) truncated due to an applied query limit
+     */
+    public static final String TRUNCATED_ENTRY_LISTS = "truncated-results";
 
     protected final GraphProvider graph;
-    private final VertexScanJob job;
+    protected final VertexScanJob job;
 
     protected StandardTitanTx tx;
     private IDManager idManager;
@@ -62,6 +72,8 @@ public class VertexJobConverter implements ScanJob {
         StandardTransactionBuilder txb = graph.get().buildTransaction().readOnly();
         txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
+        txb.dirtyVertexSize(0);
+        txb.vertexCacheSize(500);
         try {
             tx = (StandardTitanTx)txb.start();
             job.setup(graph.get(), config, metrics);
@@ -96,9 +108,17 @@ public class VertexJobConverter implements ScanJob {
                 "The bounding transaction is not configured correctly");
         PreloadedVertex v = (PreloadedVertex)vertex;
         for (Map.Entry<SliceQuery,EntryList> entry : entries.entrySet()) {
-            v.addToQueryCache(entry.getKey(),entry.getValue());
+            SliceQuery sq = entry.getKey();
+            if (sq.equals(VERTEX_EXISTS_QUERY)) continue;
+            EntryList entryList = entry.getValue();
+            if (entryList.size()>=sq.getLimit()) metrics.incrementCustom(TRUNCATED_ENTRY_LISTS);
+            v.addToQueryCache(sq.updateLimit(Query.NO_LIMIT),entryList);
         }
-        job.process(v,metrics);
+        try {
+            job.process(v, metrics);
+        } catch (Throwable ex) {
+            log.error("Exception processing vertex [" + vertexId + "]: ", ex);
+        }
     }
 
     protected boolean isGhostVertex(long vertexId, EntryList firstEntries) {

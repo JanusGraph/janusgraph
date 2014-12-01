@@ -31,6 +31,8 @@ import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
@@ -331,17 +333,21 @@ public class Backend implements LockerProvider {
     }
 
     public StandardScanner.Builder buildEdgeScanJob() {
-        return scanner.build()
-                .setStoreName(EDGESTORE_NAME)
-                .setTimestampProvider(configuration.get(TIMESTAMP_PROVIDER))
-                .setGraphConfiguration(configuration)
-                .setNumProcessingThreads(1);
+        return buildStoreIndexScanJob(EDGESTORE_NAME);
     }
 
     public StandardScanner.Builder buildGraphIndexScanJob() {
+        return buildStoreIndexScanJob(INDEXSTORE_NAME);
+    }
+
+    private StandardScanner.Builder buildStoreIndexScanJob(String storeName) {
+        TimestampProvider provider = configuration.get(TIMESTAMP_PROVIDER);
+        ModifiableConfiguration jobConfig = GraphDatabaseConfiguration.buildJobConfiguration();
+        jobConfig.set(JOB_START_TIME,provider.getTime().getTimestamp(TimeUnit.MILLISECONDS));
         return scanner.build()
-                .setStoreName(INDEXSTORE_NAME)
-                .setTimestampProvider(configuration.get(TIMESTAMP_PROVIDER))
+                .setStoreName(storeName)
+                .setTimestampProvider(provider)
+                .setJobConfiguration(jobConfig)
                 .setGraphConfiguration(configuration)
                 .setNumProcessingThreads(1);
     }

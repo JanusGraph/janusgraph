@@ -139,6 +139,10 @@ public class StandardScanner  {
             return this;
         }
 
+        public Configuration getJobConfiguration() {
+            return this.jobConfiguration;
+        }
+
         public Builder setFinishJob(Consumer<ScanMetrics> finishJob) {
             Preconditions.checkArgument(finishJob != null);
             this.finishJob = finishJob;

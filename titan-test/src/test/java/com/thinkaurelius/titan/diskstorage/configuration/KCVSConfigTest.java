@@ -18,7 +18,7 @@ public class KCVSConfigTest extends WritableConfigurationTest {
     @Override
     public WriteConfiguration getConfig() {
         final KeyColumnValueStoreManager manager = new InMemoryStoreManager(Configuration.EMPTY);
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER,Timestamps.MICRO);
         try {
             return new KCVSConfiguration(new BackendOperation.TransactionalProvider() {

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.olap;
+package com.thinkaurelius.titan.graphdb.olap.oldfulgora;
 
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.*;

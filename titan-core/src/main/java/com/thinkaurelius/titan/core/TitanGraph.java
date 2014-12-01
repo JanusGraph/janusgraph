@@ -37,6 +37,26 @@ import java.util.Collection;
         method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
         specific = "property(k)",
         reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.process.computer.GraphComputerTest$ComputerTest",
+//        method = "shouldNotAllowTheSameComputerToExecutedTwice",
+//        reason = "Titan's GraphComputer requires that a message combiner is specified.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.process.computer.GraphComputerTest$ComputerTest",
+//        method = "shouldSupportMultipleMapReduceJobs",
+//        reason = "Titan's GraphComputer requires that a message combiner is specified.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.process.computer.GraphComputerTest$ComputerTest",
+//        method = "shouldAndOrIncrCorrectlyThroughSubStages",
+//        reason = "Titan's GraphComputer requires that a message combiner is specified.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.process.computer.GraphComputerTest$ComputerTest",
+//        method = "shouldHaveConsistentMemoryVertexPropertiesAndExceptions",
+//        reason = "Titan's GraphComputer requires that a message combiner is specified.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.process.computer.GraphComputerTest$ComputerTest",
+//        method = "shouldHaveImmutableComputeResultMemory",
+//        reason = "Titan's GraphComputer requires that a message combiner is specified.")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------
@@ -76,6 +96,9 @@ public interface TitanGraph extends TitanGraphTransaction {
      * @return
      */
     public TitanManagement openManagement();
+
+    @Override
+    public TitanGraphComputer compute(final Class... graphComputerClass);
 
     /**
      * Checks whether the graph is open.

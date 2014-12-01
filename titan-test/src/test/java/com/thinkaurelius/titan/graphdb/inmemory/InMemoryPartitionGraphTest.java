@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.inmemory;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
@@ -17,7 +15,7 @@ public class InMemoryPartitionGraphTest extends TitanPartitionGraphTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
         config.set(GraphDatabaseConfiguration.IDS_FLUSH,false);

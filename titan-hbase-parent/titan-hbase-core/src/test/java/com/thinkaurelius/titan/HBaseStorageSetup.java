@@ -69,7 +69,7 @@ public class HBaseStorageSetup {
 
 
     public static ModifiableConfiguration getHBaseConfiguration() {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, true);
         config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);

@@ -27,6 +27,14 @@ public class TitanElementTraversal<S, E>  extends DefaultGraphTraversal<S, E> {
         addStep(new StartStep<>(this, element));
     }
 
+    private TitanElementTraversal(final TitanTransaction graph) {
+        super(graph);
+    }
+
+    public static<S,E> TitanElementTraversal<S,E> of(final TitanTransaction graph) {
+        return new TitanElementTraversal<>(graph);
+    }
+
     @Override
     public <E2> GraphTraversal<S, E2> addStep(Step<?, E2> step) {
         if (isLocked()) throw Exceptions.traversalIsLocked();

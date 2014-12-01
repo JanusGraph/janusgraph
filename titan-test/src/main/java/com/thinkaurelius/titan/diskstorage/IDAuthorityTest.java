@@ -78,7 +78,7 @@ public abstract class IDAuthorityTest {
     }
 
     public static ModifiableConfiguration getBasicConfig() {
-        ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration c = GraphDatabaseConfiguration.buildGraphConfiguration();
         c.set(IDAUTHORITY_WAIT, new StandardDuration(100L, TimeUnit.MILLISECONDS));
         c.set(IDS_BLOCK_SIZE,400);
         return c;

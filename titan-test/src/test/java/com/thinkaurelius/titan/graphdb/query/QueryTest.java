@@ -23,7 +23,7 @@ public class QueryTest {
 
     @Before
     public void setup() {
-        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         graph = TitanFactory.open(config);
         tx = graph.newTransaction();

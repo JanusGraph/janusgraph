@@ -70,7 +70,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         features = new StandardStoreFeatures.Builder()
                     .orderedScan(true)
                     .transactional(transactional)
-                    .keyConsistent(GraphDatabaseConfiguration.buildConfiguration())
+                    .keyConsistent(GraphDatabaseConfiguration.buildGraphConfiguration())
                     .locking(true)
                     .keyOrdered(true)
                     .build();

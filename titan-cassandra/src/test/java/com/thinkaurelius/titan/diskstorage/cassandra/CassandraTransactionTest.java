@@ -1,10 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
@@ -33,7 +29,7 @@ public class CassandraTransactionTest {
         // Test whether CassandraTransaction honors the write consistency level option
         for (CLevel writeLevel : CLevel.values()) {
             StandardBaseTransactionConfig.Builder b = new StandardBaseTransactionConfig.Builder();
-            ModifiableConfiguration mc = GraphDatabaseConfiguration.buildConfiguration();
+            ModifiableConfiguration mc = GraphDatabaseConfiguration.buildGraphConfiguration();
             mc.set(CASSANDRA_WRITE_CONSISTENCY, writeLevel.name());
             b.customOptions(mc);
             b.timestampProvider(Timestamps.MICRO);
@@ -53,7 +49,7 @@ public class CassandraTransactionTest {
         // Test whether CassandraTransaction honors the write consistency level option
         for (CLevel writeLevel : CLevel.values()) {
             StandardBaseTransactionConfig.Builder b = new StandardBaseTransactionConfig.Builder();
-            ModifiableConfiguration mc = GraphDatabaseConfiguration.buildConfiguration();
+            ModifiableConfiguration mc = GraphDatabaseConfiguration.buildGraphConfiguration();
             mc.set(CASSANDRA_READ_CONSISTENCY, writeLevel.name());
             b.timestampProvider(Timestamps.MICRO);
             b.customOptions(mc);

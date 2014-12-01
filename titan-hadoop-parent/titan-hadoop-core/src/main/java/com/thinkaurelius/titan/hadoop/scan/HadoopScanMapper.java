@@ -63,8 +63,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         // Assign head of getQueries() to "initialQuery"
         initialQuery = sliceQueries.get(0);
         // Assign tail of getQueries() to "subsequentQueries"
-        subsequentQueries = new ArrayList<>(sliceQueries.size() - 1);
-        Iterables.addAll(subsequentQueries, Iterables.skip(sliceQueries, 1));
+        subsequentQueries = new ArrayList<>(sliceQueries.subList(1,sliceQueries.size()));
         Preconditions.checkState(sliceQueries.size() == subsequentQueries.size() + 1);
         Preconditions.checkNotNull(initialQuery);
 
