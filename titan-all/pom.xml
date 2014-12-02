@@ -73,13 +73,6 @@
             <artifactId>titan-lucene</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- TODO titan-hadoop reintegration
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-rexster</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        -->
 
         <!-- Override Jackson versions in our transitive dependencies.
              Without these deps, titan-all users can end up with
