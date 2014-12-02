@@ -1,39 +1,33 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
+package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversal;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.strategy.GraphTraversalStrategyRegistry;
 import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.util.DefaultTraversalStrategies;
-import com.tinkerpop.gremlin.structure.Element;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanElementTraversal<S, E>  extends DefaultGraphTraversal<S, E> {
+public class FulgoraElementTraversal<S, E>  extends DefaultGraphTraversal<S, E> {
 
     static {
         final DefaultTraversalStrategies traversalStrategies = new DefaultTraversalStrategies();
         GraphTraversalStrategyRegistry.instance().getTraversalStrategies().forEach(traversalStrategies::addStrategy);
-        traversalStrategies.addStrategy(TitanElementStepStrategy.instance());
         traversalStrategies.addStrategy(TitanLocalQueryOptimizerStrategy.instance());
-        TraversalStrategies.GlobalCache.registerStrategies(TitanElementTraversal.class, traversalStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(FulgoraElementTraversal.class, traversalStrategies);
     }
 
-    public TitanElementTraversal(final Element element, final TitanTransaction graph) {
-        super(graph);
-        addStep(new StartStep<>(this, element));
-    }
-
-    private TitanElementTraversal(final TitanTransaction graph) {
+    private FulgoraElementTraversal(final TitanTransaction graph) {
         super(graph);
     }
 
-    public static<S,E> TitanElementTraversal<S,E> of(final TitanTransaction graph) {
-        return new TitanElementTraversal<>(graph);
+    public static<S,E> FulgoraElementTraversal<S,E> of(final TitanTransaction graph) {
+        return new FulgoraElementTraversal<>(graph);
     }
 
     @Override

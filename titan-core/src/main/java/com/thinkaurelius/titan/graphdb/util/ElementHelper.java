@@ -4,7 +4,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -31,6 +33,13 @@ public class ElementHelper {
                 }
             });
         }
+    }
+
+    public static long getCompareId(Element element) {
+        Object id = element.id();
+        if (id instanceof Long) return (Long)id;
+        else if (id instanceof RelationIdentifier) return ((RelationIdentifier)id).getRelationId();
+        else throw new IllegalArgumentException("Element identifier has unrecognized type: " + id);
     }
 
     public static void attachProperties(TitanElement element, Object... keyValues) {

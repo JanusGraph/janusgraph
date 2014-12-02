@@ -194,10 +194,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TitanGraphComputer compute(final Class... graphComputerClass) {
         GraphComputerHelper.validateComputeArguments(graphComputerClass);
-        if (graphComputerClass.length == 0 || graphComputerClass[0].equals(FulgoraGraphComputer.class))
-            return new FulgoraGraphComputer((StandardTitanGraph)this);
-        else
+        if (graphComputerClass.length == 0 || graphComputerClass[0].equals(FulgoraGraphComputer.class)) {
+            StandardTitanGraph graph = (StandardTitanGraph)this;
+            return new FulgoraGraphComputer(graph,graph.getConfiguration().getConfiguration());
+        } else {
             throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass[0]);
+        }
     }
 
     @Override

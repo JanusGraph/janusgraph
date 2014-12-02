@@ -155,6 +155,14 @@ public class GraphDatabaseConfiguration {
             "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class).hide();
 
 
+    public static final ConfigNamespace COMPUTER_NS = new ConfigNamespace(ROOT_NS,"computer",
+            "GraphComputer related configuration");
+
+    public static final ConfigOption<String> COMPUTER_RESULT_MODE = new ConfigOption<String>(COMPUTER_NS,"result-mode",
+            "How the graph computer should return the computed results. 'persist' for writing them into the graph, " +
+                    "'localtx' for writing them into the local transaction, or 'none' (default)", ConfigOption.Type.MASKABLE, "none");
+
+
     // ################ Transaction #######################
     // ################################################
 

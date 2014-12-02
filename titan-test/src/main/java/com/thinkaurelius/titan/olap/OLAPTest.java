@@ -6,7 +6,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
@@ -15,9 +14,11 @@ import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
+import com.thinkaurelius.titan.graphdb.olap.oldfulgora.*;
 import com.tinkerpop.gremlin.process.computer.*;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import com.tinkerpop.gremlin.process.computer.KeyValue;
@@ -190,7 +191,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         clopen();
 
         final TitanGraphComputer computer = graph.compute();
-        computer.persistElementKeys(false);
+        computer.setResultMode(TitanGraphComputer.ResultMode.NONE);
         computer.setNumProcessingThreads(4);
         computer.program(new DegreeCounter());
         computer.mapReduce(new DegreeMapper());
@@ -218,19 +219,33 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.persistElementKeys(true);
-        computer.setNumProcessingThreads(1);
-        computer.program(new DegreeCounter(2));
-        ComputerResult result = computer.submit().get();
-        System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
-        assertEquals(2,result.memory().getIteration());
+        for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
+            final TitanGraphComputer computer = graph.compute();
+            computer.setResultMode(mode);
+            computer.setNumProcessingThreads(1);
+            computer.program(new DegreeCounter(2));
+            ComputerResult result = computer.submit().get();
+            System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
+            assertEquals(2,result.memory().getIteration());
 
-        newTx();
-        for (Vertex v : tx.V().toList()) {
-            long degree2 = ((Integer)v.value(DegreeCounter.DEGREE)).longValue();
-            long actualDegree2 = v.out().out().count().next();
-            assertEquals(actualDegree2,degree2);
+            Graph gview = null;
+            switch (mode) {
+                case LOCALTX: gview = result.graph(); break;
+                case PERSIST: newTx(); gview = tx; break;
+                case NONE: break;
+                default: throw new AssertionError(mode);
+            }
+            if (gview == null) continue;
+
+            for (Vertex v : gview.V().toList()) {
+                long degree2 = ((Integer)v.value(DegreeCounter.DEGREE)).longValue();
+                long actualDegree2 = v.out().out().count().next();
+                assertEquals(actualDegree2,degree2);
+            }
+            if (mode== TitanGraphComputer.ResultMode.LOCALTX) {
+                assertTrue(gview instanceof TitanTransaction);
+                ((TitanTransaction)gview).rollback();
+            }
         }
     }
 

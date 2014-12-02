@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.olap.oldfulgora;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.olap.OLAPResult;
+import com.thinkaurelius.titan.graphdb.olap.oldfulgora.OLAPResult;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 

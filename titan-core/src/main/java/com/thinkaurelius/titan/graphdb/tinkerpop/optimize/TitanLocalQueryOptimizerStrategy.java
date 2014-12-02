@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.tinkerpop.gremlin.process.Step;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.TraversalStrategy;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.tinkerpop.gremlin.process.*;
 import com.tinkerpop.gremlin.process.graph.step.filter.FilterStep;
+import com.tinkerpop.gremlin.process.graph.step.filter.HasStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.LocalRangeStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.RangeStep;
 import com.tinkerpop.gremlin.process.graph.step.map.EdgeVertexStep;
@@ -18,12 +17,18 @@ import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.util.HasContainer;
+import com.tinkerpop.gremlin.tinkergraph.process.graph.step.sideEffect.TinkerGraphStep;
 
 import java.util.Set;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Matthias Broecheler (http://matthiasb.com)
  */
 public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy {
 
@@ -34,9 +39,6 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 
     @Override
     public void apply(final Traversal<?, ?> traversal, final TraversalEngine engine) {
-        if (engine.equals(TraversalEngine.COMPUTER))
-            return;
-
         TraversalHelper.getStepsOfClass(TitanVertexStep.class, traversal).forEach(step -> {
             if (step.isEdgeStep()) {
                 HasStepFolder.foldInHasContainer(step,traversal);
@@ -51,6 +53,10 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
                     int limit = QueryUtil.convertLimit(rstep.getHighRange());
                     step.setLimit(QueryUtil.mergeLimits(limit, step.getLimit()));
                 }
+            }
+            if (engine.equals(TraversalEngine.STANDARD) &&
+                    ((StandardTitanTx)traversal.sideEffects().getGraph()).getGraph().getConfiguration().useMultiQuery()) {
+                step.setUseMultiQuery(true);
             }
         });
 
@@ -85,8 +91,15 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
                 OrderByStep ostep = HasStepFolder.foldInLastOrderBy(step,traversal,false);
                 boolean hasLocalRange = HasStepFolder.foldInRange(step, traversal, LocalRangeStep.class);
                 if (ostep!=null && !hasLocalRange) TraversalHelper.insertAfterStep(ostep,step,traversal);
+
+                if (engine.equals(TraversalEngine.STANDARD) &&
+                        ((StandardTitanTx)traversal.sideEffects().getGraph()).getGraph().getConfiguration().useMultiQuery()) {
+                    step.setUseMultiQuery(true);
+                }
             }
         });
+
+
     }
 
     public static TitanLocalQueryOptimizerStrategy instance() {

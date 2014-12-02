@@ -5,8 +5,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.core.olap.Combiner;
-import com.thinkaurelius.titan.core.olap.Gather;
+import com.thinkaurelius.titan.graphdb.olap.oldfulgora.Combiner;
+import com.thinkaurelius.titan.graphdb.olap.oldfulgora.Gather;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.tinkerpop.gremlin.structure.Direction;
 

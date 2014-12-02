@@ -13,6 +13,7 @@ import com.tinkerpop.gremlin.process.computer.Messenger;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
+import com.tinkerpop.gremlin.structure.util.referenced.ReferencedVertex;
 import com.tinkerpop.gremlin.util.StreamFactory;
 
 import java.util.*;
@@ -102,7 +103,10 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
             vertexMemory.sendMessage(vertexId, m, messageScope);
         } else {
             ((MessageScope.Global) messageScope).vertices().forEach(v -> {
-                vertexMemory.sendMessage(vertexMemory.getCanonicalId(((TitanVertex) v).longId()), m, messageScope);
+                long vertexId;
+                if (v instanceof TitanVertex) vertexId=((TitanVertex)v).longId();
+                else vertexId = (Long)v.id();
+                vertexMemory.sendMessage(vertexMemory.getCanonicalId(vertexId), m, messageScope);
             });
         }
     }

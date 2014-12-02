@@ -32,6 +32,11 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     }
 
     private boolean initialized = false;
+    private boolean useMultiQuery = false;
+
+    void setUseMultiQuery(boolean useMultiQuery) {
+        this.useMultiQuery = useMultiQuery;
+    }
 
     public<Q extends BaseVertexQuery> Q makeQuery(Q query) {
         query.labels(getEdgeLabels());
@@ -52,7 +57,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     private void initialize() {
         assert !initialized;
         initialized = true;
-        if (((StandardTitanTx)traversal.sideEffects().getGraph()).getGraph().getConfiguration().useMultiQuery()) {
+        if (useMultiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
             TitanMultiVertexQuery mquery = ((TitanTransaction)traversal.sideEffects().getGraph()).multiQuery();
             List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
