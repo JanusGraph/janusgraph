@@ -54,17 +54,17 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         super.setConf(config);
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, inputConf.get(HBaseStoreManager.HBASE_TABLE));
+        config.set(TableInputFormat.INPUT_TABLE, titanConf.get(HBaseStoreManager.HBASE_TABLE));
         //config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, inputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        config.set(HConstants.ZOOKEEPER_QUORUM, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
 //        if (basicConf.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-        if (inputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(inputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(titanConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         config.set("autotype", "none");
         log.debug("hbase.security.authentication={}", config.get("hbase.security.authentication"));
         Scan scanner = new Scan();
         // TODO the mapping is private in HBaseStoreManager and leaks here -- replace String database/CF names with an enum where each value has both a short and long name
-        if (inputConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
+        if (titanConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
             scanner.addFamily("e".getBytes());
             edgestoreFamily = Bytes.toBytes("e");
         } else {

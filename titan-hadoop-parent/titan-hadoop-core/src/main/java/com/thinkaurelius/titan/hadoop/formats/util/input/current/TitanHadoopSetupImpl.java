@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.hadoop.formats.util.input.current;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
@@ -22,7 +21,6 @@ import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon;
-import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
 import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.hadoop.conf.Configuration;
 
@@ -31,11 +29,13 @@ import org.apache.hadoop.conf.Configuration;
  */
 public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
+    private final ModifiableHadoopConfiguration scanConf;
     private final StandardTitanGraph graph;
     private final StandardTitanTx tx;
 
     public TitanHadoopSetupImpl(final Configuration config) {
-        BasicConfiguration bc = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.SCAN_NS, config).getInputConf(GraphDatabaseConfiguration.ROOT_NS);
+        scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, config);
+        BasicConfiguration bc = scanConf.getTitanInputConf();
         graph = (StandardTitanGraph) TitanFactory.open(bc);
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().vertexCacheSize(200).start();
     }
@@ -90,13 +90,8 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     }
 
     @Override
-    public VertexReader getVertexReader() {
-        return new VertexReader() {
-            @Override
-            public long getVertexId(StaticBuffer key) {
-                return graph.getIDManager().getKeyID(key);
-            }
-        };
+    public IDManager getIDManager() {
+        return graph.getIDManager();
     }
 
     @Override
@@ -108,5 +103,10 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     public void close() {
         tx.rollback();
         graph.close();
+    }
+
+    @Override
+    public boolean getFilterPartitionedVertices() {
+        return scanConf.get(TitanHadoopConfiguration.FILTER_PARTITIONED_VERTICES);
     }
 }

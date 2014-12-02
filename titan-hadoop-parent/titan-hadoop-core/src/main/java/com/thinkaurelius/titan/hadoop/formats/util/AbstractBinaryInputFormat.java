@@ -13,14 +13,14 @@ import org.apache.hadoop.mapreduce.InputFormat;
 public abstract class AbstractBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Entry>> implements Configurable {
 
     protected Configuration hadoopConf;
-    protected ModifiableConfiguration inputConf;
+    protected ModifiableConfiguration titanConf;
 
     @Override
     public void setConf(final Configuration config) {
 
-        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.SCAN_NS, config);
-        this.inputConf = faunusConf.getInputConf(GraphDatabaseConfiguration.ROOT_NS);
+        ModifiableHadoopConfiguration faunusConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, config);
         this.hadoopConf = config;
+        this.titanConf = faunusConf.getTitanInputConf();
     }
 
     @Override

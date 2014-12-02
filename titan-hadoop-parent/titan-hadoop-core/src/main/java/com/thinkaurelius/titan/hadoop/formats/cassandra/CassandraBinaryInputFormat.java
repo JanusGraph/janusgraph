@@ -15,6 +15,8 @@ import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,6 +25,8 @@ import java.util.List;
  * Wraps a ColumnFamilyInputFormat and converts CFIF's binary types to Titan's binary types.
  */
 public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
+
+    private static final Logger log = LoggerFactory.getLogger(CassandraBinaryInputFormat.class);
 
     // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
@@ -56,18 +60,19 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
         super.setConf(config);
 
         // Copy some Titan configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
-        ConfigHelper.setInputInitialAddress(config, inputConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
-        if (inputConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
-            ConfigHelper.setInputRpcPort(config, String.valueOf(inputConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
-        if (inputConf.has(GraphDatabaseConfiguration.AUTH_USERNAME))
-            ConfigHelper.setInputKeyspaceUserName(config, inputConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
-        if (inputConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
-            ConfigHelper.setInputKeyspacePassword(config, inputConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
+        ConfigHelper.setInputInitialAddress(config, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            ConfigHelper.setInputRpcPort(config, String.valueOf(titanConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (titanConf.has(GraphDatabaseConfiguration.AUTH_USERNAME))
+            ConfigHelper.setInputKeyspaceUserName(config, titanConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
+        if (titanConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
+            ConfigHelper.setInputKeyspacePassword(config, titanConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
 
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         final boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
-        ConfigHelper.setInputColumnFamily(config, inputConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), Backend.EDGESTORE_NAME, wideRows);
+        ConfigHelper.setInputColumnFamily(config, titanConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), Backend.EDGESTORE_NAME, wideRows);
+        log.debug("Set keyspace: {}", titanConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
 
         // Set the column slice bounds via Faunus's vertex query filter
         final SlicePredicate predicate = new SlicePredicate();

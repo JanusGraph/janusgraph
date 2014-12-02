@@ -3,15 +3,9 @@ package com.thinkaurelius.titan.hadoop.config;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.hadoop.conf.Configuration;
-
-import java.util.Map;
-
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
 
@@ -56,7 +50,11 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         return conf;
     }
 
-    public ModifiableConfiguration getInputConf(ConfigNamespace root) {
-        return subset(root, TitanHadoopConfiguration.TITAN_INPUT_KEYS, this);
+    public ModifiableConfiguration getTitanInputConf() {
+        return subset(GraphDatabaseConfiguration.ROOT_NS, TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS, this);
+    }
+
+    public ModifiableConfiguration getScanJobConf(ConfigNamespace scanJobConfRoot) {
+        return subset(scanJobConfRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, this);
     }
 }

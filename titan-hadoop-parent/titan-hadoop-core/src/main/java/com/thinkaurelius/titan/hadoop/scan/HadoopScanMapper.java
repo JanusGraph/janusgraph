@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.hadoop.scan;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -44,7 +43,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.SCAN_NS, hadoopConf);
+        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
         job = getJob(scanConf);
         metrics = new HadoopContextScanMetrics(context);
         finishSetup(scanConf);
@@ -53,7 +52,8 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     protected void finishSetup(ModifiableHadoopConfiguration scanConf) {
         jobConf = getJobConfiguration(scanConf);
         Preconditions.checkNotNull(metrics);
-        Preconditions.checkNotNull(jobConf);
+        // Allowed to be null for jobs that specify no configuration and no configuration root
+        //Preconditions.checkNotNull(jobConf);
         Preconditions.checkNotNull(job);
         job.setup(jobConf, metrics);
         keyFilter = job.getKeyFilter();
@@ -202,7 +202,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     }
 
     private ScanJob getJob(Configuration scanConf) {
-        String jobClass = scanConf.get(TitanHadoopConfiguration.JOB_CLASS);
+        String jobClass = scanConf.get(TitanHadoopConfiguration.SCAN_JOB_CLASS);
 
         try {
             return (ScanJob)Class.forName(jobClass).newInstance();
@@ -216,8 +216,12 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     }
 
     static Configuration getJobConfiguration(ModifiableHadoopConfiguration scanConf) {
-        ConfigNamespace jobRoot = getJobRoot(scanConf.get(TitanHadoopConfiguration.JOB_CONFIG_ROOT));
-        return ModifiableHadoopConfiguration.subset(jobRoot, TitanHadoopConfiguration.JOB_CONFIG_KEYS, scanConf);
+        if (!scanConf.has(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT)) {
+            log.debug("No job configuration root provided");
+            return null;
+        }
+        ConfigNamespace jobRoot = getJobRoot(scanConf.get(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT));
+        return ModifiableHadoopConfiguration.subset(jobRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, scanConf);
     }
 
     static ConfigNamespace getJobRoot(String confRootName) {

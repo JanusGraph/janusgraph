@@ -20,7 +20,7 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
     protected void setup(Context context) throws IOException, InterruptedException {
         /* Don't call super implementation super.setup(context); */
         org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.SCAN_NS, hadoopConf);
+        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
         VertexScanJob vertexScan = null; // TODO
         TitanGraph graph = TitanFactory.open(getTitanConfiguration(context));
         job = VertexJobConverter.convert(graph, vertexScan);
@@ -30,6 +30,6 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
 
     private ModifiableConfiguration getTitanConfiguration(Context context) {
         Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        return ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.SCAN_NS, hadoopConf).getInputConf(GraphDatabaseConfiguration.ROOT_NS);
+        return ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf).getTitanInputConf();
     }
 }

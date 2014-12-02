@@ -6,12 +6,12 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
-import com.thinkaurelius.titan.hadoop.formats.util.input.VertexReader;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
@@ -27,7 +27,7 @@ public class TitanVertexDeserializer {
     private final TitanHadoopSetup setup;
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
-    private final VertexReader vertexReader;
+    private final IDManager idManager;
     private final boolean verifyVertexExistence = false;
 
     private static final Logger log =
@@ -37,7 +37,7 @@ public class TitanVertexDeserializer {
         this.setup = setup;
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
-        this.vertexReader = setup.getVertexReader();
+        this.idManager = setup.getIDManager();
     }
 
     // Read a single row from the edgestore and create a TinkerVertex corresponding to the row
@@ -45,8 +45,16 @@ public class TitanVertexDeserializer {
     public TinkerVertex readHadoopVertex(final StaticBuffer key, Iterable<Entry> entries) {
 
         // Convert key to a vertex ID
-        final long vertexId = vertexReader.getVertexId(key);
+        final long vertexId = idManager.getKeyID(key);
         Preconditions.checkArgument(vertexId > 0);
+
+        // Partitioned vertex handling
+        if (idManager.isPartitionedVertex(vertexId)) {
+            Preconditions.checkState(setup.getFilterPartitionedVertices(),
+                    "Read partitioned vertex (ID=%s), but partitioned vertex filtering is disabled.", vertexId);
+            log.debug("Skipping partitioned vertex with ID {}", vertexId);
+            return null;
+        }
 
         // Create TinkerVertex
         TinkerGraph tg = TinkerGraph.open();
@@ -75,7 +83,7 @@ public class TitanVertexDeserializer {
             tv = getOrCreateVertex(vertexId, null, tg);
         }
 
-        Preconditions.checkState(null != tv, "Unable to determine vertex label for vertex with ID %d", vertexId);
+        Preconditions.checkState(null != tv, "Unable to determine vertex label for vertex with ID %s", vertexId);
 
         // Iterate over and decode edgestore columns (relations) on this vertex
         for (final Entry data : entries) {
@@ -97,10 +105,22 @@ public class TitanVertexDeserializer {
                     Preconditions.checkNotNull(value);
                     tv.property(type.name(), value, T.id, relation.relationId);
                 } else {
-                    TinkerEdge te;
+                    assert type.isEdgeLabel();
+
+                    // Partitioned vertex handling
+                    if (idManager.isPartitionedVertex(relation.getOtherVertexId())) {
+                        Preconditions.checkState(setup.getFilterPartitionedVertices(),
+                                "Read edge incident on a partitioned vertex, but partitioned vertex filtering is disabled.  " +
+                                "Relation ID: %s.  This vertex ID: %s.  Other vertex ID: %s.  Edge label: %s.",
+                                relation.relationId, vertexId, relation.getOtherVertexId(), type.name());
+                        log.debug("Skipping edge with ID {} incident on partitioned vertex with ID {} (and nonpartitioned vertex with ID {})",
+                                relation.relationId, relation.getOtherVertexId(), vertexId);
+                        continue;
+                    }
 
                     // Decode edge
-                    assert type.isEdgeLabel();
+                    TinkerEdge te;
+
                     if (relation.direction.equals(Direction.IN)) {
                         // We don't know the label of the other vertex, but one must be provided
                         TinkerVertex outV = getOrCreateVertex(relation.getOtherVertexId(), null, tg);
