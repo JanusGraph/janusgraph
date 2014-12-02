@@ -28,7 +28,7 @@ public class TitanGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "aurelius.titan"; // TODO: call this thinkaurelius.titan?
+        return "aurelius.titan";
     }
 
     @Override
