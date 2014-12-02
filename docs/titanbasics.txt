@@ -439,18 +439,18 @@ Some more traversal examples are provided below.
 
 [source,gremlin]
 gremlin> hercules = g.V.has('name','hercules').next()
-==>v[24]
-gremlin> hercules.out('father','mother').type
+==>v[1536]
+gremlin> hercules.out('father','mother')*.getVertexLabel()
 ==>god
 ==>human
-gremlin> hercules.out('battled').type
+gremlin> hercules.out('battled')*.getVertexLabel()
 ==>monster
 ==>monster
 ==>monster
 gremlin> hercules.out('battled').map
-==>{name=nemean, type=monster}
-==>{name=hydra, type=monster}
-==>{name=cerberus, type=monster}
+==>{name=nemean}
+==>{name=hydra}
+==>{name=cerberus}
 
 Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
 
@@ -458,13 +458,13 @@ Given that _The Graph of the Gods_ only has one battler (Hercules), another batt
 
 [source,gremlin]
 gremlin> theseus = g.addVertexWithLabel('human')
-==>v[302]
+==>v[3328]
 gremlin> theseus.setProperty('name','theseus')
 ==>null
 gremlin> cerberus = g.V.has('name','cerberus').next()
-==>v[48]
+==>v[2816]
 gremlin> battle = theseus.addEdge('battled',cerberus)
-==>e[cU-48-14p-8g][302-battled->48]
+==>e[7eo-2kg-iz9-268][3328-battled->2816]
 gremlin> battle.setProperty('time',22)
 ==>null
 
@@ -691,7 +691,7 @@ https://github.com/tinkerpop/rexster/wiki/RexPro-Java[RexsterClient] uses RexPro
 RexsterClient client = RexsterClientFactory.open("localhost", "graph");
 List<Map<String,Object>> result;
 result = client.execute("g.V('name','saturn').in('father').map");
-// result.toString(): [{name="jupiter", type="god"}]
+// result.toString(): [{name="jupiter"}]
 
 Map<String,Object> params = new HashMap<String,Object>();
 params.put("name","saturn");

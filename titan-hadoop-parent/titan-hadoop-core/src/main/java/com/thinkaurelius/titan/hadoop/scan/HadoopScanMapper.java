@@ -215,18 +215,20 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         }
     }
 
-    private Configuration getJobConfiguration(ModifiableHadoopConfiguration scanConf) {
+    static Configuration getJobConfiguration(ModifiableHadoopConfiguration scanConf) {
+        ConfigNamespace jobRoot = getJobRoot(scanConf.get(TitanHadoopConfiguration.JOB_CONFIG_ROOT));
+        return ModifiableHadoopConfiguration.subset(jobRoot, TitanHadoopConfiguration.JOB_CONFIG_KEYS, scanConf);
+    }
 
-        String jobConfRoot = scanConf.get(TitanHadoopConfiguration.JOB_CONFIG_ROOT);
-        String tokens[] = jobConfRoot.split("#");
+    static ConfigNamespace getJobRoot(String confRootName) {
+
+        String tokens[] = confRootName.split("#");
         String className = tokens[0];
         String fieldName = tokens[1];
 
         try {
             Field f = Class.forName(className).getField(fieldName);
-            ConfigNamespace jobRoot = (ConfigNamespace)f.get(null);
-
-            return ModifiableHadoopConfiguration.subset(jobRoot, TitanHadoopConfiguration.JOB_CONFIG_KEYS, scanConf);
+            return (ConfigNamespace)f.get(null);
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
