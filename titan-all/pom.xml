@@ -48,13 +48,11 @@
             <artifactId>hbase-client</artifactId>
             <version>${hbase098.version}</version>
         </dependency>
-        <!-- TODO titan-hadoop reintegration
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>titan-hadoop</artifactId>
             <version>${project.version}</version>
         </dependency>
-        -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
