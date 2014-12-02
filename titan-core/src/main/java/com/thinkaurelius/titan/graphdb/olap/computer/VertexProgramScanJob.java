@@ -21,6 +21,7 @@ import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.computer.MessageCombiner;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.VertexProgram;
+import com.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -93,19 +94,27 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 }
             }
         } else {
-            vertexProgram.execute(v,vh,memory);
+            vertexProgram.execute(v, vh, memory);
         }
     }
 
     @Override
     public void getQueries(QueryContainer queries) {
+        if (vertexProgram instanceof TraversalVertexProgram) {
+            //TraversalVertexProgram currently makes the assumption that the entire star-graph around a vertex
+            //is available (in-memory). Hence, this special treatment here.
+            //TODO: After TraversalVertexProgram is adjusted, remove this
+            queries.addQuery().direction(Direction.BOTH).edges();
+            return;
+        }
+
         for (MessageScope scope : vertexMemory.getPreviousScopes()) {
             if (scope instanceof MessageScope.Global) {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
                 assert scope instanceof MessageScope.Local;
-                TitanElementTraversal<Vertex,Edge> incident = FulgoraUtil.getTitanTraversal((MessageScope.Local) scope,queries.getTransaction());
-                incident.applyStrategies(TraversalEngine.STANDARD);
+                FulgoraElementTraversal<Vertex,Edge> incident = FulgoraUtil.getTitanTraversal((MessageScope.Local) scope,queries.getTransaction());
+                incident.applyStrategies(TraversalEngine.COMPUTER);
                 TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>) TraversalHelper.getStart(incident);
                 startStep.reverse();
                 QueryContainer.QueryBuilder qb = queries.addQuery();

@@ -29,14 +29,17 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     public TitanPropertiesStep(PropertiesStep<E> copy) {
         super(copy.getTraversal(), copy.getReturnType(), copy.getPropertyKeys());
-        this.multiQuery = ((StandardTitanTx)traversal.sideEffects().getGraph()).getGraph().getConfiguration().useMultiQuery();
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }
 
-    private final boolean multiQuery;
+    private boolean useMultiQuery = false;
     private boolean initialized = false;
     private boolean isVertexProperties = false;
+
+    void setUseMultiQuery(boolean useMultiQuery) {
+        this.useMultiQuery = useMultiQuery;
+    }
 
     private<Q extends BaseVertexQuery> Q makeQuery(Q query) {
         String[] keys = getPropertyKeys();
@@ -75,7 +78,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
             return;
         }
 
-        if (multiQuery) {
+        if (useMultiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
             List<Traverser.Admin<Element>> elements = new ArrayList<>();
             starts.forEachRemaining(v -> elements.add(v));

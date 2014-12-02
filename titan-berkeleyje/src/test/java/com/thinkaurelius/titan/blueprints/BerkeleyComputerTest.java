@@ -10,6 +10,6 @@ import org.junit.runner.RunWith;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(ProcessComputerSuite.class)
-@ProcessComputerSuite.GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = TitanGraph.class)
+@ProcessComputerSuite.GraphProviderClass(provider = BerkeleyNonTxGraphProvider.class, graph = TitanGraph.class)
 public class BerkeleyComputerTest {
 }

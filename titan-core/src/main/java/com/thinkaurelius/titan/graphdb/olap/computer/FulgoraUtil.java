@@ -28,10 +28,10 @@ import java.util.List;
  */
 public class FulgoraUtil {
 
-    public static TitanElementTraversal<Vertex,Edge> getTitanTraversal(final MessageScope.Local<?> scope,
+    public static FulgoraElementTraversal<Vertex,Edge> getTitanTraversal(final MessageScope.Local<?> scope,
                                                                        final TitanTransaction graph) {
         Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
-        TitanElementTraversal<Vertex,Edge> result = TitanElementTraversal.of(graph);
+        FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
         for (Step step : incident.getSteps()) result.addStep(step);
         verifyIncidentTraversal(result);
         return result;
@@ -50,8 +50,8 @@ public class FulgoraUtil {
         return result;
     }
 
-    private static void verifyIncidentTraversal(TitanElementTraversal<Vertex,Edge> traversal) {
-        traversal.applyStrategies(TraversalEngine.STANDARD);
+    private static void verifyIncidentTraversal(FulgoraElementTraversal<Vertex,Edge> traversal) {
+        traversal.applyStrategies(TraversalEngine.COMPUTER);
         //First step must be TitanVertexStep
         List<Step> steps = traversal.getSteps();
         Step<Vertex,?> startStep = TraversalHelper.getStart(traversal);

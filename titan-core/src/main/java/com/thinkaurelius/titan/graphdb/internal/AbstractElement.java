@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -48,12 +49,17 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
             if (getCompareId()!=((AbstractElement)other).getCompareId()) return false;
         } else if (other instanceof TitanElement) {
             if (getCompareId()!=((TitanElement)other).longId()) return false;
+        } else if (other instanceof Element) {
+            if (getCompareId()!= ElementHelper.getCompareId((Element) other)) return false;
         } else return false;
 
-        if (this instanceof TitanVertex && other instanceof TitanVertex)
+        if (this instanceof Vertex && other instanceof Vertex)
             return true;
 
-        if (this instanceof TitanRelation && other instanceof TitanRelation)
+        if (this instanceof Edge && other instanceof Edge)
+            return true;
+
+        if (this instanceof VertexProperty && other instanceof VertexProperty)
             return true;
 
         return false;

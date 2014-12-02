@@ -7,8 +7,12 @@ import com.tinkerpop.gremlin.process.computer.GraphComputer;
  */
 public interface TitanGraphComputer extends GraphComputer {
 
+    public enum ResultMode { NONE, PERSIST, LOCALTX }
+
     public TitanGraphComputer setNumProcessingThreads(int threads);
 
-    public TitanGraphComputer persistElementKeys(boolean persist);
+    public TitanGraphComputer setResultMode(ResultMode mode);
+
+
 
 }
