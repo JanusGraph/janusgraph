@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.plugin;
 
-import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.attribute.Geo;
+import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.tinkerpop.computer.bulkloader.BulkLoaderVertexProgram;
 import com.tinkerpop.gremlin.groovy.plugin.Artifact;
