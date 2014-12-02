@@ -45,8 +45,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
-            <version>${hbase098.version}</version>
+            <artifactId>hbase</artifactId>
+            <version>${hbase094.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -63,11 +63,14 @@
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!--
+        Commented since it requires Hadoop 2 and TP3 requires Hadoop 1.
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-solr</artifactId>
             <version>${project.version}</version>
         </dependency>
+        -->
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-lucene</artifactId>
