@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.olap;
+package com.thinkaurelius.titan.graphdb.olap.oldfulgora;
 
 import java.util.Map;
 

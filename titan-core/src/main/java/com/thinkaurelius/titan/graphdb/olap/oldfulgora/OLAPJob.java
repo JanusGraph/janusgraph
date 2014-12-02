@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.olap;
+package com.thinkaurelius.titan.graphdb.olap.oldfulgora;
 
 import com.thinkaurelius.titan.core.TitanVertex;
 
@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
  * A vertex centric program which executes on each vertex in the graph.
  * <p/>
  * The program can only inspect the vertex's adjacency list through the pre-computed properties declared in the {@link OLAPJobBuilder} through
- * {@link OLAPQueryBuilder} accessible via {@link com.thinkaurelius.titan.core.olap.OLAPJobBuilder#addQuery()}.
+ * {@link OLAPQueryBuilder} accessible via {@link OLAPJobBuilder#addQuery()}.
  * In other words, the adjacency list and neighboring vertex's state information is aggregated as declared in {@link OLAPJobBuilder} and
  * then made available as a vertex property retrievable via {@link TitanVertex#value(String)} where the key is equal to the name
  * of the declared query (see {@link OLAPQueryBuilder#setName(String)}. The vertex can also access it's own state which is also
@@ -20,6 +20,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@Deprecated
 public interface OLAPJob<S> {
 
     public S process(TitanVertex vertex);

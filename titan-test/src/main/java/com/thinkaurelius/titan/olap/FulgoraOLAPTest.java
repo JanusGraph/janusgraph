@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.olap;
 
-import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
+import com.thinkaurelius.titan.graphdb.olap.oldfulgora.OLAPJobBuilder;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.oldfulgora.FulgoraBuilder;
 
