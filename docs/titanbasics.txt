@@ -482,7 +482,7 @@ Titan uses the http://www.tinkerpop.com/docs/current/#gremlin-server[Gremlin Ser
 
 Gremlin Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it.  By default, client applications can connect to it via WebSockets with a custom subprotocol (there are a number of clients developed in different languages to help support the subprotocol).  Gremlin Server can also be configured to serve a simple REST-style endpoint for processing Gremlin as well.  These configurations just represent the out-of-the-box options for Gremlin Server.  It is certainly possible to also extend it with other means of communication by implementing the interfaces that it provides.
 
-The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes preconfigured to run Gremlin Server without any additional configuration.  Alternatively, one can https://github.com/tinkerpop/rexster/wiki/Downloads[Download Rexster] separately and then install Titan manually.
+The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Gremlin Server without any additional configuration.  Alternatively, one can http://tinkerpop.com/downloads/3.0.0.M6/gremlin-server-3.0.0.M6.zip[Download Gremlin Server] separately and then install Titan manually.
 
 Gremlin Server with Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~
