@@ -126,7 +126,7 @@ g = TitanFactory.open(‘berkeleyje:/tmp/graph’)
 Titan Server
 ^^^^^^^^^^^^
 
-To interact with Titan remotely or in another process through a client, a Titan server needs to be configured and started. Internally, Titan uses the Gremlin Server component of the Tinkerpop stack to service client requests. Hence, configuring Titan Server is accomplished through a Gremlin Server configuration file.
+To interact with Titan remotely or in another process through a client, a Titan "server" needs to be configured and started. Internally, Titan uses Gremlin Server of the http://tinkerpop.com[TinkerPop] stack to service client requests, therefore, configuring Titan Server is accomplished through a Gremlin Server configuration file.
 
 To configure Gremlin Server with a `TitanGraph` instance the Gremlin Server configuration file requires the following settings:
 
