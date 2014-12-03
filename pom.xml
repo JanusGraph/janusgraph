@@ -126,6 +126,7 @@
         <module>titan-all</module>
         <!-- TODO titan-hadoop, gremlin-server (re)integration -->
         <!-- <module>titan-dist</module> -->
+        <module>titan-doc</module>
         <module>titan-solr</module>
     </modules>
     <build>
