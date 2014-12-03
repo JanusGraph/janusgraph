@@ -337,8 +337,8 @@ public class IndexSerializer {
         for (ParameterIndexField field: index.getFieldKeys()) {
             PropertyKey key = field.getFieldKey();
             if (field.getStatus()==SchemaStatus.DISABLED) continue;
-            Object value = element.value(key.name());
-            if (value!=null) {
+            if (element.property(key.name()).isPresent()) {
+                Object value = element.value(key.name());
                 entries.add(new IndexEntry(key2Field(field), value));
             }
         }
