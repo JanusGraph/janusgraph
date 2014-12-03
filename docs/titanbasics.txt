@@ -355,7 +355,7 @@ However, note that this would not affect vertices, edges, or properties previous
 Gremlin Query Language
 ----------------------
 
-image:https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png[link="http://gremlin.tinkerpop.com"]
+image:https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png[link="http://www.tinkerpop.com/docs/3.0.0.M6/"]
 
 http://gremlin.tinkerpop.com[Gremlin] is Titan's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
 
@@ -363,9 +363,8 @@ Gremlin is developed independently from Titan and supported by most graph databa
 
 This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
 
-* http://gremlin.tinkerpop.com[Complete Gremlin Manual]
-* http://gremlindocs.com[Gremlin Cheat-Sheet]
-* http://sql2gremlin.com[Gremlin for SQL developers]
+* http://www.tinkerpop.com/docs/3.0.0.M6/[Complete Gremlin Manual]
+* http://sql2gremlin.com[Gremlin for SQL developers *Gremlin2 Syntax*]
 
 
 [NOTE]
@@ -450,6 +449,8 @@ gremlin> cerberus = g.V.has('name','cerberus').next()
 ==>v[2816]
 gremlin> battle = theseus.addEdge('battled',cerberus,'time',22)
 ==>e[7eo-2kg-iz9-268][3328-battled->2816]
+gremlin> battle.time
+==>22
 
 When adding a vertex, an optional vertex label can be provided. An edge label must be specified when adding edges. Properties as key-value pairs can be set on both vertices and edges. When a property key is defined with SET or LIST cardinality, `addProperty` must be used when adding a respective property to a vertex.
 
