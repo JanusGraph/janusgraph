@@ -44,7 +44,6 @@ public abstract class IndexUpdateJob {
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
             ConfigOption.Type.LOCAL, "");
 
-
     protected StandardTitanGraph graph;
     protected ManagementSystem mgmt = null;
     protected StandardTitanTx writeTx;
