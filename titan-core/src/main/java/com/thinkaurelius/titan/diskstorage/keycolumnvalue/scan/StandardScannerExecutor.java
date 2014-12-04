@@ -37,6 +37,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     private final KeyColumnValueStore store;
     private final int numProcessors;
     private final Configuration jobConfiguration;
+    private final Configuration graphConfiguration;
     private final ScanMetrics metrics;
 
     private boolean hasCompleted = false;
@@ -51,7 +52,8 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     StandardScannerExecutor(final ScanJob job, final Consumer<ScanMetrics> finishJob,
                             final KeyColumnValueStore store, final StoreTransaction storeTx,
                             final StoreFeatures storeFeatures,
-                            final int numProcessors, final Configuration jobConfiguration) throws BackendException {
+                            final int numProcessors, final Configuration jobConfiguration,
+                            final Configuration graphConfiguration) throws BackendException {
         this.job = job;
         this.finishJob = finishJob;
         this.store = store;
@@ -59,6 +61,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
         this.storeFeatures = storeFeatures;
         this.numProcessors = numProcessors;
         this.jobConfiguration = jobConfiguration;
+        this.graphConfiguration = graphConfiguration;
 
         metrics = new StandardScanMetrics();
 
@@ -77,7 +80,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     @Override
     public void run() {
         try {
-            job.setup(jobConfiguration,metrics);
+            job.setup(jobConfiguration, graphConfiguration, metrics);
 
             queries = job.getQueries();
             numQueries = queries.size();

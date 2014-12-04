@@ -66,8 +66,8 @@ public class VertexJobConverter implements ScanJob {
     }
 
     @Override
-    public void setup(Configuration config, ScanMetrics metrics) {
-        graph.initializeGraph(config);
+    public void setup(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+        graph.initializeGraph(graphConfig);
         idManager = graph.get().getIDManager();
         StandardTransactionBuilder txb = graph.get().buildTransaction().readOnly();
         txb.setPreloadedData(true);
@@ -76,7 +76,7 @@ public class VertexJobConverter implements ScanJob {
         txb.vertexCacheSize(500);
         try {
             tx = (StandardTitanTx)txb.start();
-            job.setup(graph.get(), config, metrics);
+            job.setup(graph.get(), jobConfig, metrics);
         } catch (Throwable e) {
             close();
             throw e;

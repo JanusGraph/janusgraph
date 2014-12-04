@@ -178,7 +178,7 @@ public class StandardScanner  {
             openStores.add(kcvs);
             try {
                 StandardScannerExecutor executor = new StandardScannerExecutor(job, finishJob, kcvs, storeTx,
-                        manager.getFeatures(), numProcessingThreads, jobConfiguration);
+                        manager.getFeatures(), numProcessingThreads, jobConfiguration, graphConfiguration);
                 addJob(jobId,executor);
                 new Thread(executor).start();
                 return executor;

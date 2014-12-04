@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
@@ -46,16 +47,17 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
         job = getJob(scanConf);
         metrics = new HadoopContextScanMetrics(context);
-        finishSetup(scanConf);
+        Configuration graphConf = getTitanConfiguration(context);
+        finishSetup(scanConf, graphConf);
     }
 
-    protected void finishSetup(ModifiableHadoopConfiguration scanConf) {
+    protected void finishSetup(ModifiableHadoopConfiguration scanConf, Configuration graphConf) {
         jobConf = getJobConfiguration(scanConf);
         Preconditions.checkNotNull(metrics);
         // Allowed to be null for jobs that specify no configuration and no configuration root
         //Preconditions.checkNotNull(jobConf);
         Preconditions.checkNotNull(job);
-        job.setup(jobConf, metrics);
+        job.setup(jobConf, graphConf, metrics);
         keyFilter = job.getKeyFilter();
         List<SliceQuery> sliceQueries = job.getQueries();
         Preconditions.checkArgument(null != sliceQueries, "Job cannot specify null query list");
@@ -213,6 +215,11 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static ModifiableConfiguration getTitanConfiguration(Context context) {
+        org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
+        return ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf).getTitanInputConf();
     }
 
     static Configuration getJobConfiguration(ModifiableHadoopConfiguration scanConf) {

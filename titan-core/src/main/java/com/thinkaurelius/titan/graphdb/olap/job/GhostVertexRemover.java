@@ -50,10 +50,10 @@ public class GhostVertexRemover extends VertexJobConverter {
     }
 
     @Override
-    public void setup(Configuration config, ScanMetrics metrics) {
-        super.setup(config,metrics);
-        Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
-        this.jobStartTimeMS = config.get(GraphDatabaseConfiguration.JOB_START_TIME);
+    public void setup(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+        super.setup(jobConfig, graphConfig, metrics);
+        Preconditions.checkArgument(jobConfig.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
+        this.jobStartTimeMS = jobConfig.get(GraphDatabaseConfiguration.JOB_START_TIME);
 
         assert tx!=null && tx.isOpen();
         tx.rollback();

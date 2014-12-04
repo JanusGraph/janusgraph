@@ -61,7 +61,8 @@ public class SimpleScanJob implements ScanJob {
         this(ImmutableList.of(q),k -> true);
     }
 
-    public void setup(Configuration config, ScanMetrics metrics) {
+    @Override
+    public void setup(Configuration config, Configuration graphConfig, ScanMetrics metrics) {
         assertNotNull(config);
         metrics.incrementCustom(SETUP_COUNT);
 

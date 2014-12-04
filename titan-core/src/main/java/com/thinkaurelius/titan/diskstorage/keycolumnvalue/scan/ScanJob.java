@@ -1,13 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -26,7 +23,8 @@ public interface ScanJob {
      * @param config
      * @param metrics
      */
-    public default void setup(Configuration config, ScanMetrics metrics) {}
+    public default void setup(Configuration jobConfiguration,
+                  Configuration graphConfiguration, ScanMetrics metrics) {}
 
     /**
      * After this method is invoked, no additional method calls on this
