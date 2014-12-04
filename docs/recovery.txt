@@ -40,7 +40,7 @@ In this case, the user must manually remove the failed instance record from the 
 To remove the failed instance, open a management transaction against any of the running Titan instances,inspect the list of running instances to identify the failed one, and finally remove it.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 instances = mgmt.getOpenInstances() //all open instances
 mgmt.forceCloseInstance(instances.iterator().next()) //remove 1st instance
 mgmt.commit()

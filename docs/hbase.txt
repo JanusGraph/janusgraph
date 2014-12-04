@@ -53,19 +53,19 @@ TitanGraph g = TitanFactory.build()
 
 `storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Remote Server Mode with Rexster
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Remote Server Mode with Gremlin Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 image:titan-modes-rexster.png[]
 
-Finally, Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over REST. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
+Finally, Gremlin server can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
 ----
 http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<server>> for a complete example.
+In this case, each Gremlin server server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<server>> for a complete example.
 
 [source,xml]
 <graph>

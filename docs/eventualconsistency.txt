@@ -12,7 +12,7 @@ Data Consistency
 On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency because the underlying storage backend does not provide transactional isolation. In the interest of efficiency, Titan does not use locking by default. Hence, the user has to decide for each schema element that defines a consistency constraint whether or not to use locking. Use `TitanManagement.setConsistency(element,ConsistencyModifier.LOCK)` to explicitly enable locking on a schema element as shown in the following examples.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 name = mgmt.makePropertyKey('name').dataType(String.class).make()
 index = mgmt.buildIndex('byName',Vertex.class).addKey(name).unique().buildCompositeIndex()
 mgmt.setConsistency(name,ConsistencyModifier.LOCK) //Ensures only one name per vertex

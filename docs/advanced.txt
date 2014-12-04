@@ -12,7 +12,7 @@ include::reindex.txt[]
 
 include::bulkloading.txt[]
 
-include::multiquery.txt[]
+//include::multiquery.txt[]
 
 include::partitioning.txt[]
 

@@ -180,7 +180,7 @@ When the first Titan instance in a cluster is started, the global configuration 
 
 [source,gremlin]
 ----
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 mgmt.get(‘cache.db-cache’)
 //Prints the current config setting
 mgmt.set(‘cache.db-cache’,true)
@@ -239,7 +239,7 @@ Edge Label Multiplicity
 The default multiplicity is MULTI. The definition of an edge label is completed by calling the `make()` method on the builder which returns the defined edge label as shown in the following example.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
 mother = mgmt.makeEdgeLabel('mother').multiplicity(MANY2ONE).make()
 mgmt.commit()
@@ -295,7 +295,7 @@ The default cardinality setting is SINGLE.
 Note, that property keys used on edges and properties have cardinality SINGLE. Attaching multiple values for a single key on an edge or property is not supported.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
 name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
 sensorReading = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(Cardinality.LIST).make()
@@ -307,7 +307,7 @@ Relation Types
 Edge labels and property keys are jointly referred to as *relation types*. Names of relation types must be unique in the graph which means that property keys and edge labels cannot have the same name. There are methods in the Titan API to query for the existence or retrieve relation types which encompasses both property keys and edge labels.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 if (mgmt.containsRelationType('name'))
     name = mgmt.getPropertyKey('name')
 mgmt.getRelationTypes(EdgeLabel.class)
@@ -328,13 +328,13 @@ Although labels are optional at the conceptual and data model level, Titan assig
 To create a label, call `makeVertexLabel(String).make()` on an open graph or management transaction and provide the name of the vertex label as the argument.  Vertex label names must be unique in the graph.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 person = mgmt.makeVertexLabel('person').make();
 mgmt.commit()
 // Create a labeled vertex
-person = g.addVertexWithLabel('person')
+person = g.addVertex(label,'person')
 // Create an unlabeled vertex
-v = g.addVertex(null)
+v = g.addVertex()
 g.commit()
 
 Automatic Schema Maker
@@ -352,7 +352,7 @@ Changing Schema Elements
 The definition of an edge label, property key, or vertex label cannot be changed once its committed into the graph. However, the names of schema elements can be changed via `TitanManagement.changeName(TitanSchemaElement,String)` as shown in the following example where the property key `place` is renamed to `location`.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 place = mgmt.getPropertyKey('place')
 mgmt.changeName(place,'location')
 mgmt.commit()
@@ -742,7 +742,7 @@ Composite indexes retrieve vertices or edges by one or a (fixed) composition of 
 Consider the following composite index definitions.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 name = mgmt.makePropertyKey('name').dataType(String.class).make()
 age = mgmt.makePropertyKey('age').dataType(Integer.class).make()
 mgmt.buildIndex('byName',Vertex.class).addKey(name).buildCompositeIndex()
@@ -782,7 +782,7 @@ Composite indexes can also be used to enforce property uniqueness in the graph. 
 For instance, to enforce that names are unique across the entire graph the following composite graph index would be defined.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 name = mgmt.makePropertyKey('name').dataType(String.class).make()
 mgmt.buildIndex('byName',Vertex.class).addKey(name).unique().buildCompositeIndex()
 mgmt.commit()
@@ -800,7 +800,7 @@ Mixed indexes provide more flexibility than composite indexes and support additi
 Unlike composite indexes, mixed indexes require the configuration of an <<index-backends,indexing backend>> and use that indexing backend to execute lookup operations. Titan can support multiple indexing backends in a single installation. Each indexing backend must be uniquely identified by name in the Titan configuration which is called the *indexing backend name*.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 name = mgmt.makePropertyKey('name').dataType(String.class).make()
 age = mgmt.makePropertyKey('age').dataType(Integer.class).make()
 mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name).addKey(age).buildMixedIndex("search")
@@ -812,7 +812,7 @@ While this index definition looks similar to the composite index above, it provi
 [source,gremlin]
 g.V.has('name',CONTAINS,'hercules').interval('age',20,50)
 g.V.has('name',CONTAINS,'hercules')
-g.V.has('age',LESS_THAN,50)
+g.V.has('age',lt,50)
 
 Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
 
@@ -825,7 +825,7 @@ Adding Property Keys
 Property keys can be added to an existing mixed index which allows subsequent queries to include this key in the query condition.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 location = mgmt.makePropertyKey('location').dataType(Geoshape.class).make()
 nameAndAge = mgmt.getGraphIndex('nameAndAge')
 mgmt.addIndexKey(nameAndAge,location)
@@ -843,12 +843,12 @@ When adding a property key to a mixed index - either through the index builder o
 Ordering
 ^^^^^^^^
 
-The order in which the results of a graph query are returned can be defined using the `orderBy()` method available on the graph query builder returned by `TitanGraph.query()`. The graph query builder is more verbose than previous examples but provides more features to define the desired result set. The `orderBy()` method expects two parameters:
+The order in which the results of a graph query are returned can be defined using the `orderBy()` directive. The `orderBy()` method expects two parameters:
 
 * The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
-* The sort order: either increasing `Order.ASC` or decreasing `Order.DESC`
+* The sort order: either increasing `incr` or decreasing `decr`
 
-For example, the query `g.query().has('name',CONTAINS,'hercules').orderBy('age',Order.DESC).limit(10).vertices()` retrieves the ten oldest individuals with 'hercules' in their name.
+For example, the query `g.V.has('name',CONTAINS,'hercules').orderBy('age',decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
 
 When using `orderBy()` it is important to note that:
 
@@ -862,7 +862,7 @@ In many cases it is desirable to only index vertices or edges with a particular 
 When defining an index it is possible to restrict the index to a particular vertex or edge label using the `indexOnly` method of the index builder. The following creates a composite index for the property key `name` that indexes only vertices labeled `god`.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 name = mgmt.makePropertyKey('name').dataType(String.class).make()
 god = mgmt.getVertexLabel('god')
 mgmt.buildIndex('byName',Vertex.class).addKey(name).indexOnly(god).buildCompositeIndex()
@@ -893,21 +893,21 @@ h.outE('battled').interval('time',10,20).inV
 Building a vertex-centric index by time speeds up such traversal queries.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 time = mgmt.makePropertyKey('time').dataType(Integer.class).make()
 battled = mgmt.makeEdgeLabel('battled').make()
-mgmt.buildEdgeIndex(battled,'battlesByTime',Direction.BOTH,Order.DESC,time);
+mgmt.buildEdgeIndex(battled,'battlesByTime',Direction.BOTH,Order.decr,time);
 
 This example builds a vertex-centric index which indexes `battled` edges in both direction by time in decreasing order.
 A vertex-centric index is built against a particular edge label which is the first argument to the index construction method `TitanManagement.buildEdgeIndex()`. The index only applies to edges of this label - `battled` in the example above. The second argument is a unique name for the index. The third argument is the edge direction in which the index is built. The index will only apply to traversals along edges in this direction. In this example, the vertex-centric index is built in both direction which means that time restricted traversals along `battled` edges can be served by this index in both the `IN` and `OUT` direction. Titan will maintain a vertex-centric index on both the in- and out-vertex of `battled` edges. Alternatively, one could define the index to apply to the `OUT` direction only which would speed up traversals from Hercules to the monsters but not in the reverse direction. This would only require maintaining one index and hence half the index maintenance and storage cost.
 The last two arguments are the sort order of the index and a list of property keys to index by. The sort order is optional and defaults to ascending order (i.e. `Order.ASC`). The list of property keys must be non-empty and defines the keys by which to index the edges of the given label. A vertex-centric index can be defined with multiple keys.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 time = mgmt.makePropertyKey('time').dataType(Integer.class).make()
 rating = mgmt.makePropertyKey('rating').dataType(Decimal.class).make()
 battled = mgmt.makeEdgeLabel('battled').make()
-mgmt.buildEdgeIndex(battled,'battlesByRatingAndTime',Direction.OUT,Order.DESC,rating,time);
+mgmt.buildEdgeIndex(battled,'battlesByRatingAndTime',Direction.OUT,Order.decr,rating,time);
 
 This example extends the schema by a `rating` property on `battled` edges and builds a vertex-centric index which indexes `battled` edges in the out-going direction by rating and time in decreasing order. Note, that the order in which the property keys are specified is important because vertex-centric indexes are prefix indexes. This means, that `battled` edges are indexed by `rating` _first_ and `time` _second_.
 
@@ -933,11 +933,11 @@ Vertex-centric indexes cannot speed up unconstrained traversals which require tr
 Ordered Traversals
 ^^^^^^^^^^^^^^^^^^
 
-Titan extends Gremlin to provide support for edge ordering in traversals which allows a subset of incident edges to be identified by their order in the adjacency list.
+The following queries specify an order in which the incident edges are to be traversed. Use the `localLimit` command to retrieve a subset of the edges (in a given order) for EACH vertex that is traversed.
 
 [source,gremlin]
-h.query().labels('battled').direction(OUT).orderBy('time',Order.DESC).limit(10).vertices()._().name
-h.query().labels('battled').direction(OUT).has('rating',5.0).orderBy('time',Order.DESC).limit(10).edges()._().place
+h.outE('battled').orderBy('time',decr).localLimit(10).inV.name
+h.outE('battled').has('rating',5.0).orderBy('time',decr).localLimit(10).place
 
 The first query asks for the names of the 10 most recently battled monsters by Hercules. The second query asks for the places of the 10 most recent battles of Hercules that are rated 5 stars. In both cases, the query is constrained by an order on a property key with a limit on the number of elements to be returned.
 
@@ -951,7 +951,7 @@ Ordered vertex queries are a Titan extension to Gremlin which causes the verbose
 Transactions
 ------------
 
-Almost all interaction with Titan is associated with a transaction.  Titan transactions are safe for concurrent use by multiple threads.  Methods on a TitanGraph instance like `graph.getVertex(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
+Almost all interaction with Titan is associated with a transaction.  Titan transactions are safe for concurrent use by multiple threads.  Methods on a TitanGraph instance like `graph.v(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
 
 Titan transactions are not necessarily ACID.  They can be so configured on BerkleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
 
@@ -965,9 +965,9 @@ Every graph operation in Titan occurs within the context of a transaction. Accor
 [source,java]
 ----
 TitanGraph g = TitanFactory.open("berkeleyje:/tmp/titan");
-Vertex juno = g.addVertex(null); //Automatically opens a new transaction
-juno.setProperty("name", "juno");
-g.commit(); //Commits transaction
+Vertex juno = g.addVertex(); //Automatically opens a new transaction
+juno.property("name", "juno");
+g.tx().commit(); //Commits transaction
 ----
 
 In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
@@ -979,17 +979,17 @@ All graph elements (vertices, edges, and types) are associated with the transact
 
 [source,java]
 TitanGraph g = TitanFactory.open("berkeleyje:/tmp/titan");
-Vertex juno = g.addVertex(null); //Automatically opens a new transaction
-g.commit(); //Ends transaction
-juno.setProperty("name", "juno"); //Vertex is automatically transitioned
+Vertex juno = g.addVertex(); //Automatically opens a new transaction
+g.tx().commit(); //Ends transaction
+juno.property("name", "juno"); //Vertex is automatically transitioned
 
 Edges, on the other hand, are not automatically transitioned and cannot be accessed outside their original transaction. They must be explicitly transitioned.
 
 [source,java]
-Edge e = juno.addEdge("knows",g.addVertex(null));
-g.commit(); //Ends transaction
-e = g.getEdge(e); //Need to refresh edge
-e.setProperty("time", 99);
+Edge e = juno.addEdge("knows",g.addVertex());
+g.tx().commit(); //Ends transaction
+e = g.e(e); //Need to refresh edge
+e.property("time", 99);
 
 Transaction Failures
 ~~~~~~~~~~~~~~~~~~~~
@@ -998,11 +998,11 @@ When committing a transaction, Titan will attempt to persist all changes to the 
 
 [source,java]
 try {
-    if (g.getVertices("name",name).iterator().hasNext())
+    if (g.V.has("name",name).iterator().hasNext())
         throw new IllegalArgumentException("Username already taken: " + name);
-    Vertex user = g.addVertex(null);
-    user.setProperty("name", name);
-    g.commit();
+    Vertex user = g.addVertex();
+    user.property("name", name);
+    g.tx().commit();
 } catch (TitanException e) {
     //Recover, retry, 	or return error message
 }
@@ -1055,26 +1055,26 @@ Another use case for thread independent transactions is nested transactions that
 For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see <<eventual-consistency>> for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
 
 [source,java]
-Vertex v1 = g.addVertex(null);
+Vertex v1 = g.addVertex();
 //Do many other things
-Vertex v2 = g.addVertex(null);
-v2.setProperty("uniqueName","foo");
-g.addEdge(null,v1,v2,"related");
+Vertex v2 = g.addVertex();
+v2.property("uniqueName","foo");
+v1.addEdge("related",v2);
 //Do many other things
-g.commit(); // This long-running tx might fail due to contention on its uniqueName lock
+g.tx().commit(); // This long-running tx might fail due to contention on its uniqueName lock
 
 One way around this is to create the vertex in a short, nested thread-independent transaction as demonstrated by the following pseudo code::
 
 [source,java]
-Vertex v1 = g.addVertex(null);
+Vertex v1 = g.addVertex();
 //Do many other things
 TransactionalGraph tx = g.newTransaction();
-Vertex v2 = tx.addVertex(null);
-v2.setProperty("uniqueName","foo");
+Vertex v2 = tx.addVertex();
+v2.singleProperty("uniqueName","foo");
 tx.commit(); // Any lock contention will be detected here
-g.addEdge(null,v1,g.getVertex(v2),"related"); // Need to load v2 into outer transaction
+v1.addEdge("related",g.v(v2); // Need to load v2 into outer transaction
 //Do many other things
-g.commit(); // Can't fail due to uniqueName write lock contention involving v2
+g.tx().commit(); // Can't fail due to uniqueName write lock contention involving v2
 
 
 Common Transaction Handling Problems
@@ -1098,13 +1098,13 @@ Such unexpected behavior is likely to occur in client-server applications where 
 [source,java]
 v = g.v(4) //Retrieve vertex, first action automatically starts transaction
 v.bothE
-g.commit()
+g.tx().commit()
 //thread is idle for a few seconds, another thread adds edges to v
 v.bothE
 >> returns the newly added edge
-g.commit()
+g.tx().commit()
 
-When using multi-threaded transactions via `newTransaction` all vertices and edges retrieved or created in the scope of that transaction are *not* available outside the scope of that transaction. Accessing such elements after the transaction has been closed will result in an exception. As demonstrated in the example above, such elements have to be explicitly refreshed in the new transaction using `g.getVertex(existingVertex)` or `g.getEdge(existingEdge)`.
+When using multi-threaded transactions via `newTransaction` all vertices and edges retrieved or created in the scope of that transaction are *not* available outside the scope of that transaction. Accessing such elements after the transaction has been closed will result in an exception. As demonstrated in the example above, such elements have to be explicitly refreshed in the new transaction using `g.v(existingVertex)` or `g.e(existingEdge)`.
 
 [[tx-config]]
 Transaction Configuration
@@ -1214,9 +1214,9 @@ Titan can automatically log transactional changes for additional processing or a
 
 [source,gremlin]
 tx = g.buildTransaction().setLogIdentifier('addedPerson').start()
-u = tx.addVertexWithLabel('human')
-u.setProperty('name','proteros')
-u.setProperty('age',36)
+u = tx.addVertex(label,'human')
+u.property('name','proteros')
+u.property('age',36)
 tx.commit()
 
 Upon commit, any changes made during the transaction are logged to the user logging system into a log named `addedPerson`. The *user logging system* is a configurable logging backend with a Titan compatible log interface. By default, the log is written to a separate store in the primary storage backend which can be configured as described below. The log identifier specified during the start of the transaction identifies the log in which the changes are recorded thereby allowing different types of changes to be recorded in separate logs for individual processing.
@@ -1224,9 +1224,9 @@ Upon commit, any changes made during the transaction are logged to the user logg
 [source,gremlin]
 tx = g.buildTransaction().setLogIdentifier('battle').start()
 h = tx.V.has('name','hercules').next()
-m = tx.addVertexWithLabel('monster')
-m.setProperty('name','phylatax')
-h.addEdge('battled',m).setProperty('time',22)
+m = tx.addVertex(label,'monster')
+m.property('name','phylatax')
+h.addEdge('battled',m,'time',22)
 tx.commit()
 
 Titan provides a user transaction log processor framework to process the recorded transactional changes. The transaction log processor is opened via `TitanFactory.openTransactionLog(TitanGraph)` against a previously opened Titan graph instance. One can then add processors for a particular log which holds transactional changes.
@@ -1242,7 +1242,7 @@ logProcessor.addLogProcessor("addedPerson")
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
                 for (TitanVertex v : changeState.getVertices(Change.ADDED)) {
-                    if (v.getLabel().equals("human")) totalHumansAdded.incrementAndGet();
+                    if (v.label().equals("human")) totalHumansAdded.incrementAndGet();
                 }
             }
         })
@@ -1250,7 +1250,7 @@ logProcessor.addLogProcessor("addedPerson")
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
                 for (TitanVertex v : changeState.getVertices(Change.ADDED)) {
-                    if (v.getLabel().equals("god")) totalGodsAdded.incrementAndGet();
+                    if (v.label().equals("god")) totalGodsAdded.incrementAndGet();
                 }
             }
         })
@@ -1275,10 +1275,10 @@ userlogs.addLogProcessor("battle")
         .addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
-                TitanVertex h = (TitanVertex)tx.query().has("name","hercules").vertices().iterator().next();
+                TitanVertex h = (TitanVertex)tx.V.has("name","hercules").toList().iterator().next();
                 for (TitanEdge edge : changeState.getEdges(h,Change.ADDED,Direction.OUT,"battled")) {
                     if (edge.<Integer>getProperty("time")>1000)
-                        h.setProperty("oldFighter",true);
+                        h.singleProperty("oldFighter",true);
                 }
             }
         })
@@ -1447,11 +1447,6 @@ Temporary Limitations
 
 These are limitations in Titan's current implementation.  These
 limitations could reasonably be removed in upcoming versions of Titan.
-
-Unable to Drop Indices
-^^^^^^^^^^^^^^^^^^^^^^
-
-Once a graph or vertex-centric index has been created it cannot be removed from the graph, only disabled.
 
 Limited Mixed Index Support
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

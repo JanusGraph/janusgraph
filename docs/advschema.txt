@@ -11,7 +11,7 @@ Static Vertices
 Vertex labels can be defined as *static* which means that vertices with that label cannot be modified outside the transaction in which they were created. 
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
 mgmt.commit()
 
@@ -33,7 +33,7 @@ Edge TTL
 Edge TTL is defined on a per-edge label basis, meaning that all edges of that label have the same time-to-live.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 visits = mgmt.makeEdgeLabel('visits').make()
 mgmt.setTTL(visits,7,TimeUnit.DAYS)
 mgmt.commit()
@@ -46,8 +46,8 @@ Property TTL
 Property TTL is very similar to edge TTL and defined on a per-property key basis, meaning that all properties of that key have the same time-to-live.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
-sensor = mgmt.makePropertyKey('sensor').cardinality(LIST).dataType(Double.class).make()
+mgmt = g.openManagement()
+sensor = mgmt.makePropertyKey('sensor').cardinality(Cardinality.LIST).dataType(Double.class).make()
 mgmt.setTTL(sensor,21,TimeUnit.DAYS)
 mgmt.commit()
 
@@ -59,7 +59,7 @@ Vertex TTL
 Vertex TTL is defined on a per-vertex label basis, meaning that all vertices of that label have the same time-to-live. The configured TTL applies to the vertex, its properties, and all incident edges to ensure that the entire vertex is removed from the graph. For this reason, a vertex label must be defined as _static_ before a TTL can be set to rule out any modifications that would invalidate the vertex TTL. Vertex TTL only applies to static vertex labels.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
 mgmt.setTTL(tweet,36,TimeUnit.HOURS)
 mgmt.commit()
@@ -72,16 +72,16 @@ Multi-Properties
 As dicussed in <<schema>>, Titan supports property keys with SET and LIST cardinality. Hence, Titan supports multiple properties with the same key on a single vertex. Furthermore, Titan treats properties similarly to edges in that single-valued property annotations are allowed on properties as shown in the following example.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.LIST).make()
 mgmt.commit()
 v = g.addVertex()
-p1 = v.addProperty('name','Dan LaRocque')
-p1.setProperty('source','web')
-p2 = v.addProperty('name','dalaro')
-p2.setProperty('source','github')
+p1 = v.property('name','Dan LaRocque')
+p1.singleProperty('source','web')
+p2 = v.property('name','dalaro')
+p2.singleProperty('source','github')
 g.commit()
-v.getProperties('name')
+v.properties('name')
 ==> Iterable over all name properties
 
 These features are useful in a number of applications such as those where attaching provenance information (e.g. who added a property, when and from where?) to properties is necessary. Support for higher cardinality properties and property annotations on properties is also useful in high-concurrency, scale-out design patterns as described in <<eventual-consistency>>._
@@ -94,19 +94,19 @@ Unidirected Edges
 Unidirected edges are edges that can only be traversed in the out-going direction. Unidirected edges have a lower storage footprint but are limited in the types of traversals they support. Unidirected edges are conceptually similar to hyperlinks in the world-wide-web in the sense that the out-vertex can traverse through the edge, but the in-vertex is unaware of its existence.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 link = mgmt.makeEdgeLabel('link').unidirected().make()
 mgmt.commit()
 
 Unidirected edges can be added on edges and properties, thereby giving Titan limited support for hyper-edges. For example, this can be useful for capturing authorship provenance information for edges as shown in the following example, where we add a unidirected `author` edge on the `knows` edge to store the fact that `user` added this edge to the graph.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 mgmt.makeEdgeLabel('author').unidirected().make()
 mgmt.commit()
 user = g.v(4)
 u = g.v(8)
 v = g.v(16)
-v.addEdge('knows',u).setProperty('author',user)
+v.addEdge('knows',u).singleProperty('author',user)
 
 Note, that unidirected edges do not get automatically deleted when their in-vertices are deleted. The user must ensure that such inconsistencies do not arise or resolve them at query time by explicitly checking vertex existence in a transaction. See the discussion in <<ghost-vertices>> for more information.

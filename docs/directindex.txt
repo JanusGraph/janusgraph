@@ -2,7 +2,7 @@
 Direct Index Query
 ------------------
 
-Titan's `Graph.query()` querying mechanism supports boolean queries for vertices or edges. In other words, an element either matches the query or it does not. There are no partial matches or result scoring.
+Titan's standard global graph querying mechanism supports boolean queries for vertices or edges. In other words, an element either matches the query or it does not. There are no partial matches or result scoring.
 
 Some indexing backends additionally support fuzzy search queries. For those queries, a score is computed for each match to indicate the "goodness" of the match and results are returned in the order of their score. Fuzzy search is particularly useful when dealing with full-text search queries where matching more words is considered to be better.
 
