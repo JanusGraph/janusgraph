@@ -181,7 +181,7 @@ plugin activated: aurelius.titan
 gremlin>
 ----
 
-Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the <<tinkerpopdoc,Tinkerpop documentation>> for more information on package handling.
+Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://www.tinkerpop.com/docs/3.0.0.M6/[Tinkerpop documentation] for more information on package handling.
 
 The Gremlin terminal is a http://groovy.codehaus.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
 
@@ -195,7 +195,7 @@ gremlin> [name:'aurelius',vocation:['philosopher','emperor']]
 ==>vocation=[philosopher, emperor]
 
 [TIP]
-Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Gremlin], and <<tinkerpopdoc,Tinkerpop documentation>> for more information about using Gremlin.
+Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Gremlin], and http://www.tinkerpop.com/docs/3.0.0.M6/[Tinkerpop documentation] for more information about using Gremlin.
 
 Loading the Graph of the Gods Into Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
