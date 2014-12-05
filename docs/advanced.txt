@@ -8,7 +8,7 @@ include::eventualconsistency.txt[]
 
 include::recovery.txt[]
 
-include::reindex.txt[]
+//include::reindex.txt[]
 
 include::bulkloading.txt[]
 
