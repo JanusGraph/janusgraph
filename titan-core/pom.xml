@@ -123,10 +123,6 @@
                     <groupId>com.esotericsoftware.reflectasm</groupId>
                     <artifactId>reflectasm</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.objenesis</groupId>
-                    <artifactId>objenesis</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
     </dependencies>
