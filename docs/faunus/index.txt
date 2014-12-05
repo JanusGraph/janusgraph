@@ -16,10 +16,12 @@ Here's a three step example showing some basic integrated Titan-TinkerPop functi
 2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/^g`
 3. Read the derived graph vertices and their computed rank values
 
+
 [WARNING]
 Titan 0.9.0's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as Titan 0.9.0 and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
 
-First step: defining schema and loading data.
+Defining defining schema and loading data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [source,gremlin]
 ----
@@ -117,7 +119,8 @@ schema.commit()
 titanGraph.close()
 ----
 
-Second step: running PageRank.
+Running PageRank
+~~~~~~~~~~~~~~~~
 
 [source,gremlin]
 ----
@@ -153,7 +156,8 @@ giraph.minWorkers=1
 giraph.maxWorkers=1
 ----
 
-Third step: reading and printing ranks.
+Reading vertices and printing ranks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [source,gremlin]
 ----
