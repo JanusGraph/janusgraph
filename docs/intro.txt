@@ -104,7 +104,7 @@ Titan's modular architecture supports third-party adapters.
 
 Broadly speaking, applications can interact with Titan in two ways:
 
-* Embed Titan inside the application executing http://www.tinkerpop.com/[Gremlin] queries directly against the graph within the same JVM. Query execution, Titan's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
+* Embed Titan inside the application executing http://www.tinkerpop.com/docs/current/#graph-traversal-steps[Gremlin] queries directly against the graph within the same JVM. Query execution, Titan's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
 * Interact with a local or remote Titan instance by submitting Gremlin queries to the server. Titan natively supports the Gremlin Server component of the http://www.tinkerpop.com/[Tinkerpop] stack.
 
 .High-level Titan Architecture and Context
@@ -181,7 +181,7 @@ plugin activated: aurelius.titan
 gremlin>
 ----
 
-Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://www.tinkerpop.com/docs/3.0.0.M6/[Tinkerpop documentation] for more information on package handling.
+Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://www.tinkerpop.com/docs/current/[Tinkerpop documentation] for more information on package handling.
 
 The Gremlin terminal is a http://groovy.codehaus.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
 
@@ -195,7 +195,7 @@ gremlin> [name:'aurelius',vocation:['philosopher','emperor']]
 ==>vocation=[philosopher, emperor]
 
 [TIP]
-Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Gremlin], and http://www.tinkerpop.com/docs/3.0.0.M6/[Tinkerpop documentation] for more information about using Gremlin.
+Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Gremlin], and http://www.tinkerpop.com/docs/current/[Tinkerpop documentation] for more information about using Gremlin.
 
 Loading the Graph of the Gods Into Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -311,7 +311,7 @@ gremlin> hercules.outE('battled').has('time',gt,1).inV.name
 ==>cerberus
 ==>hydra
 
-The edge property `time` on `battled` edges is indexed by the vertex-centric indices of a vertex. Retrieving `battled` edges incident to Hercules according to a constraint/filter on `time` is faster than doing a linear scan of all edges and filtering  (typically `O(log n)`, where `n` is the number incident edges). Titan is intelligent enough to use vertex-centric indices when available. A `toString()` of a Gremlin expression shows the underlying http://pipes.tinkerpop.com[query pipeline].
+The edge property `time` on `battled` edges is indexed by the vertex-centric indices of a vertex. Retrieving `battled` edges incident to Hercules according to a constraint/filter on `time` is faster than doing a linear scan of all edges and filtering  (typically `O(log n)`, where `n` is the number incident edges). Titan is intelligent enough to use vertex-centric indices when available. A `toString()` of a Gremlin expression shows a decomposition into individual steps.
 
 [source,gremlin]
 gremlin> hercules.outE('battled').has('time',gt,1).inV.name.toString()

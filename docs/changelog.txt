@@ -3,6 +3,33 @@
 Release Notes
 -------------
 
+Version 0.9.0-M1 (December 4, 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.9.0-M1</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 2.0.8
+* HBase 0.94.25, 0.96.2-hadoop2, 0.98.8-hadoop2
+* BerkeleyJE 5.0.73
+* Elasticsearch 1.2.1
+* Lucene 4.8.1
+* Solr 4.8.1
+* Java 1.8
+
+*Features:*
+
+* The main feature of the 0.9.0 release is the implementation of the Tinkerpop 3 APIs in Titan. This entails some radical changes to the query language and query execution engine. Furthermore, large parts of the hadoop processing engine are now covered by Tinkerpop and Titan has been refactored accordingly.
+
+Note, that this is a milestone release which is considered experimental. Please use this only for exploration, testing, and feedback and DO NOT use in production.
+
+
 Version 0.5.2 (November 24, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

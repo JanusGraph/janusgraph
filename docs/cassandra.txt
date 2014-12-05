@@ -68,24 +68,18 @@ http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Gremlin server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example.
+In this case, each Gremlin server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
 
-[source,xml]
-<graph>
-  <graph-name>mygraph</graph-name>
-  <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
-  <graph-location></graph-location>
-  <graph-read-only>false</graph-read-only>
-  <properties>
-    <storage.backend>cassandra</storage.backend>
-    <storage.hostname>77.77.77.77</storage.hostname>
-  </properties>
-  <extensions>
-    <allows>
-      <allow>tp:gremlin</allow>
-    </allows>
-  </extensions>
-</graph>
+[source,yaml]
+----
+...
+graphs: {
+  g: conf/titan-cassandra.properties}
+plugins:
+  - aurelius.titan
+...
+----
+
 
 Titan Embedded Mode
 ~~~~~~~~~~~~~~~~~~~

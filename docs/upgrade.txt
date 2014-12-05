@@ -5,6 +5,17 @@ Upgrade Instructions
 
 Please follow these instructions when upgrading from an older Titan release.
 
+Version 0.9.0-M1 (December 4, 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 0.5.1 and 0.5.2
+^^^^^^^^^^^^^^^^^^^^
+
+Titan 0.9.x is backwards compatible with the 0.5.y line of development at the storage layer. That means, newer
+versions of Titan can read and write to the same storage backend as the older version.
+However, the query language and API have changed considerable. It is highly encouraged to study the documentation, JavaDoc and Tinkerpop 3 documentation when upgrading.
+
+
 Version 0.5.2 (November 24, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
