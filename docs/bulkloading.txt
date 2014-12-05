@@ -76,20 +76,20 @@ During bulk loading, the load on the cluster typically increases making it more 
 
 `storage.attempt-wait` specifies the number of milliseconds that Titan will wait before re-attempting a failed backend operation. A higher value can ensure that operation re-tries do not further increase the load on the backend.
 
-Tools
-~~~~~
+//Tools
+//~~~~~
 
-Titan-Hadoop
-^^^^^^^^^^^^
+//Titan-Hadoop
+//^^^^^^^^^^^^
 
-For very large graphs the best option to load data efficiently is <<hadoop,Titan-Hadoop>> using one of the supported input format and specifying Titan as the output format.
+//For very large graphs the best option to load data efficiently is <<hadoop,Titan-Hadoop>> using one of the supported input format and specifying Titan as the output format.
 
-BatchGraph
-^^^^^^^^^^
+//BatchGraph
+//^^^^^^^^^^
 
-For medium size graph datasets (up to 100s million edges), Blueprints' https://github.com/tinkerpop/blueprints/wiki/Batch-Implementation[BatchGraph] is a useful tool for bulk loading data into Titan from a single machine through Titan's native Blueprints interface. BatchGraph effectively caches externally provided vertex ids to eliminate reads against Titan. This allows bulk loading with minimal read load.
+//For medium size graph datasets (up to 100s million edges), Blueprints' https://github.com/tinkerpop/blueprints/wiki/Batch-Implementation[BatchGraph] is a useful tool for bulk loading data into Titan from a single machine through Titan's native Blueprints interface. BatchGraph effectively caches externally provided vertex ids to eliminate reads against Titan. This allows bulk loading with minimal read load.
 
-BatchGraph is limited to single machine bulk loading use cases and requires enough local RAM to hold the entire vertex id cache in memory. BatchGraph supports id compression to reduce the memory requirements. Please refer to the https://github.com/tinkerpop/blueprints/wiki/Batch-Implementation[BatchGraph documentation] for more information on how to use BatchGraph most effectively.
+//BatchGraph is limited to single machine bulk loading use cases and requires enough local RAM to hold the entire vertex id cache in memory. BatchGraph supports id compression to reduce the memory requirements. Please refer to the https://github.com/tinkerpop/blueprints/wiki/Batch-Implementation[BatchGraph documentation] for more information on how to use BatchGraph most effectively.
 
 Strategies
 ~~~~~~~~~~
