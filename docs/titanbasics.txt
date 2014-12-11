@@ -345,7 +345,7 @@ place = mgmt.getPropertyKey('place')
 mgmt.changeName(place, 'location')
 mgmt.commit()
 
-Note, that schema name changes may not be immediately visible in currently running transactions and other Titan graph instances in the cluster. While schema name changes are announced to all Titan instances, it may take a while for them to take effect and it may require a instance restart in the event of certain failure conditions - like network partitions - if they coincide with the rename. Hence, the user must ensure that either of the following holds:
+Note, that schema name changes may not be immediately visible in currently running transactions and other Titan graph instances in the cluster. While schema name changes are announced to all Titan instances through the storage backend, it may take a while for the schema changes to take effect and it may require a instance restart in the event of certain failure conditions - like network partitions - if they coincide with the rename. Hence, the user must ensure that either of the following holds:
 
 * The renamed label or key is not currently in active use (i.e. written or read) and will not be in use until all Titan instances are aware of the name change.
 * Running transactions actively accomodate the brief intermediate period where either the old or new name is valid based on the specific Titan instance and status of the name-change announcement. For instance, that could mean transactions query for both names simultaneously.
