@@ -81,7 +81,8 @@ Dynamic Field Definition
 
 By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/Dynamic+Fields[Dynamic Fields] feature to define the field types for all indexed keys. This requires no extra configuration when adding property keys to a mixed index backed by Solr and provides better performance than schemaless mode.
 
-Titan assumes the following dynamic field tags are defined in the backing Solr collection's schema.xml file:
+Titan assumes the following dynamic field tags are defined in the backing Solr collection's schema.xml file. Please note that there
+is additional xml definition of the following fields required in a solr schema.xml file in order to use them.  Reference the example schema.xml file provided in the ./conf/solr/schema.xml directory in a Titan installation for more information.
 
 [source, xml]
 ----
@@ -134,7 +135,7 @@ Irrespective of the operation mode, a Solr instance or a cluster of Solr instanc
 JTS ClassNotFoundException with Geo Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Solr relies on Spatial4j for geo processing.  Spatial4j declares an optional dependency on JTS ("JTS Topology Suite").  JTS is required for some geo field definition and query functionality.  If the JTS jar is not on the Solr daemon's classpath and a field in schema.xml uses a geo type, then Solr may throw a ClassNotFoundException on one of the missing JTS classes.  This typically appears when invoking `CREATE` in the https://wiki.apache.org/solr/CoreAdmin[Solr CoreAdmin API].  The exception appears in slightly different formats on the client and server sides, although the root cause is identical.
+Solr relies on Spatial4j for geo processing.  Spatial4j declares an optional dependency on JTS ("JTS Topology Suite").  JTS is required for some geo field definition and query functionality.  If the JTS jar is not on the Solr daemon's classpath and a field in schema.xml uses a geo type, then Solr may throw a ClassNotFoundException on one of the missing JTS classes.  The exception can appear when starting Solr using a schema.xml file designed to work with Titan, but can also appear when invoking `CREATE` in the https://wiki.apache.org/solr/CoreAdmin[Solr CoreAdmin API].  The exception appears in slightly different formats on the client and server sides, although the root cause is identical.
 
 Here's a representative example from a Solr server log:
 
@@ -172,7 +173,7 @@ org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
         ...
 ----
 
-This is resolved by adding the JTS jar to the classpath of the Solr server.
+This is resolved by adding the JTS jar to the classpath of the Solr server. In many cases, if using a version of Solr that matches the version of Solr supported by Titan, the JTS jar file, for example: jts-1.13.jar, may be copied from the Titan ./lib directory to the Solr classpath.  If using Solr's built in web server, the JTS jar may be copied to the example/solr-webapp/webapp/WEB-INF/lib directory to include it in the classpath.  Solr can be restarted, and the exception should be gone. Solr must be started once with the correct schema.xml file in place first, for the example/solr-webapp/webapp/WEB-INF/lib directory to exist.
 
 To determine the ideal JTS version, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
 Copy the jts jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your solr installation.

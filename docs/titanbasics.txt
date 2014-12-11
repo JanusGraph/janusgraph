@@ -686,8 +686,14 @@ mgmt = g.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
 mgmt.commit()
 
-The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that Titan knows which configured indexing backend it should use for this particular index.
-While this index definition looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
+The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that Titan knows which configured indexing backend it should use for this particular index.  The `search` parameter specified in the buildMixedIndex call must match the second clause in the Titan configuration defintion like this: index.search.backend   If the index was named 'solrsearch' then the configuration definition would appear like this: index.solrsearch.backend. The mgmt.buildIndex example specified above uses text search as its default behavior. An index statement that means the same thing can be written as follows:
+
+[source,gremlin]
+mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.getParameter()).addKey(age,Mapping.TEXT.getParameter()).buildMixedIndex("search")
+
+See [[index-parameters]] for more information on text and string search options, and see the documentation section specific to the indexing backend in use for more details on how each backend handles text versus string searches.
+
+While the index definition example looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
 
 [source, gremlin]
 g.traversal().V().has('name', CONTAINS, 'hercules').has('age', inside, [20, 50])
