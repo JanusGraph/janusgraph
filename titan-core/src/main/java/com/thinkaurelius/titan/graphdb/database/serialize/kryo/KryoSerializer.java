@@ -54,13 +54,8 @@ public class KryoSerializer implements Closeable {
      * <p>
      * The bottom line is that Tomcat's expectations about thread pooling
      * are incompatible with practical use of ThreadLocal here.  Fortunately,
-     * in this case, we don't have a hard performance requirement for TL.
-     * Kryos are rarely constructed, and reusing a single one from various
-     * entry points and enclosing StandardSerializer instances is not
-     * really helpful.  I think TL isn't even correct here, though we
-     * used it in previous versions, since the constructor arguments to
-     * Kryo could theoretically change depending on the arguments to our
-     * enclosing StandardSerializer constructor.
+     * in this case, we probably don't have a hard performance requirement
+     * for TL.  The overhead from the CHM lookup shouldn't be too bad.
      */
     private final ConcurrentHashMap<Thread, Kryo> kryos;
 
