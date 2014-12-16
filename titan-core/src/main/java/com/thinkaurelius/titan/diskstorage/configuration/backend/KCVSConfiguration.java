@@ -25,6 +25,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 
+import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
@@ -225,6 +226,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         try {
             store.close();
             txProvider.close();
+            IOUtils.closeQuietly(serializer);
         } catch (BackendException e) {
             throw new TitanException("Could not close configuration store",e);
         }

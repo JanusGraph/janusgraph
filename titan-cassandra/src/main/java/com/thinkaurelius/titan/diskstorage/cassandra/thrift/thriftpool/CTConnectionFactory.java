@@ -126,18 +126,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     }
 
     public static class Config {
-        // this is to keep backward compatibility with JDK 1.6, can be changed to ThreadLocalRandom once we fully switch
-        private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<Random>() {
-            @Override
-            public Random initialValue() {
-                return new Random();
-            }
-        };
 
         private final String[] hostnames;
         private final int port;
         private final String username;
         private final String password;
+        private final Random random;
 
         private int timeoutMS;
         private int frameSize;
@@ -152,6 +146,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
             this.port = port;
             this.username = username;
             this.password = password;
+            this.random = new Random();
         }
 
         // TODO: we don't really need getters/setters here as all of the fields are final and immutable
@@ -165,7 +160,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         }
 
         public String getRandomHost() {
-            return hostnames.length == 1 ? hostnames[0] : hostnames[THREAD_LOCAL_RANDOM.get().nextInt(hostnames.length)];
+            return hostnames.length == 1 ? hostnames[0] : hostnames[random.nextInt(hostnames.length)];
         }
 
         public Config setTimeoutMS(int timeoutMS) {

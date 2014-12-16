@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 
-public interface Serializer extends AttributeHandling {
+import java.io.Closeable;
+
+public interface Serializer extends AttributeHandling, Closeable {
 
     public Object readClassAndObject(ReadBuffer buffer);
 

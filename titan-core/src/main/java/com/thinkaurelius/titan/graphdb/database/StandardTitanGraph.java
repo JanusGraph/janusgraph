@@ -51,6 +51,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.gremlin.structure.Direction;
 
 import org.slf4j.Logger;
@@ -169,6 +170,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 idAssigner.close();
                 backend.close();
                 queryCache.close();
+                IOUtils.closeQuietly(serializer);
                 // Remove shutdown hook to avoid reference retention
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             }

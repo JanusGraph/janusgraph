@@ -11,10 +11,13 @@ import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StandardSerializer extends StandardAttributeHandling implements Serializer {
+public class StandardSerializer extends StandardAttributeHandling implements Serializer, Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(StandardSerializer.class);
 
@@ -101,6 +104,11 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     @Override
     public DataOutput getDataOutput(int initialCapacity) {
         return new StandardDataOutput(initialCapacity);
+    }
+
+    @Override
+    public void close() throws IOException {
+        backupSerializer.close();
     }
 
     private class StandardDataOutput extends WriteByteBuffer implements DataOutput {

@@ -18,18 +18,52 @@ import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.tinkerpop.gremlin.structure.Direction;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class KryoSerializer {
+public class KryoSerializer implements Closeable {
 
     public static final int DEFAULT_MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10 MB in bytes
     public static final int KRYO_ID_OFFSET = 50;
 
+    private final List<Class> defaultRegistrations;
     private final boolean registerRequired;
-    private final ThreadLocal<Kryo> kryos;
     private final Map<Integer,TypeRegistration> registrations;
     private final int maxOutputSize;
+
+    /**
+     * "Why don't we replace this map with a ThreadLocal?"
+     * <p>
+     * Some thread-pooling execution environments, particularly Tomcat,
+     * interact poorly with ThreadLocal.  Tomcat assumes that an application
+     * will call remove from every thread that used a ThreadLocal before
+     * that application shuts down.  Tomcat expects that it can use Thread T
+     * to execute app A1, shut A1 down, then reuse T in some other app A2,
+     * and so on indefinitely.  Tomcat does not attempt to sanitize
+     * ThreadLocal storage, which requires some ugly reflection and security
+     * model cheating, but it does look for and warn about retained TLs
+     * after an app shuts down.  TL retention is a serious problem for Tomcat,
+     * because retained TLs also tend to retain webapp classloaders, along
+     * with all the references held by the CL.  This naturally tends to
+     * exhaust the heap as Tomcat redeploys apps that use TLs.  Some versions
+     * of Tomcat appear to defensively kill and replace threads inside its
+     * pool once those versions detect that an app is leaving TLs behind
+     * after it shuts down.
+     * <p>
+     * The bottom line is that Tomcat's expectations about thread pooling
+     * are incompatible with practical use of ThreadLocal here.  Fortunately,
+     * in this case, we don't have a hard performance requirement for TL.
+     * Kryos are rarely constructed, and reusing a single one from various
+     * entry points and enclosing StandardSerializer instances is not
+     * really helpful.  I think TL isn't even correct here, though we
+     * used it in previous versions, since the constructor arguments to
+     * Kryo could theoretically change depending on the arguments to our
+     * enclosing StandardSerializer constructor.
+     */
+    private final ConcurrentHashMap<Thread, Kryo> kryos;
 
     private static final StaticBuffer.Factory<Input> INPUT_FACTORY = new StaticBuffer.Factory<Input>() {
         @Override
@@ -44,12 +78,12 @@ public class KryoSerializer {
         this(defaultRegistrations, false);
     }
 
-
     public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired) {
         this(defaultRegistrations, registrationRequired, DEFAULT_MAX_OUTPUT_SIZE);
     }
 
     public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired, int maxOutputSize) {
+        this.defaultRegistrations = defaultRegistrations;
         this.maxOutputSize = maxOutputSize;
         this.registerRequired = registrationRequired;
         this.registrations = new HashMap<Integer,TypeRegistration>();
@@ -59,22 +93,24 @@ public class KryoSerializer {
             objectVerificationCache.put(clazz,Boolean.TRUE);
         }
 
-        kryos = new ThreadLocal<Kryo>() {
-            public Kryo initialValue() {
-                Kryo k = new Kryo();
-                k.setRegistrationRequired(registerRequired);
-                k.register(Class.class,new DefaultSerializers.ClassSerializer());
-                for (int i=0;i<defaultRegistrations.size();i++) {
-                    Class clazz = defaultRegistrations.get(i);
-                    k.register(clazz, KRYO_ID_OFFSET + i);
-                }
-                return k;
-            }
-        };
+        kryos = new ConcurrentHashMap<Thread, Kryo>();
     }
 
     Kryo getKryo() {
-        return kryos.get();
+        Thread self = Thread.currentThread();
+        Kryo k = kryos.get(self);
+        if (null == k) {
+            k = new Kryo();
+            k.setRegistrationRequired(registerRequired);
+            k.register(Class.class, new DefaultSerializers.ClassSerializer());
+            for (int i = 0; i < defaultRegistrations.size(); i++) {
+                Class clazz = defaultRegistrations.get(i);
+                k.register(clazz, KRYO_ID_OFFSET + i);
+            }
+            Kryo shouldBeNull = kryos.putIfAbsent(self, k);
+            Preconditions.checkState(null == shouldBeNull);
+        }
+        return k;
     }
 
     public Object readClassAndObject(ReadBuffer buffer) {
@@ -173,6 +209,15 @@ public class KryoSerializer {
         }
     }
 
+    /**
+     * Release cached references to Kryo instances created by every thread
+     * that has executed methods on this KryoSerializer instance.
+     */
+    @Override
+    public void close() {
+        kryos.clear();
+    }
+
     private static class TypeRegistration {
 
         final Class type;
@@ -184,5 +229,4 @@ public class KryoSerializer {
         }
 
     }
-
 }
