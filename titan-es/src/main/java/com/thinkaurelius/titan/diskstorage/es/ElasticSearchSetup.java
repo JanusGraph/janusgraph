@@ -2,23 +2,21 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
@@ -164,46 +162,10 @@ public enum ElasticSearchSetup {
         settings.put("client.transport.ignore_cluster_name", true);
 
         // Apply overrides from ES conf file
-        if (config.has(INDEX_CONF_FILE)) {
-            String confFile = config.get(INDEX_CONF_FILE);
-            log.debug("Loading Elasticsearch TransportClient base settings as file {}", confFile);
-            InputStream confStream = null;
-            try {
-                confStream = new FileInputStream(confFile);
-                settings.loadFromStream(confFile, confStream);
-            } finally {
-                IOUtils.closeQuietly(confStream);
-            }
-        }
+        applySettingsFromFile(settings, config, INDEX_CONF_FILE);
 
         // Apply ext.* overrides from Titan conf file
-        int keysLoaded = 0;
-        Map<String,Object> configSub = config.getSubset(ElasticSearchIndex.ES_EXTRAS_NS);
-        for (Map.Entry<String,Object> entry : configSub.entrySet()) {
-            String key = entry.getKey();
-            Object val = entry.getValue();
-            if (null == val) continue;
-            if (List.class.isAssignableFrom(val.getClass())) {
-                // Pretty print lists using comma-separated values and no surrounding square braces for ES
-                List l = (List) val;
-                settings.put(key, Joiner.on(",").join(l));
-            } else if (val.getClass().isArray()) {
-                // As with Lists, but now for arrays
-                // The Object copy[] business lets us avoid repetitive primitive array type checking and casting
-                Object copy[] = new Object[Array.getLength(val)];
-                for (int i= 0; i < copy.length; i++) {
-                    copy[i] = Array.get(val, i);
-                }
-                settings.put(key, Joiner.on(",").join(copy));
-            } else {
-                // Copy anything else unmodified
-                settings.put(key, val.toString());
-            }
-            log.debug("[ES ext.* cfg] Set {}: {}", key, val);
-            keysLoaded++;
-        }
-        log.debug("Loaded {} settings from the {} Titan config namespace",
-                  keysLoaded, ElasticSearchIndex.ES_EXTRAS_NS);
+        applySettingsFromTitanConf(settings, config, ElasticSearchIndex.ES_EXTRAS_NS);
 
         // Apply individual Titan ConfigOptions that map to ES settings
 
@@ -235,6 +197,56 @@ public enum ElasticSearchSetup {
 
         return settings;
     }
+
+    static void applySettingsFromFile(ImmutableSettings.Builder settings,
+                                              Configuration config,
+                                              ConfigOption<String> confFileOption) throws FileNotFoundException {
+        if (config.has(confFileOption)) {
+            String confFile = config.get(confFileOption);
+            log.debug("Loading Elasticsearch settings from file {}", confFile);
+            InputStream confStream = null;
+            try {
+                confStream = new FileInputStream(confFile);
+                settings.loadFromStream(confFile, confStream);
+            } finally {
+                IOUtils.closeQuietly(confStream);
+            }
+        } else {
+            log.debug("Option {} is not set; not attempting to load Elasticsearch settings from file", confFileOption);
+        }
+    }
+
+    static void applySettingsFromTitanConf(ImmutableSettings.Builder settings,
+                                                   Configuration config,
+                                                   ConfigNamespace rootNS) {
+        int keysLoaded = 0;
+        Map<String,Object> configSub = config.getSubset(rootNS);
+        for (Map.Entry<String,Object> entry : configSub.entrySet()) {
+            String key = entry.getKey();
+            Object val = entry.getValue();
+            if (null == val) continue;
+            if (List.class.isAssignableFrom(val.getClass())) {
+                // Pretty print lists using comma-separated values and no surrounding square braces for ES
+                List l = (List) val;
+                settings.put(key, Joiner.on(",").join(l));
+            } else if (val.getClass().isArray()) {
+                // As with Lists, but now for arrays
+                // The Object copy[] business lets us avoid repetitive primitive array type checking and casting
+                Object copy[] = new Object[Array.getLength(val)];
+                for (int i= 0; i < copy.length; i++) {
+                    copy[i] = Array.get(val, i);
+                }
+                settings.put(key, Joiner.on(",").join(copy));
+            } else {
+                // Copy anything else unmodified
+                settings.put(key, val.toString());
+            }
+            log.debug("[ES ext.* cfg] Set {}: {}", key, val);
+            keysLoaded++;
+        }
+        log.debug("Loaded {} settings from the {} Titan config namespace", keysLoaded, rootNS);
+    }
+
 
     private static void makeLocalDirsIfNecessary(ImmutableSettings.Builder settingsBuilder, Configuration config) {
         if (config.has(INDEX_DIRECTORY)) {
