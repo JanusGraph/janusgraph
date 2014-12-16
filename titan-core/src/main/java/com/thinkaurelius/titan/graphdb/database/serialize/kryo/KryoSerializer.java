@@ -31,7 +31,6 @@ public class KryoSerializer implements Closeable {
 
     private final List<Class> defaultRegistrations;
     private final boolean registerRequired;
-    private final Map<Integer,TypeRegistration> registrations;
     private final int maxOutputSize;
 
     /**
@@ -86,7 +85,6 @@ public class KryoSerializer implements Closeable {
         this.defaultRegistrations = defaultRegistrations;
         this.maxOutputSize = maxOutputSize;
         this.registerRequired = registrationRequired;
-        this.registrations = new HashMap<Integer,TypeRegistration>();
 
         for (Class clazz : defaultRegistrations) {
 //            Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
