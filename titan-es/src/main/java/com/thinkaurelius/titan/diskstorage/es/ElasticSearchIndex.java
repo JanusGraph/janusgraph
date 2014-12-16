@@ -135,6 +135,14 @@ public class ElasticSearchIndex implements IndexProvider {
             "from system properties/process environment variables.  Only meaningful when using the Node " +
             "client (has no effect with TransportClient).", ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Long> INDEX_CREATION_SLEEP =
+            new ConfigOption<Long>(ELASTICSEARCH_NS, "index-creation-sleep",
+            "How long to sleep, in milliseconds, between creating a index in the ES cluster and " +
+            "attempting to use that index.  This setting is only applied when creating an index in ES, " +
+            "which typically only happens the first time Titan is started on top of ES.  If the index " +
+            "Titan is configured to use already exists, then this setting has no effect.",
+            ConfigOption.Type.MASKABLE, 200L);
+
     public static final ConfigNamespace ES_EXTRAS_NS =
             new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
 
@@ -175,7 +183,7 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!response.isExists()) {
             CreateIndexResponse create = client.admin().indices().prepareCreate(indexName).execute().actionGet();
             try {
-                Thread.sleep(200);
+                Thread.sleep(config.get(INDEX_CREATION_SLEEP));
             } catch (InterruptedException e) {
                 throw new TitanException("Interrupted while waiting for index to settle in", e);
             }
