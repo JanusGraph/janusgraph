@@ -94,6 +94,7 @@ index.search.conf-file=/home/titan/elasticsearch_client.yaml
 node.name=alice
 ----
 
+[[es-cfg-ext]]
 Embedding ES settings with `ext`
 ++++++++++++++++++++++++++++++++
 
@@ -345,6 +346,47 @@ A client uses either one protocol/port or the other, but not both simultaneously
 
 Tunnel ES's native "transport" protocol::  This approach can be implemented with SSL/TLS tunneling (for instance via https://www.stunnel.org/index.html[stunnel]), a VPN, or SSH port forwarding.  SSL/TLS tunnels require non-trivial setup and monitoring: one or both ends of the tunnel need a certificate, and the stunnel processes need to be configured and running continuously in order for Titan and Elasticsearch to communicate.  The setup for most secure VPNs is likewise non-trivial.  Some Elasticsearch service providers handle server-side tunnel management and provide a custom Elasticsearch `transport.type` to simplify the client setup.  Titan is compatible with these custom transports.  See <<es-cfg-common-opts>> for information on how to override the `transport.type` and provide arbitrary `transport.*` config keys to Titan's ES client.
 Add a firewall rule that allows only trusted clients to connect on Elasticsearch's native protocol port:: This is typically done at the host firewall level.  This doesn't require any configuration changes in Titan or Elasticsearch, nor does it require helper processes like stunnel.  Easy to configure, but very weak security by itself.
+
+[[es-cfg-index-create]]
+Index Creation Options
+~~~~~~~~~~~~~~~~~~~~~~
+
+Since 0.5.3, Titan supports customization of the index settings it uses when creating its Elasticsearch index.  The customization mechanism is based on but distinct from the `ext` config prefix described in <<es-cfg-ext>>.  It allows setting arbitrary key-value pairs on the `settings` object in the http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/indices-create-index.html[Elasticsearch `create index` request] issued by Titan.  Here is a non-exhaustive sample of Elasticsearch index settings that can be customized using this mechanism:
+
+* `index.number_of_replicas`
+* `index.number_of_shards`
+* `index.refresh_interval`
+
+Settings customized through this mechanism are only applied when Titan attempts to create its index in Elasticsearch.  If Titan finds that its index already exists, then it does not attempt to recreate it, and these settings have no effect.
+
+Embedding ES index creation settings with `create.ext`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Titan iterates over all properties prefixed with `index.[X].elasticsearch.create.ext.`, where `[X]` is an index name such as `search`.  It strips the prefix from each property key.  The remainder of the stripped key will be interpreted as an Elasticsearch index creation setting.  The value associated with the key is not modified.  The stripped key and unmodified value are passed as part of the `settings` object in the Elasticsearch create index request that Titan issues when bootstrapping on ES.  This allows embedding arbitrary index creation settings settings in Titan's properties.  Here's an example configuration fragment that customizes three Elasticsearch index settings using the `create.ext` config mechanism:
+
+[source,properties]
+----
+index.search.backend=elasticsearch
+index.search.elasticsearch.create.ext.number_of_shards=15
+index.search.elasticsearch.create.ext.number_of_replicas=3
+index.search.elasticsearch.create.ext.shard.check_on_startup=true
+----
+
+The configuration fragment listed above takes advantage of Elasticsearch's assumption, implemented server-side, that unqualified `create index` setting keys have an `index.` prefix.  It's also possible to spell out the index prefix explicitly.  Here's a Titan config file functionally equivalent to the one listed above, except that the `index.` prefix before the index creation settings is explicit:
+
+[source,properties]
+----
+index.search.backend=elasticsearch
+index.search.elasticsearch.create.ext.index.number_of_shards=15
+index.search.elasticsearch.create.ext.index.number_of_replicas=3
+index.search.elasticsearch.create.ext.index.shard.check_on_startup=false
+----
+
+[NOTE]
+The `create.ext` config prefix described in this section is similar but not identical to the `ext` config prefix described in <<es-cfg-ext>>.  Whereas the `ext` prefix controls settings applied to the client connection, the `create.ext` prefix controls settings specific to index creation requests.
+
+[TIP]
+The `create.ext` mechanism for specifying index creation settings is compatible with both of Titan's Elasticsearch configuration tracks.  
 
 Troubleshooting
 ~~~~~~~~~~~~~~~
