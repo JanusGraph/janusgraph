@@ -148,14 +148,6 @@ public class ElasticSearchIndex implements IndexProvider {
             "which typically only happens the first time Titan is started on top of ES. If the index Titan is " +
             "configured to use already exists, then this setting has no effect.", ConfigOption.Type.MASKABLE, 200L);
 
-    public static final ConfigOption<String> CREATE_CONF_FILE =
-            new ConfigOption<String>(ES_CREATE_NS, "conf-file",
-            "Path to a configuration file containing Elasticsearch index creation settings.  For example," +
-            "to set the number of shards and replicas to 3 and 2 (respectively) when Titan first creates its " +
-            "Elasticsearch index, write a file containing only the two lines \"number_of_shards: 3\" and " +
-            "\"number_of_replicas : 2\", then set this option to the file's local path.",
-            ConfigOption.Type.MASKABLE, String.class);
-
     public static final ConfigNamespace ES_CREATE_EXTRAS_NS =
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
 
@@ -212,11 +204,6 @@ public class ElasticSearchIndex implements IndexProvider {
 
             ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 
-            try {
-                ElasticSearchSetup.applySettingsFromFile(settings, config, CREATE_CONF_FILE);
-            } catch (FileNotFoundException e) {
-                throw new IllegalArgumentException(e);
-            }
             ElasticSearchSetup.applySettingsFromTitanConf(settings, config, ES_CREATE_EXTRAS_NS);
 
             CreateIndexResponse create = client.admin().indices().prepareCreate(indexName)
