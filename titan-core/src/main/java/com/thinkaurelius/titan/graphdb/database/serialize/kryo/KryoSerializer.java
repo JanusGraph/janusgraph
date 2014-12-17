@@ -5,59 +5,27 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.types.*;
-import com.tinkerpop.gremlin.structure.Direction;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.system.IOUtils;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class KryoSerializer implements Closeable {
 
     public static final int DEFAULT_MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10 MB in bytes
     public static final int KRYO_ID_OFFSET = 50;
 
-    private final List<Class> defaultRegistrations;
-    private final boolean registerRequired;
     private final int maxOutputSize;
-
-    /**
-     * "Why don't we replace this map with a ThreadLocal?"
-     * <p>
-     * Some thread-pooling execution environments, particularly Tomcat,
-     * interact poorly with ThreadLocal.  Tomcat assumes that an application
-     * will call remove from every thread that used a ThreadLocal before
-     * that application shuts down.  Tomcat expects that it can use Thread T
-     * to execute app A1, shut A1 down, then reuse T in some other app A2,
-     * and so on indefinitely.  Tomcat does not attempt to sanitize
-     * ThreadLocal storage, which requires some ugly reflection and security
-     * model cheating, but it does look for and warn about retained TLs
-     * after an app shuts down.  TL retention is a serious problem for Tomcat,
-     * because retained TLs also tend to retain webapp classloaders, along
-     * with all the references held by the CL.  This naturally tends to
-     * exhaust the heap as Tomcat redeploys apps that use TLs.  Some versions
-     * of Tomcat appear to defensively kill and replace threads inside its
-     * pool once those versions detect that an app is leaving TLs behind
-     * after it shuts down.
-     * <p>
-     * The bottom line is that Tomcat's expectations about thread pooling
-     * are incompatible with practical use of ThreadLocal here.  Fortunately,
-     * in this case, we probably don't have a hard performance requirement
-     * for TL.  The overhead from the CHM lookup shouldn't be too bad.
-     */
-    private final ConcurrentHashMap<Thread, Kryo> kryos;
+    private final KryoInstanceCache kryos;
 
     private static final StaticBuffer.Factory<Input> INPUT_FACTORY = new StaticBuffer.Factory<Input>() {
         @Override
@@ -68,42 +36,56 @@ public class KryoSerializer implements Closeable {
         }
     };
 
+    /**
+     * This constructor is no longer used within Titan and may go away in a future release.
+     */
+    @Deprecated
     public KryoSerializer(final List<Class> defaultRegistrations) {
         this(defaultRegistrations, false);
     }
 
+    /**
+     * This constructor is no longer used within Titan and may go away in a future release.
+     */
+    @Deprecated
     public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired) {
         this(defaultRegistrations, registrationRequired, DEFAULT_MAX_OUTPUT_SIZE);
     }
 
+    /**
+     * This constructor is no longer used within Titan and may go away in a future release.
+     */
+    @Deprecated
     public KryoSerializer(final List<Class> defaultRegistrations, boolean registrationRequired, int maxOutputSize) {
-        this.defaultRegistrations = defaultRegistrations;
+        this(defaultRegistrations, registrationRequired, maxOutputSize, GraphDatabaseConfiguration.KRYO_INSTANCE_CACHE.getDefaultValue());
+    }
+
+    public KryoSerializer(final List<Class> defaultRegistrations, final boolean registrationRequired, int maxOutputSize, KryoInstanceCacheImpl kcache) {
         this.maxOutputSize = maxOutputSize;
-        this.registerRequired = registrationRequired;
 
         for (Class clazz : defaultRegistrations) {
 //            Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
             objectVerificationCache.put(clazz,Boolean.TRUE);
         }
 
-        kryos = new ConcurrentHashMap<Thread, Kryo>();
+        Function<Kryo, ?> kryoInitFunc = new Function<Kryo, Void>() {
+            @Override
+            public Void apply(Kryo k) {
+                k.setRegistrationRequired(registrationRequired);
+                k.register(Class.class, new DefaultSerializers.ClassSerializer());
+                for (int i = 0; i < defaultRegistrations.size(); i++) {
+                    Class clazz = defaultRegistrations.get(i);
+                    k.register(clazz, KRYO_ID_OFFSET + i);
+                }
+                return null;
+            }
+        };
+
+        this.kryos = kcache.createManager(kryoInitFunc);
     }
 
     Kryo getKryo() {
-        Thread self = Thread.currentThread();
-        Kryo k = kryos.get(self);
-        if (null == k) {
-            k = new Kryo();
-            k.setRegistrationRequired(registerRequired);
-            k.register(Class.class, new DefaultSerializers.ClassSerializer());
-            for (int i = 0; i < defaultRegistrations.size(); i++) {
-                Class clazz = defaultRegistrations.get(i);
-                k.register(clazz, KRYO_ID_OFFSET + i);
-            }
-            Kryo shouldBeNull = kryos.putIfAbsent(self, k);
-            Preconditions.checkState(null == shouldBeNull);
-        }
-        return k;
+        return kryos.get();
     }
 
     public Object readClassAndObject(ReadBuffer buffer) {
@@ -208,7 +190,7 @@ public class KryoSerializer implements Closeable {
      */
     @Override
     public void close() {
-        kryos.clear();
+        IOUtils.closeQuietly(kryos);
     }
 
     private static class TypeRegistration {

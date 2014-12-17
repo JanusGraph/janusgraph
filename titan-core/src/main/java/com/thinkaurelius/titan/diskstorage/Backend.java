@@ -425,7 +425,9 @@ public class Backend implements LockerProvider {
                                                             final KeyColumnValueStore store, final String identifier,
                                                             final Configuration config) {
         try {
-            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,config,store,identifier);
+            KCVSConfiguration kcvsConfig =
+                    new KCVSConfiguration(txProvider,config,store,identifier,
+                            config.get(GraphDatabaseConfiguration.KRYO_INSTANCE_CACHE));
             kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
             return kcvsConfig;
         } catch (BackendException e) {
