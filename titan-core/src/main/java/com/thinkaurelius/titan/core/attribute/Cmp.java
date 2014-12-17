@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core.attribute;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.apache.commons.lang.ArrayUtils;
 
 /**
  * Basic comparison relations for comparable (i.e. linearly ordered) objects.
@@ -29,7 +30,13 @@ public enum Cmp implements TitanPredicate {
             if (condition==null) {
                 return value==null;
             } else {
-                return condition.equals(value);
+                if (condition.equals(value)) {
+                    return true;
+                } else if (condition.getClass().isArray()) {
+                    return ArrayUtils.isEquals(condition, value);
+                } else {
+                    return false;
+                }
             }
         }
 
