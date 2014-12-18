@@ -6,7 +6,8 @@ import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The timestamp and checked-ness of a held {@link ConsistentKeyLock}
+ * The timestamps of a lock held by a {@link ConsistentKeyLocker}
+ * and whether the held lock has or has not been checked.
  *
  * {@see ConsistentKeyLockStore}
  */
