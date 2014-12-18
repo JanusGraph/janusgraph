@@ -52,23 +52,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     @Test
     public void testSupport() {
-        assertTrue(index.supports(of(String.class)));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT))));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING))));
-
-        assertTrue(index.supports(of(Double.class)));
-        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT))));
-
-        assertTrue(index.supports(of(Long.class)));
-        assertTrue(index.supports(of(Long.class, new Parameter("mapping",Mapping.DEFAULT))));
-        assertTrue(index.supports(of(Integer.class)));
-        assertTrue(index.supports(of(Short.class)));
-        assertTrue(index.supports(of(Byte.class)));
-        assertTrue(index.supports(of(Float.class)));
-        assertTrue(index.supports(of(Geoshape.class)));
-        assertFalse(index.supports(of(Object.class)));
-        assertFalse(index.supports(of(Exception.class)));
-
         assertTrue(index.supports(of(String.class), Text.CONTAINS));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_PREFIX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
@@ -78,17 +61,6 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
-
-        assertTrue(index.supports(of(Double.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Double.class), Cmp.GREATER_THAN_EQUAL));
-        assertTrue(index.supports(of(Double.class), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Double.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
-        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Geoshape.class), Geo.WITHIN));
-
-        assertFalse(index.supports(of(Double.class), Geo.INTERSECT));
-        assertFalse(index.supports(of(Long.class), Text.CONTAINS));
-        assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
     }
 
     @Test
