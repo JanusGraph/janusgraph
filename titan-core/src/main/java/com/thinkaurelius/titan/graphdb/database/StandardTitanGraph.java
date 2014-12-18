@@ -9,6 +9,9 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
@@ -362,19 +365,36 @@ private synchronized void removeHook() {
 
         @Override
         public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
-            tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once and cache eviction works!
-            TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,BaseKey.SchemaName, typeName),null);
-            tx.getTxHandle().enableCache();
-            return v!=null?v.longId():null;
+            // Get a consistent tx
+            Configuration customTxOptions = new MergedConfiguration(backend.getStoreFeatures().getKeyConsistentTxConfig(),
+                    tx.getConfiguration().getCustomOptions());
+            TitanTransaction consistentTx = null;
+            try {
+                consistentTx = StandardTitanGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardTitanGraph.this, customTxOptions));
+                tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once and cache eviction works!
+                TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx, BaseKey.SchemaName, typeName), null);
+                tx.getTxHandle().enableCache();
+                return v!=null?v.longId():null;
+            } finally {
+                consistentTx.rollback();
+            }
         }
 
         @Override
         public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
             SliceQuery query = queryCache.getQuery(type,dir);
-            tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once!
-            EntryList result = edgeQuery(schemaId, query, tx.getTxHandle());
-            tx.getTxHandle().enableCache();
-            return result;
+            Configuration customTxOptions = new MergedConfiguration(backend.getStoreFeatures().getKeyConsistentTxConfig(),
+                    tx.getConfiguration().getCustomOptions());
+            StandardTitanTx consistentTx = null;
+            try {
+                consistentTx = StandardTitanGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardTitanGraph.this, customTxOptions));
+                tx.getTxHandle().disableCache(); //Disable cache to make sure that schema is only cached once!
+                EntryList result = edgeQuery(schemaId, query, consistentTx.getTxHandle());
+                tx.getTxHandle().enableCache();
+                return result;
+            } finally {
+                consistentTx.rollback();
+            }
         }
 
     };

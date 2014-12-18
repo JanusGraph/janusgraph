@@ -91,6 +91,24 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
+    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardTitanGraph graph, Configuration customOptions) {
+        Preconditions.checkNotNull(graphConfig);
+        Preconditions.checkNotNull(graph);
+        if (graphConfig.isReadOnly()) readOnly();
+        if (graphConfig.isBatchLoading()) enableBatchLoading();
+        this.graph = graph;
+        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.assignIDsImmediately = graphConfig.hasFlushIDs();
+        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
+        this.groupName = graphConfig.getMetricsPrefix();
+        this.logIdentifier = null;
+        this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
+        this.writableCustomOptions = null;
+        this.customOptions = customOptions;
+        vertexCacheSize(graphConfig.getTxVertexCacheSize());
+        dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
+    }
+
     public StandardTransactionBuilder threadBound() {
         this.threadBound = true;
         this.singleThreaded = true;
@@ -190,6 +208,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public TransactionBuilder customOption(String k, Object v) {
+        if (null == writableCustomOptions)
+            throw new IllegalStateException("This builder was not constructed with setCustomOption support");
         writableCustomOptions.set((ConfigOption<Object>)ConfigElement.parse(ROOT_NS, k).element, v);
         return this;
     }
