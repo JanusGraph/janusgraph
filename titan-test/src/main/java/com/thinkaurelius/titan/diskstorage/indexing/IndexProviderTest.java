@@ -236,6 +236,11 @@ public abstract class IndexProviderTest {
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomorrow"))).size());
             }
 
+            if (index.supports(new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX)) {
+                assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomo[r]+ow is.*world"))).size());
+                assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomorrow"))).size());
+            }
+
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(TEXT, Text.CONTAINS, "world"), PredicateCondition.of(TEXT, Text.CONTAINS, "hello"))));
             assertEquals(1, result.size());
             assertEquals("doc1", result.get(0));

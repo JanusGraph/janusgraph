@@ -51,13 +51,31 @@ public class LuceneIndexTest extends IndexProviderTest {
 
     @Test
     public void testSupport() {
+        // DEFAULT(=TEXT) support
         assertTrue(index.supports(of(String.class), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class), Text.CONTAINS_PREFIX));
+        assertFalse(index.supports(of(String.class), Text.CONTAINS_REGEX)); // TODO Not supported yet
+        assertFalse(index.supports(of(String.class), Text.REGEX));
+        assertFalse(index.supports(of(String.class), Text.PREFIX));
+        assertFalse(index.supports(of(String.class), Cmp.EQUAL));
+        assertFalse(index.supports(of(String.class), Cmp.NOT_EQUAL));
+
+        // Same tests as above, except explicitly specifying TEXT instead of relying on DEFAULT
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_PREFIX));
-        assertFalse(index.supports(of(String.class), Text.CONTAINS_REGEX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX)); // TODO Not supported yet
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.PREFIX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Cmp.EQUAL));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Cmp.NOT_EQUAL));
+
+        // STRING support
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.CONTAINS));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.CONTAINS_PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Text.CONTAINS));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Cmp.EQUAL));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Cmp.NOT_EQUAL));
     }
 
 //    @Override

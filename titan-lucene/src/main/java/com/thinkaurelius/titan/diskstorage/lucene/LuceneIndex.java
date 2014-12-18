@@ -527,7 +527,7 @@ public class LuceneIndex implements IndexProvider {
                 case TEXT:
                     return titanPredicate == Text.CONTAINS || titanPredicate == Text.CONTAINS_PREFIX; // || titanPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.PREFIX; //  || titanPredicate==Text.REGEX
+                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.PREFIX || titanPredicate==Text.REGEX;
             }
         }
         return false;
