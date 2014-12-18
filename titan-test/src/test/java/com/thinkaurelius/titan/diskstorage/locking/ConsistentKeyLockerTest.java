@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.*;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
@@ -40,10 +41,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LockCleanerService;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import org.easymock.LogicalOperator;
@@ -411,15 +408,15 @@ public class ConsistentKeyLockerTest {
     }
 
     /**
-     * Lock checking should treat columns with timestamps older than the
-     * expiration period as though they were never read from the store (aside
-     * from logging them). This tests the checker with a single expired column.
+     * A transaction that writes a lock, waits past expiration, and attempts
+     * to check locks should receive an {@code ExpiredLockException} during
+     * the check stage.
      *
      * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException
      */
     @Test
-    public void testCheckLocksIgnoresSingleExpiredLock() throws BackendException, InterruptedException {
+    public void testCheckOwnExpiredLockThrowsException() throws BackendException, InterruptedException {
         // Fake a pre-existing lock that's long since expired
         final ConsistentKeyLockStatus expired = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, expired));
@@ -435,13 +432,57 @@ public class ConsistentKeyLockerTest {
                         defaultLockVal));
 
         ctrl.replay();
-        TemporaryLockingException ple = null;
+        ExpiredLockException ele = null;
         try {
             locker.checkLocks(defaultTx);
-        } catch (TemporaryLockingException e) {
-            ple = e;
+        } catch (ExpiredLockException e) {
+            ele = e;
         }
-        assertNotNull(ple);
+        assertNotNull(ele);
+    }
+
+    /**
+     * A transaction that detects expired locks from other transactions, or from
+     * its own transaction but with a different timestamp than the one currently
+     * stored in memory by the transaction (presumably from an earlier attempt),
+     * should be ignored.
+     *
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws InterruptedException
+     */
+    @Test
+    public void testCheckLocksIgnoresOtherExpiredLocks() throws BackendException, InterruptedException {
+        // Fake a pre-existing lock from a different tx that's long since expired
+        final ConsistentKeyLockStatus otherExpired = makeStatusNow();
+
+        // Fake a pre-existing lock from our tx
+        final ConsistentKeyLockStatus ownExpired = makeStatusNow();
+
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(100, TimeUnit.DAYS); // pretend a huge multiple of the expiration time has passed
+
+        // Create a still-valid lock belonging to the default tx
+        final ConsistentKeyLockStatus recent = makeStatusNow();
+        expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, recent));
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(1L, TimeUnit.MILLISECONDS);
+
+        expectSleepAfterWritingLock(recent);
+
+        // Checker must slice the store; return both of the expired claims and the one active claim
+        recordLockGetSlice(StaticArrayEntryList.of(
+                StaticArrayEntry.of(
+                        codec.toLockCol(otherExpired.getWriteTimestamp(TimeUnit.NANOSECONDS), otherLockRid),
+                        defaultLockVal),
+                StaticArrayEntry.of(
+                        codec.toLockCol(ownExpired.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
+                        defaultLockVal),
+                StaticArrayEntry.of(
+                        codec.toLockCol(recent.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
+                        defaultLockVal)
+        ));
+
+        ctrl.replay();
+
+        locker.checkLocks(defaultTx);
     }
 
     /**
