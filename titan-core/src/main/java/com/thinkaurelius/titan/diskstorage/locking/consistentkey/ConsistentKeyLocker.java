@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
@@ -20,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -387,21 +389,27 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
         });
         // ...and then filter out the TimestampRid objects with expired timestamps
-        iter = Iterables.filter(iter, new Predicate<TimestampRid>() {
-            @Override
-            public boolean apply(TimestampRid tr) {
-                final long cutoffTime = now.sub(lockExpire).getTimestamp(timeUnit);
-                if (tr.getTimestamp() < cutoffTime) {
-                    log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
-                    if (null != cleanerService)
-                        cleanerService.clean(kc, cutoffTime, tx);
-                    return false;
+        // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
+        ArrayList<TimestampRid> unexpiredTRs = new ArrayList<TimestampRid>(Iterables.size(iter));
+        for (TimestampRid tr : iter) {
+            final long cutoffTime = now.sub(lockExpire).getTimestamp(timeUnit);
+            if (tr.getTimestamp() < cutoffTime) {
+                log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
+                if (null != cleanerService)
+                    cleanerService.clean(kc, cutoffTime, tx);
+                // Locks that this instance wrote that have now expired should not only log but also throw a descriptive exception
+                if (rid.equals(tr.getRid()) && ls.getWriteTimestamp(timeUnit) == tr.getTimestamp()) {
+                    throw new ExpiredLockException("Expired lock on " + kc.toString() +
+                            ": lock timestamp " + tr.getTimestamp() + " " + timeUnit + " is older than " +
+                            ConfigElement.getPath(GraphDatabaseConfiguration.LOCK_EXPIRE) + "=" + lockExpire);
+                    // Really shouldn't refer to GDC.LOCK_EXPIRE here, but this will typically be accurate in a real use case
                 }
-                return true;
+                continue;
             }
-        });
+            unexpiredTRs.add(tr);
+        }
 
-        checkSeniority(kc, ls, iter);
+        checkSeniority(kc, ls, unexpiredTRs);
         ls.setChecked();
     }
 
