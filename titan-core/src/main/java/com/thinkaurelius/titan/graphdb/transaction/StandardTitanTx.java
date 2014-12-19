@@ -844,7 +844,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     public TitanSchemaVertex getSchemaVertex(String schemaName) {
         Long schemaId = newTypeCache.get(schemaName);
-        if (schemaId==null) schemaId=graph.getSchemaCache().getSchemaId(schemaName, this);
+        if (schemaId==null) schemaId=graph.getSchemaCache().getSchemaId(schemaName);
         if (schemaId != null) {
             InternalVertex typeVertex = vertexCache.get(schemaId, existingVertexRetriever);
             assert typeVertex!=null;

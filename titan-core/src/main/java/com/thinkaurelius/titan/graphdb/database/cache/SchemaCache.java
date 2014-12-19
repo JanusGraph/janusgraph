@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.cache;
 
 import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -21,17 +19,17 @@ import com.tinkerpop.gremlin.structure.Direction;
  */
 public interface SchemaCache {
 
-    public Long getSchemaId(String schemaName, StandardTitanTx tx);
+    public Long getSchemaId(String schemaName);
 
-    public EntryList getSchemaRelations(long schemaId, BaseRelationType type, final Direction dir, StandardTitanTx tx);
+    public EntryList getSchemaRelations(long schemaId, BaseRelationType type, final Direction dir);
 
     public void expireSchemaElement(final long schemaId);
 
     public interface StoreRetrieval {
 
-        public Long retrieveSchemaByName(final String typeName, final StandardTitanTx tx);
+        public Long retrieveSchemaByName(final String typeName);
 
-        public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx);
+        public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir);
 
     }
 

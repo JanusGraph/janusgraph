@@ -37,7 +37,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 p = (TitanVertexProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseKey.SchemaName, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseKey.SchemaName, Direction.OUT),
                         tx), null);
             } else {
                 p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
@@ -65,7 +65,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseKey.SchemaDefinitionProperty, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseKey.SchemaDefinitionProperty, Direction.OUT),
                         tx);
             } else {
                 ps = query().type(BaseKey.SchemaDefinitionProperty).properties();
@@ -96,7 +96,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 edges = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseLabel.SchemaDefinitionEdge, dir, tx()),
+                        tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseLabel.SchemaDefinitionEdge, dir),
                         tx);
             } else {
                 edges = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir).edges();

@@ -6,7 +6,6 @@ import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
@@ -74,13 +73,13 @@ public class StandardSchemaCache implements SchemaCache {
 
 
     @Override
-    public Long getSchemaId(final String schemaName, final StandardTitanTx tx) {
+    public Long getSchemaId(final String schemaName) {
         ConcurrentMap<String,Long> types = typeNames;
         Long id;
         if (types==null) {
             id = typeNamesBackup.getIfPresent(schemaName);
             if (id==null) {
-                id = retriever.retrieveSchemaByName(schemaName, tx);
+                id = retriever.retrieveSchemaByName(schemaName);
                 if (id!=null) { //only cache if type exists
                     typeNamesBackup.put(schemaName,id);
                 }
@@ -93,10 +92,10 @@ public class StandardSchemaCache implements SchemaCache {
                     as it only happens for graph databases with thousands of types.
                      */
                     typeNames = null;
-                    return getSchemaId(schemaName, tx);
+                    return getSchemaId(schemaName);
                 } else {
                     //Expand map
-                    id = retriever.retrieveSchemaByName(schemaName, tx);
+                    id = retriever.retrieveSchemaByName(schemaName);
                     if (id!=null) { //only cache if type exists
                         types.put(schemaName,id);
                     }
@@ -124,7 +123,7 @@ public class StandardSchemaCache implements SchemaCache {
     }
 
     @Override
-    public EntryList getSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
+    public EntryList getSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir) {
         assert IDManager.isSystemRelationTypeId(type.longId()) && type.longId()>0;
         Preconditions.checkArgument(IDManager.VertexIDType.Schema.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);
@@ -138,7 +137,7 @@ public class StandardSchemaCache implements SchemaCache {
         if (types==null) {
             entries = schemaRelationsBackup.getIfPresent(typePlusRelation);
             if (entries==null) {
-                entries = retriever.retrieveSchemaRelations(schemaId, type, dir, tx);
+                entries = retriever.retrieveSchemaRelations(schemaId, type, dir);
                 if (!entries.isEmpty()) { //only cache if type exists
                     schemaRelationsBackup.put(typePlusRelation, entries);
                 }
@@ -151,10 +150,10 @@ public class StandardSchemaCache implements SchemaCache {
                     as it only happens for graph databases with thousands of types.
                      */
                     schemaRelations = null;
-                    return getSchemaRelations(schemaId, type, dir, tx);
+                    return getSchemaRelations(schemaId, type, dir);
                 } else {
                     //Expand map
-                    entries = retriever.retrieveSchemaRelations(schemaId, type, dir, tx);
+                    entries = retriever.retrieveSchemaRelations(schemaId, type, dir);
                     types.put(typePlusRelation,entries);
                 }
             }
