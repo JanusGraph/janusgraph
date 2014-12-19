@@ -66,10 +66,7 @@ import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerElementStepStrategy;
-import com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerGraphStepStrategy;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
+import com.thinkaurelius.titan.util.system.TXUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -374,7 +371,7 @@ private synchronized void removeHook() {
                 TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
                 return v!=null?v.longId():null;
             } finally {
-                consistentTx.rollback();
+                TXUtils.rollbackQuietly(consistentTx);
             }
         }
 
@@ -389,7 +386,7 @@ private synchronized void removeHook() {
                 EntryList result = edgeQuery(schemaId, query, consistentTx.getTxHandle());
                 return result;
             } finally {
-                consistentTx.rollback();
+                TXUtils.rollbackQuietly(consistentTx);
             }
         }
 
