@@ -971,6 +971,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final String METRICS_PREFIX_DEFAULT = "com.thinkaurelius.titan";
     public static final String METRICS_SYSTEM_PREFIX_DEFAULT = METRICS_PREFIX_DEFAULT + "." + "sys";
+    public static final String METRICS_SCHEMA_PREFIX_DEFAULT = METRICS_SYSTEM_PREFIX_DEFAULT + "." + "schema";
 
     /**
      * The default name prefix for Metrics reported by Titan. All metric names

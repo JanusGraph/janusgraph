@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricFilter;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -97,6 +99,8 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
     public void testReadOperations(boolean cache) {
         metricsPrefix = "schema"+cache;
 
+        resetEdgeCacheCounts();
+
         makeVertexIndexedUniqueKey("uid",Integer.class);
         mgmt.setConsistency(mgmt.getGraphIndex("uid"),ConsistencyModifier.LOCK);
         finishSchema();
@@ -112,6 +116,11 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         verifyStoreMetrics(EDGESTORE_NAME);
         verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3l, M_ACQUIRE_LOCK, 3l));
 
+        resetMetrics();
+
+        metricsPrefix=GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT;
+
+        resetMetrics();
 
         //Test schema caching
         for (int t=0;t<10;t++) {
@@ -153,8 +162,9 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
             tx.commit();
             //Needs to read on first iteration, after that it doesn't change anymore
-            verifyStoreMetrics(EDGESTORE_NAME,ImmutableMap.of(M_GET_SLICE, 19l));
-            verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 7l, M_ACQUIRE_LOCK, 3l));
+            verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 19l));
+            verifyStoreMetrics(INDEXSTORE_NAME,
+                    ImmutableMap.of(M_GET_SLICE, 4l /* name, knows, person, uid */, M_ACQUIRE_LOCK, 0l));
         }
 
         //Create some graph data
@@ -395,7 +405,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         for (String operation : OPERATION_NAMES) {
             Long count = operationCounts.get(operation);
             if (count==null) count = 0l;
-            assertEquals("On "+storeName+"-"+operation,count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
+            assertEquals(Joiner.on(".").join(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS),count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
         }
     }
 
@@ -550,6 +560,10 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         counter.dec(counter.getCount());
         counter = MetricManager.INSTANCE.getCounter(metricsPrefix, "edgeStore" + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.MISS.getName());
         counter.dec(counter.getCount());
+    }
+
+    private void resetMetrics() {
+        MetricManager.INSTANCE.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
     //#################### MOVE REMAINING TO BENCHMARK ####################
