@@ -523,8 +523,6 @@ public class IndexSerializer {
                     }
                 }
             }
-            boolean hasCardinalitySize = ((CompositeIndexType)index).getCardinality()!= Cardinality.SINGLE || results.size() <= 1;
-            Preconditions.checkArgument(((CompositeIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1);
             return results;
         } else {
             List<String> r = tx.indexQuery(((MixedIndexType) index).getBackingIndexName(), query.getMixedQuery());
