@@ -20,7 +20,7 @@ import com.thinkaurelius.titan.core.schema.TitanSchemaType;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see TitanRelation
  * @see com.thinkaurelius.titan.core.schema.RelationTypeMaker
- * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-configuration">Titan Type Wiki</a>
+ * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/schema.html">"Schema and Data Modeling" manual chapter</a>
  */
 public interface RelationType extends TitanVertex, TitanSchemaType {
 

@@ -20,7 +20,8 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
  * @param <V> Type of the attribute associated with the AttributeSerializer
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see com.thinkaurelius.titan.core.schema.RelationTypeMaker
- * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
+ * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/serializer.html">
+ *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */
 public interface AttributeSerializer<V> extends AttributeHandler<V> {
 

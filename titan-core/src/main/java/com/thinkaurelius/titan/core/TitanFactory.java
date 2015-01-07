@@ -54,7 +54,8 @@ public class TitanFactory {
      *
      * @param shortcutOrFile Configuration file name or configuration short-cut
      * @return Titan graph database configured according to the provided configuration
-     * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
+     * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/configuration.html">"Configuration" manual chapter</a>
+     * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/titan-config-ref.html">Configuration Reference</a>
      */
     public static TitanGraph open(String shortcutOrFile) {
         return open(getLocalConfiguration(shortcutOrFile));
@@ -65,7 +66,8 @@ public class TitanFactory {
      *
      * @param configuration Configuration for the graph database
      * @return Titan graph database
-     * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
+     * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/configuration.html">"Configuration" manual chapter</a>
+     * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/titan-config-ref.html">Configuration Reference</a>
      */
     public static TitanGraph open(Configuration configuration) {
         return open(new CommonsConfiguration(configuration));

@@ -37,10 +37,11 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * Returns a unique identifier for this entity.
      * <p/>
      * The unique identifier may only be set when the transaction in which entity is created commits.
-     * The <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a> explains
-     * how to configure when entity ids are assigned.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
      * <p/>
+     * Titan allocates blocks of identifiers and automatically assigns identifiers to elements
+     * automatically be default.  This behavior can be partially overridden by setting
+     * {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
      *
      * @return The unique identifier for this entity
      * @throws IllegalStateException if the entity does not (yet) have a unique identifier
