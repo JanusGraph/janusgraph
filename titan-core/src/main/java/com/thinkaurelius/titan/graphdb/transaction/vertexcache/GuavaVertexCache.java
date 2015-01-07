@@ -19,13 +19,6 @@ public class GuavaVertexCache implements VertexCache {
     private static final Logger log =
             LoggerFactory.getLogger(GuavaVertexCache.class);
 
-    /**
-     * This is a workaround for #893.  Cache sizes small relative to the level
-     * of thread parallelism can lead to Titan generating multiple copies of
-     * a single vertex in a single transaction.
-     */
-    private static final long LOWEST_ALLOWED_MAX_CACHE_SIZE = 100L;
-
     private final ConcurrentMap<Long, InternalVertex> volatileVertices;
     private final Cache<Long, InternalVertex> cache;
 
@@ -33,11 +26,7 @@ public class GuavaVertexCache implements VertexCache {
         volatileVertices = new NonBlockingHashMapLong<InternalVertex>(initialDirtySize);
         log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
-        final long effectiveMaxCacheSize = Math.max(LOWEST_ALLOWED_MAX_CACHE_SIZE, maxCacheSize);
-        log.debug("Guava cache sizes: requested={} effective={} (min={})",
-                maxCacheSize, effectiveMaxCacheSize, LOWEST_ALLOWED_MAX_CACHE_SIZE);
-
-        cache = CacheBuilder.newBuilder().maximumSize(effectiveMaxCacheSize).concurrencyLevel(concurrencyLevel)
+        cache = CacheBuilder.newBuilder().maximumSize(maxCacheSize).concurrencyLevel(concurrencyLevel)
                 .removalListener(new RemovalListener<Long, InternalVertex>() {
                     @Override
                     public void onRemoval(RemovalNotification<Long, InternalVertex> notification) {

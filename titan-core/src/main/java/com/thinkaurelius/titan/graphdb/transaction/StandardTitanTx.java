@@ -86,6 +86,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
     private static final Duration LOCK_TIMEOUT = new StandardDuration(5000L, TimeUnit.MILLISECONDS);
 
+    /**
+     * This is a workaround for #893.  Cache sizes small relative to the level
+     * of thread parallelism can lead to Titan generating multiple copies of
+     * a single vertex in a single transaction.
+     */
+    private static final long MIN_VERTEX_CACHE_SIZE = 100L;
+
+
     private final StandardTitanGraph graph;
     private final TransactionConfiguration config;
     private final IDManager idManager;
@@ -210,7 +218,15 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence(), preloadedData);
         existingVertexRetriever = new VertexConstructor(false, preloadedData);
 
-        vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel,config.getDirtyVertexSize());
+        long effectiveVertexCacheSize = config.getVertexCacheSize();
+        if (!config.isReadOnly()) {
+            effectiveVertexCacheSize = Math.max(MIN_VERTEX_CACHE_SIZE, effectiveVertexCacheSize);
+            log.debug("Guava vertex cache size: requested={} effective={} (min={})",
+                    config.getVertexCacheSize(), effectiveVertexCacheSize, MIN_VERTEX_CACHE_SIZE);
+        }
+
+        vertexCache = new GuavaVertexCache(effectiveVertexCacheSize,concurrencyLevel,config.getDirtyVertexSize());
+
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<JointIndexQuery.Subquery, List<Object>>() {
             @Override
             public int weigh(JointIndexQuery.Subquery q, List<Object> r) {
