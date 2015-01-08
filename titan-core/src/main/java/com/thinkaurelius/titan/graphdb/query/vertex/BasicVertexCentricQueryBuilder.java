@@ -548,6 +548,12 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         //...otherwise this is it and we can construct the slicequery
 
         boolean isFitted = isIntervalFittedConditions && position==intervalConstraints.size();
+        if (isFitted && position>0) {
+            //If the last interval is open ended toward the larger values, then its not fitted because we need to
+            //filter out NULL values which are serialized with -1 (largest value) byte up front.
+            EdgeSerializer.TypedInterval lastInterval = sortKeyConstraints[position-1];
+            if (!lastInterval.interval.isPoints() && lastInterval.interval.getEnd()==null) isFitted=false;
+        }
         EdgeSerializer serializer = tx.getEdgeSerializer();
         SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
         q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
