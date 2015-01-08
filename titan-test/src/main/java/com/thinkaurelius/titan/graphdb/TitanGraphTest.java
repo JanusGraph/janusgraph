@@ -4204,6 +4204,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     //................................................
 
 
+    @Test
+    public void testHasNot() {
+        TitanVertex v1,v2;
+        v1 = graph.addVertex();
+
+        v2 = graph.query().hasNot("abcd").vertices().iterator().next();
+        assertEquals(v1,v2);
+        v2 = graph.query().hasNot("abcd",true).vertices().iterator().next();
+        assertEquals(v1,v2);
+    }
+
     //Add more removal operations, different transaction contexts
     @Test
     public void testCreateDelete() {
