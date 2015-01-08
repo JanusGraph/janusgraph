@@ -2809,7 +2809,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         u = getV(tx,u);
 
         evaluateQuery(v.query().keys("name").has("weight",Cmp.GREATER_THAN,3.6),
-                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+                PROPERTY, 2*numV/10, 1, new boolean[]{false,true});
         evaluateQuery(v.query().keys("name").has("weight",Cmp.LESS_THAN,0.9).orderBy("weight", incr),
                 PROPERTY, 2*numV/10, 1, new boolean[]{true,true},weight,Order.ASC);
         evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", decr).limit(numV/10),
@@ -2893,7 +2893,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         u = getV(tx,u);
 
         evaluateQuery(v.query().keys("name").has("weight",Cmp.GREATER_THAN,3.6),
-                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+                PROPERTY, 2*numV/10, 1, new boolean[]{false,true});
         evaluateQuery(v.query().keys("name").has("weight",Cmp.LESS_THAN,0.9).orderBy("weight", incr),
                 PROPERTY, 2*numV/10, 1, new boolean[]{true,true},weight,Order.ASC);
         evaluateQuery(v.query().keys("name").interval("weight", 1.1, 2.2).orderBy("weight", decr).limit(numV/10),
@@ -2989,7 +2989,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //######### UPDATED QUERIES ##########
 
         evaluateQuery(v.query().keys("name").has("weight",Cmp.GREATER_THAN,3.6),
-                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+                PROPERTY, 2*numV/10, 1, new boolean[]{false,true});
         evaluateQuery(v.query().keys("name").interval("time",numV/2-10,numV/2+10),
                 PROPERTY, 10, 1, new boolean[]{false,true});
         evaluateQuery(v.query().keys("name").interval("time",numV/2-10,numV/2+10).orderBy("weight", decr),
@@ -3025,7 +3025,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //######### UPDATED QUERIES (copied from above) ##########
 
         evaluateQuery(v.query().keys("name").has("weight",Cmp.GREATER_THAN,3.6),
-                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+                PROPERTY, 2*numV/10, 1, new boolean[]{false,true});
         evaluateQuery(v.query().keys("name").interval("time",numV/2-10,numV/2+10),
                 PROPERTY, 10, 1, new boolean[]{false,true});
         evaluateQuery(v.query().keys("name").interval("time",numV/2-10,numV/2+10).orderBy("weight", decr),
