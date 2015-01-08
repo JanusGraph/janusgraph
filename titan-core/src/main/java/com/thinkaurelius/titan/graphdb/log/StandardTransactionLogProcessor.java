@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -325,7 +324,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content,serializer,times);
             TransactionLogHeader txheader = txentry.getHeader();
             StandardTransactionId transactionId = new StandardTransactionId(senderId,txheader.getId(),
-                    new StandardTimestamp(txheader.getTimestamp(times.getUnit()),times.getUnit()));
+                    new Timestamp(txheader.getTimestamp(times.getUnit()),times.getUnit()));
 
             TxEntry entry;
             try {

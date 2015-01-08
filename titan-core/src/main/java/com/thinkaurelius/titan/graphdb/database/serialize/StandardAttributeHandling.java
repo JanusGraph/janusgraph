@@ -6,8 +6,8 @@ import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.schema.*;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
@@ -41,7 +41,7 @@ public class StandardAttributeHandling implements AttributeHandling {
                     Parameter.class, Parameter[].class, ParameterType.class, RelationCategory.class,
                     Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
                     ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
-                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class, StandardTimestamp.class,
+                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class, Timestamp.class,
                     Timestamps.class
             );
 

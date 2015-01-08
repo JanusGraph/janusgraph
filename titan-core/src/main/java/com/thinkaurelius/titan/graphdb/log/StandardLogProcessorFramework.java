@@ -12,7 +12,6 @@ import com.thinkaurelius.titan.core.log.Change;
 import com.thinkaurelius.titan.core.log.ChangeProcessor;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.log.*;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
@@ -128,7 +127,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
 
         @Override
         public LogProcessorBuilder setStartTime(long sinceEpoch, TimeUnit unit) {
-            this.startTime = new StandardTimestamp(sinceEpoch,unit);
+            this.startTime = new Timestamp(sinceEpoch,unit);
             return this;
         }
 
@@ -228,7 +227,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                         transactionId = (StandardTransactionId)txentry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
                     } else {
                         transactionId = new StandardTransactionId(senderId,txentry.getHeader().getId(),
-                                new StandardTimestamp(txentry.getHeader().getTimestamp(times.getUnit()),times.getUnit()));
+                                new Timestamp(txentry.getHeader().getTimestamp(times.getUnit()),times.getUnit()));
                     }
                     readRelations(txentry,tx,changes);
                 } catch (Throwable e) {

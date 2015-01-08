@@ -3,13 +3,13 @@ package com.thinkaurelius.titan.core;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.LogProcessorFramework;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -158,7 +158,7 @@ public class TitanFactory {
      * @return
      */
     public static TransactionRecovery startTransactionRecovery(TitanGraph graph, long sinceEpoch, TimeUnit unit) {
-        return new StandardTransactionLogProcessor((StandardTitanGraph)graph, new StandardTimestamp(sinceEpoch,unit));
+        return new StandardTransactionLogProcessor((StandardTitanGraph)graph, new Timestamp(sinceEpoch,unit));
     }
 
     //###################################

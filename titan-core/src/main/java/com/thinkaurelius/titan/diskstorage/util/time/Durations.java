@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.util.time;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +20,7 @@ public class Durations {
      * This method is based on the method of the same name in Stopwatch.java in
      * Google Guava 14.0.1, where it was defined with private visibility.
      */
-    static String abbreviate(TimeUnit unit) {
+    public static String abbreviate(TimeUnit unit) {
         switch (unit) {
         case NANOSECONDS:
             return "ns";

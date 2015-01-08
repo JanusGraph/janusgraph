@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
@@ -79,8 +80,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         String age = "age";
         String address = "address";
 
-        Vertex v1 = tx1.addVertex(name, "a");
-        Vertex v2 = tx1.addVertex(age, "14", name, "b", age, "42");
+        TitanVertex v1 = tx1.addVertex(name, "a");
+        TitanVertex v2 = tx1.addVertex(age, "14", name, "b", age, "42");
         tx1.commit();
 
         // Fetch vertex ids
@@ -104,6 +105,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 assertTrue(d.isZeroLength());
             }
         }
+        assertEquals(1, v1.query().has("$timestamp", new Timestamp(100, unit)).propertyCount());
+        assertEquals(1, v1.query().has("$timestamp", Cmp.GREATER_THAN, new Timestamp(10, unit)).propertyCount());
         v1.property(name).remove();
         v1.singleProperty(address, "xyz");
         Edge edge = v2.addEdge("parent",v1);

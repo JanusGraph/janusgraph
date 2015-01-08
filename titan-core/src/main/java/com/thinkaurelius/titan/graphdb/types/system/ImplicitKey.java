@@ -4,13 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Direction;
@@ -87,7 +86,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                     Long time = r.getValueDirect(this);
                     if (time==null) return null; //there is no timestamp
                     TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
-                    return (O) new StandardTimestamp(time, unit);
+                    return (O) new Timestamp(time, unit);
                 }
             } else {
                 return null;
