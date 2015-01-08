@@ -845,7 +845,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String[]> INDEX_HOSTS = new ConfigOption<String[]>(INDEX_NS,"hostname",
             "The hostname or comma-separated list of hostnames of index backend servers.  " +
             "This is only applicable to some index backends, such as elasticsearch and solr.",
-            ConfigOption.Type.GLOBAL, new String[]{NetworkUtil.getLoopbackAddress()});
+            ConfigOption.Type.MASKABLE, new String[]{NetworkUtil.getLoopbackAddress()});
 
     public static final ConfigOption<Integer> INDEX_PORT = new ConfigOption<Integer>(INDEX_NS,"port",
             "The port on which to connect to index backend servers",
