@@ -50,14 +50,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>titan-all</artifactId>
             <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hadoop-core</artifactId>
-            <version>${project.version}</version>
-            <classifier>example-data</classifier>
-            <type>zip</type>
         </dependency>
         <dependency>
             <groupId>net.java.dev.jna</groupId>
@@ -65,13 +57,18 @@
             <version>${jna.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop.rexster</groupId>
-            <artifactId>rexster-console</artifactId>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>gremlin-console</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop.rexster</groupId>
-            <artifactId>rexster-server</artifactId>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>gremlin-server</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop</groupId>
+            <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
         <!-- Test dependencies -->
@@ -216,51 +213,6 @@
                                 <argument>com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
                                 <argument>${asciidoc.output.dir}/listings/titan_cfg.txt</argument>
                                 <argument>true</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>generate-faunus-config-table</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
-                            <arguments>
-                                <argument>com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration.ROOT_NS</argument>
-                                <argument>${asciidoc.output.dir}/listings/faunus_cfg.txt</argument>
-                                <argument>false</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>generate-faunus-rdf-config-table</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
-                            <arguments>
-                                <argument>com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFConfig.ROOT_NS</argument>
-                                <argument>${asciidoc.output.dir}/listings/faunus_rdf_cfg.txt</argument>
-                                <argument>false</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>generate-faunus-script-config-table</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
-                            <arguments>
-                                <argument>com.thinkaurelius.titan.hadoop.formats.script.ScriptConfig.ROOT_NS</argument>
-                                <argument>${asciidoc.output.dir}/listings/faunus_script_cfg.txt</argument>
-                                <argument>false</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -447,48 +399,6 @@
 
         <pluginManagement>
             <plugins>
-                <!-- Dump gremlin.sh's default import list to a file -->
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>generate-titan-gremlin-imports</id>
-                            <phase>prepare-package</phase>
-                            <goals>
-                                <goal>java</goal>
-                            </goals>
-                            <configuration>
-                                <mainClass>com.thinkaurelius.titan.tinkerpop.gremlin.ConsoleSetup</mainClass>
-                                <arguments>
-                                    <argument>${project.build.directory}/imports.properties</argument>
-                                </arguments>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <!-- Load gremlin.sh's default import list from a file: we're going to
-                    write this into rexster's configuration later with a template -->
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>properties-maven-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>load-titan-gremlin-imports</id>
-                            <phase>prepare-package</phase>
-                            <goals>
-                                <goal>read-project-properties</goal>
-                            </goals>
-                            <configuration>
-                                <files>
-                                    <file>${project.build.directory}/imports.properties</file>
-                                </files>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-
                 <!-- Delete bin, lib, conf, ... dirs in the root -->
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
