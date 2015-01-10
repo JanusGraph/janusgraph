@@ -14,7 +14,7 @@ abs_path() {
 }
 
 BIN=`abs_path`
-REXSTER_CONFIG_TAG=cassandra-es
+GSRV_CONFIG_TAG=cassandra-es
 : ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
 : ${CASSANDRA_SHUTDOWN_TIMEOUT_S:=60}
 
@@ -23,10 +23,10 @@ REXSTER_CONFIG_TAG=cassandra-es
 : ${ELASTICSEARCH_IP:=127.0.0.1}
 : ${ELASTICSEARCH_PORT:=9300}
 
-: ${REXSTER_STARTUP_TIMEOUT_S:=60}
-: ${REXSTER_SHUTDOWN_TIMEOUT_S:=60}
-: ${REXSTER_IP:=127.0.0.1}
-: ${REXSTER_PORT:=8184}
+: ${GSRV_STARTUP_TIMEOUT_S:=60}
+: ${GSRV_SHUTDOWN_TIMEOUT_S:=60}
+: ${GSRV_IP:=127.0.0.1}
+: ${GSRV_PORT:=8182}
 
 : ${SLEEP_INTERVAL_S:=2}
 VERBOSE=
@@ -142,23 +142,23 @@ start() {
         echo "See $BIN/../log/elasticsearch.log for Elasticsearch log output."  >&2
         return 1
     }
-    echo "Forking Titan + Rexster..."
+    echo "Forking Gremlin-Server..."
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/rexster.sh -s -wr public -c ../conf/rexster-${REXSTER_CONFIG_TAG}.xml &
+        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server.yaml &
     else
-        "$BIN"/rexster.sh -s -wr public -c ../conf/rexster-${REXSTER_CONFIG_TAG}.xml >/dev/null 2>&1 &
+        "$BIN"/gremlin-server.sh conf/gremlin-server/gremlin-server.yaml >/dev/null 2>&1 &
     fi
-    wait_for_startup 'Titan + Rexster' $REXSTER_IP $REXSTER_PORT $REXSTER_STARTUP_TIMEOUT_S || {
-        echo "See $BIN/../log/rexstitan.log for Rexster log output."  >&2
+    wait_for_startup 'Gremlin-Server' $GSRV_IP $GSRV_PORT $GSRV_STARTUP_TIMEOUT_S || {
+        echo "See $BIN/../log/gremlin-server.log for Gremlin-Server log output."  >&2
         return 1
     }
     disown
-    echo "Run rexster-console.sh to connect." >&2
+    echo "Run gremlin.sh to connect." >&2
 }
 
 stop() {
-    kill_class        'Titan + Rexster' com.tinkerpop.rexster.Application 
-    wait_for_shutdown 'Titan + Rexster' com.tinkerpop.rexster.Application $REXSTER_SHUTDOWN_TIMEOUT_S
+    kill_class        'Gremlin-Server' com.tinkerpop.gremlin.server.GremlinServer 
+    wait_for_shutdown 'Gremlin-Server' com.tinkerpop.gremlin.server.GremlinServer $GSRV_SHUTDOWN_TIMEOUT_S
     kill_class        Elasticsearch org.elasticsearch.bootstrap.Elasticsearch
     wait_for_shutdown Elasticsearch org.elasticsearch.bootstrap.Elasticsearch $ELASTICSEARCH_SHUTDOWN_TIMEOUT_S
     kill_class        Cassandra org.apache.cassandra.service.CassandraDaemon
@@ -190,7 +190,7 @@ status_class() {
 }
 
 status() {
-    status_class 'Titan + Rexster' com.tinkerpop.rexster.Application 
+    status_class 'Gremlin-Server' com.tinkerpop.gremlin.server.GremlinServer
     status_class Cassandra org.apache.cassandra.service.CassandraDaemon
     status_class Elasticsearch org.elasticsearch.bootstrap.Elasticsearch
 }
@@ -221,21 +221,21 @@ clean() {
 
 usage() {
     echo "Usage: $0 [options] {start|stop|status|clean}" >&2
-    echo " start:  fork Cassandra and Rexster+Titan processes" >&2
-    echo " stop:   kill running Cassandra and Rexster+Titan processes" >&2
-    echo " status: print Cassandra and Rexster+Titan process status" >&2
+    echo " start:  fork Cassandra, ES, and Gremlin-Server processes" >&2
+    echo " stop:   kill running Cassandra, ES, and Gremlin-Server processes" >&2
+    echo " status: print Cassandra, ES, and Gremlin-Server process status" >&2
     echo " clean:  permanently delete all graph data (run when stopped)" >&2
     echo "Options:" >&2
     echo " -v      enable logging to console in addition to logfiles" >&2
-    echo " -c str  configure rexster with conf/rexster-<str>.xml" >&2
-    echo "         recognized arguments to -c:" >&2
-    shopt -s nullglob
-    for f in "$BIN"/../conf/rexster-*.xml; do
-        f="`basename $f`"
-        f="${f#rexster-}"
-        f="${f%.xml}"
-        echo "           $f" >&2
-    done
+#    echo " -c str  configure gremlin-server with conf/rexster-<str>.xml" >&3
+#    echo "         recognized arguments to -c:" >&2
+#    shopt -s nullglob
+#    for f in "$BIN"/../conf/rexster-*.xml; do
+#        f="`basename $f`"
+#        f="${f#rexster-}"
+#        f="${f%.xml}"
+#        echo "           $f" >&2
+#    done
 }
 
 find_verb() {
@@ -254,7 +254,7 @@ while [ 1 ]; do
         OPTIND=$(($OPTIND + 1))
     elif getopts 'c:v' option; then
         case $option in
-        c) REXSTER_CONFIG_TAG="${OPTARG}";;
+        c) GSRV_CONFIG_TAG="${OPTARG}";;
         v) VERBOSE=yes;;
         *) usage; exit 1;;
         esac

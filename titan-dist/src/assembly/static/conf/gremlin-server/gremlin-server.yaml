@@ -6,7 +6,7 @@ scriptEvaluationTimeout: 30000
 serializedResponseTimeout: 30000
 channelizer: com.tinkerpop.gremlin.server.channel.WebSocketChannelizer
 graphs: {
-  g: conf/titan-berkeleydb-server.properties}
+  g: conf/gremlin-server/titan-berkeleydb-server.properties}
 plugins:
   - aurelius.titan
 scriptEngines: {

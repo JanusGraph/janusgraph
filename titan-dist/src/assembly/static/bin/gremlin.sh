@@ -77,7 +77,7 @@ if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
 fi
 
 if [ -z "${JAVA_OPTIONS:-}" ]; then
-    JAVA_OPTIONS="-Dlog4j.configuration=conf/log4j-repl.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL"
+    JAVA_OPTIONS="-Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL"
 fi
 
 if [ "$PROFILING_ENABLED" = true ]; then
