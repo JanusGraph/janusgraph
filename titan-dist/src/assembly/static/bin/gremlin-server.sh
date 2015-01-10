@@ -20,9 +20,12 @@ while [ -h "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+CP=$CP:"$DIR/../conf"
 CP=$CP:$(find -L $DIR/../ext/ -name "*.jar" | tr '\n' ':')
 
 export CLASSPATH="${CLASSPATH:-}:$CP"
+
+export TITAN_LOGDIR="$DIR/../log"
 
 # Find Java
 if [ "$JAVA_HOME" = "" ] ; then
@@ -37,9 +40,10 @@ if [ "$JAVA_OPTIONS" = "" ] ; then
 fi
 
 # Execute the application and return its exit code
+set -x
 if [ "$1" = "-i" ]; then
   shift
-  exec $JAVA -Dlog4j.configuration=conf/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.server.util.GremlinServerInstall "$@"
+  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.server.util.GremlinServerInstall "$@"
 else
-  exec $JAVA -Dlog4j.configuration=conf/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.server.GremlinServer "$@"
+  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.server.GremlinServer "$@"
 fi

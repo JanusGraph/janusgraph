@@ -42,7 +42,8 @@
 
     <modules>
         <module>titan-dist-hadoop-1</module>
-        <module>titan-dist-hadoop-2</module>
+        <!-- Hadoop 2 is blocked on TP3 support -->
+        <!-- <module>titan-dist-hadoop-2</module> -->
     </modules>
 
     <dependencies>
