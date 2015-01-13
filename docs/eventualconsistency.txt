@@ -30,7 +30,7 @@ This is a brief description of the locking protocol which leaves out optimizatio
 
 The actual lock application mechanism is abstracted such that Titan can use multiple implementations of a locking provider. Currently, two locking providers are supported in the Titan distribution:
 
-. A locking implementation based on key-consistent read and write operations that is agnostic to the underlying storage backend as long as it supports key-consistent operations (which includes Cassandra and HBase). This is the default implementation and uses timestamp based lock applications to determine which transaction holds the lock. For this implementation to work correctly, it is crucial to specify a unique machine-id in the <<titan-config-ref,graph configuration>> when running multiple Titan instances on the same machine.
+. A locking implementation based on key-consistent read and write operations that is agnostic to the underlying storage backend as long as it supports key-consistent operations (which includes Cassandra and HBase). This is the default implementation and uses timestamp based lock applications to determine which transaction holds the lock.
 . A Cassandra specific locking implementation based on the Astyanax locking recipe.
 
 Both locking providers require that clocks are synchronized across all machines in the cluster.
