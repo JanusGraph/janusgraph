@@ -1140,6 +1140,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         clopen();
 
+        Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(eventTTLSeconds * 1.25), TimeUnit.SECONDS));
+
         evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has(LABEL_NAME,"event"),
                 ElementCategory.VERTEX,0,new boolean[]{true,true},"index2");
         evaluateQuery(tx.query().has("name","first event").orderBy("time", decr),
@@ -1290,6 +1292,27 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         }
 
         Assert.assertEquals(3, scores.size());
+    }
+
+    @Test
+    // this tests a case when there as AND with a single CONTAINS condition inside AND(name:(was here))
+    // which (in case of Solr) spans multiple conditions such as AND(AND(name:was, name:here))
+    // so we need to make sure that we don't apply AND twice.
+    public void testContainsWithMultipleValues() throws Exception {
+        PropertyKey name = makeKey("name", String.class);
+
+        mgmt.buildIndex("store1", Vertex.class).addKey(name).buildMixedIndex(INDEX);
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex();
+        v1.property("name", "hercules was here");
+
+        tx.commit();
+
+        Thread.sleep(2000);
+
+        TitanVertex r = Iterables.get(graph.query().has("name", Text.CONTAINS, "was here").vertices(), 0);
+        Assert.assertEquals(r.property("name").value(), "hercules was here");
     }
 
     private void testNestedWrites(String initialValue, String updatedValue) throws BackendException {

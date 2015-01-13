@@ -464,7 +464,6 @@ public class SolrIndex implements IndexProvider {
             }
             result = new ArrayList<RawQuery.Result<String>>(totalHits);
 
-            System.out.println(solrQuery);
             for (SolrDocument hit : response.getResults()) {
                 double score = Double.parseDouble(hit.getFieldValue("score").toString());
                 result.add(new RawQuery.Result<String>(hit.getFieldValue(keyIdField).toString(), score));
@@ -526,15 +525,18 @@ public class SolrIndex implements IndexProvider {
                     //and the second where text = Hello World. Hence, we are decomposing the query string
                     //and building an AND query explicitly because we need AND semantics
                     value = ((String) value).toLowerCase();
-                    List<String> terms = Text.tokenize((String)value);
-                    if (terms.isEmpty()) return "";
-                    else if (terms.size()==1) return (key + ":("+ escapeValue(terms.get(0)) + ")");
-                    else {
+                    List<String> terms = Text.tokenize((String) value);
+
+                    if (terms.isEmpty()) {
+                        return "";
+                    } else if (terms.size() == 1) {
+                        return (key + ":(" + escapeValue(terms.get(0)) + ")");
+                    } else {
                         And<TitanElement> andTerms = new And<TitanElement>();
                         for (String term : terms) {
-                            andTerms.add(new PredicateCondition<String,TitanElement>(key,titanPredicate,term));
+                            andTerms.add(new PredicateCondition<String, TitanElement>(key, titanPredicate, term));
                         }
-                        return buildQueryFilter(andTerms,informations);
+                        return buildQueryFilter(andTerms, informations);
                     }
                 }
                 if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
@@ -577,11 +579,20 @@ public class SolrIndex implements IndexProvider {
             if (StringUtils.isNotBlank(sub)) return "-("+sub+")";
             else return "";
         } else if (condition instanceof And) {
+            int numChildren = ((And) condition).size();
             StringBuilder sb = new StringBuilder();
             for (Condition<TitanElement> c : condition.getChildren()) {
-                String sub = buildQueryFilter(c,informations);
-                if (StringUtils.isBlank(sub)) continue;
-                if (!sub.startsWith("-")) sb.append("+");
+                String sub = buildQueryFilter(c, informations);
+
+                if (StringUtils.isBlank(sub))
+                    continue;
+
+                // we don't have to add "+" which means AND iff
+                // a. it's a NOT query,
+                // b. expression is a single statement in the AND.
+                if (!sub.startsWith("-") && numChildren > 1)
+                    sb.append("+");
+
                 sb.append(sub).append(" ");
             }
             return sb.toString();
