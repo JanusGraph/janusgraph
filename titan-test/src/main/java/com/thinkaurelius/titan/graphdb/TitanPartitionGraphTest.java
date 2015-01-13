@@ -126,15 +126,15 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertTrue(getId(g)>0);
             gids[i]=getId(g);
             if (i>0) {
-                g.addEdge("base",tx.v(gids[0]));
+                g.addEdge("base",getV(tx,gids[0]));
             }
             if (i%2==1) {
-                g.addEdge("one",tx.v(gids[i-1]));
+                g.addEdge("one",getV(tx,gids[i-1]));
             }
         }
 
         for (int i = 0; i < numG; i++) {
-            Vertex g = tx.v(gids[i]);
+            Vertex g = getV(tx,gids[i]);
             assertCount(1,g.bothE("one"));
             assertCount(1, g.toE(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
             assertCount(0, g.toE(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
@@ -152,7 +152,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             long gId = gids[i];
             assertTrue(idManager.isPartitionedVertex(gId));
             assertEquals(idManager.getCanonicalVertexId(gId),gId);
-            TitanVertex g = tx.v(gId);
+            TitanVertex g = getV(tx,gId);
             final int canonicalPartition = getPartitionID(g,idManager);
             assertEquals(g,(Vertex)getOnlyElement(tx.V().has("gid",i)));
             assertEquals(i,g.<Integer>value("gid").intValue());
@@ -187,7 +187,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         Multiset<Integer> partitions = HashMultiset.create();
 
         for (int t=1;t<=numTx;t++) {
-            TitanVertex g1 = tx.v(gids[0]), g2 = tx.v(gids[1]);
+            TitanVertex g1 = getV(tx,gids[0]), g2 = getV(tx,gids[1]);
             assertNotNull(g1);
             TitanVertex[] vs = new TitanVertex[vPerTx];
             for (int vi=0;vi<vPerTx;vi++) {
@@ -205,8 +205,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             newTx();
             //Verify that all elements are in the same partition
             TitanTransaction txx = graph.buildTransaction().readOnly().start();
-            g1 = tx.v(gids[0]);
-            g2 = tx.v(gids[1]);
+            g1 = getV(tx,gids[0]);
+            g2 = getV(tx,gids[1]);
             int partition = -1;
             for (int vi=0;vi<vPerTx;vi++) {
                 assertTrue(vs[vi].hasId());
@@ -214,7 +214,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
                 if (partition<0) partition=pid;
                 else assertEquals(partition,pid);
                 int numRels = 0;
-                TitanVertex v = txx.v(vs[vi].longId());
+                TitanVertex v = getV(txx,vs[vi].longId());
                 for (TitanRelation r : v.query().relations()) {
                     numRels++;
                     assertEquals(partition,getPartitionID(r,idManager));
@@ -233,7 +233,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         newTx();
         //Verify edge querying across partitions
-        TitanVertex g1 = tx.v(gids[0]);
+        TitanVertex g1 = getV(tx,gids[0]);
         assertEquals(0, g1.<Integer>value("gid").intValue());
         assertEquals("group", g1.label());
         assertCount(names.size(), g1.properties("name"));
@@ -257,7 +257,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             for (Integer part : parts) partarr[i++]=part;
             TitanTransaction tx2 = graph.buildTransaction().restrictedPartitions(partarr).readOnly().start();
             //Copied from above
-            g1 = tx2.v(gids[0]);
+            g1 = getV(tx2,gids[0]);
             assertEquals(0, g1.<Integer>value("gid").intValue());
             assertEquals("group", g1.label());
             assertTrue(names.size() >= g1.properties("name").count().next());
@@ -266,7 +266,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertCount(numV * 2, g1.bothE("knows"));
 
             //Test local intersection
-            TitanVertex g2 = tx2.v(gids[1]);
+            TitanVertex g2 = getV(tx2,gids[1]);
             VertexList v1 = g1.query().direction(Direction.IN).labels("knows").vertexIds();
             VertexList v2 = g2.query().direction(Direction.IN).labels("knows").vertexIds();
             assertEquals(numV, v1.size());

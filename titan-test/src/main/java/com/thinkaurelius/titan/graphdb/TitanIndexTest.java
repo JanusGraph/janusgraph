@@ -868,13 +868,13 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         vs[2] = tx.addVertex("name","Tall Long Tiger","age",75);
         vs[3] = tx.addVertex("name","Long John Don","age",15);
         newTx();
-        vs[2] = tx.v(vs[2]);
+        vs[2] = getV(tx,vs[2]);
         vs[2].remove();
-        vs[3] = tx.v(vs[3]);
+        vs[3] = getV(tx,vs[3]);
         vs[3].singleProperty("name", "Bad Boy Badsy");
         vs[3].property("age").remove();
         newTx();
-        vs[0] = tx.v(vs[0]);
+        vs[0] = getV(tx,vs[0]);
         vs[0].singleProperty("age", 66);
         newTx();
 
@@ -1131,8 +1131,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has(LABEL_NAME,"event"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
 
-        v1 = tx.v(v1Id);
-        v2 = tx.v(v1Id);
+        v1 = getV(tx,v1Id);
+        v2 = getV(tx,v1Id);
         assertNotNull(v1);
         assertNotNull(v2);
 
@@ -1146,8 +1146,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,0,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
 
 
-        v1 = tx.v(v1Id);
-        v2 = tx.v(v2Id);
+        v1 = getV(tx,v1Id);
+        v2 = getV(tx,v2Id);
         assertNull(v1);
         assertNull(v2);
     }
@@ -1194,11 +1194,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.EDGE,1,new boolean[]{true,true},"index2");
         evaluateQuery(tx.query().has("name","v2 likes v3").orderBy("time", decr),
                 ElementCategory.EDGE,1,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
-        v1 = tx.v(v1.id());
-        v2 = tx.v(v2.id());
-        v3 = tx.v(v3.id());
-        e1 = tx.e(e1Id);
-        e2 = tx.e(e1Id);
+        v1 = getV(tx,v1.id());
+        v2 = getV(tx,v2.id());
+        v3 = getV(tx,v3.id());
+        e1 = getE(tx,e1Id);
+        e2 = getE(tx,e1Id);
         assertNotNull(v1);
         assertNotNull(v2);
         assertNotNull(v3);
@@ -1217,11 +1217,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("name","v2 likes v3").orderBy("time", decr),
                 ElementCategory.EDGE,0,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
 
-        v1 = tx.v(v1.id());
-        v2 = tx.v(v2.id());
-        v3 = tx.v(v3.id());
-        e1 = tx.e(e1Id);
-        e2 = tx.e(e1Id);
+        v1 = getV(tx,v1.id());
+        v2 = getV(tx,v2.id());
+        v3 = getV(tx,v3.id());
+        e1 = getE(tx,e1Id);
+        e2 = getE(tx,e1Id);
         assertNotNull(v1);
         assertNotNull(v2);
         assertNotNull(v3);
@@ -1330,18 +1330,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanTransaction vertexDeleter = graph.newTransaction();
         TitanTransaction propDeleter = graph.newTransaction();
 
-        vertexDeleter.v(id).remove();
+        getV(vertexDeleter,id).remove();
         if (null == updatedValue)
-            propDeleter.v(id).property(propName).remove();
+            getV(propDeleter,id).property(propName).remove();
         else
-            propDeleter.v(id).singleProperty(propName,updatedValue);
+            getV(propDeleter,id).singleProperty(propName,updatedValue);
 
         vertexDeleter.commit();
         propDeleter.commit();
 
         // The vertex must not exist after deletion
         graph.tx().rollback();
-        assertEquals(null, graph.v(id));
+        assertEquals(null, getV(graph,id));
         assertEmpty(graph.V().has(propName));
         if (null != updatedValue)
             assertEmpty(graph.V().has(propName, updatedValue));

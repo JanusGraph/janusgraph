@@ -167,28 +167,13 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public TitanVertex v(final Object id) {
-        return getAutoStartTx().v(id);
+    public GraphTraversal<Vertex, Vertex> V(Object... ids) {
+        return getAutoStartTx().V(ids);
     }
 
     @Override
-    public TitanEdge e(final Object id) {
-        return getAutoStartTx().e(id);
-    }
-
-    @Override
-    public GraphTraversal<Vertex, Vertex> V() {
-        return getAutoStartTx().V();
-    }
-
-    @Override
-    public GraphTraversal<Edge, Edge> E() {
-        return getAutoStartTx().E();
-    }
-
-    @Override
-    public <S> GraphTraversal<S, S> of() {
-        return getAutoStartTx().of();
+    public GraphTraversal<Edge, Edge> E(Object... ids) {
+        return getAutoStartTx().E(ids);
     }
 
     @Override
@@ -205,11 +190,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TitanVertex addVertex(String vertexLabel) {
         return getAutoStartTx().addVertex(vertexLabel);
-    }
-
-    @Override
-    public Map<Long,TitanVertex> vertices(long... ids) {
-        return getAutoStartTx().vertices(ids);
     }
 
     @Override

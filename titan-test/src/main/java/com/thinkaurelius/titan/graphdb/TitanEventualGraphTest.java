@@ -90,8 +90,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
         TitanTransaction tx2 = graph.buildTransaction().commitTime(1000, unit).start();
-        v1 = tx2.v(id1);
-        v2 = tx2.v(id2);
+        v1 = getV(tx2,id1);
+        v2 = getV(tx2,id2);
         for (VertexProperty prop : v1.properties(name).toList()) {
             if (features.hasTimestamps()) {
                 Timestamp t = prop.value("^timestamp");
@@ -110,7 +110,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx2.commit();
         Object edgeId = edge.id();
 
-        Vertex afterTx2 = graph.v(id1);
+        Vertex afterTx2 = getV(graph,id1);
 
         // Verify that "name" property is gone
         assertFalse(afterTx2.keys().contains(name));
@@ -119,42 +119,42 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         // Verify that the edge is properly registered with the endpoint vertex
         assertCount(1, afterTx2.inE("parent"));
         // Verify that edge is registered under the id
-        assertNotNull(graph.e(edgeId));
+        assertNotNull(getE(graph,edgeId));
         graph.tx().commit();
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
         TitanTransaction tx3 = graph.buildTransaction().commitTime(200, unit).start();
-        v1 = tx3.v(id1);
+        v1 = getV(tx3,id1);
         v1.property(address).remove();
         tx3.commit();
 
-        Vertex afterTx3 = graph.v(id1);
+        Vertex afterTx3 = getV(graph,id1);
         graph.tx().commit();
         // Verify that "address" is still set
         assertEquals("xyz", afterTx3.value(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
         TitanTransaction tx4 = graph.buildTransaction().commitTime(2000, unit).start();
-        v2 = tx4.v(id2);
+        v2 = getV(tx4,id2);
         v2.singleProperty(age, "15");
-        tx4.e(edgeId).remove();
+        getE(tx4,edgeId).remove();
         tx4.commit();
 
-        Vertex afterTx4 = graph.v(id2);
+        Vertex afterTx4 = getV(graph,id2);
         // Verify that "age" property is modified
         assertEquals("15", afterTx4.value(age));
         // Verify that edge is no longer registered with the endpoint vertex
         assertCount(0, afterTx4.outE("parent"));
         // Verify that edge entry disappeared from id registry
-        assertNull(graph.e(edgeId));
+        assertNull(getE(graph,edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
         TitanTransaction tx5 = graph.buildTransaction().commitTime(1500, unit).start();
-        v2 = tx5.v(id2);
+        v2 = getV(tx5,id2);
         v2.singleProperty(age, "16");
         tx5.commit();
-        Vertex afterTx5 = graph.v(id2);
+        Vertex afterTx5 = getV(graph,id2);
 
         // Verify that the property value is unchanged
         assertEquals("15", afterTx5.value(age));
@@ -260,7 +260,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx2.commit(); //tx2 should win using time-based eventual consistency
 
         newTx();
-        v = tx.v(vid);
+        v = getV(tx,vid);
         assertEquals(6.0,v.<Decimal>value("weight").doubleValue(),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(wintx,p.<Integer>value("sig").intValue());
@@ -297,8 +297,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
     private void processTx(TitanTransaction tx, int txid, long vid, long uid) {
-        TitanVertex v = tx.v(vid);
-        TitanVertex u = tx.v(uid);
+        TitanVertex v = getV(tx,vid);
+        TitanVertex u = getV(tx,uid);
         assertEquals(5.0,v.<Decimal>value("weight").doubleValue(),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(1,p.<Integer>value("sig").intValue());

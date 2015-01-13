@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import com.thinkaurelius.titan.graphdb.olap.oldfulgora.*;
 import com.tinkerpop.gremlin.process.computer.*;
+import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -104,8 +105,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             public void process(TitanVertex vertex, ScanMetrics metrics) {
                 long outDegree = vertex.outE("knows").count().next();
                 assertEquals(0,vertex.inE("knows").count().next().longValue());
-                assertEquals(1,vertex.properties("uid").count().next().longValue());
-                assertTrue(vertex.<Integer>value("uid",0) > 0);
+                assertEquals(1, vertex.properties("uid").count().next().longValue());
+                assertTrue(vertex.<Integer>property("uid").orElse(0) > 0);
                 metrics.incrementCustom(DEGREE_COUNT,outDegree);
                 metrics.incrementCustom(VERTEX_COUNT);
             }
@@ -153,15 +154,15 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         long v1id = getId(v1);
         assertTrue(v3id>0);
 
-        v3 = tx.v(v3id);
+        v3 = getV(tx, v3id);
         assertNotNull(v3);
         v3.remove();
         tx.commit();
 
         TitanTransaction xx = graph.buildTransaction().checkExternalVertexExistence(false).start();
-        v3 = xx.v(v3id);
+        v3 = getV(xx, v3id);
         assertNotNull(v3);
-        v1 = xx.v(v1id);
+        v1 = getV(xx, v1id);
         assertNotNull(v1);
         v3.property("name","deleted");
         v3.addEdge("knows",v1);
@@ -169,10 +170,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         newTx();
         try {
-            v3 = tx.v(v3id);
+            v3 = getV(tx, v3id);
             fail();
         } catch (NoSuchElementException e) {}
-        v1 = tx.v(v1id);
+        v1 = getV(tx, v1id);
         assertNotNull(v1);
         assertEquals(v3id,v1.in("knows").next().id());
         tx.commit();
@@ -204,7 +205,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int totalCount = 0;
         for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
             int degree = entry.getValue();
-            Vertex v = tx.v(entry.getKey().longValue());
+            Vertex v = getV(tx, entry.getKey().longValue());
             int count = v.value("uid");
             assertEquals(count,degree);
             totalCount+= degree;
@@ -253,7 +254,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         public static final String DEGREE = "degree";
         public static final MessageCombiner<Integer> ADDITION = (a,b) -> a+b;
-        public static final MessageScope.Local<Integer> DEG_MSG = MessageScope.Local.of(() -> GraphTraversal.<Vertex>of().inE());
+        public static final MessageScope.Local<Integer> DEG_MSG = MessageScope.Local.of(AnonymousGraphTraversal.Tokens.__::inE);
 
         private final int length;
 
@@ -304,6 +305,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         @Override
+        public VertexProgram<Integer> clone() throws CloneNotSupportedException {
+            return this;
+        }
+
+        @Override
         public Features getFeatures() {
             return new Features() {
                 @Override
@@ -317,6 +323,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 }
             };
         }
+
+
     }
 
     public static class DegreeMapper implements MapReduce<Long,Integer,Long,Integer,Map<Long,Integer>> {
@@ -347,6 +355,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         public String getMemoryKey() {
             return DEGREE_RESULT;
         }
+
+        @Override
+        public MapReduce<Long, Integer, Long, Integer, Map<Long, Integer>> clone() throws CloneNotSupportedException {
+            return this;
+        }
     }
 
 
@@ -368,7 +381,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         for (Map.Entry<Long,Degree> entry : degrees.entries()) {
             Degree degree = entry.getValue();
             assertEquals(degree.in+degree.out,degree.both);
-            Vertex v = tx.v(entry.getKey().longValue());
+            Vertex v = getV(tx, entry.getKey().longValue());
             int count = v.value("uid");
             assertEquals(count,degree.out);
             int numvals = v.value("numvals");
@@ -500,7 +513,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         System.out.println(String.format("Computing PR on graph with %s vertices took: %s ms",numV,w.elapsed(TimeUnit.MILLISECONDS)));
         double totalPr = 0.0;
         for (Map.Entry<Long,PageRank> entry : ranks.entries()) {
-            Vertex u = tx.v(entry.getKey());
+            Vertex u = getV(tx, entry.getKey());
             int distance = u.<Integer>value("distance");
             double pr = entry.getValue().getPr();
             assertEquals(correctPR[distance],pr,EPSILON);
@@ -706,7 +719,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         for (Map.Entry<Long,Integer> entry : distances.entries()) {
             int dist = entry.getValue();
             assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
-            Vertex v = tx.v(entry.getKey().longValue());
+            Vertex v = getV(tx, entry.getKey().longValue());
             assertEquals(v.<Integer>value("distance").intValue(),dist);
         }
     }

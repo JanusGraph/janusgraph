@@ -41,6 +41,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -355,10 +356,17 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static void assertMissing(TitanGraphTransaction g, Object vid) {
-        try {
-            g.v(vid);
-            Assert.fail();
-        } catch (NoSuchElementException e) {}
+        assertFalse(g.V(vid).hasNext());
+    }
+
+    public static TitanVertex getV(TitanGraphTransaction g, Object vid) {
+        if (!g.V(vid).hasNext()) return null;
+        return (TitanVertex)g.V(vid).next();
+    }
+
+    public static TitanEdge getE(TitanGraphTransaction g, Object eid) {
+        if (!g.E(eid).hasNext()) return null;
+        return (TitanEdge)g.E(eid).next();
     }
 
     public static String n(Object obj) {

@@ -50,6 +50,8 @@ public interface TitanTransaction extends TitanGraphTransaction {
     /**
      * Retrieves the vertex for the specified id.
      *
+     * This method is intended for internal use only. Use {@link com.tinkerpop.gremlin.structure.Graph#V(Object...)} instead.
+     *
      * @param id id of the vertex to retrieve
      * @return vertex with the given id if it exists, else null
      */

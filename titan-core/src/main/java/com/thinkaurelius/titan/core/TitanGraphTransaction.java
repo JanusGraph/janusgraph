@@ -45,19 +45,6 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
     @Override
     public TitanVertex addVertex(Object... objects);
 
-    @Override
-    public TitanVertex v(Object id);
-
-    /**
-     * Retrieves the vertices for the given ids and returns a map from those ids to the corresponding vertices.
-     * If a given id does not identify a vertex, it is not included in the returned map
-     *
-     * @param ids array of ids for which to retrieve vertices
-     * @return map from ids to corresponding vertices
-     * does not identify a vertex
-     */
-    public Map<Long,TitanVertex> vertices(long... ids);
-
     /**
      * @return
      * @see TitanGraph#query()

@@ -20,7 +20,6 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.io.kryo.GremlinKryo;
 import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
@@ -35,17 +34,17 @@ import java.util.Set;
  */
 public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
-    @Override
-    public GremlinKryo createConfiguredGremlinKryo() {
-        return GremlinKryo.build()
-                .addCustom(RelationIdentifier.class)
-                .create();
-    }
+//    @Override
+//    public GremlinKryo createConfiguredGremlinKryo() {
+//        return GremlinKryo.build()
+//                .addCustom(RelationIdentifier.class)
+//                .create();
+//    }
 
-    @Override
-    public SimpleModule createConfiguredGraphSONModule() {
-        return new TitanGraphSONModule();
-    }
+//    @Override
+//    public SimpleModule createConfiguredGraphSONModule() {
+//        return new TitanGraphSONModule();
+//    }
 
     @Override
     public <ID> ID reconstituteGraphSONIdentifier(final Class<? extends Element> clazz, final Object id) {
@@ -90,13 +89,12 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     public abstract ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName);
 
     @Override
-    public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith) {
+    public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
         this.createIndices((TitanGraph) g, loadGraphWith.value());
-        super.loadGraphData(g, loadGraphWith);
+        super.loadGraphData(g, loadGraphWith, testClass, testName);
     }
 
     private void createIndices(final TitanGraph g, final LoadGraphWith.GraphData graphData) {
-
         TitanManagement mgmt = g.openManagement();
         if (graphData.equals(LoadGraphWith.GraphData.GRATEFUL)) {
             VertexLabel artist = mgmt.makeVertexLabel("artist").make();
