@@ -59,7 +59,7 @@
     </scm>
     <properties>
         <titan.compatible.versions />
-        <tinkerpop.version>3.0.0.M6</tinkerpop.version>
+        <tinkerpop.version>3.0.0-SNAPSHOT</tinkerpop.version>
         <junit.version>4.11</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <cassandra.version>2.0.8</cassandra.version>
@@ -124,8 +124,7 @@
         <!-- TODO gremlin-server integration -->
         <!-- <module>titan-rexster</module> -->
         <module>titan-all</module>
-        <!-- TODO titan-hadoop, gremlin-server (re)integration -->
-        <!-- <module>titan-dist</module> -->
+        <module>titan-dist</module>
         <module>titan-doc</module>
         <module>titan-solr</module>
     </modules>
@@ -507,6 +506,11 @@
                 <version>0.9.9-RC1</version>
             </dependency>
             <dependency>
+                <groupId>xml-apis</groupId>
+                <artifactId>xml-apis</artifactId>
+                <version>1.3.04</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.zookeeper</groupId>
                 <artifactId>zookeeper</artifactId>
                 <version>${zookeeper.version}</version>
@@ -707,7 +711,7 @@
             <dependency>
                 <groupId>jline</groupId>
                 <artifactId>jline</artifactId>
-                <version>1.0</version>
+                <version>2.11</version>
             </dependency>
             <!-- Force newer Snappy-java because 1.4.0.1 is broken on Mac OS X with JDK 7 -->
             <dependency>

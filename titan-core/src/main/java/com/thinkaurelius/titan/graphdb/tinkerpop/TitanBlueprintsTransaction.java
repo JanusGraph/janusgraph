@@ -87,69 +87,54 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return vertex;
     }
 
-    @Override
-    public TitanVertex v(final Object id) {
-        if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, null);
-
-        long vertexId;
-        if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
-            vertexId = ((TitanVertex) id).longId();
-        else if (id instanceof Long) {
-            vertexId = (Long) id;
-        } else if (id instanceof Number) {
-            vertexId = ((Number) id).longValue();
-        } else {
-            try {
-                vertexId = Long.valueOf(id.toString()).longValue();
-            } catch (NumberFormatException e) {
-                throw Graph.Exceptions.elementNotFound(Vertex.class, null);
-            }
-        }
-        TitanVertex vertex = getVertex(vertexId);
-
-        if (null == vertex)
-            throw Graph.Exceptions.elementNotFound(Vertex.class, id);
-        else
-            return vertex;
-
-    }
-
-    @Override
-    public TitanEdge e(final Object id) {
-        if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, null);
-        RelationIdentifier rid = null;
-
-        try {
-            if (id instanceof TitanEdge) rid = (RelationIdentifier) ((TitanEdge) id).id();
-            else if (id instanceof RelationIdentifier) rid = (RelationIdentifier) id;
-            else if (id instanceof String) rid = RelationIdentifier.parse((String) id);
-            else if (id instanceof long[]) rid = RelationIdentifier.get((long[]) id);
-            else if (id instanceof int[]) rid = RelationIdentifier.get((int[]) id);
-        } catch (IllegalArgumentException e) {
-            //swallow since rid will be null and exception thrown below
-        }
-
-        TitanEdge edge = rid!=null?rid.findEdge(this):null;
-        if (null == edge)
-            throw Graph.Exceptions.elementNotFound(Edge.class, id);
-        else
-            return edge;
-    }
-
-    @Override
-    public GraphTraversal<Vertex, Vertex> V() {
-        return new TitanGraphTraversal<>(this, Vertex.class);
-    }
-
-    @Override
-    public GraphTraversal<Edge, Edge> E() {
-        return new TitanGraphTraversal<>(this, Edge.class);
-    }
-
-    @Override
-    public <S> GraphTraversal<S, S> of() {
-        return new TitanTraversal<>(this);
-    }
+//    @Override
+//    public TitanVertex v(final Object id) {
+//        if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, null);
+//
+//        long vertexId;
+//        if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
+//            vertexId = ((TitanVertex) id).longId();
+//        else if (id instanceof Long) {
+//            vertexId = (Long) id;
+//        } else if (id instanceof Number) {
+//            vertexId = ((Number) id).longValue();
+//        } else {
+//            try {
+//                vertexId = Long.valueOf(id.toString()).longValue();
+//            } catch (NumberFormatException e) {
+//                throw Graph.Exceptions.elementNotFound(Vertex.class, null);
+//            }
+//        }
+//        TitanVertex vertex = getVertex(vertexId);
+//
+//        if (null == vertex)
+//            throw Graph.Exceptions.elementNotFound(Vertex.class, id);
+//        else
+//            return vertex;
+//
+//    }
+//
+//    @Override
+//    public TitanEdge e(final Object id) {
+//        if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, null);
+//        RelationIdentifier rid = null;
+//
+//        try {
+//            if (id instanceof TitanEdge) rid = (RelationIdentifier) ((TitanEdge) id).id();
+//            else if (id instanceof RelationIdentifier) rid = (RelationIdentifier) id;
+//            else if (id instanceof String) rid = RelationIdentifier.parse((String) id);
+//            else if (id instanceof long[]) rid = RelationIdentifier.get((long[]) id);
+//            else if (id instanceof int[]) rid = RelationIdentifier.get((int[]) id);
+//        } catch (IllegalArgumentException e) {
+//            //swallow since rid will be null and exception thrown below
+//        }
+//
+//        TitanEdge edge = rid!=null?rid.findEdge(this):null;
+//        if (null == edge)
+//            throw Graph.Exceptions.elementNotFound(Edge.class, id);
+//        else
+//            return edge;
+//    }
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {

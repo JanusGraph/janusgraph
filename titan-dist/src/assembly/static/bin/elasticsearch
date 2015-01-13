@@ -122,13 +122,13 @@ launch_service()
     # The es-foreground option will tell Elasticsearch not to close stdout/stderr, but it's up to us not to daemonize.
     if [ "x$daemonized" = "x" ]; then
         es_parms="$es_parms -Des.foreground=yes"
-        exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.conf="$ES_HOME/conf" -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
+        exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.conf="$ES_HOME/conf/es" -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
                 org.elasticsearch.bootstrap.Elasticsearch
         # exec without running it in the background, makes it replace this shell, we'll never get here...
         # no need to return something
     else
         # Startup Elasticsearch, background it, and write the pid.
-        exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.conf="$ES_HOME/conf" -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
+        exec "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.conf="$ES_HOME/conf/es" -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
                     org.elasticsearch.bootstrap.Elasticsearch <&- &
         return $?
     fi
@@ -157,7 +157,7 @@ eval set -- "$args"
 while true; do
     case $1 in
         -v)
-            "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.conf="$ES_HOME/conf" -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
+            "$JAVA" $JAVA_OPTS $ES_JAVA_OPTS $es_parms -Des.path.conf="$ES_HOME/conf/es" -Des.path.home="$ES_HOME" -cp "$ES_CLASSPATH" $props \
                     org.elasticsearch.Version
             exit 0
         ;;

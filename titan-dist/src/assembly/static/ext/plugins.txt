@@ -1,0 +1,2 @@
+com.tinkerpop.gremlin.console.plugin.DriverGremlinPlugin
+com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanGremlinPlugin
