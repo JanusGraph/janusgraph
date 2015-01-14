@@ -49,8 +49,4 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         return true;
     }
 
-    @Override
-    public Optional<Set<Artifact>> additionalDependencies() {
-        return Optional.empty();
-    }
 }
