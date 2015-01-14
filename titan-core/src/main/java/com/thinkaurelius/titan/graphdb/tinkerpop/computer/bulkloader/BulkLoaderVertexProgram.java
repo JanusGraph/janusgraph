@@ -10,6 +10,7 @@ import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.Messenger;
 import com.tinkerpop.gremlin.process.computer.VertexProgram;
 import com.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
+import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -37,10 +38,10 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BulkLoaderVertexProgram.class);
 
     private static final String CONFIGURATION_PREFIX = "titan.bulkLoaderVertexProgram.";
-    private static final String TITAN_ID = Graph.Key.hide("titan.id");
+    private static final String TITAN_ID = "titan.id";
     private static final ImmutableSet<String> elementComputeKeys = ImmutableSet.of(TITAN_ID);
 
-    private MessageScope.Local messageScope = MessageScope.Local.of(() -> GraphTraversal.<Vertex>of().inE());
+    private MessageScope messageScope = MessageScope.Local.of(AnonymousGraphTraversal.Tokens.__::inE);
     private Configuration configuration;
     private TitanGraph graph;
 
@@ -115,10 +116,10 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             final Map<Long, Long> idPairs = new HashMap<>();
             messenger.receiveMessages(this.messageScope).forEach(idPair -> idPairs.put(idPair[0], idPair[1]));
             // get the titan vertex out of titan given the dummy id property
-            final Vertex titanVertex = graph.v(vertex.value(TITAN_ID));
+            final Vertex titanVertex = graph.V(vertex.value(TITAN_ID)).next();
             // for all the incoming edges of the vertex, get the incoming adjacent vertex and write the edge and its properties
             vertex.outE().forEachRemaining(edge -> {
-                final Vertex outgoingAdjacent = graph.v(idPairs.get(Long.valueOf(edge.inV().id().next().toString())));
+                final Vertex outgoingAdjacent = graph.V(idPairs.get(Long.valueOf(edge.inV().id().next().toString()))).next();
                 final Edge titanEdge = titanVertex.addEdge(edge.label(), outgoingAdjacent);
                 edge.properties().forEachRemaining(property -> titanEdge.<Object>property(property.key(), property.value()));
             });
@@ -141,6 +142,11 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
         return ImmutableSet.of(messageScope);
+    }
+
+    @Override
+    public VertexProgram<Long[]> clone() throws CloneNotSupportedException {
+        return this;
     }
 
     @Override

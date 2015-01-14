@@ -43,11 +43,6 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
     }
 
     @Override
-    public boolean isHidden() {
-        return Graph.Key.isHidden(type.name());
-    }
-
-    @Override
     public TitanElement element() {
         return relation;
     }

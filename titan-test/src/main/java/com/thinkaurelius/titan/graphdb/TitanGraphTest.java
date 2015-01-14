@@ -2,37 +2,29 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.core.util.ManagementUtil;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.log.*;
-import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.util.ManagementUtil;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -41,14 +33,9 @@ import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-
-import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
-
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
+import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
@@ -58,6 +45,8 @@ import com.thinkaurelius.titan.graphdb.schema.SchemaContainer;
 import com.thinkaurelius.titan.graphdb.schema.VertexLabelDefinition;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
@@ -67,11 +56,13 @@ import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.graph.step.map.LocalStep;
+import com.tinkerpop.gremlin.process.graph.step.map.OrderStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
-import com.tinkerpop.gremlin.structure.*;
-
-import static com.thinkaurelius.titan.testutil.TitanAssert.*;
-
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -84,10 +75,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
+import static com.thinkaurelius.titan.testutil.TitanAssert.*;
+import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
 import static com.tinkerpop.gremlin.structure.Direction.*;
-import static com.tinkerpop.gremlin.structure.Order.*;
+import static com.tinkerpop.gremlin.structure.Order.decr;
+import static com.tinkerpop.gremlin.structure.Order.incr;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -3147,13 +3142,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(numV/5, 1, sv[0].outE("knows").has("weight",1), TitanVertexStep.class);
         assertNumStep(numV, 1, sv[0].outE("knows"), TitanVertexStep.class);
         assertNumStep(numV, 1, sv[0].out("knows"), TitanVertexStep.class);
-        assertNumStep(10, 1, sv[0].local()outE("knows").localLimit(10), TitanVertexStep.class);
-        assertNumStep(10, 2, sv[0].outE("knows").localRange(10, 20), TitanVertexStep.class, LocalRangeStep.class);
-        assertNumStep(numV, 2, sv[0].outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderByStep.class);
-        assertNumStep(10, 1, sv[0].outE("knows").order().by("weight", decr).localLimit(10), TitanVertexStep.class);
-        assertNumStep(numV/5, 2, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1), TitanVertexStep.class, OrderByStep.class);
-        assertNumStep(10, 1, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1).localLimit(10), TitanVertexStep.class);
-        assertNumStep(5, 2, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1).localRange(10, 15), TitanVertexStep.class, LocalRangeStep.class);
+        assertNumStep(10, 1, sv[0].local(__.outE("knows").limit(10)), TitanVertexStep.class);
+        assertNumStep(10, 2, sv[0].local(__.outE("knows").range(10, 20)), LocalStep.class);
+        assertNumStep(numV, 2, sv[0].outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderStep.class);
+        assertNumStep(10, 1, sv[0].local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
+        assertNumStep(numV/5, 2, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1), TitanVertexStep.class, OrderStep.class);
+        assertNumStep(10, 1, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).limit(10)), TitanVertexStep.class);
+        assertNumStep(5, 2, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).range(10, 15)), LocalStep.class);
 
         //Global graph queries
         assertNumStep(1, 1, graph.V().has("id", numV / 5), TitanGraphStep.class);
@@ -3165,15 +3160,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         assertNumStep(superV*(numV/5), 2, graph.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV*(numV/5*2), 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3).localLimit(10), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3).orderBy("weight",decr).localLimit(10), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
         clopen(option(USE_MULTIQUERY),true);
 
         assertNumStep(superV*(numV/5), 2, graph.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV*(numV/5*2), 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id", sid).outE("knows").between("weight", 1, 3).localLimit(10), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3).order().by("weight",decr).localLimit(10), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
     }
 
@@ -3189,7 +3184,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(expectedResults,num);
 
 //        traversal.getStrategies().apply(TraversalEngine.STANDARD);
-        List<Step> steps = traversal.getSteps();
+        List<Step> steps = traversal.asAdmin().getSteps();
         Set<Class<? extends Step>> expSteps = Sets.newHashSet(expectedStepTypes);
         int numSteps = 0;
         for (Step s : steps) {

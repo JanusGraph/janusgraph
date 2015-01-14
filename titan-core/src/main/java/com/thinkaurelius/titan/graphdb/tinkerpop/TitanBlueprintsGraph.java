@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
@@ -14,6 +15,7 @@ import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.io.DefaultIo;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +40,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsGraph.class);
+
+
+    @Override
+    public Io io() {
+        return new TitanIo(this);
+    }
 
     // ########## TRANSACTION HANDLING ###########################
 
@@ -164,6 +172,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TitanVertex addVertex(Object... keyValues) {
         return getAutoStartTx().addVertex(keyValues);
+    }
+
+
+    @Override
+    public com.tinkerpop.gremlin.structure.Graph.Iterators iterators() {
+        return getAutoStartTx().iterators();
     }
 
     @Override

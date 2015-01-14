@@ -16,6 +16,8 @@ import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import com.thinkaurelius.titan.graphdb.olap.oldfulgora.*;
 import com.tinkerpop.gremlin.process.computer.*;
+import com.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
+import com.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
@@ -250,7 +252,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
     }
 
-    public static class DegreeCounter implements VertexProgram<Integer> {
+    public static class DegreeCounter extends StaticVertexProgram<Integer> {
 
         public static final String DEGREE = "degree";
         public static final MessageCombiner<Integer> ADDITION = (a,b) -> a+b;
@@ -305,11 +307,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         @Override
-        public VertexProgram<Integer> clone() throws CloneNotSupportedException {
-            return this;
-        }
-
-        @Override
         public Features getFeatures() {
             return new Features() {
                 @Override
@@ -327,7 +324,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     }
 
-    public static class DegreeMapper implements MapReduce<Long,Integer,Long,Integer,Map<Long,Integer>> {
+    public static class DegreeMapper extends StaticMapReduce<Long,Integer,Long,Integer,Map<Long,Integer>> {
 
         public static final String DEGREE_RESULT = "degrees";
 
@@ -356,10 +353,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             return DEGREE_RESULT;
         }
 
-        @Override
-        public MapReduce<Long, Integer, Long, Integer, Map<Long, Integer>> clone() throws CloneNotSupportedException {
-            return this;
-        }
     }
 
 

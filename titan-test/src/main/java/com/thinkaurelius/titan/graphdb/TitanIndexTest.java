@@ -215,8 +215,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             for (String orderKey : new String[]{"time", "category"}) {
                 for (Order order : Order.values()) {
                     for (GraphTraversal<?,? extends Element> traversal : ImmutableList.of(
-                            tx.V().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
-                            tx.V().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
+                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP()),
+                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP())
                     )) {
                         verifyElementOrder(traversal.toList(),orderKey,order,expectedSize);
                     }
@@ -224,8 +224,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             }
         }
 
-        assertCount(3, tx.V().has("group", 3).orderBy("time", incr).range(0,3));
-        assertCount(3, tx.E().has("group", 3).orderBy("time", decr).range(0,3));
+        assertCount(3, tx.V().has("group", 3).order().by("time", incr).range(0,3));
+        assertCount(3, tx.E().has("group", 3).order().by("time", decr).range(0,3));
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
             assertCount(i, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
@@ -240,8 +240,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         }
 
         //Queries combining mixed and composite indexes
-        assertCount(4, tx.V().has("category", 1).interval("time", 10, 28));
-        assertCount(4, tx.E().has("category", 1).interval("time", 10, 28));
+        assertCount(4, tx.V().has("category", 1).between("time", 10, 28));
+        assertCount(4, tx.E().has("category", 1).between("time", 10, 28));
 
         assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
         offset = (19 * 50.0 / originalNumV);
@@ -268,8 +268,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             for (String orderKey : new String[]{"time", "category"}) {
                 for (Order order : Order.values()) {
                     for (GraphTraversal<?,? extends Element> traversal : ImmutableList.of(
-                            tx.V().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
-                            tx.V().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
+                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP()),
+                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP())
                     )) {
                         verifyElementOrder(traversal.toList(),orderKey,order,expectedSize);
                     }
@@ -277,8 +277,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             }
         }
 
-        assertCount(3, tx.V().has("group", 3).orderBy("time", incr).range(0,3));
-        assertCount(3, tx.E().has("group", 3).orderBy("time", decr).range(0,3));
+        assertCount(3, tx.V().has("group", 3).order().by("time", incr).range(0,3));
+        assertCount(3, tx.E().has("group", 3).order().by("time", decr).range(0,3));
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
             assertCount(i, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
@@ -293,8 +293,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         }
 
         //Queries combining mixed and composite indexes
-        assertCount(4, tx.V().has("category", 1).interval("time", 10, 28));
-        assertCount(4, tx.E().has("category", 1).interval("time", 10, 28));
+        assertCount(4, tx.V().has("category", 1).between("time", 10, 28));
+        assertCount(4, tx.E().has("category", 1).between("time", 10, 28));
 
         assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
         offset = (19 * 50.0 / originalNumV);

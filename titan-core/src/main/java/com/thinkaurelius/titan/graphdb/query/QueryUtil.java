@@ -37,18 +37,6 @@ public class QueryUtil {
         return limit;
     }
 
-    public static String[] hideKeys(String[] keys) {
-        if (keys==null) return null;
-        keys = Arrays.copyOf(keys,keys.length);
-        for (int i = 0; i < keys.length; i++) {
-            if (Graph.Key.isHidden(keys[i])) {
-                //Key that definitely does not exist
-                keys[i]= SystemTypeManager.NON_EXISTANT_TYPE;
-            } else keys[i]= Graph.Key.hide(keys[i]);
-        }
-        return keys;
-    }
-
     public static int convertLimit(long limit) {
         assert limit>=0;
         if (limit>=Integer.MAX_VALUE) return Integer.MAX_VALUE;

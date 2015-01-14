@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * TitanTransaction defines a transactional context for a {@link TitanGraph}. Since TitanGraph is a transactional graph
@@ -56,6 +58,11 @@ public interface TitanTransaction extends TitanGraphTransaction {
      * @return vertex with the given id if it exists, else null
      */
     public TitanVertex getVertex(long id);
+
+
+    public Iterable<TitanVertex> getVertices(long... ids);
+
+    public Iterable<TitanEdge> getEdges(RelationIdentifier... ids);
 
    /* ---------------------------------------------------------------
     * Closing and admin

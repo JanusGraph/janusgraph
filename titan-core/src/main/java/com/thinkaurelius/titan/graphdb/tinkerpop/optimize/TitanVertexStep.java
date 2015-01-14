@@ -9,10 +9,10 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.FastNoSuchElementException;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.HasContainer;
 
 import java.util.*;
 
@@ -21,14 +21,10 @@ import java.util.*;
  */
 public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex,E> {
 
-    public TitanVertexStep(VertexStep<E> step) {
-        super(step.getTraversal(),step.getReturnClass(),step.getDirection(),step.getEdgeLabels());
+    public TitanVertexStep(VertexStep<E> originalStep) {
+        super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
-    }
-
-    public boolean isEdgeStep() {
-        return Edge.class.isAssignableFrom(getReturnClass());
     }
 
     private boolean initialized = false;
@@ -59,7 +55,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         initialized = true;
         if (useMultiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
-            TitanMultiVertexQuery mquery = ((TitanTransaction)traversal.sideEffects().getGraph()).multiQuery();
+            TitanMultiVertexQuery mquery = TitanTraversalUtil.getTx(traversal).multiQuery();
             List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
             starts.forEachRemaining(v -> { vertices.add(v); mquery.addVertex(v.get()); });
             starts.add(vertices.iterator());

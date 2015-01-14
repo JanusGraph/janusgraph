@@ -61,10 +61,7 @@ import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.thinkaurelius.titan.util.stats.MetricManager;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
@@ -365,19 +362,20 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
-    public Map<Long,TitanVertex> vertices(long... ids) {
+    public Iterable<TitanVertex> getVertices(long... ids) {
         verifyOpen();
-        Preconditions.checkArgument(ids != null, "Need to provide valid ids");
+        if (ids==null) return (Iterable)getInternalVertices();
+
         if (null != config.getGroupName()) {
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
         }
-        Map<Long,TitanVertex> result = new HashMap<Long,TitanVertex>(ids.length);
+        List<TitanVertex> result = new ArrayList<TitanVertex>(ids.length);
         LongArrayList vids = new LongArrayList(ids.length);
         for (long id : ids) {
             if (isValidVertexId(id)) {
                 if (idInspector.isPartitionedVertex(id)) id=idManager.getCanonicalVertexId(id);
                 if (vertexCache.contains(id))
-                    result.put(id,vertexCache.get(id, existingVertexRetriever));
+                    result.add(vertexCache.get(id, existingVertexRetriever));
                 else
                     vids.add(id);
             }
@@ -387,13 +385,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             for (int i = 0; i < vids.size(); i++) {
                 if (!existence.get(i).isEmpty()) {
                     long id = vids.get(i);
-                    result.put(id,vertexCache.get(id, existingVertexRetriever));
+                    result.add(vertexCache.get(id, existingVertexRetriever));
                 }
             }
         }
         //Filter out potentially removed vertices
-        for (Iterator<Map.Entry<Long, TitanVertex>> iterator = result.entrySet().iterator(); iterator.hasNext(); ) {
-            if (iterator.next().getValue().isRemoved()) iterator.remove();
+        for (Iterator<TitanVertex> iterator = result.iterator(); iterator.hasNext(); ) {
+            if (iterator.next().isRemoved()) iterator.remove();
         }
         return result;
     }
@@ -521,9 +519,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         });
     }
 
-    public Iterable<Vertex> getVertices() {
-        return (Iterable)getInternalVertices();
-    }
 
     /*
      * ------------------------------------ Adding and Removing Relations ------------------------------------
@@ -768,10 +763,22 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
     }
 
-    public Iterable<Edge> getEdges() {
-        return new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.EDGE);
-    }
+    @Override
+    public Iterable<TitanEdge> getEdges(RelationIdentifier... ids) {
+        verifyOpen();
+        if (ids==null) new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.EDGE);
 
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();
+        }
+        List<TitanEdge> result = new ArrayList<>(ids.length);
+        for (RelationIdentifier id : ids) {
+            if (id==null) continue;
+            TitanEdge edge = id.findEdge(this);
+            if (edge!=null && !edge.isRemoved()) result.add(edge);
+        }
+        return result;
+    }
 
 
     /*
@@ -1035,7 +1042,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     }
                 }).iterator();
             } else {
-                return Iterators.emptyIterator();
+                return Collections.emptyIterator();
             }
         }
 
@@ -1053,7 +1060,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public Iterator<TitanRelation> execute(final VertexCentricQuery query, final SliceQuery sq, final Object exeInfo) {
             assert exeInfo==null;
             if (query.getVertex().isNew())
-                return Iterators.emptyIterator();
+                return Collections.emptyIterator();
 
             final InternalVertex v = query.getVertex();
 
@@ -1089,7 +1096,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         @Override
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
             //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
-            if (query.numSubQueries()==1 && query.getSubQuery(0).getBackendQuery().isEmpty()) return Iterators.emptyIterator();
+            if (query.numSubQueries()==1 && query.getSubQuery(0).getBackendQuery().isEmpty())
+                return Collections.emptyIterator();
             Preconditions.checkArgument(query.getCondition().hasChildren(),"If the query is non-empty it needs to have a condition");
 
             if (query.getResultType() == ElementCategory.VERTEX && hasModifications()) {
@@ -1125,7 +1133,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     }
                     vertices = vertexSet.iterator();
                 } else {
-                    vertices = Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new Function<TitanVertexProperty, TitanVertex>() {
+                    vertices = com.google.common.collect.Iterators.transform(newVertexIndexEntries.get(standardIndexKey.getValue(), standardIndexKey.getKey()).iterator(), new Function<TitanVertexProperty, TitanVertex>() {
                         @Nullable
                         @Override
                         public TitanVertex apply(@Nullable TitanVertexProperty o) {
@@ -1134,7 +1142,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     });
                 }
 
-                return (Iterator) Iterators.filter(vertices, new Predicate<TitanVertex>() {
+                return (Iterator) com.google.common.collect.Iterators.filter(vertices, new Predicate<TitanVertex>() {
                     @Override
                     public boolean apply(@Nullable TitanVertex vertex) {
                         return query.matches(vertex);
@@ -1148,7 +1156,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                         return query.getResultType().isInstance(relation) && !relation.isInvisible() && query.matches(relation);
                     }
                 }).iterator();
-            } else return Iterators.emptyIterator();
+            } else return Collections.emptyIterator();
         }
 
 
@@ -1202,7 +1210,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
 
                 List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit());
-                iter = Iterators.transform(resultSet.iterator(), getConversionFunction(query.getResultType()));
+                iter = com.google.common.collect.Iterators.transform(resultSet.iterator(), getConversionFunction(query.getResultType()));
             } else {
                 if (config.hasForceIndexUsage()) throw new TitanException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());

@@ -15,8 +15,15 @@ import java.io.IOException;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class TitanGraphSONModule extends SimpleModule {
-    public TitanGraphSONModule() {
+
+    private TitanGraphSONModule() {
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
+    }
+
+    private static final TitanGraphSONModule INSTANCE = new TitanGraphSONModule();
+
+    public static final TitanGraphSONModule getInstance() {
+        return INSTANCE;
     }
 
     public static class RelationIdentifierSerializer extends StdSerializer<RelationIdentifier> {

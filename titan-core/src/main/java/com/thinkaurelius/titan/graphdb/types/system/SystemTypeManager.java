@@ -14,7 +14,6 @@ public abstract class SystemTypeManager {
     private volatile static Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
 
     static {
-        assert Graph.System.isSystem(systemETprefix);
         synchronized (SystemTypeManager.class) {
             ImmutableMap.Builder<Long, SystemRelationType> idBuilder = ImmutableMap.builder();
             ImmutableMap.Builder<String, SystemRelationType> nameBuilder = ImmutableMap.builder();

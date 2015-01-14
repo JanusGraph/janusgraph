@@ -4,9 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -101,11 +99,6 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     @Override
     public boolean isEdge() {
         return true;
-    }
-
-    @Override
-    public GraphTraversal<Edge, Edge> start() {
-        return new TitanElementTraversal<>(it(), tx());
     }
 
     @Override

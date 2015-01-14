@@ -1,22 +1,27 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphTraversal;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversal;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Transaction;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -26,7 +31,7 @@ import java.util.function.Function;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanBlueprintsTransaction implements TitanTransaction {
+public abstract class TitanBlueprintsTransaction implements TitanTransaction, Graph.Iterators {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsTransaction.class);
@@ -50,6 +55,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Configuration configuration() {
         return getGraph().configuration();
+    }
+
+    @Override
+    public Iterators iterators() {
+        return this;
     }
 
     /**
@@ -87,54 +97,63 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return vertex;
     }
 
-//    @Override
-//    public TitanVertex v(final Object id) {
-//        if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, null);
-//
-//        long vertexId;
-//        if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
-//            vertexId = ((TitanVertex) id).longId();
-//        else if (id instanceof Long) {
-//            vertexId = (Long) id;
-//        } else if (id instanceof Number) {
-//            vertexId = ((Number) id).longValue();
-//        } else {
-//            try {
-//                vertexId = Long.valueOf(id.toString()).longValue();
-//            } catch (NumberFormatException e) {
-//                throw Graph.Exceptions.elementNotFound(Vertex.class, null);
-//            }
-//        }
-//        TitanVertex vertex = getVertex(vertexId);
-//
-//        if (null == vertex)
-//            throw Graph.Exceptions.elementNotFound(Vertex.class, id);
-//        else
-//            return vertex;
-//
-//    }
-//
-//    @Override
-//    public TitanEdge e(final Object id) {
-//        if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, null);
-//        RelationIdentifier rid = null;
-//
-//        try {
-//            if (id instanceof TitanEdge) rid = (RelationIdentifier) ((TitanEdge) id).id();
-//            else if (id instanceof RelationIdentifier) rid = (RelationIdentifier) id;
-//            else if (id instanceof String) rid = RelationIdentifier.parse((String) id);
-//            else if (id instanceof long[]) rid = RelationIdentifier.get((long[]) id);
-//            else if (id instanceof int[]) rid = RelationIdentifier.get((int[]) id);
-//        } catch (IllegalArgumentException e) {
-//            //swallow since rid will be null and exception thrown below
-//        }
-//
-//        TitanEdge edge = rid!=null?rid.findEdge(this):null;
-//        if (null == edge)
-//            throw Graph.Exceptions.elementNotFound(Edge.class, id);
-//        else
-//            return edge;
-//    }
+    public Iterator<Vertex> vertexIterator(Object... vids) {
+        if (vids==null) return (Iterator)getVertices().iterator();
+        long[] ids = new long[vids.length];
+        int pos = 0;
+        for (int i = 0; i < vids.length; i++) {
+            long id = getVertexId(vids[i]);
+            if (id>0) ids[pos++]=id;
+        }
+        if (pos==0) return Collections.emptyIterator();
+        if (pos<ids.length) ids = Arrays.copyOf(ids,pos);
+        return (Iterator)getVertices(ids).iterator();
+    }
+
+    private long getVertexId(Object id) {
+        if (null == id) return 0;
+
+        if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
+            return ((TitanVertex) id).longId();
+        if (id instanceof Long)
+            return (Long) id;
+        if (id instanceof Number)
+            return ((Number) id).longValue();
+        try {
+            return Long.valueOf(id.toString()).longValue();
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+
+    public Iterator<Edge> edgeIterator(Object... eids) {
+        if (eids==null) return (Iterator)getEdges().iterator();
+        RelationIdentifier[] ids = new RelationIdentifier[eids.length];
+        int pos = 0;
+        for (int i = 0; i < eids.length; i++) {
+            RelationIdentifier id = getEdgeId(eids[i]);
+            if (id!=null) ids[pos++]=id;
+        }
+        if (pos==0) return Collections.emptyIterator();
+        if (pos<ids.length) ids = Arrays.copyOf(ids,pos);
+        return (Iterator)getEdges(ids).iterator();
+    }
+
+    private RelationIdentifier getEdgeId(Object id) {
+        if (null == id) return null;
+
+        try {
+            if (id instanceof TitanEdge) return (RelationIdentifier) ((TitanEdge) id).id();
+            else if (id instanceof RelationIdentifier) return (RelationIdentifier) id;
+            else if (id instanceof String) return RelationIdentifier.parse((String) id);
+            else if (id instanceof long[]) return RelationIdentifier.get((long[]) id);
+            else if (id instanceof int[]) return RelationIdentifier.get((int[]) id);
+        } catch (IllegalArgumentException e) {
+            //swallow since null will be returned below
+        }
+        return null;
+    }
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {

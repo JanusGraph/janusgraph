@@ -11,6 +11,8 @@ public class Token {
 
     public static final char SEPARATOR_CHAR = '%';
 
+    public static final char SYSTEM_PREFIX = '^';
+
     public static final String getSeparatedName(String... components) {
         for (String component : components) verifyName(component);
         return StringUtils.join(components,SEPARATOR_CHAR);
@@ -28,11 +30,11 @@ public class Token {
     public static final String INTERNAL_INDEX_NAME = "internalindex";
 
     public static boolean isSystemName(String name) {
-        return Graph.System.isSystem(name);
+        return name!=null && name.length()>0 && name.charAt(0)==SYSTEM_PREFIX;
     }
 
     public static String makeSystemName(String name) {
-        return Graph.System.system(name);
+        return SYSTEM_PREFIX + name;
     }
 
 

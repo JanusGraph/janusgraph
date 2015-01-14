@@ -51,8 +51,16 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
+import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.structure.Direction;
 
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerElementStepStrategy;
+import com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerGraphStepStrategy;
+import com.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
+import com.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +80,16 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private static final Logger log =
             LoggerFactory.getLogger(StandardTitanGraph.class);
 
+
+    static {
+        try {
+            TraversalStrategies.GlobalCache.registerStrategies(TitanGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(TinkerGraphStepStrategy.instance()));
+            TraversalStrategies.GlobalCache.registerStrategies(TitanVertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(TinkerElementStepStrategy.instance()));
+            TraversalStrategies.GlobalCache.registerStrategies(TitanEdge.class, TraversalStrategies.GlobalCache.getStrategies(Edge.class).clone().addStrategies(TinkerElementStepStrategy.instance()));
+        } catch (final CloneNotSupportedException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
 
     private final GraphDatabaseConfiguration config;
     private final Backend backend;
