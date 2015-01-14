@@ -25,21 +25,21 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
     }
 
     @Override
-    public void apply(final Traversal<?, ?> traversal, final TraversalEngine engine) {
+    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
         if (engine.equals(TraversalEngine.COMPUTER))
             return;
-
-
 
         final Step<?, ?> startStep = TraversalHelper.getStart(traversal);
         if (startStep instanceof GraphStep) {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
-            final TitanGraphStep<?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
-            TraversalHelper.replaceStep(startStep, titanGraphStep, traversal);
+            if (originalGraphStep.getIds()==null || originalGraphStep.getIds().length==0) {
+                final TitanGraphStep<?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
+                TraversalHelper.replaceStep(startStep, titanGraphStep, traversal);
 
-            HasStepFolder.foldInHasContainer(titanGraphStep,traversal);
-            HasStepFolder.foldInOrder(titanGraphStep,traversal,titanGraphStep.returnsVertices());
-            HasStepFolder.foldInRange(titanGraphStep,traversal);
+                HasStepFolder.foldInHasContainer(titanGraphStep,traversal);
+                HasStepFolder.foldInOrder(titanGraphStep,traversal,titanGraphStep.returnsVertices());
+                HasStepFolder.foldInRange(titanGraphStep,traversal);
+            }
         }
     }
 

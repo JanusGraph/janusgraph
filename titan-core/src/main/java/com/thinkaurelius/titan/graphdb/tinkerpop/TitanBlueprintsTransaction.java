@@ -98,7 +98,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction, Gr
     }
 
     public Iterator<Vertex> vertexIterator(Object... vids) {
-        if (vids==null) return (Iterator)getVertices().iterator();
+        if (vids==null || vids.length==0) return (Iterator)getVertices().iterator();
         long[] ids = new long[vids.length];
         int pos = 0;
         for (int i = 0; i < vids.length; i++) {
@@ -128,7 +128,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction, Gr
 
 
     public Iterator<Edge> edgeIterator(Object... eids) {
-        if (eids==null) return (Iterator)getEdges().iterator();
+        if (eids==null || eids.length==0) return (Iterator)getEdges().iterator();
         RelationIdentifier[] ids = new RelationIdentifier[eids.length];
         int pos = 0;
         for (int i = 0; i < eids.length; i++) {

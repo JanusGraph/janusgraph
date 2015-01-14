@@ -3143,7 +3143,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(numV, 1, sv[0].outE("knows"), TitanVertexStep.class);
         assertNumStep(numV, 1, sv[0].out("knows"), TitanVertexStep.class);
         assertNumStep(10, 1, sv[0].local(__.outE("knows").limit(10)), TitanVertexStep.class);
-        assertNumStep(10, 2, sv[0].local(__.outE("knows").range(10, 20)), LocalStep.class);
+        assertNumStep(10, 1, sv[0].local(__.outE("knows").range(10, 20)), LocalStep.class);
         assertNumStep(numV, 2, sv[0].outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderStep.class);
         assertNumStep(10, 1, sv[0].local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
         assertNumStep(numV/5, 2, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1), TitanVertexStep.class, OrderStep.class);

@@ -364,7 +364,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public Iterable<TitanVertex> getVertices(long... ids) {
         verifyOpen();
-        if (ids==null) return (Iterable)getInternalVertices();
+        if (ids==null || ids.length==0) return (Iterable)getInternalVertices();
 
         if (null != config.getGroupName()) {
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
@@ -766,7 +766,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public Iterable<TitanEdge> getEdges(RelationIdentifier... ids) {
         verifyOpen();
-        if (ids==null) new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.EDGE);
+        if (ids==null || ids.length==0) new VertexCentricEdgeIterable(getInternalVertices(),RelationCategory.EDGE);
 
         if (null != config.getGroupName()) {
             MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();

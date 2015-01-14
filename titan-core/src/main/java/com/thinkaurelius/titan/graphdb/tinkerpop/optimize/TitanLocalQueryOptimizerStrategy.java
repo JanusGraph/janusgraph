@@ -26,7 +26,7 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
     }
 
     @Override
-    public void apply(final Traversal<?, ?> traversal, final TraversalEngine engine) {
+    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(originalStep -> {
             TitanVertexStep vstep = new TitanVertexStep(originalStep);
             TraversalHelper.replaceStep(originalStep,vstep,traversal);
@@ -90,7 +90,7 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 //        });
 
         TraversalHelper.getStepsOfClass(LocalStep.class, traversal).forEach(localStep -> {
-            Traversal localTraversal = (Traversal)localStep.getTraversals().get(0);
+            Traversal.Admin localTraversal = ((Traversal)localStep.getTraversals().get(0)).asAdmin();
 
             Step localStart = TraversalHelper.getStart(localTraversal);
             if (localStart instanceof VertexStep) {
@@ -106,6 +106,13 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
                 if (engine.equals(TraversalEngine.STANDARD) &&
                         ((StandardTitanTx)TitanTraversalUtil.getTx(traversal)).getGraph().getConfiguration().useMultiQuery()) {
                     vstep.setUseMultiQuery(true);
+                }
+
+                assert localTraversal.asAdmin().getSteps().size()>0;
+                if (localTraversal.asAdmin().getSteps().size()==1) {
+                    //Can replace the entire localStep by the vertex step in the outer traversal
+                    assert TraversalHelper.getStart(localTraversal)==vstep;
+                    TraversalHelper.replaceStep(localStep,vstep,traversal);
                 }
             }
         });

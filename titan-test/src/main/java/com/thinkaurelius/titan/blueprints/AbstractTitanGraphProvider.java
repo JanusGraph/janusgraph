@@ -10,11 +10,18 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfigur
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
+import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -35,8 +42,23 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
         add(StandardTitanGraph.class);
         add(StandardTitanTx.class);
-        add(StandardVertex.class);
 
+        add(StandardVertex.class);
+        add(CacheVertex.class);
+        add(PreloadedVertex.class);
+        add(EdgeLabelVertex.class);
+        add(PropertyKeyVertex.class);
+        add(VertexLabelVertex.class);
+        add(TitanSchemaVertex.class);
+
+        add(StandardEdge.class);
+        add(CacheEdge.class);
+
+        add(StandardVertexProperty.class);
+        add(CacheVertexProperty.class);
+        add(SimpleTitanProperty.class);
+
+        add(StandardVertex.class);
     }};
 
     @Override

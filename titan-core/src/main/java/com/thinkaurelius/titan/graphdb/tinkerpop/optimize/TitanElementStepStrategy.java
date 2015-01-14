@@ -35,7 +35,7 @@ public class TitanElementStepStrategy extends AbstractTraversalStrategy {
     }
 
     @Override
-    public void apply(final Traversal<?, ?> traversal, final TraversalEngine engine) {
+    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
         if (engine.equals(TraversalEngine.STANDARD))
             return;
 
@@ -44,13 +44,13 @@ public class TitanElementStepStrategy extends AbstractTraversalStrategy {
         if (startStep.startAssignableTo(Vertex.class, Edge.class)) {
             final Element element = ((StartStep<?>) startStep).getStart();
             final String label = startStep.getLabel();
-            TraversalHelper.removeStep(startStep, traversal);
+            traversal.removeStep(startStep);
             if (TraversalHelper.isLabeled(label)) {
                 final Step identityStep = new IdentityStep(traversal);
                 identityStep.setLabel(label);
-                TraversalHelper.insertStep(identityStep, 0, traversal);
+                traversal.addStep(0,identityStep);
             }
-            TraversalHelper.insertStep(new GraphStep<>(traversal, EmptyGraph.instance(), element.getClass(), element.id()), 0, traversal);
+            traversal.addStep(0,new GraphStep<>(traversal, EmptyGraph.instance(), element.getClass(), element.id()));
         }
     }
 

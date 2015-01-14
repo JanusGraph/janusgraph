@@ -2,11 +2,14 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementStepStrategy;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversalUtil;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
+import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.computer.MessageCombiner;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.VertexProgram;
@@ -27,12 +30,22 @@ import java.util.List;
  */
 public class FulgoraUtil {
 
+    private static TraversalStrategies FULGORA_STRATEGIES;
+
+    static {
+        try {
+            FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+        } catch (final CloneNotSupportedException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
     public static Traversal<Vertex,Edge> getTraversal(final MessageScope.Local<?> scope,
                                                                        final TitanTransaction graph) {
         Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
         FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
         for (Step step : incident.asAdmin().getSteps()) result.addStep(step);
-        result.asAdmin().setStrategies(null);
+        result.asAdmin().setStrategies(FULGORA_STRATEGIES);
         incident.asAdmin().applyStrategies(TraversalEngine.COMPUTER);
         verifyIncidentTraversal(result);
         return result;
@@ -46,8 +59,8 @@ public class FulgoraUtil {
         assert startStep instanceof VertexStep;
         ((VertexStep) startStep).reverse();
 
-        TraversalHelper.insertStep(new StartStep<>(incident,start),0,incident);
-        incident.asAdmin().setStrategies(null);
+        incident.asAdmin().addStep(0,new StartStep<>(incident,start));
+        incident.asAdmin().setStrategies(FULGORA_STRATEGIES);
         return incident;
     }
 

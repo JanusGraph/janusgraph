@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -41,22 +42,27 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementStepStrategy;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStepStrategy;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
+import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
+import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
-import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.*;
 
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerElementStepStrategy;
 import com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerGraphStepStrategy;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
@@ -83,9 +89,33 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     static {
         try {
-            TraversalStrategies.GlobalCache.registerStrategies(TitanGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(TinkerGraphStepStrategy.instance()));
-            TraversalStrategies.GlobalCache.registerStrategies(TitanVertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(TinkerElementStepStrategy.instance()));
-            TraversalStrategies.GlobalCache.registerStrategies(TitanEdge.class, TraversalStrategies.GlobalCache.getStrategies(Edge.class).clone().addStrategies(TinkerElementStepStrategy.instance()));
+            TraversalStrategies vertexStrategies = TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone()
+                    .addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+            TraversalStrategies edgeStrategies = TraversalStrategies.GlobalCache.getStrategies(Edge.class).clone()
+                    .addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+            TraversalStrategies vertexPropStrategies = TraversalStrategies.GlobalCache.getStrategies(VertexProperty.class).clone()
+                    .addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+            TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
+                    .addStrategies(TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+
+            //Register with cache
+            TraversalStrategies.GlobalCache.registerStrategies(StandardVertex.class,vertexStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(CacheVertex.class,vertexStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(PreloadedVertex.class,vertexStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(EdgeLabelVertex.class,vertexStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(PropertyKeyVertex.class,vertexStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(VertexLabelVertex.class,vertexStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(TitanSchemaVertex.class,vertexStrategies);
+
+            TraversalStrategies.GlobalCache.registerStrategies(StandardEdge.class,edgeStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(CacheEdge.class,edgeStrategies);
+
+            TraversalStrategies.GlobalCache.registerStrategies(StandardVertexProperty.class,vertexPropStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(CacheVertexProperty.class,vertexPropStrategies);
+
+            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class,graphStrategies);
+            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class,graphStrategies);
+
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
