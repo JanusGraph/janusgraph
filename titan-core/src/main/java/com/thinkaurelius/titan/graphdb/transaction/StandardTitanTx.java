@@ -159,9 +159,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      */
     private boolean isOpen;
 
-    private final Retriever<Long, InternalVertex> existingVertexRetriever;
-    private final Retriever<Long, InternalVertex> externalVertexRetriever;
-    private final Retriever<Long, InternalVertex> internalVertexRetriever;
+    private final VertexConstructor existingVertexRetriever;
+    private final VertexConstructor externalVertexRetriever;
+    private final VertexConstructor internalVertexRetriever;
 
     public StandardTitanTx(StandardTitanGraph graph, TransactionConfiguration config) {
         Preconditions.checkNotNull(graph);
@@ -381,11 +381,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             }
         }
         if (!vids.isEmpty()) {
-            List<EntryList> existence = graph.edgeMultiQuery(vids,graph.vertexExistenceQuery,txHandle);
-            for (int i = 0; i < vids.size(); i++) {
-                if (!existence.get(i).isEmpty()) {
-                    long id = vids.get(i);
-                    result.add(vertexCache.get(id, existingVertexRetriever));
+            if (externalVertexRetriever.hasVerifyExistence()) {
+                List<EntryList> existence = graph.edgeMultiQuery(vids,graph.vertexExistenceQuery,txHandle);
+                for (int i = 0; i < vids.size(); i++) {
+                    if (!existence.get(i).isEmpty()) {
+                        long id = vids.get(i);
+                        result.add(vertexCache.get(id, existingVertexRetriever));
+                    }
+                }
+            } else {
+                for (int i = 0; i < vids.size(); i++) {
+                    result.add(vertexCache.get(vids.get(i),externalVertexRetriever));
                 }
             }
         }
@@ -414,6 +420,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         private VertexConstructor(boolean verifyExistence, boolean createStubVertex) {
             this.verifyExistence = verifyExistence;
             this.createStubVertex = createStubVertex;
+        }
+
+        public boolean hasVerifyExistence() {
+            return verifyExistence;
         }
 
         @Override
