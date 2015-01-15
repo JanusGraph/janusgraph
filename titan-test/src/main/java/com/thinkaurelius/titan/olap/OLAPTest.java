@@ -19,7 +19,6 @@ import com.tinkerpop.gremlin.process.computer.*;
 import com.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import com.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -191,8 +190,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         clopen();
 
         final TitanGraphComputer computer = graph.compute();
-        computer.setResultMode(TitanGraphComputer.ResultMode.NONE);
-        computer.setNumProcessingThreads(4);
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        computer.workers(4);
         computer.program(new DegreeCounter());
         computer.mapReduce(new DegreeMapper());
         ComputerResult result = computer.submit().get();
@@ -221,8 +220,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
             final TitanGraphComputer computer = graph.compute();
-            computer.setResultMode(mode);
-            computer.setNumProcessingThreads(1);
+            computer.resultMode(mode);
+            computer.workers(1);
             computer.program(new DegreeCounter(2));
             ComputerResult result = computer.submit().get();
             System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());

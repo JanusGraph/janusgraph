@@ -11,6 +11,8 @@ import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.relations.*;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIo;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
@@ -58,7 +60,8 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(CacheVertexProperty.class);
         add(SimpleTitanProperty.class);
 
-        add(StandardVertex.class);
+        add(TitanIo.class);
+        add(TitanGraphVariables.class);
     }};
 
     @Override
@@ -110,7 +113,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     @Override
     public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
-        this.createIndices((TitanGraph) g, loadGraphWith.value());
+        if (loadGraphWith!=null) this.createIndices((TitanGraph) g, loadGraphWith.value());
         super.loadGraphData(g, loadGraphWith, testClass, testName);
     }
 

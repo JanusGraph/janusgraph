@@ -76,14 +76,14 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     }
 
     @Override
-    public TitanGraphComputer setResultMode(ResultMode mode) {
+    public TitanGraphComputer resultMode(ResultMode mode) {
         Preconditions.checkArgument(mode!=null,"Need to specify mode");
         this.resultMode = mode;
         return this;
     }
 
     @Override
-    public TitanGraphComputer setNumProcessingThreads(int threads) {
+    public TitanGraphComputer workers(int threads) {
         Preconditions.checkArgument(threads>0,"Invalid number of threads: %s",threads);
         numThreads = threads;
         return this;
