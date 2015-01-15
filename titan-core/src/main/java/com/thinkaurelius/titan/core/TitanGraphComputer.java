@@ -9,9 +9,9 @@ public interface TitanGraphComputer extends GraphComputer {
 
     public enum ResultMode { NONE, PERSIST, LOCALTX }
 
-    public TitanGraphComputer setNumProcessingThreads(int threads);
+    public TitanGraphComputer workers(int threads);
 
-    public TitanGraphComputer setResultMode(ResultMode mode);
+    public TitanGraphComputer resultMode(ResultMode mode);
 
 
 
