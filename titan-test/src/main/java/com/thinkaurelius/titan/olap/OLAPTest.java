@@ -171,10 +171,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         xx.commit();
 
         newTx();
-        try {
-            v3 = getV(tx, v3id);
-            fail();
-        } catch (NoSuchElementException e) {}
+        assertNull(getV(tx,v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
         assertEquals(v3id,v1.in("knows").next().id());

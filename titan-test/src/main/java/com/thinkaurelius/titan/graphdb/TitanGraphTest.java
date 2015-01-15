@@ -304,7 +304,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         newTx();
         //Bulk vertex retrieval
-        long[] vids1 = new long[noNodes/10];
+        Object[] vids1 = new Object[noNodes/10];
         for (int i = 0; i < vids1.length; i++) {
             vids1[i]=nodeIds[i];
         }
@@ -314,7 +314,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //All cached
         verifyVerticesRetrieval(vids1,tx.V(vids1).toList());
 
-        long[] vids2 = new long[noNodes/10*2];
+        Object[] vids2 = new Object[noNodes/10*2];
         for (int i = 0; i < vids2.length; i++) {
             vids2[i]=nodeIds[i];
         }
@@ -322,7 +322,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         verifyVerticesRetrieval(vids2,tx.V(vids2).toList());
     }
 
-    private void verifyVerticesRetrieval(long[] vids, List<Vertex> vs) {
+    private void verifyVerticesRetrieval(Object[] vids, List<Vertex> vs) {
         assertEquals(vids.length,vs.size());
         Set<Long> vset = new HashSet<>(vs.size());
         vs.forEach(v -> vset.add((Long)v.id()));
@@ -1521,17 +1521,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(), v.value(LABEL_NAME));
         assertCount(1, v.bothE("knows").has(ID_NAME, eid));
         assertCount(0, v.bothE("knows").has(ID_NAME, RelationIdentifier.get(new long[]{4, 5, 6, 7})));
-        assertCount(1, v.bothE("knows").has("^nid", eid.getRelationId()));
-        assertCount(0, v.bothE("knows").has("^nid", 110111));
+        assertCount(1, v.bothE("knows").has("~nid", eid.getRelationId()));
+        assertCount(0, v.bothE("knows").has("~nid", 110111));
         //Test edge retrieval
         assertNotNull(getE(graph,eid));
         assertEquals(eid,getE(graph,eid).id());
         //Test adjacent constraint
-        assertEquals(1, v.query().direction(BOTH).has("^adjacent", u.id()).count());
-        assertCount(1, v.bothE().has("^adjacent", (int)getId(u)));
+        assertEquals(1, v.query().direction(BOTH).has("~adjacent", u.id()).count());
+        assertCount(1, v.bothE().has("~adjacent", (int)getId(u)));
         try {
             //Not a valid vertex
-             assertCount(0,v.bothE().has("^adjacent",110111));
+             assertCount(0,v.bothE().has("~adjacent",110111));
             fail();
         } catch (IllegalArgumentException ex) {}
 
@@ -3148,7 +3148,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(10, 1, sv[0].local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
         assertNumStep(numV/5, 2, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1), TitanVertexStep.class, OrderStep.class);
         assertNumStep(10, 1, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).limit(10)), TitanVertexStep.class);
-        assertNumStep(5, 2, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).range(10, 15)), LocalStep.class);
+        assertNumStep(5, 1, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).range(10, 15)), LocalStep.class);
 
         //Global graph queries
         assertNumStep(1, 1, graph.V().has("id", numV / 5), TitanGraphStep.class);

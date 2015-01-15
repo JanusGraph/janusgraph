@@ -34,7 +34,7 @@ public class FulgoraUtil {
 
     static {
         try {
-            FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+            FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(TitanLocalQueryOptimizerStrategy.instance());
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
@@ -46,7 +46,7 @@ public class FulgoraUtil {
         FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
         for (Step step : incident.asAdmin().getSteps()) result.addStep(step);
         result.asAdmin().setStrategies(FULGORA_STRATEGIES);
-        incident.asAdmin().applyStrategies(TraversalEngine.COMPUTER);
+        result.asAdmin().applyStrategies(TraversalEngine.COMPUTER);
         verifyIncidentTraversal(result);
         return result;
     }

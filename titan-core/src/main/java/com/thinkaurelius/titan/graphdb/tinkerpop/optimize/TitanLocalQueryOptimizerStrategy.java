@@ -99,20 +99,22 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 
                 if (TitanTraversalUtil.isEdgeReturnStep(vstep)) {
                     HasStepFolder.foldInHasContainer(vstep,localTraversal);
-                    HasStepFolder.foldInOrder(vstep, localTraversal, false);
+                    HasStepFolder.foldInOrder(vstep, localTraversal, traversal, false);
                 }
                 HasStepFolder.foldInRange(vstep, localTraversal);
 
-                if (engine.equals(TraversalEngine.STANDARD) &&
-                        ((StandardTitanTx)TitanTraversalUtil.getTx(traversal)).getGraph().getConfiguration().useMultiQuery()) {
-                    vstep.setUseMultiQuery(true);
-                }
 
                 assert localTraversal.asAdmin().getSteps().size()>0;
                 if (localTraversal.asAdmin().getSteps().size()==1) {
                     //Can replace the entire localStep by the vertex step in the outer traversal
                     assert TraversalHelper.getStart(localTraversal)==vstep;
+                    vstep.setTraversal(traversal);
                     TraversalHelper.replaceStep(localStep,vstep,traversal);
+
+                    if (engine.equals(TraversalEngine.STANDARD) &&
+                            ((StandardTitanTx)TitanTraversalUtil.getTx(traversal)).getGraph().getConfiguration().useMultiQuery()) {
+                        vstep.setUseMultiQuery(true);
+                    }
                 }
             }
         });
