@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
@@ -58,20 +59,25 @@ public class TitanTraversalUtil {
     }
 
     public static TitanTransaction getTx(Traversal traversal) {
-        if (traversal instanceof FulgoraElementTraversal) return ((FulgoraElementTraversal)traversal).getGraph();
+        TitanTransaction tx=null;
 
-        Step startStep = TraversalHelper.getStart(traversal);
-        if (startStep instanceof GraphStep) {
-            Graph graph = ((GraphStep)startStep).getGraph(Graph.class);
-            if (graph instanceof TitanTransaction) return (TitanTransaction)graph;
-            else throw new IllegalArgumentException("Not a valid Titan traversal ["+graph.getClass()+"]: " + traversal);
+        if (traversal instanceof FulgoraElementTraversal) {
+            tx = ((FulgoraElementTraversal)traversal).getGraph();
+        } else {
+            Step startStep = TraversalHelper.getStart(traversal);
+            if (startStep instanceof GraphStep) {
+                Graph graph = ((GraphStep)startStep).getGraph(Graph.class);
+                if (graph instanceof TitanTransaction) tx = (TitanTransaction)graph;
+                else throw new IllegalArgumentException("Not a valid Titan traversal ["+graph.getClass()+"]: " + traversal);
+            } else if (startStep instanceof StartStep) {
+                Element element = (Element)((StartStep)startStep).getStart();
+                if (element instanceof TitanElement) tx = ((TitanElement)element).graph();
+                else throw new IllegalArgumentException("Not a valid Titan traversal because starting element is ["+element+"]: " + traversal);
+            }
         }
-        if (startStep instanceof StartStep) {
-            Element element = (Element)((StartStep)startStep).getStart();
-            if (element instanceof TitanElement) return ((TitanElement)element).graph();
-            else throw new IllegalArgumentException("Not a valid Titan traversal because starting element is ["+element+"]: " + traversal);
-        }
-        throw new IllegalArgumentException("Not a valid start step for a Titan traversal: " + traversal);
+        if (tx==null) throw new IllegalArgumentException("Not a valid start step for a Titan traversal: " + traversal);
+        if (tx.isOpen()) return tx;
+        else return ((StandardTitanTx)tx).getNextTx();
     }
 
 }
