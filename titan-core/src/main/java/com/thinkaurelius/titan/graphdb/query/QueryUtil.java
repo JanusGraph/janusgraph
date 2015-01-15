@@ -188,11 +188,14 @@ public class QueryUtil {
                 //Rewrite contains conditions
                 Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
+                    if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
                     for (Object invalue : values)
                         addConstraint(type, Cmp.NOT_EQUAL, invalue, conditions, tx);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
-                    if (values.size() == 1) {
+                    if (values.isEmpty()) {
+                        return null; //Cannot be satisfied
+                    } if (values.size() == 1) {
                         addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
                     } else {
                         Or<E> nested = new Or<E>(values.size());

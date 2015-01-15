@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.NoSuchElementException;
 
@@ -57,4 +58,19 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
     public String toString() {
         return StringFactory.propertyString(this);
     }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder().append(relation).append(type).append(value).toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object oth) {
+        if (this==oth) return true;
+        else if (oth==null || !getClass().isInstance(oth)) return false;
+        SimpleTitanProperty other = (SimpleTitanProperty)oth;
+        return relation.equals(other.relation) && type.equals(other.type) &&
+                value.equals(other.value);
+    }
+
 }

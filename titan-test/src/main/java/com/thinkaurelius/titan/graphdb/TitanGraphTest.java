@@ -3716,6 +3716,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{true,sorted},vertex2.name());
         evaluateQuery(tx.query().has("time",Contain.IN,ImmutableList.of(51,61,71,31,41)).has("name",Cmp.EQUAL,"u1").has(LABEL_NAME,"organization"),
                 ElementCategory.VERTEX,5,new boolean[]{true,sorted},vertex2.name());
+        evaluateQuery(tx.query().has("time",Contain.IN,ImmutableList.of()),
+                ElementCategory.VERTEX,0,new boolean[]{true,false});
+        evaluateQuery(tx.query().has("text",Cmp.EQUAL,strs[2]).has(LABEL_NAME,"person").has("time",Contain.NOT_IN,ImmutableList.of()),
+                ElementCategory.VERTEX,numV/strs.length,new boolean[]{true,sorted},vertex12.name());
+
 
         evaluateQuery(tx.query().has("time",Cmp.EQUAL,51).has(LABEL_NAME,"organization"),
                 ElementCategory.VERTEX,1,new boolean[]{false,sorted});
@@ -3782,6 +3787,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{true,sorted},vertex3.name());
         evaluateQuery(tx.query().has("name",Cmp.EQUAL,"v1").has(LABEL_NAME,"organization"),
                 ElementCategory.VERTEX,1,new boolean[]{false,sorted},vertex3.name());
+        evaluateQuery(tx.query().has("time",Contain.IN,ImmutableList.of()),
+                ElementCategory.VERTEX,0,new boolean[]{true,false});
+        evaluateQuery(tx.query().has("text",Cmp.EQUAL,strs[2]).has(LABEL_NAME,"person").has("time",Contain.NOT_IN,ImmutableList.of()),
+                ElementCategory.VERTEX,numV/strs.length,new boolean[]{true,sorted},vertex12.name());
 
         //Update in transaction
         for (int i=0;i<numV/2;i++) {

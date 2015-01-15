@@ -3,10 +3,12 @@ package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
+import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.graph.step.map.PropertiesStep;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
@@ -18,6 +20,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
 
 import java.util.Set;
 
@@ -31,17 +34,12 @@ public class TitanTraversalUtil {
     static final Set<Class<? extends TraversalStrategy>> PRIORS = ImmutableSet.<Class<? extends TraversalStrategy>>of(
             IdentityRemovalStrategy.class);
 
-    public static Step replaceStep(final Step step) {
-        if (step instanceof VertexStep) {
-            VertexStep vstep = (VertexStep)step;
-            return new TitanVertexStep(vstep);
-        } else if (step instanceof PropertiesStep) {
-            PropertiesStep sstep = (PropertiesStep)step;
-            return sstep;
-//            return new TitanPropertiesStep<>(sstep);
-        } else {
-            return step;
+    public static TitanVertex getTitanVertex(Traverser<Vertex> traverser) {
+        Vertex v = traverser.get();
+        while (v instanceof WrappedVertex) {
+            v = ((WrappedVertex<Vertex>)v).getBaseVertex();
         }
+        return (TitanVertex)v;
     }
 
     public static boolean isEdgeReturnStep(VertexStep vstep) {

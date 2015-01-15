@@ -29,6 +29,8 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     public TitanPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
+        if (TraversalHelper.isLabeled(originalStep))
+            this.setLabel(originalStep.getLabel());
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }
