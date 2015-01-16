@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraversalSideEffects;
 import com.tinkerpop.gremlin.process.computer.ComputerResult;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.computer.MapReduce;
@@ -40,7 +41,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraGraphComputer.class);
 
-    public static final Set<String> NON_PERSISTING_KEYS = ImmutableSet.of(Traversal.SideEffects.SIDE_EFFECTS,
+    public static final Set<String> NON_PERSISTING_KEYS = ImmutableSet.of(TraversalSideEffects.SIDE_EFFECTS,
             TraversalVertexProgram.HALTED_TRAVERSERS);
 
     private Isolation isolation = Isolation.BSP;
@@ -75,14 +76,14 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     }
 
     @Override
-    public TitanGraphComputer setResultMode(ResultMode mode) {
+    public TitanGraphComputer resultMode(ResultMode mode) {
         Preconditions.checkArgument(mode!=null,"Need to specify mode");
         this.resultMode = mode;
         return this;
     }
 
     @Override
-    public TitanGraphComputer setNumProcessingThreads(int threads) {
+    public TitanGraphComputer workers(int threads) {
         Preconditions.checkArgument(threads>0,"Invalid number of threads: %s",threads);
         numThreads = threads;
         return this;
@@ -264,7 +265,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 } else if (resultMode==ResultMode.LOCALTX) {
                     resultgraph = graph.newTransaction();
                     for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {
-                        Vertex v = resultgraph.v(vprop.getKey());
+                        Vertex v = resultgraph.V(vprop.getKey()).next();
                         for (Map.Entry<String,Object> prop : vprop.getValue().entrySet()) {
                             v.singleProperty(prop.getKey(),prop.getValue());
                         }
@@ -296,7 +297,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             TitanTransaction tx = graph.buildTransaction().enableBatchLoading().start();
             try {
                 for (Map.Entry<Long, Map<String, Object>> vprop : properties) {
-                    Vertex v = tx.v(vprop.getKey());
+                    Vertex v = tx.getVertex(vprop.getKey());
                     for (Map.Entry<String,Object> prop : vprop.getValue().entrySet()) {
                         v.singleProperty(prop.getKey(),prop.getValue());
                     }

@@ -74,11 +74,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         TypeUtil.checkTypeName(category,name);
         if (SystemTypeManager.isSystemType(name.toLowerCase())
                 || Token.isSystemName(name)) {
-            if (category==TitanSchemaCategory.EDGELABEL) {
-                throw Element.Exceptions.labelCanNotBeASystemKey(name);
-            } else {
-                throw Property.Exceptions.propertyKeyCanNotBeASystemKey(name);
-            }
+            throw new IllegalArgumentException("Name cannot be in protected namespace: " + name);
         }
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);

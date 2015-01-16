@@ -13,10 +13,10 @@ import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.computer.MessageCombiner;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
@@ -113,8 +113,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
                 assert scope instanceof MessageScope.Local;
-                FulgoraElementTraversal<Vertex,Edge> incident = FulgoraUtil.getTitanTraversal((MessageScope.Local) scope,queries.getTransaction());
-                incident.applyStrategies(TraversalEngine.COMPUTER);
+                Traversal<Vertex,Edge> incident = FulgoraUtil.getTraversal((MessageScope.Local) scope,queries.getTransaction());
                 TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>) TraversalHelper.getStart(incident);
                 startStep.reverse();
                 QueryContainer.QueryBuilder qb = queries.addQuery();

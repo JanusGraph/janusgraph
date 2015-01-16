@@ -82,10 +82,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         return type.isInvisibleType();
     }
 
-    public boolean isHidden() {
-        return Graph.Key.isHidden(type.name());
-    }
-
     @Override
     public boolean isLoop() {
         return getArity()==2 && getVertex(0).equals(getVertex(1));

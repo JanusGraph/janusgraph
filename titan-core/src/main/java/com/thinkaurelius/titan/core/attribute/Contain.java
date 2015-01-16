@@ -59,7 +59,7 @@ public enum Contain implements TitanPredicate {
 
     @Override
     public boolean isValidCondition(Object condition) {
-        return condition != null && (condition instanceof Collection) && !((Collection) condition).isEmpty();
+        return condition != null && (condition instanceof Collection);
     }
 
     @Override

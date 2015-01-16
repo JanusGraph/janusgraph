@@ -11,10 +11,10 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.Traverser;
 import com.tinkerpop.gremlin.process.graph.step.map.PropertiesStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.FastNoSuchElementException;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.HasContainer;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -27,8 +27,10 @@ import java.util.function.Function;
  */
 public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element,E> {
 
-    public TitanPropertiesStep(PropertiesStep<E> copy) {
-        super(copy.getTraversal(), copy.getReturnType(), copy.getPropertyKeys());
+    public TitanPropertiesStep(PropertiesStep<E> originalStep) {
+        super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
+        if (TraversalHelper.isLabeled(originalStep))
+            this.setLabel(originalStep.getLabel());
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }
@@ -43,9 +45,6 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     private<Q extends BaseVertexQuery> Q makeQuery(Q query) {
         String[] keys = getPropertyKeys();
-        if (getReturnType().forHiddens()) {
-            keys = QueryUtil.hideKeys(keys);
-        }
         query.keys(keys);
         for (HasContainer condition : hasContainers) {
             if (condition.predicate instanceof Contains && condition.value==null) {
@@ -63,7 +62,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
     private Iterator<E> convertIterator(Iterable<? extends TitanProperty> iterable) {
         if (getReturnType().forProperties()) return (Iterator<E>)iterable.iterator();
         assert getReturnType().forValues();
-        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> p.value());
+        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> ((TitanProperty)p).value());
     }
 
     void makeVertrexProperties() {
@@ -85,7 +84,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
             starts.add(elements.iterator());
             assert elements.size()>0;
 
-            TitanMultiVertexQuery mquery = ((TitanTransaction) traversal.sideEffects().getGraph()).multiQuery();
+            TitanMultiVertexQuery mquery = TitanTraversalUtil.getTx(traversal).multiQuery();
             if (elements.stream().anyMatch(e -> !(e instanceof Vertex))) throw new IllegalStateException("Step should only be used against vertices");
             elements.forEach( e -> mquery.addVertex((Vertex)e.get()));
             makeQuery(mquery);

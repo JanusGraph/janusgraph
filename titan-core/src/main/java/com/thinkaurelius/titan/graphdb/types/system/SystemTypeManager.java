@@ -7,14 +7,10 @@ import java.util.Map;
 
 public abstract class SystemTypeManager {
 
-    public static final String systemETprefix = "^T$";
-    public static final String NON_EXISTANT_TYPE = systemETprefix+"doesNotExist";
-
     private volatile static Map<Long, SystemRelationType> SYSTEM_TYPES_BY_ID;
     private volatile static Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
 
     static {
-        assert Graph.System.isSystem(systemETprefix);
         synchronized (SystemTypeManager.class) {
             ImmutableMap.Builder<Long, SystemRelationType> idBuilder = ImmutableMap.builder();
             ImmutableMap.Builder<String, SystemRelationType> nameBuilder = ImmutableMap.builder();

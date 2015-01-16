@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -11,11 +9,21 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.relations.*;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIo;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
-import com.tinkerpop.gremlin.structure.BatchTest;
+import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -23,10 +31,9 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
-import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -34,17 +41,33 @@ import java.util.Set;
  */
 public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
-//    @Override
-//    public GremlinKryo createConfiguredGremlinKryo() {
-//        return GremlinKryo.build()
-//                .addCustom(RelationIdentifier.class)
-//                .create();
-//    }
+    private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
+        add(StandardTitanGraph.class);
+        add(StandardTitanTx.class);
 
-//    @Override
-//    public SimpleModule createConfiguredGraphSONModule() {
-//        return new TitanGraphSONModule();
-//    }
+        add(StandardVertex.class);
+        add(CacheVertex.class);
+        add(PreloadedVertex.class);
+        add(EdgeLabelVertex.class);
+        add(PropertyKeyVertex.class);
+        add(VertexLabelVertex.class);
+        add(TitanSchemaVertex.class);
+
+        add(StandardEdge.class);
+        add(CacheEdge.class);
+
+        add(StandardVertexProperty.class);
+        add(CacheVertexProperty.class);
+        add(SimpleTitanProperty.class);
+
+        add(TitanIo.class);
+        add(TitanGraphVariables.class);
+    }};
+
+    @Override
+    public Set<Class> getImplementations() {
+        return IMPLEMENTATION;
+    }
 
     @Override
     public <ID> ID reconstituteGraphSONIdentifier(final Class<? extends Element> clazz, final Object id) {
@@ -90,7 +113,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     @Override
     public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
-        this.createIndices((TitanGraph) g, loadGraphWith.value());
+        if (loadGraphWith!=null) this.createIndices((TitanGraph) g, loadGraphWith.value());
         super.loadGraphData(g, loadGraphWith, testClass, testName);
     }
 

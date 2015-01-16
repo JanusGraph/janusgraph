@@ -13,7 +13,6 @@ import com.tinkerpop.gremlin.process.computer.Messenger;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.structure.util.referenced.ReferencedVertex;
 import com.tinkerpop.gremlin.util.StreamFactory;
 
 import java.util.*;

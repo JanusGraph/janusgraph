@@ -37,18 +37,6 @@ public class QueryUtil {
         return limit;
     }
 
-    public static String[] hideKeys(String[] keys) {
-        if (keys==null) return null;
-        keys = Arrays.copyOf(keys,keys.length);
-        for (int i = 0; i < keys.length; i++) {
-            if (Graph.Key.isHidden(keys[i])) {
-                //Key that definitely does not exist
-                keys[i]= SystemTypeManager.NON_EXISTANT_TYPE;
-            } else keys[i]= Graph.Key.hide(keys[i]);
-        }
-        return keys;
-    }
-
     public static int convertLimit(long limit) {
         assert limit>=0;
         if (limit>=Integer.MAX_VALUE) return Integer.MAX_VALUE;
@@ -200,11 +188,14 @@ public class QueryUtil {
                 //Rewrite contains conditions
                 Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
+                    if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
                     for (Object invalue : values)
                         addConstraint(type, Cmp.NOT_EQUAL, invalue, conditions, tx);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
-                    if (values.size() == 1) {
+                    if (values.isEmpty()) {
+                        return null; //Cannot be satisfied
+                    } if (values.size() == 1) {
                         addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
                     } else {
                         Or<E> nested = new Or<E>(values.size());

@@ -16,8 +16,9 @@ import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import com.thinkaurelius.titan.graphdb.olap.oldfulgora.*;
 import com.tinkerpop.gremlin.process.computer.*;
+import com.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
+import com.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -169,10 +170,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         xx.commit();
 
         newTx();
-        try {
-            v3 = getV(tx, v3id);
-            fail();
-        } catch (NoSuchElementException e) {}
+        assertNull(getV(tx,v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
         assertEquals(v3id,v1.in("knows").next().id());
@@ -192,8 +190,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         clopen();
 
         final TitanGraphComputer computer = graph.compute();
-        computer.setResultMode(TitanGraphComputer.ResultMode.NONE);
-        computer.setNumProcessingThreads(4);
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        computer.workers(4);
         computer.program(new DegreeCounter());
         computer.mapReduce(new DegreeMapper());
         ComputerResult result = computer.submit().get();
@@ -222,8 +220,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
             final TitanGraphComputer computer = graph.compute();
-            computer.setResultMode(mode);
-            computer.setNumProcessingThreads(1);
+            computer.resultMode(mode);
+            computer.workers(1);
             computer.program(new DegreeCounter(2));
             ComputerResult result = computer.submit().get();
             System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
@@ -250,7 +248,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
     }
 
-    public static class DegreeCounter implements VertexProgram<Integer> {
+    public static class DegreeCounter extends StaticVertexProgram<Integer> {
 
         public static final String DEGREE = "degree";
         public static final MessageCombiner<Integer> ADDITION = (a,b) -> a+b;
@@ -305,11 +303,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         @Override
-        public VertexProgram<Integer> clone() throws CloneNotSupportedException {
-            return this;
-        }
-
-        @Override
         public Features getFeatures() {
             return new Features() {
                 @Override
@@ -327,7 +320,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     }
 
-    public static class DegreeMapper implements MapReduce<Long,Integer,Long,Integer,Map<Long,Integer>> {
+    public static class DegreeMapper extends StaticMapReduce<Long,Integer,Long,Integer,Map<Long,Integer>> {
 
         public static final String DEGREE_RESULT = "degrees";
 
@@ -356,10 +349,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             return DEGREE_RESULT;
         }
 
-        @Override
-        public MapReduce<Long, Integer, Long, Integer, Map<Long, Integer>> clone() throws CloneNotSupportedException {
-            return this;
-        }
     }
 
 

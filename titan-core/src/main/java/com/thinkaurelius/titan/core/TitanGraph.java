@@ -3,9 +3,6 @@ package com.thinkaurelius.titan.core;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.gremlin.structure.Graph;
 
-
-import java.util.Collection;
-
 /**
  * Titan graph database implementation of the Blueprint's interface.
  * Use {@link TitanFactory} to open and configure TitanGraph instances.

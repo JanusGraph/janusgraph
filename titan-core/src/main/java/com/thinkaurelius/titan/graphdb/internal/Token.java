@@ -11,6 +11,9 @@ public class Token {
 
     public static final char SEPARATOR_CHAR = '%';
 
+    public static final String systemETprefix = Graph.Hidden.hide("T$");
+    public static final String NON_EXISTANT_TYPE = systemETprefix+"doesNotExist";
+
     public static final String getSeparatedName(String... components) {
         for (String component : components) verifyName(component);
         return StringUtils.join(components,SEPARATOR_CHAR);
@@ -28,11 +31,11 @@ public class Token {
     public static final String INTERNAL_INDEX_NAME = "internalindex";
 
     public static boolean isSystemName(String name) {
-        return Graph.System.isSystem(name);
+        return Graph.Hidden.isHidden(name);
     }
 
     public static String makeSystemName(String name) {
-        return Graph.System.system(name);
+        return Graph.Hidden.hide(name);
     }
 
 

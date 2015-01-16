@@ -10,12 +10,17 @@ import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
 import com.tinkerpop.gremlin.process.graph.marker.Ranging;
 import com.tinkerpop.gremlin.process.graph.step.filter.FilterStep;
-import com.tinkerpop.gremlin.process.graph.step.map.OrderByStep;
+import com.tinkerpop.gremlin.process.graph.step.filter.HasStep;
+import com.tinkerpop.gremlin.process.graph.step.filter.RangeStep;
 import com.tinkerpop.gremlin.process.graph.step.map.OrderStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
+import com.tinkerpop.gremlin.process.util.ElementValueComparator;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Order;
-import com.tinkerpop.gremlin.structure.util.HasContainer;
+
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -41,19 +46,23 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return true;
     }
 
-    public static boolean validTitanOrder(OrderByStep ostep, Traversal traversal,
+    public static boolean validTitanOrder(OrderStep ostep, Traversal rootTraversal,
                                                 boolean isVertexOrder) {
-        if (!ostep.usesPropertyKey() || ostep.getPropertyValueComparators().length>1
-                || !(ostep.getPropertyValueComparators()[0] instanceof Order)) return false;
-        TitanTransaction tx = TitanTraversal.getTx(traversal);
-        String key = (String)ostep.getPropertyKey().get();
-        PropertyKey pkey = tx.getPropertyKey(key);
-        if (pkey==null || !(Comparable.class.isAssignableFrom(pkey.dataType())) ) return false;
-        if (isVertexOrder && pkey.cardinality()!=Cardinality.SINGLE) return false;
+        for (Comparator comp : (List<Comparator>)ostep.getComparators()) {
+            if (!(comp instanceof ElementValueComparator)) return false;
+            ElementValueComparator evc = (ElementValueComparator)comp;
+            if (!(evc.getValueComparator() instanceof Order)) return false;
+
+            TitanTransaction tx = TitanTraversalUtil.getTx(rootTraversal);
+            String key = evc.getPropertyKey();
+            PropertyKey pkey = tx.getPropertyKey(key);
+            if (pkey==null || !(Comparable.class.isAssignableFrom(pkey.dataType())) ) return false;
+            if (isVertexOrder && pkey.cardinality()!=Cardinality.SINGLE) return false;
+        }
         return true;
     }
 
-    public static void foldInHasContainer(final HasStepFolder titanStep, final Traversal<?, ?> traversal) {
+    public static void foldInHasContainer(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal) {
         Step currentStep = titanStep.getNextStep();
         while (true) {
             if (TraversalHelper.isLabeled(currentStep)) break;
@@ -62,13 +71,14 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
                 if (validTitanHas(containers)) {
                     titanStep.addAll(containers);
-                    TraversalHelper.removeStep(currentStep, traversal);
+                    addLabeledStepAsIdentity(currentStep, traversal);
+                    traversal.removeStep(currentStep);
                 }
-            } else if (currentStep instanceof OrderByStep || currentStep instanceof OrderStep) {
+            } else if (currentStep instanceof OrderStep) {
                 //do nothing, we can pull filters over those
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing, has no impact
-            } else if (currentStep instanceof FilterStep) {
+            } else if (currentStep instanceof HasStep) {
                 // do nothing, we can rearrange filters
             } else {
                 break;
@@ -77,45 +87,46 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    public static OrderByStep foldInLastOrderBy(final HasStepFolder titanStep, final Traversal<?, ?> traversal,
-                                                boolean isVertexOrder) {
+    public static void addLabeledStepAsIdentity(Step currentStep, final Traversal<?, ?> traversal) {
+        if (TraversalHelper.isLabeled(currentStep)) {
+            final IdentityStep identityStep = new IdentityStep<>(traversal);
+            identityStep.setLabel(currentStep.getLabel());
+            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+        }
+    }
+
+    public static void foldInOrder(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal,
+                                                final Traversal<?,?> rootTraversal, boolean isVertexOrder) {
         Step currentStep = titanStep.getNextStep();
-        Step lastOrder = null;
+        OrderStep lastOrder = null;
         while (true) {
-            if (TraversalHelper.isLabeled(currentStep)) break;
-            Step newOrder = null;
-            if (currentStep instanceof OrderByStep || currentStep instanceof OrderStep) {
-                newOrder = currentStep;
+            if (currentStep instanceof OrderStep) {
+                if (lastOrder!=null) { //Previous orders are rendered irrelevant by next order (since re-ordered)
+                    addLabeledStepAsIdentity(lastOrder, traversal);
+                    traversal.removeStep(lastOrder);
+                }
+                lastOrder = (OrderStep)currentStep;
+            } else if (currentStep instanceof IdentityStep) {
+                // do nothing, can be skipped
+            } else if (currentStep instanceof HasStep) {
+                // do nothing, can be skipped
             } else {
                 break;
             }
             currentStep = currentStep.getNextStep();
-            if (lastOrder != null) TraversalHelper.removeStep(lastOrder, traversal);
-            lastOrder = newOrder;
         }
 
-        if (lastOrder instanceof OrderByStep) {
-            OrderByStep<?, ?> ostep = (OrderByStep) lastOrder;
-            if (validTitanOrder(ostep,traversal,isVertexOrder)) {
-                titanStep.orderBy(ostep.getPropertyKey().get(), (Order) ostep.getPropertyValueComparators()[0]);
-                TraversalHelper.removeStep(ostep, traversal);
-                return ostep;
+        if (lastOrder!=null && lastOrder instanceof OrderStep) {
+            if (validTitanOrder(lastOrder,rootTraversal,isVertexOrder)) {
+                //Add orders to HasStepFolder
+                for (Comparator comp : (List<Comparator>)lastOrder.getComparators()) {
+                    ElementValueComparator evc = (ElementValueComparator)comp;
+                    titanStep.orderBy(evc.getPropertyKey(),(Order)evc.getValueComparator());
+                }
+                addLabeledStepAsIdentity(lastOrder, traversal);
+                traversal.removeStep(lastOrder);
             }
         }
-        return null;
-    }
-
-
-    public static <E extends Ranging> boolean foldInRange(final HasStepFolder titanStep, final Traversal<?, ?> traversal,
-                                                          Class<E> rangeStepType) {
-        Step nextStep = titanStep.getNextStep();
-        if (rangeStepType.isInstance(nextStep)) {
-            Ranging range = (Ranging) nextStep;
-            int limit = QueryUtil.convertLimit(range.getHighRange());
-            titanStep.setLimit(QueryUtil.mergeLimits(limit, titanStep.getLimit()));
-            if (range.getLowRange() == 0) TraversalHelper.removeStep(nextStep, traversal);
-            return true;
-        } else return false;
     }
 
     public static class OrderEntry {
@@ -128,5 +139,21 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             this.order = order;
         }
     }
+
+    public static <E extends Ranging> void foldInRange(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal) {
+        Step nextStep = TitanTraversalUtil.getNextNonIdentityStep(titanStep);
+
+        if (nextStep instanceof RangeStep) {
+            RangeStep range = (RangeStep)nextStep;
+            int limit = QueryUtil.convertLimit(range.getHighRange());
+            titanStep.setLimit(QueryUtil.mergeLimits(limit, titanStep.getLimit()));
+            if (range.getLowRange() == 0) { //Range can be removed since there is no offset
+                addLabeledStepAsIdentity(nextStep, traversal);
+                traversal.removeStep(nextStep);
+            }
+        }
+    }
+
+
 
 }

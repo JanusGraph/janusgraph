@@ -197,7 +197,7 @@ public class TitanVertexDeserializer {
         TinkerVertex v;
 
         try {
-            v = (TinkerVertex)tg.v(vertexId);
+            v = (TinkerVertex)tg.V(vertexId).next();
         } catch (NoSuchElementException e) {
             if (null != label) {
                 v = (TinkerVertex) tg.addVertex(T.label, label, T.id, vertexId);

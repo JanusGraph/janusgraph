@@ -1,14 +1,10 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanElementTraversal;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -17,13 +13,13 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.Iterator;
 
 public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex.Iterators {
 
@@ -130,11 +126,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public <O> O valueOrNull(RelationType key) {
         return (O)property(key.name()).orElse(null);
-    }
-
-    @Override
-    public GraphTraversal<Vertex, Vertex> start() {
-        return new TitanElementTraversal<>(it(), tx());
     }
 
 	/* ---------------------------------------------------------------

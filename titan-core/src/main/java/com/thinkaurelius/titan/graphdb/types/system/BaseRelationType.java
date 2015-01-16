@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
 import org.apache.commons.lang.StringUtils;
 
 public abstract class BaseRelationType extends EmptyRelationType implements SystemRelationType {
@@ -14,7 +15,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
 
     BaseRelationType(String name, long id, TitanSchemaCategory type) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
-        this.name = SystemTypeManager.systemETprefix + name;
+        this.name = Token.systemETprefix + name;
         this.id = getSystemTypeId(id, type);
     }
 

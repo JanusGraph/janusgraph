@@ -73,7 +73,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V>, VertexP
 
     @Override
     public <V> V valueOrNull(RelationType key) {
-        return value(key.name(),null);
+        return (V)property(key.name()).orElse(null);
     }
 
     @Override
