@@ -24,10 +24,7 @@ import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
@@ -164,6 +161,16 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     private void initializeSchema(ModifiableConfiguration conf, Class<?> test, String testMethodName) {
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE,"tp3");
+        if (TransactionTest.class.equals(test) && testMethodName.equalsIgnoreCase("shouldExecuteWithCompetingThreads")) {
+            TitanGraph g = TitanFactory.open(conf);
+            TitanManagement mgmt = g.openManagement();
+            mgmt.makePropertyKey("blah").dataType(Double.class).make();
+            mgmt.makePropertyKey("bloop").dataType(Integer.class).make();
+            mgmt.makePropertyKey("test").dataType(Object.class).make();
+            mgmt.makeEdgeLabel("friend").make();
+            mgmt.commit();
+            g.close();
+        }
     }
 
 
