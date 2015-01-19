@@ -66,7 +66,7 @@ public class TitanTraversalUtil {
         if (traversal instanceof FulgoraElementTraversal) {
             tx = ((FulgoraElementTraversal)traversal).getGraph();
         } else {
-            Step startStep = TraversalHelper.getStart(traversal);
+            Step startStep = TraversalHelper.getStart(traversal.asAdmin());
             if (startStep instanceof GraphStep) {
                 Graph graph = ((GraphStep)startStep).getGraph(Graph.class);
                 if (graph instanceof TitanTransaction) tx = (TitanTransaction)graph;

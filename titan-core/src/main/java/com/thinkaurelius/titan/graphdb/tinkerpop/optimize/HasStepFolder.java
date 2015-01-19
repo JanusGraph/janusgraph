@@ -87,7 +87,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    public static void addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal<?, ?> traversal) {
+    public static void addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal.Admin<?, ?> traversal) {
         currentStep.getLabel().ifPresent(label -> {
             final IdentityStep identityStep = new IdentityStep<>(traversal);
             identityStep.setLabel(label);

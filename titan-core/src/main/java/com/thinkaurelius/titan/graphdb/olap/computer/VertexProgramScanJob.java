@@ -114,7 +114,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             } else {
                 assert scope instanceof MessageScope.Local;
                 Traversal<Vertex,Edge> incident = FulgoraUtil.getTraversal((MessageScope.Local) scope,queries.getTransaction());
-                TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>) TraversalHelper.getStart(incident);
+                TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>) TraversalHelper.getStart(incident.asAdmin());
                 startStep.reverse();
                 QueryContainer.QueryBuilder qb = queries.addQuery();
                 startStep.makeQuery(qb);
