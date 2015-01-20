@@ -59,20 +59,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     };
 
-    /**
-     * ThreadLocal transactions used behind the scenes in
-     * {@link TitanGraphTransaction} methods. Transactions started through
-     * {@code ThreadedTransactionalGraph#newTransaction()} aren't included in
-     * this map. Contrary to the javadoc comment above
-     * {@code ThreadedTransactionalGraph#newTransaction()}, the caller is
-     * responsible for holding references to and committing or rolling back any
-     * transactions started through
-     * {@code ThreadedTransactionalGraph#newTransaction()}.
-     */
-    private final Map<TitanBlueprintsTransaction, Boolean> openTx =
-            new ConcurrentHashMap<TitanBlueprintsTransaction, Boolean>();
-
-
     public abstract TitanTransaction newThreadBoundTransaction();
 
     private TitanBlueprintsTransaction getAutoStartTx() {
@@ -90,7 +76,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         if (tx!=null && tx.isOpen()) throw Transaction.Exceptions.transactionAlreadyOpen();
         tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
         txs.set(tx);
-        openTx.put(tx, Boolean.TRUE);
         log.debug("Created new thread-bound transaction {}", tx);
         return tx;
     }
@@ -102,10 +87,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public synchronized void close() {
-        for (TitanTransaction tx : openTx.keySet()) {
-            tx.close();
-        }
-        openTx.clear();
         txs = null;
     }
 
@@ -262,6 +243,8 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     public VertexLabel getOrCreateVertexLabel(String name) {
         return getAutoStartTx().getOrCreateVertexLabel(name);
     }
+
+
 
     class GraphTransaction implements Transaction {
 

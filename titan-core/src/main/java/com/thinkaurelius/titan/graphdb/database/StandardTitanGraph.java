@@ -212,12 +212,37 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             try {
                 ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
                 globalConfig.remove(REGISTRATION_TIME, config.getUniqueGraphId());
+                /* Assuming a couple of properties about openTransactions:
+                 * 1. no concurrent modifications during graph shutdown
+                 * 2. all contained txs are open
+                 */
+                Map<TitanTransaction, RuntimeException> txCloseExceptions = new HashMap<TitanTransaction, RuntimeException>();
+                for (StandardTitanTx otx : openTransactions) {
+                    try {
+                        otx.close();
+                    } catch (RuntimeException e) {
+                        // Catch and store these exceptions, but proceed wit the loop
+                        // Any remaining txs on the iterator should get a chance to close before we throw up
+                        log.warn("Unable to close transaction {}", otx, e);
+                        txCloseExceptions.put(otx, e);
+                    }
+                }
+                // Throw an exception if at least one transaction failed to close
+                if (1 == txCloseExceptions.size()) {
+                    throw new TitanException("Unable to close transaction",
+                            Iterables.getOnlyElement(txCloseExceptions.values()));
+                } else if (1 < txCloseExceptions.size()) {
+                    throw new TitanException(String.format(
+                            "Unable to close %s transactions (see warnings in log output for details)",
+                            txCloseExceptions.size()));
+                }
                 super.close();
             } finally {
                 idAssigner.close();
                 backend.close();
                 queryCache.close();
                 IOUtils.closeQuietly(serializer);
+
                 // Remove shutdown hook to avoid reference retention
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             }
