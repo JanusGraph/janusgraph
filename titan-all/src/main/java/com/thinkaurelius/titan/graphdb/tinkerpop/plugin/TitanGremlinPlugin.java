@@ -1,15 +1,15 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.plugin;
 
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.tinkerpop.computer.bulkloader.BulkLoaderVertexProgram;
-import com.tinkerpop.gremlin.groovy.plugin.Artifact;
 import com.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import com.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.HashSet;;
 import java.util.Set;
 
 /**
@@ -32,6 +32,8 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         // Static imports on enum values used in query constraint expressions
         add(IMPORT_STATIC + Geo.class.getName() + DOT_STAR);
         add(IMPORT_STATIC + Text.class.getName() + DOT_STAR);
+        add(IMPORT_STATIC + Multiplicity.class.getName() + DOT_STAR);
+        add(IMPORT_STATIC + Cardinality.class.getName() + DOT_STAR);
     }};
 
     @Override
