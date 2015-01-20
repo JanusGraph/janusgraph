@@ -55,7 +55,7 @@ public class FulgoraUtil {
                                                                        final Vertex start,
                                                                        final TitanTransaction graph) {
         Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
-        Step<Vertex,?> startStep = TraversalHelper.getStart(incident);
+        Step<Vertex,?> startStep = TraversalHelper.getStart(incident.asAdmin());
         assert startStep instanceof VertexStep;
         ((VertexStep) startStep).reverse();
 

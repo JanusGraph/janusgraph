@@ -23,8 +23,8 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     public TitanVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
-        if (TraversalHelper.isLabeled(originalStep))
-            this.setLabel(originalStep.getLabel());
+        if (originalStep.getLabel().isPresent())
+            this.setLabel(originalStep.getLabel().get());
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }
@@ -85,6 +85,13 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     public void reset() {
         super.reset();
         this.initialized = false;
+    }
+
+    @Override
+    public TitanVertexStep<E> clone() throws CloneNotSupportedException {
+        final TitanVertexStep<E> clone = (TitanVertexStep<E>) super.clone();
+        clone.initialized=false;
+        return clone;
     }
 
     /*

@@ -29,8 +29,8 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     public TitanPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
-        if (TraversalHelper.isLabeled(originalStep))
-            this.setLabel(originalStep.getLabel());
+        if (originalStep.getLabel().isPresent())
+            this.setLabel(originalStep.getLabel().get());
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }
@@ -110,6 +110,13 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
     public void reset() {
         super.reset();
         this.initialized = false;
+    }
+
+    @Override
+    public TitanPropertiesStep<E> clone() throws CloneNotSupportedException {
+        final TitanPropertiesStep<E> clone = (TitanPropertiesStep<E>) super.clone();
+        clone.initialized=false;
+        return clone;
     }
 
     /*

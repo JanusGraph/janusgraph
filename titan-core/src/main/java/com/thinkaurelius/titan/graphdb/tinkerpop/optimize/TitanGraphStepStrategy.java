@@ -34,7 +34,7 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             if (originalGraphStep.getIds()==null || originalGraphStep.getIds().length==0) {
                 final TitanGraphStep<?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
-                TraversalHelper.replaceStep(startStep, titanGraphStep, traversal);
+                TraversalHelper.replaceStep(startStep, (Step)titanGraphStep, traversal);
 
                 HasStepFolder.foldInHasContainer(titanGraphStep,traversal);
                 HasStepFolder.foldInOrder(titanGraphStep,traversal,traversal,titanGraphStep.returnsVertices());

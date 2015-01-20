@@ -26,10 +26,10 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     private int limit = BaseQuery.NO_LIMIT;
     private List<OrderEntry> orders = new ArrayList<>();
 
-    public TitanGraphStep(final GraphStep<E> originalGraphStep) {
-        super(originalGraphStep.getTraversal(), originalGraphStep.getGraph(TitanGraph.class), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
-        if (TraversalHelper.isLabeled(originalGraphStep))
-            this.setLabel(originalGraphStep.getLabel());
+    public TitanGraphStep(final GraphStep<E> originalStep) {
+        super(originalStep.getTraversal(), originalStep.getGraph(TitanGraph.class), originalStep.getReturnClass(), originalStep.getIds());
+        if (originalStep.getLabel().isPresent())
+            this.setLabel(originalStep.getLabel().get());
         this.setIteratorSupplier(() -> {
             TitanTransaction tx = TitanTraversalUtil.getTx(traversal);
             TitanGraphQuery query = tx.query();

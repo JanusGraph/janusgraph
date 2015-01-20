@@ -16,6 +16,7 @@ import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.strategy.IdentityRemovalStrategy;
+import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
@@ -58,13 +59,14 @@ public class TitanTraversalUtil {
         return currentStep;
     }
 
-    public static TitanTransaction getTx(Traversal traversal) {
+    public static TitanTransaction getTx(Traversal<?,?> traversal) {
         TitanTransaction tx=null;
+        traversal = getRootTraversal(traversal);
 
         if (traversal instanceof FulgoraElementTraversal) {
             tx = ((FulgoraElementTraversal)traversal).getGraph();
         } else {
-            Step startStep = TraversalHelper.getStart(traversal);
+            Step startStep = TraversalHelper.getStart(traversal.asAdmin());
             if (startStep instanceof GraphStep) {
                 Graph graph = ((GraphStep)startStep).getGraph(Graph.class);
                 if (graph instanceof TitanTransaction) tx = (TitanTransaction)graph;
@@ -78,6 +80,13 @@ public class TitanTraversalUtil {
         if (tx==null) throw new IllegalArgumentException("Not a valid start step for a Titan traversal: " + traversal);
         if (tx.isOpen()) return tx;
         else return ((StandardTitanTx)tx).getNextTx();
+    }
+
+    public static Traversal<?,?> getRootTraversal(Traversal<?,?> traversal) {
+        while (!((traversal.asAdmin().getTraversalHolder()) instanceof EmptyStep)) {
+            traversal = traversal.asAdmin().getTraversalHolder().asStep().getTraversal();
+        }
+        return traversal;
     }
 
 }
