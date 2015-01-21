@@ -24,10 +24,7 @@ import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.process.TraversalStrategies;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
@@ -102,7 +99,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName) {
         ModifiableConfiguration conf = getTitanConfiguration(graphName,test,testMethodName);
         conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE,"persist");
-        initializeSchema(conf,test,testMethodName);
+        conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
         Map<String,Object> result = new HashMap<>();
         conf.getAll().entrySet().stream().forEach( e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements),e.getValue()));
         result.put(Graph.GRAPH, TitanFactory.class.getName());
@@ -113,7 +110,18 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     @Override
     public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
-        if (loadGraphWith!=null) this.createIndices((TitanGraph) g, loadGraphWith.value());
+        if (loadGraphWith!=null) {
+            this.createIndices((TitanGraph) g, loadGraphWith.value());
+        } else {
+            if (TransactionTest.class.equals(testClass) && testName.equalsIgnoreCase("shouldExecuteWithCompetingThreads")) {
+                TitanManagement mgmt = ((TitanGraph)g).openManagement();
+                mgmt.makePropertyKey("blah").dataType(Double.class).make();
+                mgmt.makePropertyKey("bloop").dataType(Integer.class).make();
+                mgmt.makePropertyKey("test").dataType(Object.class).make();
+                mgmt.makeEdgeLabel("friend").make();
+                mgmt.commit();
+            }
+        }
         super.loadGraphData(g, loadGraphWith, testClass, testName);
     }
 
@@ -161,10 +169,5 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         }
         mgmt.commit();
     }
-
-    private void initializeSchema(ModifiableConfiguration conf, Class<?> test, String testMethodName) {
-        conf.set(GraphDatabaseConfiguration.AUTO_TYPE,"tp3");
-    }
-
 
 }
