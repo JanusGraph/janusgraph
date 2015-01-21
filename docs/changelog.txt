@@ -29,6 +29,25 @@ Version 0.9.0-M1 (December 4, 2014)
 
 Note, that this is a milestone release which is considered experimental. Please use this only for exploration, testing, and feedback and DO NOT use in production.
 
+Version 0.5.3 (January 12, 2015)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Features:*
+
+* Added regex support for Lucene
+* Added optional customization of Elasticsearch index settings (e.g. shard count or refresh interval)
+* Removed some internal uses of ThreadLocal and made remaining uses optional
+* Gave the exception thrown when a held lock expires a more descriptive name (ExpiredLockException) and message
+
+*Bugfixes:*
+
+* Allowed index hostnames to be overwritten in a local configuration file
+* hasNot with undefined key
+* Using $timestamp in query constraints
+* Filtering out null-values in vertex-centric index queries
+* Queries now use deep Array equality when appropriate
+* Schema reads on Cassandra now use QUORUM regardless of read-consistency-level (schema writes were already done at QUROUM)
+* Removed obsolete precondition check causing spurious failures on some Contain.IN queries
 
 Version 0.5.2 (November 24, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
