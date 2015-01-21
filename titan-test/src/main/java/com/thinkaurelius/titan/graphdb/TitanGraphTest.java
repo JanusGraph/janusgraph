@@ -4659,7 +4659,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         clopen(option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
 
-        assertEquals("^ttl", ImplicitKey.TTL.name());
+        assertEquals("~ttl", ImplicitKey.TTL.name());
 
         int ttl = 24*60*60;
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
@@ -4676,23 +4676,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         graph.tx().commit();
 
         // read from the edge created in this transaction
-        d = e1.value("^ttl");
+        d = e1.value("~ttl");
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
         // get the edge via a vertex
         e1 = getOnlyElement(v1.outE("likes"));
-        d = e1.value("^ttl");
+        d = e1.value("~ttl");
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
         // returned value of ^ttl is the total time to live since commit, not remaining time
         Thread.sleep(1001);
         graph.tx().rollback();
         e1 = getOnlyElement(v1.outE("likes"));
-        d = e1.value("^ttl");
+        d = e1.value("~ttl");
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
         // no ttl on edges of this label
-        d = e2.value("^ttl");
+        d = e2.value("~ttl");
         assertEquals(0, d.getLength(TimeUnit.SECONDS));
     }
 
@@ -4717,9 +4717,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx.commit();
 
         /* TODO: this fails
-        d = v1.getProperty("^ttl");
+        d = v1.getProperty("~ttl");
         assertEquals(1, d.getLength(TimeUnit.SECONDS));
-        d = v2.getProperty("^ttl");
+        d = v2.getProperty("~ttl");
         assertEquals(0, d.getLength(TimeUnit.SECONDS));
         */
 
@@ -4728,9 +4728,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1 = getV(graph,v1id);
         v2 = getV(graph,v2id);
 
-        d = v1.value("^ttl");
+        d = v1.value("~ttl");
         assertEquals(1, d.getLength(TimeUnit.SECONDS));
-        d = v2.value("^ttl");
+        d = v2.value("~ttl");
         assertEquals(0, d.getLength(TimeUnit.SECONDS));
     }
 }
