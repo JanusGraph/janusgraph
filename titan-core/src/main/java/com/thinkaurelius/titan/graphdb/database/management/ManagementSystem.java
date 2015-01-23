@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
@@ -409,58 +408,37 @@ public class ManagementSystem implements TitanManagement {
     }
 
     /**
-     * Do not use this method.  This may be removed or refactored in future Titan versions.
+     * Returns a {@link GraphIndexStatusWatcher} configured to watch
+     * {@code graphIndexName} through graph {@code g}.
+     * <p>
+     * This method just instantiates an object.
+     * Invoke {@link GraphIndexStatusWatcher#call()} to wait.
      *
-     * Final API pending resolution of https://github.com/thinkaurelius/titan/issues/709.
-     *
+     * @param g the graph through which to read index information
+     * @param graphIndexName the name of a graph index to watch
+     * @return
      */
-    public static boolean awaitGraphIndexStatus(TitanGraph g, String indexName, SchemaStatus status, long timeout, TimeUnit timeoutUnit) {
-        Preconditions.checkNotNull(g);
-        Preconditions.checkNotNull(indexName);
-        Preconditions.checkNotNull(status);
-        Preconditions.checkArgument(0L <= timeout);
-        Preconditions.checkNotNull(timeoutUnit);
+    public static GraphIndexStatusWatcher awaitGraphIndexStatus(TitanGraph g, String graphIndexName) {
+        return new GraphIndexStatusWatcher(g, graphIndexName);
+    }
 
-        Map<PropertyKey, SchemaStatus> notConverged = new HashMap<PropertyKey, SchemaStatus>();
-        Map<PropertyKey, SchemaStatus> converged = new HashMap<PropertyKey, SchemaStatus>();
-        TitanGraphIndex idx;
 
-        Timer t = new Timer(Timestamps.MILLI).start();
-        boolean timedOut;
-        while (true) {
-            TitanManagement mgmt = g.openManagement();
-            idx  = mgmt.getGraphIndex(indexName);
-            for (PropertyKey pk : idx.getFieldKeys()) {
-                SchemaStatus s = idx.getIndexStatus(pk);
-                LOGGER.debug("Key {} has status {}", pk, s);
-                if (!status.equals(s))
-                    notConverged.put(pk, s);
-                else
-                    converged.put(pk, s);
-            }
-            /* Rollback must follow the Joiner...(notConverged).  The Joiner calls toString on
-             * PropertyKeys, and the current implementation calls the getName method on the key,
-             * and this expects the attached transaction to be open and usable to read the name.
-             * Rolling back or committing the managementsystem before calling getName results
-             * in an IllegalStateException in the guts of Joiner calling toString on a key.
-             */
-            String waitingOn = Joiner.on(",").withKeyValueSeparator("=").join(notConverged);
-            mgmt.rollback();
-            if (!notConverged.isEmpty()) {
-                LOGGER.info("Some key(s) on index {} do not currently have status {}: ", indexName, status, waitingOn);
-            } else {
-                LOGGER.info("All {} key(s) on index {} have status {}", converged.size(), indexName, status);
-                return true;
-            }
-            timedOut = timeout <= t.elapsed().getLength(timeoutUnit);
-            if (timedOut) {
-                LOGGER.info("Timed out ({} {}) while waiting for index {} to converge on status {}",
-                        timeout, timeoutUnit, indexName, status);
-                return false;
-            }
-            notConverged.clear();
-            converged.clear();
-        }
+    /**
+     * Returns a {@link RelationIndexStatusWatcher} configured to watch the index specified by
+     * {@code relationIndexName} and {@code relationIndexType} through graph {@code g}.
+     * <p>
+     * This method just instantiates an object.
+     * Invoke {@link RelationIndexStatusWatcher#call()} to wait.
+     *
+     * @param g the graph through which to read index information
+     * @param relationIndexName the name of the relation index to watch
+     * @param relationTypeName the type on the relation index to watch
+     * @return
+     */
+    public static RelationIndexStatusWatcher awaitRelationIndexStatus(TitanGraph g,
+                                                                      String relationIndexName,
+                                                                      String relationTypeName) {
+        return new RelationIndexStatusWatcher(g, relationIndexName, relationTypeName);
     }
 
     private void checkIndexName(String indexName) {

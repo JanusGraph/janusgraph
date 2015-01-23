@@ -1458,8 +1458,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
         tx2.commit(); //Release transaction and wait a little for registration which should make enabling possible
         mgmt.rollback();
-        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex", SchemaStatus.REGISTERED,
-                TestGraphConfigs.getSchemaConvergenceTime(TimeUnit.SECONDS), TimeUnit.SECONDS);
+        assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
+                .timeout(TestGraphConfigs.getSchemaConvergenceTime(TimeUnit.SECONDS), TimeUnit.SECONDS)
+                .call().getSucceeded());
         finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
         finishSchema();

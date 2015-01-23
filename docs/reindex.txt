@@ -94,21 +94,23 @@ Self-contained Example
 
 The following Gremlin snippet outlines all steps of the reindex process in one self-contained example using minimal dummy data against the Cassandra storage backend.
 
+// TODO This code snippet has only been updated for titan09 up to the mgmt.awaitGraphIndexStatus line
+
 [source,gremlin]
 ----
 // Open a graph
 g = TitanFactory.open("conf/titan-cassandra-es.properties")
 
 // Define a property
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 desc = mgmt.makePropertyKey("desc").dataType(String.class).make()
 mgmt.commit()
 
 // Insert some data
-v = g.addVertex(null)
-v.desc = "foo bar"
-v = g.addVertex(null)
-v.desc = "foo baz"
+v = g.addVertex()
+v.property("desc", "foo bar")
+v = g.addVertex()
+v.property("desc", "foo baz")
 g.commit()
 
 // Run a query -- note the planner warning recommending the use of an index
@@ -124,20 +126,7 @@ mgmt.commit()
 g.rollback()
 
 // Block until the SchemaStatus transitions from INSTALLED to REGISTERED
-registered = false
-before = System.currentTimeMillis()
-while (!registered) {
-    Thread.sleep(500L)
-    mgmt = g.getManagementSystem()
-    idx  = mgmt.getGraphIndex("mixedExample")
-    registered = true
-    for (k in idx.getFieldKeys()) {
-        s = idx.getIndexStatus(k)
-        registered &= s.equals(SchemaStatus.REGISTERED)
-    }
-    mgmt.rollback()
-}
-println("Index REGISTERED in " + (System.currentTimeMillis() - before) + " ms")
+report = mgmt.awaitGraphIndexStatus(g, "mixedExample").call()
 
 // Run a Titan-Hadoop job to reindex (replace Murmur3 with your actual partitioner)
 pt = "org.apache.cassandra.dht.Murmur3Partitioner" // The default
