@@ -18,8 +18,6 @@ public class TitanConstants {
 
     public static final String TITAN_PROPERTIES_FILE = "titan.internal.properties";
 
-    public static final String TITAN_PROPERTIES_RESOURCE_NAME;
-
     /**
      * Runtime version of Titan, as read from a properties file inside the core jar
      */
@@ -45,8 +43,6 @@ public class TitanConstants {
         String resourceName = packageName.replace('.', '/') + "/" + TITAN_PROPERTIES_FILE;
         InputStream is = TitanFactory.class.getClassLoader().getResourceAsStream(resourceName);
         Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing Titan version");
-
-        TITAN_PROPERTIES_RESOURCE_NAME = resourceName;
 
         Properties props = new Properties();
 

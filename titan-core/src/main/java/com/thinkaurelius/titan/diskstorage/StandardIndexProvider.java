@@ -29,8 +29,8 @@ public enum StandardIndexProvider {
         this.shorthands = shorthands;
     }
 
-    private static final List<String> ALL_SHORTHANDS;
-    private static final Map<String, String> ALL_MANAGER_CLASSES;
+    private static final ImmutableList<String> ALL_SHORTHANDS;
+    private static final ImmutableMap<String, String> ALL_MANAGER_CLASSES;
 
     public List<String> getShorthands() {
         return shorthands;
@@ -42,16 +42,16 @@ public enum StandardIndexProvider {
 
     static {
         StandardIndexProvider backends[] = values();
-        List<String> shorthandList = new ArrayList<String>();
-        Map<String, String> shorthandClassMap = new HashMap<String, String>();
+        List<String> tempShorthands = new ArrayList<String>();
+        Map<String, String> tempClassMap = new HashMap<String, String>();
         for (int i = 0; i < backends.length; i++) {
-            shorthandList.addAll(backends[i].getShorthands());
+            tempShorthands.addAll(backends[i].getShorthands());
             for (String shorthand : backends[i].getShorthands()) {
-                shorthandClassMap.put(shorthand, backends[i].getProviderName());
+                tempClassMap.put(shorthand, backends[i].getProviderName());
             }
         }
-        ALL_SHORTHANDS = shorthandList;
-        ALL_MANAGER_CLASSES = shorthandClassMap;
+        ALL_SHORTHANDS = ImmutableList.copyOf(tempShorthands);
+        ALL_MANAGER_CLASSES = ImmutableMap.copyOf(tempClassMap);
     }
 
     public static final List<String> getAllShorthands() {

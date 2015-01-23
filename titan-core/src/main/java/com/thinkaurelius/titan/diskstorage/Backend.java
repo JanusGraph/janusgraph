@@ -703,48 +703,4 @@ public class Backend implements LockerProvider {
             throw new IllegalArgumentException("Could not instantiate implementation: " + classname, e);
         }
     }
-
-    static {
-        Properties props;
-
-        try {
-            props = new Properties();
-            final String res = TitanConstants.TITAN_PROPERTIES_RESOURCE_NAME;
-            log.debug("Reading Titan config resource: {}", res);
-            InputStream in = TitanFactory.class.getClassLoader().getResourceAsStream(res);
-            if (in != null && in.available() > 0) {
-                props.load(in);
-            }
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-        registerShorthands(props, "storage.", StandardStoreManager.getAllManagerClasses());
-        registerShorthands(props, "index.", StandardIndexProvider.getAllProviderClasses());
-    }
-
-    public static final void registerShorthands(Properties props, String prefix, Map<String, String> shorthands) {
-        for (String key : props.stringPropertyNames()) {
-            if (key.toLowerCase().startsWith(prefix)) {
-                String shorthand = key.substring(prefix.length()).toLowerCase();
-                String clazz = props.getProperty(key);
-                shorthands.put(shorthand, clazz);
-                log.debug("Registering shorthand [{}] for [{}]", shorthand, clazz);
-            }
-        }
-    }
-
-//
-//    public synchronized static final void registerStorageManager(String name, Class<? extends StoreManager> clazz) {
-//        Preconditions.checkNotNull(name);
-//        Preconditions.checkNotNull(clazz);
-//        Preconditions.checkArgument(!StringUtils.isEmpty(name));
-//        Preconditions.checkNotNull(!REGISTERED_STORAGE_MANAGERS.containsKey(name),"A storage manager has already been registered for name: " + name);
-//        REGISTERED_STORAGE_MANAGERS.put(name,clazz);
-//    }
-//
-//    public synchronized static final void removeStorageManager(String name) {
-//        Preconditions.checkNotNull(name);
-//        REGISTERED_STORAGE_MANAGERS.remove(name);
-//    }
-
 }
