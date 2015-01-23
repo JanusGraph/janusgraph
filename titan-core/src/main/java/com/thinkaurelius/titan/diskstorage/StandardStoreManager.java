@@ -37,21 +37,21 @@ public enum StandardStoreManager {
         return managerClass;
     }
 
-    private static final ImmutableList<String> ALL_SHORTHANDS;
-    private static final ImmutableMap<String, String> ALL_MANAGER_CLASSES;
+    private static final List<String> ALL_SHORTHANDS;
+    private static final Map<String, String> ALL_MANAGER_CLASSES;
 
     static {
         StandardStoreManager backends[] = values();
-        List<String> tempShorthands = new ArrayList<String>();
-        Map<String, String> tempClassMap = new HashMap<String, String>();
+        List<String> shorthandList = new ArrayList<String>();
+        Map<String, String> shorthandClassMap = new HashMap<String, String>();
         for (int i = 0; i < backends.length; i++) {
-            tempShorthands.addAll(backends[i].getShorthands());
+            shorthandList.addAll(backends[i].getShorthands());
             for (String shorthand : backends[i].getShorthands()) {
-                tempClassMap.put(shorthand, backends[i].getManagerClass());
+                shorthandClassMap.put(shorthand, backends[i].getManagerClass());
             }
         }
-        ALL_SHORTHANDS = ImmutableList.copyOf(tempShorthands);
-        ALL_MANAGER_CLASSES = ImmutableMap.copyOf(tempClassMap);
+        ALL_SHORTHANDS = shorthandList;
+        ALL_MANAGER_CLASSES = shorthandClassMap;
     }
 
     public static List<String> getAllShorthands() {

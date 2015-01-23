@@ -709,7 +709,9 @@ public class Backend implements LockerProvider {
 
         try {
             props = new Properties();
-            InputStream in = TitanFactory.class.getClassLoader().getResourceAsStream(TitanConstants.TITAN_PROPERTIES_FILE);
+            final String res = TitanConstants.TITAN_PROPERTIES_RESOURCE_NAME;
+            log.debug("Reading Titan config resource: {}", res);
+            InputStream in = TitanFactory.class.getClassLoader().getResourceAsStream(res);
             if (in != null && in.available() > 0) {
                 props.load(in);
             }

@@ -16,14 +16,17 @@ import java.util.Properties;
  */
 public class TitanConstants {
 
-    public static final String TITAN_PROPERTIES_FILE = "titan.properties";
+    public static final String TITAN_PROPERTIES_FILE = "titan.internal.properties";
+
+    public static final String TITAN_PROPERTIES_RESOURCE_NAME;
 
     /**
-     * Version of this TitanGraph
+     * Runtime version of Titan, as read from a properties file inside the core jar
      */
     public static final String VERSION;
+
     /**
-     * Version numbers of compatible
+     * Past versions of Titan with which the runtime version shares a compatible storage format
      */
     public static final List<String> COMPATIBLE_VERSIONS;
 
@@ -42,6 +45,8 @@ public class TitanConstants {
         String resourceName = packageName.replace('.', '/') + "/" + TITAN_PROPERTIES_FILE;
         InputStream is = TitanFactory.class.getClassLoader().getResourceAsStream(resourceName);
         Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing Titan version");
+
+        TITAN_PROPERTIES_RESOURCE_NAME = resourceName;
 
         Properties props = new Properties();
 
