@@ -37,7 +37,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
     public static final ConfigNamespace BERKELEY_NS =
-            new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "berkeleydb", "BerkeleyDB configuration options");
+            new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, "berkeleyje", "BerkeleyDB JE configuration options");
 
     public static final ConfigOption<Integer> JVM_CACHE =
             new ConfigOption<Integer>(BERKELEY_NS,"cache-percentage",

@@ -6,6 +6,6 @@ public class BerkeleyAssemblyIT extends AbstractTitanAssemblyIT {
     
     @Test
     public void testBerkeleySimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/titan-berkeleydb.properties", "berkeleyje");
+        testSimpleGremlinSession("conf/titan-berkeleyje.properties", "berkeleyje");
     }
 }

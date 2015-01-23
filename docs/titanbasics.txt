@@ -134,13 +134,13 @@ To configure Gremlin Server with a `TitanGraph` instance the Gremlin Server conf
 ----
 ...
 graphs: {
-  g: conf/titan-berkeleydb.properties}
+  g: conf/titan-berkeleyje.properties}
 plugins:
   - aurelius.titan
 ...
 ----
 
-The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `g` to a Titan configuration at `conf/titan-berkeleydb.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
+The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `g` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
 
 Learn more about using and connecting to Titan server in <<server>>.
 
@@ -513,15 +513,15 @@ Edit the `GREMLIN_SERVER_HOME/conf/gremlin-server.yaml` and include the followin
 ----
 ...
 graphs: {
-  g: conf/titan-berkeleydb.properties}
+  g: conf/titan-berkeleyje.properties}
 plugins:
   - aurelius.titan
 ...
 ----
 
-The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `g` to a Titan configuration at `conf/titan-berkeleydb.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
+The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `g` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
 
-Next add a `conf/titan-berkeleydb.properties` file which should contain something like:
+Next add a `conf/titan-berkeleyje.properties` file which should contain something like:
 
 [source,text]
 ----

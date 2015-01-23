@@ -83,7 +83,7 @@ public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
 
         // Now start the current release using the old DB files (new code, old data) and query it
         // The config file below must point at the the data unzipped in the previous step
-        testGotGQueries("conf/titan-berkeleydb-es.properties");
+        testGotGQueries("conf/titan-berkeleyje-es.properties");
     }
 
     private void downloadFile(String url, String toLocalPath, File workingDir) throws IOException, InterruptedException {
