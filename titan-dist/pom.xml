@@ -64,6 +64,11 @@
         </dependency>
         <dependency>
             <groupId>com.tinkerpop</groupId>
+            <artifactId>hadoop-gremlin</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop</groupId>
             <artifactId>gremlin-server</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
