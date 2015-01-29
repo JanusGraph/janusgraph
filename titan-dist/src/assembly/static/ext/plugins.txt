@@ -1,2 +1,3 @@
 com.tinkerpop.gremlin.console.plugin.DriverGremlinPlugin
 com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanGremlinPlugin
+com.tinkerpop.gremlin.hadoop.groovy.plugin.HadoopGremlinPlugin
