@@ -73,7 +73,7 @@ done
 shift $(( $OPTIND - 1 ))
 
 if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
-    export HADOOP_GREMLIN_LIBS="$DIR"/../ext/hadoop-gremlin:"$DIR"/../ext/titan-all
+    export HADOOP_GREMLIN_LIBS="$DIR"/../lib
 fi
 
 if [ -z "${JAVA_OPTIONS:-}" ]; then
