@@ -229,10 +229,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
                 // Throw an exception if at least one transaction failed to close
                 if (1 == txCloseExceptions.size()) {
-                    throw new TitanException("Unable to close transaction",
+                    // TP3's test suite requires that this be of type ISE
+                    throw new IllegalStateException("Unable to close transaction",
                             Iterables.getOnlyElement(txCloseExceptions.values()));
                 } else if (1 < txCloseExceptions.size()) {
-                    throw new TitanException(String.format(
+                    throw new IllegalStateException(String.format(
                             "Unable to close %s transactions (see warnings in log output for details)",
                             txCloseExceptions.size()));
                 }
