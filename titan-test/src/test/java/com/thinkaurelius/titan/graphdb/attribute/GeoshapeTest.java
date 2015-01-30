@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.attribute;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 /**
@@ -47,6 +49,20 @@ public class GeoshapeTest {
         assertNotSame(c,b);
         System.out.println(c);
         System.out.println(b);
+    }
+
+    @Test
+    public void testParseCollection() {
+        Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+        assertEquals(Geoshape.point(10, 20), serializer.convert(Arrays.asList(10, 20)));
+        assertEquals(Geoshape.circle(10, 20, 30), serializer.convert(Arrays.asList(10, 20, 30)));
+        assertEquals(Geoshape.box(10, 20, 30, 40), serializer.convert(Arrays.asList(10, 20, 30, 40)));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testFailParseCollection() {
+        Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+        serializer.convert(Arrays.asList(10, "Foo"));
     }
 
 }

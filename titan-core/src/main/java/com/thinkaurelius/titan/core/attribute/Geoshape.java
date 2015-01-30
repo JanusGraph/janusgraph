@@ -11,6 +11,9 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A generic representation of a geographic shape, which can either be a single point,
@@ -353,6 +356,17 @@ public class Geoshape {
 
         @Override
         public Geoshape convert(Object value) {
+            if(value instanceof Collection) {
+                Collection<Object> c = (Collection) value;
+                List<Double> numbers = c.stream().map(o -> {
+                    if (!(o instanceof Number)) {
+                        throw new IllegalArgumentException("Collections may only contain numbers to create a Geoshape");
+                    }
+                    return ((Number)o).doubleValue();
+                }).collect(Collectors.toList());
+                value = numbers.toArray(new Double[numbers.size()]);
+            }
+
             if (value.getClass().isArray() && (value.getClass().getComponentType().isPrimitive() ||
                     Number.class.isAssignableFrom(value.getClass().getComponentType())) ) {
                 Geoshape shape = null;
