@@ -277,6 +277,12 @@
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur-ssl -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur-ssl</argLine>
                             <excludedGroups />
                             <groups>com.thinkaurelius.titan.testcategory.CassandraSSLTests</groups>
+                            <!-- The TP3 JUnit Suite/Runner ignores groups/@Category and I'm not sure why.  Redundant excludes to keep TP3 tests from using non-SSL configs on SSL -->
+                            <excludes>
+                                <exclude>**/*ComputerTest.java</exclude>
+                                <exclude>**/*StructureTest.java</exclude>
+                                <exclude>**/*ProcessTest.java</exclude>
+                            </excludes>
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
                             <parallel>classes</parallel>
