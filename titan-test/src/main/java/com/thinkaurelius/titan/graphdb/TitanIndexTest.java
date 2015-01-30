@@ -5,6 +5,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.util.ManagementUtil;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
@@ -967,7 +968,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX));
         mgmt.commit();
 
-        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, TimeUnit.SECONDS);
+        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").timeout(10L, TimeUnit.SECONDS).call();
 
         finishSchema();
         assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
