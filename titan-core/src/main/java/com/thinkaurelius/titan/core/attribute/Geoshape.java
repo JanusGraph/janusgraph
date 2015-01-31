@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Doubles;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Shape;
@@ -11,6 +12,8 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.lang.reflect.Array;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A generic representation of a geographic shape, which can either be a single point,
@@ -353,6 +356,15 @@ public class Geoshape {
 
         @Override
         public Geoshape convert(Object value) {
+
+            if(value instanceof Map) {
+                return convertGeoJson(value);
+            }
+
+            if(value instanceof Collection) {
+                value = convertCollection((Collection<Object>) value);
+            }
+
             if (value.getClass().isArray() && (value.getClass().getComponentType().isPrimitive() ||
                     Number.class.isAssignableFrom(value.getClass().getComponentType())) ) {
                 Geoshape shape = null;
@@ -383,6 +395,84 @@ public class Geoshape {
                 return convert(coords);
             } else return null;
         }
+
+
+        private double[] convertCollection(Collection<Object> c) {
+
+            List<Double> numbers = c.stream().map(o -> {
+                if (!(o instanceof Number)) {
+                    throw new IllegalArgumentException("Collections may only contain numbers to create a Geoshape");
+                }
+                return ((Number) o).doubleValue();
+            }).collect(Collectors.toList());
+            return Doubles.toArray(numbers);
+        }
+
+        private Geoshape convertGeoJson(Object value) {
+            //Note that geoJson is long,lat
+            try {
+                Map<String, Object> map = (Map) value;
+                String type = (String) map.get("type");
+                if("Point".equals(type) || "Circle".equals(type) || "Polygon".equals(type)) {
+                    return convertGeometry(map);
+                }
+                else if("Feature".equals(type)) {
+                    Map<String, Object> geometry = (Map) map.get("geometry");
+                    return convertGeometry(geometry);
+                }
+                throw new IllegalArgumentException("Only Point, Circle, Polygon or feature types are supported");
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException("GeoJSON was unparsable");
+            }
+
+        }
+
+        private Geoshape convertGeometry(Map<String, Object> geometry) {
+            String type = (String) geometry.get("type");
+            List<Object> coordinates = (List) geometry.get("coordinates");
+            //Either this is a single point or a collection of points
+
+            if ("Point".equals(type)) {
+                double[] parsedCoordinates = convertCollection(coordinates);
+                return point(parsedCoordinates[1], parsedCoordinates[0]);
+            } else if ("Circle".equals(type)) {
+                Number radius = (Number) geometry.get("radius");
+                if (radius == null) {
+                    throw new IllegalArgumentException("GeoJSON circles require a radius");
+                }
+                double[] parsedCoordinates = convertCollection(coordinates);
+                return circle(parsedCoordinates[1], parsedCoordinates[0], radius.doubleValue());
+            } else if ("Polygon".equals(type)) {
+                if (coordinates.size() != 4) {
+                    throw new IllegalArgumentException("GeoJSON polygons are only supported if they form a box");
+                }
+                List<double[]> polygon = (List<double[]>) coordinates.stream().map(o -> convertCollection((Collection) o)).collect(Collectors.toList());
+
+                double[] p0 = polygon.get(0);
+                double[] p1 = polygon.get(1);
+                double[] p2 = polygon.get(2);
+                double[] p3 = polygon.get(3);
+
+                //This may be a clockwise or counterclockwise polygon, we have to verify that it is a box
+                if ((p0[0] == p1[0] && p1[1] == p2[1] && p2[0] == p3[0] && p3[1] == p0[1]) ||
+                        (p0[1] == p1[1] && p1[0] == p2[0] && p2[1] == p3[1] && p3[0] == p0[0])) {
+                    return box(min(p0[1], p1[1], p2[1], p3[1]), min(p0[0], p1[0], p2[0], p3[0]), max(p0[1], p1[1], p2[1], p3[1]), max(p0[0], p1[0], p2[0], p3[0]));
+                }
+
+                throw new IllegalArgumentException("GeoJSON polygons are only supported if they form a box");
+            } else {
+                throw new IllegalArgumentException("GeoJSON support is restricted to Point, Circle or Polygon.");
+            }
+        }
+
+        private double min(double... numbers) {
+            return Arrays.stream(numbers).min().getAsDouble();
+        }
+
+        private double max(double... numbers) {
+            return Arrays.stream(numbers).max().getAsDouble();
+        }
+
 
         @Override
         public Geoshape read(ScanBuffer buffer) {

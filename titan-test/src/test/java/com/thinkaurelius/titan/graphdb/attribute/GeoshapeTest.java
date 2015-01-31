@@ -1,7 +1,14 @@
 package com.thinkaurelius.titan.graphdb.attribute;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -13,8 +20,8 @@ public class GeoshapeTest {
 
     @Test
     public void testDistance() {
-        Geoshape p1 = Geoshape.point(37.759,-122.536);
-        Geoshape p2 = Geoshape.point(35.714,-105.938);
+        Geoshape p1 = Geoshape.point(37.759, -122.536);
+        Geoshape p2 = Geoshape.point(35.714, -105.938);
 
         double distance = 1496;
         assertEquals(distance,p1.getPoint().distance(p2.getPoint()),5.0);
@@ -48,5 +55,165 @@ public class GeoshapeTest {
         System.out.println(c);
         System.out.println(b);
     }
+
+
+    @Test
+    public void testParseCollection() {
+        Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+        assertEquals(Geoshape.point(10, 20), serializer.convert(Arrays.asList(10, 20)));
+        assertEquals(Geoshape.circle(10, 20, 30), serializer.convert(Arrays.asList(10, 20, 30)));
+        assertEquals(Geoshape.box(10, 20, 30, 40), serializer.convert(Arrays.asList(10, 20, 30, 40)));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testFailParseCollection() {
+        Geoshape.GeoshapeSerializer serializer = new Geoshape.GeoshapeSerializer();
+        serializer.convert(Arrays.asList(10, "Foo"));
+    }
+
+
+    @Test
+    public void testGeoJsonPoint() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Point\",\n" +
+                "    \"coordinates\": [20.5, 10.5]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        assertEquals(Geoshape.point(10.5, 20.5), s.convert(json));
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGeoJsonPointUnparseable() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Point\",\n" +
+                "    \"coordinates\": [20.5, \"10.5\"]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        s.convert(json);
+    }
+
+
+    @Test
+    public void testGeoJsonCircle() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Circle\",\n" +
+                "    \"radius\": 30.5, " +
+                "    \"coordinates\": [20.5, 10.5]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        assertEquals(Geoshape.circle(10.5, 20.5, 30.5), s.convert(json));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGeoJsonCircleMissingRadius() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Circle\",\n" +
+                "    \"coordinates\": [20.5, 10.5]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        s.convert(json);
+    }
+
+    @Test
+    public void testGeoJsonPolygon() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Polygon\",\n" +
+                "    \"coordinates\": [[20.5, 10.5],[22.5, 10.5],[22.5, 12.5],[20.5, 12.5]]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        assertEquals(Geoshape.box(10.5, 20.5, 12.5, 22.5), s.convert(json));
+
+        //Try the reverse order points
+        json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Polygon\",\n" +
+                "    \"coordinates\": [[20.5, 12.5],[22.5, 12.5],[22.5, 10.5],[20.5, 10.5]]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        assertEquals(Geoshape.box(10.5, 20.5, 12.5, 22.5), s.convert(json));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGeoJsonPolygonNotBox1() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Polygon\",\n" +
+                "    \"coordinates\": [[20.5, 12.5],[22.5, 12.5],[22.5, 10.5],[20.5, 10.6]]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+        s.convert(json);
+
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGeoJsonPolygonNotBox2() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "  \"type\": \"Feature\",\n" +
+                "  \"geometry\": {\n" +
+                "    \"type\": \"Polygon\",\n" +
+                "    \"coordinates\": [[20.5, 10.5],[22.5, 10.5],[22.5, 12.5]]\n" +
+                "  },\n" +
+                "  \"properties\": {\n" +
+                "    \"name\": \"Dinagat Islands\"\n" +
+                "  }\n" +
+                "}", HashMap.class);
+         s.convert(json);
+
+    }
+
+    @Test
+    public void testGeoJsonGeometry() throws IOException {
+        Geoshape.GeoshapeSerializer s = new Geoshape.GeoshapeSerializer();
+        Map json = new ObjectMapper().readValue("{\n" +
+                "    \"type\": \"Point\",\n" +
+                "    \"coordinates\": [20.5, 10.5]\n" +
+                "}", HashMap.class);
+        assertEquals(Geoshape.point(10.5, 20.5), s.convert(json));
+
+    }
+
+
+
 
 }
