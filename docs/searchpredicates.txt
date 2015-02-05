@@ -43,7 +43,7 @@ Query Examples
 The following query examples demonstrate some of the predicates on the tutorial graph.
 
 [source,java]
-// 1) Find vertices with the name "hercules"
+ // 1) Find vertices with the name "hercules"
 g.V.has("name","hercules")
 // 2) Find all vertices with an age greater than 50
 g.V.has("age",gt,50)
@@ -83,3 +83,46 @@ While Titan's composite indexes support any data type that can be stored in Tita
  * Geoshape
  
 Additional data types will be supported in the future.
+
+Geoshape Data Type
+~~~~~~~~~~~~~~~~~~
+The Geoshape data type supports representing a point, circle or box. However all index backends currently only support indexing points.
+Geospatial index lookups are only supported via mixed indexes.
+
+To construct a Geoshape use the following methods:
+
+[source,java]
+ //lat, lng
+Geoshape.point(37.97,23.72)
+//lat, lng, radius in km
+Geoshape.circle(37.97,23.72,50)
+//SW lat, SW lng, NE lat, NE lng
+Geoshape.box(37.97,23.72,38.97,24.72)
+
+In addition when importing a graph via GraphSON Point may be represented by:
+[source,java]
+ //string
+"37.97,23.72"
+//list
+[37.97,23.72]
+//GeoJSON feature
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [125.6, 10.1]
+  },
+  "properties": {
+    "name": "Dinagat Islands"
+  }
+}
+//GeoJSON geometry
+{
+  "type": "Point",
+  "coordinates": [125.6, 10.1]
+}
+
+link:http://geojson.org/[GeoJSON] may be specified as Point, Circle or Polygon. However polygons must form a box.
+Note that unlike the Titan API GeoJSON specifies coordinates as lng lat.
+
+
