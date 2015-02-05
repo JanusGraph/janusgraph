@@ -1135,7 +1135,7 @@ userlogs.addLogProcessor("battle")
                 TitanVertex h = (TitanVertex)tx.V.has("name","hercules").toList().iterator().next();
                 for (TitanEdge edge : changeState.getEdges(h,Change.ADDED,Direction.OUT,"battled")) {
                     if (edge.<Integer>getProperty("time")>1000)
-                        h.singleProperty("oldFighter",true);
+                        h.property("oldFighter",true);
                 }
             }
         })
