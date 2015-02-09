@@ -992,6 +992,14 @@
                             </execution>
                         </executions>
                     </plugin>
+
+                    <!-- gpg must follow assembly.
+                         Both plugins run in the package phase, so only <plugin> ordering
+                         ensures that signing happens after assembly file generation.
+                         Hence this vacuous stanza down here. -->
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
