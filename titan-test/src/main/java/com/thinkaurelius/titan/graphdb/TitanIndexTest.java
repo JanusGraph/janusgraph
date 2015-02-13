@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -344,6 +346,46 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
 
     }
+
+
+    /**
+     * Tests indexing boolean
+     */
+    @Test
+    public void testUUIDIndexing() {
+        PropertyKey name = makeKey("uid", UUID.class);
+        mgmt.buildIndex("uuidIndex",Vertex.class).
+                addKey(name).buildMixedIndex(INDEX);
+        finishSchema();
+        clopen();
+
+        UUID uid1 = UUID.randomUUID();
+        UUID uid2 = UUID.randomUUID();
+
+        TitanVertex v1 = graph.addVertex();
+        v1.property("uid", uid1);
+
+        TitanVertex v2 = graph.addVertex();
+        v2.property("uid", uid2);
+
+        assertEquals(2, graph.V().count().next().intValue());
+        assertEquals(v1, graph.V().has("uid", uid1).next());
+        assertEquals(v2, graph.V().has("uid", uid2).next());
+
+        assertEquals(v2, graph.V().has("uid", Compare.neq, uid1).next());
+        assertEquals(v1, graph.V().has("uid", Compare.neq, uid2).next());
+
+        clopen();//Flush the index
+        assertEquals(2, graph.V().count().next().intValue());
+        assertEquals(v1, graph.V().has("uid", uid1).next());
+        assertEquals(v2, graph.V().has("uid", uid2).next());
+
+        assertEquals(v2, graph.V().has("uid", Compare.neq, uid1).next());
+        assertEquals(v1, graph.V().has("uid", Compare.neq, uid2).next());
+
+    }
+
+
 
     /**
      * Tests conditional indexing and the different management features

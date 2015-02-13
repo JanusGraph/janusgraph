@@ -68,6 +68,7 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(String.class, new StringSerializer()); //supports null serialization
         registerClass(Float.class, new FloatSerializer());
         registerClass(Double.class, new DoubleSerializer());
+        registerClass(UUID.class, new UUIDSerializer());
 
 
         //Arrays (support null serialization)

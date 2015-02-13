@@ -245,6 +245,10 @@
                    units="degrees"
 		   prefixTree="geohash"/>
 
+        <!-- UUID field -->
+        <fieldType name="uuid"
+                   class="solr.UUIDField"
+                   indexed="true" />
     </types>
 
 
@@ -338,7 +342,7 @@
         <dynamicField name="*_dt"   type="date"     indexed="true"  stored="true"/>
         <dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
 
-        <!--<dynamicField name="*_guid" type="text"     indexed="true"  stored="true"/>-->
+        <dynamicField name="*_uuid" type="uuid"     indexed="true"  stored="true"/>
         <!--<dynamicField name="*_name" type="text"     indexed="true"  stored="true"/>-->
 
         <dynamicField name="random*" type="random" />

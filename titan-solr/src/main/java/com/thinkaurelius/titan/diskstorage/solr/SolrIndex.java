@@ -308,6 +308,9 @@ public class SolrIndex implements IndexProvider {
         // double and let Solr do the same thing or fail.
         if (value instanceof AbstractDecimal)
             return ((AbstractDecimal) value).doubleValue();
+
+        if (value instanceof UUID)
+            return value.toString();
         return value;
     }
 
@@ -573,7 +576,15 @@ public class SolrIndex implements IndexProvider {
                     poly.append(")))\" distErrPct=0");
                     return (poly.toString());
                 }
-            }
+            } else if (value instanceof UUID) {
+                if (titanPredicate == Cmp.EQUAL) {
+                    return (key + ":\"" + escapeValue(value) + "\"");
+                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                    return ("-" + key + ":\"" + escapeValue(value) + "\"");
+                } else {
+                    throw new IllegalArgumentException("Relation is not supported for uuid value: " + titanPredicate);
+                }
+            } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             String sub = buildQueryFilter(((Not)condition).getChild(),informations);
             if (StringUtils.isNotBlank(sub)) return "-("+sub+")";
@@ -701,6 +712,8 @@ public class SolrIndex implements IndexProvider {
 //                case TEXTSTRING:
 //                    return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
+        } else if (dataType == UUID.class) {
+            return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -709,7 +722,7 @@ public class SolrIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXT || mapping==Mapping.STRING) return true;
@@ -739,7 +752,9 @@ public class SolrIndex implements IndexProvider {
             else postfix = "_d";
         } else if (datatype.equals(Geoshape.class)) {
             postfix = "_g";
-        } else throw new IllegalArgumentException("Unsupported data type ["+datatype+"] for field: " + key);
+        } else if (datatype.equals(UUID.class)) {
+            postfix = "_uuid";
+        }else throw new IllegalArgumentException("Unsupported data type ["+datatype+"] for field: " + key);
         return key+postfix;
     }
 

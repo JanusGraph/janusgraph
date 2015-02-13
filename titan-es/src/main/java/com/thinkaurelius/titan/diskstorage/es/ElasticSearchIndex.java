@@ -415,6 +415,10 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (dataType == Geoshape.class) {
                 log.debug("Registering geo_point type for {}", key);
                 mapping.field("type", "geo_point");
+            } else if (dataType == UUID.class) {
+                log.debug("Registering uuid type for {}", key);
+                mapping.field("type", "string");
+                mapping.field("index","not_analyzed");
             }
 
             mapping.endObject().endObject().endObject().endObject();
@@ -491,6 +495,8 @@ public class ElasticSearchIndex implements IndexProvider {
 //                        default: throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
 //                    }
 //                    builder.endObject();
+                } if (add.value instanceof UUID) {
+                    builder.field(add.field, add.value.toString());
                 } else throw new IllegalArgumentException("Unsupported type: " + add.value);
 
             }
@@ -673,6 +679,14 @@ public class ElasticSearchIndex implements IndexProvider {
                     return FilterBuilders.geoBoundingBoxFilter(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
                 } else
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
+            } else if (value instanceof UUID) {
+                if (titanPredicate == Cmp.EQUAL) {
+                    return FilterBuilders.termFilter(key, value);
+                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                    return FilterBuilders.notFilter(FilterBuilders.termFilter(key, value));
+                } else {
+                    throw new IllegalArgumentException("Only equal or not equal is supported for UUIDs: " + titanPredicate);
+                }
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             return FilterBuilders.notFilter(getFilter(((Not) condition).getChild(),informations));
@@ -767,6 +781,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 case TEXTSTRING:
                     return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
+        } else if (dataType == UUID.class) {
+            return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -776,7 +792,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING
