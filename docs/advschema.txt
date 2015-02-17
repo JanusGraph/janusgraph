@@ -77,9 +77,9 @@ mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.LIST
 mgmt.commit()
 v = g.addVertex()
 p1 = v.property('name','Dan LaRocque')
-p1.singleProperty('source','web')
+p1.property('source','web')
 p2 = v.property('name','dalaro')
-p2.singleProperty('source','github')
+p2.property('source','github')
 g.commit()
 v.properties('name')
 ==> Iterable over all name properties
@@ -107,6 +107,6 @@ mgmt.commit()
 user = g.v(4)
 u = g.v(8)
 v = g.v(16)
-v.addEdge('knows',u).singleProperty('author',user)
+v.addEdge('knows',u).property('author',user)
 
 Note, that unidirected edges do not get automatically deleted when their in-vertices are deleted. The user must ensure that such inconsistencies do not arise or resolve them at query time by explicitly checking vertex existence in a transaction. See the discussion in <<ghost-vertices>> for more information.
