@@ -313,6 +313,10 @@ public class LuceneIndex implements IndexProvider {
                 geofields.put(e.field, shape);
                 doc.add(new StoredField(e.field, GEOID + ctx.toString(shape)));
 
+            } else if (e.value instanceof Date) {
+                doc.add(new LongField(e.field, (((Date) e.value).getTime()), Field.Store.YES));
+            } else if (e.value instanceof Boolean) {
+                doc.add(new IntField(e.field, ((Boolean)e.value)? 1 : 0, Field.Store.YES));
             } else {
                 throw new IllegalArgumentException("Unsupported type: " + e.value);
             }
@@ -466,6 +470,25 @@ public class LuceneIndex implements IndexProvider {
                 Shape shape = ((Geoshape) value).convert2Spatial4j();
                 SpatialArgs args = new SpatialArgs(SpatialOperation.IsWithin, shape);
                 params.addFilter(getSpatialStrategy(key).makeFilter(args));
+            } else if (value instanceof Date) {
+                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
+                params.addFilter(numericFilter(key, (Cmp) titanPredicate, ((Date) value).getTime()));
+            } else if (value instanceof Boolean) {
+                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on boolean types: " + titanPredicate);
+                int intValue;
+                switch ((Cmp)titanPredicate) {
+                    case EQUAL:
+                        intValue = ((Boolean) value) ? 1 : 0;
+                        params.addFilter(NumericRangeFilter.newIntRange(key, intValue, intValue, true, true));
+                        break;
+                    case NOT_EQUAL:
+                        intValue = ((Boolean) value) ? 0 : 1;
+                        params.addFilter(NumericRangeFilter.newIntRange(key, intValue, intValue, true, true));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
+                }
+
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             SearchParams childParams = convertQuery(((Not) condition).getChild(), informations);
@@ -540,6 +563,10 @@ public class LuceneIndex implements IndexProvider {
                 case STRING:
                     return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.PREFIX || titanPredicate==Text.REGEX;
             }
+        } else if (dataType == Date.class) {
+            if (titanPredicate instanceof Cmp) return true;
+        } else if (dataType == Boolean.class) {
+            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -549,7 +576,7 @@ public class LuceneIndex implements IndexProvider {
         if (information.getCardinality()!= Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING || mapping==Mapping.TEXT) return true;

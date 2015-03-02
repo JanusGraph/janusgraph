@@ -17,6 +17,8 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -76,6 +78,16 @@ public class LuceneIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Cmp.EQUAL));
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(Date.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN));
+        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
     }
 
 //    @Override
