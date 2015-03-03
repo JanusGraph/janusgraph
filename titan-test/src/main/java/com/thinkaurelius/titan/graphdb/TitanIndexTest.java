@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.util.ManagementUtil;
@@ -36,8 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -343,6 +342,75 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertCount(numV, tx.E());
 
 
+
+
+    }
+
+
+    /**
+     * Tests indexing boolean
+     */
+    @Test
+    public void testBooleanIndexing() {
+        PropertyKey name = makeKey("visible", Boolean.class);
+        mgmt.buildIndex("booleanIndex",Vertex.class).
+                addKey(name).buildMixedIndex(INDEX);
+        finishSchema();
+        clopen();
+
+        TitanVertex v1 = graph.addVertex();
+        v1.property("visible", true);
+
+        TitanVertex v2 = graph.addVertex();
+        v2.property("visible", false);
+
+        assertEquals(2, graph.V().count().next().intValue());
+        assertEquals(v1, graph.V().has("visible", true).next());
+        assertEquals(v2, graph.V().has("visible", false).next());
+        assertEquals(v2, graph.V().has("visible", Compare.neq, true).next());
+        assertEquals(v1, graph.V().has("visible", Compare.neq, false).next());
+
+        clopen();//Flush the index
+        assertEquals(2, graph.V().count().next().intValue());
+        assertEquals(v1, graph.V().has("visible", true).next());
+        assertEquals(v2, graph.V().has("visible", false).next());
+        assertEquals(v2, graph.V().has("visible", Compare.neq, true).next());
+        assertEquals(v1, graph.V().has("visible", Compare.neq, false).next());
+    }
+
+
+    /**
+     * Tests indexing dates
+     */
+    @Test
+    public void testDateIndexing() {
+        PropertyKey name = makeKey("date", Date.class);
+        mgmt.buildIndex("dateIndex",Vertex.class).
+                addKey(name).buildMixedIndex(INDEX);
+        finishSchema();
+        clopen();
+
+        TitanVertex v1 = graph.addVertex();
+        v1.property("date", new Date(1000));
+
+        TitanVertex v2 = graph.addVertex();
+        v2.property("date", new Date(2000));
+
+
+        assertEquals(v1, graph.V().has("date", Cmp.EQUAL, new Date(1000)).next());
+        assertEquals(v2, graph.V().has("date", Cmp.GREATER_THAN, new Date(1000)).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).toSet());
+        assertEquals(v1, graph.V().has("date", Cmp.LESS_THAN, new Date(2000)).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).toSet());
+        assertEquals(v2, graph.V().has("date", Cmp.NOT_EQUAL, new Date(1000)).next());
+
+        clopen();//Flush the index
+        assertEquals(v1, graph.V().has("date", Cmp.EQUAL, new Date(1000)).next());
+        assertEquals(v2, graph.V().has("date", Cmp.GREATER_THAN, new Date(1000)).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).toSet());
+        assertEquals(v1, graph.V().has("date", Cmp.LESS_THAN, new Date(2000)).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).toSet());
+        assertEquals(v2, graph.V().has("date", Cmp.NOT_EQUAL, new Date(1000)).next());
 
 
     }

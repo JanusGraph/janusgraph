@@ -48,6 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -576,6 +578,39 @@ public class SolrIndex implements IndexProvider {
                     poly.append(")))\" distErrPct=0");
                     return (poly.toString());
                 }
+            } else if (value instanceof Date) {
+                String queryValue = escapeValue(toIsoDate((Date)value));
+                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
+                Cmp numRel = (Cmp) titanPredicate;
+
+                switch (numRel) {
+                    case EQUAL:
+                        return (key + ":" + queryValue);
+                    case NOT_EQUAL:
+                        return ("-" + key + ":" + queryValue);
+                    case LESS_THAN:
+                        //use right curly to mean up to but not including value
+                        return (key + ":[* TO " + queryValue + "}");
+                    case LESS_THAN_EQUAL:
+                        return (key + ":[* TO " + queryValue + "]");
+                    case GREATER_THAN:
+                        //use left curly to mean greater than but not including value
+                        return (key + ":{" + queryValue + " TO *]");
+                    case GREATER_THAN_EQUAL:
+                        return (key + ":[" + queryValue + " TO *]");
+                    default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
+                }
+            } else if (value instanceof Boolean) {
+                Cmp numRel = (Cmp) titanPredicate;
+                String queryValue = escapeValue(value);
+                switch (numRel) {
+                    case EQUAL:
+                        return (key + ":" + queryValue);
+                    case NOT_EQUAL:
+                        return ("-" + key + ":" + queryValue);
+                    default:
+                        throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
+                }
             } else if (value instanceof UUID) {
                 if (titanPredicate == Cmp.EQUAL) {
                     return (key + ":\"" + escapeValue(value) + "\"");
@@ -626,6 +661,12 @@ public class SolrIndex implements IndexProvider {
         return null;
     }
 
+    private String toIsoDate(Date value) {
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(tz);
+        return df.format(value);
+    }
 
     private List<Geoshape.Point> getPolygonPoints(Geoshape polygon) {
         List<Geoshape.Point> locations = new ArrayList<Geoshape.Point>();
@@ -712,6 +753,10 @@ public class SolrIndex implements IndexProvider {
 //                case TEXTSTRING:
 //                    return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
+        } else if (dataType == Date.class) {
+            if (titanPredicate instanceof Cmp) return true;
+        } else if (dataType == Boolean.class) {
+            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
         } else if (dataType == UUID.class) {
             return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
         }
@@ -722,7 +767,7 @@ public class SolrIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == UUID.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXT || mapping==Mapping.STRING) return true;
@@ -752,9 +797,13 @@ public class SolrIndex implements IndexProvider {
             else postfix = "_d";
         } else if (datatype.equals(Geoshape.class)) {
             postfix = "_g";
+        } else if (datatype.equals(Date.class)) {
+            postfix = "_dt";
+        } else if (datatype.equals(Boolean.class)) {
+            postfix = "_b";
         } else if (datatype.equals(UUID.class)) {
             postfix = "_uuid";
-        }else throw new IllegalArgumentException("Unsupported data type ["+datatype+"] for field: " + key);
+        } else throw new IllegalArgumentException("Unsupported data type ["+datatype+"] for field: " + key);
         return key+postfix;
     }
 

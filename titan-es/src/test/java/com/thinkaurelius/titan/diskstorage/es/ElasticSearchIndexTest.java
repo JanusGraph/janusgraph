@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Date;
 import java.util.UUID;
 
 import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
@@ -62,6 +63,16 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(Date.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN));
+        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
 
         assertTrue(index.supports(of(UUID.class), Cmp.EQUAL));
         assertTrue(index.supports(of(UUID.class), Cmp.NOT_EQUAL));

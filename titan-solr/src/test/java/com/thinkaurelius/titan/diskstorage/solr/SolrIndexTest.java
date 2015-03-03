@@ -17,6 +17,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Date;
+
 import java.util.UUID;
 
 import static org.junit.Assert.assertFalse;
@@ -98,6 +100,16 @@ public class SolrIndexTest extends IndexProviderTest {
         assertFalse(index.supports(of(Double.class), Geo.INTERSECT));
         assertFalse(index.supports(of(Long.class), Text.CONTAINS));
         assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
+
+        assertTrue(index.supports(of(Date.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN));
+        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
 
         assertTrue(index.supports(of(UUID.class), Cmp.EQUAL));
         assertTrue(index.supports(of(UUID.class), Cmp.NOT_EQUAL));

@@ -59,6 +59,19 @@ When a string property is indexed as string, only the following predicates are s
 
 Full-text search predicates may be used in queries, but those require filtering in memory which can be very costly.
 
+Full text and string search
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are using ElasticSearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
+
+[source,gremlin]
+mgmt = g.openManagement()
+summary = mgmt.makePropertyKey('booksummary').dataType(String.class).make()
+mgmt.buildIndex('booksBySummary',Vertex.class).addKey(summary,Mapping.TEXTSTRING.asParameter()).buildMixedIndex("search")
+mgmt.commit()
+
+Note that the data will be stored in the index twice, once for exact matching and once for fuzzy matching.
+
 Field Mapping
 ~~~~~~~~~~~~~
 
