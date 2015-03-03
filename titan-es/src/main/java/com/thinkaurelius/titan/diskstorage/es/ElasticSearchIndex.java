@@ -415,6 +415,12 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (dataType == Geoshape.class) {
                 log.debug("Registering geo_point type for {}", key);
                 mapping.field("type", "geo_point");
+            } else if (dataType == Date.class) {
+                log.debug("Registering date type for {}", key);
+                mapping.field("type", "date");
+            } else if (dataType == Boolean.class) {
+                log.debug("Registering boolean type for {}", key);
+                mapping.field("type", "boolean");
             }
 
             mapping.endObject().endObject().endObject().endObject();
@@ -491,6 +497,10 @@ public class ElasticSearchIndex implements IndexProvider {
 //                        default: throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
 //                    }
 //                    builder.endObject();
+                } else if (add.value instanceof Date) {
+                    builder.field(add.field, ((Date) add.value));
+                } else if (add.value instanceof Boolean) {
+                    builder.field(add.field, ((Boolean) add.value));
                 } else throw new IllegalArgumentException("Unsupported type: " + add.value);
 
             }
@@ -673,6 +683,37 @@ public class ElasticSearchIndex implements IndexProvider {
                     return FilterBuilders.geoBoundingBoxFilter(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
                 } else
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
+            } else if (value instanceof Date) {
+                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
+                Cmp numRel = (Cmp) titanPredicate;
+
+                switch (numRel) {
+                    case EQUAL:
+                        return FilterBuilders.inFilter(key, value);
+                    case NOT_EQUAL:
+                        return FilterBuilders.notFilter(FilterBuilders.inFilter(key, value));
+                    case LESS_THAN:
+                        return FilterBuilders.rangeFilter(key).lt(value);
+                    case LESS_THAN_EQUAL:
+                        return FilterBuilders.rangeFilter(key).lte(value);
+                    case GREATER_THAN:
+                        return FilterBuilders.rangeFilter(key).gt(value);
+                    case GREATER_THAN_EQUAL:
+                        return FilterBuilders.rangeFilter(key).gte(value);
+                    default:
+                        throw new IllegalArgumentException("Unexpected relation: " + numRel);
+                }
+            } else if (value instanceof Boolean) {
+                Cmp numRel = (Cmp) titanPredicate;
+                switch (numRel) {
+                    case EQUAL:
+                        return FilterBuilders.inFilter(key, value);
+                    case NOT_EQUAL:
+                        return FilterBuilders.notFilter(FilterBuilders.inFilter(key, value));
+                    default:
+                        throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
+                }
+
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             return FilterBuilders.notFilter(getFilter(((Not) condition).getChild(),informations));
@@ -767,6 +808,10 @@ public class ElasticSearchIndex implements IndexProvider {
                 case TEXTSTRING:
                     return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
+        } else if (dataType == Date.class) {
+            if (titanPredicate instanceof Cmp) return true;
+        } else if (dataType == Boolean.class) {
+            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -776,7 +821,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING
