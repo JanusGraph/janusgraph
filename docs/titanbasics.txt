@@ -262,6 +262,7 @@ Titan natively supports the following data types.
 |Decimal		|Number with 3 decimal digits
 |Precision		|Number with 6 decimal digits
 |Geoshape		|Geographic shape like point, circle or box
+|UUID   		|UUID
 |=====
 
 

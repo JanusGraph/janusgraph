@@ -421,6 +421,10 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (dataType == Boolean.class) {
                 log.debug("Registering boolean type for {}", key);
                 mapping.field("type", "boolean");
+            } else if (dataType == UUID.class) {
+                log.debug("Registering uuid type for {}", key);
+                mapping.field("type", "string");
+                mapping.field("index","not_analyzed");
             }
 
             mapping.endObject().endObject().endObject().endObject();
@@ -501,6 +505,8 @@ public class ElasticSearchIndex implements IndexProvider {
                     builder.field(add.field, ((Date) add.value));
                 } else if (add.value instanceof Boolean) {
                     builder.field(add.field, ((Boolean) add.value));
+                } else if (add.value instanceof UUID) {
+                    builder.field(add.field, add.value.toString());
                 } else throw new IllegalArgumentException("Unsupported type: " + add.value);
 
             }
@@ -714,6 +720,14 @@ public class ElasticSearchIndex implements IndexProvider {
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
 
+            } else if (value instanceof UUID) {
+                if (titanPredicate == Cmp.EQUAL) {
+                    return FilterBuilders.termFilter(key, value);
+                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                    return FilterBuilders.notFilter(FilterBuilders.termFilter(key, value));
+                } else {
+                    throw new IllegalArgumentException("Only equal or not equal is supported for UUIDs: " + titanPredicate);
+                }
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             return FilterBuilders.notFilter(getFilter(((Not) condition).getChild(),informations));
@@ -812,6 +826,8 @@ public class ElasticSearchIndex implements IndexProvider {
             if (titanPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
             return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
+        } else if (dataType == UUID.class) {
+            return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -821,7 +837,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING

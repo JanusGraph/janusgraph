@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Date;
+import java.util.UUID;
 
 import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
@@ -72,6 +73,9 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
         assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
         assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(UUID.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(UUID.class), Cmp.NOT_EQUAL));
     }
 
     @Test

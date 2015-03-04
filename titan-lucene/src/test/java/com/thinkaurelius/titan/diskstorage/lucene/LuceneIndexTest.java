@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
+import java.util.UUID;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -88,6 +90,9 @@ public class LuceneIndexTest extends IndexProviderTest {
 
         assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
         assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
+
+        assertTrue(index.supports(of(UUID.class), Cmp.EQUAL));
+        assertTrue(index.supports(of(UUID.class), Cmp.NOT_EQUAL));
     }
 
 //    @Override
