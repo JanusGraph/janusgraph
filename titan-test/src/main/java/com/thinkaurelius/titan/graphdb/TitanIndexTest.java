@@ -92,6 +92,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     public abstract boolean supportsLuceneStyleQueries();
 
+
+    public abstract boolean supportsWildcardQuery();
+
     @Override
     public void open(WriteConfiguration config) {
         super.open(config);
@@ -1440,5 +1443,29 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         if (null != updatedValue)
             assertEmpty(graph.V().has(propName, updatedValue));
         graph.tx().rollback();
+    }
+
+    /**
+     * Tests indexing using _all virtual field
+     */
+    @Test
+    public void testWidcardQuery() {
+        if(supportsWildcardQuery()) {
+            PropertyKey p1 = makeKey("p1", String.class);
+            PropertyKey p2 = makeKey("p2", String.class);
+            mgmt.buildIndex("mixedIndex", Vertex.class).addKey(p1).addKey(p2).buildMixedIndex(INDEX);
+
+            finishSchema();
+            clopen();
+
+            TitanVertex v1 = graph.addVertex();
+            v1.property("p1", "test1");
+            v1.property("p2", "test2");
+
+            clopen();//Flush the index
+            assertEquals(v1, graph.indexQuery("mixedIndex", "v.*:\"test1\"").vertices().iterator().next().getElement());
+            assertEquals(v1, graph.indexQuery("mixedIndex", "v.*:\"test2\"").vertices().iterator().next().getElement());
+        }
+
     }
 }

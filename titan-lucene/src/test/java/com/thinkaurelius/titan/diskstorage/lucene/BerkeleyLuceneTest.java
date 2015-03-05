@@ -33,4 +33,9 @@ public class BerkeleyLuceneTest extends TitanIndexTest {
         //TODO: The query [v.name:"Uncle Berry has a farm"] has an empty result set which indicates that exact string
         //matching inside this query is not supported for some reason. INVESTIGATE!
     }
+
+    @Override
+    public boolean supportsWildcardQuery() {
+        return false;
+    }
 }

@@ -25,4 +25,9 @@ public class BerkeleySolrTest extends SolrTitanIndexTest {
         //TODO: set SOLR specific config options
         return config.getConfiguration();
     }
+
+    @Override
+    public boolean supportsWildcardQuery() {
+        return false;
+    }
 }

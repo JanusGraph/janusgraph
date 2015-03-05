@@ -41,6 +41,8 @@ graph.indexQuery("vertexByText","v.text:(farm uncle berry)").vertices()
 
 This query matches all vertices where the text contains any of the three words (grouped by parentheses) and score matches higher the more words are matched in the text.
 
+In addition <<elasticsearch,Elasticsearch>> supports wildcard queries, use "v.\*" or "e.*" in the query string to query if any of the properties on the element match.
+
 Gotchas
 ~~~~~~~
 
