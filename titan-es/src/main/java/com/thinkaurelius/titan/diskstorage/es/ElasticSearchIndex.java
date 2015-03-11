@@ -152,7 +152,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").build();
 
     public static final int HOST_PORT_DEFAULT = 9300;
 

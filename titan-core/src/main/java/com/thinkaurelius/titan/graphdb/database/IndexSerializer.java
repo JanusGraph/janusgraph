@@ -597,6 +597,8 @@ public class IndexSerializer {
                                                   final BackendTransaction backendTx, final StandardTitanTx transaction) {
         MixedIndexType index = getMixedIndex(query.getIndex(), transaction);
         Preconditions.checkArgument(index.getElement()==resultType,"Index is not configured for the desired result type: %s",resultType);
+        String backingIndexName = index.getBackingIndexName();
+        IndexProvider indexInformation = (IndexProvider) mixedIndexes.get(backingIndexName);
 
         StringBuffer qB = new StringBuffer(query.getQuery());
         final String prefix = query.getPrefix();
@@ -615,7 +617,7 @@ public class IndexSerializer {
             if (quoteTerminated) pos++;
             while (pos<qB.length() &&
                     (Character.isLetterOrDigit(qB.charAt(pos))
-                            || (quoteTerminated && qB.charAt(pos)!='"')) ) {
+                            || (quoteTerminated && qB.charAt(pos)!='"') || qB.charAt(pos) == '*' ) ) {
                 keyBuilder.append(qB.charAt(pos));
                 pos++;
             }
@@ -625,7 +627,10 @@ public class IndexSerializer {
             Preconditions.checkArgument(StringUtils.isNotBlank(keyname),
                     "Found reference to empty key at position [%s]",startPos);
             String replacement;
-            if (transaction.containsRelationType(keyname)) {
+            if(keyname.equals("*")) {
+                replacement = indexInformation.getFeatures().getWildcardField();
+            }
+            else if (transaction.containsRelationType(keyname)) {
                 PropertyKey key = transaction.getPropertyKey(keyname);
                 Preconditions.checkNotNull(key);
                 Preconditions.checkArgument(index.indexesKey(key),

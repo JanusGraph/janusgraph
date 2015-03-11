@@ -37,6 +37,11 @@ public class ThriftElasticsearchTest extends TitanIndexTest {
         return true;
     }
 
+    @Override
+    public boolean supportsWildcardQuery() {
+        return true;
+    }
+
     @BeforeClass
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded();
