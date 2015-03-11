@@ -57,5 +57,9 @@ public class ThriftSolrTest extends SolrTitanIndexTest {
 
     }
 
+    @Override
+    public boolean supportsWildcardQuery() {
+        return false;
+    }
 
 }

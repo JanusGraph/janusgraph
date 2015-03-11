@@ -41,6 +41,11 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
         return true;
     }
 
+    @Override
+    public boolean supportsWildcardQuery() {
+        return true;
+    }
+
     /**
      * Test {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#create(String)}.
      */
