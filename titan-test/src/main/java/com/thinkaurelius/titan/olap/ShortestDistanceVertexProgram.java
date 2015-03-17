@@ -61,7 +61,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
         seed = configuration.getLong(SEED);
         weightProperty = configuration.getString(WEIGHT_PROPERTY, "distance");
         incidentMessageScope = MessageScope.Local.of(__::inE, (msg, edge) -> msg + edge.<Integer>value(weightProperty));
-        log.error("Loaded maxDepth={}", maxDepth);
+        log.debug("Loaded maxDepth={}", maxDepth);
     }
 
     @Override
