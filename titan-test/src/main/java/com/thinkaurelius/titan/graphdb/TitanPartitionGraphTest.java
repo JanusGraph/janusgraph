@@ -4,8 +4,7 @@ package com.thinkaurelius.titan.graphdb;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.olap.oldfulgora.OLAPJobBuilder;
-import com.thinkaurelius.titan.graphdb.olap.oldfulgora.OLAPResult;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -13,12 +12,13 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
-import com.thinkaurelius.titan.graphdb.olap.oldfulgora.FulgoraBuilder;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.olap.OLAPTest;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
+import com.tinkerpop.gremlin.process.computer.ComputerResult;
+import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -49,11 +49,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     final static int numPartitions = 8;
 
     public abstract WriteConfiguration getBaseConfiguration();
-
-    protected <S> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz) {
-        return new FulgoraBuilder<S>(graph);
-    }
-
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -286,29 +281,35 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         clopen(options);
 
         //Test OLAP works with partitioned vertices
-        final OLAPJobBuilder<OLAPTest.Degree> builder = getOLAPBuilder(graph,OLAPTest.Degree.class);
-        OLAPResult<OLAPTest.Degree> degrees = OLAPTest.computeDegree(builder,"name","sig");
+        TitanGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        computer.workers(4);
+        computer.program(new OLAPTest.DegreeCounter());
+        computer.mapReduce(new OLAPTest.DegreeMapper());
+        ComputerResult result = computer.submit().get();
+
+        assertTrue(result.memory().exists(OLAPTest.DegreeMapper.DEGREE_RESULT));
+        Map<Long,Integer> degrees = result.memory().get(OLAPTest.DegreeMapper.DEGREE_RESULT);
         assertNotNull(degrees);
         assertEquals(numTx*vPerTx+numG,degrees.size());
-        for (Map.Entry<Long,OLAPTest.Degree> entry : degrees.entries()) {
+        for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
             long vid = entry.getKey();
-            OLAPTest.Degree degree = entry.getValue();
-            assertEquals(degree.in+degree.out,degree.both);
+            Integer degree = entry.getValue();
             if (idManager.isPartitionedVertex(vid)) {
                 if (vid==gids[0]) {
-                    assertEquals(numTx*vPerTx + (numG-1) + 1,degree.in);
-                    assertEquals(numTx*vPerTx,degree.out);
+                    assertEquals(numTx*vPerTx + (numG-1) + 1, (long)degree);
+                    //assertEquals(numTx*vPerTx,degree.out);
                 } else if (vid==gids[1]) {
-                    assertEquals(numTx*vPerTx/2,degree.in);
-                    assertEquals(2,degree.out);
+                    assertEquals(numTx*vPerTx/2, (long)degree);
+                    //assertEquals(2,degree.out);
                 } else {
-                    assertEquals(2,degree.in+degree.out);
+                    //assertEquals(2,degree.in+degree.out);
                 }
-                assertEquals(names.size(),degree.prop);
+                //assertEquals(names.size(),degree.prop);
             } else {
-                assertEquals(1,degree.in);
-                assertTrue(1<=degree.out && degree.out<=2);
-                assertEquals(0,degree.prop);
+                assertEquals(1,(long)degree);
+                //assertTrue(1<=degree.out && degree.out<=2);
+                //assertEquals(0,degree.prop);
             }
         }
     }

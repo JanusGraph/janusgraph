@@ -2,15 +2,15 @@ package com.thinkaurelius.titan.graphdb.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.olap.FulgoraOLAPTest;
-
+import com.thinkaurelius.titan.olap.OLAPTest;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
 
-public class HBaseOLAPTest extends FulgoraOLAPTest {
+public class HBaseOLAPTest extends OLAPTest {
+
     @BeforeClass
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();
