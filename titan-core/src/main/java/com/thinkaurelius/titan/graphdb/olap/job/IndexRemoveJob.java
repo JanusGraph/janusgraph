@@ -59,24 +59,29 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         super();
     }
 
+    protected IndexRemoveJob(IndexRemoveJob copy) {
+        super(copy);
+        if (copy.graph.isProvided()) this.graph.setGraph(copy.graph.get());
+    }
+
     public IndexRemoveJob(final TitanGraph graph, final String indexName, final String indexType) {
         super(indexName,indexType);
         this.graph.setGraph(graph);
     }
 
     @Override
-    public void teardown(ScanMetrics metrics) {
-        super.teardown(metrics);
+    public void workerIterationEnd(ScanMetrics metrics) {
+        super.workerIterationEnd(metrics);
         graph.close();
     }
 
     @Override
-    public void setup(Configuration config, Configuration graphConf, ScanMetrics metrics) {
+    public void workerIterationStart(Configuration config, Configuration graphConf, ScanMetrics metrics) {
         graph.initializeGraph(graphConf);
         indexSerializer = graph.get().getIndexSerializer();
         idManager = graph.get().getIDManager();
         try {
-            super.setup(graph.get(), config, metrics);
+            super.workerIterationStart(graph.get(), config, metrics);
         } catch (Throwable e) {
             graph.close();
             throw e;
@@ -163,5 +168,10 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 else return true;
             };
         }
+    }
+
+    @Override
+    public IndexRemoveJob clone() {
+        return new IndexRemoveJob(this);
     }
 }

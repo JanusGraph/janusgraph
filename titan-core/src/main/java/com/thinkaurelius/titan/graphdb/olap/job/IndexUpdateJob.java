@@ -44,18 +44,24 @@ public abstract class IndexUpdateJob {
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
             ConfigOption.Type.LOCAL, "");
 
+
+    protected String indexRelationTypeName = null;
+    protected String indexName = null;
+
+
     protected StandardTitanGraph graph;
     protected ManagementSystem mgmt = null;
     protected StandardTitanTx writeTx;
-    protected String indexName = null;
-    protected String indexRelationTypeName = null;
-
     protected TitanIndex index;
     protected RelationType indexRelationType;
     protected long jobStartTimeMS;
 
-
     public IndexUpdateJob() { }
+
+    protected IndexUpdateJob(IndexUpdateJob copy) {
+        this.indexName = copy.indexName;
+        this.indexRelationTypeName = copy.indexRelationTypeName;
+    }
 
     public IndexUpdateJob(final String indexName, final String indexRelationTypeName) {
         this.indexName = indexName;
@@ -70,7 +76,7 @@ public abstract class IndexUpdateJob {
         return !isGlobalGraphIndex();
     }
 
-    public void setup(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+    public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
         this.graph = (StandardTitanGraph)graph;
         Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
         this.jobStartTimeMS = config.get(GraphDatabaseConfiguration.JOB_START_TIME);
@@ -108,7 +114,7 @@ public abstract class IndexUpdateJob {
         }
     }
 
-    public void teardown(ScanMetrics metrics) {
+    public void workerIterationEnd(ScanMetrics metrics) {
         try {
             if (null != mgmt && mgmt.isOpen())
                 mgmt.commit();

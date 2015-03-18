@@ -40,18 +40,20 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         super();
     }
 
+    protected IndexRepairJob(IndexRepairJob job) { super(job); }
+
     public IndexRepairJob(final String indexName, final String indexType) {
         super(indexName,indexType);
     }
 
     @Override
-    public void teardown(ScanMetrics metrics) {
-        super.teardown(metrics);
+    public void workerIterationEnd(ScanMetrics metrics) {
+        super.workerIterationEnd(metrics);
     }
 
     @Override
-    public void setup(final TitanGraph graph, Configuration config, ScanMetrics metrics) {
-        super.setup(graph, config,metrics);
+    public void workerIterationStart(final TitanGraph graph, Configuration config, ScanMetrics metrics) {
+        super.workerIterationStart(graph, config, metrics);
     }
 
     /**
@@ -192,6 +194,11 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 default: throw new AssertionError("Unexpected category: " + indexType.getElement());
             }
         } else throw new UnsupportedOperationException("Unsupported index found: "+index);
+    }
+
+    @Override
+    public IndexRepairJob clone() {
+        return new IndexRepairJob(this);
     }
 
     private static<Q extends BaseVertexQuery> Q addIndexSchemaConstraint(Q query, IndexType indexType) {

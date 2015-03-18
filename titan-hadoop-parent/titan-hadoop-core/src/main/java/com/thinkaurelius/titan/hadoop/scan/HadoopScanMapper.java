@@ -57,7 +57,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         // Allowed to be null for jobs that specify no configuration and no configuration root
         //Preconditions.checkNotNull(jobConf);
         Preconditions.checkNotNull(job);
-        job.setup(jobConf, graphConf, metrics);
+        job.workerIterationStart(jobConf, graphConf, metrics);
         keyFilter = job.getKeyFilter();
         List<SliceQuery> sliceQueries = job.getQueries();
         Preconditions.checkArgument(null != sliceQueries, "Job cannot specify null query list");
@@ -115,7 +115,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
-        job.teardown(metrics);
+        job.workerIterationEnd(metrics);
     }
 
     private EntryList findEntriesMatchingQuery(SliceQuery query, EntryList sortedEntries) {

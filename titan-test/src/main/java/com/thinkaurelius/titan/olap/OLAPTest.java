@@ -55,6 +55,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     private ScanMetrics executeScanJob(ScanJob job) throws Exception {
         return graph.getBackend().buildEdgeScanJob()
                 .setNumProcessingThreads(2)
+                .setWorkBlockSize(100)
                 .setJob(job)
                 .execute().get();
     }
@@ -113,6 +114,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 queries.addQuery().labels("knows").direction(Direction.OUT).edges();
                 queries.addQuery().keys("uid").properties();
             }
+
+            @Override
+            public VertexScanJob clone() { return this; }
         });
         assertEquals(numV,result1.getCustom(VERTEX_COUNT));
         assertEquals(numE,result1.getCustom(DEGREE_COUNT));
@@ -132,6 +136,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 queries.addQuery().keys("values").properties();
                 queries.addQuery().keys("numvals").properties();
             }
+
+            @Override
+            public VertexScanJob clone() { return this; }
         });
         assertEquals(numV,result2.getCustom(VERTEX_COUNT));
     }

@@ -27,7 +27,7 @@ import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.*;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

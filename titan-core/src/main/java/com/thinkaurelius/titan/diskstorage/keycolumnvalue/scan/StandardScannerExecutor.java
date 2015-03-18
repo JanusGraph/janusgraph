@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
+import com.thinkaurelius.titan.util.system.Threads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     private final StoreTransaction storeTx;
     private final KeyColumnValueStore store;
     private final int numProcessors;
+    private final int workBlockSize;
     private final Configuration jobConfiguration;
     private final Configuration graphConfiguration;
     private final ScanMetrics metrics;
@@ -48,11 +50,11 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     private List<BlockingQueue<SliceResult>> dataQueues;
     private DataPuller[] pullThreads;
 
-
     StandardScannerExecutor(final ScanJob job, final Consumer<ScanMetrics> finishJob,
                             final KeyColumnValueStore store, final StoreTransaction storeTx,
                             final StoreFeatures storeFeatures,
-                            final int numProcessors, final Configuration jobConfiguration,
+                            final int numProcessors, final int workBlockSize,
+                            final Configuration jobConfiguration,
                             final Configuration graphConfiguration) throws BackendException {
         this.job = job;
         this.finishJob = finishJob;
@@ -60,6 +62,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
         this.storeTx = storeTx;
         this.storeFeatures = storeFeatures;
         this.numProcessors = numProcessors;
+        this.workBlockSize = workBlockSize;
         this.jobConfiguration = jobConfiguration;
         this.graphConfiguration = graphConfiguration;
 
@@ -80,7 +83,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
     @Override
     public void run() {
         try {
-            job.setup(jobConfiguration, graphConfiguration, metrics);
+            job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
 
             queries = job.getQueries();
             numQueries = queries.size();
@@ -104,13 +107,19 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
         }  catch (Throwable e) {
             log.error("Exception trying to setup the job:", e);
             cleanupSilent();
-            job.teardown(metrics);
+            job.workerIterationEnd(metrics);
             setException(e);
             return;
         }
 
-        ThreadPoolExecutor processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
-        processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        BlockingQueue<Row> processorQueue = new LinkedBlockingQueue<>(QUEUE_SIZE);
+
+        Processor[] processors = new Processor[numProcessors];
+        for (int i=0;i<processors.length;i++) {
+            processors[i]= new Processor(job.clone(),processorQueue);
+            processors[i].start();
+        }
+
         try {
             SliceResult[] currentResults = new SliceResult[numQueries];
             while (!interrupted) {
@@ -142,8 +151,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
                     }
                     queryResults.put(query,entries);
                 }
-                processor.submit(new RowProcessor(key, queryResults));
-
+                processorQueue.put(new Row(key, queryResults));
             }
 
             for (int i = 0; i < pullThreads.length; i++) {
@@ -154,12 +162,13 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
                 }
             }
 
-            processor.shutdown();
-            processor.awaitTermination(TIMEOUT_MS,TimeUnit.MILLISECONDS);
-            if (!processor.isTerminated()) log.error("Processor did not terminate in time");
+            for (int i=0; i<processors.length;i++) {
+                processors[i].finish();
+            }
+            if (!Threads.waitForCompletion(processors,TIMEOUT_MS)) log.error("Processor did not terminate in time");
 
             cleanup();
-            job.teardown(metrics);
+            job.workerIterationEnd(metrics);
 
             if (interrupted) {
                 setException(new InterruptedException("Scanner got interrupted"));
@@ -169,10 +178,10 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
             }
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
-            job.teardown(metrics);
+            job.workerIterationEnd(metrics);
             setException(e);
         } finally {
-            processor.shutdownNow();
+            Threads.terminate(processors);
             cleanupSilent();
         }
     }
@@ -209,27 +218,74 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Sta
         return metrics;
     }
 
-    private class RowProcessor implements Runnable {
+    private static class Row {
 
-        private final StaticBuffer key;
-        private final Map<SliceQuery,EntryList> entries;
+        final StaticBuffer key;
+        final Map<SliceQuery,EntryList> entries;
 
-        private RowProcessor(StaticBuffer key, Map<SliceQuery, EntryList> entries) {
+        private Row(StaticBuffer key, Map<SliceQuery, EntryList> entries) {
             this.key = key;
             this.entries = entries;
+        }
+    }
+
+
+
+    private class Processor extends Thread {
+
+        private ScanJob job;
+        private final BlockingQueue<Row> processorQueue;
+
+        private volatile boolean finished;
+        private int numProcessed;
+
+
+        private Processor(ScanJob job, BlockingQueue<Row> processorQueue) {
+            this.job = job;
+            this.processorQueue = processorQueue;
+
+            this.finished = false;
+            this.numProcessed = 0;
         }
 
         @Override
         public void run() {
             try {
-                job.process(key,entries,metrics);
-                metrics.increment(ScanMetrics.Metric.SUCCESS);
-            } catch (Throwable ex) {
-                log.error("Exception processing row ["+key+"]: ",ex);
-                metrics.increment(ScanMetrics.Metric.FAILURE);
+                job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
+                while (!finished) {
+                    Row row;
+                    while ((row=processorQueue.poll(100,TimeUnit.MILLISECONDS))!=null) {
+                        if (numProcessed>=workBlockSize) {
+                            //Setup new chunk of work
+                            job.workerIterationEnd(metrics);
+                            job = job.clone();
+                            job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
+                            numProcessed=0;
+                        }
+                        try {
+                            job.process(row.key,row.entries,metrics);
+                            metrics.increment(ScanMetrics.Metric.SUCCESS);
+                        } catch (Throwable ex) {
+                            log.error("Exception processing row ["+row.key+"]: ",ex);
+                            metrics.increment(ScanMetrics.Metric.FAILURE);
+                        }
+                        numProcessed++;
+                    }
+                }
+            } catch (InterruptedException e) {
+                log.error("Processing thread interrupted while waiting on queue or processing data", e);
+            } catch (Throwable e) {
+                log.error("Unexpected error processing data: {}",e);
+            } finally {
+                job.workerIterationEnd(metrics);
             }
         }
+
+        public void finish() {
+            this.finished=true;
+        }
     }
+
 
     private static class DataPuller extends Thread {
 

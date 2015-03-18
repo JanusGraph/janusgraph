@@ -46,12 +46,18 @@ public class GhostVertexRemover extends VertexJobConverter {
     }
 
     public GhostVertexRemover() {
-        this(null);
+        this((TitanGraph)null);
     }
 
+    protected GhostVertexRemover(GhostVertexRemover copy) { super(copy); }
+
     @Override
-    public void setup(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
-        super.setup(jobConfig, graphConfig, metrics);
+    public GhostVertexRemover clone() { return new GhostVertexRemover(this); }
+
+
+    @Override
+    public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+        super.workerIterationStart(jobConfig, graphConfig, metrics);
         Preconditions.checkArgument(jobConfig.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
         this.jobStartTimeMS = jobConfig.get(GraphDatabaseConfiguration.JOB_START_TIME);
 
@@ -116,6 +122,11 @@ public class GhostVertexRemover extends VertexJobConverter {
         @Override
         public void getQueries(QueryContainer queries) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public NoOpJob clone() {
+            return this;
         }
     }
 

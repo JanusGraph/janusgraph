@@ -349,7 +349,8 @@ public class Backend implements LockerProvider {
                 .setTimestampProvider(provider)
                 .setJobConfiguration(jobConfig)
                 .setGraphConfiguration(configuration)
-                .setNumProcessingThreads(1);
+                .setNumProcessingThreads(1)
+                .setWorkBlockSize(10000);
     }
 
     public StandardScanner.ScanResult getScanJobStatus(Object jobId) {

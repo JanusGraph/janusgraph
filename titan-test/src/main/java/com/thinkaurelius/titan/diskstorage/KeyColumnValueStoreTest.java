@@ -1195,6 +1195,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         jobBuilder.setStoreName(store.getName());
         jobBuilder.setJobConfiguration(jobConf);
         jobBuilder.setNumProcessingThreads(2);
+        jobBuilder.setWorkBlockSize(100);
         jobBuilder.setTimestampProvider(times);
         jobBuilder.setJob(job);
         return jobBuilder.execute().get();

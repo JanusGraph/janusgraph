@@ -10,30 +10,40 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 /**
- * A computation over edgestore entries.
+ * A global computation over
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface ScanJob {
+public interface ScanJob extends Cloneable {
 
     /**
-     * Invoked prior to any other method on this {@code ScanJob} instance.
-     * This will only be called once per instance.
+     * Invoked before a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
+     * Can be used to initialize the iteration. This method is called exactly once for each before a block of computation.
+     * This method is semantically aligned with {@link com.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationStart()}
      *
-     * @param config
-     * @param metrics
+     * This method may not be called if there is no data to be processed. Correspondingly, the end method won't be called either.
+     *
+     * No-op default implementation.
+     *
+     * @param jobConfiguration configuration for this particular job
+     * @param graphConfiguration configuration options for the entire graph against which this job is executed
+     * @param metrics {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
-    public default void setup(Configuration jobConfiguration,
-                  Configuration graphConfiguration, ScanMetrics metrics) {}
+    public default void workerIterationStart(Configuration jobConfiguration,
+                                             Configuration graphConfiguration, ScanMetrics metrics) {}
 
     /**
-     * After this method is invoked, no additional method calls on this
-     * {@code ScanJob} instance are permitted.
-     * This will only be called once per instance.
+     * Invoked after a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
+     * Can be used to close any resources held by this job. This method is called exactly once for each after a block of computation.
+     * This method is semantically aligned with {@link com.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationEnd()}
      *
-     * @param metrics
+     * This method may not be called if there is no data to be processed. Correspondingly, the start method won't be called either.
+     *
+     * No-op default implementation.
+     *
+     * @param metrics {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
-    public default void teardown(ScanMetrics metrics) {}
+    public default void workerIterationEnd(ScanMetrics metrics) {}
 
     /**
      * Run this {@code ScanJob}'s computation on the supplied row-key and entries.
@@ -108,5 +118,13 @@ public interface ScanJob {
     public default Predicate<StaticBuffer> getKeyFilter() {
         return b -> true; //No filter by default
     }
+
+    /**
+     * Returns a clone of this ScanJob. The clone will not yet be initialized for computation but all of
+     * its internal state (if any) must match that of the original copy.
+     *
+     * @return A clone of this {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob}
+     */
+    public ScanJob clone();
 
 }

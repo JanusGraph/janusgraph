@@ -53,8 +53,14 @@ public class VertexJobConverter implements ScanJob {
     protected VertexJobConverter(TitanGraph graph, VertexScanJob job) {
         Preconditions.checkArgument(job!=null);
         this.graph = new GraphProvider();
-        this.graph.setGraph(graph);
+        if (graph!=null) this.graph.setGraph(graph);
         this.job = job;
+    }
+
+    protected VertexJobConverter(VertexJobConverter copy) {
+        this.graph = new GraphProvider();
+        if (copy.graph.isProvided()) this.graph.setGraph(copy.graph.get());
+        this.job = copy.job.clone();
     }
 
     public static ScanJob convert(TitanGraph graph, VertexScanJob vertexJob) {
@@ -66,7 +72,7 @@ public class VertexJobConverter implements ScanJob {
     }
 
     @Override
-    public void setup(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+    public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
         graph.initializeGraph(graphConfig);
         idManager = graph.get().getIDManager();
         StandardTransactionBuilder txb = graph.get().buildTransaction().readOnly();
@@ -76,7 +82,7 @@ public class VertexJobConverter implements ScanJob {
         txb.vertexCacheSize(500);
         try {
             tx = (StandardTitanTx)txb.start();
-            job.setup(graph.get(), jobConfig, metrics);
+            job.workerIterationStart(graph.get(), jobConfig, metrics);
         } catch (Throwable e) {
             close();
             throw e;
@@ -90,8 +96,8 @@ public class VertexJobConverter implements ScanJob {
     }
 
     @Override
-    public void teardown(ScanMetrics metrics) {
-        job.teardown(metrics);
+    public void workerIterationEnd(ScanMetrics metrics) {
+        job.workerIterationEnd(metrics);
         close();
     }
 
@@ -154,6 +160,11 @@ public class VertexJobConverter implements ScanJob {
         };
     }
 
+    @Override
+    public VertexJobConverter clone() {
+        return new VertexJobConverter(this);
+    }
+
     protected long getVertexId(StaticBuffer key) {
         return idManager.getKeyID(key);
     }
@@ -180,6 +191,10 @@ public class VertexJobConverter implements ScanJob {
                 graph.close();
                 graph=null;
             }
+        }
+
+        public boolean isProvided() {
+            return provided;
         }
 
         public final StandardTitanGraph get() {

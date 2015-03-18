@@ -72,8 +72,11 @@ public class StandardScanner  {
 
     public class Builder {
 
+        private static final int DEFAULT_WORKBLOCK_SIZE = 10000;
+
         private ScanJob job;
         private int numProcessingThreads;
+        private int workBlockSize;
         private TimestampProvider times;
         private Configuration graphConfiguration;
         private Configuration jobConfiguration;
@@ -83,6 +86,7 @@ public class StandardScanner  {
 
         private Builder() {
             numProcessingThreads = 1;
+            workBlockSize = DEFAULT_WORKBLOCK_SIZE;
             job = null;
             times = null;
             graphConfiguration = Configuration.EMPTY;
@@ -96,6 +100,12 @@ public class StandardScanner  {
             Preconditions.checkArgument(numThreads>0,
                     "Need to specify a positive number of processing threads: %s",numThreads);
             this.numProcessingThreads = numThreads;
+            return this;
+        }
+
+        public Builder setWorkBlockSize(int size) {
+            Preconditions.checkArgument(size>0, "Need to specify a positive work block size: %s",size);
+            this.workBlockSize = size;
             return this;
         }
 
@@ -178,7 +188,7 @@ public class StandardScanner  {
             openStores.add(kcvs);
             try {
                 StandardScannerExecutor executor = new StandardScannerExecutor(job, finishJob, kcvs, storeTx,
-                        manager.getFeatures(), numProcessingThreads, jobConfiguration, graphConfiguration);
+                        manager.getFeatures(), numProcessingThreads, workBlockSize, jobConfiguration, graphConfiguration);
                 addJob(jobId,executor);
                 new Thread(executor).start();
                 return executor;

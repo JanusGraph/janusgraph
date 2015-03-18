@@ -57,12 +57,17 @@ public class SimpleScanJob implements ScanJob {
         this.keyFilter = keyFilter;
     }
 
+    @Override
+    public SimpleScanJob clone() {
+        return new SimpleScanJob(qs,keyFilter);
+    }
+
     public SimpleScanJob(SliceQuery q) {
         this(ImmutableList.of(q),k -> true);
     }
 
     @Override
-    public void setup(Configuration config, Configuration graphConfig, ScanMetrics metrics) {
+    public void workerIterationStart(Configuration config, Configuration graphConfig, ScanMetrics metrics) {
         assertNotNull(config);
         metrics.incrementCustom(SETUP_COUNT);
 
@@ -95,7 +100,7 @@ public class SimpleScanJob implements ScanJob {
         }
     }
 
-    public void teardown(ScanMetrics metrics) {
+    public void workerIterationEnd(ScanMetrics metrics) {
         metrics.incrementCustom(TEARDOWN_COUNT);
     }
 

@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.EntryList;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -17,7 +18,6 @@ import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.computer.MessageCombiner;
 import com.tinkerpop.gremlin.process.computer.MessageScope;
 import com.tinkerpop.gremlin.process.computer.VertexProgram;
@@ -45,7 +45,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     private static final Logger log =
             LoggerFactory.getLogger(VertexProgramScanJob.class);
 
-    private final StandardTitanGraph graph;
     private final IDManager idManager;
     private final FulgoraMemory memory;
     private final FulgoraVertexMemory<M> vertexMemory;
@@ -58,16 +57,33 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     public static final String PARTITION_VERTEX_POSTSUCCESS = "partition-success";
     public static final String PARTITION_VERTEX_POSTFAIL = "partition-fail";
 
-    private VertexProgramScanJob(StandardTitanGraph graph, FulgoraMemory memory,
+    private VertexProgramScanJob(IDManager idManager, FulgoraMemory memory,
                                 FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
-        this.graph = graph;
-        this.idManager = graph.getIDManager();
+        this.idManager = idManager;
         this.memory = memory;
         this.vertexMemory = vertexMemory;
         this.vertexProgram = vertexProgram;
         this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
         this.scopes = vertexProgram.getMessageScopes(memory);
+    }
 
+    @Override
+    public VertexProgramScanJob<M> clone() {
+        try {
+            return new VertexProgramScanJob<>(this.idManager, this.memory, this.vertexMemory, this.vertexProgram.clone());
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("VertexProgram must support clone()",e);
+        }
+    }
+
+    @Override
+    public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+        vertexProgram.workerIterationStart(memory); //TODO: Should this also be immutable?
+    }
+
+    @Override
+    public void workerIterationEnd(ScanMetrics metrics) {
+        vertexProgram.workerIterationEnd(memory.asImmutable());
     }
 
     @Override
@@ -127,7 +143,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     public static<M> Executor getVertexProgramScanJob(StandardTitanGraph graph, FulgoraMemory memory,
                                                   FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram,
                                                   int numThreads) {
-        VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph,memory,vertexMemory,vertexProgram);
+        VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
         return new Executor(graph,job,numThreads);
     }
 
@@ -146,6 +162,11 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             this.numThreads = numThreads;
         }
 
+        private Executor(final Executor copy) {
+            super(copy);
+            this.numThreads=copy.numThreads;
+        }
+
         @Override
         public List<SliceQuery> getQueries() {
             List<SliceQuery> queries = super.getQueries();
@@ -154,7 +175,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         }
 
         @Override
-        public void teardown(ScanMetrics metrics) {
+        public void workerIterationEnd(ScanMetrics metrics) {
             ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
             processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
             try {
@@ -168,8 +189,12 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             } finally {
                 processor.shutdownNow();
             }
-            super.teardown(metrics);
+            super.workerIterationEnd(metrics);
         }
+
+        @Override
+        public Executor clone() { return new Executor(this); }
+
 
     }
 

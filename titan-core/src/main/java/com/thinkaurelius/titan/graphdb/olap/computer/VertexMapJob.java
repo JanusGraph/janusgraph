@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -32,11 +33,24 @@ public class VertexMapJob implements VertexScanJob {
     public static final String MAP_JOB_SUCCESS = "map-success";
     public static final String MAP_JOB_FAILURE = "map-fail";
 
-    private VertexMapJob(StandardTitanGraph graph, FulgoraVertexMemory vertexMemory,
+    private VertexMapJob(IDManager idManager, FulgoraVertexMemory vertexMemory,
                             Map<MapReduce, FulgoraMapEmitter> mapJobs) {
         this.mapJobs = mapJobs;
         this.vertexMemory = vertexMemory;
-        this.idManager = graph.getIDManager();
+        this.idManager = idManager;
+    }
+
+    @Override
+    public VertexMapJob clone() {
+        ImmutableMap.Builder<MapReduce,FulgoraMapEmitter> cloneMap = ImmutableMap.builder();
+        for (Map.Entry<MapReduce,FulgoraMapEmitter> entry : mapJobs.entrySet()) {
+            try {
+                cloneMap.put(entry.getKey().clone(),entry.getValue());
+            } catch (CloneNotSupportedException e) {
+                throw new AssertionError("MapReduce implementations need to support clone()",e);
+            }
+        }
+        return new VertexMapJob(idManager,vertexMemory,cloneMap.build());
     }
 
     @Override
@@ -70,7 +84,7 @@ public class VertexMapJob implements VertexScanJob {
 
     public static Executor getVertexMapJob(StandardTitanGraph graph, FulgoraVertexMemory vertexMemory,
                                               Map<MapReduce,FulgoraMapEmitter> mapJobs) {
-        VertexMapJob job = new VertexMapJob(graph,vertexMemory,mapJobs);
+        VertexMapJob job = new VertexMapJob(graph.getIDManager(),vertexMemory,mapJobs);
         return new Executor(graph,job);
     }
 
@@ -80,6 +94,8 @@ public class VertexMapJob implements VertexScanJob {
             super(graph, job);
         }
 
+        private Executor(final Executor copy) { super(copy); }
+
         @Override
         public List<SliceQuery> getQueries() {
             List<SliceQuery> queries = super.getQueries();
@@ -87,6 +103,8 @@ public class VertexMapJob implements VertexScanJob {
             return queries;
         }
 
+        @Override
+        public Executor clone() { return new Executor(this); }
 
     }
 

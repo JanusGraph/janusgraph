@@ -55,6 +55,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private boolean executed = false;
 
     private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
+    private int readBatchSize = 10000;
     private int writeBatchSize;
     private ResultMode resultMode;
 
@@ -65,6 +66,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     public FulgoraGraphComputer(final StandardTitanGraph graph, final Configuration configuration) {
         this.graph = graph;
         this.writeBatchSize = configuration.get(GraphDatabaseConfiguration.BUFFER_SIZE);
+        this.readBatchSize = this.writeBatchSize*10;
         this.resultMode = ResultMode.valueOf(configuration.get(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE).toUpperCase());
         this.name = "compute" + computerCounter.incrementAndGet();
     }
@@ -130,7 +132,6 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 memory.completeSubRound();
 
                 for (int iteration=1;;iteration++) {
-                    vertexProgram.workerIterationStart(this.memory);
                     vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
 
                     jobId = name + "#" + iteration;
@@ -138,6 +139,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                     StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
                     scanBuilder.setJobId(jobId);
                     scanBuilder.setNumProcessingThreads(numThreads);
+                    scanBuilder.setWorkBlockSize(readBatchSize);
                     scanBuilder.setJob(job);
                     try {
                         ScanMetrics jobResult = scanBuilder.execute().get();
@@ -153,7 +155,6 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         throw new TitanException(e);
                     }
 
-                    vertexProgram.workerIterationEnd(memory.asImmutable());
                     vertexMemory.completeIteration();
                     memory.completeSubRound();
                     try {
@@ -182,6 +183,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
             scanBuilder.setJobId(jobId);
             scanBuilder.setNumProcessingThreads(numThreads);
+            scanBuilder.setWorkBlockSize(readBatchSize);
             scanBuilder.setJob(job);
             try {
                 ScanMetrics jobResult = scanBuilder.execute().get();
