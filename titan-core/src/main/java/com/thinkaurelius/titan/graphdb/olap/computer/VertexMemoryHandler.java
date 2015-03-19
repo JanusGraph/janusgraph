@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
@@ -46,8 +47,11 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     @Override
     public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
         if (vertexMemory.elementKeyMap.isEmpty()) return Collections.emptyIterator();
-        if (keys==null || keys.length==0) keys = vertexMemory.elementKeyMap.keySet()
-                .toArray(new String[vertexMemory.elementKeyMap.size()]);
+        if (keys==null || keys.length==0) {
+            return Iterators.emptyIterator(); //Do NOT return compute keys as part of all the properties...
+            //keys = vertexMemory.elementKeyMap.keySet().toArray(new String[vertexMemory.elementKeyMap.size()]);
+        }
+        //..but only if specifically asked for by key
         List<VertexProperty<V>> result = new ArrayList<>(Math.min(keys.length,vertexMemory.elementKeyMap.size()));
         for (String key : keys) {
             if (!supports(key)) continue;

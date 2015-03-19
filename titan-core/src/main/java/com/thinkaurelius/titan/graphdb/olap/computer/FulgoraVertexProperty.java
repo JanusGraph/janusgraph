@@ -55,12 +55,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V>, VertexP
         mixinParent.removeKey(key);
         isRemoved=true;
     }
-
-    @Override
-    public Object id() {
-        return null;
-    }
-
+    
     @Override
     public long longId() {
         throw new IllegalStateException("An id has not been set for this property");
