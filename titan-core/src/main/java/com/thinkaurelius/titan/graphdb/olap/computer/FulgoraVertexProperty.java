@@ -57,9 +57,13 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V>, VertexP
     }
 
     @Override
+    public Object id() {
+        return null;
+    }
+
+    @Override
     public long longId() {
-        return 0;
-        //throw new IllegalStateException("An id has not been set for this property");
+        throw new IllegalStateException("An id has not been set for this property");
     }
 
     @Override
