@@ -48,7 +48,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
         if (vertexMemory.elementKeyMap.isEmpty()) return Collections.emptyIterator();
         if (keys==null || keys.length==0) {
-            return Iterators.emptyIterator(); //Do NOT return compute keys as part of all the properties...
+            return Collections.emptyIterator(); //Do NOT return compute keys as part of all the properties...
             //keys = vertexMemory.elementKeyMap.keySet().toArray(new String[vertexMemory.elementKeyMap.size()]);
         }
         //..but only if specifically asked for by key
