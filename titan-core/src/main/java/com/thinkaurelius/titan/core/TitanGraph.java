@@ -106,6 +106,10 @@ import com.tinkerpop.gremlin.structure.Graph;
         test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
         method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX",
         reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
+@Graph.OptOut(
+        test="com.tinkerpop.gremlin.process.computer.ranking.PageRankVertexProgramTest",
+        method="shouldExecutePageRank",
+        reason="Blocked on resolution of a TP3 inconsistency")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------
