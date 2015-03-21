@@ -97,6 +97,15 @@ import com.tinkerpop.gremlin.structure.Graph;
         method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
         specific = "property(k)",
         reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
+//------------------------
+@Graph.OptOut(
+        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
+        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX_groupCount",
+        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
+@Graph.OptOut(
+        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
+        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX",
+        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------
