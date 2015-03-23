@@ -158,4 +158,15 @@ public interface StoreFeatures {
     public Configuration getLocalKeyConsistentTxConfig();
 
 
+    /**
+     * Get a transaction configuration suitable for reading data into a
+     * {@link ScanJob}.  Transactions opened on this config will only be
+     * used to read data, not to write it, and they'll be rolled back
+     * when those reads are completed.  The configuration returned by this
+     * method should disable transaction isolation, if the store supports it.
+     *
+     * @return a transaction configuration suitable for scanjob data reading
+     */
+    public Configuration getScanTxConfig();
+
 }

@@ -73,6 +73,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                     .keyConsistent(GraphDatabaseConfiguration.buildGraphConfiguration())
                     .locking(true)
                     .keyOrdered(true)
+                    .scanTxConfig(GraphDatabaseConfiguration.buildGraphConfiguration()
+                            .set(ISOLATION_LEVEL, IsolationLevel.READ_UNCOMMITTED))
                     .build();
 
 //        features = new StoreFeatures();

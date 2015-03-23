@@ -165,10 +165,17 @@ public class StandardScanner  {
             Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
             StandardBaseTransactionConfig.Builder txBuilder = new StandardBaseTransactionConfig.Builder();
             txBuilder.timestampProvider(times);
-            if (graphConfiguration!=Configuration.EMPTY) {
-                txBuilder.customOptions(graphConfiguration);
 
+            Configuration scanConfig = manager.getFeatures().getScanTxConfig();
+            if (Configuration.EMPTY != graphConfiguration) {
+                scanConfig = null == scanConfig ?
+                        graphConfiguration :
+                        new MergedConfiguration(graphConfiguration, scanConfig);
             }
+            if (null != scanConfig) {
+                txBuilder.customOptions(scanConfig);
+            }
+
 //            if (!txOptions.isEmpty()) {
 //                ModifiableConfiguration writeConf = GraphDatabaseConfiguration.buildConfiguration();
 //                for (Map.Entry<String,Object> confEntry : txOptions.entrySet()) {
@@ -183,8 +190,10 @@ public class StandardScanner  {
 //                }
 //                txBuilder.customOptions(customConf);
 //            }
+
             StoreTransaction storeTx = manager.beginTransaction(txBuilder.build());
             KeyColumnValueStore kcvs = manager.openDatabase(dbName);
+
             openStores.add(kcvs);
             try {
                 StandardScannerExecutor executor = new StandardScannerExecutor(job, finishJob, kcvs, storeTx,
