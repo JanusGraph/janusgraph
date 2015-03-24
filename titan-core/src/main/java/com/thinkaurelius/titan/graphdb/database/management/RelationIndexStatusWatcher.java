@@ -68,7 +68,7 @@ public class RelationIndexStatusWatcher
             if (timedOut) {
                 LOGGER.info("Timed out ({}) while waiting for index {} (relation type {}) to reach status {}",
                         timeout, relationIndexName, relationTypeName, status);
-                return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, status, t.elapsed());
+                return new RelationIndexStatusReport(false, relationIndexName, relationTypeName, actualStatus, status, t.elapsed());
             }
 
             Thread.sleep(poll.getLength(TimeUnit.MILLISECONDS));
