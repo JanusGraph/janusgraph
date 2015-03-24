@@ -1257,8 +1257,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             mgmt.updateIndex(gindex, SchemaAction.ENABLE_INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
-        //This call is not strictly necessary - we are just doing it to ensure that a redundant call doesn't mess anything up
-        mgmt.updateIndex(eindex, SchemaAction.REGISTER_INDEX);
         mgmt.commit();
 
 
@@ -1273,10 +1271,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(SchemaStatus.REGISTERED, pindex.getIndexStatus());
         assertEquals(SchemaStatus.REGISTERED, eindex.getIndexStatus());
         assertEquals(SchemaStatus.REGISTERED, gindex.getIndexStatus(gindex.getFieldKeys()[0]));
-
+        finishSchema();
         //Simply enable without reindex
+        eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
         mgmt.updateIndex(eindex, SchemaAction.ENABLE_INDEX);
         finishSchema();
+        assertTrue(ManagementSystem.awaitRelationIndexStatus(graph, "byTime", "friend").status(SchemaStatus.ENABLED)
+                .timeout(10L, TimeUnit.SECONDS).call().getSucceeded());
+
         //Reindex the other two
         pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
         mgmt.updateIndex(pindex, SchemaAction.REINDEX);
