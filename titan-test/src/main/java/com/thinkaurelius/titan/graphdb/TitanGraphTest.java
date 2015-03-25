@@ -55,6 +55,7 @@ import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.gremlin.process.Step;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.map.LocalStep;
 import com.tinkerpop.gremlin.process.graph.step.map.OrderStep;
@@ -4506,7 +4507,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event","name", "some event","time", System.currentTimeMillis());
+        Vertex v1 = tx.addVertex(T.label, "event","name", "some event","time", System.currentTimeMillis());
         tx.commit();
         Object id = v1.id();
 
