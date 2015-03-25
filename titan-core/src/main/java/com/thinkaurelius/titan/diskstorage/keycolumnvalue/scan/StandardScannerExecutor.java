@@ -253,7 +253,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Tit
         public void run() {
             try {
                 job.workerIterationStart(jobConfiguration, graphConfiguration, metrics);
-                while (!finished) {
+                while (!finished || !processorQueue.isEmpty()) {
                     Row row;
                     while ((row=processorQueue.poll(100,TimeUnit.MILLISECONDS))!=null) {
                         if (numProcessed>=workBlockSize) {
