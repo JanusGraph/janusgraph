@@ -71,6 +71,7 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -1181,7 +1182,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testIndexUpdatesWithReindexAndRemove() throws InterruptedException {
+    public void testIndexUpdatesWithReindexAndRemove() throws InterruptedException, ExecutionException {
         clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
@@ -1392,13 +1393,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         gindex = mgmt.getGraphIndex("bySensorReading");
         mgmt.updateIndex(pindex,SchemaAction.REMOVE_INDEX);
         mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX);
-        ManagementSystem.IndexJobStatus pmetrics = (ManagementSystem.IndexJobStatus) mgmt.getIndexJobStatus(pindex);
-        ManagementSystem.IndexJobStatus gmetrics = (ManagementSystem.IndexJobStatus) mgmt.getIndexJobStatus(gindex);
+        TitanManagement.IndexJobFuture pmetrics = mgmt.getIndexJobStatus(pindex);
+        TitanManagement.IndexJobFuture gmetrics = mgmt.getIndexJobStatus(gindex);
         finishSchema();
         waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"));
         waitForReindex(graph, mgmt -> mgmt.getGraphIndex("bySensorReading"));
-        assertEquals(30,pmetrics.getMetrics().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
-        assertEquals(30,gmetrics.getMetrics().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+        assertEquals(30, pmetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+        assertEquals(30, gmetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
     public static void waitForReindex(TitanGraph graph, Function<TitanManagement,TitanIndex> indexRetriever) {
@@ -1406,7 +1407,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             TitanManagement mgmt = graph.openManagement();
             try {
                 TitanIndex index = indexRetriever.apply(mgmt);
-                JobStatus status = mgmt.getIndexJobStatus(index);
+                TitanManagement.IndexJobFuture status = mgmt.getIndexJobStatus(index);
                 System.out.println("Index [" + index.name() + (index instanceof RelationTypeIndex ? "@" + ((RelationTypeIndex) index).getType().name() : "") + "] job status: " + status);
                 if (status.isDone()) break;
             } finally {
@@ -2437,13 +2438,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(10, size(u.query().labels("connectDesc").has("time", Cmp.GREATER_THAN, 30).limit(10).vertices()));
 
        lastTime = 0;
-       for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
+       for (TitanEdge e : (Iterable<TitanEdge>)v.query().labels("connect").direction(OUT).limit(20).edges()) {
            int nowTime = e.value("time");
            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
            lastTime = nowTime;
        }
        lastTime = Integer.MAX_VALUE;
-       for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
+       for (Edge e : (Iterable<TitanEdge>)u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
            int nowTime = e.value("time");
            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
            lastTime = nowTime;
@@ -2452,7 +2453,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(10, size(u.query().labels("connectDesc").direction(OUT).has("time", Cmp.GREATER_THAN, 60).limit(10).vertices()));
 
        outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
-       for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
+       for (Edge e : (Iterable<TitanEdge>)v.query().labels("connect").direction(OUT).limit(10).edges()) {
            assertEquals(e, outer.next());
        }
 
@@ -2550,13 +2551,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(10, size(u.query().labels("connectDesc").has("time", Cmp.GREATER_THAN, 30).limit(10).vertices()));
 
        lastTime = 0;
-       for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
+       for (Edge e : (Iterable<TitanEdge>)v.query().labels("connect").direction(OUT).limit(20).edges()) {
            int nowTime = e.value("time");
            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
            lastTime = nowTime;
        }
        lastTime = Integer.MAX_VALUE;
-       for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
+       for (Edge e : (Iterable<TitanEdge>)u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
            int nowTime = e.value("time");
            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
            lastTime = nowTime;
@@ -2565,7 +2566,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(10, size(u.query().labels("connectDesc").direction(OUT).has("time", Cmp.GREATER_THAN, 60).limit(10).vertices()));
 
        outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
-       for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
+       for (Edge e : (Iterable<TitanEdge>)v.query().labels("connect").direction(OUT).limit(10).edges()) {
            assertEquals(e, outer.next());
        }
 
@@ -4212,9 +4213,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanVertex v1,v2;
         v1 = graph.addVertex();
 
-        v2 = graph.query().hasNot("abcd").vertices().iterator().next();
+        v2 = (TitanVertex)graph.query().hasNot("abcd").vertices().iterator().next();
         assertEquals(v1,v2);
-        v2 = graph.query().hasNot("abcd",true).vertices().iterator().next();
+        v2 = (TitanVertex)graph.query().hasNot("abcd",true).vertices().iterator().next();
         assertEquals(v1,v2);
     }
 

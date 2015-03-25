@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
@@ -1029,7 +1030,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testIndexUpdatesWithoutReindex() throws InterruptedException {
+    public void testIndexUpdatesWithoutReindex() throws InterruptedException, ExecutionException {
         Object[] settings = new Object[]{option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0, TimeUnit.MILLISECONDS),
                 option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
                 option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
@@ -1076,15 +1077,15 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         addVertex(defTime,defText,defHeight);
         tx.commit();
         //Should not yet be able to enable since not yet registered
-        assertFalse(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
+        assertNull(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
         //This call is redundant and just here to make sure it doesn't mess anything up
-        assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX));
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX).get();
         mgmt.commit();
 
         ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").timeout(10L, TimeUnit.SECONDS).call();
 
         finishSchema();
-        assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX).get();
         finishSchema();
 
         //Add more data
@@ -1164,7 +1165,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
                 ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
 
-        assertTrue(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"),SchemaAction.DISABLE_INDEX));
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"),SchemaAction.DISABLE_INDEX).get();
         tx.commit();
         mgmt.commit();
 
@@ -1425,7 +1426,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         Thread.sleep(2000);
 
-        TitanVertex r = Iterables.get(graph.query().has("name", Text.CONTAINS, "was here").vertices(), 0);
+        TitanVertex r = Iterables.<TitanVertex>get(graph.query().has("name", Text.CONTAINS, "was here").vertices(), 0);
         Assert.assertEquals(r.property("name").value(), "hercules was here");
     }
 

@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -353,7 +354,7 @@ public class Backend implements LockerProvider {
                 .setWorkBlockSize(10000);
     }
 
-    public StandardScanner.ScanResult getScanJobStatus(Object jobId) {
+    public TitanManagement.IndexJobFuture getScanJobStatus(Object jobId) {
         return scanner.getRunningJob(jobId);
     }
 

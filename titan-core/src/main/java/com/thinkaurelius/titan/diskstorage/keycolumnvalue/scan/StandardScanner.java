@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -66,7 +67,7 @@ public class StandardScanner  {
         Preconditions.checkArgument(runningJobs.get(jobId)==executor,"Another job with the same id is already running: %s",jobId);
     }
 
-    public ScanResult getRunningJob(Object jobId) {
+    public TitanManagement.IndexJobFuture getRunningJob(Object jobId) {
         return runningJobs.get(jobId);
     }
 
@@ -159,7 +160,7 @@ public class StandardScanner  {
             return this;
         }
 
-        public ScanResult execute() throws BackendException {
+        public TitanManagement.IndexJobFuture execute() throws BackendException {
             Preconditions.checkArgument(job!=null,"Need to specify a job to execute");
             Preconditions.checkArgument(StringUtils.isNotBlank(dbName),"Need to specify a database to execute against");
             Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
@@ -208,11 +209,4 @@ public class StandardScanner  {
         }
 
     }
-
-    public interface ScanResult extends Future<ScanMetrics> {
-
-        public ScanMetrics getIntermediateResult();
-
-    }
-
 }

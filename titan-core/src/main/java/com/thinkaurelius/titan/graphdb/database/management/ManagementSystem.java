@@ -69,6 +69,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -621,7 +622,7 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     @Override
-    public boolean updateIndex(TitanIndex index, SchemaAction updateAction) {
+    public IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction) {
         Preconditions.checkArgument(index!=null,"Need to provide an index");
         Preconditions.checkArgument(updateAction!=null,"Need to provide update action");
 
@@ -630,12 +631,14 @@ public class ManagementSystem implements TitanManagement {
         Set<PropertyKeyVertex> keySubset = ImmutableSet.of();
         if (index instanceof RelationTypeIndex) {
             dependentTypes = ImmutableSet.of((TitanSchemaVertex)((InternalRelationType)schemaVertex).getBaseType());
-            if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) return false;
+            if (!updateAction.isApplicableStatus(schemaVertex.getStatus()))
+                return null;
         } else if (index instanceof TitanGraphIndex) {
             IndexType indexType = schemaVertex.asIndexType();
             dependentTypes = Sets.newHashSet();
             if (indexType.isCompositeIndex()) {
-                if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) return false;
+                if (!updateAction.isApplicableStatus(schemaVertex.getStatus()))
+                    return null;
                 for (PropertyKey key : ((TitanGraphIndex)index).getFieldKeys()) {
                     dependentTypes.add((PropertyKeyVertex)key);
                 }
@@ -646,19 +649,23 @@ public class ManagementSystem implements TitanManagement {
                 for (ParameterIndexField field : cindexType.getFieldKeys()) {
                     if (applicableStatus.contains(field.getStatus())) keySubset.add((PropertyKeyVertex)field.getFieldKey());
                 }
-                if (keySubset.isEmpty()) return false;
+                if (keySubset.isEmpty())
+                    return null;
+
                 dependentTypes.addAll(keySubset);
             }
         } else throw new UnsupportedOperationException("Updates not supported for index: " + index);
 
         IndexIdentifier indexId = new IndexIdentifier(index);
         StandardScanner.Builder builder;
+        IndexJobFuture future;
         switch(updateAction) {
             case REGISTER_INDEX:
                 setStatus(schemaVertex,SchemaStatus.INSTALLED,keySubset);
                 updatedTypes.add(schemaVertex);
                 updatedTypes.addAll(dependentTypes);
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
+                future = new EmptyIndexJobFuture();
                 break;
             case REINDEX:
                 builder = graph.getBackend().buildEdgeScanJob();
@@ -666,19 +673,21 @@ public class ManagementSystem implements TitanManagement {
                 builder.setJobId(indexId);
                 builder.setJob(VertexJobConverter.convert(graph,new IndexRepairJob(indexId.indexName,indexId.relationTypeName)));
                 try {
-                    builder.execute();
+                    future = builder.execute();
                 } catch (BackendException e) { throw new TitanException(e); }
                 break;
             case ENABLE_INDEX:
-                setStatus(schemaVertex,SchemaStatus.ENABLED,keySubset);
+                setStatus(schemaVertex, SchemaStatus.ENABLED, keySubset);
                 updatedTypes.add(schemaVertex);
                 if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                future = new EmptyIndexJobFuture();
                 break;
             case DISABLE_INDEX:
                 setStatus(schemaVertex,SchemaStatus.INSTALLED,keySubset);
                 updatedTypes.add(schemaVertex);
                 if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.DISABLED, keySubset));
+                future = new EmptyIndexJobFuture();
                 break;
             case REMOVE_INDEX:
                 if (index instanceof RelationTypeIndex) {
@@ -692,12 +701,45 @@ public class ManagementSystem implements TitanManagement {
                 builder.setJobId(indexId);
                 builder.setJob(new IndexRemoveJob(graph,indexId.indexName,indexId.relationTypeName));
                 try {
-                    builder.execute();
+                    future = builder.execute();
                 } catch (BackendException e) { throw new TitanException(e); }
                 break;
             default: throw new UnsupportedOperationException("Update action not supported: " + updateAction);
         }
-        return true;
+        return future;
+    }
+
+    private static class EmptyIndexJobFuture implements IndexJobFuture {
+
+        @Override
+        public ScanMetrics getIntermediateResult() {
+            return null;
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return true;
+        }
+
+        @Override
+        public ScanMetrics get() throws InterruptedException, ExecutionException {
+            return null;
+        }
+
+        @Override
+        public ScanMetrics get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return null;
+        }
     }
 
     private static class UpdateStatusTrigger implements Callable<Boolean> {
@@ -825,18 +867,9 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public IndexJobStatus getIndexJobStatus(TitanIndex index) {
+    public IndexJobFuture getIndexJobStatus(TitanIndex index) {
         IndexIdentifier indexId = new IndexIdentifier(index);
-        StandardScanner.ScanResult result = graph.getBackend().getScanJobStatus(indexId);
-        JobStatus.State state = JobStatus.State.UNKNOWN;
-        ScanMetrics metrics = null;
-        if (result!=null) {
-            if (result.isDone()) state = JobStatus.State.DONE;
-            else if (result.isCancelled()) state = JobStatus.State.FAILED;
-            else state = JobStatus.State.RUNNING;
-            metrics = result.getIntermediateResult();
-        }
-        return new IndexJobStatus(state,metrics);
+        return graph.getBackend().getScanJobStatus(indexId);
     }
 
     public static class IndexJobStatus extends JobStatus {

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -22,7 +23,7 @@ import java.util.function.Predicate;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements StandardScanner.ScanResult, Runnable {
+class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements TitanManagement.IndexJobFuture, Runnable {
 
     private static final Logger log =
             LoggerFactory.getLogger(StandardScannerExecutor.class);

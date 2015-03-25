@@ -2,11 +2,13 @@ package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Order;
 
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -211,6 +213,26 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     }
 
+    public interface IndexJobFuture extends Future<ScanMetrics> {
+
+        /**
+         * Returns a set of potentially incomplete and still-changing metrics
+         * for this job.  This is not guaranteed to be the same object as the
+         * one returned by {@link #get()}, nor will the metrics visible through
+         * the object returned by this method necessarily eventually converge
+         * on the same values in the object returned by {@link #get()}, though
+         * the implementation should attempt to provide both properties when
+         * practical.
+         *
+         * The metrics visible through the object returned by this method may
+         * also change their values between reads.  In other words, this is not
+         * necessarily an immutable snapshot.
+         *
+         * @return metrics for a potentially still-running job
+         */
+        public ScanMetrics getIntermediateResult();
+    }
+
     /*
     ##################### CONSISTENCY SETTING ##########################
      */
@@ -270,9 +292,9 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      *
      * @param index
      * @param updateAction
-     * @return true, if an update operation was triggered or false, if the action did not have any impact
+     * @return a future that completes when the index action is done
      */
-    public boolean updateIndex(TitanIndex index, SchemaAction updateAction);
+    public IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction);
 
     /**
      * If an index update job was triggered through {@link #updateIndex(TitanIndex, SchemaAction)} with schema actions
@@ -282,7 +304,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param index
      * @return A message that reflects the status of the index job
      */
-    public JobStatus getIndexJobStatus(TitanIndex index);
+    public IndexJobFuture getIndexJobStatus(TitanIndex index);
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################
