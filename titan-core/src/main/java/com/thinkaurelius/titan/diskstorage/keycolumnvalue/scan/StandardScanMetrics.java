@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.EnumMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -13,6 +16,9 @@ public class StandardScanMetrics implements ScanMetrics {
     private final EnumMap<Metric,AtomicLong> metrics;
     private final ConcurrentMap<String,AtomicLong> customMetrics;
 
+    private static final Logger log =
+            LoggerFactory.getLogger(StandardScanMetrics.class);
+
     public StandardScanMetrics() {
         metrics = new EnumMap<>(ScanMetrics.Metric.class);
         for (Metric m : Metric.values()) {
@@ -24,8 +30,17 @@ public class StandardScanMetrics implements ScanMetrics {
     @Override
     public long getCustom(String metric) {
         AtomicLong counter = customMetrics.get(metric);
-        if (counter == null) return 0;
-        else return counter.get();
+        if (counter == null) {
+            if (log.isDebugEnabled())
+                log.debug("[{}:{}] Returning zero by default (was null)",
+                        System.identityHashCode(customMetrics), metric);
+            return 0;
+        } else {
+            long v = counter.get();
+            if (log.isDebugEnabled())
+                log.debug("[{}:{}] Returning {}", System.identityHashCode(customMetrics), metric, v);
+            return v;
+        }
     }
 
     @Override
@@ -36,6 +51,8 @@ public class StandardScanMetrics implements ScanMetrics {
             counter = customMetrics.get(metric);
         }
         counter.addAndGet(delta);
+        if (log.isDebugEnabled())
+            log.debug("[{}:{}] Incremented by {}", System.identityHashCode(customMetrics), metric, delta);
     }
 
     @Override
