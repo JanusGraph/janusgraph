@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
@@ -73,11 +74,6 @@ public class LocalLockMediator<T> {
      * have expired and the calling context should assume it no longer holds the
      * lock specified by {@code kc}.
      * <p/>
-     * The number of nanoseconds elapsed since the UNIX Epoch is not readily
-     * available within the JVM. When reckoning expiration times, this method
-     * uses the approximation implemented by
-     * {@link com.thinkaurelius.titan.diskstorage.util.NanoTime#getApproxNSSinceEpoch(false)}.
-     * <p/>
      * The current implementation of this method returns true when given an
      * {@code expiresAt} argument in the past. Future implementations may return
      * false instead.
@@ -91,7 +87,10 @@ public class LocalLockMediator<T> {
         assert null != kc;
         assert null != requestor;
 
-        AuditRecord<T> audit = new AuditRecord<T>(requestor, expires);
+        final StackTraceElement[] acquiredAt = log.isTraceEnabled() ?
+                new Throwable("Lock acquisition by " + requestor).getStackTrace() : null;
+
+        AuditRecord<T> audit = new AuditRecord<T>(requestor, expires, acquiredAt);
         AuditRecord<T> inmap = locks.putIfAbsent(kc, audit);
 
         boolean success = false;
@@ -133,6 +132,7 @@ public class LocalLockMediator<T> {
                 log.trace(
                         "Local lock failed: {} namespace={} txn={} (already owned by {})",
                         new Object[]{kc, name, requestor, inmap});
+                log.trace("Owner stacktrace:\n        {}", Joiner.on("\n        ").join(inmap.acquiredAt));
             }
         }
 
@@ -153,7 +153,7 @@ public class LocalLockMediator<T> {
             return false;
         }
 
-        AuditRecord<T> unlocker = new AuditRecord<T>(requestor, null);
+        AuditRecord<T> unlocker = new AuditRecord<T>(requestor, null, null);
 
         AuditRecord<T> holder = locks.get(kc);
 
@@ -205,9 +205,15 @@ public class LocalLockMediator<T> {
          */
         private int hashCode;
 
-        private AuditRecord(T holder, Timepoint expires) {
+        /**
+         * A optional call trace generated when the lock was acquired.
+         */
+        private StackTraceElement[] acquiredAt;
+
+        private AuditRecord(T holder, Timepoint expires, StackTraceElement[] acquiredAt) {
             this.holder = holder;
             this.expires = expires;
+            this.acquiredAt = acquiredAt;
         }
 
         /**
