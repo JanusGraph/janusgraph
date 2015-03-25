@@ -32,7 +32,9 @@ public class CacheVertex extends StandardVertex {
     }
 
     protected int getQueryCacheSize() {
-        return queryCache.size();
+        synchronized (queryCache) {
+            return queryCache.size();
+        }
     }
 
     @Override
@@ -66,8 +68,9 @@ public class CacheVertex extends StandardVertex {
     }
 
     private Map.Entry<SliceQuery, EntryList> getSuperResultSet(final SliceQuery query) {
-        if (queryCache.size() > 0) {
-            synchronized (queryCache) {
+
+        synchronized (queryCache) {
+            if (queryCache.size() > 0) {
                 for (Map.Entry<SliceQuery, EntryList> entry : queryCache.entrySet()) {
                     if (entry.getKey().subsumes(query)) return entry;
                 }
