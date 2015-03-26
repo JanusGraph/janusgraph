@@ -242,9 +242,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             IOUtils.closeQuietly(backend);
             IOUtils.closeQuietly(queryCache);
             IOUtils.closeQuietly(serializer);
-
-            // Remove shutdown hook to avoid reference retention
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
         } finally {
             isOpen = false;
         }
