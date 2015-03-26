@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.tinkerpop.gremlin.structure.Direction;
 
+import java.io.Closeable;
 import java.util.EnumMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -14,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class RelationQueryCache {
+public class RelationQueryCache implements AutoCloseable {
 
     private final Cache<Long,CacheEntry> cache;
     private final EdgeSerializer edgeSerializer;

@@ -207,50 +207,57 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private synchronized void closeInternal() {
 
         if (!isOpen) return;
+
+        Map<TitanTransaction, RuntimeException> txCloseExceptions = new HashMap<>();
+
         try {
             //Unregister instance
+            String uniqueid = null;
             try {
+                uniqueid = config.getUniqueGraphId();
                 ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
-                globalConfig.remove(REGISTRATION_TIME, config.getUniqueGraphId());
-                /* Assuming a couple of properties about openTransactions:
-                 * 1. no concurrent modifications during graph shutdown
-                 * 2. all contained txs are open
-                 */
-                Map<TitanTransaction, RuntimeException> txCloseExceptions = new HashMap<TitanTransaction, RuntimeException>();
-                for (StandardTitanTx otx : openTransactions) {
-                    try {
-                        otx.close();
-                    } catch (RuntimeException e) {
-                        // Catch and store these exceptions, but proceed wit the loop
-                        // Any remaining txs on the iterator should get a chance to close before we throw up
-                        log.warn("Unable to close transaction {}", otx, e);
-                        txCloseExceptions.put(otx, e);
-                    }
-                }
-                // Throw an exception if at least one transaction failed to close
-                if (1 == txCloseExceptions.size()) {
-                    // TP3's test suite requires that this be of type ISE
-                    throw new IllegalStateException("Unable to close transaction",
-                            Iterables.getOnlyElement(txCloseExceptions.values()));
-                } else if (1 < txCloseExceptions.size()) {
-                    throw new IllegalStateException(String.format(
-                            "Unable to close %s transactions (see warnings in log output for details)",
-                            txCloseExceptions.size()));
-                }
-                super.close();
-            } finally {
-                idAssigner.close();
-                backend.close();
-                queryCache.close();
-                IOUtils.closeQuietly(serializer);
-
-                // Remove shutdown hook to avoid reference retention
-                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+                globalConfig.remove(REGISTRATION_TIME, uniqueid);
+            } catch (Exception e) {
+                log.warn("Unable to remove graph instance uniqueid {}", uniqueid, e);
             }
-        } catch (BackendException e) {
-            throw new TitanException("Could not close storage backend", e);
+
+            /* Assuming a couple of properties about openTransactions:
+             * 1. no concurrent modifications during graph shutdown
+             * 2. all contained txs are open
+             */
+            for (StandardTitanTx otx : openTransactions) {
+                try {
+                    otx.close();
+                } catch (RuntimeException e) {
+                    // Catch and store these exceptions, but proceed wit the loop
+                    // Any remaining txs on the iterator should get a chance to close before we throw up
+                    log.warn("Unable to close transaction {}", otx, e);
+                    txCloseExceptions.put(otx, e);
+                }
+            }
+
+            super.close();
+
+            IOUtils.closeQuietly(idAssigner);
+            IOUtils.closeQuietly(backend);
+            IOUtils.closeQuietly(queryCache);
+            IOUtils.closeQuietly(serializer);
+
+            // Remove shutdown hook to avoid reference retention
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
         } finally {
             isOpen = false;
+        }
+
+        // Throw an exception if at least one transaction failed to close
+        if (1 == txCloseExceptions.size()) {
+            // TP3's test suite requires that this be of type ISE
+            throw new IllegalStateException("Unable to close transaction",
+                    Iterables.getOnlyElement(txCloseExceptions.values()));
+        } else if (1 < txCloseExceptions.size()) {
+            throw new IllegalStateException(String.format(
+                    "Unable to close %s transactions (see warnings in log output for details)",
+                    txCloseExceptions.size()));
         }
     }
 
@@ -350,7 +357,7 @@ private synchronized void removeHook() {
 
     private BackendTransaction openBackendTransaction(StandardTitanTx tx) throws BackendException {
         IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever(tx);
-        return backend.beginTransaction(tx.getConfiguration(),retriever);
+        return backend.beginTransaction(tx.getConfiguration(), retriever);
     }
 
     public void closeTransaction(StandardTitanTx tx) {

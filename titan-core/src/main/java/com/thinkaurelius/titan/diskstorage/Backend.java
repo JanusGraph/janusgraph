@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -60,7 +61,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class Backend implements LockerProvider {
+public class Backend implements LockerProvider, AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(Backend.class);
 

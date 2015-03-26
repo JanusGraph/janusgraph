@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 @PreInitializeConfigOptions
-public class VertexIDAssigner {
+public class VertexIDAssigner implements AutoCloseable {
 
     private static final Logger log =
             LoggerFactory.getLogger(VertexIDAssigner.class);
