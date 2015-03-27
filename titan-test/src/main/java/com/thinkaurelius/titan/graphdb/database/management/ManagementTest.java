@@ -26,8 +26,9 @@ public abstract class ManagementTest extends TitanGraphBaseTest {
             "~T$SchemaDefinitionDescription",
             "~T$SchemaUpdateTimestamp",
             "~T$SchemaRelated",
-            "~T$VertexLabel"
-            /* "key", "vertex", "edge", "element", "property", "label"*/);
+            "~T$VertexLabel");
+            // TODO #634 add to list: "key"
+            // TODO #730 add to list: "vertex", "edge", "element", "property", "label"
 
     @Test
     public void testReservedNamesRejectedForPropertyKeys() {

@@ -2,17 +2,19 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
-import com.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Map;
+import java.util.Set;
 
 public abstract class SystemTypeManager {
 
     private volatile static Map<Long, SystemRelationType> SYSTEM_TYPES_BY_ID;
     private volatile static Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
+    private static final Set<String> ADDITIONAL_RESERVED_NAMES;
     private static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
 
     static {
@@ -33,6 +35,10 @@ public abstract class SystemTypeManager {
 
             SYSTEM_TYPES_BY_ID = idBuilder.build();
             SYSTEM_TYPES_BY_NAME = nameBuilder.build();
+
+
+            ADDITIONAL_RESERVED_NAMES = ImmutableSet.of(
+                /*"key", "vertex", "edge", "element", "property", "label"*/); // TODO #634, #730
         }
         assert SYSTEM_TYPES_BY_ID.size()==17;
         assert SYSTEM_TYPES_BY_NAME.size()==17;
@@ -56,7 +62,7 @@ public abstract class SystemTypeManager {
     }
 
     public static boolean isSystemType(String name) {
-        return SYSTEM_TYPES_BY_NAME.containsKey(name);
+        return SYSTEM_TYPES_BY_NAME.containsKey(name) || ADDITIONAL_RESERVED_NAMES.contains(name);
     }
 
 
