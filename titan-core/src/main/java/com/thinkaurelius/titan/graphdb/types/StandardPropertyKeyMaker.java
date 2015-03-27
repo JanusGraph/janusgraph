@@ -23,9 +23,9 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
 
     private Class<?> dataType;
 
-    public StandardPropertyKeyMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
+    public StandardPropertyKeyMaker(StandardTitanTx tx, String name, IndexSerializer indexSerializer,
                                     final AttributeHandling attributeHandler) {
-        super(tx, indexSerializer, attributeHandler);
+        super(tx, name, indexSerializer, attributeHandler);
         dataType = null;
         cardinality(Cardinality.SINGLE);
     }

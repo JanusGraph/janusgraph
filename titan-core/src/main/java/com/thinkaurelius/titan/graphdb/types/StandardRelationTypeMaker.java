@@ -23,8 +23,6 @@ import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
-    static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
-
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
     protected final AttributeHandling attributeHandler;
@@ -37,7 +35,8 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     private Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 
-    public StandardRelationTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
+    public StandardRelationTypeMaker(final StandardTitanTx tx, String name,
+                                     final IndexSerializer indexSerializer,
                                      final AttributeHandling attributeHandler) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(indexSerializer);
@@ -45,9 +44,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         this.tx = tx;
         this.indexSerializer = indexSerializer;
         this.attributeHandler = attributeHandler;
+        name(name);
 
         //Default assignments
-        name = null;
         isInvisible = false;
         sortKey = new ArrayList<RelationType>(4);
         sortOrder = Order.ASC;
@@ -70,19 +69,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     abstract TitanSchemaCategory getSchemaCategory();
 
-    public static void checkName(TitanSchemaCategory category, String name) {
-        TypeUtil.checkTypeName(category,name);
-        if (SystemTypeManager.isSystemType(name.toLowerCase())
-                || Token.isSystemName(name)) {
-            throw new IllegalArgumentException("Name cannot be in protected namespace: " + name);
-        }
-        for (char c : RESERVED_CHARS)
-            Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
-    }
-
     private void checkGeneralArguments() {
-        //Verify name
-        checkName(getSchemaCategory(),name);
         checkSortKey(sortKey);
         Preconditions.checkArgument(sortOrder==Order.ASC || hasSortKey(),"Must define a sort key to use ordering");
         checkSignature(signature);
@@ -191,6 +178,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     public StandardRelationTypeMaker name(String name) {
+        SystemTypeManager.isNotSystemName(getSchemaCategory(), name);
         this.name = name;
         return this;
     }

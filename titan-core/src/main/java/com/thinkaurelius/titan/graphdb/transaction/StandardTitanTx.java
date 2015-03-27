@@ -945,15 +945,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public PropertyKeyMaker makePropertyKey(String name) {
-        StandardPropertyKeyMaker maker = new StandardPropertyKeyMaker(this, indexSerializer, attributeHandler);
-        maker.name(name);
+        StandardPropertyKeyMaker maker = new StandardPropertyKeyMaker(this, name, indexSerializer, attributeHandler);
         return maker;
     }
 
     @Override
     public EdgeLabelMaker makeEdgeLabel(String name) {
-        StandardEdgeLabelMaker maker = new StandardEdgeLabelMaker(this, indexSerializer, attributeHandler);
-        maker.name(name);
+        StandardEdgeLabelMaker maker = new StandardEdgeLabelMaker(this, name, indexSerializer, attributeHandler);
         return maker;
     }
 

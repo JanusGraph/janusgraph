@@ -22,9 +22,10 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
 
     private Direction unidirectionality;
 
-    public StandardEdgeLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
+    public StandardEdgeLabelMaker(final StandardTitanTx tx,
+                                  final String name, final IndexSerializer indexSerializer,
                                   final AttributeHandling attributeHandler) {
-        super(tx, indexSerializer, attributeHandler);
+        super(tx, name, indexSerializer, attributeHandler);
         unidirectionality = Direction.BOTH;
     }
 

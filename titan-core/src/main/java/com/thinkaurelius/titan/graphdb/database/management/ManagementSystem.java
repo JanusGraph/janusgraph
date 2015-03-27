@@ -48,6 +48,7 @@ import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
@@ -981,11 +982,12 @@ public class ManagementSystem implements TitanManagement {
             if (relType.getBaseType()!=null) {
                 newName = composeRelationTypeIndexName(relType.getBaseType(),newName);
             } else assert !(element instanceof RelationTypeIndex);
-            StandardRelationTypeMaker.checkName(
-                    relType.isEdgeLabel()?TitanSchemaCategory.EDGELABEL:TitanSchemaCategory.PROPERTYKEY
-                    ,newName);
+
+            TitanSchemaCategory cat = relType.isEdgeLabel() ?
+                    TitanSchemaCategory.EDGELABEL : TitanSchemaCategory.PROPERTYKEY;
+            SystemTypeManager.isNotSystemName(cat, newName);
         } else if (element instanceof VertexLabel) {
-            StandardVertexLabelMaker.checkName(newName);
+            SystemTypeManager.isNotSystemName(TitanSchemaCategory.VERTEXLABEL, newName);
         } else if (element instanceof TitanGraphIndex) {
             checkIndexName(newName);
         }

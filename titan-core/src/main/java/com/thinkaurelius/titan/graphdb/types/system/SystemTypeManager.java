@@ -1,6 +1,10 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
+import com.thinkaurelius.titan.graphdb.types.TypeUtil;
 import com.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Map;
@@ -9,6 +13,7 @@ public abstract class SystemTypeManager {
 
     private volatile static Map<Long, SystemRelationType> SYSTEM_TYPES_BY_ID;
     private volatile static Map<String, SystemRelationType> SYSTEM_TYPES_BY_NAME;
+    private static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
 
     static {
         synchronized (SystemTypeManager.class) {
@@ -39,6 +44,15 @@ public abstract class SystemTypeManager {
 
     public static SystemRelationType getSystemType(String name) {
         return SYSTEM_TYPES_BY_NAME.get(name);
+    }
+
+    public static boolean isNotSystemName(TitanSchemaCategory category, String name) {
+        TypeUtil.checkTypeName(category, name);
+        if (SystemTypeManager.isSystemType(name.toLowerCase()) || Token.isSystemName(name))
+            throw new IllegalArgumentException("Name cannot be in protected namespace: "+name);
+        for (char c : RESERVED_CHARS)
+            Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);
+        return true;
     }
 
     public static boolean isSystemType(String name) {
