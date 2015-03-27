@@ -87,7 +87,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         }
 
         open();
-        k = KeyValueStoreUtil.getBuffer("key");
+        k = KeyValueStoreUtil.getBuffer("testkey");
         c1 = KeyValueStoreUtil.getBuffer("col1");
         c2 = KeyValueStoreUtil.getBuffer("col2");
         v1 = KeyValueStoreUtil.getBuffer("val1");
