@@ -1046,15 +1046,6 @@
                 <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
                 <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
             </properties>
-            <build>
-                <plugins>
-                    <!-- This binds no goals by default.  The user has to run the sonar:sonar goal for this plugin to do anything. -->
-                    <plugin>
-                        <groupId>org.codehaus.sonar</groupId>
-                        <artifactId>sonar-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
