@@ -244,8 +244,8 @@ public class ElasticSearchConfigTest {
         NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder().settings(settingsBuilder.build());
         nodeBuilder.client(true).data(false).local(false);
         Node n = nodeBuilder.build().start();
-        GetSettingsRequest request = new GetSettingsRequestBuilder((NodeClient)n.client(), "titan").request();
-        GetSettingsResponse response = n.client().admin().indices().getSettings(request).actionGet();
+
+        GetSettingsResponse response = n.client().admin().indices().getSettings(new GetSettingsRequest().indices("titan")).actionGet();
         assertEquals(String.valueOf(shards), response.getSetting("titan", "index.number_of_shards"));
 
         n.stop();
