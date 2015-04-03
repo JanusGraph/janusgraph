@@ -20,7 +20,7 @@ while [ -h "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-CP=$CP:$(find -L $DIR/../ext/ -name "*.jar" \! -wholename "$DIR"/../ext/titan-all/'*' \! -wholename "$DIR"/../ext/hadoop-gremlin/'*' | tr '\n' ':')
+CP=$CP:$(find -L $DIR/../ext/ -name "*.jar" | sort | tr '\n' ':')
 
 export CLASSPATH="${CLASSPATH:-}:$CP"
 
