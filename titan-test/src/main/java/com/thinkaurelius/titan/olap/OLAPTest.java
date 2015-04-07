@@ -10,8 +10,6 @@ import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.olap.*;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import com.tinkerpop.gremlin.process.computer.*;
-import com.tinkerpop.gremlin.process.computer.ranking.pagerank.PageRankMapReduce;
-import com.tinkerpop.gremlin.process.computer.ranking.pagerank.PageRankVertexProgram;
 import com.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import com.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
@@ -388,21 +386,25 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             for (int i=0;i<branch;i++) {
                 Vertex u = tx.addVertex();
                 u.addEdge("likes",v);
-                if (previous!=null) u.addEdge("knows",previous);
+                log.debug("likes {}->{}", u.id(), v.id());
+                // Commented since the PageRank implementation does not discriminate by label
+//                if (previous!=null) {
+//                    u.addEdge("knows",previous);
+//                    log.error("knows {}->{}", u.id(), v.id());
+//                }
                 previous=u;
                 expand(u,distance+1,diameter,branch);
             }
         }
     }
 
-    @Ignore
     @Test
-    public void pageRank() throws ExecutionException, InterruptedException {
+    public void testPageRank() throws ExecutionException, InterruptedException {
         mgmt.makePropertyKey("distance").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
         mgmt.makeEdgeLabel("likes").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
-        final int branch = 5;
+        final int branch = 6;
         final int diameter = 5;
         final double alpha = 0.85d;
         int numV = (int)((Math.pow(branch,diameter+1)-1)/(branch-1));
@@ -416,8 +418,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         //Precompute correct PR results:
         double[] correctPR = new double[diameter+1];
         for (int i=diameter;i>=0;i--) {
-//            double pr = 1.0/numV*(1-alpha);
-//            if (i<diameter) pr+= (alpha)*branch*correctPR[i+1];
             double pr = (1.0D - alpha)/numV;
             if (i<diameter) pr+= alpha*branch*correctPR[i+1];
             log.debug("diameter={} pr={}", diameter, pr);
@@ -429,14 +429,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         while (iv.hasNext()) {
             correctPRSum += correctPR[iv.next().<Integer>value("distance")];
         }
-        assertEquals(1, correctPRSum, 0.01);
-        assertTrue(false); // TODO remove
 
-        Stopwatch w = new Stopwatch().start();
         final TitanGraphComputer computer = graph.compute();
         computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(4);
-        computer.program(PageRankVertexProgram.build().iterations(100).vertexCount(numV).alpha(0.85).create());
+        computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create());
         computer.mapReduce(PageRankMapReduce.build().create());
         ComputerResult result = computer.submit().get();
 
@@ -462,11 +459,12 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
             assertFalse(vertexIDs.contains(vertexID));
             vertexIDs.add(vertexID);
+
+            log.debug("vertexID={} computedPR={}", vertexID, computedPR);
         }
 
-        assertEquals(numV,vertexCounter);
-//        assertEquals(1, correctPRSum, 0.001);
-        assertEquals(1, computedPRSum, 0.001);
+        assertEquals(numV, vertexCounter);
+        assertEquals(correctPRSum, computedPRSum, 0.001);
     }
 
     @Test
