@@ -17,7 +17,7 @@
     <dependencies>
         <!-- TinkerPop -->
         <dependency>
-            <groupId>com.tinkerpop</groupId>
+            <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-core</artifactId>
             <version>${tinkerpop.version}</version>
             <exclusions>
@@ -28,12 +28,12 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop</groupId>
+            <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop</groupId>
+            <groupId>org.apache.tinkerpop</groupId>
             <artifactId>tinkergraph-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>

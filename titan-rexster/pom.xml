@@ -21,7 +21,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop.rexster</groupId>
+            <groupId>org.apache.tinkerpop</groupId>
             <artifactId>rexster-core</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
