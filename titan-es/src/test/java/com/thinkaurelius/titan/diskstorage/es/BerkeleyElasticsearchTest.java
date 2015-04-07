@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,8 +33,9 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
         config.set(INDEX_BACKEND,"elasticsearch",INDEX);
         config.set(LOCAL_MODE,true,INDEX);
         config.set(CLIENT_ONLY,false,INDEX);
-        config.set(INDEX_DIRECTORY,StorageSetup.getHomeDir("es"),INDEX);
+        config.set(INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), INDEX);
         return config.getConfiguration();
+
     }
 
     @Override
@@ -51,8 +53,10 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
      */
     @Test
     public void testGraphOfTheGodsFactoryCreate() {
-        String bdbtmp = Joiner.on(File.separator).join("target", "gotgfactory");
-        TitanGraph gotg = GraphOfTheGodsFactory.create(bdbtmp);
+        File bdbtmp = new File("target/gotgfactory");
+        IOUtils.deleteDirectory(bdbtmp, true);
+
+        TitanGraph gotg = GraphOfTheGodsFactory.create(bdbtmp.getPath());
         TitanIndexTest.assertGraphOfTheGods(gotg);
         gotg.close();
     }

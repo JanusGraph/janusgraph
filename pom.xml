@@ -81,8 +81,8 @@
              version used by the titan-lucene module.  When updating
              the ES version, also consider the version of Lucene, and
              vice-versa. -->
-        <lucene.version>4.8.1</lucene.version>
-        <elasticsearch.version>1.2.1</elasticsearch.version>
+        <lucene.version>4.10.4</lucene.version>
+        <elasticsearch.version>1.5.0</elasticsearch.version>
         <elasticsearch.mr.version>2.0.0</elasticsearch.mr.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <joda.version>1.6.2</joda.version>

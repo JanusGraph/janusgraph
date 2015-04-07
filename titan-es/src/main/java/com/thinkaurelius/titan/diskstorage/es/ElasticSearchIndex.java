@@ -46,6 +46,7 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -547,7 +548,7 @@ public class ElasticSearchIndex implements IndexProvider {
                                 }
                                 log.trace("Deleting individual field [{}] for document {}", key, docid);
                             }
-                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
+                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString(), ScriptService.ScriptType.INLINE));
                             bulkrequests++;
                         }
 
