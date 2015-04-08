@@ -136,7 +136,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public<V> TitanVertexProperty<V> property(String key, V value) {
-        return tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
+        return this.property(VertexProperty.Cardinality.single, key, value);
     }
 
     @Override
@@ -160,41 +160,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     }
 
-    public <V> VertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
-        // TODO adapt from singleProperty, except now accounting for cardinality (?)
+    @Override
+    public <V> TitanVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
+        TitanVertexProperty<V> p = tx().addPropertyInternal(cardinality,it(),tx().getOrCreatePropertyKey(key),value);
+        ElementHelper.attachProperties(p,keyValues);
+        return p;
     }
 
 
-//    @Override
-//    public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
-//        TitanVertexProperty<V> p = tx().setProperty(it(),tx().getOrCreatePropertyKey(key),value);
-//        ElementHelper.attachProperties(p,keyValues);
-//        return p;
-//    }
-
-//	/* ---------------------------------------------------------------
-//	 * TinkerPop Iterators Method
-//	 * ---------------------------------------------------------------
-//	 */
-//
-//    @Override
-//    public Vertex.Iterators iterators() {
-//        return this;
-//    }
-//
-//    @Override
-//    public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
-//        return (Iterator)query().direction(direction).labels(strings).edges().iterator();
-//    }
-//
-//    @Override
-//    public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
-//        return (Iterator)query().direction(direction).labels(strings).vertices().iterator();
-//    }
-//
-//    @Override
-//    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
-//        return (Iterator)query().direction(Direction.OUT).keys(keys).properties().iterator();
-//    }
 
 }

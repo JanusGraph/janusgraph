@@ -5,6 +5,8 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -57,6 +59,21 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return getGraph().configuration();
     }
 
+    @Override
+    public Io io() {
+        return getGraph().io();
+    }
+
+    @Override
+    public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
+        return getGraph().compute(graphComputerClass);
+    }
+
+    @Override
+    public FulgoraGraphComputer compute() throws IllegalArgumentException {
+        return getGraph().compute();
+    }
+
     /**
      * Creates a new vertex in the graph with the given vertex id.
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
@@ -92,7 +109,8 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return vertex;
     }
 
-    public Iterator<Vertex> vertexIterator(Object... vids) {
+    @Override
+    public Iterator<Vertex> vertices(Object... vids) {
         if (vids==null || vids.length==0) return (Iterator)getVertices().iterator();
         long[] ids = new long[vids.length];
         int pos = 0;
@@ -122,7 +140,8 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     }
 
 
-    public Iterator<Edge> edgeIterator(Object... eids) {
+    @Override
+    public Iterator<Edge> edges(Object... eids) {
         if (eids==null || eids.length==0) return (Iterator)getEdges().iterator();
         RelationIdentifier[] ids = new RelationIdentifier[eids.length];
         int pos = 0;

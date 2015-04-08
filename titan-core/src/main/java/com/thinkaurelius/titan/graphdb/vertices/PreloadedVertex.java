@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
@@ -13,7 +12,6 @@ import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -99,27 +97,22 @@ public class PreloadedVertex extends CacheVertex {
     }
 
     @Override
-    public<V> TitanVertexProperty<V> property(String key, V value) {
-        return mixin.property(key,value);
-    }
-
-    @Override
-    public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
-        TitanVertexProperty<V> p = mixin.singleProperty(key,value);
+    public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
+        TitanVertexProperty<V> p = mixin.property(cardinality,key,value);
         ElementHelper.attachProperties(p,keyValues);
         return p;
     }
 
     @Override
-    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
-        if (mixin==NO_MIXIN) return super.propertyIterator(keys);
+    public <V> Iterator<VertexProperty<V>> properties(String... keys) {
+        if (mixin==NO_MIXIN) return super.properties(keys);
         if (keys!=null && keys.length>0) {
             int count=0;
             for (int i = 0; i < keys.length; i++) if (mixin.supports(keys[i])) count++;
-            if (count==0) return super.propertyIterator(keys);
-            else if (count==keys.length) return mixin.propertyIterator(keys);
+            if (count==0) return super.properties(keys);
+            else if (count==keys.length) return mixin.properties(keys);
         }
-        return (Iterator)com.google.common.collect.Iterators.concat(super.propertyIterator(keys),mixin.propertyIterator(keys));
+        return (Iterator)com.google.common.collect.Iterators.concat(super.properties(keys),mixin.properties(keys));
     }
 
     @Override
@@ -149,19 +142,17 @@ public class PreloadedVertex extends CacheVertex {
 
     public interface PropertyMixing {
 
-        public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys);
+        public <V> Iterator<VertexProperty<V>> properties(String... keys);
 
         public boolean supports(String key);
 
-        public <V>  TitanVertexProperty<V> property(String key, V value);
-
-        public <V>  TitanVertexProperty<V> singleProperty(String key, V value);
+        public <V>  TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
 
     }
 
     private static PropertyMixing NO_MIXIN = new PropertyMixing() {
         @Override
-        public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+        public <V> Iterator<VertexProperty<V>> properties(String... keys) {
             return Collections.emptyIterator();
         }
 
@@ -171,12 +162,7 @@ public class PreloadedVertex extends CacheVertex {
         }
 
         @Override
-        public <V> TitanVertexProperty<V> property(String key, V value) {
-            return singleProperty(key,value);
-        }
-
-        @Override
-        public <V> TitanVertexProperty<V> singleProperty(String key, V value) {
+        public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
             throw new UnsupportedOperationException("Provided key is not supported: " + key);
         }
     };

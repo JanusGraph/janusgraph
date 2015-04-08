@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
 import org.apache.tinkerpop.gremlin.structure.io.DefaultIo;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.kryo.KryoMapper;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 
 /**
  *
@@ -20,9 +20,9 @@ public class TitanIo extends DefaultIo {
     }
 
     @Override
-    public KryoMapper.Builder kryoMapper() {
+    public GryoMapper.Builder gryoMapper() {
         //Add user registered serializers
-        return KryoMapper.build().addCustom(RelationIdentifier.class);
+        return GryoMapper.build().addCustom(RelationIdentifier.class);
     }
 
     @Override

@@ -258,19 +258,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
     }
 
-private synchronized void removeHook() {
-    if (null == shutdownHook)
-            return;
+    private synchronized void removeHook() {
+        if (null == shutdownHook)
+                return;
 
-    ShutdownThread tmp = shutdownHook;
-    shutdownHook = null;
-    // Remove shutdown hook to avoid reference retention
-    try {
-        Runtime.getRuntime().removeShutdownHook(tmp);
-    } catch (IllegalStateException e) {
-        log.warn("Failed to remove shutdown hook", e);
+        ShutdownThread tmp = shutdownHook;
+        shutdownHook = null;
+        // Remove shutdown hook to avoid reference retention
+        try {
+            Runtime.getRuntime().removeShutdownHook(tmp);
+        } catch (IllegalStateException e) {
+            log.warn("Failed to remove shutdown hook", e);
+        }
     }
-}
 
 
     // ################### Simple Getters #########################

@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -24,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexPr
 import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,9 +269,9 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 } else if (resultMode==ResultMode.LOCALTX) {
                     resultgraph = graph.newTransaction();
                     for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {
-                        Vertex v = resultgraph.V(vprop.getKey()).next();
+                        Vertex v = resultgraph.vertices(vprop.getKey()).next();
                         for (Map.Entry<String,Object> prop : vprop.getValue().entrySet()) {
-                            v.singleProperty(prop.getKey(),prop.getValue());
+                            v.property(VertexProperty.Cardinality.single,prop.getKey(), prop.getValue());
                         }
                     }
                 }
@@ -278,7 +280,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             // update runtime and return the newly computed graph
             this.memory.setRuntime(System.currentTimeMillis() - time);
             this.memory.complete();
-            return new ComputerResult(resultgraph, this.memory);
+            return new DefaultComputerResult(resultgraph, this.memory);
         });
     }
 
@@ -301,7 +303,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 for (Map.Entry<Long, Map<String, Object>> vprop : properties) {
                     Vertex v = tx.getVertex(vprop.getKey());
                     for (Map.Entry<String,Object> prop : vprop.getValue().entrySet()) {
-                        v.singleProperty(prop.getKey(),prop.getValue());
+                        v.property(VertexProperty.Cardinality.single,prop.getKey(), prop.getValue());
                     }
                 }
                 tx.commit();
@@ -324,8 +326,8 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     public Features features() {
         return new Features() {
             @Override
-            public boolean supportsWorkerPersistenceBetweenIterations() {
-                return false;
+            public boolean supportsResultGraphPersistCombination(final ResultGraph resultGraph, final Persist persist) {
+                //?
             }
 
             @Override

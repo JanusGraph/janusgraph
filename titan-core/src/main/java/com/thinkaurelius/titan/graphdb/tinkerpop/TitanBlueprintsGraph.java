@@ -16,16 +16,14 @@ import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.DefaultIo;
+import org.apache.tinkerpop.gremlin.structure.util.AbstractTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,10 +40,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
             LoggerFactory.getLogger(TitanBlueprintsGraph.class);
 
 
-    @Override
-    public Io io() {
-        return new TitanIo(this);
-    }
+
 
     // ########## TRANSACTION HANDLING ###########################
 
@@ -67,7 +62,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
         TitanBlueprintsTransaction tx = txs.get();
         Preconditions.checkState(tx!=null,"Invalid read-write behavior configured: " +
-                "Should either open transaction or throw exception. [%s]",tinkerpopTxContainer.readWriteBehavior);
+                "Should either open transaction or throw exception.");
         return tx;
     }
 
@@ -112,6 +107,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return config.getLocalConfiguration();
     }
 
+    @Override
+    public Io io() {
+        return new TitanIo(this);
+    }
+
     // ########## TRANSACTIONAL FORWARDING ###########################
 
     @Override
@@ -125,25 +125,28 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 //    }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> V(Object... ids) {
-        return getAutoStartTx().V(ids);
+    public Iterator<Vertex> vertices(Object... vertexIds) {
+        return getAutoStartTx().vertices(vertexIds);
     }
 
     @Override
-    public GraphTraversal<Edge, Edge> E(Object... ids) {
-        return getAutoStartTx().E(ids);
+    public Iterator<Edge> edges(Object... edgeIds) {
+        return getAutoStartTx().edges(edgeIds);
     }
 
     @Override
-    public TitanGraphComputer compute(final Class... graphComputerClass) {
-        if (graphComputerClass.length > 1)
-            throw Graph.Exceptions.onlyOneOrNoGraphComputerClass();
-        if (graphComputerClass.length == 0 || graphComputerClass[0].equals(FulgoraGraphComputer.class)) {
-            StandardTitanGraph graph = (StandardTitanGraph)this;
-            return new FulgoraGraphComputer(graph,graph.getConfiguration().getConfiguration());
+    public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
+        if (!graphComputerClass.equals(FulgoraGraphComputer.class)) {
+            throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass);
         } else {
-            throw Graph.Exceptions.graphDoesNotSupportProvidedGraphComputer(graphComputerClass[0]);
+            return (C)compute();
         }
+    }
+
+    @Override
+    public FulgoraGraphComputer compute() throws IllegalArgumentException {
+        StandardTitanGraph graph = (StandardTitanGraph)this;
+        return new FulgoraGraphComputer(graph,graph.getConfiguration().getConfiguration());
     }
 
     @Override
@@ -246,30 +249,25 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
 
 
-    class GraphTransaction implements Transaction {
+    class GraphTransaction extends AbstractTransaction {
 
-        private Consumer<Transaction> readWriteBehavior = READ_WRITE_BEHAVIOR.AUTO;
-        private Consumer<Transaction> closeBehavior = CLOSE_BEHAVIOR.COMMIT;
+        public GraphTransaction() {
+            super(TitanBlueprintsGraph.this);
+        }
 
         @Override
-        public void open() {
-            if (isOpen()) throw Exceptions.transactionAlreadyOpen();
+        public void doOpen() {
             startNewTx();
         }
 
         @Override
-        public void commit() {
+        public void doCommit() {
             getAutoStartTx().commit();
         }
 
         @Override
-        public void rollback() {
+        public void doRollback() {
             getAutoStartTx().rollback();
-        }
-
-        @Override
-        public <R> Workload<R> submit(Function<Graph, R> graphRFunction) {
-            return new Workload<R>(TitanBlueprintsGraph.this,graphRFunction);
         }
 
         @Override
@@ -284,36 +282,27 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         }
 
         @Override
-        public void readWrite() {
-            readWriteBehavior.accept(this);
-        }
-
-        @Override
         public void close() {
             close(this);
         }
 
         void close(Transaction tx) {
-            closeBehavior.accept(tx);
-            Preconditions.checkState(!tx.isOpen(),"Invalid close behavior configured: Should close transaction. [%s]",closeBehavior);
+            closeConsumer.accept(tx);
+            Preconditions.checkState(!tx.isOpen(),"Invalid close behavior configured: Should close transaction. [%s]",closeConsumer);
         }
 
         @Override
         public Transaction onReadWrite(Consumer<Transaction> transactionConsumer) {
-            if (transactionConsumer==null) throw Exceptions.onReadWriteBehaviorCannotBeNull();
             Preconditions.checkArgument(transactionConsumer instanceof READ_WRITE_BEHAVIOR,
                     "Only READ_WRITE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
-            this.readWriteBehavior = transactionConsumer;
-            return this;
+            return super.onReadWrite(transactionConsumer);
         }
 
         @Override
         public Transaction onClose(Consumer<Transaction> transactionConsumer) {
-            if (transactionConsumer==null) throw Exceptions.onCloseBehaviorCannotBeNull();
             Preconditions.checkArgument(transactionConsumer instanceof CLOSE_BEHAVIOR,
                     "Only CLOSE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
-            this.closeBehavior = transactionConsumer;
-            return this;
+            return super.onClose(transactionConsumer);
         }
     }
 

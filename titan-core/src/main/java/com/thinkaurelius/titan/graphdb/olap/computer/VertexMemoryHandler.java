@@ -44,7 +44,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     }
 
     @Override
-    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+    public <V> Iterator<VertexProperty<V>> properties(String... keys) {
         if (vertexMemory.elementKeyMap.isEmpty()) return Collections.emptyIterator();
         if (keys==null || keys.length==0) {
             return Collections.emptyIterator(); //Do NOT return compute keys as part of all the properties...
@@ -66,14 +66,10 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     }
 
     @Override
-    public <V> TitanVertexProperty<V> property(String key, V value) {
-        return singleProperty(key,value);
-    }
-
-    @Override
-    public <V> TitanVertexProperty<V> singleProperty(String key, V value) {
+    public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
         if (!supports(key)) throw GraphComputer.Exceptions.providedKeyIsNotAnElementComputeKey(key);
         Preconditions.checkArgument(value != null);
+        Preconditions.checkArgument(cardinality== VertexProperty.Cardinality.single,"Only single cardinality is supported, provided: %s",cardinality);
         vertexMemory.setProperty(vertexId, key, value);
         return constructProperty(key,value);
     }

@@ -29,6 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,7 +100,8 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             for (MessageScope scope : scopes) {
                 if (scope instanceof MessageScope.Local) {
                     M combinedMsg = null;
-                    for (M msg : vh.receiveMessages(scope)) {
+                    for (Iterator<M> msgIter = vh.receiveMessages(scope); msgIter.hasNext(); ) {
+                        M msg = msgIter.next();
                         if (combinedMsg==null) combinedMsg=msg;
                         else combinedMsg = combiner.combine(combinedMsg,msg);
                     }
