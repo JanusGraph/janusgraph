@@ -3,10 +3,10 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraVertexProperty<V> implements TitanVertexProperty<V>, VertexProperty.Iterators {
+public class FulgoraVertexProperty<V> implements TitanVertexProperty<V> {
 
     private final VertexMemoryHandler mixinParent;
     private final TitanVertex vertex;
@@ -92,11 +92,6 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V>, VertexP
     }
 
     @Override
-    public VertexProperty.Iterators iterators() {
-        return this;
-    }
-
-    @Override
     public <V> V value(String key) {
         throw Property.Exceptions.propertyDoesNotExist(key);
     }
@@ -133,7 +128,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V>, VertexP
     }
 
     @Override
-    public <U> Iterator<Property<U>> propertyIterator(String... strings) {
+    public <V> Iterator<Property<V>> properties(String... propertyKeys) {
         return Collections.emptyIterator();
     }
 }

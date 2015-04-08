@@ -4,9 +4,9 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
-import com.tinkerpop.gremlin.structure.io.DefaultIo;
-import com.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import com.tinkerpop.gremlin.structure.io.kryo.KryoMapper;
+import org.apache.tinkerpop.gremlin.structure.io.DefaultIo;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.apache.tinkerpop.gremlin.structure.io.kryo.KryoMapper;
 
 /**
  *

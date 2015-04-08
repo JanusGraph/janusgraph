@@ -35,7 +35,7 @@ import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
-import com.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;

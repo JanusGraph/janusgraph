@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.Iterator;

@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.core;
 
+// TODO is this vestigial now that TP3's VertexProperty.Cardinality exists?
+
 /**
  * The cardinality of the values associated with given key for a particular element.
  *

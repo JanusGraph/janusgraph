@@ -28,7 +28,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoInstanceCacheImpl;
 import com.thinkaurelius.titan.util.system.IOUtils;
-import com.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;

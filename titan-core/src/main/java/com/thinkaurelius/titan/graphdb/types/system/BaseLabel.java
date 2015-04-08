@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class BaseLabel extends BaseRelationType implements EdgeLabel {
 

@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  * Titan graph database implementation of the Blueprint's interface.
@@ -149,9 +150,6 @@ public interface TitanGraph extends TitanGraphTransaction {
      * @return
      */
     public TitanManagement openManagement();
-
-    @Override
-    public TitanGraphComputer compute(final Class... graphComputerClass);
 
     /**
      * Checks whether the graph is open.

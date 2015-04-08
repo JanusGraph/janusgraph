@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb.tinkerpop;
 
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Optional;

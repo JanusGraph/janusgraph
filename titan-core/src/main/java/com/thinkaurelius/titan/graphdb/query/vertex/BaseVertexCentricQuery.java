@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.FixedCondition;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.ArrayList;
 import java.util.List;

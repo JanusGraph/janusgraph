@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.SchemaManager;
-import com.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Collection;
 import java.util.Map;

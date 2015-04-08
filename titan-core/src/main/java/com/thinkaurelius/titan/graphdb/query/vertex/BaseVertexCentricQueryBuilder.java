@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -174,7 +174,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     @Override
-    public Q orderBy(String keyName, com.tinkerpop.gremlin.structure.Order order) {
+    public Q orderBy(String keyName, org.apache.tinkerpop.gremlin.structure.Order order) {
         Preconditions.checkArgument(schemaInspector.containsPropertyKey(keyName),"Provided key does not exist: %s",keyName);
         PropertyKey key = schemaInspector.getPropertyKey(keyName);
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");

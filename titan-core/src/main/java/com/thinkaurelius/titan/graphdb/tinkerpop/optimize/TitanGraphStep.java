@@ -6,13 +6,13 @@ import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Contains;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Order;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Contains;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Order;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     private List<OrderEntry> orders = new ArrayList<>();
 
     public TitanGraphStep(final GraphStep<E> originalStep) {
-        super(originalStep.getTraversal(), originalStep.getGraph(TitanGraph.class), originalStep.getReturnClass(), originalStep.getIds());
+        super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getIds());
         if (originalStep.getLabel().isPresent())
             this.setLabel(originalStep.getLabel().get());
         this.setIteratorSupplier(() -> {

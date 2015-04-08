@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.transaction.addedrelations.AddedRelations
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Collections;

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * IMPORTANT: The byte values of the proper directions must be sequential,

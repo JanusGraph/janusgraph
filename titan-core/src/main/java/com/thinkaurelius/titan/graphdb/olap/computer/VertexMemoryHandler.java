@@ -1,20 +1,19 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.computer.MessageScope;
-import com.tinkerpop.gremlin.process.computer.Messenger;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.util.StreamFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -80,11 +79,11 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     }
 
     @Override
-    public Iterable<M> receiveMessages(MessageScope messageScope) {
+    public Iterator<M> receiveMessages(MessageScope messageScope) {
         if (messageScope instanceof MessageScope.Global) {
             M message = vertexMemory.getMessage(vertexId,messageScope);
-            if (message == null) return Collections.EMPTY_LIST;
-            else return ImmutableList.of(message);
+            if (message == null) return Iterators.emptyIterator();
+            else return Iterators.singletonIterator(message);
         } else {
             final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
             final Traversal<Vertex, Edge> reverseIncident = FulgoraUtil.getReverseElementTraversal(localMessageScope,vertex,vertex.tx());
@@ -96,7 +95,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
                         return msg == null ? null : edgeFct.apply(msg, e);
                     })
                     .filter(m -> m != null)
-            );
+            ).iterator();
         }
     }
 
@@ -121,14 +120,14 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
         }
 
         @Override
-        public Iterable<M> receiveMessages(MessageScope messageScope) {
+        public Iterator<M> receiveMessages(MessageScope messageScope) {
             if (messageScope instanceof MessageScope.Global) {
                 return super.receiveMessages(messageScope);
             } else {
                 final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
                 M aggregateMsg = vertexMemory.getAggregateMessage(vertexId,localMessageScope);
-                if (aggregateMsg==null) return Collections.EMPTY_LIST;
-                else return ImmutableList.of(aggregateMsg);
+                if (aggregateMsg==null) return Iterators.emptyIterator();
+                else return Iterators.singletonIterator(aggregateMsg);
             }
         }
 

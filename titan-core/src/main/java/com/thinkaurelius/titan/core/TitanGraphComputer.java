@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

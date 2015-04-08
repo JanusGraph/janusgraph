@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.tinkerpop.gremlin.process.computer.MessageCombiner;
-import com.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 
 import java.util.Collections;
 import java.util.Map;

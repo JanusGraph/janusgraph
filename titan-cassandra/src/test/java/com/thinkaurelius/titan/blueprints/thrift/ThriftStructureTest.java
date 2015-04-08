@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.blueprints.thrift;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.gremlin.structure.StructureStandardSuite;
+import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 

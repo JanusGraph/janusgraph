@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.testutil;
 
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.process.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

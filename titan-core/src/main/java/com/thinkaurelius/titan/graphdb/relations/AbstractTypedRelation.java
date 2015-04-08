@@ -10,14 +10,14 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.util.StreamFactory;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation, Edge.Iterators, VertexProperty.Iterators {
+public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation {
 
     protected final InternalRelationType type;
 
@@ -154,26 +154,8 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         }
     }
 
-    /* ---------------------------------------------------------------
-	 * Blueprints Iterators
-	 * ---------------------------------------------------------------
-	 */
-
     @Override
-    public Iterator<Vertex> vertexIterator(Direction direction) {
-        verifyAccess();
-
-        List<Vertex> vertices;
-        if (direction==Direction.BOTH) {
-            vertices = ImmutableList.of((Vertex)getVertex(0),getVertex(1));
-        } else {
-            vertices = ImmutableList.of((Vertex)getVertex(EdgeDirection.position(direction)));
-        }
-        return vertices.iterator();
-    }
-
-    @Override
-    public <V> Iterator<Property<V>> propertyIterator(String... keyNames) {
+    public <V> Iterator<Property<V>> properties(final String... keyNames) {
         verifyAccess();
 
         Stream<RelationType> keys;
@@ -186,6 +168,39 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         }
         return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
     }
+
+    /* ---------------------------------------------------------------
+	 * Blueprints Iterators
+	 * ---------------------------------------------------------------
+	 */
+
+//    @Override
+//    public Iterator<Vertex> vertexIterator(Direction direction) {
+//        verifyAccess();
+//
+//        List<Vertex> vertices;
+//        if (direction==Direction.BOTH) {
+//            vertices = ImmutableList.of((Vertex)getVertex(0),getVertex(1));
+//        } else {
+//            vertices = ImmutableList.of((Vertex)getVertex(EdgeDirection.position(direction)));
+//        }
+//        return vertices.iterator();
+//    }
+//
+//    @Override
+//    public <V> Iterator<Property<V>> propertyIterator(String... keyNames) {
+//        verifyAccess();
+//
+//        Stream<RelationType> keys;
+//
+//        if (keyNames==null || keyNames.length==0) {
+//            keys = StreamFactory.stream(it().getPropertyKeysDirect());
+//        } else {
+//            keys = Stream.of(keyNames)
+//                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
+//        }
+//        return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
+//    }
 
 
 }

@@ -1,14 +1,22 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.util.StreamFactory;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -102,7 +110,15 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     }
 
     @Override
-    public Edge.Iterators iterators() {
-        return this;
+    public Iterator<Vertex> vertices(Direction direction) {
+        verifyAccess();
+
+        List<Vertex> vertices;
+        if (direction==Direction.BOTH) {
+            vertices = ImmutableList.of((Vertex) getVertex(0), getVertex(1));
+        } else {
+            vertices = ImmutableList.of((Vertex)getVertex(EdgeDirection.position(direction)));
+        }
+        return vertices.iterator();
     }
 }

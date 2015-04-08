@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database;
 
 import com.thinkaurelius.titan.core.RelationType;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

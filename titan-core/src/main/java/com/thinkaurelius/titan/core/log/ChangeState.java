@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.core.log;
 
 import com.thinkaurelius.titan.core.*;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 

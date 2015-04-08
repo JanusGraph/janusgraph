@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.graphdb.relations.CacheVertexProperty;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Iterator;
 

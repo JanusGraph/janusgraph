@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import com.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
 /**

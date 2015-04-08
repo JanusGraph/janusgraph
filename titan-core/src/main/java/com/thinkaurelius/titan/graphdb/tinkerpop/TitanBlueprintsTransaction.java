@@ -7,15 +7,15 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Transaction;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ import java.util.function.Function;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanBlueprintsTransaction implements TitanTransaction, Graph.Iterators {
+public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsTransaction.class);
@@ -55,11 +55,6 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction, Gr
     @Override
     public Configuration configuration() {
         return getGraph().configuration();
-    }
-
-    @Override
-    public Iterators iterators() {
-        return this;
     }
 
     /**
@@ -155,10 +150,10 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction, Gr
         return null;
     }
 
-    @Override
-    public GraphComputer compute(final Class... graphComputerClass) {
-        throw new UnsupportedOperationException("Graph Computer not supported on an individual transaction. Call on graph instead.");
-    }
+//    @Override
+//    public GraphComputer compute(final Class... graphComputerClass) {
+//        throw new UnsupportedOperationException("Graph Computer not supported on an individual transaction. Call on graph instead.");
+//    }
 
     @Override
     public String toString() {
@@ -217,6 +212,21 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction, Gr
             @Override
             public Transaction onClose(Consumer<Transaction> transactionConsumer) {
                 throw new UnsupportedOperationException("Transaction consumer can only be configured at the graph and not the transaction level.");
+            }
+
+            @Override
+            public void addTransactionListener(Consumer<Status> listener) {
+                throw new UnsupportedOperationException("Transaction consumer can only be configured at the graph and not the transaction level.");
+            }
+
+            @Override
+            public void removeTransactionListener(Consumer<Status> listener) {
+                throw new UnsupportedOperationException("Transaction consumer can only be configured at the graph and not the transaction level.");
+            }
+
+            @Override
+            public void clearTransactionListeners() {
+                // Could issue a warning here
             }
         };
     }

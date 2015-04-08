@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

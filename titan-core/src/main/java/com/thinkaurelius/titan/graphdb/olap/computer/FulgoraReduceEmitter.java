@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
-import com.tinkerpop.gremlin.process.computer.MapReduce;
-import com.tinkerpop.gremlin.tinkergraph.process.computer.TinkerReduceEmitter;
-import com.tinkerpop.gremlin.process.computer.KeyValue;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerReduceEmitter;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 
 import java.util.Queue;
 

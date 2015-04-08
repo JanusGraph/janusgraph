@@ -1,7 +1,7 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * TitanProperty is a {@link TitanRelation} connecting a vertex to a value.

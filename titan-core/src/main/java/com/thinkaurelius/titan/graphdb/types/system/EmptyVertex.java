@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -10,7 +11,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
-import com.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.*;
 
 import java.util.Iterator;
 import java.util.List;
@@ -89,6 +90,22 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
+    public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object...
+            keyValues) {
+        throw new UnsupportedOperationException(errorName + " do not support incident properties");
+    }
+
+    @Override
+    public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
+        return Iterators.emptyIterator();
+    }
+
+    @Override
+    public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
+        return Iterators.emptyIterator();
+    }
+
+    @Override
     public boolean addRelation(InternalRelation e) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
@@ -101,34 +118,6 @@ public class EmptyVertex implements InternalVertex {
     @Override
     public TitanEdge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
-    }
-
-    @Override
-    public Vertex.Iterators iterators() {
-        return Iterators.INSTANCE;
-    }
-
-    public static class Iterators implements Vertex.Iterators {
-
-        public static final Iterators INSTANCE = new Iterators();
-
-        private Iterators() {}
-
-        @Override
-        public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
-            return com.google.common.collect.Iterators.emptyIterator();
-        }
-
-        @Override
-        public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
-            return com.google.common.collect.Iterators.emptyIterator();
-        }
-
-        @Override
-        public <V> Iterator<VertexProperty<V>> propertyIterator(String... strings) {
-            return com.google.common.collect.Iterators.emptyIterator();
-        }
-
     }
 
 	/* ---------------------------------------------------------------
@@ -154,6 +143,11 @@ public class EmptyVertex implements InternalVertex {
     @Override
     public void remove() {
         throw new UnsupportedOperationException(errorName + " cannot be removed");
+    }
+
+    @Override
+    public <V> Iterator<VertexProperty<V>> properties(String... propertyKeys) {
+        return Iterators.emptyIterator();
     }
 
     @Override

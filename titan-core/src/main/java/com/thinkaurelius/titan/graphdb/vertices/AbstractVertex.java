@@ -8,20 +8,21 @@ import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.Iterator;
 
-public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex.Iterators {
+public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex {
 
     private final StandardTitanTx tx;
 
@@ -139,13 +140,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
-        TitanVertexProperty<V> p = tx().setProperty(it(),tx().getOrCreatePropertyKey(key),value);
-        ElementHelper.attachProperties(p,keyValues);
-        return p;
-    }
-
-    @Override
     public TitanEdge addEdge(String label, Vertex vertex, Object... keyValues) {
         Preconditions.checkArgument(vertex instanceof TitanVertex,"Invalid vertex provided: %s",vertex);
         TitanEdge edge = tx().addEdge(it(), (TitanVertex) vertex, tx().getOrCreateEdgeLabel(label));
@@ -153,29 +147,54 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return edge;
     }
 
-	/* ---------------------------------------------------------------
-	 * TinkerPop Iterators Method
-	 * ---------------------------------------------------------------
-	 */
-
-    @Override
-    public Vertex.Iterators iterators() {
-        return this;
+    public Iterator<Edge> edges(Direction direction, String... labels) {
+        return (Iterator)query().direction(direction).labels(labels).edges().iterator();
     }
 
-    @Override
-    public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
-        return (Iterator)query().direction(direction).labels(strings).edges().iterator();
-    }
-
-    @Override
-    public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
-        return (Iterator)query().direction(direction).labels(strings).vertices().iterator();
-    }
-
-    @Override
-    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+    public <V> Iterator<VertexProperty<V>> properties(String... keys) {
         return (Iterator)query().direction(Direction.OUT).keys(keys).properties().iterator();
     }
+
+    public Iterator<Vertex> vertices(final Direction direction, final String... edgeLabels) {
+        return (Iterator)query().direction(direction).labels(edgeLabels).vertices().iterator();
+
+    }
+
+    public <V> VertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
+        // TODO adapt from singleProperty, except now accounting for cardinality (?)
+    }
+
+
+//    @Override
+//    public <V> TitanVertexProperty<V> singleProperty(String key, V value, Object... keyValues) {
+//        TitanVertexProperty<V> p = tx().setProperty(it(),tx().getOrCreatePropertyKey(key),value);
+//        ElementHelper.attachProperties(p,keyValues);
+//        return p;
+//    }
+
+//	/* ---------------------------------------------------------------
+//	 * TinkerPop Iterators Method
+//	 * ---------------------------------------------------------------
+//	 */
+//
+//    @Override
+//    public Vertex.Iterators iterators() {
+//        return this;
+//    }
+//
+//    @Override
+//    public Iterator<Edge> edgeIterator(Direction direction, String... strings) {
+//        return (Iterator)query().direction(direction).labels(strings).edges().iterator();
+//    }
+//
+//    @Override
+//    public Iterator<Vertex> vertexIterator(Direction direction, String... strings) {
+//        return (Iterator)query().direction(direction).labels(strings).vertices().iterator();
+//    }
+//
+//    @Override
+//    public <V> Iterator<VertexProperty<V>> propertyIterator(String... keys) {
+//        return (Iterator)query().direction(Direction.OUT).keys(keys).properties().iterator();
+//    }
 
 }

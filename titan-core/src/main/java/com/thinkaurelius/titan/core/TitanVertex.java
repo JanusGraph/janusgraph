@@ -1,12 +1,8 @@
 
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Set;
-
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * TitanVertex is the basic unit of a {@link TitanGraph}.

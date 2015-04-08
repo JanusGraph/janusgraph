@@ -17,15 +17,15 @@ import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.computer.MessageCombiner;
-import com.tinkerpop.gremlin.process.computer.MessageScope;
-import com.tinkerpop.gremlin.process.computer.VertexProgram;
-import com.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,11 +69,8 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     @Override
     public VertexProgramScanJob<M> clone() {
-        try {
-            return new VertexProgramScanJob<>(this.idManager, this.memory, this.vertexMemory, this.vertexProgram.clone());
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError("VertexProgram must support clone()",e);
-        }
+        return new VertexProgramScanJob<>(this.idManager, this.memory, this.vertexMemory, this.vertexProgram
+                .clone());
     }
 
     @Override
@@ -130,8 +127,8 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             } else {
                 assert scope instanceof MessageScope.Local;
                 Traversal<Vertex,Edge> incident = FulgoraUtil.getTraversal((MessageScope.Local) scope,queries.getTransaction());
-                TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>) TraversalHelper.getStart(incident.asAdmin());
-                startStep.reverse();
+                TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>)incident.asAdmin().getStartStep();
+                startStep.reverseDirection();
                 QueryContainer.QueryBuilder qb = queries.addQuery();
                 startStep.makeQuery(qb);
                 qb.edges();

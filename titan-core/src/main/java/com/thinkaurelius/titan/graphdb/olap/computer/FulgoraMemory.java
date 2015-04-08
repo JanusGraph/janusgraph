@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
-import com.tinkerpop.gremlin.process.computer.MapReduce;
-import com.tinkerpop.gremlin.process.computer.VertexProgram;
-import com.tinkerpop.gremlin.tinkergraph.process.computer.TinkerMemory;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerMemory;
 
 import java.util.Set;
 

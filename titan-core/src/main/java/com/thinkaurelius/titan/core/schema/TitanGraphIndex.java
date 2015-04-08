@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**
  * A TitanGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements

@@ -118,7 +118,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder orderBy(String keyName, com.tinkerpop.gremlin.structure.Order order) {
+    public GraphCentricQueryBuilder orderBy(String keyName, org.apache.tinkerpop.gremlin.structure.Order order) {
         Preconditions.checkArgument(tx.containsPropertyKey(keyName),"Provided key does not exist: %s",keyName);
         PropertyKey key = tx.getPropertyKey(keyName);
         Preconditions.checkArgument(key!=null && order!=null,"Need to specify and key and an order");

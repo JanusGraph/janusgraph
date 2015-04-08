@@ -54,8 +54,8 @@ import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.util.encoding.ConversionHelper;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -265,7 +265,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, com.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, org.apache.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
         return buildRelationTypeIndex(label, name, direction, Order.convert(sortOrder), sortKeys);
     }
 
@@ -275,7 +275,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, com.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, org.apache.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
         return buildRelationTypeIndex(key, name, Direction.OUT, Order.convert(sortOrder), sortKeys);
     }
 

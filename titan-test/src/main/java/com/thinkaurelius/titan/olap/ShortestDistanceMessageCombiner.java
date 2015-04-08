@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.olap;
 
-import com.tinkerpop.gremlin.process.computer.MessageCombiner;
+import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 
 import java.util.Optional;
 

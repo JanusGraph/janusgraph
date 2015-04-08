@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * The multiplicity of edges between vertices for a given label. Multiplicity here is understood in the same sense as

@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.tinkerpop.gremlin.process.ProcessComputerSuite;
-import com.tinkerpop.gremlin.structure.StructurePerformanceSuite;
+import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
+import org.apache.tinkerpop.gremlin.structure.StructurePerformanceSuite;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 

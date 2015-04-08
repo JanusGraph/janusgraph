@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.database.cache;
 
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
-import com.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * This interface defines the methods that a SchemaCache must implement. A SchemaCache is maintained by the Titan graph

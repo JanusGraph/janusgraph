@@ -2,24 +2,24 @@ package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.tinkerpop.gremlin.process.Step;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.TraversalStrategy;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
-import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 
 import java.util.Set;
 
 /**
- * Modeled after {@link com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerElementStepStrategy}
+ * Modeled after {@code com.tinkerpop.gremlin.tinkergraph.process.graph.strategy.TinkerElementStepStrategy}
  *
  * @author Matthias Broecheler (http://matthiasb.com)
  */
@@ -35,12 +35,13 @@ public class TitanElementStepStrategy extends AbstractTraversalStrategy {
     }
 
     @Override
-    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
-        if (engine.equals(TraversalEngine.STANDARD))
+    public void apply(final Traversal.Admin<?, ?> traversal) {
+
+        if (traversal.getEngine().equals(TraversalEngine.Type.STANDARD))
             return;
 
         //Copied this block of code from TinkerElementStepStrategy: If traversal starts with a startstep && OLAP => convert to graphstep
-        final StartStep<Element> startStep = (StartStep) TraversalHelper.getStart(traversal);
+        final StartStep<Element> startStep = (StartStep<Element>)traversal.asAdmin().getStartStep();
         if (startStep.startAssignableTo(Vertex.class, Edge.class)) {
             final Element element = ((StartStep<?>) startStep).getStart();
             traversal.removeStep(startStep);
@@ -49,7 +50,7 @@ public class TitanElementStepStrategy extends AbstractTraversalStrategy {
                 identityStep.setLabel(label);
                 traversal.addStep(0, identityStep);
             });
-            traversal.addStep(0, new GraphStep<>(traversal, EmptyGraph.instance(), element.getClass(), element.id()));
+            traversal.addStep(0, new GraphStep(traversal.asAdmin(), element.getClass(), element.id()));
         }
     }
 

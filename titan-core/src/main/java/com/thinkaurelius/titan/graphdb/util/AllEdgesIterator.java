@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.graphdb.util;
 
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -64,7 +64,7 @@ public class AllEdgesIterator implements Iterator<Edge> {
             } else {
                 if (vertexIter.hasNext()) {
                     Vertex nextVertex = vertexIter.next();
-                    currentEdges = nextVertex.iterators().edgeIterator(Direction.OUT);
+                    currentEdges = nextVertex.edges(Direction.OUT);
                 } else break;
             }
         }

@@ -11,12 +11,12 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
-import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.io.DefaultIo;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.io.DefaultIo;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -119,11 +119,10 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return getAutoStartTx().addVertex(keyValues);
     }
 
-
-    @Override
-    public com.tinkerpop.gremlin.structure.Graph.Iterators iterators() {
-        return getAutoStartTx().iterators();
-    }
+//    @Override
+//    public com.tinkerpop.gremlin.structure.Graph.Iterators iterators() {
+//        return getAutoStartTx().iterators();
+//    }
 
     @Override
     public GraphTraversal<Vertex, Vertex> V(Object... ids) {
@@ -137,7 +136,8 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public TitanGraphComputer compute(final Class... graphComputerClass) {
-        GraphComputerHelper.validateComputeArguments(graphComputerClass);
+        if (graphComputerClass.length > 1)
+            throw Graph.Exceptions.onlyOneOrNoGraphComputerClass();
         if (graphComputerClass.length == 0 || graphComputerClass[0].equals(FulgoraGraphComputer.class)) {
             StandardTitanGraph graph = (StandardTitanGraph)this;
             return new FulgoraGraphComputer(graph,graph.getConfiguration().getConfiguration());

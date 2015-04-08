@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -77,11 +77,6 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     @Override
     public boolean isPresent() {
         return true;
-    }
-
-    @Override
-    public VertexProperty.Iterators iterators() {
-        return this;
     }
 
 }

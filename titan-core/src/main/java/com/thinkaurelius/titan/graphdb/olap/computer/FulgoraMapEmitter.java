@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
-import com.tinkerpop.gremlin.process.computer.MapReduce;
-import com.tinkerpop.gremlin.tinkergraph.process.computer.TinkerMapEmitter;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerMapEmitter;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
