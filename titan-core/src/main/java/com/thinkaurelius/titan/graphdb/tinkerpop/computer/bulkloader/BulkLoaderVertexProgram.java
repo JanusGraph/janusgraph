@@ -7,6 +7,7 @@ import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.util.system.IOUtils;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -14,6 +15,7 @@ import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -22,6 +24,8 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 import java.io.FileInputStream;
 import java.util.*;
@@ -43,7 +47,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     private static final String TITAN_ID = "titan.id";
     private static final ImmutableSet<String> elementComputeKeys = ImmutableSet.of(TITAN_ID);
 
-    private MessageScope messageScope = MessageScope.Local.of(AnonymousGraphTraversal.Tokens.__::inE);
+    private MessageScope messageScope = MessageScope.Local.of(__::inE);
     private Configuration configuration;
     private TitanGraph graph;
     private TitanManagement mgmt;
@@ -135,18 +139,18 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
         } else {
             // create a id/titan_id map and populate it with all the incoming messages
             final Map<Long, Long> idPairs = new HashMap<>();
-            messenger.receiveMessages(this.messageScope).forEach(idPair -> idPairs.put(idPair[0], idPair[1]));
+            messenger.receiveMessages(this.messageScope).forEachRemaining(idPair -> idPairs.put(idPair[0], idPair[1]));
             // get the titan vertex out of titan given the dummy id property
             Object vid = vertex.value(TITAN_ID);
-            final Vertex titanVertex = graph.V(vid).next();
+            final Vertex titanVertex = graph.vertices(vid).next();
             // enforce edge constraints if so configured
             if (checkSchema) {
                 LOGGER.debug("Checking edges on vertex {}", vertex);
                 checkEdges(vertex);
             }
             // for all the incoming edges of the vertex, get the incoming adjacent vertex and write the edge and its properties
-            vertex.outE().forEachRemaining(edge -> {
-                final Vertex outgoingAdjacent = graph.V(idPairs.get(Long.valueOf(edge.inV().id().next().toString()))).next();
+            vertex.edges(Direction.OUT).forEachRemaining(edge -> {
+                final Vertex outgoingAdjacent = graph.vertices(idPairs.get(Long.valueOf(edge.inVertex().id().toString()))).next();
                 final Edge titanEdge = titanVertex.addEdge(edge.label(), outgoingAdjacent);
                 edge.properties().forEachRemaining(property -> titanEdge.<Object>property(property.key(), property.value()));
             });
@@ -198,12 +202,12 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
 
     private void checkEdges(Vertex vertex) {
 
-        GraphTraversal<Vertex, Edge> gt = vertex.inE();
+        Iterator<Edge> inEdges = vertex.edges(Direction.IN);
 
         Set<String> simpleLabels = new HashSet<>();
 
-        while (gt.hasNext()) {
-            Edge e = gt.next();
+        while (inEdges.hasNext()) {
+            Edge e = inEdges.next();
             String edgeLabelName = e.label();
             EdgeLabel edgeLabel = mgmt.getEdgeLabel(edgeLabelName);
 
@@ -212,7 +216,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
 
             Multiplicity multi = edgeLabel.multiplicity();
             if (multi == Multiplicity.ONE2MANY) {
-                long count = vertex.inE(edgeLabelName).count().next().longValue();
+                long count = Iterators.size(vertex.edges(Direction.IN, edgeLabelName));
                 if (1 < count) {
                     multipleEdgesViolatesOne2Many(vertex, edgeLabelName);
                 }
@@ -222,15 +226,16 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
                 simpleLabels.add(edgeLabelName);
         }
 
-        gt = vertex.outE();
+        Iterator<Edge> outEdges = vertex.edges(Direction.OUT);
 
-        while (gt.hasNext()) {
-            Edge e = gt.next();
+        while (outEdges.hasNext()) {
+            Edge e = outEdges.next();
             String edgeLabelName = e.label();
             EdgeLabel edgeLabel = mgmt.getEdgeLabel(edgeLabelName);
             Multiplicity multi = edgeLabel.multiplicity();
             if (multi == Multiplicity.MANY2ONE) {
-                long count = vertex.outE(edgeLabelName).count().next().longValue();
+                //long count = vertex.outE(edgeLabelName).count().next().longValue();
+                long count = Iterators.size(vertex.edges(Direction.OUT, edgeLabelName));
                 if (1 < count) {
                     multipleEdgesViolateMany2One(vertex, edgeLabelName);
                 }
@@ -241,14 +246,14 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
         }
 
         for (String simpleLabel : simpleLabels) {
-            gt = vertex.bothE(simpleLabel);
+            Iterator<Edge> bothEdges = vertex.edges(Direction.BOTH, simpleLabel);
 
             HashMap<Vertex, Vertex> simpleMap = new HashMap<>();
 
-            while (gt.hasNext()) {
-                Edge e = gt.next();
-                Vertex outV = e.outV().next();
-                Vertex inV = e.inV().next();
+            while (bothEdges.hasNext()) {
+                Edge e = bothEdges.next();
+                Vertex outV = e.outVertex();
+                Vertex inV = e.inVertex();
 
                 Vertex otherV = outV.equals(vertex) ? inV : outV;
 
@@ -323,6 +328,18 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     @Override
     public VertexProgram<Long[]> clone() {
         return this;
+    }
+
+    // TODO verify ResultGraph.ORIGINAL & Persist.EDGES trigger intended behavior
+
+    @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.ORIGINAL;
+    }
+
+    @Override
+    public GraphComputer.Persist getPreferredPersist() {
+        return GraphComputer.Persist.EDGES;
     }
 
     @Override
