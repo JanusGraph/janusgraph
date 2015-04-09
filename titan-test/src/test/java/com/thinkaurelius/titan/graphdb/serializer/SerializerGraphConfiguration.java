@@ -42,9 +42,9 @@ public class SerializerGraphConfiguration {
         mgmt.commit();
 
         TitanTransaction tx = graph.newTransaction();
-        Vertex v = tx.addVertex("person");
-        v.singleProperty("time",5);
-        v.singleProperty("any",new Precision(5.0));
+        TitanVertex v = tx.addVertex("person");
+        v.property(VertexProperty.Cardinality.single, "time", 5);
+        v.property(VertexProperty.Cardinality.single, "any", new Precision(5.0));
         tx.commit();
 
         tx = graph.newTransaction();
@@ -54,7 +54,7 @@ public class SerializerGraphConfiguration {
 
         tx = graph.newTransaction();
         v = tx.addVertex("person");
-        v.singleProperty("any",TestEnum.One); //Should not be allowed
+        v.property(VertexProperty.Cardinality.single, "any", TestEnum.One); //Should not be allowed
         try {
             tx.commit();
             fail();

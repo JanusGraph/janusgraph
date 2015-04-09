@@ -222,7 +222,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
                     TitanTransaction tx = graph.newTransaction();
                     try {
                         for (int i = 0; i < batchV; i++) {
-                            Vertex v = tx.addVertex();
+                            TitanVertex v = tx.addVertex();
                             v.property("k", random.nextInt(maxK));
                             v.property("q", random.nextInt(maxQ));
                         }
@@ -300,7 +300,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         log.info("Creating vertices");
         // Write vertices with indexed properties
         for (int i = 0; i < vertexCount; i++) {
-            Vertex v = tx.addVertex();
+            TitanVertex v = tx.addVertex();
             for (int p = 0; p < propCount; p++) {
                 v.property("p" + p, i);
             }
@@ -335,7 +335,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             while (true) {
                 // Set propType to a random value on a random node
-                Vertex n = getOnlyElement(tx.V().has(idKey, RandomGenerator.randomInt(0, nodeCount)));
+                TitanVertex n = getOnlyElement(tx.query().has(idKey, RandomGenerator.randomInt(0, nodeCount).vertices()));
                 String propVal = RandomGenerator.randomString();
                 n.property(randomKey, propVal);
                 if (Thread.interrupted())
@@ -370,8 +370,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             while (true) {
                 // Make or break relType between two (possibly same) random nodes
-                Vertex source = getOnlyElement(tx.V().has(idKey, 0));
-                Vertex sink = getOnlyElement(tx.V().has(idKey, 1));
+                TitanVertex source = getOnlyElement(tx.query().has(idKey, 0).vertices());
+                TitanVertex sink = getOnlyElement(tx.query().has(idKey, 1).vertices());
                 for (Edge r : source.outE(elabel).toList()) {
                     if (getId(r.inV().next()) == getId(sink)) {
                         r.remove();
@@ -405,7 +405,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
         @Override
         protected void doRun() throws Exception {
-            Vertex v = getOnlyElement(tx.V().has(idKey, vertexid));
+            TitanVertex v = getOnlyElement(tx.query().has(idKey, vertexid).vertices());
 
             for (int i = 0; i < nodeTraversalCount; i++) {
                 assertCount(expectedEdges, v.bothE(label2Traverse));

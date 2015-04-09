@@ -83,12 +83,12 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                 public void run() {
                     for (int r = 0; r < rounds; r++) {
                         TitanTransaction tx = graph.newTransaction();
-                        Vertex previous = null;
+                        TitanVertex previous = null;
                         for (int c = 0; c < commitSize; c++) {
-                            Vertex v = tx.addVertex();
+                            TitanVertex v = tx.addVertex();
                             long uid = uidCounter.incrementAndGet();
-                            v.singleProperty("uid", uid);
-                            v.singleProperty("name", "user" + uid);
+                            v.property(VertexProperty.Cardinality.single, "uid",  uid);
+                            v.property(VertexProperty.Cardinality.single, "name",  "user" + uid);
                             if (previous != null) {
                                 v.addEdge("friend", previous, "time", Math.abs(random.nextInt()));
                             }
@@ -116,9 +116,9 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                 public void run() {
                     TitanTransaction tx = graph.newTransaction();
                     long ruid = random.nextInt(maxUID) + 1;
-                    getVertex(tx,"uid", ruid).singleProperty("name", fixedName);
+                    getVertex(tx,"uid", ruid).property(VertexProperty.Cardinality.single, "name",  fixedName);
                     for (int t = 1; t <= trials; t++) {
-                        Vertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
+                        TitanVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
                         assertCount(2, v.properties());
                         int count = 0;
                         for (Edge e : v.bothE().toList()) {

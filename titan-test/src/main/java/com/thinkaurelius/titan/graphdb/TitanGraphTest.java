@@ -150,22 +150,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1 = getV(graph, v1);
         v2 = getV(graph, v2);
         assertCount(1,v1.query().direction(BOTH).edges());
-        assertCount(1,v2.bothE());
+        assertCount(1,v2.query().direction(Direction.BOTH).edges());
         v2.remove();
-        assertCount(0,v1.bothE());
+        assertCount(0,v1.query().direction(Direction.BOTH).edges());
         try {
-            assertCount(0,v2.bothE());
+            assertCount(0,v2.query().direction(Direction.BOTH).edges());
             fail();
         } catch (IllegalStateException ex) {}
-        assertCount(1,graph.V());
+        assertCount(1,graph.query().vertices());
         assertCount(1,graph.query().has(namen,"v1").vertices());
-        assertCount(0,graph.V().has(namen,"v2"));
+        assertCount(0,graph.query().has(namen,"v2").vertices());
         graph.tx().commit();
 
         assertMissing(graph,v2);
-        assertCount(1,graph.V());
-        assertCount(1,graph.V().has(namen,"v1"));
-        assertCount(0,graph.V().has(namen,"v2"));
+        assertCount(1,graph.query().vertices());
+        assertCount(1,graph.query().has(namen,"v1").vertices());
+        assertCount(0,graph.query().has(namen,"v2").vertices());
     }
 
     /**
@@ -176,36 +176,36 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int numV = 50;
         int deleteV = 5;
 
-        Vertex previous = tx.addVertex("count",0);
+        TitanVertex previous = tx.addVertex("count",0);
         for (int i = 1; i < numV; i++) {
-            Vertex next = tx.addVertex("count",i);
+            TitanVertex next = tx.addVertex("count",i);
             previous.addEdge("next", next);
             previous = next;
         }
         int numE = numV - 1;
-        assertCount(numV, tx.V());
-        assertCount(numV, tx.V());
-        assertCount(numE, tx.E());
-        assertCount(numE, tx.E());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numE, tx.query().edges());
+        assertCount(numE, tx.query().edges());
 
         clopen();
 
-        assertCount(numV, tx.V());
-        assertCount(numV, tx.V());
-        assertCount(numE, tx.E());
-        assertCount(numE, tx.E());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numE, tx.query().edges());
+        assertCount(numE, tx.query().edges());
 
         tx.V().range(0,deleteV).remove();
 
         for (int i=0;i<10;i++) { //Repeated vertex counts
-            assertCount(numV - deleteV, tx.V());
-            assertCount(numV - deleteV, tx.V().has("count",Cmp.GREATER_THAN_EQUAL,0));
+            assertCount(numV - deleteV, tx.query().vertices());
+            assertCount(numV - deleteV, tx.query().has("count",Cmp.GREATER_THAN_EQUAL,0).vertices());
         }
 
         clopen();
         for (int i=0;i<10;i++) { //Repeated vertex counts
-            assertCount(numV - deleteV, tx.V());
-            assertCount(numV - deleteV, tx.V().has("count",Cmp.GREATER_THAN_EQUAL,0));
+            assertCount(numV - deleteV, tx.query().vertices());
+            assertCount(numV - deleteV, tx.query().has("count",Cmp.GREATER_THAN_EQUAL,0).vertices());
         }
     }
 
@@ -236,14 +236,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int[] connectOff = {-100, -34, -4, 10, 20};
         int[] knowsOff = {-400, -18, 8, 232, 334};
         for (int i = 0; i < noVertices; i++) {
-            Vertex n = nodes[i];
+            TitanVertex n = nodes[i];
             nodeEdges[i] = new ArrayList(10);
             for (int c : connectOff) {
                 Edge r = n.addEdge("connect", nodes[wrapAround(i + c, noVertices)]);
                 nodeEdges[i].add(r);
             }
             for (int k : knowsOff) {
-                Vertex n2 = nodes[wrapAround(i + k, noVertices)];
+                TitanVertex n2 = nodes[wrapAround(i + k, noVertices)];
                 Edge r = n.addEdge("knows", n2,
                         "uid", ((Number) n.value("uid")).intValue() + ((Number) n2.value("uid")).intValue(),
                         "weight", k * 1.5,
@@ -274,16 +274,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertEquals(nodeIds[i], n.longId());
         }
         for (int i = 0; i < noVertices; i++) {
-            Vertex n = nodes[i];
-            assertCount(connectOff.length + knowsOff.length, n.outE());
-            assertCount(connectOff.length, n.outE("connect"));
-            assertCount(connectOff.length * 2, n.bothE("connect"));
-            assertCount(knowsOff.length * 2,  n.bothE("knows"));
+            TitanVertex n = nodes[i];
+            assertCount(connectOff.length + knowsOff.length, n.query().direction(Direction.OUT).edges());
+            assertCount(connectOff.length, n.query().direction(Direction.OUT).labels("connect").edges());
+            assertCount(connectOff.length * 2, n.query().direction(Direction.BOTH).labels("connect").edges());
+            assertCount(knowsOff.length * 2,  n.query().direction(Direction.BOTH).labels("knows").edges());
 
-            assertCount(connectOff.length + knowsOff.length, n.outE());
+            assertCount(connectOff.length + knowsOff.length, n.query().direction(Direction.OUT).edges());
             assertCount(2, n.properties());
             for (Edge r : n.outE("knows").toList()) {
-                Vertex n2 = r.inVertex();
+                TitanVertex n2 = r.inVertex();
                 int idsum = ((Number) n.value("uid")).intValue() + ((Number) n2.value("uid")).intValue();
                 assertEquals(idsum, ((Number)r.value("uid")).intValue());
                 double k = ((Number) r.value("weight")).doubleValue() / 1.5;
@@ -625,9 +625,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         clopen();
 
         TitanTransaction tx2;
-        assertEmpty(tx.V().has("uid","v1")); //shouldn't exist
+        assertEmpty(tx.query().has("uid","v1").vertices()); //shouldn't exist
 
-        Vertex v = tx.addVertex();
+        TitanVertex v = tx.addVertex();
         //test property keys
         v.property("uid", "v1");
         v.property("weight", 1.5);
@@ -639,7 +639,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.property("value",33.3,"weight",66.6);
         v.property("value",11,"weight",22); //same values are supported for list-properties
         //test edges
-        Vertex v12 = tx.addVertex("person"), v13 = tx.addVertex("person");
+        TitanVertex v12 = tx.addVertex("person"), v13 = tx.addVertex("person");
         v12.property("uid", "v12");
         v13.property("uid", "v13");
         v12.addEdge("parent", v, "weight", 4.5);
@@ -651,16 +651,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.addEdge("friend",v12); //supports multi edges
         v.addEdge("connect", v12,"uid","e1","link",v);
         v.addEdge("link",v13);
-        Vertex v2 = tx.addVertex("tweet");
+        TitanVertex v2 = tx.addVertex("tweet");
         v2.addEdge("link",v13);
         v12.addEdge("connect",v2);
         Edge edge;
 
         // ######### INSPECTION & FAILURE ############
-        assertEquals(v, (Vertex)getOnlyElement(tx.V().has("uid", Cmp.EQUAL, "v1")));
-        v = getOnlyElement(tx.V().has("uid",Cmp.EQUAL,"v1"));
-        v12 = getOnlyElement(tx.V().has("uid",Cmp.EQUAL,"v12"));
-        v13 = getOnlyElement(tx.V().has("uid",Cmp.EQUAL,"v13"));
+        assertEquals(v, (Vertex)getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices()));
+        v = getOnlyElement(tx.query().has("uid",Cmp.EQUAL,"v1").vertices());
+        v12 = getOnlyElement(tx.query().has("uid",Cmp.EQUAL,"v12").vertices());
+        v13 = getOnlyElement(tx.query().has("uid",Cmp.EQUAL,"v13").vertices());
         try {
             //Invalid data type
             v.property("weight", "x");
@@ -676,7 +676,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //Only one property for weight allowed
         v.property(single,"weight", 1.0);
         assertCount(1,v.properties("weight"));
-        v.singleProperty("weight",0.5);
+        v.property(VertexProperty.Cardinality.single, "weight", 0.5);
         assertEquals(0.5,v.<Decimal>value("weight").doubleValue(),0.00001);
         assertEquals("v1",v.value("uid"));
         assertCount(2, v.properties("name"));
@@ -691,7 +691,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         //Ensure we can add additional values
         p = v.property("value",44.4,"weight",88.8);
-        assertEquals(v, (Vertex)getOnlyElement(tx.V().has("someid",Cmp.EQUAL,"Hello")));
+        assertEquals(v, (Vertex)getOnlyElement(tx.query().has("someid",Cmp.EQUAL,"Hello").vertices()));
 
         //------- EDGES -------
         try {
@@ -718,11 +718,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             fail();
         } catch (SchemaViolationException e) {
         }
-        assertCount(2, v.inE("parent"));
+        assertCount(2, v.query().direction(Direction.IN).labels("parent").edges());
         assertCount(1, v12.outE("parent").has("weight"));
         assertCount(1, v13.outE("parent").has("weight"));
-        assertEquals(v12,getOnlyElement(v.out("spouse")));
-        edge = getOnlyElement(v.bothE("connect"));
+        assertEquals(v12,getOnlyElement(v.query().direction(Direction.OUT).labels("spouse").vertices()));
+        edge = getOnlyElement(v.query().direction(Direction.BOTH).labels("connect").edges());
         assertEquals(2,edge.keys().size());
         assertEquals("e1",edge.value("uid"));
         assertEquals(v,edge.value("link"));
@@ -733,18 +733,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (SchemaViolationException e) {
         }
         //Make sure "link" is unidirected
-        assertCount(1, v.bothE("link"));
-        assertCount(0, v13.bothE("link"));
+        assertCount(1, v.query().direction(Direction.BOTH).labels("link").edges());
+        assertCount(0, v13.query().direction(Direction.BOTH).labels("link").edges());
         //Assert we can add more friendships
         v.addEdge("friend",v12);
-        v2 = getOnlyElement(v12.out("connect"));
-        assertEquals(v13,getOnlyElement(v2.out("link")));
+        v2 = getOnlyElement(v12.query().direction(Direction.OUT).labels("connect").vertices());
+        assertEquals(v13,getOnlyElement(v2.query().direction(Direction.OUT).labels("link").vertices()));
 
         assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(),v.label());
         assertEquals("person",v12.label());
         assertEquals("person", v13.label());
 
-        assertCount(4, tx.V());
+        assertCount(4, tx.query().vertices());
 
         // ######### END INSPECTION & FAILURE ############
 
@@ -767,9 +767,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (SchemaViolationException e) {}
 
         //Only one property for weight allowed
-        v.singleProperty("weight", 1.0);
+        v.property(VertexProperty.Cardinality.single, "weight",  1.0);
         assertCount(1, v.properties("weight"));
-        v.singleProperty("weight", 0.5);
+        v.property(VertexProperty.Cardinality.single, "weight",  0.5);
         assertEquals(0.5,v.<Decimal>value("weight").doubleValue(),0.00001);
         assertEquals("v1",v.value("uid"));
         assertCount(2, v.properties("name"));
@@ -784,7 +784,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         //Ensure we can add additional values
         p = v.property("value", 44.4, "weight", 88.8);
-        assertEquals(v, (Vertex)getOnlyElement(tx.V().has("someid", Cmp.EQUAL, "Hello")));
+        assertEquals(v, (Vertex)getOnlyElement(tx.query().has("someid", Cmp.EQUAL, "Hello").vertices()));
 
         //------- EDGES -------
         try {
@@ -811,11 +811,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             fail();
         } catch (SchemaViolationException e) {
         }
-        assertCount(2, v.inE("parent"));
+        assertCount(2, v.query().direction(Direction.IN).labels("parent").edges());
         assertCount(1, v12.outE("parent").has("weight"));
         assertCount(1, v13.outE("parent").has("weight"));
-        assertEquals(v12,getOnlyElement(v.out("spouse")));
-        edge = getOnlyElement(v.bothE("connect"));
+        assertEquals(v12,getOnlyElement(v.query().direction(Direction.OUT).labels("spouse").vertices()));
+        edge = getOnlyElement(v.query().direction(Direction.BOTH).labels("connect").edges());
         assertEquals(2,edge.keys().size());
         assertEquals("e1",edge.value("uid"));
         assertEquals(v,edge.value("link"));
@@ -826,35 +826,35 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (SchemaViolationException e) {
         }
         //Make sure "link" is unidirected
-        assertCount(1, v.bothE("link"));
-        assertCount(0, v13.bothE("link"));
+        assertCount(1, v.query().direction(Direction.BOTH).labels("link").edges());
+        assertCount(0, v13.query().direction(Direction.BOTH).labels("link").edges());
         //Assert we can add more friendships
         v.addEdge("friend",v12);
-        v2 = getOnlyElement(v12.out("connect"));
-        assertEquals(v13,getOnlyElement(v2.out("link")));
+        v2 = getOnlyElement(v12.query().direction(Direction.OUT).labels("connect").vertices());
+        assertEquals(v13,getOnlyElement(v2.query().direction(Direction.OUT).labels("link").vertices()));
 
         assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(),v.label());
         assertEquals("person",v12.label());
         assertEquals("person", v13.label());
 
-        assertCount(4, tx.V());
+        assertCount(4, tx.query().vertices());
 
         // ######### END INSPECTION & FAILURE ############
 
         //Ensure index uniqueness enforcement
         tx2 = graph.newTransaction();
         try {
-            Vertex vx = tx2.addVertex();
+            TitanVertex vx = tx2.addVertex();
             try {
                 //property is unique
-                vx.singleProperty("uid","v1");
+                vx.property(VertexProperty.Cardinality.single, "uid", "v1");
                 fail();
             } catch (SchemaViolationException e) {}
-            vx.singleProperty("uid", "unique");
-            Vertex vx2 = tx2.addVertex();
+            vx.property(VertexProperty.Cardinality.single, "uid",  "unique");
+            TitanVertex vx2 = tx2.addVertex();
             try {
                 //property unique
-                vx2.singleProperty("uid","unique");
+                vx2.property(VertexProperty.Cardinality.single, "uid", "unique");
                 fail();
             } catch (SchemaViolationException e) {}
         } finally {
@@ -866,7 +866,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v2 = getV(tx,v2);
         assertEquals("tweet",v2.label());
         try {
-            v2.singleProperty("weight",11);
+            v2.property(VertexProperty.Cardinality.single, "weight", 11);
             fail();
         } catch (SchemaViolationException e) {}
         try {
@@ -876,7 +876,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //Ensure that unidirected edges keep pointing to deleted vertices
         getV(tx,v13).remove();
-        assertCount(1, v.bothE("link"));
+        assertCount(1, v.query().direction(Direction.BOTH).labels("link").edges());
 
         //Finally, test the schema container
         SchemaContainer schemaContainer = new SchemaContainer(graph);
@@ -951,7 +951,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         c.setTime(new SimpleDateFormat("ddMMyyyy").parse("28101978"));
         final Geoshape shape = Geoshape.box(10.0, 10.0, 20.0, 20.0);
 
-        Vertex v = tx.addVertex();
+        TitanVertex v = tx.addVertex();
         v.property(n(boolval), true);
         v.singleProperty(n(birthday), c);
         v.singleProperty(n(num), new SpecialInt(10));
@@ -1018,7 +1018,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Vertex v1,v2;
         v1 = tx.addVertex();
         try {
-            v1.singleProperty("domain", "unique1");
+            v1.property(VertexProperty.Cardinality.single, "domain",  "unique1");
         } catch (SchemaViolationException e) {
 
         } finally {
@@ -1045,7 +1045,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         clopen();
         v1 = tx.addVertex();
         v1.property("domain", "unique1");
-        assertCount(1, tx.V().has("domain", "unique1"));
+        assertCount(1, tx.query().has("domain", "unique1").vertices());
         try {
             v2 = tx.addVertex();
             v2.property("domain", "unique1");
@@ -1071,7 +1071,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         PropertyKey value = tx.getOrCreatePropertyKey("value");
         assertNotNull(value);
         assertTrue(tx.containsRelationType("value"));
-        Vertex v = tx.addVertex("person");
+        TitanVertex v = tx.addVertex("person");
         assertTrue(tx.containsVertexLabel("person"));
         assertEquals("person",v.label());
         assertFalse(tx.containsRelationType("knows"));
@@ -1111,16 +1111,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
         //CREATE SMALL GRAPH
-        Vertex v = tx.addVertex("people");
-        v.singleProperty("time", 5);
+        TitanVertex v = tx.addVertex("people");
+        v.property(VertexProperty.Cardinality.single, "time",  5);
         v.addEdge("knows", v, "time", 11);
 
         newTx();
-        v = getOnlyElement(tx.V().has("time",5));
+        v = getOnlyElement(tx.query().has("time",5).vertices());
         assertNotNull(v);
         assertEquals("people", v.label());
         assertEquals(5,v.<Integer>value("time").intValue());
-        assertCount(1, v.inE("knows"));
+        assertCount(1, v.query().direction(Direction.IN).labels("knows").edges());
         assertCount(1, v.outE("knows").has("time", 11));
         newTx();
 
@@ -1166,12 +1166,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //VERIFY UPDATES IN TRANSACTION
         newTx();
-        v = getOnlyElement(tx.V().has("time",5));
+        v = getOnlyElement(tx.query().has("time",5).vertices());
         assertNotNull(v);
         assertEquals("person", v.label());
         assertEquals(5,v.<Integer>value("time").intValue());
-        assertCount(1, v.inE("know"));
-        assertCount(0,v.inE("knows"));
+        assertCount(1, v.query().direction(Direction.IN).labels("know").edges());
+        assertCount(0,v.query().direction(Direction.IN).labels("knows").edges());
         assertCount(1,v.outE("know").has("time",11));
     }
 
@@ -1196,7 +1196,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         for (int i=0;i<10;i++) {
             v.property("sensor", i, "time", i);
             v.property("name", "v" + i);
-            Vertex o = tx.addVertex();
+            TitanVertex o = tx.addVertex();
             v.addEdge("friend", o, "time", i);
         }
         newTx();
@@ -1232,7 +1232,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         for (int i=100;i<110;i++) {
             v.property("sensor", i, "time", i);
             v.property("name", "v" + i);
-            Vertex o = tx.addVertex();
+            TitanVertex o = tx.addVertex();
             v.addEdge("friend", o, "time", i);
         }
         tx.commit();
@@ -1299,7 +1299,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         for (int i=200;i<210;i++) {
             v.property("sensor", i, "time", i);
             v.property("name", "v" + i);
-            Vertex o = tx.addVertex();
+            TitanVertex o = tx.addVertex();
             v.addEdge("friend", o, "time", i);
         }
         newTx();
@@ -1578,18 +1578,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      */
     @Test
     public void testSelfLoop() {
-        Vertex v = tx.addVertex();
+        TitanVertex v = tx.addVertex();
         v.addEdge("self", v);
-        assertCount(1, v.outE("self"));
-        assertCount(1, v.inE("self"));
-        assertCount(2, v.bothE("self"));
+        assertCount(1, v.query().direction(Direction.OUT).labels("self").edges());
+        assertCount(1, v.query().direction(Direction.IN).labels("self").edges());
+        assertCount(2, v.query().direction(Direction.BOTH).labels("self").edges());
         clopen();
         v = getV(tx,v);
         assertNotNull(v);
-        assertCount(1, v.inE("self"));
-        assertCount(1, v.outE("self"));
-        assertCount(1, v.inE("self"));
-        assertCount(2, v.bothE("self"));
+        assertCount(1, v.query().direction(Direction.IN).labels("self").edges());
+        assertCount(1, v.query().direction(Direction.OUT).labels("self").edges());
+        assertCount(1, v.query().direction(Direction.IN).labels("self").edges());
+        assertCount(2, v.query().direction(Direction.BOTH).labels("self").edges());
     }
 
     /**
@@ -1603,18 +1603,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
         finishSchema();
 
-        Vertex v1 = graph.addVertex("name", "Vertex1","age", 35);
-        Vertex v2 = graph.addVertex("name", "Vertex2","age", 45);
-        Vertex v3 = graph.addVertex("name", "Vertex3","age", 55);
+        TitanVertex v1 = graph.addVertex("name", "Vertex1","age", 35);
+        TitanVertex v2 = graph.addVertex("name", "Vertex2","age", 45);
+        TitanVertex v3 = graph.addVertex("name", "Vertex3","age", 55);
 
         Edge e1 = v1.addEdge("knows", v2, "time", 5);
         Edge e2 = v2.addEdge("knows", v3, "time", 15);
         Edge e3 = v3.addEdge("knows", v1, "time", 25);
         Edge e4 = v2.addEdge("friend", v2, "type", 1);
         for (Vertex v : new Vertex[]{v1, v2, v3}) {
-            assertCount(2, v.bothE("knows"));
-            assertCount(1, v.outE("knows"));
-            assertEquals(5, getOnlyElement(v.outE("knows")).<Integer>value("time").intValue() % 10);
+            assertCount(2, v.query().direction(Direction.BOTH).labels("knows").edges());
+            assertCount(1, v.query().direction(Direction.OUT).labels("knows").edges());
+            assertEquals(5, getOnlyElement(v.query().direction(Direction.OUT).labels("knows").edges()).<Integer>value("time").intValue() % 10);
         }
         e3.property("time", 35);
         assertEquals(35, e3.<Integer>value("time").intValue());
@@ -1622,8 +1622,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1.addEdge("friend", v2, "type", 0);
         graph.tx().commit();
         e4.property("type", 2);
-        Edge ef = getOnlyElement(v1.outE("friend"));
-        assertEquals(ef, (Edge)getOnlyElement(graph.E().has("type", 0)));
+        Edge ef = getOnlyElement(v1.query().direction(Direction.OUT).labels("friend").edges());
+        assertEquals(ef, (Edge)getOnlyElement(graph.query().has("type", 0).edges()));
         ef.property("type", 1);
         graph.tx().commit();
 
@@ -1643,9 +1643,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         e1 = getE(graph,e1);
 
         for (Vertex v : new Vertex[]{v1, v2, v3}) {
-            assertCount(2, v.bothE("knows"));
-            assertCount(1, v.outE("knows"));
-            assertEquals(5, getOnlyElement(v.outE("knows")).<Integer>value("time").intValue() % 10);
+            assertCount(2, v.query().direction(Direction.BOTH).labels("knows").edges());
+            assertCount(1, v.query().direction(Direction.OUT).labels("knows").edges());
+            assertEquals(5, getOnlyElement(v.query().direction(Direction.OUT).labels("knows").edges()).<Integer>value("time").intValue() % 10);
         }
 
         graph.tx().commit();
@@ -1662,9 +1662,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(65, v3.<Integer>value("age").intValue());
 
         for (Vertex v : new Vertex[]{v1, v2, v3}) {
-            assertCount(2, v.bothE("knows"));
-            assertCount(1, v.outE("knows"));
-            assertEquals(5, getOnlyElement(v.outE("knows")).<Integer>value("time").intValue() % 10);
+            assertCount(2, v.query().direction(Direction.BOTH).labels("knows").edges());
+            assertCount(1, v.query().direction(Direction.OUT).labels("knows").edges());
+            assertEquals(5, getOnlyElement(v.query().direction(Direction.OUT).labels("knows").edges()).<Integer>value("time").intValue() % 10);
         }
 
         graph.tx().commit();
@@ -1686,12 +1686,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
 
-        Vertex cartman = graph.addVertex("name","cartman", "age", 10);
-        Vertex stan = graph.addVertex("name","stan","age",8);
+        TitanVertex cartman = graph.addVertex("name","cartman", "age", 10);
+        TitanVertex stan = graph.addVertex("name","stan","age",8);
 
         graph.tx().commit();
 
-        cartman = getOnlyElement(graph.V().has("name", "cartman"));
+        cartman = getOnlyElement(graph.query().has("name", "cartman").vertices());
 
         graph.tx().commit();
 
@@ -1713,17 +1713,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanTransaction tx2 = graph.newTransaction();
 
         //Verify that using vertices across transactions is prohibited
-        Vertex v11 = tx1.addVertex();
-        Vertex v12 = tx1.addVertex();
+        TitanVertex v11 = tx1.addVertex();
+        TitanVertex v12 = tx1.addVertex();
         v11.addEdge("knows",v12);
 
-        Vertex v21 = tx2.addVertex();
+        TitanVertex v21 = tx2.addVertex();
         try {
             v21.addEdge("knows", v11);
             fail();
         } catch (IllegalStateException e) {
         }
-        Vertex v22 = tx2.addVertex();
+        TitanVertex v22 = tx2.addVertex();
         v21.addEdge("knows", v22);
         tx2.commit();
         try {
@@ -1733,7 +1733,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         tx1.rollback();
         try {
-            v11.singleProperty("test", 5);
+            v11.property(VertexProperty.Cardinality.single, "test",  5);
             fail();
         } catch (IllegalStateException e) {
         }
@@ -1742,22 +1742,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
         v21 = getV(tx,v21);
         tx.makeEdgeLabel("link").unidirected().make();
-        Vertex v3 = tx.addVertex();
+        TitanVertex v3 = tx.addVertex();
         v21.addEdge("link", v3);
         newTx();
         v21 = getV(tx,v21);
-        v3 = getOnlyElement(v21.out("link"));
+        v3 = getOnlyElement(v21.query().direction(Direction.OUT).labels("link").vertices());
         assertFalse(((TitanVertex)v3).isRemoved());
         v3.remove();
         newTx();
         v21 = getV(tx,v21);
-        v3 = getOnlyElement(v21.out("link"));
+        v3 = getOnlyElement(v21.query().direction(Direction.OUT).labels("link").vertices());
         assertFalse(((TitanVertex)v3).isRemoved());
         newTx();
 
         TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence(true).start();
         v21 = getV(tx3,v21);
-        v3 = getOnlyElement(v21.out("link"));
+        v3 = getOnlyElement(v21.query().direction(Direction.OUT).labels("link").vertices());
         assertTrue(((TitanVertex) v3).isRemoved());
         tx3.commit();
     }
@@ -1791,7 +1791,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.buildIndex(bar,Vertex.class).addKey(b).buildCompositeIndex();
         finishSchema();
 
-        Vertex v = tx.addVertex();
+        TitanVertex v = tx.addVertex();
 
         // Insert prop values
         int i=0;
@@ -1818,11 +1818,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
 
-        assertCount(1, tx.V().has(foo, values.get(1)));
-        assertCount(1, tx.V().has(foo, values.get(3)));
+        assertCount(1, tx.query().has(foo, values.get(1).vertices()));
+        assertCount(1, tx.query().has(foo, values.get(3).vertices()));
 
-        assertCount(1, tx.V().has(bar, values.get(1)));
-        assertCount(1, tx.V().has(bar, values.get(3)));
+        assertCount(1, tx.query().has(bar, values.get(1).vertices()));
+        assertCount(1, tx.query().has(bar, values.get(3).vertices()));
 
         // Check that removing properties works
         v.properties(foo).remove();
@@ -1832,11 +1832,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Reopen database
         clopen();
 
-        assertCount(0, tx.V().has(foo, values.get(1)));
-        assertCount(0, tx.V().has(foo, values.get(3)));
+        assertCount(0, tx.query().has(foo, values.get(1).vertices()));
+        assertCount(0, tx.query().has(foo, values.get(3).vertices()));
 
-        assertCount(1, tx.V().has(bar, values.get(1)));
-        assertCount(1, tx.V().has(bar, values.get(3)));
+        assertCount(1, tx.query().has(bar, values.get(1).vertices()));
+        assertCount(1, tx.query().has(bar, values.get(3).vertices()));
 
         // Retrieve and check our test vertex
         v = getV(tx,v);
@@ -2103,9 +2103,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         connect = tx.getEdgeLabel("connect");
         related = tx.getEdgeLabel("related");
 
-        Vertex v1 = tx.addVertex("uid",1);
-        Vertex v2 = tx.addVertex("uid",2);
-        Vertex v3 = tx.addVertex("uid",3);
+        TitanVertex v1 = tx.addVertex("uid",1);
+        TitanVertex v2 = tx.addVertex("uid",2);
+        TitanVertex v3 = tx.addVertex("uid",3);
 
         Edge e1 = v1.addEdge(connect.name(),v2, name.name(),"e1");
         Edge e2 = v1.addEdge(related.name(),v2, name.name(),"e2");
@@ -2117,10 +2117,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
          */
         long e1id = getId(e1);
         long e2id = getId(e2);
-        e1 = getOnlyElement(v1.outE("connect"));
+        e1 = getOnlyElement(v1.query().direction(Direction.OUT).labels("connect").edges());
         assertEquals("e1",e1.value("name"));
         assertEquals(e1id,getId(e1));
-        e2 = getOnlyElement(v1.outE("related"));
+        e2 = getOnlyElement(v1.query().direction(Direction.OUT).labels("related").edges());
         assertEquals("e2",e2.value("name"));
         assertEquals(e2id,getId(e2));
         //Update edges - one should simply update, the other fork
@@ -2130,10 +2130,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
         v1 = getV(tx,v1);
 
-        e1 = getOnlyElement(v1.outE("connect"));
+        e1 = getOnlyElement(v1.query().direction(Direction.OUT).labels("connect").edges());
         assertEquals("e1.2",e1.value("name"));
         assertEquals(e1id,getId(e1)); //should have same id
-        e2 = getOnlyElement(v1.outE("related"));
+        e2 = getOnlyElement(v1.query().direction(Direction.OUT).labels("related").edges());
         assertEquals("e2.2",e2.value("name"));
         assertNotEquals(e2id,getId(e2)); //should have different id since forked
 
@@ -2149,23 +2149,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             private int pos = 0;
             @Override
             public void run(TitanTransaction tx) {
-                Vertex u = getV(tx,vids[pos++]);
-                u.singleProperty("uid",5);
+                TitanVertex u = getV(tx,vids[pos++]);
+                u.property(VertexProperty.Cardinality.single, "uid", 5);
             }
         });
         //2) Property out-uniqueness
         executeLockConflictingTransactionJobs(graph,new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex u = getV(tx,vids[0]);
-                u.singleProperty("name","v"+random.nextInt(10));
+                TitanVertex u = getV(tx,vids[0]);
+                u.property(VertexProperty.Cardinality.single, "name", "v"+random.nextInt(10));
             }
         });
         //3) knows simpleness
         executeLockConflictingTransactionJobs(graph,new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex u1 = getV(tx,vids[0]), u2 = getV(tx,vids[1]);
+                TitanVertex u1 = getV(tx,vids[0]), u2 = getV(tx,vids[1]);
                 u1.addEdge("knows",u2);
             }
         });
@@ -2174,7 +2174,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             private int pos = 1;
             @Override
             public void run(TitanTransaction tx) {
-                Vertex u1 = getV(tx,vids[0]),
+                TitanVertex u1 = getV(tx,vids[0]),
                         u2 = getV(tx,vids[pos++]);
                 u1.addEdge("spouse",u2);
             }
@@ -2183,7 +2183,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             private int pos = 1;
             @Override
             public void run(TitanTransaction tx) {
-                Vertex u1 = getV(tx,vids[pos++]),
+                TitanVertex u1 = getV(tx,vids[pos++]),
                         u2 = getV(tx,vids[0]);
                 u1.addEdge("spouse",u2);
             }
@@ -2248,7 +2248,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel friend = mgmt.makeEdgeLabel("friend").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
 
-        Vertex baseV = tx.addVertex("name","base");
+        TitanVertex baseV = tx.addVertex("name","base");
         newTx();
         final long baseVid = getId(baseV);
         final String nameA = "a", nameB = "b";
@@ -2258,8 +2258,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int numSuccess = executeParallelTransactions(new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex a = tx.addVertex();
-                Vertex base = getV(tx,baseVid);
+                TitanVertex a = tx.addVertex();
+                TitanVertex base = getV(tx,baseVid);
                 base.addEdge("married",a);
             }
         },parallelThreads);
@@ -2269,8 +2269,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         numSuccess = executeParallelTransactions(new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex a = tx.addVertex("name",nameA);
-                Vertex b = tx.addVertex("name",nameB);
+                TitanVertex a = tx.addVertex("name",nameA);
+                TitanVertex b = tx.addVertex("name",nameB);
                 b.addEdge("friend",b);
             }
         },parallelThreads);
@@ -2423,7 +2423,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
 
        //To trigger queries from cache (don't copy!!!)
-       assertCount(2 * (noVertices - 1), v.bothE());
+       assertCount(2 * (noVertices - 1), v.query().direction(Direction.BOTH).edges());
 
 
        assertEquals(10, size(v.query().labels("connect").limit(10).vertices()));
@@ -2509,7 +2509,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
            vl.sort();
            for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
        }
-       assertCount(2*(noVertices-1), v.bothE());
+       assertCount(2*(noVertices-1), v.query().direction(Direction.BOTH).edges());
 
 
        //Property queries
@@ -2622,7 +2622,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
            vl.sort();
            for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
        }
-       assertCount(2 * (noVertices - 1), v.bothE());
+       assertCount(2 * (noVertices - 1), v.query().direction(Direction.BOTH).edges());
 
 
        //Property queries
@@ -3125,23 +3125,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testEdgesExceedCacheSize() {
         // Add a vertex with as many edges as the tx-cache-size. (20000 by default)
         int numEdges = graph.getConfiguration().getTxVertexCacheSize();
-        Vertex parentVertex = graph.addVertex();
+        TitanVertex parentVertex = graph.addVertex();
         for (int i = 0; i < numEdges; i++) {
-            Vertex childVertex = graph.addVertex();
+            TitanVertex childVertex = graph.addVertex();
             parentVertex.addEdge("friend", childVertex);
         }
         graph.tx().commit();
-        assertCount(numEdges, parentVertex.outE());
+        assertCount(numEdges, parentVertex.query().direction(Direction.OUT).edges());
 
         // Remove an edge.
         parentVertex.outE().next().remove();
 
         // Check that getEdges returns one fewer.
-        assertCount(numEdges - 1, parentVertex.outE());
+        assertCount(numEdges - 1, parentVertex.query().direction(Direction.OUT).edges());
 
         // Run the same check one more time.
         // This fails! (Expected: 19999. Actual: 20000.)
-        assertCount(numEdges - 1, parentVertex.outE());
+        assertCount(numEdges - 1, parentVertex.query().direction(Direction.OUT).edges());
     }
 
     @Test
@@ -3270,20 +3270,20 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey weight = tx.makePropertyKey("weight").dataType(Decimal.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = tx.makeEdgeLabel("knows").make();
-        Vertex n1 = tx.addVertex("weight", 10.5);
+        TitanVertex n1 = tx.addVertex("weight", 10.5);
         newTx();
 
         final Timepoint txTimes[] = new Timepoint[4];
         //Transaction with custom userlog name
         txTimes[0] = times.getTime();
         TitanTransaction tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
-        Vertex v1 = tx2.addVertex("weight", 111.1);
+        TitanVertex v1 = tx2.addVertex("weight", 111.1);
         v1.addEdge("knows", v1);
         tx2.commit();
         final long v1id = getId(v1);
         txTimes[1] = times.getTime();
         tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
-        Vertex v2 = tx2.addVertex("weight",222.2);
+        TitanVertex v2 = tx2.addVertex("weight",222.2);
         v2.addEdge("knows",getV(tx2,v1id));
         tx2.commit();
         final long v2id = getId(v2);
@@ -3305,7 +3305,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
         v1 = getV(tx2,v1id);
         assertEquals(111.1,v1.<Decimal>value("weight").doubleValue(),0.0);
-        Edge e = getOnlyElement(v1.outE("knows"));
+        Edge e = getOnlyElement(v1.query().direction(Direction.OUT).labels("knows").edges());
         assertFalse(e.property("weight").isPresent());
         e.property("weight", 44.4);
         tx2.commit();
@@ -3512,7 +3512,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //                    assertTrue(txNo + " - " + v2, v2 == null || v2.isRemoved());
                 }
                 assertEquals(111.1, v1.<Decimal>value("weight").doubleValue(), 0.0);
-                assertCount(1, v1.outE());
+                assertCount(1, v1.query().direction(Direction.OUT).edges());
 
                 userLogCount.incrementAndGet();
             }
@@ -3691,9 +3691,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             long t = i;
             String txt = strs[i%(strs.length)];
 
-            ns[i].singleProperty("weight",w);
-            ns[i].singleProperty("time",t);
-            ns[i].singleProperty("text",txt);
+            ns[i].property(VertexProperty.Cardinality.single, "weight", w);
+            ns[i].property(VertexProperty.Cardinality.single, "time", t);
+            ns[i].property(VertexProperty.Cardinality.single, "text", txt);
 
             for (VertexProperty p : new VertexProperty[]{p1,p2}) {
                 p.property("weight",w);
@@ -3701,7 +3701,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 p.property("text",txt);
             }
 
-            Vertex u = ns[(i>0?i-1:i)]; //previous or self-loop
+            TitanVertex u = ns[(i>0?i-1:i)]; //previous or self-loop
             for (String label : new String[]{"connect","related"}) {
                 Edge e = ns[i].addEdge(label,u, "weight",(w++)%5, "time",t, "text",txt);
             }
@@ -3830,7 +3830,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         //Update in transaction
         for (int i=0;i<numV/2;i++) {
-            Vertex v = getV(tx,ns[i]);
+            TitanVertex v = getV(tx,ns[i]);
             v.remove();
         }
         ns = new Vertex[numV*3/2];
@@ -3843,9 +3843,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             long t = i;
             String txt = strs[i%(strs.length)];
 
-            ns[i].singleProperty("weight",w);
-            ns[i].singleProperty("time",t);
-            ns[i].singleProperty("text",txt);
+            ns[i].property(VertexProperty.Cardinality.single, "weight", w);
+            ns[i].property(VertexProperty.Cardinality.single, "time", t);
+            ns[i].property(VertexProperty.Cardinality.single, "text", txt);
 
             for (VertexProperty p : new VertexProperty[]{p1,p2}) {
                 p.property("weight",w);
@@ -3853,7 +3853,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 p.property("text",txt);
             }
 
-            Vertex u = ns[(i>numV?i-1:i)]; //previous or self-loop
+            TitanVertex u = ns[(i>numV?i-1:i)]; //previous or self-loop
             for (String label : new String[]{"connect","related"}) {
                 Edge e = ns[i].addEdge(label,u,"weight",(w++)%5,"time",t,"text",txt);
             }
@@ -3934,27 +3934,27 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         failTransactionOnCommit(new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex v0 = tx.addVertex("person");
-                v0.singleProperty("time",1);
-                Vertex v1 = tx.addVertex("person");
-                v1.singleProperty("time",1);
+                TitanVertex v0 = tx.addVertex("person");
+                v0.property(VertexProperty.Cardinality.single, "time", 1);
+                TitanVertex v1 = tx.addVertex("person");
+                v1.property(VertexProperty.Cardinality.single, "time", 1);
             }
         });
 
         //Ib) Uniqueness violation across transactions
-        Vertex v0 = tx.addVertex("person");
-        v0.singleProperty("time",1);
+        TitanVertex v0 = tx.addVertex("person");
+        v0.property(VertexProperty.Cardinality.single, "time", 1);
         newTx();
         failTransactionOnCommit(new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex v1 = tx.addVertex("person");
-                v1.singleProperty("time",1);
+                TitanVertex v1 = tx.addVertex("person");
+                v1.property(VertexProperty.Cardinality.single, "time", 1);
             }
         });
         //Ic) However, this should work since the label is different
-        Vertex v1 = tx.addVertex("organization");
-        v1.singleProperty("time",1);
+        TitanVertex v1 = tx.addVertex("organization");
+        v1.property(VertexProperty.Cardinality.single, "time", 1);
         newTx();
 
         //II) Composite uniqueness
@@ -3962,8 +3962,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         failTransactionOnCommit(new TransactionJob() {
             @Override
             public void run(TitanTransaction tx) {
-                Vertex v0 = tx.addVertex("time",2,"text","hello");
-                Vertex v1 = tx.addVertex("time",2,"text","hello");
+                TitanVertex v0 = tx.addVertex("time",2,"text","hello");
+                TitanVertex v1 = tx.addVertex("time",2,"text","hello");
             }
         });
 
@@ -3974,7 +3974,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             @Override
             public void run(TitanTransaction tx) {
 
-                Vertex v1 = tx.addVertex("time",2,"text","hello");
+                TitanVertex v1 = tx.addVertex("time",2,"text","hello");
             }
         });
 
@@ -4060,18 +4060,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
         for (int i=1;i<=10;i++) {
-            Vertex v = tx.addVertex("time",i,"age",i);
+            TitanVertex v = tx.addVertex("time",i,"age",i);
         }
 
         //Graph query with and with-out index support
-        assertCount(1, tx.V().has("time", 5));
-        assertCount(1, tx.V().has("age", 6));
+        assertCount(1, tx.query().has("time", 5).vertices());
+        assertCount(1, tx.query().has("age", 6).vertices());
 
         clopen(option(FORCE_INDEX_USAGE), true);
         //Query with-out index support should now throw exception
-        assertCount(1,tx.V().has("time",5));
+        assertCount(1,tx.query().has("time",5).vertices());
         try {
-            assertCount(1,tx.V().has("age",6));
+            assertCount(1,tx.query().has("age",6).vertices());
             fail();
         } catch (Exception e) {}
     }
@@ -4087,14 +4087,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int multiplier = 200;
         int numV = sids * colors.length * multiplier;
         for (int i = 0; i < numV; i++) {
-            Vertex v = graph.addVertex(
+            TitanVertex v = graph.addVertex(
                     "color", colors[i % colors.length],
                     "sid", i % sids);
         }
         clopen();
 
-        assertCount(numV / sids, graph.V().has("sid", 8));
-        assertCount(numV / colors.length, graph.V().has("color", colors[2]));
+        assertCount(numV / sids, graph.query().has("sid", 8).vertices());
+        assertCount(numV / colors.length, graph.query().has("color", colors[2]).vertices());
 
         assertCount(multiplier, graph.V().has("sid", 11).has("color", colors[3]));
     }
@@ -4112,8 +4112,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.setConsistency(uidCompositeIndex, ConsistencyModifier.LOCK);
         finishSchema();
 
-        Vertex foo = graph.addVertex(labelName);
-        Vertex bar = graph.addVertex(labelName);
+        TitanVertex foo = graph.addVertex(labelName);
+        TitanVertex bar = graph.addVertex(labelName);
         foo.property("uid", "foo");
         bar.property("uid", "bar");
         graph.tx().commit();
@@ -4141,8 +4141,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         finishSchema();
 
-        Vertex a = tx.addVertex(vt, user, fn, "alice");
-        Vertex b = tx.addVertex(vt, user, fn, "bob");
+        TitanVertex a = tx.addVertex(vt, user, fn, "alice");
+        TitanVertex b = tx.addVertex(vt, user, fn, "bob");
         Vertex v;
 
         v = (Vertex)getOnlyElement(tx.V().has(vt, user).has(fn, bob).range(0,1));
@@ -4174,9 +4174,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         Random random = new Random();
         int numV = 1000;
-        Vertex previous = null;
+        TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
-            Vertex v = graph.addVertex(
+            TitanVertex v = graph.addVertex(
                     "kid",random.nextInt(numV),"name","v"+i);
             if (previous!=null) {
                 Edge e = v.addEdge("knows",previous,"kid",random.nextInt(numV/2));
@@ -4263,7 +4263,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         finishSchema();
 
-        Vertex v1 = graph.addVertex(), v3 = graph.addVertex("uid", 445);
+        TitanVertex v1 = graph.addVertex(), v3 = graph.addVertex("uid", 445);
         Edge e = v3.addEdge("knows", v1, "uid", 111);
         Edge e2 = v1.addEdge("friend",v3);
         assertEquals(111, e.<Integer>value("uid").intValue());
@@ -4271,7 +4271,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         v3 = getV(graph,v3);
         assertEquals(445, v3.<Integer>value("uid").intValue());
-        e = getOnlyElement(v3.outE("knows"));
+        e = getOnlyElement(v3.query().direction(Direction.OUT).labels("knows").edges());
         assertEquals(111, e.<Integer>value("uid").intValue());
         assertEquals(e, getE(graph,e.id()));
         assertEquals(e, getE(graph,e.id().toString()));
@@ -4279,10 +4279,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         p.remove();
         v3.property("uid", 353);
 
-        e = getOnlyElement(v3.outE("knows"));
+        e = getOnlyElement(v3.query().direction(Direction.OUT).labels("knows").edges());
         e.property("uid",222);
 
-        e2 = getOnlyElement(v1.outE("friend"));
+        e2 = getOnlyElement(v1.query().direction(Direction.OUT).labels("friend").edges());
         e2.property("uid", 1);
         e2.property("weight", 2.0);
 
@@ -4295,7 +4295,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v3 = getV(graph,v3.id());
         assertEquals(353, v3.<Integer>value("uid").intValue());
 
-        e = getOnlyElement(v3.outE("knows"));
+        e = getOnlyElement(v3.query().direction(Direction.OUT).labels("knows").edges());
         assertEquals(222,e.<Integer>value("uid").intValue());
     }
 
@@ -4321,40 +4321,40 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0, mgmt.getTTL(label3).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = graph.addVertex(), v2 = graph.addVertex(), v3 = graph.addVertex();
+        TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex(), v3 = graph.addVertex();
 
         v1.addEdge("likes",v2);
         v2.addEdge("dislikes", v1);
         v3.addEdge("indifferentTo", v1);
 
         // initial, pre-commit state of the edges.  They are not yet subject to TTL
-        assertNotEmpty(v1.out());
-        assertNotEmpty(v2.out());
-        assertNotEmpty(v3.out());
+        assertNotEmpty(v1.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v2.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v3.query().direction(Direction.OUT).vertices());
 
         long commitTime = System.currentTimeMillis();
         graph.tx().commit();
 
         // edges are now subject to TTL, although we must commit() or rollback() to see it
-        assertNotEmpty(v1.out());
-        assertNotEmpty(v2.out());
-        assertNotEmpty(v3.out());
+        assertNotEmpty(v1.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v2.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v3.query().direction(Direction.OUT).vertices());
 
         Thread.sleep(commitTime + (ttl1 * 1000L + 200) - System.currentTimeMillis());
         graph.tx().rollback();
 
         // e1 has dropped out
-        assertEmpty(v1.out());
-        assertNotEmpty(v2.out());
-        assertNotEmpty(v3.out());
+        assertEmpty(v1.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v2.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v3.query().direction(Direction.OUT).vertices());
 
         Thread.sleep(commitTime + (ttl2 * 1000L + 500) - System.currentTimeMillis());
         graph.tx().rollback();
 
         // both e1 and e2 have dropped out.  e3 has no TTL, and so remains
-        assertEmpty(v1.out());
-        assertEmpty(v2.out());
-        assertNotEmpty(v3.out());
+        assertEmpty(v1.query().direction(Direction.OUT).vertices());
+        assertEmpty(v2.query().direction(Direction.OUT).vertices());
+        assertNotEmpty(v3.query().direction(Direction.OUT).vertices());
     }
 
     @Test
@@ -4368,31 +4368,31 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = graph.addVertex(), v2 = graph.addVertex();
+        TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex();
 
         v1.addEdge("likes",v2);
 
         // pre-commit state of the edge.  It is not yet subject to TTL
-        assertNotEmpty(v1.out());
+        assertNotEmpty(v1.query().direction(Direction.OUT).vertices());
 
         Thread.sleep(1001);
 
         // the edge should have expired by now, but only if it had been committed
-        assertNotEmpty(v1.out());
+        assertNotEmpty(v1.query().direction(Direction.OUT).vertices());
 
         graph.tx().commit();
 
         // still here, because we have just committed the edge.  Its countdown starts at the commit
-        assertNotEmpty(v1.out());
+        assertNotEmpty(v1.query().direction(Direction.OUT).vertices());
 
         Thread.sleep(1001);
 
         // the edge has expired in Cassandra, but still appears alive in this transaction
-        assertNotEmpty(v1.out());
+        assertNotEmpty(v1.query().direction(Direction.OUT).vertices());
 
         // syncing with the data store, we see that the edge has expired
         graph.tx().rollback();
-        assertEmpty(v1.out());
+        assertEmpty(v1.query().direction(Direction.OUT).vertices());
     }
 
     @Category({ BrittleTests.class })
@@ -4416,22 +4416,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1.addEdge("wavedAt",v2,"time", 42);
 
         assertTrue(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
-        assertNotEmpty(v1.outE());
-        assertNotEmpty(graph.E().has("time",42));
+        assertNotEmpty(v1.query().direction(Direction.OUT).edges());
+        assertNotEmpty(graph.query().has("time",42).edges());
 
         graph.tx().commit();
         long commitTime = System.currentTimeMillis();
 
         assertTrue(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
-        assertNotEmpty(v1.outE());
-        assertNotEmpty(graph.E().has("time",42));
+        assertNotEmpty(v1.query().direction(Direction.OUT).edges());
+        assertNotEmpty(graph.query().has("time",42).edges());
 
         Thread.sleep(commitTime + (ttl * 1000L + 100) - System.currentTimeMillis());
         graph.tx().rollback();
 
         assertFalse(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
-        assertEmpty(v1.outE());
-        assertEmpty(graph.E().has("time",42));
+        assertEmpty(v1.query().direction(Direction.OUT).edges());
+        assertEmpty(graph.query().has("time",42).edges());
     }
 
     @Category({ BrittleTests.class })
@@ -4454,7 +4454,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex(LABEL_NAME,"event","name", "some event","place", "somewhere");
+        TitanVertex v1 = tx.addVertex(LABEL_NAME,"event","name", "some event","place", "somewhere");
 
         tx.commit();
         Object id = v1.id();
@@ -4462,7 +4462,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1 = getV(graph,id);
         assertNotNull(v1);
         assertNotEmpty(graph.V().has("name","some event").has("place","somewhere"));
-        assertNotEmpty(graph.V().has("name","some event"));
+        assertNotEmpty(graph.query().has("name","some event").vertices());
 
         Thread.sleep(1001);
         graph.tx().rollback();
@@ -4471,14 +4471,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1 = getV(graph,id);
         assertNotNull(v1);
         assertEmpty(graph.V().has("name","some event").has("place","somewhere"));
-        assertNotEmpty(graph.V().has("name","some event"));
+        assertNotEmpty(graph.query().has("name","some event").vertices());
 
         Thread.sleep(1001);
         graph.tx().rollback();
 
         // vertex expires before defined TTL of the long-lived property
         assertEmpty(graph.V().has("name","some event").has("place","somewhere"));
-        assertEmpty(graph.V().has("name","some event"));
+        assertEmpty(graph.query().has("name","some event").vertices());
         v1 = getV(graph,id);
         assertNull(v1);
     }
@@ -4500,20 +4500,20 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex(T.label, "event","name", "some event","time", System.currentTimeMillis());
+        TitanVertex v1 = tx.addVertex(T.label, "event","name", "some event","time", System.currentTimeMillis());
         tx.commit();
         Object id = v1.id();
 
         v1 = getV(graph,id);
         assertNotNull(v1);
-        assertNotEmpty(graph.V().has("name", "some event"));
+        assertNotEmpty(graph.query().has("name", "some event").vertices());
 
         Thread.sleep(1001);
         graph.tx().rollback();
 
         v1 = getV(graph,id);
         assertNull(v1);
-        assertEmpty(graph.V().has("name", "some event"));
+        assertEmpty(graph.query().has("name", "some event").vertices());
     }
 
     @Category({ BrittleTests.class })
@@ -4541,8 +4541,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("person");
-        Vertex v2 = tx.addVertex();
+        TitanVertex v1 = tx.addVertex("person");
+        TitanVertex v2 = tx.addVertex();
         Edge v1LikesV2 = v1.addEdge("likes",v2);
         Edge v1DislikesV2 = v1.addEdge("dislikes",v2);
         Edge v1IndifferentToV2 = v1.addEdge("indifferentTo",v2);
@@ -4565,9 +4565,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNotNull(v1LikesV2);
         assertNotNull(v1DislikesV2);
         assertNotNull(v1IndifferentToV2);
-        assertNotEmpty(v2.inE("likes"));
-        assertNotEmpty(v2.inE("dislikes"));
-        assertNotEmpty(v2.inE("indifferentTo"));
+        assertNotEmpty(v2.query().direction(Direction.IN).labels("likes").edges());
+        assertNotEmpty(v2.query().direction(Direction.IN).labels("dislikes").edges());
+        assertNotEmpty(v2.query().direction(Direction.IN).labels("indifferentTo").edges());
 
         Thread.sleep(commitTime + 1001L - System.currentTimeMillis());
         graph.tx().rollback();
@@ -4583,10 +4583,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // this edge has expired
         assertNull(v1DislikesV2);
         assertNotNull(v1IndifferentToV2);
-        assertNotEmpty(v2.inE("likes"));
+        assertNotEmpty(v2.query().direction(Direction.IN).labels("likes").edges());
         // expired
-        assertEmpty(v2.inE("dislikes"));
-        assertNotEmpty(v2.inE("indifferentTo"));
+        assertEmpty(v2.query().direction(Direction.IN).labels("dislikes").edges());
+        assertNotEmpty(v2.query().direction(Direction.IN).labels("indifferentTo").edges());
 
         Thread.sleep(commitTime + 2001L - System.currentTimeMillis());
         graph.tx().rollback();
@@ -4606,14 +4606,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         if (dbCache) {
             /* TODO: uncomment
-            assertNotEmpty(v2.inE("likes"));
-            assertNotEmpty(v2.inE("dislikes"));
-            assertNotEmpty(v2.inE("indifferentTo"));
+            assertNotEmpty(v2.query().direction(Direction.IN).labels("likes").edges());
+            assertNotEmpty(v2.query().direction(Direction.IN).labels("dislikes").edges());
+            assertNotEmpty(v2.query().direction(Direction.IN).labels("indifferentTo").edges());
             */
         } else {
-            assertEmpty(v2.inE("likes"));
-            assertEmpty(v2.inE("dislikes"));
-            assertEmpty(v2.inE("indifferentTo"));
+            assertEmpty(v2.query().direction(Direction.IN).labels("likes").edges());
+            assertEmpty(v2.query().direction(Direction.IN).labels("dislikes").edges());
+            assertEmpty(v2.query().direction(Direction.IN).labels("indifferentTo").edges());
         }
     }
 
@@ -4667,7 +4667,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(0, mgmt.getTTL(hasLiked).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = graph.addVertex(), v2 = graph.addVertex();
+        TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex();
 
         Edge e1 = v1.addEdge("likes",v2);
         Edge e2 = v1.addEdge("hasLiked",v2);
@@ -4678,14 +4678,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
         // get the edge via a vertex
-        e1 = getOnlyElement(v1.outE("likes"));
+        e1 = getOnlyElement(v1.query().direction(Direction.OUT).labels("likes").edges());
         d = e1.value("~ttl");
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
         // returned value of ^ttl is the total time to live since commit, not remaining time
         Thread.sleep(1001);
         graph.tx().rollback();
-        e1 = getOnlyElement(v1.outE("likes"));
+        e1 = getOnlyElement(v1.query().direction(Direction.OUT).labels("likes").edges());
         d = e1.value("~ttl");
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
@@ -4710,8 +4710,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex("event");
-        Vertex v2 = tx.addVertex();
+        TitanVertex v1 = tx.addVertex("event");
+        TitanVertex v2 = tx.addVertex();
         tx.commit();
 
         /* TODO: this fails

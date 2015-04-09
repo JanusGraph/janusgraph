@@ -29,7 +29,7 @@ public class EdgeSerializerTest {
         for (int i=1;i<=5;i++) mgmt.makePropertyKey("key" + i).dataType(Integer.class).make();
         mgmt.commit();
 
-        Vertex v1 = graph.addVertex(), v2 = graph.addVertex();
+        TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex();
         Edge e1 = v1.addEdge("father",v2);
         for (int i=1;i<=5;i++) e1.property("key"+i,i);
 

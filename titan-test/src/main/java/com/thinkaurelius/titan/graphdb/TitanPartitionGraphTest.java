@@ -108,9 +108,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         final long[] gids = new long[numG];
 
         for (int i = 0; i < numG; i++) {
-            Vertex g = tx.addVertex("group");
-            g.singleProperty("gid", i);
-            g.singleProperty("sig", 0);
+            TitanVertex g = tx.addVertex("group");
+            g.property(VertexProperty.Cardinality.single, "gid",  i);
+            g.property(VertexProperty.Cardinality.single, "sig",  0);
             for (String n : names) {
                 g.property("name", n);
             }
@@ -129,14 +129,14 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         }
 
         for (int i = 0; i < numG; i++) {
-            Vertex g = getV(tx,gids[i]);
-            assertCount(1,g.bothE("one"));
+            TitanVertex g = getV(tx,gids[i]);
+            assertCount(1,g.query().direction(Direction.BOTH).labels("one").edges());
             assertCount(1, g.toE(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
             assertCount(0, g.toE(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
             if (i>0) {
-                assertCount(1,g.outE("base"));
+                assertCount(1,g.query().direction(Direction.OUT).labels("base").edges());
             } else {
-                assertCount(numG-1,g.inE("base"));
+                assertCount(numG-1,g.query().direction(Direction.IN).labels("base").edges());
             }
         }
 
@@ -149,7 +149,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertEquals(idManager.getCanonicalVertexId(gId),gId);
             TitanVertex g = getV(tx,gId);
             final int canonicalPartition = getPartitionID(g,idManager);
-            assertEquals(g,(Vertex)getOnlyElement(tx.V().has("gid",i)));
+            assertEquals(g,(Vertex)getOnlyElement(tx.query().has("gid",i).vertices()));
             assertEquals(i,g.<Integer>value("gid").intValue());
             assertCount(names.size(),g.properties("name"));
 
@@ -164,13 +164,13 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertTrue(propPartitions.size()>=3);
 
             //Copied from above
-            assertCount(1, g.bothE("one"));
+            assertCount(1, g.query().direction(Direction.BOTH).labels("one").edges());
             assertCount(1, g.toE(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
             assertCount(0, g.toE(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
             if (i>0) {
-                assertCount(1, g.outE("base"));
+                assertCount(1, g.query().direction(Direction.OUT).labels("base").edges());
             } else {
-                assertCount(numG - 1, g.inE("base"));
+                assertCount(numG - 1, g.query().direction(Direction.IN).labels("base").edges());
             }
         }
 
@@ -187,7 +187,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             TitanVertex[] vs = new TitanVertex[vPerTx];
             for (int vi=0;vi<vPerTx;vi++) {
                 vs[vi] = tx.addVertex("person");
-                vs[vi].singleProperty("sig", t);
+                vs[vi].property(VertexProperty.Cardinality.single, "sig",  t);
                 Edge e = vs[vi].addEdge("knows",g1);
                 e.property("sig", t);
                 e = g1.addEdge("knows",vs[vi]);
@@ -232,10 +232,10 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         assertEquals(0, g1.<Integer>value("gid").intValue());
         assertEquals("group", g1.label());
         assertCount(names.size(), g1.properties("name"));
-        assertCount(numTx * vPerTx, g1.outE("knows"));
-        assertCount(numTx * vPerTx, g1.inE("knows"));
-        assertCount(numTx * vPerTx * 2, g1.bothE("knows"));
-        assertCount(numTx * vPerTx + numG, tx.V());
+        assertCount(numTx * vPerTx, g1.query().direction(Direction.OUT).labels("knows").edges());
+        assertCount(numTx * vPerTx, g1.query().direction(Direction.IN).labels("knows").edges());
+        assertCount(numTx * vPerTx * 2, g1.query().direction(Direction.BOTH).labels("knows").edges());
+        assertCount(numTx * vPerTx + numG, tx.query().vertices());
 
         newTx();
         //Restrict to partitions
@@ -256,9 +256,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertEquals(0, g1.<Integer>value("gid").intValue());
             assertEquals("group", g1.label());
             assertTrue(names.size() >= g1.properties("name").count().next());
-            assertCount(numV, g1.outE("knows"));
-            assertCount(numV, g1.inE("knows"));
-            assertCount(numV * 2, g1.bothE("knows"));
+            assertCount(numV, g1.query().direction(Direction.OUT).labels("knows").edges());
+            assertCount(numV, g1.query().direction(Direction.IN).labels("knows").edges());
+            assertCount(numV * 2, g1.query().direction(Direction.BOTH).labels("knows").edges());
 
             //Test local intersection
             TitanVertex g2 = getV(tx2,gids[1]);

@@ -171,9 +171,9 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         metricsPrefix = "add"+cache;
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
-        Vertex v = tx.addVertex(), u = tx.addVertex("person");
-        v.singleProperty("uid", 1);
-        u.singleProperty("name", "juju");
+        TitanVertex v = tx.addVertex(), u = tx.addVertex("person");
+        v.property(VertexProperty.Cardinality.single, "uid",  1);
+        u.property(VertexProperty.Cardinality.single, "name",  "juju");
         Edge e = v.addEdge("knows",u);
         e.property("name", "edge");
         tx.commit();
@@ -183,10 +183,10 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         for (int i = 1; i <= 20; i++) {
             metricsPrefix = "op"+i+cache;
             tx = graph.buildTransaction().groupName(metricsPrefix).start();
-            v = getOnlyElement(tx.V().has("uid",1));
+            v = getOnlyElement(tx.query().has("uid",1).vertices());
             assertEquals(1,v.<Integer>value("uid").intValue());
             u = getOnlyElement(v.both("knows"));
-            e = getOnlyElement(u.inE("knows"));
+            e = getOnlyElement(u.query().direction(Direction.IN).labels("knows").edges());
             assertEquals("juju",u.value("name"));
             assertEquals("edge",e.value("name"));
             tx.commit();
@@ -213,9 +213,9 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         metricsPrefix = "metrics1";
 
         TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
-        Vertex v = tx.addVertex("age", 25, "name", "john");
+        TitanVertex v = tx.addVertex("age", 25, "name", "john");
         verifyStoreMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 2l, M_GET_SLICE, 4l));
-        Vertex u = tx.addVertex("age", 35, "name", "mary");
+        TitanVertex u = tx.addVertex("age", 35, "name", "mary");
         v.addEdge("knows", u);
         tx.commit();
 //        printAllMetrics();
@@ -262,7 +262,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
-        assertCount(1, v.bothE());
+        assertCount(1, v.query().direction(Direction.BOTH).edges());
         assertCount(2, v.properties());
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 15l));
         verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 5l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
@@ -278,15 +278,15 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         metricsPrefix = "metrics2";
 
         TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
-        Vertex parentVertex = tx.addVertex();
-        parentVertex.singleProperty("name", "vParent");
-        parentVertex.singleProperty("other-prop-key1", "other-prop-value1");
-        parentVertex.singleProperty("other-prop-key2", "other-prop-value2");
+        TitanVertex parentVertex = tx.addVertex();
+        parentVertex.property(VertexProperty.Cardinality.single, "name",  "vParent");
+        parentVertex.property(VertexProperty.Cardinality.single, "other-prop-key1",  "other-prop-value1");
+        parentVertex.property(VertexProperty.Cardinality.single, "other-prop-key2",  "other-prop-value2");
 
-        Vertex parentVertex2 = tx.addVertex();
-        parentVertex2.singleProperty("name", "vParent2");
-        parentVertex2.singleProperty("other-prop-key1", "other-prop-value12");
-        parentVertex2.singleProperty("other-prop-key2", "other-prop-value22");
+        TitanVertex parentVertex2 = tx.addVertex();
+        parentVertex2.property(VertexProperty.Cardinality.single, "name",  "vParent2");
+        parentVertex2.property(VertexProperty.Cardinality.single, "other-prop-key1",  "other-prop-value12");
+        parentVertex2.property(VertexProperty.Cardinality.single, "other-prop-key2",  "other-prop-value22");
 
         tx.commit();
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l));
@@ -342,7 +342,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         TitanTransaction tx = graph.buildTransaction().groupName(metricsPrefix).start();
         tx.makePropertyKey("name").dataType(String.class).make();
         tx.makePropertyKey("age").dataType(Integer.class).make();
-        Vertex v = tx.addVertex("uid", "v1", "age", 25, "name", "john");
+        TitanVertex v = tx.addVertex("uid", "v1", "age", 25, "name", "john");
         tx.commit();
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 7l));
         verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 4l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 3l));
@@ -350,8 +350,8 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
-        v.singleProperty("age", 35);
-        v.singleProperty("name", "johnny");
+        v.property(VertexProperty.Cardinality.single, "age",  35);
+        v.property(VertexProperty.Cardinality.single, "name",  "johnny");
         tx.commit();
         if (fastProperty)
             verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 7l));
@@ -365,8 +365,8 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
-        v.singleProperty("age", 45);
-        v.singleProperty("name", "johnnie");
+        v.property(VertexProperty.Cardinality.single, "age",  45);
+        v.property(VertexProperty.Cardinality.single, "name",  "johnnie");
         tx.commit();
         if (fastProperty)
             verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 9l, M_GET_SLICE, 9l));
@@ -470,7 +470,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         final int numV = 100;
         final long[] vids = new long[numV];
         for (int i=0;i<numV;i++) {
-            Vertex v = graph.addVertex(prop,0);
+            TitanVertex v = graph.addVertex(prop,0);
             graph.tx().commit();
             vids[i]=getId(v);
         }
@@ -496,7 +496,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
                 while (reads<numReads) {
                     final int pos = random.nextInt(vids.length);
                     long vid = vids[pos];
-                    Vertex v = getV(graph,vid);
+                    TitanVertex v = getV(graph,vid);
                     assertNotNull(v);
                     boolean postCommit = postcommit[pos].get();
                     Integer value = v.value(prop);
@@ -521,8 +521,8 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             public void run() {
                 for (int i=0;i<numV;i++) {
                     try {
-                        Vertex v = getV(graph,vids[i]);
-                        v.singleProperty(prop,1);
+                        TitanVertex v = getV(graph,vids[i]);
+                        v.property(VertexProperty.Cardinality.single, prop, 1);
                         precommit[i].set(true);
                         graph.tx().commit();
                         postcommit[i].set(true);
@@ -581,16 +581,16 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
         int numV = 1000;
 
-        Vertex previous = null;
+        TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
-            Vertex v = graph.addVertex("name", "v" + i);
+            TitanVertex v = graph.addVertex("name", "v" + i);
             if (previous!=null)
                 v.addEdge("knows",previous);
             previous = v;
         }
         graph.tx().commit();
         long vertexId = getId(previous);
-        assertCount(numV, graph.V());
+        assertCount(numV, graph.query().vertices());
 
         clopen(newConfig);
 
@@ -635,9 +635,9 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
     private double testAllVertices(long vid, int numV) {
         long start = System.nanoTime();
-        Vertex v = getV(graph,vid);
+        TitanVertex v = getV(graph,vid);
         for (int i=1; i<numV; i++) {
-            v = getOnlyElement(v.out("knows"));
+            v = getOnlyElement(v.query().direction(Direction.OUT).labels("knows").vertices());
         }
         return ((System.nanoTime()-start)/1000000.0);
     }

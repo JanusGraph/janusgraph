@@ -117,12 +117,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
 
     public static void assertGraphOfTheGods(TitanGraph gotg) {
-        assertCount(12, gotg.V());
-        assertCount(3, gotg.V().has(T.label, "god"));
-        Vertex h = getOnlyElement(gotg.V().has("name", "hercules"));
+        assertCount(12, gotg.query().vertices());
+        assertCount(3, gotg.query().has(T.label, "god").vertices());
+        TitanVertex h = getOnlyElement(gotg.query().has("name", "hercules").vertices());
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod",h.label());
-        assertCount(5, h.bothE());
+        assertCount(5, h.query().direction(Direction.BOTH).edges());
         gotg.tx().commit();
     }
 
@@ -134,27 +134,27 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("namee",Edge.class).addKey(name).buildMixedIndex(INDEX);
         finishSchema();
 
-        Vertex v = tx.addVertex("name", "Marko Rodriguez");
+        TitanVertex v = tx.addVertex("name", "Marko Rodriguez");
         Edge e = v.addEdge("knows",v, "name","Hulu Bubab");
-        assertCount(1, tx.V().has("name", Text.CONTAINS, "marko"));
-        assertCount(1, tx.E().has("name", Text.CONTAINS, "Hulu"));
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
         for (Vertex u : tx.V().toList()) assertEquals("Marko Rodriguez",u.value("name"));
         clopen();
-        assertCount(1, tx.V().has("name", Text.CONTAINS, "marko"));
-        assertCount(1, tx.E().has("name", Text.CONTAINS, "Hulu"));
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
         for (Vertex u : tx.V().toList()) assertEquals("Marko Rodriguez",u.value("name"));
-        v = getOnlyElement(tx.V().has("name", Text.CONTAINS, "marko"));
-        v.singleProperty("name", "Marko");
-        e = getOnlyElement(v.outE());
+        v = getOnlyElement(tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        v.property(VertexProperty.Cardinality.single, "name",  "Marko");
+        e = getOnlyElement(v.query().direction(Direction.OUT).edges());
         e.property("name","Tubu Rubu");
-        assertCount(1, tx.V().has("name", Text.CONTAINS, "marko"));
-        assertCount(1, tx.E().has("name", Text.CONTAINS, "Rubu"));
-        assertCount(0, tx.E().has("name", Text.CONTAINS, "Hulu"));
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "Rubu").edges());
+        assertCount(0, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
         for (Vertex u : tx.V().toList()) assertEquals("Marko",u.value("name"));
         clopen();
-        assertCount(1, tx.V().has("name", Text.CONTAINS, "marko"));
-        assertCount(1, tx.E().has("name", Text.CONTAINS, "Rubu"));
-        assertCount(0, tx.E().has("name", Text.CONTAINS, "Hulu"));
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        assertCount(1, tx.query().has("name", Text.CONTAINS, "Rubu").edges());
+        assertCount(0, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
         for (Vertex u : tx.V().toList()) assertEquals("Marko",u.value("name"));
     }
 
@@ -195,12 +195,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         int numV = 100;
         final int originalNumV = numV;
         for (int i = 0; i < numV; i++) {
-            Vertex v = tx.addVertex();
-            v.singleProperty("uid", i);
-            v.singleProperty("category", i % numCategories);
-            v.singleProperty("group", i % numGroups);
-            v.singleProperty("text", "Vertex " + words[i % words.length]);
-            v.singleProperty("time", i);
+            TitanVertex v = tx.addVertex();
+            v.property(VertexProperty.Cardinality.single, "uid",  i);
+            v.property(VertexProperty.Cardinality.single, "category",  i % numCategories);
+            v.property(VertexProperty.Cardinality.single, "group",  i % numGroups);
+            v.property(VertexProperty.Cardinality.single, "text",  "Vertex " + words[i % words.length]);
+            v.property(VertexProperty.Cardinality.single, "time",  i);
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
             v.singleProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
 
@@ -214,8 +214,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         for (int i = 0; i < words.length; i++) {
             int expectedSize = numV / words.length;
-            assertCount(expectedSize, tx.V().has("text", Text.CONTAINS, words[i]));
-            assertCount(expectedSize, tx.E().has("text", Text.CONTAINS, words[i]));
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).edges());
 
             //Test ordering
             for (String orderKey : new String[]{"time", "category"}) {
@@ -241,8 +241,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         for (int i = 0; i < numV; i += 10) {
             offset = (i * 50.0 / originalNumV);
             distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-            assertCount(i + 1, tx.V().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)));
-            assertCount(i + 1, tx.E().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).vertices()));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).edges()));
         }
 
         //Queries combining mixed and composite indexes
@@ -252,10 +252,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
         offset = (19 * 50.0 / originalNumV);
         distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.V().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance).vertices()).has("text", Text.CONTAINS, words[0]));
 
-        assertCount(numV, tx.V());
-        assertCount(numV, tx.E());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numV, tx.query().edges());
 
         //--------------
 
@@ -267,8 +267,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         for (int i = 0; i < words.length; i++) {
             int expectedSize = numV / words.length;
-            assertCount(expectedSize, tx.V().has("text", Text.CONTAINS, words[i]));
-            assertCount(expectedSize, tx.E().has("text", Text.CONTAINS, words[i]));
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
+            assertCount(expectedSize, tx.query().has("text", Text.CONTAINS, words[i]).edges());
 
             //Test ordering
             for (String orderKey : new String[]{"time", "category"}) {
@@ -294,8 +294,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         for (int i = 0; i < numV; i += 10) {
             offset = (i * 50.0 / originalNumV);
             distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-            assertCount(i + 1, tx.V().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)));
-            assertCount(i + 1, tx.E().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).vertices()));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).edges()));
         }
 
         //Queries combining mixed and composite indexes
@@ -305,10 +305,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
         offset = (19 * 50.0 / originalNumV);
         distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.V().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance).vertices()).has("text", Text.CONTAINS, words[0]));
 
-        assertCount(numV, tx.V());
-        assertCount(numV, tx.E());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numV, tx.query().edges());
 
         newTx();
 
@@ -321,8 +321,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         //Copied from above
         for (int i = 0; i < words.length; i++) {
-            assertCount(numV / words.length, tx.V().has("text", Text.CONTAINS, words[i]));
-            assertCount(numV / words.length, tx.E().has("text", Text.CONTAINS, words[i]));
+            assertCount(numV / words.length, tx.query().has("text", Text.CONTAINS, words[i]).vertices());
+            assertCount(numV / words.length, tx.query().has("text", Text.CONTAINS, words[i]).edges());
         }
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
@@ -333,17 +333,17 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         for (int i = 0; i < numV; i += 10) {
             offset = (i * 50.0 / originalNumV);
             distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-            assertCount(i + 1, tx.V().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)));
-            assertCount(i + 1, tx.E().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).vertices()));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).edges()));
         }
 
         assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
         offset = (19 * 50.0 / originalNumV);
         distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.V().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance).vertices()).has("text", Text.CONTAINS, words[0]));
 
-        assertCount(numV, tx.V());
-        assertCount(numV, tx.E());
+        assertCount(numV, tx.query().vertices());
+        assertCount(numV, tx.query().edges());
 
 
 
@@ -401,20 +401,20 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         v2.property("date", new Date(2000));
 
 
-        assertEquals(v1, graph.V().has("date", Cmp.EQUAL, new Date(1000)).next());
-        assertEquals(v2, graph.V().has("date", Cmp.GREATER_THAN, new Date(1000)).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).toSet());
-        assertEquals(v1, graph.V().has("date", Cmp.LESS_THAN, new Date(2000)).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).toSet());
-        assertEquals(v2, graph.V().has("date", Cmp.NOT_EQUAL, new Date(1000)).next());
+        assertEquals(v1, graph.query().has("date", Cmp.EQUAL, new Date(1000).vertices()).next());
+        assertEquals(v2, graph.query().has("date", Cmp.GREATER_THAN, new Date(1000).vertices()).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000).vertices()).toSet());
+        assertEquals(v1, graph.query().has("date", Cmp.LESS_THAN, new Date(2000).vertices()).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000).vertices()).toSet());
+        assertEquals(v2, graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000).vertices()).next());
 
         clopen();//Flush the index
-        assertEquals(v1, graph.V().has("date", Cmp.EQUAL, new Date(1000)).next());
-        assertEquals(v2, graph.V().has("date", Cmp.GREATER_THAN, new Date(1000)).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).toSet());
-        assertEquals(v1, graph.V().has("date", Cmp.LESS_THAN, new Date(2000)).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.V().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).toSet());
-        assertEquals(v2, graph.V().has("date", Cmp.NOT_EQUAL, new Date(1000)).next());
+        assertEquals(v1, graph.query().has("date", Cmp.EQUAL, new Date(1000).vertices()).next());
+        assertEquals(v2, graph.query().has("date", Cmp.GREATER_THAN, new Date(1000).vertices()).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000).vertices()).toSet());
+        assertEquals(v1, graph.query().has("date", Cmp.LESS_THAN, new Date(2000).vertices()).next());
+        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000).vertices()).toSet());
+        assertEquals(v2, graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000).vertices()).next());
 
 
     }
@@ -574,7 +574,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assert numV%(modulo*strs.length*2)==0;
 
         for (int i=0;i<numV;i++) {
-            Vertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
+            TitanVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
             v.property("name",strs[i%strs.length]);
             v.property("text", strs[i % strs.length]);
             v.property("weight", (i % modulo) + 0.5);
@@ -659,7 +659,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         final int divisor = modulo*strs.length;
 
         for (int i=0;i<numV;i++) {
-            Vertex v = tx.addVertex();
+            TitanVertex v = tx.addVertex();
             v.property("name", strs[i % strs.length]);
             v.property("text", strs[i % strs.length]);
             v.property("weight", (i % modulo) + 0.5);
@@ -727,9 +727,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.makeEdgeLabel("knows").signature(name).make();
         mgmt.makePropertyKey("uid").dataType(String.class).signature(text).make();
         finishSchema();
-        Vertex previous = null;
+        TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
-            Vertex v = graph.addVertex("name",strs[i%strs.length],"text",strs[i%strs.length]);
+            TitanVertex v = graph.addVertex("name",strs[i%strs.length],"text",strs[i%strs.length]);
             Edge e = v.addEdge("knows",previous==null?v:previous,
                     "name",strs[i%strs.length],"text",strs[i%strs.length]);
             VertexProperty p = v.property("uid", "v" + i,
@@ -920,7 +920,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mixed.name();
         finishSchema();
 
-        Vertex v = tx.addVertex("name","Long John Don");
+        TitanVertex v = tx.addVertex("name","Long John Don");
         v = tx.addVertex("name","Long Little Lewis");
 
         clopen();
@@ -942,7 +942,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             if (n.endsWith("Don")) {
                 u.remove();
             } else if (n.endsWith("Lewis")) {
-                u.singleProperty("name", "Big Brother Bob");
+                u.property(VertexProperty.Cardinality.single, "name",  "Big Brother Bob");
             }
         }
 
@@ -986,11 +986,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         vs[2] = getV(tx,vs[2]);
         vs[2].remove();
         vs[3] = getV(tx,vs[3]);
-        vs[3].singleProperty("name", "Bad Boy Badsy");
+        vs[3].property(VertexProperty.Cardinality.single, "name",  "Bad Boy Badsy");
         vs[3].property("age").remove();
         newTx();
         vs[0] = getV(tx,vs[0]);
-        vs[0].singleProperty("age", 66);
+        vs[0].property(VertexProperty.Cardinality.single, "age",  66);
         newTx();
 
         clopen();
@@ -1013,7 +1013,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"mi");
         evaluateQuery(tx.query().has("name",Text.CONTAINS,"long"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"mi");
-//        Vertex v = Iterables.getOnlyElement(tx.query().has("name",Text.CONTAINS,"long").vertices());
+//        TitanVertex v = Iterables.getOnlyElement(tx.query().has("name",Text.CONTAINS,"long").vertices());
 //        System.out.println(v.getProperty("age"));
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "long").interval("age", 30, 40),
                 ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
@@ -1186,7 +1186,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     private void addVertex(int time, String text, double height) {
         newTx();
-        Vertex v = tx.addVertex("text",text,"time",time,"height",height);
+        TitanVertex v = tx.addVertex("text",text,"time",time,"height",height);
         newTx();
     }
 
@@ -1220,16 +1220,16 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(eventTTLSeconds, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
         finishSchema();
 
-        Vertex v1 = tx.addVertex("event");
-        v1.singleProperty("name", "first event");
-        v1.singleProperty("text", "this text will help to identify the first event");
+        TitanVertex v1 = tx.addVertex("event");
+        v1.property(VertexProperty.Cardinality.single, "name",  "first event");
+        v1.property(VertexProperty.Cardinality.single, "text",  "this text will help to identify the first event");
         long time1 = System.currentTimeMillis();
-        v1.singleProperty("time", time1);
-        Vertex v2 = tx.addVertex("event");
-        v2.singleProperty("name", "second event");
-        v2.singleProperty("text", "this text won't match");
+        v1.property(VertexProperty.Cardinality.single, "time",  time1);
+        TitanVertex v2 = tx.addVertex("event");
+        v2.property(VertexProperty.Cardinality.single, "name",  "second event");
+        v2.property(VertexProperty.Cardinality.single, "text",  "this text won't match");
         long time2 = time1 + 1;
-        v2.singleProperty("time", time2);
+        v2.property(VertexProperty.Cardinality.single, "time",  time2);
 
         evaluateQuery(tx.query().has("name","first event").orderBy("time", decr),
                 ElementCategory.VERTEX,1,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
@@ -1292,7 +1292,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(likesTTLSeconds, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
         finishSchema();
 
-        Vertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
+        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
 
         Edge e1 = v1.addEdge("likes", v2,"name", "v1 likes v2", "text", "this will help to identify the edge");
         long time1 = System.currentTimeMillis();
@@ -1321,8 +1321,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertNotNull(v3);
         assertNotNull(e1);
         assertNotNull(e2);
-        assertNotEmpty(v1.outE());
-        assertNotEmpty(v2.outE());
+        assertNotEmpty(v1.query().direction(Direction.OUT).edges());
+        assertNotEmpty(v2.query().direction(Direction.OUT).edges());
 
 
         Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(likesTTLSeconds * 1.25), TimeUnit.SECONDS));
@@ -1345,8 +1345,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         // edges have expired from the graph...
         assertNull(e1);
         assertNull(e2);
-        assertEmpty(v1.outE());
-        assertEmpty(v2.outE());
+        assertEmpty(v1.query().direction(Direction.OUT).edges());
+        assertEmpty(v2.query().direction(Direction.OUT).edges());
     }
 
    /* ==================================================================================
@@ -1389,9 +1389,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("store1", Vertex.class).addKey(textKey).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex();
-        Vertex v2 = tx.addVertex();
-        Vertex v3 = tx.addVertex();
+        TitanVertex v1 = tx.addVertex();
+        TitanVertex v2 = tx.addVertex();
+        TitanVertex v3 = tx.addVertex();
 
         v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello");
         v2.property("text", "Hello abab abab fsdfsd sfdfsd sdffs fsdsdf fdf fsdfsd aera fsad abab abab fsdfsd sfdf");
@@ -1419,7 +1419,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("store1", Vertex.class).addKey(name).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        Vertex v1 = tx.addVertex();
+        TitanVertex v1 = tx.addVertex();
         v1.property("name", "hercules was here");
 
         tx.commit();
@@ -1457,9 +1457,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         createExternalVertexIndex(prop, INDEX);
         finishSchema();
 
-        Vertex v = graph.addVertex();
+        TitanVertex v = graph.addVertex();
         if (null != initialValue)
-            v.singleProperty(propName, initialValue);
+            v.property(VertexProperty.Cardinality.single, propName,  initialValue);
         graph.tx().commit();
 
         Object id = v.id();
@@ -1472,7 +1472,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         if (null == updatedValue)
             getV(propDeleter,id).property(propName).remove();
         else
-            getV(propDeleter,id).singleProperty(propName,updatedValue);
+            getV(propDeleter,id).property(VertexProperty.Cardinality.single, propName, updatedValue);
 
         vertexDeleter.commit();
         propDeleter.commit();
@@ -1480,9 +1480,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         // The vertex must not exist after deletion
         graph.tx().rollback();
         assertEquals(null, getV(graph,id));
-        assertEmpty(graph.V().has(propName));
+        assertEmpty(graph.query().has(propName).vertices());
         if (null != updatedValue)
-            assertEmpty(graph.V().has(propName, updatedValue));
+            assertEmpty(graph.query().has(propName, updatedValue).vertices());
         graph.tx().rollback();
     }
 

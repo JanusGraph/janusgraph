@@ -49,15 +49,15 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
 
-        Vertex v = tx.addVertex("uid", "v");
+        TitanVertex v = tx.addVertex("uid", "v");
 
         clopen();
 
         //Concurrent index addition
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
-        getVertex(tx1, "uid", "v").singleProperty("value", 11);
-        getVertex(tx2, "uid", "v").singleProperty("value", 11);
+        getVertex(tx1, "uid", "v").property(VertexProperty.Cardinality.single, "value",  11);
+        getVertex(tx2, "uid", "v").property(VertexProperty.Cardinality.single, "value",  11);
         tx1.commit();
         tx2.commit();
 
@@ -108,19 +108,19 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals(1, v1.query().has("$timestamp", new Timestamp(100, unit)).propertyCount());
         assertEquals(1, v1.query().has("$timestamp", Cmp.GREATER_THAN, new Timestamp(10, unit)).propertyCount());
         v1.property(name).remove();
-        v1.singleProperty(address, "xyz");
+        v1.property(VertexProperty.Cardinality.single, address,  "xyz");
         Edge edge = v2.addEdge("parent",v1);
         tx2.commit();
         Object edgeId = edge.id();
 
-        Vertex afterTx2 = getV(graph,id1);
+        TitanVertex afterTx2 = getV(graph,id1);
 
         // Verify that "name" property is gone
         assertFalse(afterTx2.keys().contains(name));
         // Verify that "address" property is set
         assertEquals("xyz", afterTx2.value(address));
         // Verify that the edge is properly registered with the endpoint vertex
-        assertCount(1, afterTx2.inE("parent"));
+        assertCount(1, afterTx2.query().direction(Direction.IN).labels("parent").edges());
         // Verify that edge is registered under the id
         assertNotNull(getE(graph,edgeId));
         graph.tx().commit();
@@ -132,7 +132,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         v1.property(address).remove();
         tx3.commit();
 
-        Vertex afterTx3 = getV(graph,id1);
+        TitanVertex afterTx3 = getV(graph,id1);
         graph.tx().commit();
         // Verify that "address" is still set
         assertEquals("xyz", afterTx3.value(address));
@@ -140,24 +140,24 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
         TitanTransaction tx4 = graph.buildTransaction().commitTime(2000, unit).start();
         v2 = getV(tx4,id2);
-        v2.singleProperty(age, "15");
+        v2.property(VertexProperty.Cardinality.single, age,  "15");
         getE(tx4,edgeId).remove();
         tx4.commit();
 
-        Vertex afterTx4 = getV(graph,id2);
+        TitanVertex afterTx4 = getV(graph,id2);
         // Verify that "age" property is modified
         assertEquals("15", afterTx4.value(age));
         // Verify that edge is no longer registered with the endpoint vertex
-        assertCount(0, afterTx4.outE("parent"));
+        assertCount(0, afterTx4.query().direction(Direction.OUT).labels("parent").edges());
         // Verify that edge entry disappeared from id registry
         assertNull(getE(graph,edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
         TitanTransaction tx5 = graph.buildTransaction().commitTime(1500, unit).start();
         v2 = getV(tx5,id2);
-        v2.singleProperty(age, "16");
+        v2.property(VertexProperty.Cardinality.single, age,  "16");
         tx5.commit();
-        Vertex afterTx5 = getV(graph,id2);
+        TitanVertex afterTx5 = getV(graph,id2);
 
         // Verify that the property value is unchanged
         assertEquals("15", afterTx5.value(age));
@@ -203,15 +203,15 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         int numV = 10000;
         long start = System.currentTimeMillis();
         for (int i=0;i<numV;i++) {
-            Vertex v = tx.addVertex("uid",i+1);
+            TitanVertex v = tx.addVertex("uid",i+1);
             v.addEdge("knows",v);
         }
         clopen();
 //        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
         for (int i=0;i<Math.min(numV,300);i++) {
-            assertCount(1, graph.V().has("uid", i + 1));
-            assertCount(1, ((Vertex)getOnlyElement(graph.V().has("uid", i + 1))).outE("knows"));
+            assertCount(1, graph.query().has("uid", i + 1).vertices());
+            assertCount(1, ((Vertex)getOnlyElement(graph.query().has("uid", i + 1).vertices())).query().direction(Direction.OUT).labels("knows").edges());
         }
     }
 
@@ -279,17 +279,17 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
             assertEquals(2,pp.value());
         }
 
-        Edge e = getOnlyElement(v.outE("es"));
+        Edge e = getOnlyElement(v.query().direction(Direction.OUT).labels("es").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[6].longId(),getId(e));
 
-        e = getOnlyElement(v.outE("o2o"));
+        e = getOnlyElement(v.query().direction(Direction.OUT).labels("o2o").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[7].longId(),getId(e));
-        e = getOnlyElement(v.outE("o2m"));
+        e = getOnlyElement(v.query().direction(Direction.OUT).labels("o2m").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[8].longId(),getId(e));
-        e = getOnlyElement(v.outE("em"));
+        e = getOnlyElement(v.query().direction(Direction.OUT).labels("em").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[4].longId(),getId(e));
         for (Edge ee : v.outE("emf").toList()) {
@@ -318,14 +318,14 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
             sign((TitanVertexProperty)p,txid);
         }
 
-        Edge e = getOnlyElement(v.outE("es"));
+        Edge e = getOnlyElement(v.query().direction(Direction.OUT).labels("es").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
         sign(v.addEdge("es",u),txid);
-        e = getOnlyElement(v.outE("o2o"));
+        e = getOnlyElement(v.query().direction(Direction.OUT).labels("o2o").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         sign((TitanEdge)e,txid);
-        e = getOnlyElement(v.outE("o2m"));
+        e = getOnlyElement(v.query().direction(Direction.OUT).labels("o2m").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
         sign(v.addEdge("o2m",u),txid);

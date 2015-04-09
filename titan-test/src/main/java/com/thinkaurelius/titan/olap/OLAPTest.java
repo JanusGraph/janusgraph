@@ -69,16 +69,16 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         for (int i=0;i<numV;i++) {
             vs[i] = tx.addVertex("uid",i+1);
             int numVals = random.nextInt(5)+1;
-            vs[i].singleProperty("numvals",numVals);
+            vs[i].property(VertexProperty.Cardinality.single, "numvals", numVals);
             for (int j=0;j<numVals;j++) {
                 vs[i].property("values",random.nextInt(100));
             }
         }
         for (int i=0;i<numV;i++) {
             int edges = i+1;
-            Vertex v = vs[i];
+            TitanVertex v = vs[i];
             for (int j=0;j<edges;j++) {
-                Vertex u = vs[random.nextInt(numV)];
+                TitanVertex u = vs[random.nextInt(numV)];
                 v.addEdge("knows", u);
                 numE++;
             }
@@ -143,11 +143,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     @Test
     public void removeGhostVertices() throws Exception {
-        Vertex v1 = tx.addVertex("person");
+        TitanVertex v1 = tx.addVertex("person");
         v1.property("name","stephen");
-        Vertex v2 = tx.addVertex("person");
+        TitanVertex v2 = tx.addVertex("person");
         v1.property("name","marko");
-        Vertex v3 = tx.addVertex("person");
+        TitanVertex v3 = tx.addVertex("person");
         v1.property("name","dan");
         v2.addEdge("knows",v3);
         v1.addEdge("knows",v2);
@@ -204,7 +204,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int totalCount = 0;
         for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
             int degree = entry.getValue();
-            Vertex v = getV(tx, entry.getKey().longValue());
+            TitanVertex v = getV(tx, entry.getKey().longValue());
             int count = v.value("uid");
             assertEquals(count,degree);
             totalCount+= degree;
@@ -277,7 +277,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 messenger.sendMessage(DEG_MSG, 1);
             } else {
                 int degree = StreamFactory.stream(messenger.receiveMessages(DEG_MSG)).reduce(0, (a, b) -> a + b);
-                vertex.singleProperty(DEGREE, degree);
+                vertex.property(VertexProperty.Cardinality.single, DEGREE,  degree);
                 if (memory.getIteration()<length) messenger.sendMessage(DEG_MSG, degree);
             }
         }
@@ -380,11 +380,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
 
     private void expand(Vertex v, final int distance, final int diameter, final int branch) {
-        v.singleProperty("distance",distance);
+        v.property(VertexProperty.Cardinality.single, "distance", distance);
         if (distance<diameter) {
-            Vertex previous = null;
+            TitanVertex previous = null;
             for (int i=0;i<branch;i++) {
-                Vertex u = tx.addVertex();
+                TitanVertex u = tx.addVertex();
                 u.addEdge("likes",v);
                 log.debug("likes {}->{}", u.id(), v.id());
                 // Commented since the PageRank implementation does not discriminate by label
@@ -408,10 +408,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         final int diameter = 5;
         final double alpha = 0.85d;
         int numV = (int)((Math.pow(branch,diameter+1)-1)/(branch-1));
-        Vertex v = tx.addVertex();
+        TitanVertex v = tx.addVertex();
         expand(v,0,diameter,branch);
         clopen();
-        assertCount(numV, tx.V());
+        assertCount(numV, tx.query().vertices());
         log.debug("PR test numV: {}", numV);
         newTx();
 
@@ -425,7 +425,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         double correctPRSum = 0;
-        Iterator<Vertex> iv = tx.V();
+        Iterator<Vertex> iv = tx.query().vertices();
         while (iv.hasNext()) {
             correctPRSum += correctPR[iv.next().<Integer>value("distance")];
         }
@@ -449,7 +449,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             final Double computedPR = rank.getValue();
             assertNotNull(vertexID);
             assertNotNull(computedPR);
-            final Vertex u = getV(tx, vertexID);
+            final TitanVertex u = getV(tx, vertexID);
             final int distance = u.<Integer>value("distance");
             vertexCounter++;
 
@@ -475,12 +475,12 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         int maxDepth = 16;
         int maxBranch = 5;
-        Vertex vertex = tx.addVertex();
+        TitanVertex vertex = tx.addVertex();
         //Grow a star-shaped graph around vertex which will be the single-source for this shortest path computation
         final int numV = growVertex(vertex,0,maxDepth, maxBranch);
         final int numE = numV-1;
-        assertCount(numV,tx.V());
-        assertCount(numE,tx.E());
+        assertCount(numV,tx.query().vertices());
+        assertCount(numE,tx.query().edges());
 
         log.debug("seed inE count: {}", vertex.inE().count().next());
         log.debug("seed outE count: {}", vertex.outE().count().next());
@@ -503,7 +503,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             final KeyValue<Long, Long> kv = distances.next();
             final long dist = kv.getValue();
             assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
-            Vertex v = getV(tx, kv.getKey());
+            TitanVertex v = getV(tx, kv.getKey());
             assertEquals(v.<Integer>value("distance").intValue(), dist);
             vertexCount++;
         }
@@ -513,13 +513,13 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     }
 
     private int growVertex(Vertex vertex, int depth, int maxDepth, int maxBranch) {
-        vertex.singleProperty("distance",depth);
+        vertex.property(VertexProperty.Cardinality.single, "distance", depth);
         int total=1;
         if (depth>=maxDepth) return total;
 
         for (int i=0;i<random.nextInt(maxBranch)+1;i++) {
             int dist = random.nextInt(3)+1;
-            Vertex n = tx.addVertex();
+            TitanVertex n = tx.addVertex();
             n.addEdge("connect",vertex, "distance",dist);
             total+=growVertex(n,depth+dist,maxDepth,maxBranch);
         }

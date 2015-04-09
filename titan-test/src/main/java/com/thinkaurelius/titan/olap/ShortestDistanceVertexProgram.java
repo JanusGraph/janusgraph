@@ -102,7 +102,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
                 // The seed sends a single message to start the computation
                 log.debug("Sent initial message from {}", vertex.id());
                 // The seed's distance to itself is zero
-                vertex.singleProperty(DISTANCE, 0L);
+                vertex.property(VertexProperty.Cardinality.single, DISTANCE,  0L);
                 messenger.sendMessage(incidentMessageScope, 0L);
             }
         } else {
@@ -120,7 +120,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
             if (!currentShortestVP.isPresent() ||
                     currentShortestVP.value() > shortestDistanceSeenOnThisIteration) {
                 // First/shortest distance seen by this vertex: store it and forward to neighbors
-                vertex.singleProperty(DISTANCE, shortestDistanceSeenOnThisIteration);
+                vertex.property(VertexProperty.Cardinality.single, DISTANCE,  shortestDistanceSeenOnThisIteration);
                 messenger.sendMessage(incidentMessageScope, shortestDistanceSeenOnThisIteration);
             }
             // else: no new winner, ergo no reason to send message to neighbors
