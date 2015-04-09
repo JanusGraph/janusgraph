@@ -23,9 +23,6 @@ import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
-
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -332,7 +329,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static TitanVertex getVertex(TitanTransaction tx, String key, Object value) {
-        return (TitanVertex)getOnlyElement(tx.V().has(key,value),null);
+        return (TitanVertex)getOnlyElement(tx.query().has(key,value).vertices(),null);
     }
 
     public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
@@ -343,30 +340,54 @@ public abstract class TitanGraphBaseTest {
         return Math.round(d*1000.0)/1000.0;
     }
 
-    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal) {
+    public static TitanVertex getOnlyVertex(TitanGraphQuery<?> query) {
+        return (TitanVertex)getOnlyElement(query.vertices());
+    }
+
+    public static<E> E getOnlyElement(Iterable<E> traversal) {
+        return getOnlyElement(traversal.iterator());
+    }
+
+    public static<E> E getOnlyElement(Iterator<E> traversal) {
         if (!traversal.hasNext()) throw new NoSuchElementException();
         return getOnlyElement(traversal,null);
     }
 
-    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal, E defaultElement) {
+    public static<E> E getOnlyElement(Iterable<E> traversal, E defaultElement) {
+        return getOnlyElement(traversal.iterator(),defaultElement);
+    }
+
+    public static<E> E getOnlyElement(Iterator<E> traversal, E defaultElement) {
         if (!traversal.hasNext()) return defaultElement;
         E result = traversal.next();
         if (traversal.hasNext()) throw new IllegalArgumentException("Traversal contains more than 1 element: " + result + ", " + traversal.next());
         return result;
     }
 
+//    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal) {
+//        if (!traversal.hasNext()) throw new NoSuchElementException();
+//        return getOnlyElement(traversal,null);
+//    }
+//
+//    public static<E> E getOnlyElement(GraphTraversal<?,E> traversal, E defaultElement) {
+//        if (!traversal.hasNext()) return defaultElement;
+//        E result = traversal.next();
+//        if (traversal.hasNext()) throw new IllegalArgumentException("Traversal contains more than 1 element: " + result + ", " + traversal.next());
+//        return result;
+//    }
+
     public static void assertMissing(TitanGraphTransaction g, Object vid) {
-        assertFalse(g.V(vid).hasNext());
+        assertFalse(g.vertices(vid).hasNext());
     }
 
     public static TitanVertex getV(TitanGraphTransaction g, Object vid) {
-        if (!g.V(vid).hasNext()) return null;
-        return (TitanVertex)g.V(vid).next();
+        if (!g.vertices(vid).hasNext()) return null;
+        return (TitanVertex)g.vertices(vid).next();
     }
 
     public static TitanEdge getE(TitanGraphTransaction g, Object eid) {
-        if (!g.E(eid).hasNext()) return null;
-        return (TitanEdge)g.E(eid).next();
+        if (!g.edges(eid).hasNext()) return null;
+        return (TitanEdge)g.edges(eid).next();
     }
 
     public static String n(Object obj) {
@@ -376,14 +397,6 @@ public abstract class TitanGraphBaseTest {
 
     public static long getId(Element e) {
         return ((TitanElement)e).longId();
-    }
-
-    public static int size(Object obj) {
-        Preconditions.checkArgument(obj!=null);
-        if (obj instanceof Collection) return ((Collection)obj).size();
-        else if (obj instanceof Iterable) return Iterables.size((Iterable)obj);
-        else if (obj.getClass().isArray()) return Array.getLength(obj);
-        throw new IllegalArgumentException("Cannot find size of: " + obj);
     }
 
     public static void verifyElementOrder(Iterable<? extends Element> elements, String key, Order order, int expectedCount) {
