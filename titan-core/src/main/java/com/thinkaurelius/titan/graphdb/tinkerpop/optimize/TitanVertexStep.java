@@ -31,6 +31,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     private boolean initialized = false;
     private boolean useMultiQuery = false;
+    private Map<TitanVertex, Iterable<? extends TitanElement>> multiQueryResults = null;
 
     void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
@@ -64,14 +65,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
             assert vertices.size()>0;
             makeQuery(mquery);
 
-            final Map<TitanVertex, Iterable<? extends TitanElement>> results =
-                    (Vertex.class.isAssignableFrom(getReturnClass())) ? mquery.vertices() : mquery.edges();
-            super.setFunction(v -> (Iterator<E>)results.get(v.get()).iterator());
-        } else {
-            super.setFunction( v -> {
-                TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(v)).query());
-                return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
-            } );
+            multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? mquery.vertices() : mquery.edges();
         }
     }
 
@@ -79,6 +73,17 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     protected Traverser<E> processNextStart() {
         if (!initialized) initialize();
         return super.processNextStart();
+    }
+
+    @Override
+    protected Iterator<E> flatMap(final Traverser.Admin<Vertex> traverser) {
+        if (useMultiQuery) {
+            assert multiQueryResults!=null;
+            return (Iterator<E>)multiQueryResults.get(traverser.get()).iterator();
+        } else {
+            TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(traverser)).query());
+            return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
+        }
     }
 
     @Override

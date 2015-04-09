@@ -3,8 +3,11 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+
+import java.util.Iterator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -42,6 +45,11 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     @Override
     public TitanTransaction graph() {
         return vertex.graph();
+    }
+
+    @Override
+    public <U> Iterator<Property<U>> properties(final String... propertyKeys) {
+        return super.properties(propertyKeys);
     }
 
     @Override

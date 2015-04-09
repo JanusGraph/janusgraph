@@ -88,37 +88,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
 
     static {
-        try {
-            TraversalStrategies vertexStrategies = TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone()
-                    .addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
-            TraversalStrategies edgeStrategies = TraversalStrategies.GlobalCache.getStrategies(Edge.class).clone()
-                    .addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
-            TraversalStrategies vertexPropStrategies = TraversalStrategies.GlobalCache.getStrategies(VertexProperty.class).clone()
-                    .addStrategies(TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
-            TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
-                    .addStrategies(TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
+        TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
+                .addStrategies(TitanGraphStepStrategy.instance(), TitanElementStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance());
 
-            //Register with cache
-            TraversalStrategies.GlobalCache.registerStrategies(StandardVertex.class,vertexStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(CacheVertex.class,vertexStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(PreloadedVertex.class,vertexStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(EdgeLabelVertex.class,vertexStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(PropertyKeyVertex.class,vertexStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(VertexLabelVertex.class,vertexStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(TitanSchemaVertex.class,vertexStrategies);
-
-            TraversalStrategies.GlobalCache.registerStrategies(StandardEdge.class,edgeStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(CacheEdge.class,edgeStrategies);
-
-            TraversalStrategies.GlobalCache.registerStrategies(StandardVertexProperty.class,vertexPropStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(CacheVertexProperty.class,vertexPropStrategies);
-
-            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class,graphStrategies);
-            TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class,graphStrategies);
-
-        } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(e.getMessage(), e);
-        }
+        //Register with cache
+        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class,graphStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class,graphStrategies);
     }
 
     private final GraphDatabaseConfiguration config;

@@ -6,8 +6,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -26,7 +26,7 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
     }
 
     @Override
-    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
+    public void apply(final Traversal.Admin<?, ?> traversal) {
         TraversalHelper.getStepsOfClass(VertexStep.class, traversal).forEach(originalStep -> {
             TitanVertexStep vstep = new TitanVertexStep(originalStep);
             TraversalHelper.replaceStep(originalStep,vstep,traversal);
@@ -39,12 +39,12 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 
             assert TitanTraversalUtil.isEdgeReturnStep(vstep) || TitanTraversalUtil.isVertexReturnStep(vstep);
             Step nextStep = TitanTraversalUtil.getNextNonIdentityStep(vstep);
-            if (nextStep instanceof RangeStep) {
-                int limit = QueryUtil.convertLimit(((RangeStep)nextStep).getHighRange());
+            if (nextStep instanceof RangeGlobalStep) {
+                int limit = QueryUtil.convertLimit(((RangeGlobalStep)nextStep).getHighRange());
                 vstep.setLimit(QueryUtil.mergeLimits(limit, vstep.getLimit()));
             }
 
-            if (engine.equals(TraversalEngine.STANDARD) &&
+            if (traversal.getEngine().isStandard() &&
                     ((StandardTitanTx)TitanTraversalUtil.getTx(traversal)).getGraph().getConfiguration().useMultiQuery()) {
                 vstep.setUseMultiQuery(true);
             }
@@ -90,9 +90,9 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 //        });
 
         TraversalHelper.getStepsOfClass(LocalStep.class, traversal).forEach(localStep -> {
-            Traversal.Admin localTraversal = ((Traversal)localStep.getTraversals().get(0)).asAdmin();
+            Traversal.Admin localTraversal = localStep.getTraversal();
 
-            Step localStart = TraversalHelper.getStart(localTraversal);
+            Step localStart = localTraversal.getStartStep();
             if (localStart instanceof VertexStep) {
                 TitanVertexStep vstep = new TitanVertexStep((VertexStep)localStart);
                 TraversalHelper.replaceStep(localStart,vstep,localTraversal);
@@ -107,11 +107,11 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
                 assert localTraversal.asAdmin().getSteps().size()>0;
                 if (localTraversal.asAdmin().getSteps().size()==1) {
                     //Can replace the entire localStep by the vertex step in the outer traversal
-                    assert TraversalHelper.getStart(localTraversal)==vstep;
+                    assert localTraversal.getStartStep()==vstep;
                     vstep.setTraversal(traversal);
                     TraversalHelper.replaceStep(localStep,vstep,traversal);
 
-                    if (engine.equals(TraversalEngine.STANDARD) &&
+                    if (traversal.getEngine().isStandard() &&
                             ((StandardTitanTx)TitanTraversalUtil.getTx(traversal)).getGraph().getConfiguration().useMultiQuery()) {
                         vstep.setUseMultiQuery(true);
                     }

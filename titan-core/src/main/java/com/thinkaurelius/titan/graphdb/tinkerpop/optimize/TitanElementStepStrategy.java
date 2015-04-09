@@ -36,8 +36,7 @@ public class TitanElementStepStrategy extends AbstractTraversalStrategy {
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
-
-        if (traversal.getEngine().equals(TraversalEngine.Type.STANDARD))
+        if (traversal.getEngine().isStandard())
             return;
 
         //Copied this block of code from TinkerElementStepStrategy: If traversal starts with a startstep && OLAP => convert to graphstep

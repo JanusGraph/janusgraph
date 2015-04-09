@@ -48,7 +48,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return true;
     }
 
-    public static boolean validTitanOrder(OrderStep ostep, Traversal rootTraversal,
+    public static boolean validTitanOrder(OrderGlobalStep ostep, Traversal rootTraversal,
                                                 boolean isVertexOrder) {
         for (Comparator comp : (List<Comparator>)ostep.getComparators()) {
             if (!(comp instanceof ElementValueComparator)) return false;
@@ -76,7 +76,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                     addLabeledStepAsIdentity(currentStep, traversal);
                     traversal.removeStep(currentStep);
                 }
-            } else if (currentStep instanceof OrderStep) {
+            } else if (currentStep instanceof OrderLocalStep || currentStep instanceof OrderGlobalStep) {
                 //do nothing, we can pull filters over those
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing, has no impact
@@ -100,14 +100,14 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     public static void foldInOrder(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal,
                                                 final Traversal<?,?> rootTraversal, boolean isVertexOrder) {
         Step currentStep = titanStep.getNextStep();
-        OrderStep lastOrder = null;
+        OrderGlobalStep lastOrder = null;
         while (true) {
-            if (currentStep instanceof OrderStep) {
+            if (currentStep instanceof OrderGlobalStep) {
                 if (lastOrder!=null) { //Previous orders are rendered irrelevant by next order (since re-ordered)
                     addLabeledStepAsIdentity(lastOrder, traversal);
                     traversal.removeStep(lastOrder);
                 }
-                lastOrder = (OrderStep)currentStep;
+                lastOrder = (OrderGlobalStep)currentStep;
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing, can be skipped
             } else if (currentStep instanceof HasStep) {
@@ -118,7 +118,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             currentStep = currentStep.getNextStep();
         }
 
-        if (lastOrder!=null && lastOrder instanceof OrderStep) {
+        if (lastOrder!=null && lastOrder instanceof OrderGlobalStep) {
             if (validTitanOrder(lastOrder,rootTraversal,isVertexOrder)) {
                 //Add orders to HasStepFolder
                 for (Comparator comp : (List<Comparator>)lastOrder.getComparators()) {
@@ -145,8 +145,8 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     public static <E extends Ranging> void foldInRange(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal) {
         Step nextStep = TitanTraversalUtil.getNextNonIdentityStep(titanStep);
 
-        if (nextStep instanceof RangeStep) {
-            RangeStep range = (RangeStep)nextStep;
+        if (nextStep instanceof RangeGlobalStep) {
+            RangeGlobalStep range = (RangeGlobalStep)nextStep;
             int limit = QueryUtil.convertLimit(range.getHighRange());
             titanStep.setLimit(QueryUtil.mergeLimits(limit, titanStep.getLimit()));
             if (range.getLowRange() == 0) { //Range can be removed since there is no offset

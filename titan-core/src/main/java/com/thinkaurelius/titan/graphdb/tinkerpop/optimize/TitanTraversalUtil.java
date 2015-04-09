@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -61,32 +62,14 @@ public class TitanTraversalUtil {
 
     public static TitanTransaction getTx(Traversal<?,?> traversal) {
         TitanTransaction tx=null;
-        traversal = getRootTraversal(traversal);
+        Optional<Graph> graph = TraversalHelper.getRootTraversal(traversal.asAdmin()).getGraph();
+        if (!graph.isPresent()) throw new IllegalArgumentException("Traversal is not bound to a graph: " + traversal);
+        if (!(graph.get() instanceof TitanTransaction)) throw new IllegalArgumentException("Traversal is not bound to a Titan Graph: " + traversal);
+        tx = (TitanTransaction)graph.get();
 
-        if (traversal instanceof FulgoraElementTraversal) {
-            tx = ((FulgoraElementTraversal)traversal).getGraph();
-        } else {
-            Step startStep = traversal.asAdmin().getStartStep();
-            if (startStep instanceof GraphStep) {
-                Graph graph = ((GraphStep)startStep).getGraph(Graph.class); //?
-                if (graph instanceof TitanTransaction) tx = (TitanTransaction)graph;
-                else throw new IllegalArgumentException("Not a valid Titan traversal ["+graph.getClass()+"]: " + traversal);
-            } else if (startStep instanceof StartStep) {
-                Element element = (Element)((StartStep)startStep).getStart();
-                if (element instanceof TitanElement) tx = ((TitanElement)element).graph();
-                else throw new IllegalArgumentException("Not a valid Titan traversal because starting element is ["+element+"]: " + traversal);
-            }
-        }
         if (tx==null) throw new IllegalArgumentException("Not a valid start step for a Titan traversal: " + traversal);
         if (tx.isOpen()) return tx;
         else return ((StandardTitanTx)tx).getNextTx();
-    }
-
-    public static Traversal<?,?> getRootTraversal(Traversal<?,?> traversal) {
-        while (!((traversal.asAdmin().getTraversalHolder()) instanceof EmptyStep)) {
-            traversal = traversal.asAdmin().getTraversalHolder().asStep().getTraversal();
-        }
-        return traversal;
     }
 
 }

@@ -23,32 +23,26 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentitySt
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class FulgoraUtil {
 
-    private static TraversalStrategies FULGORA_STRATEGIES;
-
-    static {
-        try {
-            FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(TitanLocalQueryOptimizerStrategy.instance());
-        } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(e.getMessage(), e);
-        }
-    }
+    private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(TitanLocalQueryOptimizerStrategy.instance());;
 
     public static Traversal<Vertex,Edge> getTraversal(final MessageScope.Local<?> scope,
                                                                        final TitanTransaction graph) {
-        Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
+        Traversal.Admin<Vertex,Edge> incident = scope.getIncidentTraversal().get().asAdmin();
         FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
-        for (Step step : incident.asAdmin().getSteps()) result.addStep(step);
+        for (Step step : incident.getSteps()) result.addStep(step);
         result.asAdmin().setStrategies(FULGORA_STRATEGIES);
-        result.asAdmin().applyStrategies(TraversalEngine.COMPUTER);
+        result.asAdmin().applyStrategies();
         verifyIncidentTraversal(result);
         return result;
     }
@@ -56,30 +50,25 @@ public class FulgoraUtil {
     public static Traversal<Vertex,Edge> getReverseElementTraversal(final MessageScope.Local<?> scope,
                                                                        final Vertex start,
                                                                        final TitanTransaction graph) {
-        Traversal<Vertex,Edge> incident = scope.getIncidentTraversal().get();
-        Step<Vertex,?> startStep = TraversalHelper.getStart(incident.asAdmin());
+        Traversal.Admin<Vertex,Edge> incident = scope.getIncidentTraversal().get().asAdmin();
+        Step<Vertex,?> startStep = incident.getStartStep();
         assert startStep instanceof VertexStep;
-        ((VertexStep) startStep).reverse();
+        ((VertexStep) startStep).reverseDirection();
 
-        incident.asAdmin().addStep(0,new StartStep<>(incident,start));
-        incident.asAdmin().setStrategies(FULGORA_STRATEGIES);
+        incident.addStep(0, new StartStep<>(incident, start));
+        incident.setStrategies(FULGORA_STRATEGIES);
         return incident;
     }
 
     private static void verifyIncidentTraversal(FulgoraElementTraversal<Vertex,Edge> traversal) {
         //First step must be TitanVertexStep
         List<Step> steps = traversal.getSteps();
-        Step<Vertex,?> startStep = TraversalHelper.getStart(traversal);
+        Step<Vertex,?> startStep = steps.get(0);
         Preconditions.checkArgument(startStep instanceof TitanVertexStep &&
                 TitanTraversalUtil.isEdgeReturnStep((TitanVertexStep) startStep),"Expected first step to be an edge step but found: %s",startStep);
-        for (int i = 1; i < steps.size(); i++) {
-            Step step = steps.get(i);
-            if (step instanceof OrderStep ||
-                step instanceof IdentityStep ||
-                step instanceof FilterStep ||
-                step instanceof RangeStep) continue;
-            throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + step);
-        }
+        Optional<Step> violatingStep = steps.stream().filter(s -> !(s instanceof OrderGlobalStep || s instanceof OrderLocalStep ||
+                s instanceof IdentityStep || s instanceof FilterStep)).findAny();
+        if (violatingStep.isPresent()) throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + violatingStep.get());
     }
 
     public static<M> MessageCombiner<M> getMessageCombiner(VertexProgram<M> program) {

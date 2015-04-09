@@ -44,11 +44,7 @@ public class VertexMapJob implements VertexScanJob {
     public VertexMapJob clone() {
         ImmutableMap.Builder<MapReduce,FulgoraMapEmitter> cloneMap = ImmutableMap.builder();
         for (Map.Entry<MapReduce,FulgoraMapEmitter> entry : mapJobs.entrySet()) {
-            try {
-                cloneMap.put(entry.getKey().clone(),entry.getValue());
-            } catch (CloneNotSupportedException e) {
-                throw new AssertionError("MapReduce implementations need to support clone()",e);
-            }
+            cloneMap.put(entry.getKey().clone(),entry.getValue());
         }
         return new VertexMapJob(idManager,vertexMemory,cloneMap.build());
     }

@@ -59,7 +59,9 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private int numThreads = 1;//Math.max(1,Runtime.getRuntime().availableProcessors());
     private int readBatchSize = 10000;
     private int writeBatchSize;
-    private ResultMode resultMode;
+
+    private ResultGraph resultGraphMode;
+    private Persist persistMode;
 
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
     private String name;
@@ -69,7 +71,9 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
         this.graph = graph;
         this.writeBatchSize = configuration.get(GraphDatabaseConfiguration.BUFFER_SIZE);
         this.readBatchSize = this.writeBatchSize*10;
-        this.resultMode = ResultMode.valueOf(configuration.get(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE).toUpperCase());
+        ResultMode resultMode = ResultMode.valueOf(configuration.get(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE).toUpperCase());
+        this.resultGraphMode = resultMode.toResultGraph();
+        this.persistMode = resultMode.toPersist();
         this.name = "compute" + computerCounter.incrementAndGet();
     }
 
@@ -80,9 +84,16 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     }
 
     @Override
-    public TitanGraphComputer resultMode(ResultMode mode) {
-        Preconditions.checkArgument(mode!=null,"Need to specify mode");
-        this.resultMode = mode;
+    public GraphComputer result(ResultGraph resultGraph) {
+        Preconditions.checkArgument(resultGraph!=null,"Need to specify mode");
+        this.resultGraphMode=resultGraph;
+        return this;
+    }
+
+    @Override
+    public GraphComputer persist(Persist persist) {
+        Preconditions.checkArgument(persist!=null,"Need to specify mode");
+        this.persistMode=persist;
         return this;
     }
 
@@ -217,7 +228,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
 
             // #### Write mutated properties back into graph
             Graph resultgraph = graph;
-            if (resultMode!=ResultMode.NONE && vertexProgram!=null && !vertexProgram.getElementComputeKeys().isEmpty()) {
+            if (persistMode!=Persist.NOTHING && vertexProgram!=null && !vertexProgram.getElementComputeKeys().isEmpty()) {
                 //First, create property keys in graph if they don't already exist
                 TitanManagement mgmt = graph.openManagement();
                 try {
@@ -240,7 +251,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                             }
                         });
 
-                if (resultMode==ResultMode.PERSIST) {
+                if (resultGraphMode==ResultGraph.ORIGINAL) {
                     ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
                     processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
                     AtomicInteger failures = new AtomicInteger(0);
@@ -266,7 +277,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                     } finally {
                         processor.shutdownNow();
                     }
-                } else if (resultMode==ResultMode.LOCALTX) {
+                } else if (resultGraphMode==ResultGraph.NEW) {
                     resultgraph = graph.newTransaction();
                     for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {
                         Vertex v = resultgraph.vertices(vprop.getKey()).next();
@@ -327,7 +338,8 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
         return new Features() {
             @Override
             public boolean supportsResultGraphPersistCombination(final ResultGraph resultGraph, final Persist persist) {
-                //?
+                return (persist==Persist.NOTHING || persist==Persist.VERTEX_PROPERTIES) &&
+                        (resultGraph==ResultGraph.NEW || resultGraph==ResultGraph.ORIGINAL);
             }
 
             @Override

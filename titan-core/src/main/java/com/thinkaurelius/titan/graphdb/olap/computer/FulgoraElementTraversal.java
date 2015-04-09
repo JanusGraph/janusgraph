@@ -19,8 +19,4 @@ public class FulgoraElementTraversal<S, E>  extends DefaultGraphTraversal<S, E> 
         return new FulgoraElementTraversal<>(graph);
     }
 
-//    public TitanTransaction getGraph() {
-//        return graph;
-//    }
-
 }

@@ -23,11 +23,11 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
     }
 
     @Override
-    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine engine) {
-        if (engine.equals(TraversalEngine.COMPUTER))
+    public void apply(final Traversal.Admin<?, ?> traversal) {
+        if (traversal.getEngine().isComputer())
             return;
 
-        final Step<?, ?> startStep = TraversalHelper.getStart(traversal);
+        final Step<?, ?> startStep = traversal.getStartStep();
         if (startStep instanceof GraphStep) {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             if (originalGraphStep.getIds()==null || originalGraphStep.getIds().length==0) {

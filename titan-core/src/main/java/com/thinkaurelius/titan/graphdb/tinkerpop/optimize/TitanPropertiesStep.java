@@ -38,6 +38,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
     private boolean useMultiQuery = false;
     private boolean initialized = false;
     private boolean isVertexProperties = false;
+    private Map<TitanVertex, Iterable<? extends TitanProperty>> multiQueryResults = null;
 
     void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
@@ -89,14 +90,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
             elements.forEach( e -> mquery.addVertex((Vertex)e.get()));
             makeQuery(mquery);
 
-            final Map<TitanVertex, Iterable<? extends TitanProperty>> results = mquery.properties();
-            super.setFunction(v -> convertIterator(results.get(v.get())));
-        } else {
-            super.setFunction(v -> {
-                if (!(v.get() instanceof Vertex)) throw new IllegalStateException("Step should only be used against vertices");
-                TitanVertexQuery query = makeQuery(((TitanVertex) v.get()).query());
-                return convertIterator(query.properties());
-            });
+            multiQueryResults = mquery.properties();
         }
     }
 
@@ -104,6 +98,16 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
     protected Traverser<E> processNextStart() {
         //if (!initialized) initialize();
         return super.processNextStart();
+    }
+
+    @Override
+    protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
+//        if (useMultiQuery) {
+//            assert multiQueryResults!=null;
+//            return (Iterator<E>)multiQueryResults.get(traverser.get()).iterator();
+//        } else {
+            return super.flatMap(traverser);
+//        }
     }
 
     @Override
