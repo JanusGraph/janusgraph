@@ -1,11 +1,13 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -370,8 +372,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             while (true) {
                 // Make or break relType between two (possibly same) random nodes
-                TitanVertex source = getOnlyElement(tx.query().has(idKey, 0).vertices());
-                TitanVertex sink = getOnlyElement(tx.query().has(idKey, 1).vertices());
+                TitanVertex source = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, 0).vertices());
+                TitanVertex sink = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, 1).vertices());
                 for (Edge r : source.outE(elabel).toList()) {
                     if (getId(r.inV().next()) == getId(sink)) {
                         r.remove();
@@ -405,12 +407,12 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
         @Override
         protected void doRun() throws Exception {
-            TitanVertex v = getOnlyElement(tx.query().has(idKey, vertexid).vertices());
+            TitanVertex v = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, vertexid).vertices());
 
             for (int i = 0; i < nodeTraversalCount; i++) {
-                assertCount(expectedEdges, v.bothE(label2Traverse));
-                for (Edge r : v.outE(label2Traverse).toList()) {
-                    v = r.inV().next();
+                assertCount(expectedEdges, v.query().labels(label2Traverse).direction(Direction.BOTH).edges());
+                for (TitanEdge r : v.query().direction(Direction.OUT).labels(label2Traverse).edges()) {
+                    v = r.vertex(Direction.IN);
                 }
             }
         }
@@ -465,7 +467,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             for (int i = 0; i < vertexCount; i++) {
                 for (int p = 0; p < propCount; p++) {
-                    tx.V().has("p" + p, i).count().next();
+                    Iterables.size(tx.query().has("p" + p, i).vertices());
                 }
             }
         }
