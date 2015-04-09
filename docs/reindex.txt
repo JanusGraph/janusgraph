@@ -1,6 +1,10 @@
+[[index-admin]]
+Reindexing and Index Removal
+----------------------------
+
 [[reindex]]
-Reindexing Process
-------------------
+Reindexing
+~~~~~~~~~~
 
 <<graph-indexes>> and <<vertex-indexes>> describe how to build graph-global and vertex-centric indexes to improve query performance. These indexes are immediately available if the indexed keys or labels have been newly defined in the same management transaction. In this case, there is no need to reindex the graph and this section can be skipped. If the indexed keys or labels already existed prior to index construction it is necessary to reindex the entire graph in order to ensure that the index contains previously added elements. This section describes the reindexing process.
 
@@ -8,80 +12,87 @@ Reindexing Process
 Reindexing is a manual process comprised of multiple steps. These steps must be carefully followed in the right order to avoid index inconsistencies.
 
 Overview
-~~~~~~~~
+^^^^^^^^
 
 Titan can begin writing incremental index updates right after an index is defined.  However, before the index is complete and usable, Titan must also take a one-time read pass over all existing graph elements associated with the newly indexed schema type(s).  Titan uses Hadoop MapReduce for this task in order to scale reindexing to very large graphs. Once this reindexing job has completed, the index is fully populated and ready to be used. The index must then be enabled to be used during query processing.
 
 Prior to Reindex
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 The starting point of the reindexing process is the construction of an index. Refer to <<indexes>> for a complete discussion of global graph and vertex-centric indexes. Note, that a global graph index is uniquely identified by its name. A vertex-centric index is uniquely identified by the combination of its name and the edge label or property key on which the index is defined - the name of the latter is referred to as the *index type* in this section and only applies to vertex-centric indexes.
 
 After building a new index against existing schema elements it is recommended to wait a few minutes for the index to be announced to the cluster. Note the index name (and the index type in case of a vertex-centric index) since this information is needed when reindexing.
 
 Preparing to Reindex
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
-Reindexing large, horizontally-distributed databases generally proceeds most quickly on a Hadoop MapReduce cluster.  However, it's also possible to reindex from a single machine using Hadoop's "local" job runner.  Either method will work from a correctness standpoint.  The only differentiator is reindex throughput and setup complexity.
+There is a choice between two execution frameworks for reindex jobs:
+
+* MapReduce
+* TitanManagement
+
+Reindex on MapReduce supports large, horizontally-distributed databases.  Reindex on TitanManagement spawns a single-machine OLAP job.  This is intended for convenience and speed on those databases small enough to be handled by one machine.
 
 Reindexing requires:
 
 * The index name (a string -- the user provides this to Titan when building a new index)
 * The index type (a string -- the name of the edge label or property key on which the vertex-centric index is built). This applies only to vertex-centric indexes - leave blank for global graph indexes.
-* An TitanGraph configuration file (a file whose path can be passed to `TitanFactory.open`)
 
-Executing a Reindex Job
-~~~~~~~~~~~~~~~~~~~~~~~
+On MapReduce (but not TitanManagement), reindexing also requires:
 
-The recommended way to generate and run a reindex job is through the `TitanIndexRepair` helper class.  It has a pair of helper methods to generate a MapReduce configuration, configure a MR Job with a `TitanIndexRepairMapper`, and then run the job using the default job runner.
+* A TitanGraph configuration file (a file whose path can be passed to `TitanFactory.open`)
 
-The two recommended entry points on the `TitanIndexRepair` helper class are these methods:
+Executing a Reindex Job on MapReduce
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The recommended way to generate and run a reindex job is through the `MapReduceIndexJobs` helper class.  It has a pair of helper methods to generate a MapReduce configuration, configure a MR Job with a `MapReduceIndexJobsMapper`, and then run the job using the default job runner.
+
+The two recommended entry points on the `MapReduceIndexJobs` helper class are these methods:
 
 * `cassandraRepair`
 * `hbaseRepair`
 
 Cassandra Helper
-^^^^^^^^^^^^^^^^
+++++++++++++++++
 
-The static helper method `TitanIndexRepair.cassandraRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, an (optional) index type, and the name of the Cassandra keyspace partitioner.  It generates a reindexing config file in memory and starts a job using the generated config.
+The static helper method `MapReduceIndexJobs.cassandraRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, an (optional) index type, and the name of the Cassandra keyspace partitioner.  It generates a reindexing config file in memory and starts a job using the generated config.
 
 The following starts the reindexing process for the global graph index `byName` defined in <<graph-indexes>>:
 
 [source,gremlin]
-TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "byName", "",
+MapReduceIndexJobs.cassandraRepair("conf/titan-cassandra-es.properties", "byName", "",
    /* Replace with your actual partitioner when not using Murmur3 */
    "org.apache.cassandra.dht.Murmur3Partitioner")
 
 The following starts the reindexing process for the vertex-centric index `battlesByTime` build over `battled` edges as defined in <<vertex-indexes>>:
 
 [source,gremlin]
-TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "battlesByTime", "battled",
+MapReduceIndexJobs.cassandraRepair("conf/titan-cassandra-es.properties", "battlesByTime", "battled",
    /* Replace with your actual partitioner when not using Murmur3 */
    "org.apache.cassandra.dht.Murmur3Partitioner")
-
 
 HBase Helper
-^^^^^^^^^^^^
+++++++++++++
 
-The static helper method `TitanIndexRepair.hbaseRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, and an (optional) index type.  Unlike its Cassandra counterpart, there is no need to pass a partitioner name to the HBase helper method.  It generates a reindexing config file in memory and starts a job using the generated config.
+The static helper method `MapReduceIndexJobs.hbaseRepair` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, and an (optional) index type.  Unlike its Cassandra counterpart, there is no need to pass a partitioner name to the HBase helper method.  It generates a reindexing config file in memory and starts a job using the generated config.
 
 The following starts the reindexing process for the global graph index `byName` defined in <<graph-indexes>>:
 
 [source,gremlin]
-TitanIndexRepair.hbaseRepair("conf/titan-hbase-es.properties", "byName", "")
+MapReduceIndexJobs.hbaseRepair("conf/titan-hbase-es.properties", "byName", "")
 
 The following starts the reindexing process for the vertex-centric index `battlesByTime` build over `battled` edges as defined in <<vertex-indexes>>:
 
 [source,gremlin]
-TitanIndexRepair.hbaseRepair("conf/titan-hbase-es.properties", "battlesByTime", "battled")
+MapReduceIndexJobs.hbaseRepair("conf/titan-hbase-es.properties", "battlesByTime", "battled")
 
 Enabling Index
-~~~~~~~~~~~~~~
+++++++++++++++
 
 When the reindex job completes successfully, the index is fully populated and ready to be used. To alert all Titan instances that the index can be used for query answering, the index must be enabled in the management system.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 rindex = mgmt.getRelationIndex(mgmt.getRelationType("battled"),"battlesByTime")
 mgmt.updateIndex(rindex, SchemaAction.ENABLE_INDEX);
 gindex = mgmt.getGraphIndex("byName")
@@ -89,12 +100,10 @@ mgmt.updateIndex(gindex, SchemaAction.ENABLE_INDEX);
 mgmt.commit()
 
 
-Self-contained Example
-~~~~~~~~~~~~~~~~~~~~~~
+Example for MapReduce
++++++++++++++++++++++
 
-The following Gremlin snippet outlines all steps of the reindex process in one self-contained example using minimal dummy data against the Cassandra storage backend.
-
-// TODO This code snippet has only been updated for titan09 up to the mgmt.awaitGraphIndexStatus line
+The following Gremlin snippet outlines all steps of the MapReduce reindex process in one self-contained example using minimal dummy data against the Cassandra storage backend.
 
 [source,gremlin]
 ----
@@ -107,17 +116,17 @@ desc = mgmt.makePropertyKey("desc").dataType(String.class).make()
 mgmt.commit()
 
 // Insert some data
-v = g.addVertex()
-v.property("desc", "foo bar")
-v = g.addVertex()
-v.property("desc", "foo baz")
+v = g.addVertex(null)
+v.desc = "foo bar"
+v = g.addVertex(null)
+v.desc = "foo baz"
 g.commit()
 
 // Run a query -- note the planner warning recommending the use of an index
-g.V.has("desc", com.thinkaurelius.titan.core.attribute.Text.CONTAINS, "baz").map
+g.V().has("desc", CONTAINS, "baz").map
 
 // Create an index
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 desc = mgmt.getPropertyKey("desc")
 mixedIndex = mgmt.buildIndex("mixedExample",Vertex.class).addKey(desc).buildMixedIndex("search")
 mgmt.commit()
@@ -130,31 +139,171 @@ report = mgmt.awaitGraphIndexStatus(g, "mixedExample").call()
 
 // Run a Titan-Hadoop job to reindex (replace Murmur3 with your actual partitioner)
 pt = "org.apache.cassandra.dht.Murmur3Partitioner" // The default
-TitanIndexRepair.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "", pt)
+MapReduceIndexJobs.cassandraRepair("conf/titan-cassandra-es.properties", "mixedExample", "", pt)
 
 // Enable the index
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("mixedExample"), SchemaAction.ENABLE_INDEX);
 mgmt.commit()
 
 // Check the status -- should be ENABLED
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 desc = mgmt.getPropertyKey("desc")
 mgmt.getGraphIndex("mixedExample").getIndexStatus(desc)
 mgmt.rollback()
 
 // Run a query -- Titan will use the new index, no planner warning
-g.V.has("desc", com.thinkaurelius.titan.core.attribute.Text.CONTAINS, "baz").map
+g.V().has("desc", CONTAINS, "baz").map
 
 // Concerned that Titan could have read cache in that last query, instead of relying on the index?
 // Start a new instance to rule out cache hits.  Now we're definitely using the index.
-g.shutdown()
+g.close()
 g = TitanFactory.open("conf/titan-cassandra-es.properties")
-g.V.has("desc", com.thinkaurelius.titan.core.attribute.Text.CONTAINS, "baz").map
+g.V().has("desc", CONTAINS, "baz").map
 ----
 
-Common Problems
-~~~~~~~~~~~~~~~
+Executing a Reindex job on TitanManagement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To run a reindex job on TitanManagement, invoke `TitanManagement.updateIndex` with the `SchemaAction.REINDEX` argument.  For example:
+
+[source,gremlin]
+m = g.openManagement()
+i = m.getGraphIndex('indexName')
+m.updateIndex(i, SchemaAction.REINDEX)
+m.commit()
+
+Example for TitanManagement
++++++++++++++++++++++++++++
+
+The following loads some sample data into a BerkeleyDB-backed Titan database, defines an index after the fact, reindexes using TitanManagement, and finally enables and uses the index:
+
+[source,java]
+----
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem
+
+// Load some data from a file without any predefined schema
+g = TitanFactory.open('conf/titan-berkeleyje.properties')
+stream = new FileInputStream('data/tinkerpop-modern.gio')
+reader = KryoReader.build().create()
+reader.readGraph(stream, g)
+g.tx().commit()
+
+// Run a query -- note the planner warning recommending the use of an index
+g.V().has('name', 'lop')
+g.tx().rollback()
+
+// Create an index
+m = g.openManagement()
+m.buildIndex('names', Vertex.class).addKey(m.getPropertyKey('name')).buildCompositeIndex()
+m.commit()
+g.tx().commit()
+
+// Block until the SchemaStatus transitions from INSTALLED to REGISTERED
+ManagementSystem.awaitGraphIndexStatus(g, 'names').status(SchemaStatus.REGISTERED).call()
+
+// Reindex using TitanManagement
+m = g.openManagement()
+i = m.getGraphIndex('names')
+m.updateIndex(i, SchemaAction.REINDEX)
+m.commit()
+
+// Enable the index
+ManagementSystem.awaitGraphIndexStatus(g, 'names').status(SchemaStatus.ENABLED).call()
+
+// Run a query -- Titan will use the new index, no planner warning
+g.V().has('name', 'lop')
+g.tx().rollback()
+
+// Concerned that Titan could have read cache in that last query, instead of relying on the index?
+// Start a new instance to rule out cache hits.  Now we're definitely using the index.
+g.close()
+g = TitanFactory.open("conf/titan-berkeleyje.properties")
+g.V().has('name', 'lop')
+----
+
+[[mr-index-removal]]
+Index Removal
+~~~~~~~~~~~~~
+
+[WARNING]
+Index removal is a manual process comprised of multiple steps. These steps must be carefully followed in the right order to avoid index inconsistencies.
+
+Overview
+^^^^^^^^
+
+Index removal is a two-stage process.  In the first stage, one Titan signals to all others via the storage backend that the index is slated for deletion.  This changes the index's state to `DISABLED`.  At that point, Titan stops using the index to answer queries and stops incrementally updating the index.  Index-related data in the storage backend remains present but ignored. the second stage, a background job deletes the index's data from the storage backend.
+
+Preparing for Index Removal
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If the index is currently enabled and in use, it should first be disabled.  This is done through the `ManagementSystem`.
+
+[source,gremlin]
+mgmt = g.openManagement()
+rindex = mgmt.getRelationIndex(mgmt.getRelationType("battled"),"battlesByTime")
+mgmt.updateIndex(rindex, SchemaAction.DISABLE_INDEX);
+gindex = mgmt.getGraphIndex("byName")
+mgmt.updateIndex(gindex, SchemaAction.DISABLE_INDEX);
+mgmt.commit()
+
+Once the status of all keys on the index changes to `DISABLED`, the index is ready to be removed.
+
+Removing an index from a large, horizontally-distributed database generally proceeds most quickly on a Hadoop MapReduce cluster.  However, it's also possible to remove an index using Hadoop's "local" job runner.  Either method will work from a correctness standpoint.  The only differentiator is remove an index throughput and setup complexity.
+
+Index removal requires:
+
+* The index name (a string -- the user provides this to Titan when building a new index)
+* The index type (a string -- the name of the edge label or property key on which the vertex-centric index is built). This applies only to vertex-centric indexes - leave blank for global graph indexes.
+* An TitanGraph configuration file (a file whose path can be passed to `TitanFactory.open`)
+
+Executing an Index Removal  Job
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The recommended way to generate and run an index removal job is through the `MapReduceIndexJobs` helper class.  It has a pair of helper methods to generate a MapReduce configuration, configure a MR Job with a `MapReduceIndexJobsMapper`, and then run the job using the default job runner.
+
+The two recommended entry points on the `MapReduceIndexJobs` helper class are these methods:
+
+* `cassandraRemove`
+* `hbaseRemove`
+
+Cassandra Helper
+++++++++++++++++
+
+The static helper method `MapReduceIndexJobs.cassandraRemove` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, an (optional) index type, and the name of the Cassandra keyspace partitioner.  It generates an index removal config file in memory and starts a job using the generated config.
+
+The following starts an index removal job for the global graph index `byName` defined in <<graph-indexes>>:
+
+[source,gremlin]
+MapReduceIndexJobs.cassandraRemove("conf/titan-cassandra-es.properties", "byName", "",
+   /* Replace with your actual partitioner when not using Murmur3 */
+   "org.apache.cassandra.dht.Murmur3Partitioner")
+
+The following starts an index removal job for the vertex-centric index `battlesByTime` build over `battled` edges as defined in <<vertex-indexes>>:
+
+[source,gremlin]
+MapReduceIndexJobs.cassandraRemove("conf/titan-cassandra-es.properties", "battlesByTime", "battled",
+   /* Replace with your actual partitioner when not using Murmur3 */
+   "org.apache.cassandra.dht.Murmur3Partitioner")
+
+
+HBase Helper
+++++++++++++
+
+The static helper method `MapReduceIndexJobs.hbaseRemove` takes a path to a TitanGraph properties file (the same file that one would pass to `TitanFactory.open`), an index name, and an (optional) index type.  Unlike its Cassandra counterpart, there is no need to pass a partitioner name to the HBase helper method.  It generates a reindexing config file in memory and starts a job using the generated config.
+
+The following starts the reindexing process for the global graph index `byName` defined in <<graph-indexes>>:
+
+[source,gremlin]
+MapReduceIndexJobs.hbaseRemove("conf/titan-hbase-es.properties", "byName", "")
+
+The following starts the reindexing process for the vertex-centric index `battlesByTime` build over `battled` edges as defined in <<vertex-indexes>>:
+
+[source,gremlin]
+MapReduceIndexJobs.hbaseRemove("conf/titan-hbase-es.properties", "battlesByTime", "battled")
+
+Common Problems with Index Jobs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IllegalArgumentException when starting job
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -175,7 +324,7 @@ When an index is built, its existence is broadcast to all other Titan instances 
 Note, that the acknowledgement might fail due to Titan instance failure. In other words, the cluster might wait indefinitely on the acknowledgement of a failed instance. In this case, the user must manually remove the failed instance from the cluster registry as described in <<failure-recovery>>. After the cluster state has been restored, the acknowledgement process must be reinitiated by manually registering the index again in the management system.
 
 [source,gremlin]
-mgmt = g.getManagementSystem()
+mgmt = g.openManagement()
 rindex = mgmt.getRelationIndex(mgmt.getRelationType("battled"),"battlesByTime")
 mgmt.updateIndex(rindex, SchemaAction.REGISTER_INDEX);
 gindex = mgmt.getGraphIndex("byName")
@@ -189,8 +338,8 @@ Could not find index
 
 This exception in the reindexing job indicates that an index with the given name does not exist or that the name has not been specified correctly. When reindexing a global graph index, only the name of the index as defined when building the index should be specified. When reindexing a global graph index, the name of the index must be given in addition to the name of the edge label or property key on which the vertex-centric index is defined.
 
-Cassandra Reindex Mappers Fail with "Too many open files"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Cassandra Mappers Fail with "Too many open files"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The end of the exception stacktrace may look like this:
 

@@ -97,7 +97,7 @@ Strategies
 Parallelizing the Load
 ^^^^^^^^^^^^^^^^^^^^^^
 
-By parallelizing the bulk loading across multiple machines, the load time can be greatly reduced if Titan's storage backend cluster is large enough to serve the additional requests. This is essentially the approach <<hadoop>> takes to bulk loading data into Titan using MapReduce.
+By parallelizing the bulk loading across multiple machines, the load time can be greatly reduced if Titan's storage backend cluster is large enough to serve the additional requests. This is essentially the approach <<titan-hadoop-tp3>> takes to bulk loading data into Titan using MapReduce.
 
 If Hadoop cannot be used for parallelizing the bulk loading process, here are some high level guidelines for effectively parallelizing the loading process:
 

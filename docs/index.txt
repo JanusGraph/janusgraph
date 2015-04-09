@@ -11,10 +11,6 @@ include::indexbackends.txt[]
 
 include::advanced.txt[]
 
-include::faunus/index.txt[]
-
-//include::usefultools.txt[]
-
 include::titaninternals.txt[]
 
 include::appendices.txt[]

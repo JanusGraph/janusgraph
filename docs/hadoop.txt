@@ -1,43 +1,189 @@
-[[hadoop]]
-Global Graph Analytics
-----------------------
+[[titan-hadoop-tp3]]
+Titan with TinkerPop's Hadoop-Gremlin
+-------------------------------------
 
-image:faunus-diagram.png[]
+Titan-Hadoop works with TinkerPop 3's new hadoop-gremlin package for
+general-purpose OLAP.
 
-Titan is designed to compute numerous, concurrent, short-lived, local graph traversals. Titan is _not_ designed for global graph analysis. In order to understand the difference, a itemization of each term above is defined below.
+Here's a three step example showing some basic integrated Titan-TinkerPop functionality.
 
-* *Numerous concurrent interactions*: the graph is being queried, in parallel, by different users solving different problems.
-* *Short-lived transactions*: each interaction with Titan is intended to be real-time on the order of hundreds of milliseconds.
-* *Local graph traversals*: each transaction is touching a small fraction of the entire graph and as such is solving a problem within a localized region of the graph. 
+1. Manually define schema and then load the Grateful Dead graph from a TP3 Kryo-serialized binary file 
+2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/^g`
+3. Read the derived graph vertices and their computed rank values
 
-Faunus: Graph Analytics Engine
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan is a multi-client database in the classic sense. For performing global graph analytics, Titan relies on http://thinkaurelius.github.com/faunus/[Faunus]. Faunus is a batch processing framework that is optimized for computing a small number of concurrent, long running, global graph traversals.
+[WARNING]
+Titan 0.9.0's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as Titan 0.9.0 and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
 
-Please review Faunus documentation for instructions on how to connect https://github.com/thinkaurelius/faunus/wiki/Titan-Format[Titan to Faunus]. However, a short example is provided below. With Faunus it is possible to use Titan as the source of a http://hadoop.apache.org[Hadoop] MapReduce job chain. Like Titan, Faunus uses Gremlin as its traversal language. However, Faunus compiles its Gremlin statements down to MapReduce jobs. Assume the Titan/Cassandra maintains _The Graph of the Gods_. The Faunus/Gremlin shell can be used to create a `FaunusGraph`. When the traversal is evaluated, Titan serves as the data source and Hadoop serves as the data processing system.
+Defining defining schema and loading data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,text]
+[source,gremlin]
 ----
-faunus$ bin/gremlin.sh 
+bin/gremlin.sh 
 
          \,,,/
          (o o)
------oOOo-(_)-oOOo-----
-gremlin> g = FaunusFactory.open('bin/titan-cassandra-input.properties')
-==>faunusgraph[titancassandrainputformat]
-gremlin> g.V.count()
-12/12/15 23:58:38 INFO mapreduce.FaunusCompiler: Compiled to 1 MapReduce job(s)
-12/12/15 23:58:38 INFO mapreduce.FaunusCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Reduce]
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.utilities
+plugin activated: tinkerpop.tinkergraph
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/lib/slf4j-log4j12-1.7.7.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/ext/hadoop-gremlin/slf4j-log4j12-1.7.7.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/ext/titan-all/slf4j-log4j12-1.7.7.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+INFO  com.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/bin/../ext/hadoop-gremlin:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/bin/../ext/titan-all
+plugin activated: tinkerpop.hadoop
+plugin activated: aurelius.titan
+gremlin> :load data/grateful-dead-titan-schema.groovy
+==>true
+==>standardtitangraph[cassandrathrift:[127.0.0.1]]
+==>com.thinkaurelius.titan.graphdb.database.management.ManagementSystem@6088451e
+==>true
+==>song
+==>artist
+==>true
+==>songType
+==>performances
+==>name
+==>weight
+==>true
+==>sungBy
+==>writtenBy
+==>followedBy
+==>true
+==>verticesByName
+==>followsByWeight
+==>true
+==>null
+==>null
+gremlin> g = GraphFactory.open('conf/hadoop-load.properties')
+==>hadoopgraph[kryoinputformat->kryooutputformat]
+gremlin> r = g.compute().program(BulkLoaderVertexProgram.build().titan('conf/titan-cassandra.properties').create()).submit().get()
 ...
-12/12/15 23:59:16 INFO mapred.JobClient:     Total committed heap usage (bytes)=269619200
-12/12/15 23:59:16 INFO mapred.JobClient:     Combine input records=12
-12/12/15 23:59:16 INFO mapred.JobClient:     SPLIT_RAW_BYTES=120
-12/12/15 23:59:16 INFO mapred.JobClient:     Reduce input records=1
-12/12/15 23:59:16 INFO mapred.JobClient:     Reduce input groups=1
-12/12/15 23:59:16 INFO mapred.JobClient:     Combine output records=1
-12/12/15 23:59:16 INFO mapred.JobClient:     Reduce output records=0
-12/12/15 23:59:16 INFO mapred.JobClient:     Map output records=12
-==>12
-gremlin> 
+==>result[hadoopgraph[kryoinputformat->kryooutputformat],memory[size:0]]
+gremlin>
+----
+
+[source,properties]
+----
+# hadoop-load.properties
+
+# Hadoop-Gremlin settings
+gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphInputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoInputFormat
+gremlin.hadoop.graphOutputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoOutputFormat
+gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
+gremlin.hadoop.inputLocation=data/grateful-dead-vertices.gio
+gremlin.hadoop.outputLocation=output
+gremlin.hadoop.deriveMemory=false
+gremlin.hadoop.jarsInDistributedCache=true
+
+# Giraph settings
+giraph.SplitMasterWorker=false
+giraph.minWorkers=1
+giraph.maxWorkers=1
+----
+
+[source,gremlin]
+----
+// grateful-dead-titan-schema.groovy
+
+// Open Titan and its ManagementSystem
+titanGraph = TitanFactory.open('conf/titan-cassandra.properties')
+schema = titanGraph.openManagement()
+// Vertex Labels
+schema.makeVertexLabel("song").make()
+schema.makeVertexLabel("artist").make()
+// Property Keys
+schema.makePropertyKey("songType").dataType(String.class).make()
+schema.makePropertyKey("performances").dataType(Integer.class).make()
+nameKey = schema.makePropertyKey("name").dataType(String.class).make()
+weightKey = schema.makePropertyKey("weight").dataType(Integer.class).make()
+// Edge Labels
+schema.makeEdgeLabel("sungBy").make()
+schema.makeEdgeLabel("writtenBy").make()
+followedLabel = schema.makeEdgeLabel("followedBy").make()
+// Indices
+schema.buildIndex("verticesByName", Vertex.class).addKey(nameKey).unique().buildCompositeIndex()
+schema.buildEdgeIndex(followedLabel, "followsByWeight", Direction.BOTH, Order.decr, weightKey)
+// Commit schemata and release resources
+schema.commit()
+titanGraph.close()
+----
+
+Running PageRank
+~~~~~~~~~~~~~~~~
+
+[source,gremlin]
+----
+gremlin> g = GraphFactory.open('conf/run-pagerank.properties')
+==>hadoopgraph[cassandrainputformat->kryooutputformat]
+gremlin> r = g.compute().program(PageRankVertexProgram.build().create()).submit().get()
+INFO  com.tinkerpop.gremlin.hadoop.process.computer.giraph.GiraphGraphComputer  - HadoopGremlin(Giraph): PageRankVertexProgram[alpha=0.85,iterations=30]
+...
+==>result[hadoopgraph[cassandrainputformat->kryooutputformat],memory[size:0]]
+gremlin>
+----
+
+[source,properties]
+----
+# run-pagerank.properties
+
+# Hadoop-Gremlin settings
+gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphInputFormat=com.thinkaurelius.titan.hadoop.formats.cassandra.CassandraInputFormat
+gremlin.hadoop.graphOutputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoOutputFormat
+gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
+gremlin.hadoop.inputLocation=.
+gremlin.hadoop.outputLocation=output
+gremlin.hadoop.deriveMemory=true
+gremlin.hadoop.jarsInDistributedCache=true
+
+input.conf.storage.backend=cassandra
+cassandra.input.partitioner.class=org.apache.cassandra.dht.Murmur3Partitioner
+
+# Giraph settings
+giraph.SplitMasterWorker=false
+giraph.minWorkers=1
+giraph.maxWorkers=1
+----
+
+Reading vertices and printing ranks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,gremlin]
+----
+gremlin> g = GraphFactory.open('conf/read-pagerank-results.properties')
+==>hadoopgraph[kryoinputformat->nulloutputformat]
+gremlin> g.V().map{[it.get().value('name'), it.get().value(PageRankVertexProgram.PAGE_RANK)]}
+==>[BIG BOSS MAN, 0.612518225466592]
+==>[WEATHER REPORT SUITE, 0.7317693791428082]
+==>[HELL IN A BUCKET, 1.6428823764685747]
+...
+==>[Medley_Russell, 0.21375000000000002]
+==>[F_&_B_Bryant, 0.21375000000000002]
+==>[Johnny_Otis, 0.1786280514597559]
+gremlin>
+----
+
+[source,properties]
+----
+# read-pagerank-results.properties
+# Hadoop-Gremlin settings
+gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphInputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoInputFormat
+gremlin.hadoop.graphOutputFormat=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
+gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
+gremlin.hadoop.inputLocation=output/^g
+gremlin.hadoop.outputLocation=output
+gremlin.hadoop.deriveMemory=false
+gremlin.hadoop.jarsInDistributedCache=true
+
+# Giraph settings
+giraph.SplitMasterWorker=false
+giraph.minWorkers=1
+giraph.maxWorkers=1
 ----

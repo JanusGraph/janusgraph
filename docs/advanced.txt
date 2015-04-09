@@ -8,7 +8,7 @@ include::eventualconsistency.txt[]
 
 include::recovery.txt[]
 
-//include::reindex.txt[]
+include::reindex.txt[]
 
 include::bulkloading.txt[]
 
@@ -16,9 +16,6 @@ include::bulkloading.txt[]
 
 include::partitioning.txt[]
 
-
-
 include::serializer.txt[]
 
-include::monitoring.txt[]
-
+include::hadoop.txt[]
