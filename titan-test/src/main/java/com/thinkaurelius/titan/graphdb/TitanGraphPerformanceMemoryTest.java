@@ -7,9 +7,11 @@ import static org.junit.Assert.assertTrue;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -121,7 +123,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                         TitanVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
                         assertCount(2, v.properties());
                         int count = 0;
-                        for (Edge e : v.bothE().toList()) {
+                        for (TitanEdge e : v.query().direction(Direction.BOTH).edges()) {
                             count++;
                             assertTrue(e.<Integer>value("time") >= 0);
                         }

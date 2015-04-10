@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Random;
 import java.util.concurrent.*;

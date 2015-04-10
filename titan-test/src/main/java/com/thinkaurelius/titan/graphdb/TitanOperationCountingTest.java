@@ -33,6 +33,7 @@ import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -185,7 +186,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             tx = graph.buildTransaction().groupName(metricsPrefix).start();
             v = getOnlyElement(tx.query().has("uid",1).vertices());
             assertEquals(1,v.<Integer>value("uid").intValue());
-            u = getOnlyElement(v.both("knows"));
+            u = getOnlyElement(v.query().direction(Direction.BOTH).labels("knows").vertices());
             e = getOnlyElement(u.query().direction(Direction.IN).labels("knows").edges());
             assertEquals("juju",u.value("name"));
             assertEquals("edge",e.value("name"));
@@ -382,7 +383,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         //Check no further locks on read all
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
         v = getV(tx,v);
-        for (VertexProperty p : v.properties().toList()) {
+        for (TitanVertexProperty p : v.query().properties()) {
             assertNotNull(p.value());
             assertNotNull(p.key());
         }
