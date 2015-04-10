@@ -35,6 +35,7 @@ import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
@@ -56,12 +57,18 @@ import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.structure.*;
+
 import static org.apache.tinkerpop.gremlin.structure.Direction.*;
 import static org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality.*;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -665,7 +672,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(v, (Vertex)getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices()));
         v = getOnlyVertex(tx.query().has("uid",Cmp.EQUAL,"v1"));
         v12 = getOnlyVertex(tx.query().has("uid", Cmp.EQUAL, "v12"));
-        v13 = getOnlyVertex(tx.query().has("uid",Cmp.EQUAL,"v13"));
+        v13 = getOnlyVertex(tx.query().has("uid", Cmp.EQUAL, "v13"));
         try {
             //Invalid data type
             v.property("weight", "x");
@@ -3150,7 +3157,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(numEdges - 1, parentVertex.query().direction(Direction.OUT).edges());
     }
 
-    // TODO this can be rewritten without TP3 traversal types, but then much of its unique value is lost
     @Test
     public void testTinkerPopOptimizationStrategies() {
         PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
@@ -3182,40 +3188,43 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
         }
 
-        assertNumStep(numV/5, 1, sv[0].outE("knows").has("weight",1), TitanVertexStep.class);
-        assertNumStep(numV, 1, sv[0].outE("knows"), TitanVertexStep.class);
-        assertNumStep(numV, 1, sv[0].out("knows"), TitanVertexStep.class);
-        assertNumStep(10, 1, sv[0].local(__.outE("knows").limit(10)), TitanVertexStep.class);
-        assertNumStep(10, 1, sv[0].local(__.outE("knows").range(10, 20)), LocalStep.class);
-        assertNumStep(numV, 2, sv[0].outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderStep.class);
-        assertNumStep(10, 1, sv[0].local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
-        assertNumStep(numV/5, 2, sv[0].outE("knows").has("weight").order().by("weight", incr).has("weight", 1), TitanVertexStep.class, OrderStep.class);
-        assertNumStep(10, 1, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).limit(10)), TitanVertexStep.class);
-        assertNumStep(5, 1, sv[0].local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).range(10, 15)), LocalStep.class);
+        GraphTraversalSource gts = graph.traversal();
+
+        assertNumStep(numV/5, 1, gts.V(sv[0]).outE("knows").has("weight",1), TitanVertexStep.class);
+        assertNumStep(numV, 1, gts.V(sv[0]).outE("knows"), TitanVertexStep.class);
+        assertNumStep(numV, 1, gts.V(sv[0]).out("knows"), TitanVertexStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").limit(10)), TitanVertexStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").range(10, 20)), LocalStep.class);
+        assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderGlobalStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
+        assertNumStep(numV/5, 2, gts.V(sv[0]).outE("knows").has("weight").order().by("weight", incr).has("weight", 1), TitanVertexStep.class, OrderGlobalStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).limit(10)), TitanVertexStep.class);
+        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight").order().by("weight", incr).has("weight", 1).range(10, 15)), LocalStep.class);
 
         //Global graph queries
-        assertNumStep(1, 1, graph.V().has("id", numV / 5), TitanGraphStep.class);
-        assertNumStep(1, 1, graph.V().has("id", numV / 5).has("weight", (numV / 5) % 5), TitanGraphStep.class);
-        assertNumStep(numV / 5, 1, graph.V().has("weight", 1), TitanGraphStep.class);
-        assertNumStep(10, 1, graph.V().has("weight", 1).range(0, 10), TitanGraphStep.class);
+        assertNumStep(1, 1, gts.V().has("id", numV / 5), TitanGraphStep.class);
+        assertNumStep(1, 1, gts.V().has("id", numV / 5).has("weight", (numV / 5) % 5), TitanGraphStep.class);
+        assertNumStep(numV / 5, 1, gts.V().has("weight", 1), TitanGraphStep.class);
+        assertNumStep(10, 1, gts.V().has("weight", 1).range(0, 10), TitanGraphStep.class);
 
-        assertNumStep(superV, 1, graph.V().has("id",sid), TitanGraphStep.class);
+        assertNumStep(superV, 1, gts.V().has("id",sid), TitanGraphStep.class);
 
-        assertNumStep(superV*(numV/5), 2, graph.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*(numV/5*2), 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", Compare.inside, ImmutableList.of(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.inside, ImmutableList.of(1, 3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.inside, ImmutableList.of(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
         clopen(option(USE_MULTIQUERY),true);
+        gts = graph.traversal();
 
-        assertNumStep(superV*(numV/5), 2, graph.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*(numV/5*2), 2, graph.V().has("id",sid).outE("knows").between("weight", 1, 3), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, graph.V().has("id", sid).local(__.outE("knows").between("weight", 1, 3).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5), 2, gts.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", Compare.inside, ImmutableList.of(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.inside, ImmutableList.of(1, 3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.inside, ImmutableList.of(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
     }
 
-    private static void assertNumStep(int expectedResults, int expectedSteps, Traversal traversal, Class<? extends Step>... expectedStepTypes) {
+    private static void assertNumStep(int expectedResults, int expectedSteps, GraphTraversal traversal, Class<? extends Step>... expectedStepTypes) {
         int num = 0;
         while (traversal.hasNext()) {
             traversal.next();
