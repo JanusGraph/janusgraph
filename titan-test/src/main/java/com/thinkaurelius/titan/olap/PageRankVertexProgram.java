@@ -1,18 +1,20 @@
 package com.thinkaurelius.titan.olap;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.StreamFactory;
 import org.apache.commons.configuration.Configuration;
 
 import java.util.Set;
 
-import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 /**
  * This implementation is only intended for testing.
@@ -75,13 +77,13 @@ public class PageRankVertexProgram extends StaticVertexProgram<Double> {
         } else if (1 == memory.getIteration()) {
             double initialPageRank = 1D / vertexCount;
             double edgeCount = StreamFactory.stream(messenger.receiveMessages(inE)).reduce(0D, (a, b) -> a + b);
-            vertex.property(VertexProperty.Cardinality.single, PAGE_RANK,  initialPageRank);
-            vertex.property(VertexProperty.Cardinality.single, OUTGOING_EDGE_COUNT,  edgeCount);
+            vertex.property(VertexProperty.Cardinality.single, PAGE_RANK, initialPageRank);
+            vertex.property(VertexProperty.Cardinality.single, OUTGOING_EDGE_COUNT, edgeCount);
             messenger.sendMessage(outE, initialPageRank / edgeCount);
         } else {
             double newPageRank = StreamFactory.stream(messenger.receiveMessages(outE)).reduce(0D, (a, b) -> a + b);
             newPageRank =  (dampingFactor * newPageRank) + ((1D - dampingFactor) / vertexCount);
-            vertex.property(VertexProperty.Cardinality.single, PAGE_RANK,  newPageRank);
+            vertex.property(VertexProperty.Cardinality.single, PAGE_RANK, newPageRank);
             messenger.sendMessage(outE, newPageRank / vertex.<Double>value(OUTGOING_EDGE_COUNT));
         }
     }
@@ -94,6 +96,16 @@ public class PageRankVertexProgram extends StaticVertexProgram<Double> {
     @Override
     public Set<MessageScope> getMessageScopes(Memory memory) {
         return ImmutableSet.of(outE, inE);
+    }
+
+    @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.ORIGINAL;
+    }
+
+    @Override
+    public GraphComputer.Persist getPreferredPersist() {
+        return GraphComputer.Persist.VERTEX_PROPERTIES;
     }
 
     @Override

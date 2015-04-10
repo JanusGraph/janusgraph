@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.olap;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -12,13 +12,12 @@ import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
-import org.apache.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.StreamFactory;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.*;
+
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -65,7 +65,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         mgmt.makePropertyKey("numvals").dataType(Integer.class).make();
         finishSchema();
         int numE = 0;
-        Vertex[] vs = new Vertex[numV];
+        TitanVertex[] vs = new TitanVertex[numV];
         for (int i=0;i<numV;i++) {
             vs[i] = tx.addVertex("uid",i+1);
             int numVals = random.nextInt(5)+1;
@@ -99,9 +99,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
             @Override
             public void process(TitanVertex vertex, ScanMetrics metrics) {
-                long outDegree = vertex.outE("knows").count().next();
-                assertEquals(0,vertex.inE("knows").count().next().longValue());
-                assertEquals(1, vertex.properties("uid").count().next().longValue());
+                long outDegree = vertex.query().labels("knows").direction(Direction.OUT).count();
+                assertEquals(0, vertex.query().labels("knows").direction(Direction.IN).count());
+                assertEquals(1, vertex.query().labels("uid").propertyCount());
                 assertTrue(vertex.<Integer>property("uid").orElse(0) > 0);
                 metrics.incrementCustom(DEGREE_COUNT,outDegree);
                 metrics.incrementCustom(VERTEX_COUNT);
@@ -124,9 +124,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             @Override
             public void process(TitanVertex vertex, ScanMetrics metrics) {
                 metrics.incrementCustom(VERTEX_COUNT);
-                assertEquals(1,vertex.properties("numvals").count().next().longValue());
+                assertEquals(1 ,vertex.query().labels("numvals").propertyCount());
                 int numvals = vertex.value("numvals");
-                assertEquals(numvals,vertex.properties("values").count().next().longValue());
+                assertEquals(numvals, vertex.query().labels("values").propertyCount());
             }
 
             @Override
@@ -166,15 +166,15 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertNotNull(v3);
         v1 = getV(xx, v1id);
         assertNotNull(v1);
-        v3.property("name","deleted");
-        v3.addEdge("knows",v1);
+        v3.property("name", "deleted");
+        v3.addEdge("knows", v1);
         xx.commit();
 
         newTx();
         assertNull(getV(tx,v3id));
         v1 = getV(tx, v1id);
         assertNotNull(v1);
-        assertEquals(v3id,v1.in("knows").next().id());
+        assertEquals(v3id,v1.query().direction(Direction.IN).labels("knows").vertices().iterator().next().longId());
         tx.commit();
         mgmt.commit();
 
@@ -219,6 +219,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
+        // TODO does this iteration over TitanGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
         for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
             final TitanGraphComputer computer = graph.compute();
             computer.resultMode(mode);
@@ -228,18 +229,21 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
             assertEquals(2,result.memory().getIteration());
 
-            Graph gview = null;
+            TitanGraphTransaction gview = null;
             switch (mode) {
-                case LOCALTX: gview = result.graph(); break;
+                case LOCALTX: gview = (TitanGraph) result.graph(); break;
                 case PERSIST: newTx(); gview = tx; break;
                 case NONE: break;
                 default: throw new AssertionError(mode);
             }
             if (gview == null) continue;
 
-            for (Vertex v : gview.V().toList()) {
+            for (TitanVertex v : gview.query().vertices()) {
                 long degree2 = ((Integer)v.value(DegreeCounter.DEGREE)).longValue();
-                long actualDegree2 = v.out().out().count().next();
+                long actualDegree2 = 0;
+                for (TitanVertex w : v.query().direction(Direction.OUT).vertices()) {
+                    actualDegree2 += Iterables.size(w.query().direction(Direction.OUT).vertices());
+                }
                 assertEquals(actualDegree2,degree2);
             }
             if (mode== TitanGraphComputer.ResultMode.LOCALTX) {
@@ -253,7 +257,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         public static final String DEGREE = "degree";
         public static final MessageCombiner<Integer> ADDITION = (a,b) -> a+b;
-        public static final MessageScope.Local<Integer> DEG_MSG = MessageScope.Local.of(AnonymousGraphTraversal.Tokens.__::inE);
+        public static final MessageScope.Local<Integer> DEG_MSG = MessageScope.Local.of(__::inE);
 
         private final int length;
 
@@ -277,7 +281,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 messenger.sendMessage(DEG_MSG, 1);
             } else {
                 int degree = StreamFactory.stream(messenger.receiveMessages(DEG_MSG)).reduce(0, (a, b) -> a + b);
-                vertex.property(VertexProperty.Cardinality.single, DEGREE,  degree);
+                vertex.property(VertexProperty.Cardinality.single, DEGREE, degree);
                 if (memory.getIteration()<length) messenger.sendMessage(DEG_MSG, degree);
             }
         }
@@ -301,6 +305,18 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         public Set<MessageScope> getMessageScopes(Memory memory) {
             if (memory.getIteration()<length) return ImmutableSet.of((MessageScope)DEG_MSG);
             else return Collections.EMPTY_SET;
+        }
+
+        // TODO i'm not sure these preferences are correct
+
+        @Override
+        public GraphComputer.ResultGraph getPreferredResultGraph() {
+            return GraphComputer.ResultGraph.NEW;
+        }
+
+        @Override
+        public GraphComputer.Persist getPreferredPersist() {
+            return GraphComputer.Persist.VERTEX_PROPERTIES;
         }
 
         @Override
@@ -425,7 +441,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         double correctPRSum = 0;
-        Iterator<Vertex> iv = tx.query().vertices();
+        Iterator<TitanVertex> iv = tx.query().vertices().iterator();
         while (iv.hasNext()) {
             correctPRSum += correctPR[iv.next().<Integer>value("distance")];
         }
@@ -482,8 +498,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertCount(numV,tx.query().vertices());
         assertCount(numE,tx.query().edges());
 
-        log.debug("seed inE count: {}", vertex.inE().count().next());
-        log.debug("seed outE count: {}", vertex.outE().count().next());
+        log.debug("seed inE count: {}", vertex.query().direction(Direction.IN).count());
+        log.debug("seed outE count: {}", vertex.query().direction(Direction.OUT).count());
 
         clopen();
 

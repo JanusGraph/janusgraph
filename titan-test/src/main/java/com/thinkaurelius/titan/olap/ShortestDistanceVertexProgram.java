@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.olap;
 
-import org.apache.tinkerpop.gremlin.process.Traversal;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -19,11 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal.Tokens.__;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
@@ -91,6 +93,16 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     }
 
     @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.ORIGINAL;
+    }
+
+    @Override
+    public GraphComputer.Persist getPreferredPersist() {
+        return GraphComputer.Persist.VERTEX_PROPERTIES;
+    }
+
+    @Override
     public void setup(final Memory memory) {
 
     }
@@ -106,7 +118,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
                 messenger.sendMessage(incidentMessageScope, 0L);
             }
         } else {
-            Iterable<Long> distances = messenger.receiveMessages(incidentMessageScope);
+            Iterator<Long> distances = messenger.receiveMessages(incidentMessageScope);
 
             // Find minimum distance among all incoming messages, or null if no messages came in
             Long shortestDistanceSeenOnThisIteration =
