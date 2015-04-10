@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.*;
 
 import static org.junit.Assert.*;
@@ -48,7 +49,7 @@ public class SerializerGraphConfiguration {
         tx.commit();
 
         tx = graph.newTransaction();
-        v = (Vertex)tx.V().has("time",5).next();
+        v = tx.query().has("time",5).vertices().iterator().next();
         assertEquals(5.0, v.<Precision>value("any").doubleValue(),0.0);
         tx.rollback();
 
