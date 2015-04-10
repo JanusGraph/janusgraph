@@ -132,7 +132,7 @@ launch_service()
 args=`getopt fhp:bD: "$@"`
 eval set -- "$args"
 
-classname="com.tinkerpop.rexster.Application"
+classname="org.apache.tinkerpop.rexster.Application"
 while true; do
     case "$1" in
         -p)

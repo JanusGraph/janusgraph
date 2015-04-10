@@ -46,7 +46,7 @@ while getopts "elv" opt; do
 	   SCRIPT_DEBUG=y
        fi
        ;;
-    v) MAIN_CLASS=com.tinkerpop.gremlin.Version
+    v) MAIN_CLASS=org.apache.tinkerpop.gremlin.util.Gremlin
     esac
 done
 

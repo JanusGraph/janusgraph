@@ -43,7 +43,7 @@ fi
 set -x
 if [ "$1" = "-i" ]; then
   shift
-  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.server.util.GremlinServerInstall "$@"
+  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH org.apache.tinkerpop.gremlin.server.util.GremlinServerInstall "$@"
 else
-  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH com.tinkerpop.gremlin.server.GremlinServer "$@"
+  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH org.apache.tinkerpop.gremlin.server.GremlinServer "$@"
 fi

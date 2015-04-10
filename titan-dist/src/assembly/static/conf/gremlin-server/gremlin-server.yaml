@@ -4,7 +4,7 @@ threadPoolWorker: 1
 gremlinPool: 8
 scriptEvaluationTimeout: 30000
 serializedResponseTimeout: 30000
-channelizer: com.tinkerpop.gremlin.server.channel.WebSocketChannelizer
+channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
 graphs: {
   g: conf/gremlin-server/titan-berkeleyje-server.properties}
 plugins:
@@ -17,12 +17,12 @@ scriptEngines: {
       imports: [java.lang.Math],
       staticImports: [java.lang.Math.PI]}}
 serializers:
-  - { className: com.tinkerpop.gremlin.driver.ser.KryoMessageSerializerV1d0 }
-  - { className: com.tinkerpop.gremlin.driver.ser.KryoMessageSerializerV1d0, config: { serializeResultToString: true }}
-  - { className: com.tinkerpop.gremlin.driver.ser.JsonMessageSerializerGremlinV1d0 }
-  - { className: com.tinkerpop.gremlin.driver.ser.JsonMessageSerializerV1d0 }
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.KryoMessageSerializerV1d0 }
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.KryoMessageSerializerV1d0, config: { serializeResultToString: true }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.JsonMessageSerializerGremlinV1d0 }
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.JsonMessageSerializerV1d0 }
 processors:
-  - { className: com.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: { sessionTimeout: 28800000 }}
+  - { className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: { sessionTimeout: 28800000 }}
 metrics: {
   consoleReporter: {enabled: true, interval: 180000},
   csvReporter: {enabled: true, interval: 180000, fileName: /tmp/gremlin-server-metrics.csv},
