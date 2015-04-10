@@ -28,11 +28,12 @@ import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
+import static com.thinkaurelius.titan.testutil.TitanAssert.*;
 import static org.junit.Assert.*;
 
 /**
@@ -109,8 +110,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         for (int i = 0; i < numG; i++) {
             TitanVertex g = tx.addVertex("group");
-            g.property(VertexProperty.Cardinality.single, "gid",  i);
-            g.property(VertexProperty.Cardinality.single, "sig",  0);
+            g.property(VertexProperty.Cardinality.single, "gid", i);
+            g.property(VertexProperty.Cardinality.single, "sig", 0);
             for (String n : names) {
                 g.property("name", n);
             }
@@ -131,8 +132,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         for (int i = 0; i < numG; i++) {
             TitanVertex g = getV(tx,gids[i]);
             assertCount(1,g.query().direction(Direction.BOTH).labels("one").edges());
-            assertCount(1, g.toE(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
-            assertCount(0, g.toE(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
+            assertCount(1, g.edges(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
+            assertCount(0, g.edges(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
             if (i>0) {
                 assertCount(1,g.query().direction(Direction.OUT).labels("base").edges());
             } else {
@@ -149,7 +150,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertEquals(idManager.getCanonicalVertexId(gId),gId);
             TitanVertex g = getV(tx,gId);
             final int canonicalPartition = getPartitionID(g,idManager);
-            assertEquals(g,(Vertex)getOnlyElement(tx.query().has("gid",i).vertices()));
+            assertEquals(g,(Vertex)getOnlyElement(tx.query().has("gid", i).vertices()));
             assertEquals(i,g.<Integer>value("gid").intValue());
             assertCount(names.size(),g.properties("name"));
 
@@ -157,16 +158,16 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             TitanVertexProperty p = (TitanVertexProperty)getOnlyElement(g.properties("gid"));
             assertEquals(canonicalPartition,getPartitionID(p,idManager));
             Set<Integer> propPartitions = Sets.newHashSet();
-            for (VertexProperty n : g.properties("name").toList()) {
-                propPartitions.add(getPartitionID((TitanVertex)n.element(),idManager));
+            for (Iterator<VertexProperty<Object>> niter = g.properties("name"); niter.hasNext();) {
+                propPartitions.add(getPartitionID((TitanVertex)niter.next().element(),idManager));
             }
             //Verify spread across partitions; this number is a pessimistic lower bound but might fail since it is probabilistic
             assertTrue(propPartitions.size()>=3);
 
             //Copied from above
             assertCount(1, g.query().direction(Direction.BOTH).labels("one").edges());
-            assertCount(1, g.toE(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
-            assertCount(0, g.toE(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
+            assertCount(1, g.edges(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
+            assertCount(0, g.edges(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
             if (i>0) {
                 assertCount(1, g.query().direction(Direction.OUT).labels("base").edges());
             } else {
@@ -187,7 +188,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             TitanVertex[] vs = new TitanVertex[vPerTx];
             for (int vi=0;vi<vPerTx;vi++) {
                 vs[vi] = tx.addVertex("person");
-                vs[vi].property(VertexProperty.Cardinality.single, "sig",  t);
+                vs[vi].property(VertexProperty.Cardinality.single, "sig", t);
                 Edge e = vs[vi].addEdge("knows",g1);
                 e.property("sig", t);
                 e = g1.addEdge("knows",vs[vi]);
@@ -255,7 +256,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             g1 = getV(tx2,gids[0]);
             assertEquals(0, g1.<Integer>value("gid").intValue());
             assertEquals("group", g1.label());
-            assertTrue(names.size() >= g1.properties("name").count().next());
+            assertTrue(names.size() >= size(g1.properties("name")));
             assertCount(numV, g1.query().direction(Direction.OUT).labels("knows").edges());
             assertCount(numV, g1.query().direction(Direction.IN).labels("knows").edges());
             assertCount(numV * 2, g1.query().direction(Direction.BOTH).labels("knows").edges());

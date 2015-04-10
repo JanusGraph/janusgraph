@@ -663,9 +663,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // ######### INSPECTION & FAILURE ############
         assertEquals(v, (Vertex)getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices()));
-        v = getOnlyElement(tx.query().has("uid",Cmp.EQUAL,"v1").vertices());
-        v12 = getOnlyElement(tx.query().has("uid",Cmp.EQUAL,"v12").vertices());
-        v13 = getOnlyElement(tx.query().has("uid",Cmp.EQUAL,"v13").vertices());
+        v = getOnlyVertex(tx.query().has("uid",Cmp.EQUAL,"v1"));
+        v12 = getOnlyVertex(tx.query().has("uid", Cmp.EQUAL, "v12"));
+        v13 = getOnlyVertex(tx.query().has("uid",Cmp.EQUAL,"v13"));
         try {
             //Invalid data type
             v.property("weight", "x");

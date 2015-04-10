@@ -23,7 +23,6 @@ import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
