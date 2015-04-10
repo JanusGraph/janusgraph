@@ -24,9 +24,8 @@ import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.*;
+import static org.apache.tinkerpop.gremlin.structure.Order.*;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,7 +46,7 @@ import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static com.thinkaurelius.titan.testutil.TitanAssert.assertEmpty;
 import static com.thinkaurelius.titan.testutil.TitanAssert.assertNotEmpty;
 import static org.junit.Assert.*;
-import static com.tinkerpop.gremlin.structure.Order.*;
+
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -118,8 +117,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     public static void assertGraphOfTheGods(TitanGraph gotg) {
         assertCount(12, gotg.query().vertices());
-        assertCount(3, gotg.query().has(T.label, "god").vertices());
-        TitanVertex h = getOnlyElement(gotg.query().has("name", "hercules").vertices());
+        assertCount(3, gotg.query().has(LABEL_NAME, "god").vertices());
+        TitanVertex h = getOnlyVertex(gotg.query().has("name", "hercules"));
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod",h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
@@ -138,24 +137,24 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         Edge e = v.addEdge("knows",v, "name","Hulu Bubab");
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.V().toList()) assertEquals("Marko Rodriguez",u.value("name"));
+        for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez",u.value("name"));
         clopen();
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.V().toList()) assertEquals("Marko Rodriguez",u.value("name"));
-        v = getOnlyElement(tx.query().has("name", Text.CONTAINS, "marko").vertices());
-        v.property(VertexProperty.Cardinality.single, "name",  "Marko");
-        e = getOnlyElement(v.query().direction(Direction.OUT).edges());
-        e.property("name","Tubu Rubu");
+        for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez",u.value("name"));
+        v = getOnlyVertex(tx.query().has("name", Text.CONTAINS, "marko"));
+        v.property(VertexProperty.Cardinality.single, "name", "Marko");
+        e = getOnlyEdge(v.query().direction(Direction.OUT));
+        e.property("name", "Tubu Rubu");
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Rubu").edges());
         assertCount(0, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.V().toList()) assertEquals("Marko",u.value("name"));
+        for (Vertex u : tx.getVertices()) assertEquals("Marko",u.value("name"));
         clopen();
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Rubu").edges());
         assertCount(0, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
-        for (Vertex u : tx.V().toList()) assertEquals("Marko",u.value("name"));
+        for (Vertex u : tx.getVertices()) assertEquals("Marko",u.value("name"));
     }
 
 
@@ -202,7 +201,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             v.property(VertexProperty.Cardinality.single, "text",  "Vertex " + words[i % words.length]);
             v.property(VertexProperty.Cardinality.single, "time",  i);
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
-            v.singleProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
+            v.property(VertexProperty.Cardinality.single, "location", Geoshape.point(0.0 + offset, 0.0 + offset));
 
             Edge e = v.addEdge("knows", getVertex("uid", Math.max(0, i - 1)));
             e.property("text", "Vertex " + words[i % words.length]);
@@ -220,39 +219,39 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             //Test ordering
             for (String orderKey : new String[]{"time", "category"}) {
                 for (Order order : Order.values()) {
-                    for (GraphTraversal<?,? extends Element> traversal : ImmutableList.of(
-                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP()),
-                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP())
+                    for (TitanGraphQuery traversal : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
                     )) {
-                        verifyElementOrder(traversal.toList(),orderKey,order,expectedSize);
+                        verifyElementOrder(traversal.vertices(),orderKey,order,expectedSize);
                     }
                 }
             }
         }
 
-        assertCount(3, tx.V().has("group", 3).order().by("time", incr).range(0,3));
-        assertCount(3, tx.E().has("group", 3).order().by("time", decr).range(0,3));
+        assertCount(3, tx.query().has("group", 3).orderBy("time", incr).limit(3).vertices());
+        assertCount(3, tx.query().has("group", 3).orderBy("time", decr).limit(3).edges());
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
-            assertCount(i, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
-            assertCount(i, tx.E().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
+            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices());
+            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges());
         }
 
         for (int i = 0; i < numV; i += 10) {
             offset = (i * 50.0 / originalNumV);
             distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).vertices()));
-            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).edges()));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices());
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges());
         }
 
         //Queries combining mixed and composite indexes
-        assertCount(4, tx.V().has("category", 1).between("time", 10, 28));
-        assertCount(4, tx.E().has("category", 1).between("time", 10, 28));
+        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).vertices());
+        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).edges());
 
-        assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
         offset = (19 * 50.0 / originalNumV);
         distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance).vertices()).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
 
         assertCount(numV, tx.query().vertices());
         assertCount(numV, tx.query().edges());
@@ -273,39 +272,39 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             //Test ordering
             for (String orderKey : new String[]{"time", "category"}) {
                 for (Order order : Order.values()) {
-                    for (GraphTraversal<?,? extends Element> traversal : ImmutableList.of(
-                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP()),
-                            tx.V().has("text", Text.CONTAINS, words[i]).order().by(orderKey, order.getTP())
+                    for (TitanGraphQuery traversal : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
                     )) {
-                        verifyElementOrder(traversal.toList(),orderKey,order,expectedSize);
+                        verifyElementOrder(traversal.vertices(),orderKey,order,expectedSize);
                     }
                 }
             }
         }
 
-        assertCount(3, tx.V().has("group", 3).order().by("time", incr).range(0,3));
-        assertCount(3, tx.E().has("group", 3).order().by("time", decr).range(0,3));
+        assertCount(3, tx.query().has("group", 3).orderBy("time", incr).limit(3).vertices());
+        assertCount(3, tx.query().has("group", 3).orderBy("time", decr).limit(3).edges());
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
-            assertCount(i, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
-            assertCount(i, tx.E().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
+            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices());
+            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges());
         }
 
         for (int i = 0; i < numV; i += 10) {
             offset = (i * 50.0 / originalNumV);
             distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).vertices()));
-            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).edges()));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices());
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges());
         }
 
         //Queries combining mixed and composite indexes
-        assertCount(4, tx.V().has("category", 1).between("time", 10, 28));
-        assertCount(4, tx.E().has("category", 1).between("time", 10, 28));
+        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).vertices());
+        assertCount(4, tx.query().has("category", 1).interval("time", 10, 28).edges());
 
-        assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
         offset = (19 * 50.0 / originalNumV);
         distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance).vertices()).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
 
         assertCount(numV, tx.query().vertices());
         assertCount(numV, tx.query().edges());
@@ -326,21 +325,21 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         }
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
-            assertCount(i, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
-            assertCount(i, tx.E().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i));
+            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices());
+            assertCount(i, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).edges());
         }
 
         for (int i = 0; i < numV; i += 10) {
             offset = (i * 50.0 / originalNumV);
             distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).vertices()));
-            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance).edges()));
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices());
+            assertCount(i + 1, tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges());
         }
 
-        assertCount(5, tx.V().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices());
         offset = (19 * 50.0 / originalNumV);
         distance = Geoshape.point(0.0, 0.0).getPoint().distance(Geoshape.point(offset, offset).getPoint()) + 20;
-        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance).vertices()).has("text", Text.CONTAINS, words[0]));
+        assertCount(5, tx.query().has("location", Geo.INTERSECT, Geoshape.circle(0.0, 0.0, distance)).has("text", Text.CONTAINS, words[0]).vertices());
 
         assertCount(numV, tx.query().vertices());
         assertCount(numV, tx.query().edges());
@@ -368,18 +367,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanVertex v2 = graph.addVertex();
         v2.property("visible", false);
 
-        assertEquals(2, graph.V().count().next().intValue());
-        assertEquals(v1, graph.V().has("visible", true).next());
-        assertEquals(v2, graph.V().has("visible", false).next());
-        assertEquals(v2, graph.V().has("visible", Compare.neq, true).next());
-        assertEquals(v1, graph.V().has("visible", Compare.neq, false).next());
+        assertCount(2, graph.vertices());
+        assertEquals(v1, getOnlyVertex(graph.query().has("visible", true)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("visible", false)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("visible", Cmp.NOT_EQUAL, true)));
+        assertEquals(v1, getOnlyVertex(graph.query().has("visible", Cmp.NOT_EQUAL, false)));
 
         clopen();//Flush the index
-        assertEquals(2, graph.V().count().next().intValue());
-        assertEquals(v1, graph.V().has("visible", true).next());
-        assertEquals(v2, graph.V().has("visible", false).next());
-        assertEquals(v2, graph.V().has("visible", Compare.neq, true).next());
-        assertEquals(v1, graph.V().has("visible", Compare.neq, false).next());
+        assertCount(2, graph.vertices());
+        assertEquals(v1, getOnlyVertex(graph.query().has("visible", true)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("visible", false)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("visible", Cmp.NOT_EQUAL, true)));
+        assertEquals(v1, getOnlyVertex(graph.query().has("visible", Cmp.NOT_EQUAL, false)));
     }
 
 
@@ -401,20 +400,20 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         v2.property("date", new Date(2000));
 
 
-        assertEquals(v1, graph.query().has("date", Cmp.EQUAL, new Date(1000).vertices()).next());
-        assertEquals(v2, graph.query().has("date", Cmp.GREATER_THAN, new Date(1000).vertices()).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000).vertices()).toSet());
-        assertEquals(v1, graph.query().has("date", Cmp.LESS_THAN, new Date(2000).vertices()).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000).vertices()).toSet());
-        assertEquals(v2, graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000).vertices()).next());
+        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.EQUAL, new Date(1000))));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.GREATER_THAN, new Date(1000))));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).vertices()));
+        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.LESS_THAN, new Date(2000))));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).vertices()));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000))));
 
         clopen();//Flush the index
-        assertEquals(v1, graph.query().has("date", Cmp.EQUAL, new Date(1000).vertices()).next());
-        assertEquals(v2, graph.query().has("date", Cmp.GREATER_THAN, new Date(1000).vertices()).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000).vertices()).toSet());
-        assertEquals(v1, graph.query().has("date", Cmp.LESS_THAN, new Date(2000).vertices()).next());
-        assertEquals(Sets.newHashSet(v1, v2), graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000).vertices()).toSet());
-        assertEquals(v2, graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000).vertices()).next());
+        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.EQUAL, new Date(1000))));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.GREATER_THAN, new Date(1000))));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).vertices()));
+        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.LESS_THAN, new Date(2000))));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).vertices()));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000))));
 
 
     }
@@ -440,20 +439,20 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanVertex v2 = graph.addVertex();
         v2.property("uid", uid2);
 
-        assertEquals(2, graph.V().count().next().intValue());
-        assertEquals(v1, graph.V().has("uid", uid1).next());
-        assertEquals(v2, graph.V().has("uid", uid2).next());
+        assertCount(2, graph.query().vertices());
+        assertEquals(v1, getOnlyVertex(graph.query().has("uid", uid1)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("uid", uid2)));
 
-        assertEquals(v2, graph.V().has("uid", Compare.neq, uid1).next());
-        assertEquals(v1, graph.V().has("uid", Compare.neq, uid2).next());
+        assertEquals(v2, getOnlyVertex(graph.query().has("uid", Cmp.NOT_EQUAL, uid1)));
+        assertEquals(v1, getOnlyVertex(graph.query().has("uid", Cmp.NOT_EQUAL, uid2)));
 
         clopen();//Flush the index
-        assertEquals(2, graph.V().count().next().intValue());
-        assertEquals(v1, graph.V().has("uid", uid1).next());
-        assertEquals(v2, graph.V().has("uid", uid2).next());
+        assertCount(2, graph.query().vertices());
+        assertEquals(v1, getOnlyVertex(graph.query().has("uid", uid1)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("uid", uid2)));
 
-        assertEquals(v2, graph.V().has("uid", Compare.neq, uid1).next());
-        assertEquals(v1, graph.V().has("uid", Compare.neq, uid2).next());
+        assertEquals(v2, getOnlyVertex(graph.query().has("uid", Cmp.NOT_EQUAL, uid1)));
+        assertEquals(v1, getOnlyVertex(graph.query().has("uid", Cmp.NOT_EQUAL, uid2)));
 
     }
 
@@ -481,7 +480,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         // ########### INSPECTION & FAILURE ##############
         assertTrue(mgmt.containsGraphIndex("index1"));
         assertFalse(mgmt.containsGraphIndex("index"));
-        assertEquals(3,Iterables.size(mgmt.getGraphIndexes(Vertex.class)));
+        assertCount(3, mgmt.getGraphIndexes(Vertex.class));
         assertNull(mgmt.getGraphIndex("indexx"));
 
         name = mgmt.getPropertyKey("name");
@@ -524,7 +523,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         // ########### INSPECTION & FAILURE (copied from above) ##############
         assertTrue(mgmt.containsGraphIndex("index1"));
         assertFalse(mgmt.containsGraphIndex("index"));
-        assertEquals(3,Iterables.size(mgmt.getGraphIndexes(Vertex.class)));
+        assertCount(3, mgmt.getGraphIndexes(Vertex.class));
         assertNull(mgmt.getGraphIndex("indexx"));
 
         name = mgmt.getPropertyKey("name");
@@ -745,57 +744,57 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public void testIndexParameters() {
         int numV = 1000;
         String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
-        setupChainGraph(numV,strs,false);
+        setupChainGraph(numV, strs, false);
 
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
-                ElementCategory.VERTEX,numV/strs.length*2,new boolean[]{true,true},VINDEX);
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").vertices()));
-        evaluateQuery(graph.query().has("text",Text.CONTAINS_PREFIX,"beauti"),
-                ElementCategory.VERTEX,numV/strs.length,new boolean[]{true,true},VINDEX);
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS_REGEX,"be[r]+y").vertices()));
-        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).vertices()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).vertices()));
-        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").vertices()));
+        evaluateQuery(graph.query().has("text", Text.CONTAINS, "ducks"),
+                ElementCategory.VERTEX, numV / strs.length * 2, new boolean[]{true, true}, VINDEX);
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "ducks").vertices());
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "farm").vertices());
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS, "beautiful").vertices());
+        evaluateQuery(graph.query().has("text", Text.CONTAINS_PREFIX, "beauti"),
+                ElementCategory.VERTEX, numV / strs.length, new boolean[]{true, true}, VINDEX);
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS_REGEX, "be[r]+y").vertices());
+        assertCount(0, graph.query().has("text", Text.CONTAINS, "lolipop").vertices());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).vertices());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).vertices());
+        assertCount(numV / strs.length * (strs.length - 1), graph.query().has("name", Cmp.NOT_EQUAL, strs[2]).vertices());
+        assertCount(0, graph.query().has("name", Cmp.EQUAL, "farm").vertices());
+        assertCount(numV / strs.length, graph.query().has("name", Text.PREFIX, "ducks").vertices());
+        assertCount(numV / strs.length * 2, graph.query().has("name", Text.REGEX, "(.*)ducks(.*)").vertices());
 
         //Same queries for edges
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
-                ElementCategory.EDGE,numV/strs.length*2,new boolean[]{true,true},EINDEX);
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").edges()));
-        evaluateQuery(graph.query().has("text",Text.CONTAINS_PREFIX,"beauti"),
-                ElementCategory.EDGE,numV/strs.length,new boolean[]{true,true},EINDEX);
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS_REGEX,"be[r]+y").edges()));
-        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).edges()));
-        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").edges()));
+        evaluateQuery(graph.query().has("text", Text.CONTAINS, "ducks"),
+                ElementCategory.EDGE, numV / strs.length * 2, new boolean[]{true, true}, EINDEX);
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "ducks").edges());
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "farm").edges());
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS, "beautiful").edges());
+        evaluateQuery(graph.query().has("text", Text.CONTAINS_PREFIX, "beauti"),
+                ElementCategory.EDGE, numV / strs.length, new boolean[]{true, true}, EINDEX);
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS_REGEX, "be[r]+y").edges());
+        assertCount(0, graph.query().has("text", Text.CONTAINS, "lolipop").edges());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).edges());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).edges());
+        assertCount(numV / strs.length * (strs.length - 1), graph.query().has("name", Cmp.NOT_EQUAL, strs[2]).edges());
+        assertCount(0, graph.query().has("name", Cmp.EQUAL, "farm").edges());
+        assertCount(numV / strs.length, graph.query().has("name", Text.PREFIX, "ducks").edges());
+        assertCount(numV / strs.length * 2, graph.query().has("name", Text.REGEX, "(.*)ducks(.*)").edges());
 
         //Same queries for properties
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
-                ElementCategory.PROPERTY,numV/strs.length*2,new boolean[]{true,true},PINDEX);
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").properties()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").properties()));
-        evaluateQuery(graph.query().has("text",Text.CONTAINS_PREFIX,"beauti"),
-                ElementCategory.PROPERTY,numV/strs.length,new boolean[]{true,true},PINDEX);
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS_REGEX,"be[r]+y").properties()));
-        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has(LABEL_NAME,"uid").has("name",Cmp.NOT_EQUAL,strs[2]).properties()));
-        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").properties()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").properties()));
+        evaluateQuery(graph.query().has("text", Text.CONTAINS, "ducks"),
+                ElementCategory.PROPERTY, numV / strs.length * 2, new boolean[]{true, true}, PINDEX);
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "ducks").properties());
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "farm").properties());
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS, "beautiful").properties());
+        evaluateQuery(graph.query().has("text", Text.CONTAINS_PREFIX, "beauti"),
+                ElementCategory.PROPERTY, numV / strs.length, new boolean[]{true, true}, PINDEX);
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS_REGEX, "be[r]+y").properties());
+        assertCount(0, graph.query().has("text", Text.CONTAINS, "lolipop").properties());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).properties());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).properties());
+        assertCount(numV / strs.length * (strs.length - 1), graph.query().has(LABEL_NAME, "uid").has("name", Cmp.NOT_EQUAL, strs[2]).properties());
+        assertCount(0, graph.query().has("name", Cmp.EQUAL, "farm").properties());
+        assertCount(numV / strs.length, graph.query().has("name", Text.PREFIX, "ducks").properties());
+        assertCount(numV / strs.length * 2, graph.query().has("name", Text.REGEX, "(.*)ducks(.*)").properties());
 
 
         clopen();
@@ -804,58 +803,58 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
                 ElementCategory.VERTEX,numV/strs.length*2,new boolean[]{true,true},VINDEX);
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").vertices()));
-        evaluateQuery(graph.query().has("text",Text.CONTAINS_PREFIX,"beauti"),
-                ElementCategory.VERTEX,numV/strs.length,new boolean[]{true,true},VINDEX);
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS_REGEX,"be[r]+y").vertices()));
-        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).vertices()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).vertices()));
-        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").vertices()));
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "ducks").vertices());
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "farm").vertices());
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS, "beautiful").vertices());
+        evaluateQuery(graph.query().has("text", Text.CONTAINS_PREFIX, "beauti"),
+                ElementCategory.VERTEX, numV / strs.length, new boolean[]{true, true}, VINDEX);
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS_REGEX, "be[r]+y").vertices());
+        assertCount(0, graph.query().has("text", Text.CONTAINS, "lolipop").vertices());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).vertices());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).vertices());
+        assertCount(numV / strs.length * (strs.length - 1), graph.query().has("name", Cmp.NOT_EQUAL, strs[2]).vertices());
+        assertCount(0, graph.query().has("name", Cmp.EQUAL, "farm").vertices());
+        assertCount(numV / strs.length, graph.query().has("name", Text.PREFIX, "ducks").vertices());
+        assertCount(numV / strs.length * 2, graph.query().has("name", Text.REGEX, "(.*)ducks(.*)").vertices());
 
         //Same queries for edges
         evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
                 ElementCategory.EDGE,numV/strs.length*2,new boolean[]{true,true},EINDEX);
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").edges()));
-        evaluateQuery(graph.query().has("text",Text.CONTAINS_PREFIX,"beauti"),
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "ducks").edges());
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "farm").edges());
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS, "beautiful").edges());
+        evaluateQuery(graph.query().has("text", Text.CONTAINS_PREFIX, "beauti"),
                 ElementCategory.EDGE,numV/strs.length,new boolean[]{true,true},EINDEX);
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS_REGEX,"be[r]+y").edges()));
-        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).edges()));
-        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").edges()));
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS_REGEX, "be[r]+y").edges());
+        assertCount(0, graph.query().has("text", Text.CONTAINS, "lolipop").edges());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).edges());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).edges());
+        assertCount(numV / strs.length * (strs.length - 1), graph.query().has("name", Cmp.NOT_EQUAL, strs[2]).edges());
+        assertCount(0, graph.query().has("name", Cmp.EQUAL, "farm").edges());
+        assertCount(numV / strs.length, graph.query().has("name", Text.PREFIX, "ducks").edges());
+        assertCount(numV / strs.length * 2, graph.query().has("name", Text.REGEX, "(.*)ducks(.*)").edges());
 
         //Same queries for properties
-        evaluateQuery(graph.query().has("text",Text.CONTAINS,"ducks"),
-                ElementCategory.PROPERTY,numV/strs.length*2,new boolean[]{true,true},PINDEX);
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").properties()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").properties()));
+        evaluateQuery(graph.query().has("text", Text.CONTAINS, "ducks"),
+                ElementCategory.PROPERTY, numV / strs.length * 2, new boolean[]{true, true}, PINDEX);
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "ducks").properties());
+        assertCount(numV / strs.length * 2, graph.query().has("text", Text.CONTAINS, "farm").properties());
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS, "beautiful").properties());
         evaluateQuery(graph.query().has("text",Text.CONTAINS_PREFIX,"beauti"),
                 ElementCategory.PROPERTY,numV/strs.length,new boolean[]{true,true},PINDEX);
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS_REGEX,"be[r]+y").properties()));
-        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has(LABEL_NAME,"uid").has("name",Cmp.NOT_EQUAL,strs[2]).properties()));
-        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").properties()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").properties()));
+        assertCount(numV / strs.length, graph.query().has("text", Text.CONTAINS_REGEX, "be[r]+y").properties());
+        assertCount(0, graph.query().has("text", Text.CONTAINS, "lolipop").properties());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).properties());
+        assertCount(numV / strs.length, graph.query().has("name", Cmp.EQUAL, strs[1]).properties());
+        assertCount(numV / strs.length * (strs.length - 1), graph.query().has(LABEL_NAME, "uid").has("name", Cmp.NOT_EQUAL, strs[2]).properties());
+        assertCount(0, graph.query().has("name", Cmp.EQUAL, "farm").properties());
+        assertCount(numV / strs.length, graph.query().has("name", Text.PREFIX, "ducks").properties());
+        assertCount(numV / strs.length * 2, graph.query().has("name", Text.REGEX, "(.*)ducks(.*)").properties());
 
         //Test name mapping
         if (supportsLuceneStyleQueries()) {
-            assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "xtext:ducks").vertices()));
-            assertEquals(0, Iterables.size(graph.indexQuery(EINDEX, "xtext:ducks").edges()));
+            assertCount(numV / strs.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertices());
+            assertCount(0, graph.indexQuery(EINDEX, "xtext:ducks").edges());
         }
     }
 
@@ -871,44 +870,44 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         setupChainGraph(numV,strs,true);
         clopen();
 
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "v.text:ducks").vertices()));
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "v.text:(farm uncle berry)").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").vertices()));
-        assertEquals(numV / strs.length * 2 - 10, Iterables.size(graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").offset(10).vertices()));
-        assertEquals(10, Iterables.size(graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).vertices()));
-        assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertices()));
-        assertEquals(0,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertices()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(VINDEX, "v.text:ducks").vertices());
+        assertCount(numV / strs.length * 2, graph.indexQuery(VINDEX, "v.text:(farm uncle berry)").vertices());
+        assertCount(numV / strs.length, graph.indexQuery(VINDEX, "v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices());
+        assertCount(numV / strs.length * 2, graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").vertices());
+        assertCount(numV / strs.length * 2 - 10, graph.indexQuery(VINDEX, "v.text:(beautiful are ducks)").offset(10).vertices());
+        assertCount(10, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).vertices());
+        assertCount(10, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertices());
+        assertCount(0, graph.indexQuery(VINDEX, "v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertices());
         //Test name mapping
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "xtext:ducks").vertices()));
-        assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "text:ducks").vertices()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(VINDEX, "xtext:ducks").vertices());
+        assertCount(0, graph.indexQuery(VINDEX, "text:ducks").vertices());
         //Test custom element identifier
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(VINDEX, "$v$text:ducks").setElementIdentifier("$v$").vertices()));
-        //assertEquals(0, Iterables.size(graph.indexQuery(VINDEX, "v.\"text\":ducks").setElementIdentifier("$v$").vertices()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(VINDEX, "$v$text:ducks").setElementIdentifier("$v$").vertices());
+        //assertCount(0, graph.indexQuery(VINDEX, "v.\"text\":ducks").setElementIdentifier("$v$").vertices()));
 
         //Same queries for edges
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "e.text:ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry)").edges()));
-        assertEquals(numV / strs.length, Iterables.size(graph.indexQuery(EINDEX, "e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").edges()));
-        assertEquals(numV / strs.length * 2 - 10, Iterables.size(graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").offset(10).edges()));
-        assertEquals(10, Iterables.size(graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).edges()));
-        assertEquals(10, Iterables.size(graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges()));
-        assertEquals(0,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(EINDEX, "e.text:ducks").edges());
+        assertCount(numV / strs.length * 2, graph.indexQuery(EINDEX, "e.text:(farm uncle berry)").edges());
+        assertCount(numV / strs.length, graph.indexQuery(EINDEX, "e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges());
+        assertCount(numV / strs.length * 2, graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").edges());
+        assertCount(numV / strs.length * 2 - 10, graph.indexQuery(EINDEX, "e.text:(beautiful are ducks)").offset(10).edges());
+        assertCount(10, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).edges());
+        assertCount(10, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges());
+        assertCount(0, graph.indexQuery(EINDEX, "e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges());
         //Test name mapping
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(EINDEX, "text:ducks").edges()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(EINDEX, "text:ducks").edges());
 
         //Same queries for edges
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:ducks").properties()));
-        assertEquals(numV / strs.length * 2, Iterables.size(graph.indexQuery(PINDEX, "p.text:(farm uncle berry)").properties()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").properties()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").properties()));
-        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").offset(10).properties()));
-        assertEquals(10, Iterables.size(graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).properties()));
-        assertEquals(10, Iterables.size(graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties()));
-        assertEquals(0,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(PINDEX, "p.text:ducks").properties());
+        assertCount(numV / strs.length * 2, graph.indexQuery(PINDEX, "p.text:(farm uncle berry)").properties());
+        assertCount(numV / strs.length, graph.indexQuery(PINDEX, "p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").properties());
+        assertCount(numV / strs.length * 2, graph.indexQuery(PINDEX, "p.text:(beautiful are ducks)").properties());
+        assertCount(numV / strs.length * 2 - 10, graph.indexQuery(PINDEX, "p.text:(beautiful are ducks)").offset(10).properties());
+        assertCount(10, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).properties());
+        assertCount(10, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties());
+        assertCount(0, graph.indexQuery(PINDEX, "p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties());
         //Test name mapping
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"text:ducks").properties()));
+        assertCount(numV / strs.length * 2, graph.indexQuery(PINDEX, "text:ducks").properties());
     }
 
     @Test
@@ -937,7 +936,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         evaluateQuery(tx.query().has("name",Text.REGEX,"Long.*"),ElementCategory.VERTEX,
                 2,new boolean[]{true,true},"mixed");
 
-        for (Vertex u : tx.V().toList()) {
+        for (Vertex u : tx.getVertices()) {
             String n = u.<String>value("name");
             if (n.endsWith("Don")) {
                 u.remove();
@@ -1025,7 +1024,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"mi");
 
 
-        assertEquals(1,recoveryStats[0]); //schema transaction was successful
+        assertEquals(1, recoveryStats[0]); //schema transaction was successful
         assertEquals(4,recoveryStats[1]); //all 4 index transaction had provoked errors in the indexing backend
     }
 

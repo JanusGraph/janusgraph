@@ -345,6 +345,10 @@ public abstract class TitanGraphBaseTest {
         return (TitanVertex)getOnlyElement(query.vertices());
     }
 
+    public static TitanEdge getOnlyEdge(TitanVertexQuery<?> query) {
+        return (TitanEdge)getOnlyElement(query.edges());
+    }
+
     public static<E> E getOnlyElement(Iterable<E> traversal) {
         return getOnlyElement(traversal.iterator());
     }
