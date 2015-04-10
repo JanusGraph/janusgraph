@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
 import com.thinkaurelius.titan.graphdb.util.ElementHelper
-import com.tinkerpop.gremlin.structure.Vertex
 
 import static org.junit.Assert.*
 
@@ -277,7 +276,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         String labelName = schema.getEdgeLabelName(0)
         sequentialUidTask { tx, vertex ->
             if (-1 != last && last != vertex.id()) {
-                Vertex target = tx.v(last)
+                TitanVertex target = tx.v(last)
                 vertex.addEdge(labelName, target)
                 edgesAdded++
             } else {

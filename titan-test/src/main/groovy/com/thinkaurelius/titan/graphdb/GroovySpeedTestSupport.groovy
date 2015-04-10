@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
 import com.thinkaurelius.titan.graphdb.query.QueryUtil
-import com.tinkerpop.gremlin.util.Gremlin
+import org.apache.tinkerpop.gremlin.util.Gremlin
 
 import static org.junit.Assert.*
 
@@ -14,7 +14,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import com.google.common.base.Preconditions
-import com.tinkerpop.gremlin.structure.Vertex
 import com.thinkaurelius.titan.core.TitanVertex
 import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
@@ -125,7 +124,7 @@ abstract class GroovySpeedTestSupport {
 
         while (uids.hasNext()) {
             long u = uids.next()
-            Vertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,Schema.UID_PROP, u))
+            TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,Schema.UID_PROP, u))
             assertNotNull(v)
             vbuf[vloaded++] = v
             if (vloaded == chunksize) {

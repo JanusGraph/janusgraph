@@ -7,8 +7,8 @@ import com.thinkaurelius.titan.core.TitanGraph
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier
 import com.thinkaurelius.titan.core.schema.TitanManagement
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker
-import com.tinkerpop.gremlin.structure.Edge
-import com.tinkerpop.gremlin.structure.Vertex
+import org.apache.tinkerpop.gremlin.structure.Edge
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
