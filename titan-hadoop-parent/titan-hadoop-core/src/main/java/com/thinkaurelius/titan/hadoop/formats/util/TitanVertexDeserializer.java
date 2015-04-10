@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -186,7 +186,7 @@ public class TitanVertexDeserializer {
         if (!foundVertexState) {
             log.trace("Vertex {} has unknown lifecycle state", vertexId);
             return null;
-        } else if (!tv.edgeIterator(Direction.BOTH).hasNext() && !tv.propertyIterator().hasNext()) {
+        } else if (!tv.edges(Direction.BOTH).hasNext() && !tv.properties().hasNext()) {
             log.trace("Vertex {} has no relations", vertexId);
             return null;
         }
@@ -197,7 +197,7 @@ public class TitanVertexDeserializer {
         TinkerVertex v;
 
         try {
-            v = (TinkerVertex)tg.V(vertexId).next();
+            v = (TinkerVertex)tg.vertices(vertexId).next();
         } catch (NoSuchElementException e) {
             if (null != label) {
                 v = (TinkerVertex) tg.addVertex(T.label, label, T.id, vertexId);
