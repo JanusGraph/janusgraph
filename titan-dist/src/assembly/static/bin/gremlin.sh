@@ -47,10 +47,10 @@ fi
 PROFILING_ENABLED=false
 
 # Process options
-MAIN_CLASS=com.tinkerpop.gremlin.console.Console
+MAIN_CLASS=org.apache.tinkerpop.gremlin.console.Console
 while getopts "elpv" opt; do
     case "$opt" in
-    e) MAIN_CLASS=com.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor
+    e) MAIN_CLASS=org.apache.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor
        # For compatibility with behavior pre-Titan-0.5.0, stop
        # processing gremlin.sh arguments as soon as the -e switch is
        # seen; everything following -e becomes arguments to the
@@ -65,7 +65,7 @@ while getopts "elpv" opt; do
        ;;
     p) PROFILING_ENABLED=true
        ;;
-    v) MAIN_CLASS=com.tinkerpop.gremlin.Version
+    v) MAIN_CLASS=org.apache.tinkerpop.gremlin.util.Gremlin
     esac
 done
 

@@ -157,8 +157,8 @@ start() {
 }
 
 stop() {
-    kill_class        'Gremlin-Server' com.tinkerpop.gremlin.server.GremlinServer 
-    wait_for_shutdown 'Gremlin-Server' com.tinkerpop.gremlin.server.GremlinServer $GSRV_SHUTDOWN_TIMEOUT_S
+    kill_class        'Gremlin-Server' org.apache.tinkerpop.gremlin.server.GremlinServer 
+    wait_for_shutdown 'Gremlin-Server' org.apache.tinkerpop.gremlin.server.GremlinServer $GSRV_SHUTDOWN_TIMEOUT_S
     kill_class        Elasticsearch org.elasticsearch.bootstrap.Elasticsearch
     wait_for_shutdown Elasticsearch org.elasticsearch.bootstrap.Elasticsearch $ELASTICSEARCH_SHUTDOWN_TIMEOUT_S
     kill_class        Cassandra org.apache.cassandra.service.CassandraDaemon
@@ -190,7 +190,7 @@ status_class() {
 }
 
 status() {
-    status_class 'Gremlin-Server' com.tinkerpop.gremlin.server.GremlinServer
+    status_class 'Gremlin-Server' org.apache.tinkerpop.gremlin.server.GremlinServer
     status_class Cassandra org.apache.cassandra.service.CassandraDaemon
     status_class Elasticsearch org.elasticsearch.bootstrap.Elasticsearch
 }

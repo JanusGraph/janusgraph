@@ -26,7 +26,7 @@ if "%1" == "-v" goto version
 :console
 
 set CLASSPATH=%CP%;%OLD_CLASSPATH%
-java %JAVA_OPTIONS% %JAVA_ARGS% com.tinkerpop.gremlin.console.Console %*
+java %JAVA_OPTIONS% %JAVA_ARGS% org.apache.tinkerpop.gremlin.console.Console %*
 
 set CLASSPATH=%OLD_CLASSPATH%
 goto :eof
@@ -40,14 +40,14 @@ CALL :concat %%X %1 %2
 )
 
 set CLASSPATH=%CP%;%OLD_CLASSPATH%
-java %JAVA_OPTIONS% %JAVA_ARGS% com.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor %strg%
+java %JAVA_OPTIONS% %JAVA_ARGS% org.apache.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor %strg%
 set CLASSPATH=%OLD_CLASSPATH%
 goto :eof
 
 :version
 
 set CLASSPATH=%CP%;%OLD_CLASSPATH%
-java %JAVA_OPTIONS% %JAVA_ARGS% com.tinkerpop.gremlin.Version
+java %JAVA_OPTIONS% %JAVA_ARGS% org.apache.tinkerpop.gremlin.util.Gremlin
 
 set CLASSPATH=%OLD_CLASSPATH%
 goto :eof
