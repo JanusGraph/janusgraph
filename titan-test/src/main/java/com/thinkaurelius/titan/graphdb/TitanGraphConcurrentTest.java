@@ -374,8 +374,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
                 // Make or break relType between two (possibly same) random nodes
                 TitanVertex source = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, 0).vertices());
                 TitanVertex sink = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, 1).vertices());
-                for (Iterator<Edge> riter = source.edges(Direction.OUT,elabel); riter.hasNext();) {
-                    Edge r = riter.next();
+                for (Edge r : source.query().direction(Direction.OUT).labels(elabel).edges()) {
                     if (getId(r.inVertex()) == getId(sink)) {
                         r.remove();
                         continue;

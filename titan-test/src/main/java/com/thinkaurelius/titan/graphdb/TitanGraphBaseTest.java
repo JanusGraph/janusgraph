@@ -34,6 +34,8 @@ import org.junit.Before;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
@@ -423,6 +425,11 @@ public abstract class TitanGraphBaseTest {
             count++;
         }
         assertEquals(expectedCount, count);
+    }
+
+    public static <T> Stream<T> asStream(final Iterator<T> source) {
+        final Iterable<T> iterable = () -> source;
+        return StreamSupport.stream(iterable.spliterator(),false);
     }
 
 }

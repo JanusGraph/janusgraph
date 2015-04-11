@@ -505,7 +505,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         } else if (config.hasAssignIDsImmediately() || label.isPartitioned()) {
             graph.assignID(vertex,label);
         }
-        addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
+        addPropertyInternal(vertex, BaseKey.VertexExists, Boolean.TRUE);
         if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
             addEdge(vertex, (VertexLabelVertex) label, BaseLabel.VertexLabelEdge);
@@ -702,12 +702,18 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public TitanVertexProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
+        //See TINKERPOP3-627 for more detail on why this distinction is necessary
+        return addPropertyInternal(graph.getConfiguration().useVertexPropSingleCardinality()? VertexProperty.Cardinality.single: key.cardinality().convert(),
+                vertex, key, value);
+    }
+
+    public TitanVertexProperty addPropertyInternal(TitanVertex vertex, PropertyKey key, Object value) {
         return addPropertyInternal(key.cardinality().convert(), vertex, key, value);
     }
 
-    public TitanVertexProperty addPropertyInternal(org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality cardi, TitanVertex vertex, PropertyKey key, Object value) {
-        Preconditions.checkArgument(key.cardinality().convert()==cardi || cardi== VertexProperty.Cardinality.single,
-                "Key is defined for %s cardinality which conflicts with specified: %s",key.cardinality(),cardi);
+    public TitanVertexProperty addPropertyInternal(VertexProperty.Cardinality cardi, TitanVertex vertex, PropertyKey key, Object value) {
+        if (key.cardinality().convert()!=cardi && cardi!=VertexProperty.Cardinality.single)
+                throw new SchemaViolationException(String.format("Key is defined for %s cardinality which conflicts with specified: %s",key.cardinality(),cardi));
         verifyWriteAccess(vertex);
         Preconditions.checkArgument(!(key instanceof ImplicitKey),"Cannot create a property of implicit type: %s",key.name());
         vertex = ((InternalVertex) vertex).it();
@@ -894,13 +900,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         graph.assignID(schemaVertex, BaseVertexLabel.DEFAULT_VERTEXLABEL);
         Preconditions.checkArgument(schemaVertex.longId() > 0);
-        if (schemaCategory.hasName()) addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
-        addProperty(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
-        addProperty(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
+        if (schemaCategory.hasName()) addPropertyInternal(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
+        addPropertyInternal(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
+        addPropertyInternal(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
         updateSchemaVertex(schemaVertex);
-        addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
+        addPropertyInternal(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
-            TitanVertexProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
+            TitanVertexProperty p = addPropertyInternal(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
             p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(schemaVertex, schemaVertex.longId());

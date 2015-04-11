@@ -42,7 +42,7 @@ public class TitanAssert {
         if (obj instanceof Traversal) return !((Traversal) obj).hasNext();
         else if (obj instanceof Collection) return ((Collection)obj).isEmpty();
         else if (obj instanceof Iterable) return Iterables.isEmpty((Iterable)obj);
-        else if (obj instanceof Iterator) return ((Iterator)obj).hasNext();
+        else if (obj instanceof Iterator) return !((Iterator)obj).hasNext();
         else if (obj.getClass().isArray()) return Array.getLength(obj)==0;
         throw new IllegalArgumentException("Cannot determine size of: " + obj);
     }

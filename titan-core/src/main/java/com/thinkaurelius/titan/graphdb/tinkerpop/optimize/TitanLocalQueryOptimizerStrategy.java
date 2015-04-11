@@ -90,7 +90,7 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 //        });
 
         TraversalHelper.getStepsOfClass(LocalStep.class, traversal).forEach(localStep -> {
-            Traversal.Admin localTraversal = localStep.getTraversal();
+            Traversal.Admin localTraversal = ((LocalStep<?,?>)localStep).getLocalChildren().get(0);
 
             Step localStart = localTraversal.getStartStep();
             if (localStart instanceof VertexStep) {

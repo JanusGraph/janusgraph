@@ -262,6 +262,11 @@ public class GraphDatabaseConfiguration {
         }
     });
 
+    public static final ConfigOption<Boolean> VERTEXPROPERTY_SINGLE = new ConfigOption<Boolean>(SCHEMA_NS,"single-cardinality",
+            "Whether calls to vertex.property(key,value) should be executed with default cardinality SINGLE overwriting " +
+                    "the key's defined cardinality",
+            ConfigOption.Type.GLOBAL, false);
+
     private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
         put("none", DisableDefaultSchemaMaker.INSTANCE);
         put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
@@ -1300,6 +1305,7 @@ public class GraphDatabaseConfiguration {
     private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeyName;
+    private boolean vertexPropertySingleCardinality;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1574,6 +1580,7 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
         useMultiQuery = configuration.get(USE_MULTIQUERY);
+        vertexPropertySingleCardinality = configuration.get(VERTEXPROPERTY_SINGLE);
         adjustQueryLimit = configuration.get(ADJUST_LIMIT);
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
@@ -1731,6 +1738,8 @@ public class GraphDatabaseConfiguration {
     public boolean useMultiQuery() {
         return useMultiQuery;
     }
+
+    public boolean useVertexPropSingleCardinality() { return vertexPropertySingleCardinality; }
 
     public boolean adjustQueryLimit() {
         return adjustQueryLimit;

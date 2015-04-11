@@ -844,7 +844,7 @@ public class ManagementSystem implements TitanManagement {
             }
         }
         //Add new status
-        TitanVertexProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
+        TitanVertexProperty p = transaction.addPropertyInternal(vertex, BaseKey.SchemaDefinitionProperty, status);
         p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
     }
 
@@ -992,7 +992,7 @@ public class ManagementSystem implements TitanManagement {
             checkIndexName(newName);
         }
 
-        transaction.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
+        transaction.addPropertyInternal(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
         updateSchemaVertex(schemaVertex);
         schemaVertex.resetCache();
         updatedTypes.add(schemaVertex);

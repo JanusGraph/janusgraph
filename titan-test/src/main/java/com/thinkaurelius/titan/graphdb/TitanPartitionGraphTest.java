@@ -132,8 +132,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         for (int i = 0; i < numG; i++) {
             TitanVertex g = getV(tx,gids[i]);
             assertCount(1,g.query().direction(Direction.BOTH).labels("one").edges());
-            assertCount(1, g.edges(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
-            assertCount(0, g.edges(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
+            assertCount(1, g.query().direction(i % 2 == 0 ? Direction.IN : Direction.OUT).labels("one").edges());
+            assertCount(0, g.query().direction(i % 2 == 1 ? Direction.IN : Direction.OUT).labels("one").edges());
             if (i>0) {
                 assertCount(1,g.query().direction(Direction.OUT).labels("base").edges());
             } else {
@@ -166,8 +166,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
             //Copied from above
             assertCount(1, g.query().direction(Direction.BOTH).labels("one").edges());
-            assertCount(1, g.edges(i % 2 == 0 ? Direction.IN : Direction.OUT, "one"));
-            assertCount(0, g.edges(i % 2 == 1 ? Direction.IN : Direction.OUT, "one"));
+            assertCount(1, g.query().direction(i % 2 == 0 ? Direction.IN : Direction.OUT).labels("one").edges());
+            assertCount(0, g.query().direction(i % 2 == 1 ? Direction.IN : Direction.OUT).labels("one").edges());
             if (i>0) {
                 assertCount(1, g.query().direction(Direction.OUT).labels("base").edges());
             } else {

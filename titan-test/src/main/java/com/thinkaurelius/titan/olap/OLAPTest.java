@@ -231,7 +231,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
             TitanGraphTransaction gview = null;
             switch (mode) {
-                case LOCALTX: gview = (TitanGraph) result.graph(); break;
+                case LOCALTX: gview = (TitanGraphTransaction) result.graph(); break;
                 case PERSIST: newTx(); gview = tx; break;
                 case NONE: break;
                 default: throw new AssertionError(mode);

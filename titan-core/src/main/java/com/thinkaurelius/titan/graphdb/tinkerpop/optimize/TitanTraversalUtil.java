@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -60,13 +61,19 @@ public class TitanTraversalUtil {
         return currentStep;
     }
 
-    public static TitanTransaction getTx(Traversal<?,?> traversal) {
+    public static TitanTransaction getTx(Traversal.Admin<?,?> traversal) {
         TitanTransaction tx=null;
-        Optional<Graph> graph = TraversalHelper.getRootTraversal(traversal.asAdmin()).getGraph();
-        if (!graph.isPresent()) throw new IllegalArgumentException("Traversal is not bound to a graph: " + traversal);
-        if (!(graph.get() instanceof TitanTransaction)) throw new IllegalArgumentException("Traversal is not bound to a Titan Graph: " + traversal);
-        tx = (TitanTransaction)graph.get();
+        Optional<Graph> optGraph = TraversalHelper.getRootTraversal(traversal.asAdmin()).getGraph();
 
+        if (traversal instanceof FulgoraElementTraversal) {
+            tx = (TitanTransaction)optGraph.get();
+        } else {
+            if (!optGraph.isPresent()) throw new IllegalArgumentException("Traversal is not bound to a graph: " + traversal);
+            Graph graph = optGraph.get();
+            if (graph instanceof TitanTransaction) tx = (TitanTransaction)graph;
+            else if (graph instanceof TitanBlueprintsGraph) tx = ((TitanBlueprintsGraph)graph).getCurrentThreadTx();
+            else throw new IllegalArgumentException("Traversal is not bound to a Titan Graph, but: " + graph);
+        }
         if (tx==null) throw new IllegalArgumentException("Not a valid start step for a Titan traversal: " + traversal);
         if (tx.isOpen()) return tx;
         else return ((StandardTitanTx)tx).getNextTx();

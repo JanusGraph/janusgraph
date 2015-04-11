@@ -16,101 +16,102 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.PartitionStrategyTest",
-        method = "shouldWriteToMultiplePartitions",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
-        method = "shouldFilterMixedCriteria",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
-        method = "testVertexCriterion",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
-        method = "shouldFilterEdgeCriterion",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(1).outE().inV()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(4).bothE().bothV()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(4).inE().outV()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(1).out()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(1).outE().otherV()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(4).inE().otherV()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(1).outE()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(4).bothE()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
-        method = "shouldWrap",
-        specific = "g.V(4).inE()",
-        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_PERFORMANCE)
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.PartitionStrategyTest",
+//        method = "shouldWriteToMultiplePartitions",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
+//        method = "shouldFilterMixedCriteria",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
+//        method = "testVertexCriterion",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.SubgraphStrategyTest",
+//        method = "shouldFilterEdgeCriterion",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(1).outE().inV()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(4).bothE().bothV()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(4).inE().outV()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(1).out()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(1).outE().otherV()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$VertexShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(4).inE().otherV()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(1).outE()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(4).bothE()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
+//        method = "shouldWrap",
+//        specific = "g.V(4).inE()",
+//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
 //------------------------
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
-        method = "shouldThrowExceptionIfEdgeWasRemoved",
-        specific = "e.remove()",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
-        method = "shouldThrowExceptionIfEdgeWasRemoved",
-        specific = "property(k)",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
-        method = "shouldThrowExceptionIfEdgeWasRemoved",
-        specific = "remove()",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "com.tinkerpop.gremlin.structure.VertexPropertyTest$ExceptionConsistencyWhenVertexPropertyRemovedTest",
-        method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
-        specific = "property(k)",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
+//        method = "shouldThrowExceptionIfEdgeWasRemoved",
+//        specific = "e.remove()",
+//        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
+//        method = "shouldThrowExceptionIfEdgeWasRemoved",
+//        specific = "property(k)",
+//        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
+//        method = "shouldThrowExceptionIfEdgeWasRemoved",
+//        specific = "remove()",
+//        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
+//@Graph.OptOut(
+//        test = "com.tinkerpop.gremlin.structure.VertexPropertyTest$ExceptionConsistencyWhenVertexPropertyRemovedTest",
+//        method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
+//        specific = "property(k)",
+//        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
 //------------------------
-@Graph.OptOut(
-        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
-        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX_groupCount",
-        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
-@Graph.OptOut(
-        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
-        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX",
-        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
-@Graph.OptOut(
-        test="com.tinkerpop.gremlin.process.computer.ranking.PageRankVertexProgramTest",
-        method="shouldExecutePageRank",
-        reason="Blocked on resolution of a TP3 inconsistency")
+//@Graph.OptOut(
+//        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
+//        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX_groupCount",
+//        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
+//@Graph.OptOut(
+//        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
+//        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX",
+//        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
+//@Graph.OptOut(
+//        test="com.tinkerpop.gremlin.process.computer.ranking.PageRankVertexProgramTest",
+//        method="shouldExecutePageRank",
+//        reason="Blocked on resolution of a TP3 inconsistency regarding the returned result graph")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

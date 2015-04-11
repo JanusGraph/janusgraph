@@ -1,9 +1,14 @@
 
 package com.thinkaurelius.titan.core;
 
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
@@ -34,6 +39,17 @@ public interface TitanEdge extends TitanRelation, Edge {
      */
     public TitanVertex vertex(Direction dir);
 
+    @Override
+    public default TitanVertex outVertex() {
+        return vertex(Direction.OUT);
+    }
+
+    @Override
+    public default TitanVertex inVertex() {
+        return vertex(Direction.IN);
+    }
+
+
     /**
      * Returns the vertex at the opposite end of the edge.
      *
@@ -43,5 +59,16 @@ public interface TitanEdge extends TitanRelation, Edge {
      */
     public TitanVertex otherVertex(Vertex vertex);
 
+
+    @Override
+    public default Iterator<Vertex> vertices(Direction direction) {
+        List<Vertex> vertices;
+        if (direction==Direction.BOTH) {
+            vertices = ImmutableList.of((Vertex) vertex(Direction.OUT), vertex(Direction.IN));
+        } else {
+            vertices = ImmutableList.of((Vertex) vertex(direction));
+        }
+        return vertices.iterator();
+    }
 
 }

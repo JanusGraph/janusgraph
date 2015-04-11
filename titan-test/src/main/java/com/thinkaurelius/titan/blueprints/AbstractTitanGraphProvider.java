@@ -99,6 +99,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         ModifiableConfiguration conf = getTitanConfiguration(graphName,test,testMethodName);
         conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE,"persist");
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
+        conf.set(GraphDatabaseConfiguration.VERTEXPROPERTY_SINGLE,true);
         Map<String,Object> result = new HashMap<>();
         conf.getAll().entrySet().stream().forEach( e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements),e.getValue()));
         result.put(Graph.GRAPH, TitanFactory.class.getName());

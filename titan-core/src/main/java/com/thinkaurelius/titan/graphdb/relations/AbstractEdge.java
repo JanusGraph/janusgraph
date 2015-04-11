@@ -109,16 +109,5 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
         return true;
     }
 
-    @Override
-    public Iterator<Vertex> vertices(Direction direction) {
-        verifyAccess();
 
-        List<Vertex> vertices;
-        if (direction==Direction.BOTH) {
-            vertices = ImmutableList.of((Vertex) getVertex(0), getVertex(1));
-        } else {
-            vertices = ImmutableList.of((Vertex)getVertex(EdgeDirection.position(direction)));
-        }
-        return vertices.iterator();
-    }
 }

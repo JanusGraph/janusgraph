@@ -51,13 +51,16 @@ public class FulgoraUtil {
                                                                        final Vertex start,
                                                                        final TitanTransaction graph) {
         Traversal.Admin<Vertex,Edge> incident = scope.getIncidentTraversal().get().asAdmin();
-        Step<Vertex,?> startStep = incident.getStartStep();
+        FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
+
+        for (Step step : incident.getSteps()) result.addStep(step);
+        Step<Vertex,?> startStep = result.getStartStep();
         assert startStep instanceof VertexStep;
         ((VertexStep) startStep).reverseDirection();
 
-        incident.addStep(0, new StartStep<>(incident, start));
-        incident.setStrategies(FULGORA_STRATEGIES);
-        return incident;
+        result.addStep(0, new StartStep<>(incident, start));
+        result.asAdmin().setStrategies(FULGORA_STRATEGIES);
+        return result;
     }
 
     private static void verifyIncidentTraversal(FulgoraElementTraversal<Vertex,Edge> traversal) {
@@ -66,8 +69,9 @@ public class FulgoraUtil {
         Step<Vertex,?> startStep = steps.get(0);
         Preconditions.checkArgument(startStep instanceof TitanVertexStep &&
                 TitanTraversalUtil.isEdgeReturnStep((TitanVertexStep) startStep),"Expected first step to be an edge step but found: %s",startStep);
-        Optional<Step> violatingStep = steps.stream().filter(s -> !(s instanceof OrderGlobalStep || s instanceof OrderLocalStep ||
-                s instanceof IdentityStep || s instanceof FilterStep)).findAny();
+        Optional<Step> violatingStep = steps.stream().filter(s -> !(s instanceof TitanVertexStep ||
+                s instanceof OrderGlobalStep || s instanceof OrderLocalStep ||
+                        s instanceof IdentityStep || s instanceof FilterStep)).findAny();
         if (violatingStep.isPresent()) throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + violatingStep.get());
     }
 

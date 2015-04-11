@@ -19,8 +19,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentitySt
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Compare;
 import org.apache.tinkerpop.gremlin.structure.Order;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -41,6 +43,21 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return TitanPredicate.Converter.supports(has.predicate);
     }
 
+    public static List<HasContainer> getHasContainers(HasContainerHolder holder) {
+        List<HasContainer> original = holder.getHasContainers();
+        List<HasContainer> result = new ArrayList<>(original.size());
+        for (HasContainer hc : original) {
+            if (hc.predicate == Compare.inside) {
+                result.add(new HasContainer(hc.key,Compare.gt,((List)hc.value).get(0)));
+                result.add(new HasContainer(hc.key,Compare.lt,((List)hc.value).get(1)));
+            } else if (hc.predicate == Compare.outside) {
+                result.add(new HasContainer(hc.key,Compare.lt,((List)hc.value).get(0)));
+                result.add(new HasContainer(hc.key,Compare.gt,((List)hc.value).get(1)));
+            } else result.add(hc);
+        }
+        return result;
+    }
+
     public static boolean validTitanHas(Iterable<HasContainer> has) {
         for (HasContainer h : has) {
             if (!validTitanHas(h)) return false;
@@ -55,7 +72,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             ElementValueComparator evc = (ElementValueComparator)comp;
             if (!(evc.getValueComparator() instanceof Order)) return false;
 
-            TitanTransaction tx = TitanTraversalUtil.getTx(rootTraversal);
+            TitanTransaction tx = TitanTraversalUtil.getTx(rootTraversal.asAdmin());
             String key = evc.getPropertyKey();
             PropertyKey pkey = tx.getPropertyKey(key);
             if (pkey==null || !(Comparable.class.isAssignableFrom(pkey.dataType())) ) return false;
@@ -70,7 +87,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             if (currentStep.getLabel().isPresent()) break;
 
             if (currentStep instanceof HasContainerHolder) {
-                Iterable<HasContainer> containers = ((HasContainerHolder) currentStep).getHasContainers();
+                Iterable<HasContainer> containers = getHasContainers((HasContainerHolder) currentStep);
                 if (validTitanHas(containers)) {
                     titanStep.addAll(containers);
                     addLabeledStepAsIdentity(currentStep, traversal);

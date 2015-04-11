@@ -296,8 +296,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         e = getOnlyElement(v.query().direction(OUT).labels("em").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[4].longId(),getId(e));
-        for (Iterator<Edge> eeiter = v.edges(OUT,"emf"); eeiter.hasNext(); ) {
-            Edge ee = eeiter.next();
+        for (Edge ee : v.query().direction(OUT).labels("emf").edges()) {
             assertNotEquals(rs[5].longId(),getId(ee));
             assertEquals(uid,ee.inVertex().id());
         }
@@ -335,7 +334,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         e.remove();
         sign(v.addEdge("o2m",u),txid);
         for (String label : new String[]{"em","emf"}) {
-            e = getOnlyElement(v.edges(OUT,label));
+            e = getOnlyElement(v.query().direction(OUT).labels(label).edges());
             assertEquals(1,e.<Integer>value("sig").intValue());
             sign((TitanEdge)e,txid);
         }
