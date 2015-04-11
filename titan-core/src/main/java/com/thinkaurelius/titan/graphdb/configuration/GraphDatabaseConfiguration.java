@@ -265,7 +265,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> VERTEXPROPERTY_SINGLE = new ConfigOption<Boolean>(SCHEMA_NS,"single-cardinality",
             "Whether calls to vertex.property(key,value) should be executed with default cardinality SINGLE overwriting " +
                     "the key's defined cardinality",
-            ConfigOption.Type.GLOBAL, false);
+            ConfigOption.Type.MASKABLE, false);
 
     private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
         put("none", DisableDefaultSchemaMaker.INSTANCE);
