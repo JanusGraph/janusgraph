@@ -1,5 +1,6 @@
-package com.thinkaurelius.titan.blueprints;
+package com.thinkaurelius.titan.blueprints.structure;
 
+import com.thinkaurelius.titan.blueprints.BerkeleyGraphProvider;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.runner.RunWith;
@@ -9,5 +10,5 @@ import org.junit.runner.RunWith;
  */
 @RunWith(StructureStandardSuite.class)
 @StructureStandardSuite.GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = TitanGraph.class)
-public class BerkeleyStructureTest {
+public class BerkeleyTitanStructureTest {
 }

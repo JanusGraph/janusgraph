@@ -98,6 +98,11 @@
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-groovy-test</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
