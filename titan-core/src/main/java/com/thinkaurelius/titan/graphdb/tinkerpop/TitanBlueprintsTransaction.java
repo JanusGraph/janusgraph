@@ -102,7 +102,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         }
 
         final TitanVertex vertex = addVertex(null,label);
-        ElementHelper.attachProperties(vertex, VertexProperty.Cardinality.list, keyValues);
+        ElementHelper.attachProperties(vertex, VertexProperty.Cardinality.single, keyValues);
         return vertex;
     }
 
