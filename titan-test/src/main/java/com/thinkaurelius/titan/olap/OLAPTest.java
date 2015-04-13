@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -182,6 +183,12 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertEquals(1,result.getCustom(GhostVertexRemover.REMOVED_VERTEX_COUNT));
         assertEquals(2,result.getCustom(GhostVertexRemover.REMOVED_RELATION_COUNT));
         assertEquals(0,result.getCustom(GhostVertexRemover.SKIPPED_GHOST_LIMIT_COUNT));
+    }
+
+    @Test
+    public void testBasicComputeJob() throws Exception {
+        GraphTraversalSource g = graph.traversal(GraphTraversalSource.computer());
+        System.out.println(g.V().count().next());
     }
 
     @Test
