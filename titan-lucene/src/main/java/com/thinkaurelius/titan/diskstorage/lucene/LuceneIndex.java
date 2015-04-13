@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -60,12 +61,12 @@ public class LuceneIndex implements IndexProvider {
     private static final String GEOID = "_____geo";
     private static final int MAX_STRING_FIELD_LEN = 256;
 
-    private static final Version LUCENE_VERSION = Version.LUCENE_41;
+    private static final Version LUCENE_VERSION = Version.LUCENE_4_10_4;
     private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
 
     private static final int GEO_MAX_LEVELS = 11;
 
-    private final Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
+    private final Analyzer analyzer = new StandardAnalyzer();
 
     private final Map<String, IndexWriter> writers = new HashMap<String, IndexWriter>(4);
     private final ReentrantLock writerLock = new ReentrantLock();
@@ -444,11 +445,9 @@ public class LuceneIndex implements IndexProvider {
 
                 if (titanPredicate == Text.CONTAINS) {
                     value = ((String) value).toLowerCase();
-                    BooleanFilter b = new BooleanFilter();
-                    for (String term : Text.tokenize((String)value)) {
-                        b.add(new TermsFilter(new Term(key, term)), BooleanClause.Occur.MUST);
-                    }
-                    params.addFilter(b);
+                    List<String> terms = Text.tokenize((String) value);
+                    TermsFilter termsFilter = new TermsFilter(terms.stream().map(s->new Term(key, s)).collect(Collectors.toList()));
+                    params.addFilter(termsFilter);
                 } else if (titanPredicate == Text.CONTAINS_PREFIX) {
                     value = ((String) value).toLowerCase();
                     params.addFilter(new PrefixFilter(new Term(key, (String) value)));
