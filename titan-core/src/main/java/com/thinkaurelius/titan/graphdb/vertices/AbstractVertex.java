@@ -136,10 +136,10 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public<V> TitanVertexProperty<V> property(String key, V value) {
-        return tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
+        return property(key,value,new Object[0]);
     }
 
-    public<V> VertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+    public<V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
         TitanVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
         ElementHelper.attachProperties(p,keyValues);
         return p;

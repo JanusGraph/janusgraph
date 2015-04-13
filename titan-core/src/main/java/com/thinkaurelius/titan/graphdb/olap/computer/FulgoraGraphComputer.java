@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.util.WorkerPool;
 import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
@@ -218,7 +219,16 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
                 if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
                     final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
-                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
+                    try (WorkerPool workers = new WorkerPool(numThreads)) {
+                        for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
+                            workers.submit(() -> mapReduce.reduce(queueEntry.getKey(),((Iterable)queueEntry.getValue()).iterator(), reduceEmitter));
+                        }
+                    } catch (Exception e) {
+                        throw new TitanException("Exception while executing reduce phase",e);
+                    }
+//                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
+
+
                     reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
                     mapReduce.addResultToMemory(this.memory, reduceEmitter.getQueue().iterator());
                 } else {
@@ -252,31 +262,24 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         });
 
                 if (resultGraphMode==ResultGraph.ORIGINAL) {
-                    ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
-                    processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
                     AtomicInteger failures = new AtomicInteger(0);
-                    try {
+                    try (WorkerPool workers = new WorkerPool(numThreads)) {
                         List<Map.Entry<Long,Map<String,Object>>> subset = new ArrayList<>(writeBatchSize/vertexProgram.getElementComputeKeys().size());
                         int currentSize = 0;
                         for (Map.Entry<Long,Map<String,Object>> entry : mutatedProperties.entrySet()) {
                             subset.add(entry);
                             currentSize+=entry.getValue().size();
                             if (currentSize>=writeBatchSize) {
-                                processor.submit(new VertexPropertyWriter(subset,failures));
+                                workers.submit(new VertexPropertyWriter(subset,failures));
                                 subset = new ArrayList<>(subset.size());
                                 currentSize = 0;
                             }
                         }
-                        if (!subset.isEmpty()) processor.submit(new VertexPropertyWriter(subset,failures));
-                        processor.shutdown();
-                        processor.awaitTermination(10,TimeUnit.SECONDS);
-                        if (!processor.isTerminated()) log.error("Processor did not terminate in time");
-                        if (failures.get()>0) throw new TitanException("Could not persist program results to graph. Check log for details.");
-                    } catch (InterruptedException ex) {
-                        throw new TitanException("Got interrupted while attempting to persist program results");
-                    } finally {
-                        processor.shutdownNow();
+                        if (!subset.isEmpty()) workers.submit(new VertexPropertyWriter(subset,failures));
+                    } catch (Exception e) {
+                        throw new TitanException("Exception while attempting to persist result into graph",e);
                     }
+                    if (failures.get()>0) throw new TitanException("Could not persist program results to graph. Check log for details.");
                 } else if (resultGraphMode==ResultGraph.NEW) {
                     resultgraph = graph.newTransaction();
                     for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {

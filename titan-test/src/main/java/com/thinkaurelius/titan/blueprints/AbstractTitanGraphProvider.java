@@ -23,6 +23,9 @@ import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
@@ -31,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -63,6 +67,18 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     @Override
     public Set<Class> getImplementations() {
         return IMPLEMENTATION;
+    }
+
+    @Override
+    public GraphTraversalSource traversal(final Graph graph) {
+        return GraphTraversalSource.standard().create(graph);
+    }
+
+    @Override
+    public GraphTraversalSource traversal(final Graph graph, final TraversalStrategy... strategies) {
+        final GraphTraversalSource.Builder builder = GraphTraversalSource.build().engine(StandardTraversalEngine.build());
+        Stream.of(strategies).forEach(builder::with);
+        return builder.create(graph);
     }
 
     @Override

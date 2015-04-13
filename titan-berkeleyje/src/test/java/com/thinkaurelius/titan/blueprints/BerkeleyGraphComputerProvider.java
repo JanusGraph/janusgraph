@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BerkeleyNonTxGraphProvider extends AbstractTitanGraphProvider {
+public class BerkeleyGraphComputerProvider extends AbstractTitanGraphComputerProvider {
 
     @Override
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {

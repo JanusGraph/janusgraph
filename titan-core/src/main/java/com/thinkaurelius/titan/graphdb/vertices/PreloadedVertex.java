@@ -103,6 +103,10 @@ public class PreloadedVertex extends CacheVertex {
         return p;
     }
 
+    public<V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+        return property(VertexProperty.Cardinality.single,key,value,keyValues);
+    }
+
     @Override
     public <V> Iterator<VertexProperty<V>> properties(String... keys) {
         if (mixin==NO_MIXIN) return super.properties(keys);
