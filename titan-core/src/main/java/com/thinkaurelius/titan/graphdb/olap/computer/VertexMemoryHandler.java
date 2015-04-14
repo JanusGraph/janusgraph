@@ -87,7 +87,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
             return StreamFactory.iterable(StreamFactory.stream(reverseIncident)
                     .map(e -> {
-                        M msg = vertexMemory.getMessage(((TitanEdge) e).otherVertex(vertex).longId(), localMessageScope);
+                        M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((TitanEdge) e).otherVertex(vertex).longId()), localMessageScope);
                         return msg == null ? null : edgeFct.apply(msg, e);
                     })
                     .filter(m -> m != null)

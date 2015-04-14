@@ -71,17 +71,21 @@ public class VertexJobConverter implements ScanJob {
         return new VertexJobConverter(null,vertexJob);
     }
 
-    @Override
-    public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
-        graph.initializeGraph(graphConfig);
-        idManager = graph.get().getIDManager();
-        StandardTransactionBuilder txb = graph.get().buildTransaction().readOnly();
+    public static StandardTitanTx startTransaction(StandardTitanGraph graph) {
+        StandardTransactionBuilder txb = graph.buildTransaction().readOnly();
         txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
         txb.dirtyVertexSize(0);
         txb.vertexCacheSize(500);
+        return (StandardTitanTx)txb.start();
+    }
+
+    @Override
+    public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+        graph.initializeGraph(graphConfig);
+        idManager = graph.get().getIDManager();
         try {
-            tx = (StandardTitanTx)txb.start();
+            tx = startTransaction(graph.get());
             job.workerIterationStart(graph.get(), jobConfig, metrics);
         } catch (Throwable e) {
             close();
@@ -120,11 +124,7 @@ public class VertexJobConverter implements ScanJob {
             if (entryList.size()>=sq.getLimit()) metrics.incrementCustom(TRUNCATED_ENTRY_LISTS);
             v.addToQueryCache(sq.updateLimit(Query.NO_LIMIT),entryList);
         }
-        try {
-            job.process(v, metrics);
-        } catch (Throwable ex) {
-            log.error("Exception processing vertex [" + vertexId + "]: ", ex);
-        }
+        job.process(v, metrics);
     }
 
     protected boolean isGhostVertex(long vertexId, EntryList firstEntries) {

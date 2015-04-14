@@ -149,19 +149,23 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                     vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
 
                     jobId = name + "#" + iteration;
-                    VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram,numThreads);
+                    VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram);
                     StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
                     scanBuilder.setJobId(jobId);
                     scanBuilder.setNumProcessingThreads(numThreads);
                     scanBuilder.setWorkBlockSize(readBatchSize);
                     scanBuilder.setJob(job);
+                    PartitionedVertexProgramExecutor pvpe = new PartitionedVertexProgramExecutor(graph,memory,vertexMemory,vertexProgram);
                     try {
+                        //Iterates over all vertices and computes the vertex program on all non-partitioned vertices. For partitioned ones, the data is aggregated
                         ScanMetrics jobResult = scanBuilder.execute().get();
                         long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
                         if (failures>0) {
                             throw new TitanException("Failed to process ["+failures+"] vertices in vertex program iteration ["+iteration+"]. Computer is aborting.");
                         }
-                        failures = jobResult.getCustom(VertexProgramScanJob.PARTITION_VERTEX_POSTFAIL);
+                        //Runs the vertex program on all aggregated, partitioned vertices.
+                        pvpe.run(numThreads,jobResult);
+                        failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
                         if (failures>0) {
                             throw new TitanException("Failed to process ["+failures+"] partitioned vertices in vertex program iteration ["+iteration+"]. Computer is aborting.");
                         }

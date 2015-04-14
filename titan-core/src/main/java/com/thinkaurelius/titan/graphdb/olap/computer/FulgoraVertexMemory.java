@@ -137,7 +137,7 @@ public class FulgoraVertexMemory<M> {
         getPartitioned(vertexId).addMessage(message,normalizeScope(scope),previousScopes,combiner);
     }
 
-    public M getAggregateMessage(long vertexId, MessageScope scope) {
+    M getAggregateMessage(long vertexId, MessageScope scope) {
         return getPartitioned(vertexId).getMessage(normalizeScope(scope),previousScopes);
     }
 

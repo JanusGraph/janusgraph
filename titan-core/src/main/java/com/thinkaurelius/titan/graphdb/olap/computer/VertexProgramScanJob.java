@@ -52,11 +52,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     private final VertexProgram<M> vertexProgram;
 
     private final MessageCombiner<M> combiner;
-    private final Set<MessageScope> scopes;
-
-    public static final String GHOTST_PARTITION_VERTEX = "partition-ghost";
-    public static final String PARTITION_VERTEX_POSTSUCCESS = "partition-success";
-    public static final String PARTITION_VERTEX_POSTFAIL = "partition-fail";
 
     private VertexProgramScanJob(IDManager idManager, FulgoraMemory memory,
                                 FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
@@ -65,7 +60,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         this.vertexMemory = vertexMemory;
         this.vertexProgram = vertexProgram;
         this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
-        this.scopes = vertexProgram.getMessageScopes(memory);
     }
 
     @Override
@@ -89,7 +83,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         PreloadedVertex v = (PreloadedVertex)vertex;
         long vertexId = v.longId();
         VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
-        v.setPropertyMixing(vh);
         v.setExceptionOnRetrieve(true);
         if (idManager.isPartitionedVertex(vertexId)) {
             if (idManager.isCanonicalVertexId(vertexId)) {
@@ -97,7 +90,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 if (results == null) results = EntryList.EMPTY_LIST;
                 vertexMemory.setLoadedProperties(vertexId,results);
             }
-            for (MessageScope scope : scopes) {
+            for (MessageScope scope : vertexMemory.getPreviousScopes()) {
                 if (scope instanceof MessageScope.Local) {
                     M combinedMsg = null;
                     for (Iterator<M> msgIter = vh.receiveMessages(scope); msgIter.hasNext(); ) {
@@ -109,6 +102,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 }
             }
         } else {
+            v.setPropertyMixing(vh);
             vertexProgram.execute(v, vh, memory);
         }
     }
@@ -128,9 +122,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
                 assert scope instanceof MessageScope.Local;
-                Traversal<Vertex,Edge> incident = FulgoraUtil.getTraversal((MessageScope.Local) scope,queries.getTransaction());
-                TitanVertexStep<Vertex> startStep = (TitanVertexStep<Vertex>)incident.asAdmin().getStartStep();
-                startStep.reverseDirection();
+                TitanVertexStep<Vertex> startStep = FulgoraUtil.getReverseTitanVertexStep((MessageScope.Local) scope,queries.getTransaction());
                 QueryContainer.QueryBuilder qb = queries.addQuery();
                 startStep.makeQuery(qb);
                 qb.edges();
@@ -140,10 +132,9 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
 
     public static<M> Executor getVertexProgramScanJob(StandardTitanGraph graph, FulgoraMemory memory,
-                                                  FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram,
-                                                  int numThreads) {
+                                                  FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
         VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
-        return new Executor(graph,job,numThreads);
+        return new Executor(graph,job);
     }
 
     //Query for all system properties+edges and normal properties
@@ -153,17 +144,12 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     public static class Executor extends VertexJobConverter {
 
-        private final int numThreads;
-
-        private Executor(TitanGraph graph, VertexProgramScanJob job, int numThreads) {
+        private Executor(TitanGraph graph, VertexProgramScanJob job) {
             super(graph, job);
-            Preconditions.checkArgument(numThreads>0,"Invalid number: %s",numThreads);
-            this.numThreads = numThreads;
         }
 
         private Executor(final Executor copy) {
             super(copy);
-            this.numThreads=copy.numThreads;
         }
 
         @Override
@@ -175,19 +161,6 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
         @Override
         public void workerIterationEnd(ScanMetrics metrics) {
-            ThreadPoolExecutor processor = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(128));
-            processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            try {
-                ((VertexProgramScanJob)job).processPartitionedVertices(processor,tx,metrics);
-                processor.shutdown();
-                processor.awaitTermination(10,TimeUnit.SECONDS);
-                if (!processor.isTerminated()) log.error("Processor did not terminate in time");
-            } catch (Throwable ex) {
-                log.error("Could not post-process partitioned vertices",ex);
-                metrics.incrementCustom(PARTITION_VERTEX_POSTFAIL);
-            } finally {
-                processor.shutdownNow();
-            }
             super.workerIterationEnd(metrics);
         }
 
@@ -197,52 +170,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     }
 
-    private void processPartitionedVertices(final ExecutorService exeuctor, final StandardTitanTx tx, ScanMetrics metrics) {
-        Map<Long,EntryList> pVertexAggregates = vertexMemory.retrievePartitionAggregates();
-        for (Map.Entry<Long,EntryList> pvertices : pVertexAggregates.entrySet()) {
-            if (pvertices.getValue()==null) {
-                metrics.incrementCustom(GHOTST_PARTITION_VERTEX);
-                continue;
-            }
-            exeuctor.submit(new PartitionedVertexProcessor(pvertices.getKey(),pvertices.getValue(),tx,metrics));
-        }
-    }
 
-    private class PartitionedVertexProcessor implements Runnable {
-
-        private final long vertexId;
-        private final EntryList preloaded;
-        private final StandardTitanTx tx;
-        private final ScanMetrics metrics;
-
-        private PartitionedVertexProcessor(long vertexId, EntryList preloaded, StandardTitanTx tx, ScanMetrics metrics) {
-            Preconditions.checkArgument(idManager.isPartitionedVertex(vertexId) && idManager.isCanonicalVertexId(vertexId));
-            assert preloaded!=null;
-            this.vertexId = vertexId;
-            this.preloaded = preloaded;
-            this.tx = tx;
-            this.metrics = metrics;
-        }
-
-        @Override
-        public void run() {
-            try {
-                TitanVertex vertex = tx.getInternalVertex(vertexId);
-                Preconditions.checkArgument(vertex instanceof PreloadedVertex,
-                        "The bounding transaction is not configured correctly");
-                PreloadedVertex v = (PreloadedVertex)vertex;
-                v.setExceptionOnRetrieve(true);
-                v.addToQueryCache(SYSTEM_PROPS_QUERY,preloaded);
-                VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<M>(vertexMemory,v);
-                v.setPropertyMixing(vh);
-                vertexProgram.execute(v,vh,memory);
-                metrics.incrementCustom(PARTITION_VERTEX_POSTSUCCESS);
-            } catch (Throwable e) {
-                metrics.incrementCustom(PARTITION_VERTEX_POSTFAIL);
-                log.error("Error post-processing partition vertex: " + vertexId,e);
-            }
-        }
-    }
 
 
 

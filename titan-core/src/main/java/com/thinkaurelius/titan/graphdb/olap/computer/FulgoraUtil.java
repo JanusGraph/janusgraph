@@ -26,6 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,20 +37,22 @@ public class FulgoraUtil {
 
     private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(TitanLocalQueryOptimizerStrategy.instance());;
 
-    public static Traversal<Vertex,Edge> getTraversal(final MessageScope.Local<?> scope,
+    public static TitanVertexStep<Vertex> getReverseTitanVertexStep(final MessageScope.Local<?> scope,
                                                                        final TitanTransaction graph) {
-        Traversal.Admin<Vertex,Edge> incident = scope.getIncidentTraversal().get().asAdmin();
-        FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
-        for (Step step : incident.getSteps()) result.addStep(step);
-        result.asAdmin().setStrategies(FULGORA_STRATEGIES);
+        FulgoraElementTraversal<Vertex,Edge> result = getReverseTraversal(scope,graph,null);
         result.asAdmin().applyStrategies();
         verifyIncidentTraversal(result);
-        return result;
+        return (TitanVertexStep)result.getStartStep();
     }
 
     public static Traversal<Vertex,Edge> getReverseElementTraversal(final MessageScope.Local<?> scope,
-                                                                       final Vertex start,
-                                                                       final TitanTransaction graph) {
+                                                                    final Vertex start,
+                                                                    final TitanTransaction graph) {
+        return getReverseTraversal(scope,graph,start);
+    }
+
+    private static FulgoraElementTraversal<Vertex,Edge> getReverseTraversal(final MessageScope.Local<?> scope,
+                                                      final TitanTransaction graph, @Nullable final Vertex start) {
         Traversal.Admin<Vertex,Edge> incident = scope.getIncidentTraversal().get().asAdmin();
         FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
 
@@ -58,10 +61,11 @@ public class FulgoraUtil {
         assert startStep instanceof VertexStep;
         ((VertexStep) startStep).reverseDirection();
 
-        result.addStep(0, new StartStep<>(incident, start));
+        if (start!=null) result.addStep(0, new StartStep<>(incident, start));
         result.asAdmin().setStrategies(FULGORA_STRATEGIES);
         return result;
     }
+
 
     private static void verifyIncidentTraversal(FulgoraElementTraversal<Vertex,Edge> traversal) {
         //First step must be TitanVertexStep
