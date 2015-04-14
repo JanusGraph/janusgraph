@@ -3159,6 +3159,33 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(numEdges - 1, parentVertex.query().direction(Direction.OUT).edges());
     }
 
+
+    @Test
+    public void testTinkerPopCardinality() {
+        PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
+        PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.SINGLE).dataType(String.class).make();
+        PropertyKey names = mgmt.makePropertyKey("names").cardinality(Cardinality.LIST).dataType(String.class).make();
+
+        mgmt.buildIndex("byId",Vertex.class).addKey(id).buildCompositeIndex();
+
+        finishSchema();
+        GraphTraversalSource gts;
+        Vertex v;
+
+        v = graph.addVertex("id",1);
+        v.property(single,"name","t1");
+        graph.addVertex("id",2,"names","n1","names","n2");
+        graph.tx().commit();
+
+        gts = graph.traversal();
+        v = gts.V().has("id",1).next();
+        v.property(single,"name","t2");
+        v = gts.V().has("id",1).next();
+        v.property(single,"name","t3");
+        assertCount(1,gts.V(v).properties("name"));
+        assertCount(2,gts.V().has("id",2).properties("names"));
+    }
+
     @Test
     public void testTinkerPopOptimizationStrategies() {
         PropertyKey id = mgmt.makePropertyKey("id").cardinality(Cardinality.SINGLE).dataType(Integer.class).make();
