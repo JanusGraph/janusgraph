@@ -108,6 +108,14 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
         test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
         method = "shouldHandleSetVertexProperties",
         reason = "Titan can only handle SET cardinality for properties when defined in the schema")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngineOverGraphTest",
+        method = "shouldProcessUTF8Query",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-629 (FIXED on HEAD)")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngineOverGraphTest",
+        method = "shouldEvalGlobalClosuresEvenAfterEvictionOfClass",
+        reason = "https://issues.apache.org/jira/browse/TINKERPOP3-630 (FIXED on HEAD)")
 //------------------------
 //@Graph.OptOut(
 //        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
