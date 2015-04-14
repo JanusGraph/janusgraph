@@ -17,6 +17,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_COMPUTER)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_PERFORMANCE)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_PROCESS_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_PROCESS_COMPUTER)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 //@Graph.OptOut(
 //        test = "com.tinkerpop.gremlin.structure.strategy.PartitionStrategyTest",
 //        method = "shouldWriteToMultiplePartitions",
