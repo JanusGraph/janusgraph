@@ -20,6 +20,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             LoggerFactory.getLogger(ElasticsearchRunner.class);
 
     public static final String ES_PID_FILE = "/tmp/titan-test-es.pid";
+    private String configFile = "elasticsearch.yml";
 
     public ElasticsearchRunner() {
         this.homedir = ".";
@@ -29,6 +30,12 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         this.homedir = esHome;
     }
 
+    public ElasticsearchRunner(String esHome, String configFile) {
+        this(esHome);
+        this.configFile = configFile;
+    }
+
+
     @Override
     protected String getDaemonShortName() {
         return "Elasticsearch";
@@ -36,12 +43,18 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
 
     @Override
     protected void killImpl(ElasticsearchStatus stat) throws IOException {
-
         log.info("Killing {} pid {}...", getDaemonShortName(), stat.getPid());
 
         runCommand("/bin/kill", String.valueOf(stat.getPid()));
 
         log.info("Sent SIGTERM to {} pid {}", getDaemonShortName(), stat.getPid());
+
+        try {
+            watchLog(" closed", 60L, TimeUnit.SECONDS);
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         stat.getFile().delete();
 
@@ -64,12 +77,13 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             FileUtils.deleteDirectory(logs);
         }
 
-        runCommand(homedir + File.separator + "bin/elasticsearch", "-d", "-p", ES_PID_FILE);
+        runCommand(homedir + File.separator + "bin/elasticsearch", "-d", "-p", ES_PID_FILE, "-Des.config=" + homedir + File.separator + "config" + File.separator + configFile);
         try {
-            watchLogForStartup(60L, TimeUnit.SECONDS);
+            watchLog(" started", 60L, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
         return readStatusFromDisk();
     }
 
@@ -78,7 +92,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         return ElasticsearchStatus.read(ES_PID_FILE);
     }
 
-    private void watchLogForStartup(long duration, TimeUnit unit) throws InterruptedException {
+    private void watchLog(String suffix, long duration, TimeUnit unit) throws InterruptedException {
         long startMS = System.currentTimeMillis();
         long durationMS = TimeUnit.MILLISECONDS.convert(duration, unit);
         long elapsedMS;
@@ -86,19 +100,18 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
         File logFile = new File(homedir + File.separator + "target" + File.separator
                 + "es-logs" + File.separator + "elasticsearch.log");
 
-        log.info("Watching ES logfile {} for startup token", logFile);
+        log.info("Watching ES logfile {} for {} token", logFile, suffix);
 
         while ((elapsedMS = System.currentTimeMillis() - startMS) < durationMS) {
 
-            // Grep for a logline ending in "started" and assume that means ES is ready
+            // Grep for a logline ending in the suffix and assume that means ES is ready
             BufferedReader br = null;
             try {
                 br = new BufferedReader(new FileReader(logFile));
                 String line;
                 while (null != (line = br.readLine())) {
-                    if (line.endsWith(" started")) {
+                    if (line.endsWith(suffix)) {
                         log.debug("Read line \"{}\" from ES logfile {}", line, logFile);
-                        log.info("Elasticsearch started in {} {}", elapsedMS, TimeUnit.MILLISECONDS);
                         return;
                     }
                 }
@@ -113,7 +126,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
             Thread.sleep(500L);
         }
 
-        log.info("Elasticsearch startup timeout ({} {})", elapsedMS, TimeUnit.MILLISECONDS);
+        log.info("Elasticsearch logfile timeout ({} {})", elapsedMS, TimeUnit.MILLISECONDS);
     }
 
 }

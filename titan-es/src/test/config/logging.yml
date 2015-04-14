@@ -33,7 +33,7 @@ appender:
 
   file:
     type: dailyRollingFile
-    file: ${path.logs}/${cluster.name}.log
+    file: ${path.logs}/elasticsearch.log
     datePattern: "'.'yyyy-MM-dd"
     layout:
       type: pattern
