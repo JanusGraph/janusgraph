@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
@@ -52,13 +53,14 @@ public class ElasticSearchConfigTest {
 
     @BeforeClass
     public static void killElasticsearch() {
+        IOUtils.deleteDirectory(new File("es"), true);
         ElasticsearchRunner esr = new ElasticsearchRunner();
         esr.stop();
     }
 
     @Test
     public void testTransportClient() throws BackendException, InterruptedException {
-        ElasticsearchRunner esr = new ElasticsearchRunner();
+        ElasticsearchRunner esr = new ElasticsearchRunner(".", "transportClient.yml");
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT, INDEX_NAME);
@@ -155,11 +157,12 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testNetworkNodeUsingExt() throws BackendException, InterruptedException {
-        ElasticsearchRunner esr = new ElasticsearchRunner();
+        ElasticsearchRunner esr = new ElasticsearchRunner(".", "networkNodeUsingExt.yml");
         esr.start();
         CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "false");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.node.client", "true");
+        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.cluster.name", "networkNodeUsingExt");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.discovery.zen.ping.multicast.enabled", "false");
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.discovery.zen.ping.unicast.hosts", "localhost,127.0.0.1:9300");
         ModifiableConfiguration config =
@@ -191,7 +194,7 @@ public class ElasticSearchConfigTest {
 
     @Test
     public void testNetworkNodeUsingYaml() throws BackendException, InterruptedException {
-        ElasticsearchRunner esr = new ElasticsearchRunner();
+        ElasticsearchRunner esr = new ElasticsearchRunner(".", "networkNodeUsingYaml.yml");
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
@@ -224,10 +227,11 @@ public class ElasticSearchConfigTest {
     public void testIndexCreationOptions() throws InterruptedException, BackendException {
         final int shards = 77;
 
-        ElasticsearchRunner esr = new ElasticsearchRunner();
+        ElasticsearchRunner esr = new ElasticsearchRunner(".", "indexCreationOptions.yml");
         esr.start();
         CommonsConfiguration cc = new CommonsConfiguration(new BaseConfiguration());
         cc.set("index." + INDEX_NAME + ".elasticsearch.create.ext.number_of_shards", String.valueOf(shards));
+        cc.set("index." + INDEX_NAME + ".elasticsearch.ext.cluster.name", "indexCreationOptions");
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                         cc, BasicConfiguration.Restriction.NONE);
@@ -235,12 +239,13 @@ public class ElasticSearchConfigTest {
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
         simpleWriteAndQuery(idx);
-        idx.close();
+
 
 
         ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
         settingsBuilder.put("discovery.zen.ping.multicast.enabled", "false");
         settingsBuilder.put("discovery.zen.ping.unicast.hosts", "localhost,127.0.0.1:9300");
+        settingsBuilder.put("cluster.name", "indexCreationOptions");
         NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder().settings(settingsBuilder.build());
         nodeBuilder.client(true).data(false).local(false);
         Node n = nodeBuilder.build().start();
@@ -248,6 +253,7 @@ public class ElasticSearchConfigTest {
         GetSettingsResponse response = n.client().admin().indices().getSettings(new GetSettingsRequest().indices("titan")).actionGet();
         assertEquals(String.valueOf(shards), response.getSetting("titan", "index.number_of_shards"));
 
+        idx.close();
         n.stop();
         esr.stop();
     }
