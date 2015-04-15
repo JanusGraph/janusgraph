@@ -1275,8 +1275,17 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> GRAPHITE_PREFIX = new ConfigOption<String>(METRICS_GRAPHITE_NS,"prefix",
             "A Graphite-specific prefix for reported metrics",
             ConfigOption.Type.MASKABLE, String.class);
+
+
 //    public static final String GRAPHITE_PREFIX_KEY = "prefix";
 //    public static final String GRAPHITE_PREFIX_DEFAULT = null;
+
+    /**
+     * A compute specific config option for internal use.
+     */
+    public static final ConfigOption<Boolean> IS_COMPUTE = new ConfigOption<Boolean>(ROOT_NS,"isCompute",
+            "A compute specific config option for internal use",
+            ConfigOption.Type.LOCAL, Boolean.class, false);
 
 
     // ################ Begin Class Definition #######################
@@ -1288,8 +1297,8 @@ public class GraphDatabaseConfiguration {
 
 
     private final Configuration configuration;
-    private final String uniqueGraphId;
-    private final ModifiableConfiguration localConfiguration;
+    private String uniqueGraphId;
+    private ModifiableConfiguration localConfiguration;
 
 
     private boolean readOnly;
@@ -1309,12 +1318,19 @@ public class GraphDatabaseConfiguration {
     private boolean vertexPropertySingleCardinality;
 
     private StoreFeatures storeFeatures = null;
+    private boolean compute;
 
     public GraphDatabaseConfiguration(ReadConfiguration localConfig) {
         Preconditions.checkNotNull(localConfig);
 
         BasicConfiguration localbc = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+
+        if(Boolean.TRUE.equals(localbc.get(IS_COMPUTE))) {
+            configuration = localbc;
+            compute = true;
+            return;
+        }
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
@@ -1915,6 +1931,10 @@ public class GraphDatabaseConfiguration {
 
     static boolean existsFile(String file) {
         return (new File(file)).isFile();
+    }
+
+    public boolean isCompute() {
+        return compute;
     }
 
 //    static PropertiesConfiguration getPropertiesConfig(String file) {

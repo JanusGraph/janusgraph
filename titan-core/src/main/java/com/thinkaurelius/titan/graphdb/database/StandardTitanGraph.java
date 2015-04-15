@@ -11,8 +11,10 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.log.Message;
@@ -85,6 +87,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -92,33 +95,39 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             LoggerFactory.getLogger(StandardTitanGraph.class);
 
 
+    private static final StandardTitanGraph EMPTY;
+
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
                 .addStrategies(TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance()); //TitanElementStepStrategy.instance()
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class,graphStrategies);
-        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class,graphStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, graphStrategies);
+
+        ModifiableConfiguration config = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+        config.set(GraphDatabaseConfiguration.IS_COMPUTE, true);
+        EMPTY = new StandardTitanGraph(new GraphDatabaseConfiguration(config.getConfiguration()));
     }
 
-    private final GraphDatabaseConfiguration config;
-    private final Backend backend;
-    private final IDManager idManager;
-    private final VertexIDAssigner idAssigner;
-    private final TimestampProvider times;
+    private GraphDatabaseConfiguration config;
+    private Backend backend;
+    private IDManager idManager;
+    private VertexIDAssigner idAssigner;
+    private TimestampProvider times;
 
     //Serializers
-    protected final IndexSerializer indexSerializer;
-    protected final EdgeSerializer edgeSerializer;
-    protected final Serializer serializer;
+    protected IndexSerializer indexSerializer;
+    protected EdgeSerializer edgeSerializer;
+    protected Serializer serializer;
 
     //Caches
-    public final SliceQuery vertexExistenceQuery;
-    private final RelationQueryCache queryCache;
-    private final SchemaCache schemaCache;
+    public SliceQuery vertexExistenceQuery;
+    private RelationQueryCache queryCache;
+    private SchemaCache schemaCache;
 
     //Log
-    private final ManagementLogger mgmtLogger;
+    private ManagementLogger mgmtLogger;
 
     //Shutdown hook
     private volatile ShutdownThread shutdownHook;
@@ -129,41 +138,45 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private Set<StandardTitanTx> openTransactions;
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
+
         this.config = configuration;
-        this.backend = configuration.getBackend();
+        if(!configuration.isCompute()) {
+            this.backend = configuration.getBackend();
 
-        this.idAssigner = config.getIDAssigner(backend);
-        this.idManager = idAssigner.getIDManager();
+            this.idAssigner = config.getIDAssigner(backend);
+            this.idManager = idAssigner.getIDManager();
 
-        this.serializer = config.getSerializer();
-        StoreFeatures storeFeatures = backend.getStoreFeatures();
-        this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer,
-                this.backend.getIndexInformation(),storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
-        this.edgeSerializer = new EdgeSerializer(this.serializer);
-        this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
-        this.queryCache = new RelationQueryCache(this.edgeSerializer);
-        this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
-        this.times = configuration.getTimestampProvider();
+            this.serializer = config.getSerializer();
+            StoreFeatures storeFeatures = backend.getStoreFeatures();
+            this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer,
+                    this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
+            this.edgeSerializer = new EdgeSerializer(this.serializer);
+            this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
+            this.queryCache = new RelationQueryCache(this.edgeSerializer);
+            this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
+            this.times = configuration.getTimestampProvider();
 
-        isOpen = true;
-        txCounter = new AtomicLong(0);
-        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100,0.75f,1));
+            isOpen = true;
+            txCounter = new AtomicLong(0);
+            openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100, 0.75f, 1));
 
-        //Register instance and ensure uniqueness
-        String uniqueInstanceId = configuration.getUniqueGraphId();
-        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
-        if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
-            throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
+            //Register instance and ensure uniqueness
+            String uniqueInstanceId = configuration.getUniqueGraphId();
+            ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+            if (globalConfig.has(REGISTRATION_TIME, uniqueInstanceId)) {
+                throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
+            }
+            globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
+
+            Log mgmtLog = backend.getSystemMgmtLog();
+            mgmtLogger = new ManagementLogger(this, mgmtLog, schemaCache, this.times);
+            mgmtLog.registerReader(ReadMarker.fromNow(), mgmtLogger);
+
+            shutdownHook = new ShutdownThread(this);
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
         }
-        globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
-
-        Log mgmtLog = backend.getSystemMgmtLog();
-        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);
-        mgmtLog.registerReader(ReadMarker.fromNow(),mgmtLogger);
-
-        shutdownHook = new ShutdownThread(this);
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
+
 
     @Override
     public boolean isOpen() {
@@ -822,5 +835,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 return GraphSONWriter.build().mapper(mapper);
             }
         };
+    }
+
+
+
+    public static Graph empty() {
+        return EMPTY;
     }
 }
