@@ -3184,6 +3184,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.property(single,"name","t3");
         assertCount(1,gts.V(v).properties("name"));
         assertCount(2,gts.V().has("id",2).properties("names"));
+        assertCount(2,gts.V().hasLabel("vertex"));
     }
 
     @Test

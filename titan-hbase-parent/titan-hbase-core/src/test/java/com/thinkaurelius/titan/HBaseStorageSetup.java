@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -67,10 +68,14 @@ public class HBaseStorageSetup {
         }
     }
 
-
     public static ModifiableConfiguration getHBaseConfiguration() {
+        return getHBaseConfiguration("");
+    }
+
+    public static ModifiableConfiguration getHBaseConfiguration(String tableName) {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
+        if (!StringUtils.isEmpty(tableName)) config.set(HBaseStoreManager.HBASE_TABLE,tableName);
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, true);
         config.set(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER, HBaseStoreManager.PREFERRED_TIMESTAMPS);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
