@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.graphdb.attribute;
 
-import com.fasterxml.jackson.core.JsonParseException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import org.junit.Test;
 
@@ -214,6 +215,17 @@ public class GeoshapeTest {
     }
 
 
+    @Test
+    public void testGeoJsonSerialization() throws IOException {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(new Geoshape.GeoshapeGsonSerializer(Geoshape.class));
+        final ObjectMapper om = new ObjectMapper();
+        om.registerModule(module);
+        assertEquals("{\"type\":\"Point\",\"coordinates\":[20.5,10.5]}", om.writeValueAsString(Geoshape.point(10.5, 20.5)));
+        assertEquals("{\"type\":\"Polygon\",\"coordinates\":[[20.5,10.5],[22.5,10.5],[22.5,12.5],[20.5,12.5]]}", om.writeValueAsString(Geoshape.box(10.5, 20.5, 12.5, 22.5)));
+        assertEquals("{\"type\":\"Circle\",\"radius\":30.5,\"coordinates\":[20.5,10.5]}", om.writeValueAsString(Geoshape.circle(10.5, 20.5, 30.5)));
+
+    }
 
 
 }
