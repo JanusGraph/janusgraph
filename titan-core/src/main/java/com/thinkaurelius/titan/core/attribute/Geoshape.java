@@ -1,5 +1,9 @@
 package com.thinkaurelius.titan.core.attribute;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
 import com.spatial4j.core.context.SpatialContext;
@@ -11,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -498,6 +503,75 @@ public class Geoshape {
                     buffer.putFloat(coordinates[i][j]);
                 }
             }
+        }
+    }
+
+    /**
+     * @author Bryn Cooke
+     */
+    public static class GeoshapeGsonSerializer extends StdSerializer<Geoshape> {
+
+        public GeoshapeGsonSerializer(Class<Geoshape> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(Geoshape value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+            jgen.writeStartObject();
+            jgen.writeFieldName("type");
+
+
+            switch(value.getType()) {
+                case POLYGON:
+                    throw new UnsupportedOperationException("Ploygons are not supported");
+                case BOX:
+                    jgen.writeString("Polygon");
+                    jgen.writeFieldName("coordinates");
+                    jgen.writeStartArray();
+
+                    jgen.writeStartArray();
+                    jgen.writeNumber(value.coordinates[1][0]);
+                    jgen.writeNumber(value.coordinates[0][0]);
+                    jgen.writeEndArray();
+
+                    jgen.writeStartArray();
+                    jgen.writeNumber(value.coordinates[1][1]);
+                    jgen.writeNumber(value.coordinates[0][0]);
+                    jgen.writeEndArray();
+
+                    jgen.writeStartArray();
+                    jgen.writeNumber(value.coordinates[1][1]);
+                    jgen.writeNumber(value.coordinates[0][1]);
+                    jgen.writeEndArray();
+
+                    jgen.writeStartArray();
+                    jgen.writeNumber(value.coordinates[1][0]);
+                    jgen.writeNumber(value.coordinates[0][1]);
+                    jgen.writeEndArray();
+
+                    jgen.writeEndArray();
+                    break;
+                case CIRCLE:
+                    jgen.writeString("Circle");
+                    jgen.writeFieldName("radius");
+                    jgen.writeNumber(value.getRadius());
+                    jgen.writeFieldName("coordinates");
+                    jgen.writeStartArray();
+                    jgen.writeNumber(value.coordinates[1][0]);
+                    jgen.writeNumber(value.coordinates[0][0]);
+                    jgen.writeEndArray();
+                    break;
+                case POINT:
+                    jgen.writeString("Point");
+                    jgen.writeFieldName("coordinates");
+                    jgen.writeStartArray();
+                    jgen.writeNumber(value.coordinates[1][0]);
+                    jgen.writeNumber(value.coordinates[0][0]);
+                    jgen.writeEndArray();
+                    break;
+            }
+            jgen.writeEndObject();
+
         }
     }
 }
