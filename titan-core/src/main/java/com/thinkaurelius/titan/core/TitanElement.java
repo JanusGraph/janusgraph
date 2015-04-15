@@ -93,7 +93,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
     public<V> Property<V> property(String key, V value);
 
     /**
-     * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
+     * Retrieves the value associated with the given key on this element and casts it to the specified type.
      * If the key has cardinality SINGLE, then there can be at most one value and this value is returned (or null).
      * Otherwise a list of all associated values is returned, or an empty list if non exist.
      * <p/>
@@ -101,7 +101,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * @param key key
      * @return value or list of values associated with key
      */
-    public <V> V valueOrNull(RelationType key);
+    public <V> V valueOrNull(PropertyKey key);
 
     //########### LifeCycle Status ##########
 

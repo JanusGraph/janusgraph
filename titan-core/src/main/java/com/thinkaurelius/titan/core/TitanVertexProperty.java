@@ -26,11 +26,7 @@ public interface TitanVertexProperty<V> extends TitanRelation, VertexProperty<V>
         return element().graph();
     }
 
-    /**
-     * Returns the {@link PropertyKey} for this property
-     * 
-     * @return
-     */
+    @Override
     public default PropertyKey propertyKey() {
         return (PropertyKey)getType();
     }

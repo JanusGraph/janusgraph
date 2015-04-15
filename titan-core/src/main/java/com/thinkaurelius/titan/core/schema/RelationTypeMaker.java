@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core.schema;
 
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 
 /**
@@ -39,10 +40,10 @@ public interface RelationTypeMaker {
      * <br />
      * The signature is empty by default.
      *
-     * @param types RelationTypes composing the signature for the configured relation type. The order is irrelevant.
+     * @param keys PropertyKey composing the signature for the configured relation type. The order is irrelevant.
      * @return this RelationTypeMaker
      */
-    public RelationTypeMaker signature(RelationType... types);
+    public RelationTypeMaker signature(PropertyKey... keys);
 
     /**
      * Builds the configured relation type

@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.DirectionID;
-import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.EdgeTypeParse;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.RelationTypeParse;
 import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getBounds;
 
 /**
@@ -66,7 +66,7 @@ public class EdgeSerializer implements RelationReader {
     public Direction parseDirection(Entry data) {
         RelationCache map = data.getCache();
         if (map != null) return map.direction;
-        return IDHandler.readEdgeType(data.asReadBuffer()).dirID.getDirection();
+        return IDHandler.readRelationType(data.asReadBuffer()).dirID.getDirection();
     }
 
     @Override
@@ -74,7 +74,7 @@ public class EdgeSerializer implements RelationReader {
         ReadBuffer in = data.asReadBuffer();
 
         LongObjectOpenHashMap properties = excludeProperties ? null : new LongObjectOpenHashMap(4);
-        EdgeTypeParse typeAndDir = IDHandler.readEdgeType(in);
+        RelationTypeParse typeAndDir = IDHandler.readRelationType(in);
 
         long typeId = typeAndDir.typeId;
         Direction dir = typeAndDir.dirID.getDirection();
@@ -145,7 +145,7 @@ public class EdgeSerializer implements RelationReader {
 
             //Third: read rest
             while (in.hasRemaining()) {
-                RelationType type = tx.getExistingRelationType(IDHandler.readInlineEdgeType(in));
+                PropertyKey type = tx.getExistingPropertyKey(IDHandler.readInlineRelationType(in));
                 Object pvalue = readInline(in, type, InlineType.NORMAL);
                 assert pvalue != null;
                 properties.put(type.longId(), pvalue);
@@ -165,27 +165,16 @@ public class EdgeSerializer implements RelationReader {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] typeids, LongObjectOpenHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
-        for (long typeid : typeids) {
-            RelationType keyType = tx.getExistingRelationType(typeid);
+    private void readInlineTypes(long[] keyIds, LongObjectOpenHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
+        for (long keyId : keyIds) {
+            PropertyKey keyType = tx.getExistingPropertyKey(keyId);
             Object value = readInline(in, keyType, inlineType);
-            if (value != null) properties.put(typeid, value);
+            if (value != null) properties.put(keyId, value);
         }
     }
 
-    private Object readInline(ReadBuffer read, RelationType type, InlineType inlineType) {
-        if (type.isPropertyKey()) {
-            PropertyKey key = ((PropertyKey) type);
-            return readPropertyValue(read,key, inlineType);
-        } else {
-            assert type.isEdgeLabel();
-            long id;
-            if (inlineType.writeByteOrdered())
-                id = LongSerializer.INSTANCE.readByteOrder(read);
-            else
-                id = VariableLong.readPositive(read);
-            return id == 0 ? null : id;
-        }
+    private Object readInline(ReadBuffer read, PropertyKey key, InlineType inlineType) {
+        return readPropertyValue(read, key, inlineType);
     }
 
     private Object readPropertyValue(ReadBuffer read, PropertyKey key) {
@@ -239,7 +228,7 @@ public class EdgeSerializer implements RelationReader {
 
         DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
         int valuePosition;
-        IDHandler.writeEdgeType(out, typeid, dirID, type.isInvisibleType());
+        IDHandler.writeRelationType(out, typeid, dirID, type.isInvisibleType());
         Multiplicity multiplicity = type.multiplicity();
 
         long[] sortKey = type.getSortKey();
@@ -305,7 +294,7 @@ public class EdgeSerializer implements RelationReader {
             for (long id : signature) writtenTypes.add(id);
         }
         LongArrayList remainingTypes = new LongArrayList(8);
-        for (RelationType t : relation.getPropertyKeysDirect()) {
+        for (PropertyKey t : relation.getPropertyKeysDirect()) {
             if (!(t instanceof ImplicitKey) && !writtenTypes.contains(t.longId())) {
                 remainingTypes.add(t.longId());
             }
@@ -314,7 +303,7 @@ public class EdgeSerializer implements RelationReader {
         long[] remaining = remainingTypes.toArray();
         Arrays.sort(remaining);
         for (long tid : remaining) {
-            RelationType t = tx.getExistingRelationType(tid);
+            PropertyKey t = tx.getExistingPropertyKey(tid);
             writeInline(out, t, relation.getValueDirect(t), InlineType.NORMAL);
         }
         assert valuePosition>0;
@@ -329,7 +318,7 @@ public class EdgeSerializer implements RelationReader {
 
         KEY, SIGNATURE, NORMAL;
 
-        public boolean writeEdgeType() {
+        public boolean writeInlineKey() {
             return this==NORMAL;
         }
 
@@ -339,28 +328,21 @@ public class EdgeSerializer implements RelationReader {
 
     }
 
-    private void writeInlineTypes(long[] typeids, InternalRelation relation, DataOutput out, TypeInspector tx, InlineType inlineType) {
-        for (long typeid : typeids) {
-            RelationType t = tx.getExistingRelationType(typeid);
+    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx, InlineType inlineType) {
+        for (long keyId : keyIds) {
+            PropertyKey t = tx.getExistingPropertyKey(keyId);
             writeInline(out, t, relation.getValueDirect(t), inlineType);
         }
     }
 
-    private void writeInline(DataOutput out, RelationType type, Object value, InlineType inlineType) {
-        assert !(type.isPropertyKey() && !inlineType.writeEdgeType()) || !AttributeUtil.hasGenericDataType((PropertyKey) type);
+    private void writeInline(DataOutput out, PropertyKey inlineKey, Object value, InlineType inlineType) {
+        assert inlineType.writeInlineKey() || !AttributeUtil.hasGenericDataType(inlineKey);
 
-        if (inlineType.writeEdgeType()) {
-            IDHandler.writeInlineEdgeType(out, type.longId());
+        if (inlineType.writeInlineKey()) {
+            IDHandler.writeInlineRelationType(out, inlineKey.longId());
         }
 
-        if (type.isPropertyKey()) {
-            writePropertyValue(out,(PropertyKey)type,value, inlineType);
-        } else {
-            assert type.isEdgeLabel() && ((EdgeLabel) type).isUnidirected();
-            long id = (value==null?0:((InternalVertex) value).longId());
-            if (inlineType.writeByteOrdered()) LongSerializer.INSTANCE.writeByteOrder(out,id);
-            else VariableLong.writePositive(out,id);
-        }
+        writePropertyValue(out,inlineKey,value, inlineType);
     }
 
     private void writePropertyValue(DataOutput out, PropertyKey key, Object value) {
@@ -394,8 +376,8 @@ public class EdgeSerializer implements RelationReader {
         RelationCategory rt = type.isPropertyKey() ? RelationCategory.PROPERTY : RelationCategory.EDGE;
         if (dir == Direction.BOTH) {
             assert type.isEdgeLabel();
-            sliceStart = IDHandler.getEdgeType(type.longId(), getDirID(Direction.OUT, rt),type.isInvisibleType());
-            sliceEnd = IDHandler.getEdgeType(type.longId(), getDirID(Direction.IN, rt),type.isInvisibleType());
+            sliceStart = IDHandler.getRelationType(type.longId(), getDirID(Direction.OUT, rt), type.isInvisibleType());
+            sliceEnd = IDHandler.getRelationType(type.longId(), getDirID(Direction.IN, rt), type.isInvisibleType());
             assert sliceStart.compareTo(sliceEnd)<0;
             sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
@@ -403,8 +385,8 @@ public class EdgeSerializer implements RelationReader {
 
             DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
             DataOutput colEnd = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
-            IDHandler.writeEdgeType(colStart, type.longId(), dirID, type.isInvisibleType());
-            IDHandler.writeEdgeType(colEnd, type.longId(), dirID, type.isInvisibleType());
+            IDHandler.writeRelationType(colStart, type.longId(), dirID, type.isInvisibleType());
+            IDHandler.writeRelationType(colEnd, type.longId(), dirID, type.isInvisibleType());
 
             long[] sortKeyIDs = type.getSortKey();
             Preconditions.checkArgument(sortKey.length >= sortKeyIDs.length);
@@ -412,41 +394,41 @@ public class EdgeSerializer implements RelationReader {
             int keyStartPos = colStart.getPosition();
             int keyEndPos = -1;
             for (int i = 0; i < sortKey.length && sortKey[i] != null; i++) {
-                RelationType t = sortKey[i].type;
+                PropertyKey skey = sortKey[i].key;
                 Interval interval = sortKey[i].interval;
 
                 if (i>=sortKeyIDs.length) {
                     assert !type.multiplicity().isUnique(dir);
-                    assert (t instanceof ImplicitKey) && (t==ImplicitKey.TITANID || t==ImplicitKey.ADJACENT_ID);
-                    assert t!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
-                    assert t!=ImplicitKey.TITANID || (!type.multiplicity().isConstrained() &&
-                                                  (i==sortKeyIDs.length && t.isPropertyKey() || i==sortKeyIDs.length+1 && t.isEdgeLabel() ));
+                    assert (skey instanceof ImplicitKey) && (skey==ImplicitKey.TITANID || skey==ImplicitKey.ADJACENT_ID);
+                    assert skey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
+                    assert skey!=ImplicitKey.TITANID || (!type.multiplicity().isConstrained() &&
+                                                  (i==sortKeyIDs.length && skey.isPropertyKey() || i==sortKeyIDs.length+1 && skey.isEdgeLabel() ));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoints();
                     keyEndPos = colStart.getPosition();
 
                 } else {
                     assert !type.multiplicity().isConstrained();
-                    assert t.longId() == sortKeyIDs[i];
+                    assert skey.longId() == sortKeyIDs[i];
                 }
 
                 if (interval == null || interval.isEmpty()) {
                     break;
                 }
                 if (interval.isPoints()) {
-                    if (t==ImplicitKey.TITANID || t==ImplicitKey.ADJACENT_ID) {
+                    if (skey==ImplicitKey.TITANID || skey==ImplicitKey.ADJACENT_ID) {
                         assert !type.multiplicity().isUnique(dir);
                         VariableLong.writePositiveBackward(colStart, (Long)interval.getStart());
                         VariableLong.writePositiveBackward(colEnd, (Long)interval.getEnd());
                     } else {
-                        writeInline(colStart, t, interval.getStart(), InlineType.KEY);
-                        writeInline(colEnd, t, interval.getEnd(), InlineType.KEY);
+                        writeInline(colStart, skey, interval.getStart(), InlineType.KEY);
+                        writeInline(colEnd, skey, interval.getEnd(), InlineType.KEY);
                     }
                 } else {
                     if (interval.getStart() != null)
-                        writeInline(colStart, t, interval.getStart(), InlineType.KEY);
+                        writeInline(colStart, skey, interval.getStart(), InlineType.KEY);
                     if (interval.getEnd() != null)
-                        writeInline(colEnd, t, interval.getEnd(), InlineType.KEY);
+                        writeInline(colEnd, skey, interval.getEnd(), InlineType.KEY);
 
                     switch (type.getSortOrder()) {
                         case ASC:
@@ -493,12 +475,12 @@ public class EdgeSerializer implements RelationReader {
     }
 
     public static class TypedInterval {
-        public final InternalRelationType type;
+        public final PropertyKey key;
         public final Interval interval;
 
 
-        public TypedInterval(InternalRelationType type, Interval interval) {
-            this.type = type;
+        public TypedInterval(PropertyKey key, Interval interval) {
+            this.key = key;
             this.interval = interval;
         }
     }

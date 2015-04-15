@@ -369,7 +369,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //Unidirected
         EdgeLabel link = mgmt.makeEdgeLabel("link").unidirected().multiplicity(Multiplicity.MANY2ONE).make();
         //Signature label
-        EdgeLabel connect = mgmt.makeEdgeLabel("connect").signature(uid, link).multiplicity(Multiplicity.SIMPLE).make();
+        EdgeLabel connect = mgmt.makeEdgeLabel("connect").signature(uid).multiplicity(Multiplicity.SIMPLE).make();
         //Edge labels with different cardinalities
         EdgeLabel parent = mgmt.makeEdgeLabel("parent").multiplicity(Multiplicity.MANY2ONE).make();
         EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
@@ -427,9 +427,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(((InternalRelationType) friend).isInvisible());
         assertEquals(0, ((InternalRelationType) friend).getSignature().length);
         sig = ((InternalRelationType)connect).getSignature();
-        assertEquals(2,sig.length);
+        assertEquals(1,sig.length);
         assertEquals(uid.longId(),sig[0]);
-        assertEquals(link.longId(),sig[1]);
         assertEquals(0,((InternalRelationType) friend).getSortKey().length);
         assertEquals(Order.DEFAULT,((InternalRelationType) friend).getSortOrder());
         assertEquals(SchemaStatus.ENABLED,((InternalRelationType)friend).getStatus());
@@ -490,8 +489,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             fail();
         } catch (SchemaViolationException e) {}
         try {
-            //only unidrected, Many2One labels are allowed in signatures
-            mgmt.makeEdgeLabel("test").signature(friend).make();
+            //signature key must have non-generic data type
+            mgmt.makeEdgeLabel("test").signature(someid).make();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -562,9 +561,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(((InternalRelationType) friend).isInvisible());
         assertEquals(0, ((InternalRelationType) friend).getSignature().length);
         sig = ((InternalRelationType)connect).getSignature();
-        assertEquals(2, sig.length);
+        assertEquals(1, sig.length);
         assertEquals(uid.longId(), sig[0]);
-        assertEquals(link.longId(),sig[1]);
         assertEquals(0,((InternalRelationType) friend).getSortKey().length);
         assertEquals(Order.DEFAULT,((InternalRelationType) friend).getSortOrder());
         assertEquals(SchemaStatus.ENABLED,((InternalRelationType)friend).getStatus());
@@ -625,8 +623,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             fail();
         } catch (SchemaViolationException e) {}
         try {
-            //only unidrected, Many2One labels are allowed in signatures
-            mgmt.makeEdgeLabel("test").signature(friend).make();
+            //signature key must have non-generic data type
+            mgmt.makeEdgeLabel("test").signature(someid).make();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -663,7 +661,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.addEdge("spouse", v12);
         v.addEdge("friend",v12);
         v.addEdge("friend",v12); //supports multi edges
-        v.addEdge("connect", v12,"uid","e1","link",v);
+        v.addEdge("connect", v12,"uid","e1");
         v.addEdge("link",v13);
         TitanVertex v2 = tx.addVertex("tweet");
         v2.addEdge("link",v13);
@@ -685,6 +683,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v.property(VertexProperty.Cardinality.list,"name","John");
             fail();
         } catch (SchemaViolationException e) {}
+        try {
+            //Cannot set a property as edge
+            v.property("link",v);
+            fail();
+        } catch (IllegalArgumentException e) {}
 
 
         //Only one property for weight allowed
@@ -737,9 +740,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(1, v13.query().direction(Direction.OUT).labels("parent").has("weight").edges());
         assertEquals(v12,getOnlyElement(v.query().direction(Direction.OUT).labels("spouse").vertices()));
         edge = getOnlyElement(v.query().direction(Direction.BOTH).labels("connect").edges());
-        assertEquals(2,edge.keys().size());
+        assertEquals(1,edge.keys().size());
         assertEquals("e1",edge.value("uid"));
-        assertEquals(v,edge.value("link"));
         try {
             //connect is simple
             v.addEdge("connect", v12);
@@ -779,6 +781,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             v.property(VertexProperty.Cardinality.list,"name", "John");
             fail();
         } catch (SchemaViolationException e) {}
+        try {
+            //Cannot set a property as edge
+            v.property("link",v);
+            fail();
+        } catch (IllegalArgumentException e) {}
 
         //Only one property for weight allowed
         v.property(VertexProperty.Cardinality.single, "weight",  1.0);
@@ -830,9 +837,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(1, v13.query().direction(Direction.OUT).labels("parent").has("weight").edges());
         assertEquals(v12,getOnlyElement(v.query().direction(Direction.OUT).labels("spouse").vertices()));
         edge = getOnlyElement(v.query().direction(Direction.BOTH).labels("connect").edges());
-        assertEquals(2,edge.keys().size());
+        assertEquals(1,edge.keys().size());
         assertEquals("e1",edge.value("uid"));
-        assertEquals(v,edge.value("link"));
         try {
             //connect is simple
             v.addEdge("connect", v12);
@@ -1762,18 +1768,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         newTx();
         v21 = getV(tx,v21);
         v3 = getOnlyElement(v21.query().direction(Direction.OUT).labels("link").vertices());
-        assertFalse(((TitanVertex)v3).isRemoved());
+        assertFalse(v3.isRemoved());
         v3.remove();
         newTx();
         v21 = getV(tx,v21);
         v3 = getOnlyElement(v21.query().direction(Direction.OUT).labels("link").vertices());
-        assertFalse(((TitanVertex)v3).isRemoved());
+        assertFalse(v3.isRemoved());
         newTx();
 
         TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence(true).start();
         v21 = getV(tx3,v21);
         v3 = getOnlyElement(v21.query().direction(Direction.OUT).labels("link").vertices());
-        assertTrue(((TitanVertex) v3).isRemoved());
+        assertTrue(v3.isRemoved());
         tx3.commit();
     }
 
@@ -2377,14 +2383,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        makeVertexIndexedUniqueKey("name",String.class);
        PropertyKey time = makeKey("time",Integer.class);
        PropertyKey weight = makeKey("weight",Precision.class);
-
-       EdgeLabel author = mgmt.makeEdgeLabel("author").multiplicity(Multiplicity.MANY2ONE).unidirected().make();
+       PropertyKey number = makeKey("number",Long.class);
 
        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connect")).sortKey(time).make();
        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connectDesc")).sortKey(time).sortOrder(Order.DESC).make();
-       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
-       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friendDesc")).sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
-       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(author, weight).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(weight, time).sortOrder(Order.ASC).signature(number).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friendDesc")).sortKey(weight, time).sortOrder(Order.DESC).signature(number).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(number, weight).make();
        mgmt.makeEdgeLabel("follows").make();
        finishSchema();
 
@@ -2407,7 +2412,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                    e.property("time", i);
                    e.property("weight", i % 4 + 0.5);
                    e.property("name", "e" + i);
-                   e.property("author", i % 5 == 0 ? v : vs[i % 5]);
+                   e.property("number", i % 5);
                }
            }
        }
@@ -2489,10 +2494,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).count());
        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
 
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
-       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 2.0).count());
+       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 2.1, 4.0).count());
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
@@ -2602,10 +2607,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).count());
        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
 
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
-       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 2.0).count());
+       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 2.1, 4.0).count());
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
@@ -3174,7 +3179,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         v = graph.addVertex("id",1);
         v.property(single,"name","t1");
-        graph.addVertex("id",2,"names","n1","names","n2");
+        graph.addVertex("id", 2, "names", "n1", "names", "n2");
         graph.tx().commit();
 
         gts = graph.traversal();

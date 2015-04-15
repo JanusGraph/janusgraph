@@ -26,11 +26,11 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
 
     //############## SAME CODE AS StandardEdge #############################
 
-    private static final Map<RelationType, Object> EMPTY_PROPERTIES = ImmutableMap.of();
+    private static final Map<PropertyKey, Object> EMPTY_PROPERTIES = ImmutableMap.of();
 
     private byte lifecycle;
     private long previousID = 0;
-    private volatile Map<RelationType, Object> properties = EMPTY_PROPERTIES;
+    private volatile Map<PropertyKey, Object> properties = EMPTY_PROPERTIES;
 
     @Override
     public long getPreviousID() {
@@ -45,36 +45,36 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
     }
 
     @Override
-    public <O> O getValueDirect(RelationType type) {
-        return (O) properties.get(type);
+    public <O> O getValueDirect(PropertyKey key) {
+        return (O) properties.get(key);
     }
 
     @Override
-    public void setPropertyDirect(RelationType type, Object value) {
-        Preconditions.checkArgument(!(type instanceof ImplicitKey),"Cannot use implicit type [%s] when setting property",type.name());
+    public void setPropertyDirect(PropertyKey key, Object value) {
+        Preconditions.checkArgument(!(key instanceof ImplicitKey), "Cannot use implicit type [%s] when setting property", key.name());
         if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
-                properties = new HashMap<RelationType, Object>(5);
+                properties = new HashMap<PropertyKey, Object>(5);
             } else {
                 synchronized (this) {
                     if (properties == EMPTY_PROPERTIES) {
-                        properties = Collections.synchronizedMap(new HashMap<RelationType, Object>(5));
+                        properties = Collections.synchronizedMap(new HashMap<PropertyKey, Object>(5));
                     }
                 }
             }
         }
-        properties.put(type, value);
+        properties.put(key, value);
     }
 
     @Override
-    public Iterable<RelationType> getPropertyKeysDirect() {
+    public Iterable<PropertyKey> getPropertyKeysDirect() {
         return Lists.newArrayList(properties.keySet());
     }
 
     @Override
-    public <O> O removePropertyDirect(RelationType type) {
+    public <O> O removePropertyDirect(PropertyKey key) {
         if (!properties.isEmpty())
-            return (O) properties.remove(type);
+            return (O) properties.remove(key);
         else return null;
     }
 

@@ -66,7 +66,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public <O> O valueOrNull(RelationType key) {
+    public <O> O valueOrNull(PropertyKey key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return null;
     }

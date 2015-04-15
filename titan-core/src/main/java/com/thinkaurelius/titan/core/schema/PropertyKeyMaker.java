@@ -38,7 +38,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
     public PropertyKeyMaker dataType(Class<?> clazz);
 
     @Override
-    public PropertyKeyMaker signature(RelationType... types);
+    public PropertyKeyMaker signature(PropertyKey... types);
 
 
     /**

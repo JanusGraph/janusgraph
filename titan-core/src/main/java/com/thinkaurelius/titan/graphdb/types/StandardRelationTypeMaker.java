@@ -29,9 +29,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     private String name;
     private boolean isInvisible;
-    private List<RelationType> sortKey;
+    private List<PropertyKey> sortKey;
     private Order sortOrder;
-    private List<RelationType> signature;
+    private List<PropertyKey> signature;
     private Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 
@@ -48,9 +48,9 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
         //Default assignments
         isInvisible = false;
-        sortKey = new ArrayList<RelationType>(4);
+        sortKey = new ArrayList<>(4);
         sortOrder = Order.ASC;
-        signature = new ArrayList<RelationType>(4);
+        signature = new ArrayList<>(4);
         multiplicity = Multiplicity.MULTI;
     }
 
@@ -78,26 +78,23 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         Preconditions.checkArgument(!hasSortKey() || !multiplicity.isConstrained(),"Cannot define a sort-key on constrained edge labels");
     }
 
-    private long[] checkSortKey(List<RelationType> sig) {
-        for (RelationType t : sig) {
-            Preconditions.checkArgument(t.isEdgeLabel()
-                    || attributeHandler.isOrderPreservingDatatype(((PropertyKey) t).dataType()),
-                    "Key must have an order-preserving data type to be used as sort key: " + t);
+    private long[] checkSortKey(List<PropertyKey> sig) {
+        for (PropertyKey key : sig) {
+            Preconditions.checkArgument(attributeHandler.isOrderPreservingDatatype(key.dataType()),
+                    "Key must have an order-preserving data type to be used as sort key: " + key);
         }
         return checkSignature(sig);
     }
 
-    private static long[] checkSignature(List<RelationType> sig) {
+    private static long[] checkSignature(List<PropertyKey> sig) {
         Preconditions.checkArgument(sig.size() == (Sets.newHashSet(sig)).size(), "Signature and sort key cannot contain duplicate types");
         long[] signature = new long[sig.size()];
         for (int i = 0; i < sig.size(); i++) {
-            RelationType et = sig.get(i);
-            Preconditions.checkNotNull(et);
-            Preconditions.checkArgument(!et.isEdgeLabel() || ((EdgeLabel) et).isUnidirected(),
-                    "Label must be unidirectional: %s", et.name());
-            Preconditions.checkArgument(!et.isPropertyKey() || !((PropertyKey) et).dataType().equals(Object.class),
-                    "Signature and sort keys must have a proper declared datatype: %s", et.name());
-            signature[i] = et.longId();
+            PropertyKey key = sig.get(i);
+            Preconditions.checkNotNull(key);
+            Preconditions.checkArgument(!((PropertyKey) key).dataType().equals(Object.class),
+                    "Signature and sort keys must have a proper declared datatype: %s", key.name());
+            signature[i] = key.longId();
         }
         return signature;
     }
@@ -122,7 +119,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     @Override
-    public StandardRelationTypeMaker signature(RelationType... types) {
+    public StandardRelationTypeMaker signature(PropertyKey... types) {
         Preconditions.checkArgument(types!=null && types.length>0);
         signature.addAll(Arrays.asList(types));
         return this;
@@ -152,12 +149,12 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <p/>
      * {@link com.thinkaurelius.titan.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
-     * @param types TitanTypes composing the sort key. The order is relevant.
+     * @param keys TitanTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
      */
-    public StandardRelationTypeMaker sortKey(RelationType... types) {
-        Preconditions.checkArgument(types!=null && types.length>0);
-        sortKey.addAll(Arrays.asList(types));
+    public StandardRelationTypeMaker sortKey(PropertyKey... keys) {
+        Preconditions.checkArgument(keys!=null && keys.length>0);
+        sortKey.addAll(Arrays.asList(keys));
         return this;
     }
 

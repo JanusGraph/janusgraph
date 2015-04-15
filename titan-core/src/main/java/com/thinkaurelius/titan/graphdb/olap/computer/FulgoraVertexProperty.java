@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
@@ -72,7 +73,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V> {
     }
 
     @Override
-    public <V> V valueOrNull(RelationType key) {
+    public <V> V valueOrNull(PropertyKey key) {
         return (V)property(key.name()).orElse(null);
     }
 
@@ -97,9 +98,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V> {
     }
 
     @Override
-    public RelationType getType() {
-        throw new UnsupportedOperationException();
-    }
+    public RelationType getType() { throw new UnsupportedOperationException(); }
 
     @Override
     public Direction direction(Vertex vertex) {

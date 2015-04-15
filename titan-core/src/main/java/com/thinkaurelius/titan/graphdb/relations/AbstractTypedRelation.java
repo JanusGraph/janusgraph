@@ -106,26 +106,14 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <V> Property<V> property(final String key, final V value) {
         verifyAccess();
 
-        RelationType type = tx().getRelationType(key);
-        if (type==null) {
-            if (value instanceof TitanVertex) type = tx().getOrCreateEdgeLabel(key);
-            type = tx().getOrCreatePropertyKey(key);
-        }
-        assert type!=null;
-
-        if (type instanceof PropertyKey) {
-            it().setPropertyDirect(type,tx().verifyAttribute((PropertyKey)type,value));
-        } else {
-            assert type.isEdgeLabel();
-            Preconditions.checkArgument(((EdgeLabel)type).isUnidirected(),"Label must be unidirected");
-            Preconditions.checkArgument(value!=null && value instanceof TitanVertex,"Value must be a vertex");
-            it().setPropertyDirect(type,value);
-        }
-        return new SimpleTitanProperty<V>(this,type,value);
+        PropertyKey pkey = tx().getOrCreatePropertyKey(key);
+        Object normalizedValue = tx().verifyAttribute(pkey,value);
+        it().setPropertyDirect(pkey,normalizedValue);
+        return new SimpleTitanProperty<V>(this,pkey,value);
     }
 
     @Override
-    public <O> O valueOrNull(RelationType key) {
+    public <O> O valueOrNull(PropertyKey key) {
         verifyAccess();
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return it().getValueDirect(key);
@@ -134,37 +122,29 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     @Override
     public <O> O value(String key) {
         verifyAccess();
-        O val = valueInternal(tx().getRelationType(key));
+        O val = valueInternal(tx().getPropertyKey(key));
         if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
         return val;
     }
 
-    private <O> O valueInternal(RelationType type) {
+    private <O> O valueInternal(PropertyKey type) {
         if (type==null) {
             return null;
-        } else if (type.isPropertyKey()) {
-            return valueOrNull((PropertyKey) type);
-        } else {
-            assert type.isEdgeLabel();
-            Object val = it().getValueDirect(type);
-            if (val==null) return null;
-            else if (val instanceof Number) return (O)tx().getInternalVertex(((Number) val).longValue());
-            else if (val instanceof TitanVertex) return (O)val;
-            else throw new IllegalStateException("Invalid object found instead of vertex: " + val);
         }
+        return valueOrNull(type);
     }
 
     @Override
     public <V> Iterator<Property<V>> properties(final String... keyNames) {
         verifyAccess();
 
-        Stream<RelationType> keys;
+        Stream<PropertyKey> keys;
 
         if (keyNames==null || keyNames.length==0) {
             keys = StreamFactory.stream(it().getPropertyKeysDirect());
         } else {
             keys = Stream.of(keyNames)
-                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
+                    .map(s -> tx().getPropertyKey(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
         }
         return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
     }

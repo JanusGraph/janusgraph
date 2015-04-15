@@ -478,10 +478,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                             int currentOrder = 0;
 
                             double score = 0.0;
-                            RelationType[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
+                            PropertyKey[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
 
                             for (int i=0;i<extendedSortKey.length;i++) {
-                                RelationType keyType = extendedSortKey[i];
+                                PropertyKey keyType = extendedSortKey[i];
                                 if (currentOrder<orders.size() && orders.getKey(currentOrder).equals(keyType)) currentOrder++;
 
                                 Interval interval = intervalConstraints.get(keyType);
@@ -504,7 +504,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
                         //Construct sort key constraints for the best candidate and then serialize into a SliceQuery
                         //that is wrapped into a BackendQueryHolder
-                        RelationType[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
+                        PropertyKey[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
                         EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[extendedSortKey.length];
                         constructSliceQueries(extendedSortKey,sortKeyConstraints,0,bestCandidate,direction,intervalConstraints,
                                 sliceLimit,isIntervalFittedConditions,bestCandidateSupportsOrder,queries);
@@ -520,24 +520,24 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, orders, limit);
     }
 
-    private void constructSliceQueries(RelationType[] extendedSortKey, EdgeSerializer.TypedInterval[] sortKeyConstraints,
+    private void constructSliceQueries(PropertyKey[] extendedSortKey, EdgeSerializer.TypedInterval[] sortKeyConstraints,
                                        int position,
                                        InternalRelationType bestCandidate, Direction direction,
                                        Map<RelationType,Interval> intervalConstraints, int sliceLimit,
                                        boolean isIntervalFittedConditions, boolean bestCandidateSupportsOrder,
                                        List<BackendQueryHolder<SliceQuery>> queries) {
         if (position<extendedSortKey.length) {
-            RelationType keyType = extendedSortKey[position];
+            PropertyKey keyType = extendedSortKey[position];
             Interval interval = intervalConstraints.get(keyType);
             if (interval!=null) {
-                sortKeyConstraints[position]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,interval);
+                sortKeyConstraints[position]=new EdgeSerializer.TypedInterval(keyType,interval);
                 position++;
             }
             if (interval!=null && interval.isPoints()) {
                 //Keep invoking recursively to see if we can satisfy more constraints...
                 for (Object point : interval.getPoints()) {
                     EdgeSerializer.TypedInterval[] clonedSKC = Arrays.copyOf(sortKeyConstraints,sortKeyConstraints.length);
-                    clonedSKC[position-1]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,new PointInterval(point));
+                    clonedSKC[position-1]=new EdgeSerializer.TypedInterval(keyType,new PointInterval(point));
                     constructSliceQueries(extendedSortKey, clonedSKC, position,
                             bestCandidate, direction, intervalConstraints, sliceLimit,
                             isIntervalFittedConditions, bestCandidateSupportsOrder, queries);
@@ -571,16 +571,16 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @param tx
      * @return
      */
-    private static RelationType[] getExtendedSortKey(InternalRelationType type, Direction dir, StandardTitanTx tx) {
+    private static PropertyKey[] getExtendedSortKey(InternalRelationType type, Direction dir, StandardTitanTx tx) {
         int additional = 0;
         if (!type.multiplicity().isUnique(dir)) {
             if (!type.multiplicity().isConstrained()) additional++;
             if (type.isEdgeLabel()) additional++;
         }
-        RelationType[] entireKey = new RelationType[type.getSortKey().length+additional];
+        PropertyKey[] entireKey = new PropertyKey[type.getSortKey().length+additional];
         int i;
         for (i=0;i<type.getSortKey().length;i++) {
-            entireKey[i]=tx.getExistingRelationType(type.getSortKey()[i]);
+            entireKey[i]=tx.getExistingPropertyKey(type.getSortKey()[i]);
         }
         if (type.isEdgeLabel() && !type.multiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
         if (!type.multiplicity().isConstrained()) entireKey[i++]=ImplicitKey.TITANID;

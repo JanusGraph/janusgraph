@@ -52,7 +52,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     private void copyProperties(InternalRelation to) {
         for (LongObjectCursor<Object> entry : getPropertyMap()) {
-            to.setPropertyDirect(tx().getExistingRelationType(entry.key), entry.value);
+            to.setPropertyDirect(tx().getExistingPropertyKey(entry.key), entry.value);
         }
     }
 
@@ -83,29 +83,29 @@ public class CacheVertexProperty extends AbstractVertexProperty {
     }
 
     @Override
-    public <O> O getValueDirect(RelationType type) {
-        return getPropertyMap().get(type.longId());
+    public <O> O getValueDirect(PropertyKey key) {
+        return getPropertyMap().get(key.longId());
     }
 
     @Override
-    public Iterable<RelationType> getPropertyKeysDirect() {
+    public Iterable<PropertyKey> getPropertyKeysDirect() {
         RelationCache map = getPropertyMap();
-        List<RelationType> types = new ArrayList<RelationType>(map.numProperties());
+        List<PropertyKey> types = new ArrayList<>(map.numProperties());
 
         for (LongObjectCursor<Object> entry : map) {
-            types.add(tx().getExistingRelationType(entry.key));
+            types.add(tx().getExistingPropertyKey(entry.key));
         }
         return types;
     }
 
     @Override
-    public void setPropertyDirect(RelationType type, Object value) {
-        update().setPropertyDirect(type, value);
+    public void setPropertyDirect(PropertyKey key, Object value) {
+        update().setPropertyDirect(key, value);
     }
 
     @Override
-    public <O> O removePropertyDirect(RelationType type) {
-        return update().removePropertyDirect(type);
+    public <O> O removePropertyDirect(PropertyKey key) {
+        return update().removePropertyDirect(key);
     }
 
     @Override

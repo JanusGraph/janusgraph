@@ -86,9 +86,9 @@ public class IDHandler {
 
     private static final int PREFIX_BIT_LEN = 3;
 
-    public static int edgeTypeLength(long etid) {
-        assert etid > 0 && (etid << 1) > 0;  //Check positive and no-overflow
-        return VariableLong.positiveWithPrefixLength(IDManager.stripEntireRelationTypePadding(etid) << 1, PREFIX_BIT_LEN);
+    public static int relationTypeLength(long relationTypeId) {
+        assert relationTypeId > 0 && (relationTypeId << 1) > 0;  //Check positive and no-overflow
+        return VariableLong.positiveWithPrefixLength(IDManager.stripEntireRelationTypePadding(relationTypeId) << 1, PREFIX_BIT_LEN);
     }
 
     /**
@@ -97,23 +97,23 @@ public class IDHandler {
      *
      *
      * @param out
-     * @param etid
+     * @param relationTypeId
      * @param dirID
      */
-    public static void writeEdgeType(WriteBuffer out, long etid, DirectionID dirID, boolean invisible) {
-        assert etid > 0 && (etid << 1) > 0; //Check positive and no-overflow
+    public static void writeRelationType(WriteBuffer out, long relationTypeId, DirectionID dirID, boolean invisible) {
+        assert relationTypeId > 0 && (relationTypeId << 1) > 0; //Check positive and no-overflow
 
-        long strippedId = (IDManager.stripEntireRelationTypePadding(etid) << 1) + dirID.getDirectionInt();
-        VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(invisible, IDManager.isSystemRelationTypeId(etid)), PREFIX_BIT_LEN);
+        long strippedId = (IDManager.stripEntireRelationTypePadding(relationTypeId) << 1) + dirID.getDirectionInt();
+        VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(invisible, IDManager.isSystemRelationTypeId(relationTypeId)), PREFIX_BIT_LEN);
     }
 
-    public static StaticBuffer getEdgeType(long etid, DirectionID dirID, boolean invisible) {
-        WriteBuffer b = new WriteByteBuffer(edgeTypeLength(etid));
-        IDHandler.writeEdgeType(b, etid, dirID, invisible);
+    public static StaticBuffer getRelationType(long relationTypeId, DirectionID dirID, boolean invisible) {
+        WriteBuffer b = new WriteByteBuffer(relationTypeLength(relationTypeId));
+        IDHandler.writeRelationType(b, relationTypeId, dirID, invisible);
         return b.getStaticBuffer();
     }
 
-    public static EdgeTypeParse readEdgeType(ReadBuffer in) {
+    public static RelationTypeParse readRelationType(ReadBuffer in) {
         long[] countPrefix = VariableLong.readPositiveWithPrefix(in, PREFIX_BIT_LEN);
         DirectionID dirID = DirectionID.getDirectionID((int) countPrefix[1] & 1, (int) (countPrefix[0] & 1));
         long typeId = countPrefix[0] >>> 1;
@@ -123,27 +123,27 @@ public class IDHandler {
             typeId = IDManager.getSchemaId(isSystemType?SystemPropertyKey:UserPropertyKey, typeId);
         else
             typeId = IDManager.getSchemaId(isSystemType?SystemEdgeLabel:UserEdgeLabel, typeId);
-        return new EdgeTypeParse(typeId,dirID);
+        return new RelationTypeParse(typeId,dirID);
     }
 
-    public static class EdgeTypeParse {
+    public static class RelationTypeParse {
 
         public final long typeId;
         public final DirectionID dirID;
 
-        public EdgeTypeParse(long typeId, DirectionID dirID) {
+        public RelationTypeParse(long typeId, DirectionID dirID) {
             this.typeId = typeId;
             this.dirID = dirID;
         }
     }
 
 
-    public static void writeInlineEdgeType(WriteBuffer out, long etid) {
-        long compressId = IDManager.stripRelationTypePadding(etid);
+    public static void writeInlineRelationType(WriteBuffer out, long relationTypeId) {
+        long compressId = IDManager.stripRelationTypePadding(relationTypeId);
         VariableLong.writePositive(out, compressId);
     }
 
-    public static long readInlineEdgeType(ReadBuffer in) {
+    public static long readInlineRelationType(ReadBuffer in) {
         long compressId = VariableLong.readPositive(in);
         return IDManager.addRelationTypePadding(compressId);
     }

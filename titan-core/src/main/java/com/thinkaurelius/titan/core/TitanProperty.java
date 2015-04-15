@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 
 /**
@@ -8,11 +7,11 @@ import org.apache.tinkerpop.gremlin.structure.Property;
  */
 public interface TitanProperty<V> extends Property<V> {
 
-    public RelationType getType();
+    public PropertyKey propertyKey();
 
     @Override
     public default String key() {
-        return getType().name();
+        return propertyKey().name();
     }
 
 }

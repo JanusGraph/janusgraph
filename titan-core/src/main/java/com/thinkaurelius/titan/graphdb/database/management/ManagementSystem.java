@@ -260,26 +260,26 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys) {
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, PropertyKey... sortKeys) {
         return buildRelationTypeIndex(label, name, direction, Order.ASC, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, org.apache.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, org.apache.tinkerpop.gremlin.structure.Order sortOrder, PropertyKey... sortKeys) {
         return buildRelationTypeIndex(label, name, direction, Order.convert(sortOrder), sortKeys);
     }
 
     @Override
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, RelationType... sortKeys) {
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, PropertyKey... sortKeys) {
         return buildRelationTypeIndex(key, name, Direction.OUT, Order.ASC, sortKeys);
     }
 
     @Override
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, org.apache.tinkerpop.gremlin.structure.Order sortOrder, RelationType... sortKeys) {
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, org.apache.tinkerpop.gremlin.structure.Order sortOrder, PropertyKey... sortKeys) {
         return buildRelationTypeIndex(key, name, Direction.OUT, Order.convert(sortOrder), sortKeys);
     }
 
-    private RelationTypeIndex buildRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
+    private RelationTypeIndex buildRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys) {
         Preconditions.checkArgument(type!=null && direction!=null && sortOrder!=null && sortKeys!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Name cannot be blank: %s",name);
         Token.verifyName(name);
@@ -311,11 +311,11 @@ public class ManagementSystem implements TitanManagement {
 
         //Compose signature
         long[] typeSig = ((InternalRelationType)type).getSignature();
-        Set<RelationType> signature = Sets.newHashSet();
-        for (long typeId : typeSig) signature.add(transaction.getExistingRelationType(typeId));
+        Set<PropertyKey> signature = Sets.newHashSet();
+        for (long typeId : typeSig) signature.add(transaction.getExistingPropertyKey(typeId));
         for (RelationType sortType : sortKeys) signature.remove(sortType);
         if (!signature.isEmpty()) {
-            RelationType[] sig = signature.toArray(new RelationType[signature.size()]);
+            PropertyKey[] sig = signature.toArray(new PropertyKey[signature.size()]);
             maker.signature(sig);
         }
         RelationType typeIndex = maker.make();

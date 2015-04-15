@@ -121,10 +121,10 @@ public class RelationComparator implements Comparator<InternalRelation> {
     }
 
     private int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid, Order order) {
-        return compareOnKey(r1,r2,tx.getExistingRelationType(typeid),order);
+        return compareOnKey(r1,r2,tx.getExistingPropertyKey(typeid),order);
     }
 
-    private int compareOnKey(TitanRelation r1, TitanRelation r2, RelationType type, Order order) {
+    private int compareOnKey(TitanRelation r1, TitanRelation r2, PropertyKey type, Order order) {
         Object v1 = r1.valueOrNull(type), v2 = r2.valueOrNull(type);
         return compareValues(v1, v2,order);
     }

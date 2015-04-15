@@ -49,7 +49,7 @@ public class ModificationDeserializer {
         }
         if (state==Change.REMOVED && relCache.hasProperties()) { //copy over properties
             for (LongObjectCursor<Object> entry : relCache) {
-                rel.setPropertyDirect(tx.getExistingRelationType(entry.key),entry.value);
+                rel.setPropertyDirect(tx.getExistingPropertyKey(entry.key),entry.value);
             }
         }
         return rel;

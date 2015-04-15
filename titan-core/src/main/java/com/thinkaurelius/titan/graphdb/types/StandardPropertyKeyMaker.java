@@ -56,13 +56,13 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
     }
 
     @Override
-    public StandardPropertyKeyMaker signature(RelationType... types) {
+    public StandardPropertyKeyMaker signature(PropertyKey... types) {
         super.signature(types);
         return this;
     }
 
     @Override
-    public StandardPropertyKeyMaker sortKey(RelationType... types) {
+    public StandardPropertyKeyMaker sortKey(PropertyKey... types) {
         super.sortKey(types);
         return this;
     }

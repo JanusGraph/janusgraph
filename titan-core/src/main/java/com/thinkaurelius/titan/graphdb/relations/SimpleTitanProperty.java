@@ -1,13 +1,11 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -18,19 +16,19 @@ import java.util.NoSuchElementException;
  */
 public class SimpleTitanProperty<V> implements TitanProperty<V> {
 
-    private final InternalRelationType type;
+    private final PropertyKey key;
     private final V value;
     private final InternalRelation relation;
 
-    public SimpleTitanProperty(InternalRelation relation, RelationType type, V value) {
-        this.type = (InternalRelationType)type;
+    public SimpleTitanProperty(InternalRelation relation, PropertyKey key, V value) {
+        this.key = key;
         this.value = value;
         this.relation = relation;
     }
 
     @Override
-    public RelationType getType() {
-        return type;
+    public PropertyKey propertyKey() {
+        return key;
     }
 
     @Override
@@ -51,7 +49,7 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
     @Override
     public void remove() {
         Preconditions.checkArgument(!relation.isRemoved(), "Cannot modified removed relation");
-        relation.it().removePropertyDirect(type);
+        relation.it().removePropertyDirect(key);
     }
 
     @Override
@@ -61,7 +59,7 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(relation).append(type).append(value).toHashCode();
+        return new HashCodeBuilder().append(relation).append(key).append(value).toHashCode();
     }
 
     @Override
@@ -69,7 +67,7 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
         if (this==oth) return true;
         else if (oth==null || !getClass().isInstance(oth)) return false;
         SimpleTitanProperty other = (SimpleTitanProperty)oth;
-        return relation.equals(other.relation) && type.equals(other.type) &&
+        return relation.equals(other.relation) && key.equals(other.key) &&
                 value.equals(other.value);
     }
 

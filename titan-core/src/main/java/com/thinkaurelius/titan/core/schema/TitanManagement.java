@@ -37,7 +37,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
      * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
      *
      * @param label
@@ -46,7 +46,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, PropertyKey... sortKeys);
 
     /**
      * Creates a {@link RelationTypeIndex} for the provided edge label. That means, that all edges of that label will be
@@ -62,10 +62,10 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys);
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys);
 
     /**
-     * Identical to {@link #buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.RelationType...)}
+     * Identical to {@link #buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
      * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
      *
      * @param key
@@ -73,7 +73,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, RelationType... sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, PropertyKey... sortKeys);
 
     /**
      * Creates a {@link RelationTypeIndex} for the provided property key. That means, that all properties of that key will be
@@ -87,7 +87,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys);
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, Order sortOrder, PropertyKey... sortKeys);
 
     /**
      * Whether a {@link RelationTypeIndex} with the given name has been defined for the provided {@link RelationType}

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanRelation;
 
@@ -45,12 +46,12 @@ public interface InternalRelation extends TitanRelation, InternalElement {
 
 
 
-    public <O> O getValueDirect(RelationType type);
+    public <O> O getValueDirect(PropertyKey key);
 
-    public void setPropertyDirect(RelationType type, Object value);
+    public void setPropertyDirect(PropertyKey key, Object value);
 
-    public Iterable<RelationType> getPropertyKeysDirect();
+    public Iterable<PropertyKey> getPropertyKeysDirect();
 
-    public <O> O removePropertyDirect(RelationType type);
+    public <O> O removePropertyDirect(PropertyKey key);
 
 }

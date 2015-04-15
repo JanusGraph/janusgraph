@@ -58,13 +58,13 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     }
 
     @Override
-    public StandardEdgeLabelMaker signature(RelationType... types) {
+    public StandardEdgeLabelMaker signature(PropertyKey... types) {
         super.signature(types);
         return this;
     }
 
     @Override
-    public StandardEdgeLabelMaker sortKey(RelationType... types) {
+    public StandardEdgeLabelMaker sortKey(PropertyKey... types) {
         super.sortKey(types);
         return this;
     }

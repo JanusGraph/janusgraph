@@ -162,25 +162,25 @@ public class IDManagementTest {
             }
             assertTrue(eid.isRelationTypeId(id));
 
-            StaticBuffer b = IDHandler.getEdgeType(id, dirID, false);
+            StaticBuffer b = IDHandler.getRelationType(id, dirID, false);
 //            System.out.println(dirID);
 //            System.out.println(getBinary(id));
 //            System.out.println(getBuffer(b.asReadBuffer()));
             ReadBuffer rb = b.asReadBuffer();
-            IDHandler.EdgeTypeParse parse = IDHandler.readEdgeType(rb);
+            IDHandler.RelationTypeParse parse = IDHandler.readRelationType(rb);
             assertEquals(id,parse.typeId);
             assertEquals(dirID, parse.dirID);
             assertFalse(rb.hasRemaining());
 
             //Inline edge type
             WriteBuffer wb = new WriteByteBuffer(9);
-            IDHandler.writeInlineEdgeType(wb, id);
-            long newId = IDHandler.readInlineEdgeType(wb.getStaticBuffer().asReadBuffer());
+            IDHandler.writeInlineRelationType(wb, id);
+            long newId = IDHandler.readInlineRelationType(wb.getStaticBuffer().asReadBuffer());
             assertEquals(id,newId);
 
             //Compare to Kryo
             DataOutput out = serializer.getDataOutput(10);
-            IDHandler.writeEdgeType(out, id, dirID, false);
+            IDHandler.writeRelationType(out, id, dirID, false);
             assertEquals(b, out.getStaticBuffer());
 
             //Make sure the bounds are right
@@ -201,18 +201,18 @@ public class IDManagementTest {
         int numTries = 100;
         WriteBuffer out = new WriteByteBuffer(8*numTries);
         for (SystemRelationType t : SYSTEM_TYPES) {
-            IDHandler.writeInlineEdgeType(out,t.longId());
+            IDHandler.writeInlineRelationType(out, t.longId());
         }
         for (long i=1;i<=numTries;i++) {
-            IDHandler.writeInlineEdgeType(out, IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, i * 1000));
+            IDHandler.writeInlineRelationType(out, IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, i * 1000));
         }
 
         ReadBuffer in = out.getStaticBuffer().asReadBuffer();
         for (SystemRelationType t : SYSTEM_TYPES) {
-            assertEquals(t, SystemTypeManager.getSystemType(IDHandler.readInlineEdgeType(in)));
+            assertEquals(t, SystemTypeManager.getSystemType(IDHandler.readInlineRelationType(in)));
         }
         for (long i=1;i<=numTries;i++) {
-            assertEquals(i * 1000, IDManager.stripEntireRelationTypePadding(IDHandler.readInlineEdgeType(in)));
+            assertEquals(i * 1000, IDManager.stripEntireRelationTypePadding(IDHandler.readInlineRelationType(in)));
         }
     }
 
@@ -247,8 +247,8 @@ public class IDManagementTest {
         RelationCategory relCat = IDManager.VertexIDType.EdgeLabel.is(etid)?RelationCategory.EDGE:RelationCategory.PROPERTY;
         boolean invisible = IDManager.isSystemRelationTypeId(etid);
         for (IDHandler.DirectionID d : dir) {
-            StaticBuffer b = IDHandler.getEdgeType(etid,d,invisible);
-            IDHandler.EdgeTypeParse parse = IDHandler.readEdgeType(b.asReadBuffer());
+            StaticBuffer b = IDHandler.getRelationType(etid, d, invisible);
+            IDHandler.RelationTypeParse parse = IDHandler.readRelationType(b.asReadBuffer());
             assertEquals(d,parse.dirID);
             assertEquals(etid,parse.typeId);
         }
