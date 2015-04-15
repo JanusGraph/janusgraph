@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.graphdb.database;
 
 import com.carrotsearch.hppc.LongArrayList;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -67,6 +69,9 @@ import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
 import com.thinkaurelius.titan.util.system.TXUtils;
+import org.apache.tinkerpop.gremlin.structure.io.DefaultIo;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -805,5 +810,17 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
             graph.closeInternal();
         }
+    }
+
+    @Override
+    public Io io() {
+        return new DefaultIo(this) {
+            public GraphSONWriter.Builder graphSONWriter() {
+                SimpleModule module = new SimpleModule();
+                module.addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer(Geoshape.class));
+                GraphSONMapper mapper = GraphSONMapper.build().addCustomModule(module).create();
+                return GraphSONWriter.build().mapper(mapper);
+            }
+        };
     }
 }
