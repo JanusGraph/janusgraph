@@ -9,11 +9,6 @@ import java.lang.reflect.Array;
 public class FloatArraySerializer extends ArraySerializer implements AttributeSerializer<float[]> {
 
     @Override
-    public void verifyAttribute(float[] value) {
-        //All values are valid
-    }
-
-    @Override
     public float[] convert(Object value) {
         return convertInternal(value, float.class, Float.class);
     }

@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.attribute.Decimal;
-import com.thinkaurelius.titan.core.attribute.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +27,7 @@ public class AttributeUtil {
     }
 
     public static final boolean isDecimal(Class<?> clazz) {
-        return clazz.equals(Double.class) || clazz.equals(Float.class) ||
-                clazz.equals(Decimal.class) || clazz.equals(Precision.class);
+        return clazz.equals(Double.class) || clazz.equals(Float.class);
     }
 
     public static final boolean isString(Object o) {

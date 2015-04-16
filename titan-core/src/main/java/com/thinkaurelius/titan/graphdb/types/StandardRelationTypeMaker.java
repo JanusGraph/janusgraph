@@ -7,15 +7,11 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.RelationTypeMaker;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandler;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
@@ -25,7 +21,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
-    protected final AttributeHandling attributeHandler;
+    protected final AttributeHandler attributeHandler;
 
     private String name;
     private boolean isInvisible;
@@ -37,7 +33,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
     public StandardRelationTypeMaker(final StandardTitanTx tx, String name,
                                      final IndexSerializer indexSerializer,
-                                     final AttributeHandling attributeHandler) {
+                                     final AttributeHandler attributeHandler) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(indexSerializer);
         Preconditions.checkNotNull(attributeHandler);

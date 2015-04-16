@@ -26,11 +26,6 @@ public class UUIDSerializer implements AttributeSerializer<UUID>  {
     }
 
     @Override
-    public void verifyAttribute(UUID value) {
-
-    }
-
-    @Override
     public UUID convert(Object value) {
         Preconditions.checkNotNull(value);
         if(value instanceof String){

@@ -9,11 +9,6 @@ import java.lang.reflect.Array;
 public class ShortArraySerializer extends ArraySerializer implements AttributeSerializer<short[]> {
 
     @Override
-    public void verifyAttribute(short[] value) {
-        //All values are valid
-    }
-
-    @Override
     public short[] convert(Object value) {
         return convertInternal(value, short.class, Short.class);
     }

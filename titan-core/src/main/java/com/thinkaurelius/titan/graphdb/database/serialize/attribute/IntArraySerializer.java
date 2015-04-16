@@ -9,11 +9,6 @@ import java.lang.reflect.Array;
 public class IntArraySerializer extends ArraySerializer implements AttributeSerializer<int[]> {
 
     @Override
-    public void verifyAttribute(int[] value) {
-        //All values are valid
-    }
-
-    @Override
     public int[] convert(Object value) {
         return convertInternal(value, int.class, Integer.class);
     }

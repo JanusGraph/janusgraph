@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.attribute.AttributeHandler;
+import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface AttributeHandling {
+public interface AttributeHandler {
 
-    public <T> void registerClass(Class<T> type, AttributeHandler<T> attributeHandler);
+    public <T> void registerClass(int registrationNo, Class<T> type, AttributeSerializer<T> attributeHandler);
 
     public boolean validDataType(Class datatype);
 

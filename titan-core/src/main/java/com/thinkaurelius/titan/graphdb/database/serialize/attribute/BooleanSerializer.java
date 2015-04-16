@@ -28,11 +28,6 @@ public class BooleanSerializer implements OrderPreservingSerializer<Boolean> {
     }
 
     @Override
-    public void verifyAttribute(Boolean value) {
-        //All values are valid
-    }
-
-    @Override
     public Boolean convert(Object value) {
         if (value instanceof Number) {
             return decode(((Number)value).byteValue());

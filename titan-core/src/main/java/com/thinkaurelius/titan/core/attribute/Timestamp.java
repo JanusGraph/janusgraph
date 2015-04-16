@@ -15,8 +15,6 @@ public class Timestamp implements Comparable<Timestamp> {
     private long sinceEpoch;
     private TimeUnit unit;
 
-    private Timestamp() {} //For Kryo serialization
-
     public Timestamp(long sinceEpoch, TimeUnit unit) {
         Preconditions.checkNotNull(unit);
         this.sinceEpoch = sinceEpoch;

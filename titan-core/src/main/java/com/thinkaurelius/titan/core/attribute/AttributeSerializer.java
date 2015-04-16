@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core.attribute;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
@@ -23,7 +24,7 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
  * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/serializer.html">
  *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */
-public interface AttributeSerializer<V> extends AttributeHandler<V> {
+public interface AttributeSerializer<V> {
 
     /**
      * Reads an attribute from the given ReadBuffer.
@@ -44,5 +45,33 @@ public interface AttributeSerializer<V> extends AttributeHandler<V> {
      * @param attribute Attribute to write to WriteBuffer
      */
     public void write(WriteBuffer buffer, V attribute);
+
+
+    /**
+     * Verifies the given (not-null) attribute value is valid.
+     * Throws an {@link IllegalArgumentException} if the value is invalid,
+     * otherwise simply returns.
+     *
+     * @param value to verify
+     */
+    public default void verifyAttribute(V value) {
+        Preconditions.checkArgument(value != null,"Provided value cannot be null");
+    }
+
+    /**
+     * Converts the given (not-null) value to the expected datatype V.
+     * The given object will NOT be of type V.
+     * Throws an {@link IllegalArgumentException} if it cannot be converted.
+     *
+     * @param value to convert
+     * @return converted to expected datatype
+     */
+    public default V convert(Object value) {
+        try {
+            return (V)value;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
 
 }

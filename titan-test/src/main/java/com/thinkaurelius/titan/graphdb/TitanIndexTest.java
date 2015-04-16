@@ -464,7 +464,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testConditionalIndexing() {
         PropertyKey name = makeKey("name", String.class);
-        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey weight = makeKey("weight",Double.class);
         PropertyKey text = makeKey("text", String.class);
 
         VertexLabel person = mgmt.makeVertexLabel("person").make();
@@ -640,7 +640,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testCompositeAndMixedIndexing() {
         PropertyKey name = makeKey("name", String.class);
-        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey weight = makeKey("weight",Double.class);
         PropertyKey text = makeKey("text", String.class);
         PropertyKey flag = makeKey("flag",Boolean.class);
 
@@ -1043,7 +1043,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         //Creates types and index only one key
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
-        PropertyKey height = mgmt.makePropertyKey("height").dataType(Decimal.class).make();
+        PropertyKey height = mgmt.makePropertyKey("height").dataType(Double.class).make();
         TitanGraphIndex index = mgmt.buildIndex("theIndex",Vertex.class)
                 .addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
         finishSchema();

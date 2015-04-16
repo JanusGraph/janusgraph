@@ -5,13 +5,9 @@ import java.lang.reflect.Array;
 import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerializer;
 
 public class ByteArraySerializer extends ArraySerializer implements AttributeSerializer<byte[]> {
-
-    @Override
-    public void verifyAttribute(byte[] value) {
-        //All values are valid
-    }
 
     @Override
     public byte[] convert(Object value) {

@@ -9,11 +9,6 @@ import java.lang.reflect.Array;
 public class LongArraySerializer extends ArraySerializer implements AttributeSerializer<long[]> {
 
     @Override
-    public void verifyAttribute(long[] value) {
-        //All values are valid
-    }
-
-    @Override
     public long[] convert(Object value) {
         return convertInternal(value, long.class, Long.class);
     }

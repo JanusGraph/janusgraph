@@ -10,8 +10,6 @@ public class TypeDefinitionDescription {
     private TypeDefinitionCategory category;
     private Object modifier;
 
-    private TypeDefinitionDescription() {} //For Kryo
-
     public TypeDefinitionDescription(TypeDefinitionCategory category, Object modifier) {
         Preconditions.checkNotNull(category);
         if (category.isProperty()) Preconditions.checkArgument(modifier==null);

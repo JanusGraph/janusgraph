@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.log;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.TransactionId;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -13,9 +14,8 @@ public class StandardTransactionId implements TransactionId {
     private long transactionId;
     private Timestamp transactionTime;
 
-    private StandardTransactionId() {} //For serialization
-
     public StandardTransactionId(String instanceId, long transactionId, Timestamp transactionTime) {
+        Preconditions.checkArgument(instanceId!=null && transactionId>=0 && transactionTime!=null);
         this.instanceId = instanceId;
         this.transactionId = transactionId;
         this.transactionTime = transactionTime;

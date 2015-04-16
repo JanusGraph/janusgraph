@@ -15,8 +15,6 @@ public class Parameter<V> {
     private String key;
     private V value;
 
-    private Parameter() {} //For serialization
-
     public Parameter(String key, V value) {
         Preconditions.checkArgument(StringUtils.isNotBlank(key),"Invalid key");
         this.key = key;

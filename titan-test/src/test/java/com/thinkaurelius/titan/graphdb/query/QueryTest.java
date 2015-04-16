@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -38,7 +37,7 @@ public class QueryTest {
     @Test
     public void testOrderList() {
         PropertyKey name = tx.makePropertyKey("name").dataType(String.class).make();
-        PropertyKey weight = tx.makePropertyKey("weight").dataType(Decimal.class).make();
+        PropertyKey weight = tx.makePropertyKey("weight").dataType(Double.class).make();
         PropertyKey time = tx.makePropertyKey("time").dataType(Long.class).make();
 
         OrderList ol1 = new OrderList();

@@ -14,12 +14,6 @@ public class StandardTimepoint implements Timepoint {
     private final long sinceEpoch;
     private final TimestampProvider provider;
 
-    private StandardTimepoint() {
-        //For kryo
-        sinceEpoch=0;
-        provider=null;
-    }
-
     /**
      * Number of time units elapsed between the UNIX Epoch and this instant.
      * {@code sinceEpoch} may by any value in the representable range of {@code long}.

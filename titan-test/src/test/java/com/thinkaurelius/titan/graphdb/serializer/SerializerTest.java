@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.serializer;
 
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -9,8 +10,8 @@ import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
+import com.thinkaurelius.titan.graphdb.serializer.attributes.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,9 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void objectWriteReadTest() {
+        serialize.registerClass(2,TClass1.class, new TClass1Serializer());
+        serialize.registerClass(80342,TClass2.class, new TClass2Serializer());
+        serialize.registerClass(999,TEnum.class, new TEnumSerializer());
         objectWriteRead();
     }
 
@@ -60,18 +64,6 @@ public class SerializerTest extends SerializerTestCommon {
     }
 
     @Test
-    public void testListSerialization() {
-        DataOutput out = serialize.getDataOutput(128);
-        ArrayList<Object> mixed = new ArrayList<>();
-        mixed.add("try1"); mixed.add(2);
-        out.writeClassAndObject(mixed);
-        StaticBuffer b = out.getStaticBuffer();
-        ReadBuffer r = b.asReadBuffer();
-        List res = (List) serialize.readClassAndObject(r);
-        assertEquals(mixed.size(),res.size());
-    }
-
-    @Test
     public void classSerialization() {
         DataOutput out = serialize.getDataOutput(128);
         out.writeObjectNotNull(Boolean.class);
@@ -85,25 +77,31 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void parallelDeserialization() throws InterruptedException {
+        serialize.registerClass(1,TClass2.class, new TClass2Serializer());
+
+        final long value = 8;
+        final String str = "123456";
+        final TClass2 c = new TClass2("abcdefg",333);
+
         DataOutput out = serialize.getDataOutput(128);
-        out.putLong(8);
-        out.writeClassAndObject(Long.valueOf(8));
-        TestClass c = new TestClass(5, 8, new short[]{1, 2, 3, 4, 5}, TestEnum.Two);
-        out.writeObject(c, TestClass.class);
+        out.putLong(value);
+        out.writeClassAndObject(Long.valueOf(value));
+        out.writeObject(c, TClass2.class);
+        out.writeObjectNotNull(str);
         final StaticBuffer b = out.getStaticBuffer();
 
-        int numThreads = 1;
+        int numThreads = 4;
         Thread[] threads = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
             threads[i] = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     for (int j = 0; j < 100000; j++) {
-                        ReadBuffer c = b.asReadBuffer();
-                        assertEquals(8, c.getLong());
-                        Long l = (Long) serialize.readClassAndObject(c);
-                        assertEquals(8, l.longValue());
-                        TestClass c2 = serialize.readObject(c, TestClass.class);
+                        ReadBuffer buffer = b.asReadBuffer();
+                        assertEquals(8, buffer.getLong());
+                        assertEquals (value , (long)serialize.readClassAndObject(buffer));
+                        assertEquals(c,serialize.readObject(buffer,TClass2.class));
+                        assertEquals(str,serialize.readObjectNotNull(buffer,String.class));
                     }
                 }
             });
@@ -114,37 +112,6 @@ public class SerializerTest extends SerializerTestCommon {
         }
     }
 
-    @Test
-    public void testDecimalSerializers() {
-        double[] dvalues  = { 1.031, 0.031, 0.333, 3423424.771};
-        Decimal.DecimalSerializer fs = new Decimal.DecimalSerializer();
-        for (double d : dvalues) {
-            fs.verifyAttribute(new Decimal(d));
-            assertEquals(d,AbstractDecimal.convert(AbstractDecimal.convert(d,3),3),AbstractDecimal.EPSILON);
-        }
-        dvalues = new double[]{ 1e16f, -1e16f, AbstractDecimal.minDoubleValue(3)*10, AbstractDecimal.maxDoubleValue(3)*10};
-        for (double d : dvalues) {
-            try {
-                fs.verifyAttribute(new Decimal(d));
-                fail();
-            } catch (IllegalArgumentException e) {}
-        }
-
-        dvalues = new double[]{ 0.12574, 2342332.12574, 35.123456, 24321.692953};
-        Precision.PrecisionSerializer ds = new Precision.PrecisionSerializer();
-        for (double d : dvalues) {
-            ds.verifyAttribute(new Precision(d));
-            assertEquals(d,AbstractDecimal.convert(AbstractDecimal.convert(d,6),6),AbstractDecimal.EPSILON);
-        }
-
-        dvalues = new double[]{ 1e13, -1e13, AbstractDecimal.minDoubleValue(6)*10, AbstractDecimal.maxDoubleValue(6)*10};
-        for (double d : dvalues) {
-            try {
-                ds.verifyAttribute(new Precision(d));
-                fail();
-            } catch (IllegalArgumentException e) {}
-        }
-    }
 
     @Test
     public void primitiveSerialization() {
@@ -166,11 +133,7 @@ public class SerializerTest extends SerializerTestCommon {
         out.writeObjectNotNull(Long.MIN_VALUE);
         out.writeObjectNotNull(Long.MAX_VALUE);
         out.writeObjectNotNull(new Long(0));
-        out.writeObjectNotNull(Decimal.MIN_VALUE);
-        out.writeObjectNotNull(Decimal.MAX_VALUE);
         out.writeObjectNotNull(new Float((float) 0.0));
-        out.writeObjectNotNull(Precision.MIN_VALUE);
-        out.writeObjectNotNull(Precision.MAX_VALUE);
         out.writeObjectNotNull(new Double(0.0));
 
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
@@ -191,11 +154,7 @@ public class SerializerTest extends SerializerTestCommon {
         assertEquals(Long.MIN_VALUE, serialize.readObjectNotNull(b, Long.class).longValue());
         assertEquals(Long.MAX_VALUE, serialize.readObjectNotNull(b, Long.class).longValue());
         assertEquals(0, serialize.readObjectNotNull(b, Long.class).longValue());
-        assertEquals(Decimal.MIN_VALUE, serialize.readObjectNotNull(b, Decimal.class));
-        assertEquals(Decimal.MAX_VALUE, serialize.readObjectNotNull(b, Decimal.class));
         assertEquals(0.0, serialize.readObjectNotNull(b, Float.class).floatValue(), 1e-20);
-        assertEquals(Precision.MIN_VALUE, serialize.readObjectNotNull(b, Precision.class));
-        assertEquals(Precision.MAX_VALUE, serialize.readObjectNotNull(b, Precision.class));
         assertEquals(0.0, serialize.readObjectNotNull(b, Double.class).doubleValue(), 1e-20);
 
     }
@@ -203,33 +162,38 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void testObjectVerification() {
-        Serializer s = new StandardSerializer();
-        DataOutput out = s.getDataOutput(128);
-        Long l = Long.valueOf(128);
-        out.writeClassAndObject(l);
-        Calendar c = Calendar.getInstance();
-        out.writeClassAndObject(c);
-        NoDefaultConstructor dc = new NoDefaultConstructor(5);
-        try {
-            out.writeClassAndObject(dc);
-            fail();
-        } catch (Exception e) {
+        serialize.registerClass(2,TClass1.class, new TClass1Serializer());
+        TClass1 t1 = new TClass1(24223,0.25f);
 
-        }
-        TestTransientClass d = new TestTransientClass(101);
-        try {
-            out.writeClassAndObject(d);
-            fail();
-        } catch (Exception e) {
+        DataOutput out = serialize.getDataOutput(128);
+        out.writeClassAndObject(t1);
+        out.writeClassAndObject(null);
+        out.writeObject(t1,TClass1.class);
+        out.writeObject(null,TClass1.class);
 
+        //Test failure
+        for (Object o : new Object[]{new TClass2("abc",2),Calendar.getInstance(), Lists.newArrayList()}) {
+            try {
+                out.writeObjectNotNull(o);
+                fail();
+            } catch (Exception e) {
+
+            }
         }
-        out.writeObject(null, TestClass.class);
+
+        ReadBuffer b = out.getStaticBuffer().asReadBuffer();
+        assertEquals(t1, serialize.readClassAndObject(b));
+        assertNull(serialize.readClassAndObject(b));
+        assertEquals(t1, serialize.readObject(b, TClass1.class));
+        assertNull(serialize.readObject(b, TClass1.class));
+
+        assertFalse(b.hasRemaining());
     }
 
 
     @Test
     public void longWriteTest() {
-        longWrite();
+        multipleStringWrite();
     }
 
     @Test
@@ -247,11 +211,14 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void enumSerializeTest() {
+        serialize.registerClass(1,TEnum.class, new TEnumSerializer());
         DataOutput out = serialize.getDataOutput(128);
-        out.writeObjectNotNull(TestEnum.Two);
+        out.writeObjectNotNull(TEnum.TWO);
+        out.writeObjectNotNull(TEnum.THREE);
         ReadBuffer b = out.getStaticBuffer().asReadBuffer();
         if (printStats) log.debug(bufferStats(b));
-        assertEquals(TestEnum.Two, serialize.readObjectNotNull(b, TestEnum.class));
+        assertEquals(TEnum.TWO, serialize.readObjectNotNull(b, TEnum.class));
+        assertEquals(TEnum.THREE, serialize.readObjectNotNull(b, TEnum.class));
         assertFalse(b.hasRemaining());
 
     }
@@ -310,6 +277,8 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void testSerializationMixture() {
+        serialize.registerClass(1,TClass1.class, new TClass1Serializer());
+
         for (int t = 0; t < 1000; t++) {
             DataOutput out = serialize.getDataOutput(128);
             int num = random.nextInt(100)+1;
@@ -345,6 +314,8 @@ public class SerializerTest extends SerializerTestCommon {
 
     @Test
     public void testSerializedOrder() {
+        serialize.registerClass(1,TClass1.class, new TClass1Serializer());
+
         Map<Class,Factory> sortTypes = new HashMap<Class, Factory>();
         for (Map.Entry<Class,Factory> entry : TYPES.entrySet()) {
             if (serialize.isOrderPreservingDatatype(entry.getKey()))
@@ -463,18 +434,6 @@ public class SerializerTest extends SerializerTestCommon {
                 return (char)random.nextInt();
             }
         });
-        put(Decimal.class, new Factory<Decimal>() {
-            @Override
-            public Decimal newInstance() {
-                return new Decimal(random.nextInt()*1.0/1000);
-            }
-        });
-        put(Precision.class, new Factory<Precision>() {
-            @Override
-            public Precision newInstance() {
-                return new Precision(random.nextInt()*1.0/1000000.0);
-            }
-        });
         put(Date.class, new Factory<Date>() {
             @Override
             public Date newInstance() {
@@ -512,10 +471,10 @@ public class SerializerTest extends SerializerTestCommon {
         put(double[].class,getArrayFactory(double.class,get(Double.class)));
         put(char[].class,getArrayFactory(char.class,get(Character.class)));
         put(String[].class,getArrayFactory(String.class,get(String.class)));
-        put(TestClass.class,new Factory<TestClass>() {
+        put(TClass1.class,new Factory<TClass1>() {
             @Override
-            public TestClass newInstance() {
-                return new TestClass(random.nextLong(),random.nextLong(),new short[]{1,2,3},TestEnum.Two);
+            public TClass1 newInstance() {
+                return new TClass1(random.nextLong(),random.nextFloat());
             }
         });
     }};

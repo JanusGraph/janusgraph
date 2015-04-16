@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
@@ -224,7 +223,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     @Test
     public void testConsistencyModifier() throws InterruptedException {
         PropertyKey sig = makeKey("sig",Integer.class);
-        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey weight = makeKey("weight",Double.class);
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
         PropertyKey value = mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         PropertyKey valuef = mgmt.makePropertyKey("valuef").dataType(Integer.class).cardinality(Cardinality.LIST).make();
@@ -267,7 +266,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         newTx();
         v = getV(tx,vid);
-        assertEquals(6.0,v.<Decimal>value("weight").doubleValue(),0.00001);
+        assertEquals(6.0,v.<Double>value("weight").doubleValue(),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(wintx,p.<Integer>value("sig").intValue());
         p = getOnlyElement(v.properties("name"));
@@ -306,7 +305,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     private void processTx(TitanTransaction tx, int txid, long vid, long uid) {
         TitanVertex v = getV(tx,vid);
         TitanVertex u = getV(tx,uid);
-        assertEquals(5.0,v.<Decimal>value("weight").doubleValue(),0.00001);
+        assertEquals(5.0,v.<Double>value("weight").doubleValue(),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(1,p.<Integer>value("sig").intValue());
         sign(v.property("weight",6.0),txid);

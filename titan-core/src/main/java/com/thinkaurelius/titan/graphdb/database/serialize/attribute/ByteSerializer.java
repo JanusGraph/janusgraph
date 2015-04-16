@@ -34,11 +34,6 @@ public class ByteSerializer implements OrderPreservingSerializer<Byte> {
      */
 
     @Override
-    public void verifyAttribute(Byte value) {
-        //All values are valid
-    }
-
-    @Override
     public Byte convert(Object value) {
         if (value instanceof Number) {
             double d = ((Number)value).doubleValue();

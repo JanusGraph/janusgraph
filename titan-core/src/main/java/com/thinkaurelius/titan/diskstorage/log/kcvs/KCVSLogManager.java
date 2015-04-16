@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoInstanceCacheImpl;
 import com.thinkaurelius.titan.util.encoding.ConversionHelper;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import com.thinkaurelius.titan.util.system.IOUtils;
@@ -179,8 +178,7 @@ public class KCVSLogManager implements LogManager {
             this.readPartitionIds=new int[]{0};
         }
 
-        KryoInstanceCacheImpl kcache = configuration.get(GraphDatabaseConfiguration.KRYO_INSTANCE_CACHE);
-        this.serializer = new StandardSerializer(false, kcache);
+        this.serializer = new StandardSerializer();
     }
 
     private static void checkValidPartitionId(int partitionId, int partitionBitWidth) {

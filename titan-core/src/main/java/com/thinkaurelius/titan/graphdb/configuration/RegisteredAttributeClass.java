@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.AttributeHandler;
+import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 
 /**
@@ -11,19 +11,22 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
  */
 public class RegisteredAttributeClass<T> {
 
+    private final int position;
     private final Class<T> type;
-    private final AttributeHandler<T> serializer;
+    private final AttributeSerializer<T> serializer;
 
-    public RegisteredAttributeClass(Class<T> type, AttributeHandler<T> serializer) {
+    public RegisteredAttributeClass(int position, Class<T> type, AttributeSerializer<T> serializer) {
+        Preconditions.checkArgument(position>=0,"Position must be a positive integer, given: %s",position);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(serializer);
+        this.position=position;
         this.type = type;
         this.serializer = serializer;
     }
 
 
     void registerWith(Serializer s) {
-        s.registerClass(type,serializer);
+        s.registerClass(position,type,serializer);
     }
 
     @Override

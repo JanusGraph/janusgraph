@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandler;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -24,7 +24,7 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
 
     public StandardEdgeLabelMaker(final StandardTitanTx tx,
                                   final String name, final IndexSerializer indexSerializer,
-                                  final AttributeHandling attributeHandler) {
+                                  final AttributeHandler attributeHandler) {
         super(tx, name, indexSerializer, attributeHandler);
         unidirectionality = Direction.BOTH;
     }

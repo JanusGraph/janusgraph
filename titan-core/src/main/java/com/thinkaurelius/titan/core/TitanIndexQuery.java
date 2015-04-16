@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.core.schema.Parameter;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * A GraphQuery that queries for graph elements directly against a particular indexing backend and hence allows this

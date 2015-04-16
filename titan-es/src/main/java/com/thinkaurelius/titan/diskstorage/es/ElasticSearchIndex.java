@@ -395,7 +395,7 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (dataType == Float.class) {
                 log.debug("Registering float type for {}", key);
                 mapping.field("type", "float");
-            } else if (dataType == Double.class || dataType == Decimal.class || dataType == Precision.class) {
+            } else if (dataType == Double.class) {
                 log.debug("Registering double type for {}", key);
                 mapping.field("type", "double");
             } else if (dataType == Byte.class) {

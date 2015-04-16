@@ -11,11 +11,6 @@ public class StringArraySerializer extends ArraySerializer implements AttributeS
     private static final StringSerializer stringSerializer = new StringSerializer();
 
     @Override
-    public void verifyAttribute(String[] value) {
-        //All values are valid
-    }
-
-    @Override
     public String[] convert(Object value) {
         return convertInternal(value, null, String.class);
     }

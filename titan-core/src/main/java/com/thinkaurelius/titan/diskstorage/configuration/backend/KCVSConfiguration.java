@@ -26,7 +26,6 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoInstanceCacheImpl;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
@@ -40,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ATTRIBUTE_ALLOW_ALL_SERIALIZABLE;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
@@ -59,11 +57,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, Configuration config,
                              KeyColumnValueStore store, String identifier) throws BackendException {
-        this(txProvider, config, store, identifier, GraphDatabaseConfiguration.KRYO_INSTANCE_CACHE.getDefaultValue());
-    }
-
-    public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, Configuration config,
-                             KeyColumnValueStore store, String identifier, KryoInstanceCacheImpl kcache) throws BackendException {
         Preconditions.checkArgument(txProvider!=null && store!=null && config!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
         this.txProvider = txProvider;
@@ -71,7 +64,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         this.store = store;
         this.identifier = identifier;
         this.rowKey = string2StaticBuffer(this.identifier);
-        this.serializer = new StandardSerializer(true, kcache); //config.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE)
+        this.serializer = new StandardSerializer();
     }
 
     public void setMaxOperationWaitTime(Duration waitTime) {

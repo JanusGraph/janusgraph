@@ -353,7 +353,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testSchemaTypes() {
         // ---------- PROPERTY KEYS ----------------
         //Normal single-valued property key
-        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey weight = makeKey("weight",Float.class);
         //Indexed unique property key
         PropertyKey uid = makeVertexIndexedUniqueKey("uid",String.class);
         //Indexed but not unique
@@ -361,7 +361,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //Set-valued property key
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
         //List-valued property key with signature
-        PropertyKey value = mgmt.makePropertyKey("value").dataType(Precision.class).signature(weight).cardinality(Cardinality.LIST).make();
+        PropertyKey value = mgmt.makePropertyKey("value").dataType(Double.class).signature(weight).cardinality(Cardinality.LIST).make();
 
         // ---------- EDGE LABELS ----------------
         //Standard edge label
@@ -404,7 +404,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(Cardinality.SET,name.cardinality());
         assertEquals(Cardinality.LIST,value.cardinality());
         assertEquals(Object.class,someid.dataType());
-        assertEquals(Decimal.class,weight.dataType());
+        assertEquals(Float.class,weight.dataType());
         sig = ((InternalRelationType)value).getSignature();
         assertEquals(1,sig.length);
         assertEquals(weight.longId(),sig[0]);
@@ -538,7 +538,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(Cardinality.SET, name.cardinality());
         assertEquals(Cardinality.LIST,value.cardinality());
         assertEquals(Object.class,someid.dataType());
-        assertEquals(Decimal.class,weight.dataType());
+        assertEquals(Float.class,weight.dataType());
         sig = ((InternalRelationType)value).getSignature();
         assertEquals(1,sig.length);
         assertEquals(weight.longId(),sig[0]);
@@ -694,7 +694,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.property(single,"weight", 1.0);
         assertCount(1,v.properties("weight"));
         v.property(VertexProperty.Cardinality.single, "weight", 0.5);
-        assertEquals(0.5,v.<Decimal>value("weight").doubleValue(),0.00001);
+        assertEquals(0.5,v.<Float>value("weight").doubleValue(),0.00001);
         assertEquals("v1",v.value("uid"));
         assertCount(2, v.properties("name"));
         for (TitanVertexProperty<String> prop : v.query().labels("name").properties()) {
@@ -702,7 +702,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertTrue(nstr.equals("Bob") || nstr.equals("John"));
         }
         assertTrue(size(v.properties("value")) >= 3);
-        for (TitanVertexProperty<Precision> prop : v.query().labels("value").properties()) {
+        for (TitanVertexProperty<Double> prop : v.query().labels("value").properties()) {
             double prec = prop.value().doubleValue();
             assertEquals(prec*2,prop.<Number>value("weight").doubleValue(),0.00001);
         }
@@ -791,7 +791,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.property(VertexProperty.Cardinality.single, "weight",  1.0);
         assertCount(1, v.properties("weight"));
         v.property(VertexProperty.Cardinality.single, "weight",  0.5);
-        assertEquals(0.5,v.<Decimal>value("weight").doubleValue(),0.00001);
+        assertEquals(0.5,v.<Float>value("weight").doubleValue(),0.00001);
         assertEquals("v1",v.value("uid"));
         assertCount(2, v.properties("name"));
         for (TitanVertexProperty<String> prop : v.query().labels("name").properties()) {
@@ -799,7 +799,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertTrue(nstr.equals("Bob") || nstr.equals("John"));
         }
         assertTrue(Iterables.size(v.query().labels("value").properties()) >= 3);
-        for (TitanVertexProperty<Precision> prop : v.query().labels("value").properties()) {
+        for (TitanVertexProperty<Double> prop : v.query().labels("value").properties()) {
             double prec = prop.value().doubleValue();
             assertEquals(prec*2,prop.<Number>value("weight").doubleValue(),0.00001);
         }
@@ -930,11 +930,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey boolval = makeKey("boolval",Boolean.class);
 
-        PropertyKey birthday = makeKey("birthday",GregorianCalendar.class);
+        PropertyKey birthday = makeKey("birthday",Timestamp.class);
 
         PropertyKey geo = makeKey("geo", Geoshape.class);
 
-        PropertyKey precise = makeKey("precise",Precision.class);
+        PropertyKey precise = makeKey("precise",Double.class);
 
         PropertyKey any = mgmt.makePropertyKey("any").cardinality(Cardinality.LIST).dataType(Object.class).make();
 
@@ -967,8 +967,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(byte[].class, barr.dataType());
         assertEquals(Object.class, any.dataType());
 
-        final Calendar c = Calendar.getInstance();
-        c.setTime(new SimpleDateFormat("ddMMyyyy").parse("28101978"));
+        final Timestamp c = new Timestamp(1429225756,TimeUnit.SECONDS);
         final Geoshape shape = Geoshape.box(10.0, 10.0, 20.0, 20.0);
 
         TitanVertex v = tx.addVertex();
@@ -980,9 +979,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v.property(VertexProperty.Cardinality.single, n(precise), 10.12345);
         v.property(n(any), "Hello");
         v.property(n(any), 10l);
-        HashMap<String,Integer> testmap = new HashMap<String, Integer>(1);
-        testmap.put("test", 10);
-        v.property(n(any), testmap);
+        int[] testarr = {5,6,7};
+        v.property(n(any), testarr);
 
         // ######## VERIFICATION ##########
         assertTrue(v.<Boolean>value("boolval"));
@@ -990,15 +988,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(c, v.value("birthday"));
         assertEquals(4, v.<byte[]>value("barr").length);
         assertEquals(shape, v.<Geoshape>value("geo"));
-        assertEquals(10.12345,v.<Precision>value("precise").doubleValue(),0.000001);
+        assertEquals(10.12345,v.<Double>value("precise").doubleValue(),0.000001);
         assertCount(3,v.properties("any"));
         for (TitanVertexProperty prop : v.query().labels("any").properties()) {
             Object value = prop.value();
             if (value instanceof String) assertEquals("Hello",value);
             else if (value instanceof Long) assertEquals(10l,value);
-            else if (value instanceof Map) {
-                HashMap<String,Integer> map = (HashMap<String,Integer>)value;
-                assertEquals(1,map.size());
+            else if (value.getClass().isArray()) {
+                assertTrue(Arrays.equals(testarr, (int[]) value));
             } else fail();
         }
 
@@ -1012,15 +1009,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(c, v.value("birthday"));
         assertEquals(4, v.<byte[]>value("barr").length);
         assertEquals(shape, v.<Geoshape>value("geo"));
-        assertEquals(10.12345,v.<Precision>value("precise").doubleValue(),0.000001);
+        assertEquals(10.12345,v.<Double>value("precise").doubleValue(),0.000001);
         assertCount(3, v.properties("any"));
         for (TitanVertexProperty prop : v.query().labels("any").properties()) {
             Object value = prop.value();
             if (value instanceof String) assertEquals("Hello",value);
             else if (value instanceof Long) assertEquals(10l,value);
-            else if (value instanceof Map) {
-                HashMap<String,Integer> map = (HashMap<String,Integer>)value;
-                assertEquals(1,map.size());
+            else if (value.getClass().isArray()) {
+                assertTrue(Arrays.equals(testarr, (int[]) value));
             } else fail();
         }
     }
@@ -1572,25 +1568,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         assertEquals(1, Iterables.size(graph.query().has(singlePropName, singleDimension).vertices()));
         assertEquals(1, Iterables.size(graph.query().has(singlePropName, singleDimensionCopy).vertices()));
-
-        byte multiDimension[][]     = new byte[1][1];
-        multiDimension[0][0]        = (byte)42;
-        byte multiDimensionCopy[][] = new byte[1][1];
-        multiDimensionCopy[0][0]    = (byte)42;
-        final String multiPropName  = "multi";
-
-        v = graph.addVertex();
-
-        v.property(multiPropName, multiDimension);
-
-        assertEquals(1, Iterables.size(graph.query().has(multiPropName, multiDimension).vertices()));
-        assertEquals(1, Iterables.size(graph.query().has(multiPropName, multiDimensionCopy).vertices()));
-
-        graph.tx().commit();
-
-        assertEquals(1, Iterables.size(graph.query().has(multiPropName, multiDimension).vertices()));
-        assertEquals(1, Iterables.size(graph.query().has(multiPropName, multiDimensionCopy).vertices()));
-
     }
 
     /**
@@ -2382,7 +2359,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
    public void testVertexCentricQuery() {
        makeVertexIndexedUniqueKey("name",String.class);
        PropertyKey time = makeKey("time",Integer.class);
-       PropertyKey weight = makeKey("weight",Precision.class);
+       PropertyKey weight = makeKey("weight",Double.class);
        PropertyKey number = makeKey("number",Long.class);
 
        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connect")).sortKey(time).make();
@@ -2697,7 +2674,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testRelationTypeIndexes() {
-        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey weight = makeKey("weight",Float.class);
         PropertyKey time = makeKey("time",Long.class);
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
@@ -3318,7 +3295,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         );
         final String instanceid = graph.getConfiguration().getUniqueGraphId();
 
-        PropertyKey weight = tx.makePropertyKey("weight").dataType(Decimal.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey weight = tx.makePropertyKey("weight").dataType(Float.class).cardinality(Cardinality.SINGLE).make();
         EdgeLabel knows = tx.makeEdgeLabel("knows").make();
         TitanVertex n1 = tx.addVertex("weight", 10.5);
         newTx();
@@ -3340,21 +3317,21 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //Only read tx
         tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
         v1 = getV(tx2,v1id);
-        assertEquals(111.1,v1.<Decimal>value("weight").doubleValue(),0.0);
-        assertEquals(222.2,getV(tx2,v2).<Decimal>value("weight").doubleValue(),0.0);
+        assertEquals(111.1,v1.<Float>value("weight").doubleValue(),0.01);
+        assertEquals(222.2,getV(tx2,v2).<Float>value("weight").doubleValue(),0.01);
         tx2.commit();
         //Deleting transaction
         txTimes[2] = times.getTime();
         tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
         v2 = getV(tx2,v2id);
-        assertEquals(222.2,v2.<Decimal>value("weight").doubleValue(),0.0);
+        assertEquals(222.2,v2.<Float>value("weight").doubleValue(),0.01);
         v2.remove();
         tx2.commit();
         //Edge modifying transaction
         txTimes[3] = times.getTime();
         tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
         v1 = getV(tx2,v1id);
-        assertEquals(111.1,v1.<Decimal>value("weight").doubleValue(),0.0);
+        assertEquals(111.1,v1.<Float>value("weight").doubleValue(),0.01);
         Edge e = getOnlyElement(v1.query().direction(Direction.OUT).labels("knows").edges());
         assertFalse(e.property("weight").isPresent());
         e.property("weight", 44.4);
@@ -3491,8 +3468,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ADDED));
                     assertEquals(v1id, getId(v));
-                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v, Change.ADDED, "weight"));
-                    assertEquals(111.1, p.value().doubleValue(), 0.0001);
+                    VertexProperty<Float> p = Iterables.getOnlyElement(changes.getProperties(v, Change.ADDED, "weight"));
+                    assertEquals(111.1, p.value().doubleValue(), 0.01);
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
                 } else if (txTimeMicro < txTimes[2].getTimestamp(TimeUnit.MICROSECONDS)) {
@@ -3509,8 +3486,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.ADDED));
                     assertEquals(v2id, getId(v));
-                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v, Change.ADDED, "weight"));
-                    assertEquals(222.2, p.value().doubleValue(), 0.0001);
+                    VertexProperty<Float> p = Iterables.getOnlyElement(changes.getProperties(v, Change.ADDED, "weight"));
+                    assertEquals(222.2, p.value().doubleValue(), 0.01);
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
                 } else if (txTimeMicro < txTimes[3].getTimestamp(TimeUnit.MICROSECONDS)) {
@@ -3527,8 +3504,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
                     TitanVertex v = Iterables.getOnlyElement(changes.getVertices(Change.REMOVED));
                     assertEquals(v2id, getId(v));
-                    VertexProperty<Decimal> p = Iterables.getOnlyElement(changes.getProperties(v, Change.REMOVED, "weight"));
-                    assertEquals(222.2, p.value().doubleValue(), 0.0001);
+                    VertexProperty<Float> p = Iterables.getOnlyElement(changes.getProperties(v, Change.REMOVED, "weight"));
+                    assertEquals(222.2, p.value().doubleValue(), 0.01);
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.REMOVED, OUT)));
                     assertEquals(0, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
                 } else {
@@ -3548,7 +3525,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     assertFalse(e.property("weight").isPresent());
                     assertEquals(v, e.vertex(Direction.IN));
                     e = Iterables.getOnlyElement(changes.getEdges(v, Change.ADDED, Direction.OUT, "knows"));
-                    assertEquals(44.4, e.<Decimal>value("weight").doubleValue(), 0.0);
+                    assertEquals(44.4, e.<Float>value("weight").doubleValue(), 0.01);
                     assertEquals(v, e.vertex(Direction.IN));
                 }
 
@@ -3561,7 +3538,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     assertMissing(tx,v2id);
 //                    assertTrue(txNo + " - " + v2, v2 == null || v2.isRemoved());
                 }
-                assertEquals(111.1, v1.<Decimal>value("weight").doubleValue(), 0.0);
+                assertEquals(111.1, v1.<Float>value("weight").doubleValue(), 0.01);
                 assertCount(1, v1.query().direction(Direction.OUT).edges());
 
                 userLogCount.incrementAndGet();
@@ -3598,7 +3575,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      */
     @Test
     public void testGlobalGraphIndexingAndQueriesForInternalIndexes() {
-        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey weight = makeKey("weight",Float.class);
         PropertyKey time = makeKey("time",Long.class);
         PropertyKey text = makeKey("text",String.class);
 

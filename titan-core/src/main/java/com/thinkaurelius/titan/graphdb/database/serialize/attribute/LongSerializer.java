@@ -37,11 +37,6 @@ public class LongSerializer implements OrderPreservingSerializer<Long> {
      */
 
     @Override
-    public void verifyAttribute(Long value) {
-        //All values are valid
-    }
-
-    @Override
     public Long convert(Object value) {
         if (value instanceof Number) {
             double d = ((Number)value).doubleValue();

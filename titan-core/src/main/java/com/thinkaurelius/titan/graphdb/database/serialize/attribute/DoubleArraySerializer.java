@@ -9,11 +9,6 @@ import java.lang.reflect.Array;
 public class DoubleArraySerializer extends ArraySerializer implements AttributeSerializer<double[]> {
 
     @Override
-    public void verifyAttribute(double[] value) {
-        //All values are valid
-    }
-
-    @Override
     public double[] convert(Object value) {
         return convertInternal(value, double.class, Double.class);
     }

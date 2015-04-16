@@ -34,11 +34,6 @@ public class ShortSerializer implements OrderPreservingSerializer<Short>  {
      */
 
     @Override
-    public void verifyAttribute(Short value) {
-        //All values are valid
-    }
-
-    @Override
     public Short convert(Object value) {
         if (value instanceof Number) {
             double d = ((Number)value).doubleValue();

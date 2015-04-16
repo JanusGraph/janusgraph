@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.berkeleyje;
 
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
 import org.junit.Rule;
@@ -36,11 +37,11 @@ public class BerkeleyGraphTest extends TitanGraphTest {
         if (methodName.equals("testConsistencyEnforcement")) {
             IsolationLevel iso = IsolationLevel.SERIALIZABLE;
             log.debug("Forcing isolation level {} for test method {}", iso, methodName);
-            mcfg.set(BerkeleyJEStoreManager.ISOLATION_LEVEL, iso);
+            mcfg.set(BerkeleyJEStoreManager.ISOLATION_LEVEL, iso.toString());
         } else {
             IsolationLevel iso = null;
             if (mcfg.has(BerkeleyJEStoreManager.ISOLATION_LEVEL)) {
-                iso = mcfg.get(BerkeleyJEStoreManager.ISOLATION_LEVEL);
+                iso = ConfigOption.getEnumValue(mcfg.get(BerkeleyJEStoreManager.ISOLATION_LEVEL),IsolationLevel.class);
             }
             log.debug("Using isolation level {} (null means adapter default) for test method {}", iso, methodName);
         }
@@ -53,7 +54,7 @@ public class BerkeleyGraphTest extends TitanGraphTest {
         // This could be enforced with a JUnit assertion instead of a Precondition,
         // but a failure here indicates a problem in the test itself rather than the
         // system-under-test, so a Precondition seems more appropriate
-        IsolationLevel effective = config.get(ConfigElement.getPath(BerkeleyJEStoreManager.ISOLATION_LEVEL), IsolationLevel.class);
+        IsolationLevel effective = ConfigOption.getEnumValue(config.get(ConfigElement.getPath(BerkeleyJEStoreManager.ISOLATION_LEVEL), String.class),IsolationLevel.class);
         Preconditions.checkState(IsolationLevel.SERIALIZABLE.equals(effective));
         super.testConsistencyEnforcement();
     }

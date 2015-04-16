@@ -17,7 +17,6 @@ import com.thinkaurelius.titan.diskstorage.solr.transform.GeoToWktConverter;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.AbstractDecimal;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 
@@ -304,12 +303,6 @@ public class SolrIndex implements IndexProvider {
     private Object convertValue(Object value) throws BackendException {
         if (value instanceof Geoshape)
             return GeoToWktConverter.convertToWktString((Geoshape) value);
-
-        // in order to serialize/deserialize properly Solr will have to have an
-        // access to Titan source which has Decimal type, so for now we simply convert to
-        // double and let Solr do the same thing or fail.
-        if (value instanceof AbstractDecimal)
-            return ((AbstractDecimal) value).doubleValue();
 
         if (value instanceof UUID)
             return value.toString();

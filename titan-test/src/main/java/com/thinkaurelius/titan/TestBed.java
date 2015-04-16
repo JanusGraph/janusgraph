@@ -17,6 +17,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TestBed {
 
+    static enum TEnum {
+
+        ONE, TWO, THREE {
+            @Override
+            public String toString() {
+                return "three";
+            }
+        }, FOUR;
+
+
+        @Override
+        public String toString() {
+            return super.toString().toLowerCase();
+        }
+
+    }
+
 
     static class A {
 
@@ -50,12 +67,15 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        IDHandler.RelationTypeParse ep = IDHandler.readRelationType(StaticArrayBuffer.of(new byte[]{36}).asReadBuffer());
-        System.out.println(ep.typeId + " "+ BaseLabel.VertexLabelEdge.longId());
+        System.out.println(TEnum.class);
+        System.out.println(TEnum.ONE.getClass());
+        System.out.println(TEnum.THREE.getClass());
+        System.out.println(TEnum.THREE.getClass().isEnum());
+        System.out.println(TEnum.THREE.getClass().getSuperclass().isEnum());
+        System.out.println(TEnum.THREE instanceof TEnum);
+        System.out.println(Object.class.getSuperclass());
 
-        WriteBuffer out = new WriteByteBuffer(20);
-        IDHandler.writeRelationType(out, BaseKey.VertexExists.longId(), IDHandler.DirectionID.PROPERTY_DIR, BaseKey.VertexExists.isInvisibleType());
-        StaticBuffer b = out.getStaticBuffer();
+
         System.exit(0);
 
         final ScheduledExecutorService exe = new ScheduledThreadPoolExecutor(1,new RejectedExecutionHandler() {

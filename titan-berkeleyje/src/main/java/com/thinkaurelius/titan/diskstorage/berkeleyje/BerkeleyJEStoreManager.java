@@ -44,16 +44,16 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
             "Percentage of JVM heap reserved for BerkeleyJE's cache",
             ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
 
-    public static final ConfigOption<LockMode> LOCK_MODE =
-            new ConfigOption<LockMode>(BERKELEY_NS, "lock-mode",
+    public static final ConfigOption<String> LOCK_MODE =
+            new ConfigOption<>(BERKELEY_NS, "lock-mode",
             "The BDB record lock mode used for read operations",
-            ConfigOption.Type.MASKABLE, LockMode.class, LockMode.DEFAULT, disallowEmpty(LockMode.class));
+            ConfigOption.Type.MASKABLE, String.class, LockMode.DEFAULT.toString(), disallowEmpty(String.class));
 
-    public static final ConfigOption<IsolationLevel> ISOLATION_LEVEL =
-            new ConfigOption<IsolationLevel>(BERKELEY_NS, "isolation-level",
+    public static final ConfigOption<String> ISOLATION_LEVEL =
+            new ConfigOption<>(BERKELEY_NS, "isolation-level",
             "The isolation level used by transactions",
-            ConfigOption.Type.MASKABLE,  IsolationLevel.class,
-            IsolationLevel.REPEATABLE_READ, disallowEmpty(IsolationLevel.class));
+            ConfigOption.Type.MASKABLE,  String.class,
+            IsolationLevel.REPEATABLE_READ.toString(), disallowEmpty(String.class));
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 
@@ -74,7 +74,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
                     .locking(true)
                     .keyOrdered(true)
                     .scanTxConfig(GraphDatabaseConfiguration.buildGraphConfiguration()
-                            .set(ISOLATION_LEVEL, IsolationLevel.READ_UNCOMMITTED))
+                            .set(ISOLATION_LEVEL, IsolationLevel.READ_UNCOMMITTED.toString()))
                     .build();
 
 //        features = new StoreFeatures();
@@ -132,10 +132,10 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
             if (transactional) {
                 TransactionConfig txnConfig = new TransactionConfig();
-                effectiveCfg.get(ISOLATION_LEVEL).configure(txnConfig);
+                ConfigOption.getEnumValue(effectiveCfg.get(ISOLATION_LEVEL),IsolationLevel.class).configure(txnConfig);
                 tx = environment.beginTransaction(null, txnConfig);
             }
-            BerkeleyJETx btx = new BerkeleyJETx(tx, effectiveCfg.get(LOCK_MODE), txCfg);
+            BerkeleyJETx btx = new BerkeleyJETx(tx, ConfigOption.getEnumValue(effectiveCfg.get(LOCK_MODE),LockMode.class), txCfg);
 
             if (log.isTraceEnabled()) {
                 log.trace("Berkeley tx created", new TransactionBegin(btx.toString()));

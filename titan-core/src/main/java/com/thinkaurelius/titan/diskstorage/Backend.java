@@ -429,8 +429,7 @@ public class Backend implements LockerProvider, AutoCloseable {
                                                             final Configuration config) {
         try {
             KCVSConfiguration kcvsConfig =
-                    new KCVSConfiguration(txProvider,config,store,identifier,
-                            config.get(GraphDatabaseConfiguration.KRYO_INSTANCE_CACHE));
+                    new KCVSConfiguration(txProvider,config,store,identifier);
             kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
             return kcvsConfig;
         } catch (BackendException e) {

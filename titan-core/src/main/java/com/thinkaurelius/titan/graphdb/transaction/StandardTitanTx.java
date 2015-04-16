@@ -24,8 +24,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPool;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandler;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
@@ -61,7 +60,6 @@ import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.thinkaurelius.titan.util.stats.MetricManager;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.*;
 
 import org.apache.commons.lang.StringUtils;
@@ -99,7 +97,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private final TransactionConfiguration config;
     private final IDManager idManager;
     private final IDManager idInspector;
-    private final AttributeHandling attributeHandler;
+    private final AttributeHandler attributeHandler;
     private BackendTransaction txHandle;
     private final EdgeSerializer edgeSerializer;
     private final IndexSerializer indexSerializer;

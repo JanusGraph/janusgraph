@@ -8,10 +8,6 @@ import java.lang.reflect.Array;
 
 public class CharArraySerializer extends ArraySerializer implements AttributeSerializer<char[]> {
 
-    @Override
-    public void verifyAttribute(char[] value) {
-        //All values are valid
-    }
 
     @Override
     public char[] convert(Object value) {

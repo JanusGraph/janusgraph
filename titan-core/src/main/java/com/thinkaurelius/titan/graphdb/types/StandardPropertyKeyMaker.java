@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandler;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -24,7 +24,7 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
     private Class<?> dataType;
 
     public StandardPropertyKeyMaker(StandardTitanTx tx, String name, IndexSerializer indexSerializer,
-                                    final AttributeHandling attributeHandler) {
+                                    final AttributeHandler attributeHandler) {
         super(tx, name, indexSerializer, attributeHandler);
         dataType = null;
         cardinality(Cardinality.SINGLE);

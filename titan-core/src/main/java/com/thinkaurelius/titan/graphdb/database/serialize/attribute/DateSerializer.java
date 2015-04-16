@@ -34,11 +34,6 @@ public class DateSerializer implements OrderPreservingSerializer<Date> {
     }
 
     @Override
-    public void verifyAttribute(Date value) {
-        //All values are valid
-    }
-
-    @Override
     public Date convert(Object value) {
         if (value instanceof Number && !(value instanceof Float) && !(value instanceof Double)) {
             return new Date(((Number)value).longValue());

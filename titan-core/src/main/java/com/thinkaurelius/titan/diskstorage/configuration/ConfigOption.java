@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,11 +174,21 @@ public class ConfigOption<O> extends ConfigElement {
 
     //########### HELPER METHODS ##################
 
+    public static final<E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
+        str = str.trim();
+        if (StringUtils.isBlank(str)) return null;
+        for (E e : enumClass.getEnumConstants()) {
+            if (e.toString().equalsIgnoreCase(str)) return e;
+        }
+        throw new IllegalArgumentException("Invalid enum string provided for ["+enumClass+"]: " + str);
+    }
+
     public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
         return new Predicate<O>() {
             @Override
             public boolean apply(@Nullable O o) {
                 if (o==null) return false;
+                if (o instanceof String) return StringUtils.isNotBlank((String)o);
                 if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) return false;
                 if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) return false;
                 return true;

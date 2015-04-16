@@ -37,10 +37,6 @@ public class IntegerSerializer implements OrderPreservingSerializer<Integer> {
     ====== byte, short, int, long ======
      */
 
-    @Override
-    public void verifyAttribute(Integer value) {
-        //All values are valid
-    }
 
     @Override
     public Integer convert(Object value) {
