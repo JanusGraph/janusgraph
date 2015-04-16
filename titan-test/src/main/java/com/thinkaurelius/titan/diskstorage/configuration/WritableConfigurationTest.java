@@ -41,12 +41,10 @@ public abstract class WritableConfigurationTest {
     public void configTest() {
         config.set("test.key","world");
         config.set("test.bar", 100);
-        // This does not actually work with KCVSConfiguration, but Titan doesn't need it anyway
-        //config.set("test.baz", BigInteger.ONE);
+
         config.set("storage.xyz", true);
         config.set("storage.abc", Boolean.FALSE);
         config.set("storage.duba", new String[]{"x", "y"});
-        config.set("enum", Thread.State.RUNNABLE);
         config.set("times.60m", new StandardDuration(60, TimeUnit.MINUTES));
         config.set("obj", new Object()); // necessary for AbstractConfiguration.getSubset
         assertEquals("world", config.get("test.key", String.class));
@@ -58,7 +56,6 @@ public abstract class WritableConfigurationTest {
         assertEquals(true,config.get("storage.xyz",Boolean.class).booleanValue());
         assertEquals(false,config.get("storage.abc",Boolean.class).booleanValue());
         assertTrue(Arrays.equals(new String[]{"x", "y"},config.get("storage.duba",String[].class)));
-        assertEquals(Thread.State.RUNNABLE, config.get("enum", Thread.State.class));
         assertEquals(new StandardDuration(60, TimeUnit.MINUTES), config.get("times.60m", Duration.class));
         assertTrue(Object.class.isAssignableFrom(config.get("obj", Object.class).getClass()));
     }

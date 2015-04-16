@@ -76,7 +76,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registrations = HashBiMap.create(60);
 
         //Setup
-        registerClassInternal(1, Object.class, new NoSerializer<>(Object.class));
+        registerClassInternal(1, Object.class, new ObjectSerializer());
 
 
 
