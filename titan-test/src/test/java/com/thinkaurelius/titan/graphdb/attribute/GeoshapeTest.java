@@ -218,7 +218,7 @@ public class GeoshapeTest {
     @Test
     public void testGeoJsonSerialization() throws IOException {
         SimpleModule module = new SimpleModule();
-        module.addSerializer(new Geoshape.GeoshapeGsonSerializer(Geoshape.class));
+        module.addSerializer(new Geoshape.GeoshapeGsonSerializer());
         final ObjectMapper om = new ObjectMapper();
         om.registerModule(module);
         assertEquals("{\"type\":\"Point\",\"coordinates\":[20.5,10.5]}", om.writeValueAsString(Geoshape.point(10.5, 20.5)));

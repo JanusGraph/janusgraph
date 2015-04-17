@@ -825,20 +825,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
     }
 
-    @Override
-    public Io io() {
-        return new DefaultIo(this) {
-            public GraphSONWriter.Builder graphSONWriter() {
-                SimpleModule module = new SimpleModule();
-                module.addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer(Geoshape.class));
-                GraphSONMapper mapper = GraphSONMapper.build().addCustomModule(module).create();
-                return GraphSONWriter.build().mapper(mapper);
-            }
-        };
-    }
-
-
-
     public static Graph empty() {
         return EMPTY;
     }

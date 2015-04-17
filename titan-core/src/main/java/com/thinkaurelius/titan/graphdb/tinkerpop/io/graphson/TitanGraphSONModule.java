@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class TitanGraphSONModule extends SimpleModule {
 
     private TitanGraphSONModule() {
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
+        addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer());
     }
 
     private static final TitanGraphSONModule INSTANCE = new TitanGraphSONModule();

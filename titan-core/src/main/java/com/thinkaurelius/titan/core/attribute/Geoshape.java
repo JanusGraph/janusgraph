@@ -511,8 +511,8 @@ public class Geoshape {
      */
     public static class GeoshapeGsonSerializer extends StdSerializer<Geoshape> {
 
-        public GeoshapeGsonSerializer(Class<Geoshape> t) {
-            super(t);
+        public GeoshapeGsonSerializer() {
+            super(Geoshape.class);
         }
 
         @Override
