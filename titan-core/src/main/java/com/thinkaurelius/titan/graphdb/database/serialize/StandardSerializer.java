@@ -124,6 +124,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(53,MgmtLogType.class, new EnumSerializer<>(MgmtLogType.class));
         registerClassInternal(54,Timestamps.class, new EnumSerializer<>(Timestamps.class));
         registerClassInternal(55,TimeUnit.class, new EnumSerializer<>(TimeUnit.class));
+        registerClassInternal(56,Mapping.class, new EnumSerializer<>(Mapping.class));
 
         registerClassInternal(60,Class.class, new ClassSerializer());
         registerClassInternal(61,Parameter.class, new ParameterSerializer());
