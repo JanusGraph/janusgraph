@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -102,7 +103,12 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         }
 
         final TitanVertex vertex = addVertex(null,label);
-        ElementHelper.attachProperties(vertex, keyValues);
+        for (int i = 0; i < keyValues.length; i = i + 2) {
+            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
+                ((StandardTitanTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
+        }
+        //TODO: After TINKERPOP3-627 is fixed the above can be replaced by the following line:
+        // ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
     }
 

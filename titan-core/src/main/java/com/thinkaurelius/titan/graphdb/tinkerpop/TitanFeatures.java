@@ -7,6 +7,8 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * Blueprint's features of a TitanGraph.
  *
@@ -20,68 +22,14 @@ public class TitanFeatures implements Graph.Features {
 
 
     private final GraphFeatures graphFeatures;
-    private final VariableFeatures variableFeatures;
     private final VertexFeatures vertexFeatures;
     private final EdgeFeatures edgeFeatures;
 
 
     private TitanFeatures() {
-        variableFeatures = new VariableFeatures() {
-            @Override
-            public boolean supportsVariables() {
-                return true;
-            }
-
-            @Override
-            public boolean supportsSerializableValues() { return true; }
-        };
-        graphFeatures = new GraphFeatures() {
-            @Override
-            public VariableFeatures variables() {
-                return variableFeatures;
-            }
-
-            @Override
-            public boolean supportsComputer() {
-                return true;
-            }
-        };
-        vertexFeatures = new VertexFeatures() {
-            @Override
-            public boolean supportsUserSuppliedIds() {
-                return false;
-            }
-
-            @Override
-            public VertexPropertyFeatures properties() {
-                return new VertexPropertyFeatures() {
-                    @Override
-                    public boolean supportsUserSuppliedIds() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean supportsSerializableValues() { return true; }
-                };
-            }
-
-        };
-        edgeFeatures = new EdgeFeatures() {
-            @Override
-            public boolean supportsUserSuppliedIds() {
-                return false;
-            }
-
-            @Override
-            public EdgePropertyFeatures properties() {
-                return new EdgePropertyFeatures() {
-                    @Override
-                    public boolean supportsSerializableValues() { return true; }
-                };
-            }
-
-        };
-
+        graphFeatures = new TitanGraphFeatures();
+        vertexFeatures = new TitanVertexFeatures();
+        edgeFeatures = new TitanEdgeFeatures();
     }
 
     @Override
@@ -110,6 +58,96 @@ public class TitanFeatures implements Graph.Features {
 
     public static TitanFeatures getFeatures(GraphDatabaseConfiguration config, StoreFeatures storageFeatures) {
         return INSTANCE;
+    }
+
+    private static class TitanDataTypeFeatures implements DataTypeFeatures {
+
+        @Override
+        public boolean supportsMapValues() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsMixedListValues() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsSerializableValues() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsUniformListValues() {
+            return false;
+        }
+    }
+
+    private static class TitanVariableFeatures extends TitanDataTypeFeatures implements VariableFeatures { }
+
+    private static class TitanGraphFeatures extends TitanDataTypeFeatures implements GraphFeatures {
+
+        @Override
+        public VariableFeatures variables() {
+            return new TitanVariableFeatures();
+        }
+
+        @Override
+        public boolean supportsComputer() {
+            return true;
+        }
+
+        @Override
+        public boolean supportsPersistence() {
+            return true;
+        }
+
+        @Override
+        public boolean supportsTransactions() {
+            return true;
+        }
+
+        @Override
+        public boolean supportsThreadedTransactions() {
+            return true;
+        }
+    }
+
+    private static class TitanVertexPropertyFeatures extends TitanDataTypeFeatures implements VertexPropertyFeatures {
+
+        @Override
+        public boolean supportsUserSuppliedIds() {
+            return false;
+        }
+    }
+
+    private static class TitanEdgePropertyFeatures extends TitanDataTypeFeatures implements EdgePropertyFeatures {
+
+    }
+
+    private static class TitanVertexFeatures implements VertexFeatures {
+
+        @Override
+        public VertexPropertyFeatures properties() {
+            return new TitanVertexPropertyFeatures();
+        }
+
+        @Override
+        public boolean supportsUserSuppliedIds() {
+            return false;
+        }
+    }
+
+    private static class TitanEdgeFeatures implements EdgeFeatures {
+        @Override
+        public EdgePropertyFeatures properties() {
+            return new TitanEdgePropertyFeatures();
+        }
+
+        @Override
+        public boolean supportsUserSuppliedIds() {
+            return false;
+        }
     }
 
 }
