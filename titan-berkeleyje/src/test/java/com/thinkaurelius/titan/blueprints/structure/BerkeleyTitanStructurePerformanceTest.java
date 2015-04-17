@@ -10,7 +10,7 @@ import org.junit.runner.RunWith;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-//@Ignore
+@Ignore
 @RunWith(StructurePerformanceSuite.class)
 @StructurePerformanceSuite.GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = TitanGraph.class)
 public class BerkeleyTitanStructurePerformanceTest {
