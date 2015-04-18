@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
@@ -93,6 +94,12 @@ public class TypeUtil {
             }
         }
         return indexes;
+    }
+
+    public static boolean hasAnyIndex(PropertyKey key) {
+        InternalRelationType type = (InternalRelationType) key;
+        return !Iterables.isEmpty(type.getKeyIndexes()) ||
+                !Iterables.isEmpty(type.getRelationIndexes());
     }
 
     private static <T> T getTypeModifier(final SchemaSource schema,

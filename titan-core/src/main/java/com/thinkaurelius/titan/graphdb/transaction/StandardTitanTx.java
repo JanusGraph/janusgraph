@@ -72,6 +72,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -731,31 +732,48 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple),times);
         uniqueLock.lock(LOCK_TIMEOUT);
         try {
-            //Delete properties if cardi==single
-            if (cardi== VertexProperty.Cardinality.single) {
-                if (!config.hasVerifyUniqueness() && key.cardinality() == Cardinality.SINGLE) {
+//            //Check vertex-centric uniqueness -> this doesn't really make sense to check
+//            if (config.hasVerifyUniqueness()) {
+//                if (cardinality == Cardinality.SINGLE) {
+//                    if (!Iterables.isEmpty(query(vertex).type(key).properties()))
+//                        throw new SchemaViolationException("A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.name(), vertex);
+//                }
+//                if (cardinality == Cardinality.SET) {
+//                    if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(), new Predicate<TitanVertexProperty>() {
+//                        @Override
+//                        public boolean apply(@Nullable TitanVertexProperty titanProperty) {
+//                            return normalizedValue.equals(titanProperty.value());
+//                        }
+//                    })))
+//                        throw new SchemaViolationException("A property with the given key [%s] and value [%s] already exists on the vertex and the property key is defined as set-valued", key.name(), normalizedValue);
+//                }
+//            }
+
+            //Delete properties if the cardinality is restricted
+            if (cardi==VertexProperty.Cardinality.single || cardi== VertexProperty.Cardinality.set) {
+                Consumer<TitanRelation> propertyRemover;
+                if (cardi==VertexProperty.Cardinality.single)
+                    propertyRemover = p -> p.remove();
+                else
+                    propertyRemover = p -> { if (((TitanVertexProperty)p).value().equals(normalizedValue)) p.remove(); };
+
+                /* If we are simply overwriting a vertex property, then we don't have to explicitly remove it thereby saving a read operation
+                   However, this only applies if
+                   1) we don't lock on the property key or consistency checks are disabled and
+                   2) there are no indexes for this property key
+                   3) the cardinalities match (if we overwrite a set with single, we need to read all other values to delete)
+                */
+                if ( (!config.hasVerifyUniqueness() || ((InternalRelationType)key).getConsistencyModifier()!=ConsistencyModifier.LOCK) &&
+                        !TypeUtil.hasAnyIndex(key) && cardi==cardinality.convert()) {
                     //Only delete in-memory so as to not trigger a read from the database which isn't necessary because we will overwrite blindly
-                    ((InternalVertex) vertex).getAddedRelations(p -> p.getType().equals(key)).forEach(p -> p.remove());
+                    ((InternalVertex) vertex).getAddedRelations(p -> p.getType().equals(key)).forEach(propertyRemover);
                 } else {
-                    ((InternalVertex) vertex).query().types(key).properties().forEach( p -> p.remove());
+                    ((InternalVertex) vertex).query().types(key).properties().forEach(propertyRemover);
                 }
             }
 
-            //Check uniqueness
+            //Check index uniqueness
             if (config.hasVerifyUniqueness()) {
-                if (cardinality==Cardinality.SINGLE) {
-                    if (!Iterables.isEmpty(query(vertex).type(key).properties()))
-                        throw new SchemaViolationException("A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.name(), vertex);
-                }
-                if (cardinality==Cardinality.SET) {
-                    if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanVertexProperty>() {
-                        @Override
-                        public boolean apply(@Nullable TitanVertexProperty titanProperty) {
-                            return normalizedValue.equals(titanProperty.value());
-                        }
-                    })))
-                        throw new SchemaViolationException("A property with the given key [%s] and value [%s] already exists on the vertex and the property key is defined as set-valued", key.name(), normalizedValue);
-                }
                 //Check all unique indexes
                 for (IndexLockTuple lockTuple : uniqueIndexTuples) {
                     if (!Iterables.isEmpty(IndexHelper.getQueryResults(lockTuple.getIndex(), lockTuple.getAll(), this)))
@@ -772,89 +790,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     }
 
-//    public TitanVertexProperty addPropertyInternal(TitanVertex vertex, final PropertyKey key, Object value) {
-//        verifyWriteAccess(vertex);
-//        Preconditions.checkArgument(!(key instanceof ImplicitKey),"Cannot create a property of implicit type: %s",key.name());
-//        vertex = ((InternalVertex) vertex).it();
-//        Preconditions.checkNotNull(key);
-//        final Object normalizedValue = verifyAttribute(key, value);
-//        Cardinality cardinality = key.cardinality();
-//
-//        //Determine unique indexes
-//        List<IndexLockTuple> uniqueIndexTuples = new ArrayList<IndexLockTuple>();
-//        for (CompositeIndexType index : TypeUtil.getUniqueIndexes(key)) {
-//            IndexSerializer.IndexRecords matches = IndexSerializer.indexMatches(vertex, index, key, normalizedValue);
-//            for (Object[] match : matches.getRecordValues()) uniqueIndexTuples.add(new IndexLockTuple(index,match));
-//        }
-//
-//        TransactionLock uniqueLock = getUniquenessLock(vertex, (InternalRelationType) key, normalizedValue);
-//        //Add locks for unique indexes
-//        for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple),times);
-//        uniqueLock.lock(LOCK_TIMEOUT);
-//        try {
-//            //Check uniqueness
-//            if (config.hasVerifyUniqueness()) {
-//                if (cardinality==Cardinality.SINGLE) {
-//                    if (!Iterables.isEmpty(query(vertex).type(key).properties()))
-//                            throw new SchemaViolationException("A property with the given key [%s] already exists on the vertex [%s] and the property key is defined as single-valued", key.name(), vertex);
-//                }
-//                if (cardinality==Cardinality.SET) {
-//                    if (!Iterables.isEmpty(Iterables.filter(query(vertex).type(key).properties(),new Predicate<TitanVertexProperty>() {
-//                        @Override
-//                        public boolean apply(@Nullable TitanVertexProperty titanProperty) {
-//                            return normalizedValue.equals(titanProperty.value());
-//                        }
-//                    })))
-//                            throw new SchemaViolationException("A property with the given key [%s] and value [%s] already exists on the vertex and the property key is defined as set-valued", key.name(), normalizedValue);
-//                }
-//                //Check all unique indexes
-//                for (IndexLockTuple lockTuple : uniqueIndexTuples) {
-//                    if (!Iterables.isEmpty(IndexHelper.getQueryResults(lockTuple.getIndex(), lockTuple.getAll(), this)))
-//                            throw new SchemaViolationException("Adding this property for key [%s] and value [%s] violates a uniqueness constraint [%s]", key.name(), normalizedValue, lockTuple.getIndex());
-//                }
-//            }
-//            StandardVertexProperty prop = new StandardVertexProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, normalizedValue, ElementLifeCycle.New);
-//            if (config.hasAssignIDsImmediately()) graph.assignID(prop);
-//            connectRelation(prop);
-//            return prop;
-//        } finally {
-//            uniqueLock.unlock();
-//        }
-//    }
-//
-//    public TitanVertexProperty setProperty(TitanVertex vertex, final PropertyKey key, Object value) {
-//        verifyWriteAccess(vertex);
-//        Preconditions.checkNotNull(key);
-//        InternalVertex v = (InternalVertex) vertex;
-//        if (key.cardinality()==Cardinality.SINGLE) {
-//            TransactionLock uniqueLock = FakeLock.INSTANCE;
-//            try {
-//                if (config.hasVerifyUniqueness()) {
-//                    //Acquire uniqueness lock, remove and add
-//                    uniqueLock = getLock(vertex, key, Direction.OUT);
-//                    uniqueLock.lock(LOCK_TIMEOUT);
-//                    vertex.property(key.name()).remove();
-//                } else {
-//                    //Only delete in-memory
-//                    for (InternalRelation r : v.it().getAddedRelations(new Predicate<InternalRelation>() {
-//                        @Override
-//                        public boolean apply(@Nullable InternalRelation p) {
-//                            return p.getType().equals(key);
-//                        }
-//                    })) {
-//                        r.remove();
-//                    }
-//                }
-//                return addPropertyInternal(vertex, key, value);
-//            } finally {
-//                uniqueLock.unlock();
-//            }
-//        } else {
-//            //Remove all other properties
-//            for (TitanVertexProperty property : v.it().query().types(key).properties()) property.remove();
-//            return addPropertyInternal(vertex,key,value);
-//        }
-//    }
 
     @Override
     public Iterable<TitanEdge> getEdges(RelationIdentifier... ids) {

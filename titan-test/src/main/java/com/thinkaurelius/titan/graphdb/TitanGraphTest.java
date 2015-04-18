@@ -1530,24 +1530,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         finishSchema();
 
-        Vertex v1 = tx.addVertex();
-        v1.setProperty("name", "name1");
-        Vertex v2 = tx.addVertex();
-        v2.setProperty("uid", 512);
+        TitanVertex v1 = tx.addVertex();
+        v1.property("name", "name1");
+        TitanVertex v2 = tx.addVertex();
+        v2.property("uid", 512);
 
         newTx();
 
-        v1 = tx.getVertex(v1);
-        v1.setProperty("name", "name2"); //Ensure that the old index record gets removed
-        v2 = tx.getVertex(v2);
-        v2.setProperty("uid",512); //Ensure that replacement is allowed
+        v1 = tx.getVertex(v1.longId());
+        v1.property("name", "name2"); //Ensure that the old index record gets removed
+        v2 = tx.getVertex(v2.longId());
+        v2.property("uid", 512); //Ensure that replacement is allowed
 
         newTx();
 
-        assertEquals(0,tx.query().has("name","name1").vertices());
-        assertEquals(1,tx.query().has("name","name2").vertices());
-        assertEquals(1,tx.query().has("uid",512).vertices());
-
+        assertCount(0, tx.query().has("name", "name1").vertices());
+        assertCount(1, tx.query().has("name", "name2").vertices());
+        assertCount(1, tx.query().has("uid", 512).vertices());
     }
 
     /**
