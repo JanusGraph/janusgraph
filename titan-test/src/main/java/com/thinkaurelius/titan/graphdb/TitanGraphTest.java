@@ -1517,6 +1517,40 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      ==================================================================================*/
 
     /**
+     * This test exercises different types of updates against cardinality restricted properties
+     * to ensure that the resulting behavior is fully consistent.
+     *
+     */
+    @Test
+    public void testPropertyCardinality() {
+        PropertyKey uid = mgmt.makePropertyKey("uid").dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("byUid", Vertex.class).addKey(uid).unique().buildCompositeIndex();
+        mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+
+        finishSchema();
+
+        Vertex v1 = tx.addVertex();
+        v1.setProperty("name", "name1");
+        Vertex v2 = tx.addVertex();
+        v2.setProperty("uid", 512);
+
+        newTx();
+
+        v1 = tx.getVertex(v1);
+        v1.setProperty("name", "name2"); //Ensure that the old index record gets removed
+        v2 = tx.getVertex(v2);
+        v2.setProperty("uid",512); //Ensure that replacement is allowed
+
+        newTx();
+
+        assertEquals(0,tx.query().has("name","name1").vertices());
+        assertEquals(1,tx.query().has("name","name2").vertices());
+        assertEquals(1,tx.query().has("uid",512).vertices());
+
+    }
+
+    /**
      * Test the correct application of {@link com.thinkaurelius.titan.graphdb.types.system.ImplicitKey}
      * to vertices, edges, and properties.
      *
