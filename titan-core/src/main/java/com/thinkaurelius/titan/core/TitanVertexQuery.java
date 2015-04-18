@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Order;
@@ -96,18 +97,31 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Iterable<TitanRelation> relations();
 
     /**
+     * Returns the number of relations that match this query
+     *
+     * @return Number of relations that match this query
+     */
+    public default long count() {
+        return Iterables.size(relations());
+    }
+
+    /**
      * Returns the number of edges that match this query
      *
      * @return Number of edges that match this query
      */
-    public long count();
+    public default long edgeCount() {
+        return vertexIds().size();
+    }
 
     /**
      * Returns the number of properties that match this query
      *
      * @return Number of properties that match this query
      */
-    public long propertyCount();
+    public default long propertyCount() {
+        return Iterables.size(properties());
+    }
 
     /**
      * Retrieves all vertices connected to this query's base vertex by edges

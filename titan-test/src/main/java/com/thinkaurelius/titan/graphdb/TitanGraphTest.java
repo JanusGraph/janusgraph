@@ -70,13 +70,11 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import static org.apache.tinkerpop.gremlin.structure.Direction.*;
 import static org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality.*;
 
-import org.apache.tinkerpop.gremlin.util.StreamFactory;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -1574,7 +1572,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNotNull(getE(graph,eid));
         assertEquals(eid,getE(graph,eid).id());
         //Test adjacent constraint
-        assertEquals(1, v.query().direction(BOTH).has("~adjacent", u.id()).count());
+        assertEquals(1, v.query().direction(BOTH).has("~adjacent", u.id()).edgeCount());
         assertCount(1, v.query().direction(BOTH).has("~adjacent", (int) getId(u)).edges());
         try {
             //Not a valid vertex
@@ -2456,6 +2454,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        assertCount(2 * (noVertices - 1), v.query().direction(Direction.BOTH).edges());
 
 
+       assertEquals(1, v.query().propertyCount());
+
        assertEquals(10, size(v.query().labels("connect").limit(10).vertices()));
        assertEquals(10, size(u.query().labels("connectDesc").limit(10).vertices()));
        assertEquals(10, size(v.query().labels("connect").has("time", Cmp.GREATER_THAN, 30).limit(10).vertices()));
@@ -2484,9 +2484,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        evaluateQuery(v.query().labels("connect").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", 15).has("weight", 3.5),EDGE,1,1,new boolean[]{false,true});
        evaluateQuery(u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
-       assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
-       assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
-       assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
+       assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).edgeCount());
+       assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).edgeCount());
+       assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).edgeCount());
        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Cmp.GREATER_THAN, 31).count());
        assertEquals(10, size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
@@ -2496,42 +2496,42 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", Contain.IN, ImmutableList.of(0.5)),EDGE,3,1,new boolean[]{true,true});
        evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5,2.5)).interval("time", 3, 33),EDGE,7,3,new boolean[]{true,true});
        evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5)),EDGE,1667,2,new boolean[]{true,true});
-       assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-       assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-       assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-       assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-       assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).count());
-       assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).count());
-       assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
+       assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).edgeCount());
+       assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).edgeCount());
+       assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).edgeCount());
+       assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).edgeCount());
+       assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).edgeCount());
+       assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).edgeCount());
+       assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).edgeCount());
 
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 4.0).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 2.0).count());
-       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 2.1, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).edgeCount());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 4.0).edgeCount());
+       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 2.0).edgeCount());
+       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 2.1, 4.0).edgeCount());
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
-       assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
-       assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Cmp.NOT_EQUAL, 10).count());
+       assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).edgeCount());
+       assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Cmp.NOT_EQUAL, 10).edgeCount());
 
-       assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
-       assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
-       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
-       assertEquals(1, v.query().labels("knows").direction(IN).adjacent(vs[11]).count());
-       assertEquals(2, v.query().labels("knows").direction(BOTH).adjacent(vs[11]).count());
-       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
-       assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
-       assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
+       assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).edgeCount());
+       assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).edgeCount());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).edgeCount());
+       assertEquals(1, v.query().labels("knows").direction(IN).adjacent(vs[11]).edgeCount());
+       assertEquals(2, v.query().labels("knows").direction(BOTH).adjacent(vs[11]).edgeCount());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).edgeCount());
+       assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).edgeCount());
+       assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).edgeCount());
 
-       assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
-       assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
-       assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).edgeCount());
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).edgeCount());
+       assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).edgeCount());
 
-       assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
+       assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).edgeCount());
        assertEquals(2 * (int) Math.ceil((noVertices - 1) / 4.0), size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
-       assertEquals(1, v.query().direction(IN).has("time", 1).count());
-       assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
-       assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).count());
-       assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).count());
+       assertEquals(1, v.query().direction(IN).has("time", 1).edgeCount());
+       assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).edgeCount());
+       assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).edgeCount());
+       assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).edgeCount());
        assertEquals(noVertices - 1, size(v.query().direction(OUT).vertices()));
        assertEquals(noVertices - 1, size(v.query().direction(IN).vertices()));
        for (Direction dir : new Direction[]{IN,OUT}) {
@@ -2597,9 +2597,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        evaluateQuery(v.query().labels("connect").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
        evaluateQuery(v.query().labels("connect").direction(OUT).has("time", 15).has("weight", 3.5),EDGE,1,1,new boolean[]{false,true});
        evaluateQuery(u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
-       assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
-       assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
-       assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
+       assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).edgeCount());
+       assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).edgeCount());
+       assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).edgeCount());
        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Cmp.GREATER_THAN, 31).count());
        assertEquals(10, size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
@@ -2609,42 +2609,42 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
        evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", Contain.IN, ImmutableList.of(0.5)),EDGE,3,1,new boolean[]{true,true});
        evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5,2.5)).interval("time", 3, 33),EDGE,7,3,new boolean[]{true,true});
        evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", Contain.IN, ImmutableList.of(0.5,1.5)),EDGE,1667,2,new boolean[]{true,true});
-       assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-       assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-       assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-       assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-       assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).count());
-       assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).count());
-       assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
+       assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).edgeCount());
+       assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).edgeCount());
+       assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).edgeCount());
+       assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).edgeCount());
+       assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Cmp.LESS_THAN_EQUAL, 10).edgeCount());
+       assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Cmp.GREATER_THAN, 10).edgeCount());
+       assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).edgeCount());
 
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 4.0).count());
-       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 2.0).count());
-       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 2.1, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).edgeCount());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 4.0).edgeCount());
+       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 0.0, 2.0).edgeCount());
+       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("number", 0).interval("weight", 2.1, 4.0).edgeCount());
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
        assertEquals(20, size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
-       assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
-       assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Cmp.NOT_EQUAL, 10).count());
+       assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).edgeCount());
+       assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Cmp.NOT_EQUAL, 10).edgeCount());
 
-       assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
-       assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
-       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
-       assertEquals(1, v.query().labels("knows").direction(IN).adjacent(vs[11]).count());
-       assertEquals(2, v.query().labels("knows").direction(BOTH).adjacent(vs[11]).count());
-       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
-       assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
-       assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
+       assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).edgeCount());
+       assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).edgeCount());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).edgeCount());
+       assertEquals(1, v.query().labels("knows").direction(IN).adjacent(vs[11]).edgeCount());
+       assertEquals(2, v.query().labels("knows").direction(BOTH).adjacent(vs[11]).edgeCount());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).edgeCount());
+       assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).edgeCount());
+       assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).edgeCount());
 
-       assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
-       assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
-       assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).edgeCount());
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).edgeCount());
+       assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).edgeCount());
 
-       assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
+       assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).edgeCount());
        assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
-       assertEquals(1, v.query().direction(IN).has("time", 1).count());
-       assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
-       assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).count());
-       assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).count());
+       assertEquals(1, v.query().direction(IN).has("time", 1).edgeCount());
+       assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).edgeCount());
+       assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).edgeCount());
+       assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Cmp.NOT_EQUAL, 10).edgeCount());
        assertEquals(noVertices-1, size(v.query().direction(OUT).vertices()));
        assertEquals(noVertices-1, size(v.query().direction(IN).vertices()));
        for (Direction dir : new Direction[]{IN,OUT}) {
@@ -2688,8 +2688,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
        v = getOnlyElement(tx.query().has("name", "v").vertices());
        assertNotNull(v);
-       assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
-       assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).count());
+       assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).edgeCount());
+       assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).edgeCount());
 
 
        newTx();
@@ -4288,30 +4288,30 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v1.addEdge("bought",v2);
         v1.addEdge("bought",v2);
 
-        assertEquals(5,v1.query().direction(OUT).labels("bought").count());
-        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",1).count());
-        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).has("time",Cmp.GREATER_THAN,1).count());
-        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,5).count());
-        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,0).count());
-        assertEquals(2,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).count());
-        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,2).count());
-        assertEquals(2,v1.query().direction(OUT).labels("bought").hasNot("time").count());
-        assertEquals(5,v1.query().direction(OUT).labels("bought").count());
+        assertEquals(5,v1.query().direction(OUT).labels("bought").edgeCount());
+        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",1).edgeCount());
+        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).has("time",Cmp.GREATER_THAN,1).edgeCount());
+        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,5).edgeCount());
+        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,0).edgeCount());
+        assertEquals(2,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).edgeCount());
+        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,2).edgeCount());
+        assertEquals(2,v1.query().direction(OUT).labels("bought").hasNot("time").edgeCount());
+        assertEquals(5,v1.query().direction(OUT).labels("bought").edgeCount());
 
 
         newTx();
         v1 = tx.getVertex(v1.longId());
         //Queries copied from above
 
-        assertEquals(5,v1.query().direction(OUT).labels("bought").count());
-        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",1).count());
-        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).has("time",Cmp.GREATER_THAN,1).count());
-        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,5).count());
-        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,0).count());
-        assertEquals(2,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).count());
-        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,2).count());
-        assertEquals(2,v1.query().direction(OUT).labels("bought").hasNot("time").count());
-        assertEquals(5,v1.query().direction(OUT).labels("bought").count());
+        assertEquals(5,v1.query().direction(OUT).labels("bought").edgeCount());
+        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",1).edgeCount());
+        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).has("time",Cmp.GREATER_THAN,1).edgeCount());
+        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,5).edgeCount());
+        assertEquals(3,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,0).edgeCount());
+        assertEquals(2,v1.query().direction(OUT).labels("bought").has("time",Cmp.LESS_THAN,3).edgeCount());
+        assertEquals(1,v1.query().direction(OUT).labels("bought").has("time",Cmp.GREATER_THAN,2).edgeCount());
+        assertEquals(2,v1.query().direction(OUT).labels("bought").hasNot("time").edgeCount());
+        assertEquals(5,v1.query().direction(OUT).labels("bought").edgeCount());
     }
 
     //Add more removal operations, different transaction contexts

@@ -100,8 +100,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
             @Override
             public void process(TitanVertex vertex, ScanMetrics metrics) {
-                long outDegree = vertex.query().labels("knows").direction(Direction.OUT).count();
-                assertEquals(0, vertex.query().labels("knows").direction(Direction.IN).count());
+                long outDegree = vertex.query().labels("knows").direction(Direction.OUT).edgeCount();
+                assertEquals(0, vertex.query().labels("knows").direction(Direction.IN).edgeCount());
                 assertEquals(1, vertex.query().labels("uid").propertyCount());
                 assertTrue(vertex.<Integer>property("uid").orElse(0) > 0);
                 metrics.incrementCustom(DEGREE_COUNT,outDegree);
@@ -505,8 +505,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertCount(numV,tx.query().vertices());
         assertCount(numE,tx.query().edges());
 
-        log.debug("seed inE count: {}", vertex.query().direction(Direction.IN).count());
-        log.debug("seed outE count: {}", vertex.query().direction(Direction.OUT).count());
+        log.debug("seed inE count: {}", vertex.query().direction(Direction.IN).edgeCount());
+        log.debug("seed outE count: {}", vertex.query().direction(Direction.OUT).edgeCount());
 
         clopen();
 

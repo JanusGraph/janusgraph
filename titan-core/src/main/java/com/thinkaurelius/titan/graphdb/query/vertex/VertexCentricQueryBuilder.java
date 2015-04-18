@@ -105,15 +105,4 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
         return execute(RelationCategory.EDGE,new VertexIdConstructor());
     }
 
-    //#### COUNTS
-
-    @Override
-    public long count() {
-        return vertexIds().size();
-    }
-
-    @Override
-    public long propertyCount() {
-        return Iterables.size(properties());
-    }
 }
