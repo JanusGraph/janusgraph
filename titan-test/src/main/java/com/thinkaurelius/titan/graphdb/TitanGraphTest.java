@@ -1574,9 +1574,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         newTx();
 
-        assertCount(0, tx.query().has("name", "name1").vertices());
-        assertCount(1, tx.query().has("name", "name2").vertices());
-        assertCount(1, tx.query().has("uid", 512).vertices());
+        assertCount(0, Iterables.size(tx.query().has("name", "name1").vertices()));
+        assertCount(1, Iterables.size(tx.query().has("name", "name2").vertices()));
+        assertCount(1, Iterables.size(tx.query().has("uid", 512).vertices()));
     }
 
     /**
