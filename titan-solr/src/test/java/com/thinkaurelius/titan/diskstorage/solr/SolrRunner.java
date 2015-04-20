@@ -39,13 +39,13 @@ public class SolrRunner {
         temp.deleteOnExit();
 
         File solrXml = new File(solrHome, "solr.xml");
-        miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, solrXml, null, null);
+        miniSolrCloudCluster = new MiniSolrCloudCluster(NUM_SERVERS, null, temp, solrXml, null, null);
 
         for (String core : COLLECTIONS) {
             File coreDirectory = new File(temp.getAbsolutePath() + File.separator + core);
             assert coreDirectory.mkdirs();
             FileUtils.copyDirectory(templateDirectory, coreDirectory);
-            uploadConfigDirToZk(core, coreDirectory.getAbsolutePath());
+            miniSolrCloudCluster.uploadConfigDir(coreDirectory.getAbsoluteFile(), core);
         }
     }
 
@@ -65,8 +65,5 @@ public class SolrRunner {
         return dispatchFilter.getCores().getZkController();
     }
 
-    protected static void uploadConfigDirToZk(String coreName, String collectionConfigDir) throws Exception {
-        ZkController zkController = getZkController();
-        zkController.uploadConfigDir(new File(collectionConfigDir), coreName);
-    }
+
 }

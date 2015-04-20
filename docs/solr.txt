@@ -59,6 +59,22 @@ Collection Initialization
 +++++++++++++++++++++++++
 
 It is required that a collection is initialized in Solr before it can be used by Titan. Initialization refers to definition of a schema (e.g. provided as a `schema.xml` file), and other configurations for a particular collection. When a <<index-mixed>> is defined, a unique name is assigned to that index. For each such index backed by a Solr indexing backend, a collection with that same name must be initialized in Solr before the index can be used in Titan.
+An example config is included in config/solr that is based on the example schema that ships with Solr 5. It contains additional configuration that is required by Titan.
+
+To create a new core that is compatible with Titan:
+
+. Create a new core conf directory in your solr directory. For example if using the default installation server/solr/{core_name}/conf
+. Copy the contents of titan/conf/solr to server/solr/{core_name}/conf
+. Open the Solr web interface and select Core Admin->Add Core
+. Change the name and instance dir to match your {core_name}
+. Finish by clicking Add Core
+
+The core_name must match the index name used to build the index:
+
+[source,gremlin]
+----
+mgmt.buildIndex('{core_name}',Vertex.class).addKey(name).buildMixedIndex("search")
+----
 
 Dynamic Field Definition
 ++++++++++++++++++++++++
@@ -69,15 +85,17 @@ Titan assumes the following dynamic field tags are defined in the backing Solr c
 
 [source,xml]
 ----
-<dynamicField name="*_i"    type="sint"     indexed="true"  stored="true"/>
-<dynamicField name="*_s"    type="string"   indexed="true"  stored="true"/>
-<dynamicField name="*_l"    type="slong"    indexed="true"  stored="true"/>
-<dynamicField name="*_t"    type="text"     indexed="true"  stored="true"/>
-<dynamicField name="*_b"    type="boolean"  indexed="true"  stored="true"/>
-<dynamicField name="*_f"    type="sfloat"   indexed="true"  stored="true"/>
-<dynamicField name="*_d"    type="sdouble"  indexed="true"  stored="true"/>
-<dynamicField name="*_dt"   type="date"     indexed="true"  stored="true"/>
-<dynamicField name="*_g"    type="geo"      indexed="true"  stored="true"/>
+   <dynamicField name="*_i"    type="int"          indexed="true"  stored="true"/>
+   <dynamicField name="*_s"    type="string"       indexed="true"  stored="true" />
+   <dynamicField name="*_l"    type="long"         indexed="true"  stored="true"/>
+   <dynamicField name="*_t"    type="text_general" indexed="true"  stored="true"/>
+   <dynamicField name="*_b"    type="boolean"      indexed="true" stored="true"/>
+   <dynamicField name="*_f"    type="float"        indexed="true"  stored="true"/>
+   <dynamicField name="*_d"    type="double"       indexed="true"  stored="true"/>
+   <dynamicField name="*_g"    type="geo"          indexed="true"  stored="true"/>
+   <dynamicField name="*_dt"   type="date"         indexed="true"  stored="true"/>
+   <dynamicField name="*_uuid" type="uuid"         indexed="true"  stored="true"/>
+
 ----
 
 In Titan's default configuration, property key names do not have to end with the type-appropriate suffix to take advantage of Solr's dynamic field feature.  Titan generates the Solr field name from the property key name by encoding the property key definition's numeric identifier and the type-appropriate suffix.  This means that Titan uses synthetic field names with type-appropriate suffixes behind the scenes, regardless of the property key names defined and used by application code using Titan.  This field name mapping can be overridden through non-default configuration.  That's described in the next section. 
@@ -157,6 +175,7 @@ org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
 This is resolved by adding the JTS jar to the classpath of the Solr server.
 
 To determine the ideal JTS version, first check the version of Spatial4j in use by the Solr cluster, then determine the version of JTS against which that Spatial4j version was compiled.  Spatial4j declares its target JTS version in the http://search.maven.org/#search|gav|1|g%3A%22com.spatial4j%22%20AND%20a%3A%22spatial4j%22[pom for the `com.spatial4j:spatial4j` artifact].
+Copy the jts jar to the server/solr-webapp/webapp/WEB-INF/lib directory in your solr installation.
 
 Advanced Solr Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
