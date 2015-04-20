@@ -22,12 +22,10 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 public abstract class AbstractStoreManager implements StoreManager {
 
     protected final boolean transactional;
-    protected final boolean isReadOnly;
     protected final boolean batchLoading;
     protected final Configuration storageConfig;
 
     public AbstractStoreManager(Configuration storageConfig) {
-        isReadOnly = storageConfig.get(STORAGE_READONLY);
         batchLoading = storageConfig.get(STORAGE_BATCH);
         boolean transactional = storageConfig.get(STORAGE_TRANSACTIONAL);
         if (batchLoading) {
