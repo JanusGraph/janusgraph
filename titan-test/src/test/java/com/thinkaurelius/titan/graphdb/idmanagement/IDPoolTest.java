@@ -2,13 +2,26 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.easymock.EasyMock.*;
 
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import com.thinkaurelius.titan.diskstorage.IDBlock;
+import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+import junit.framework.Assert;
+import org.easymock.EasyMock;
+import org.easymock.IMocksControl;
 import org.junit.Test;
 
 import com.thinkaurelius.titan.core.TitanException;
@@ -111,6 +124,76 @@ public class IDPoolTest {
 
         }
 
+    }
+
+    @Test
+    public void testAllocationTimeoutAndRecovery() throws BackendException {
+        IMocksControl ctrl = EasyMock.createStrictControl();
+
+        final int partition = 42;
+        final int idNamespace = 777;
+        final Duration timeout = new StandardDuration(1L, TimeUnit.SECONDS);
+
+        final IDAuthority mockAuthority = ctrl.createMock(IDAuthority.class);
+
+        // Sleep for two seconds, then throw a backendexception
+        // this whole delegate could be deleted if we abstracted StandardIDPool's internal executor and stopwatches
+        expect(mockAuthority.getIDBlock(partition, idNamespace, timeout)).andDelegateTo(new IDAuthority() {
+            @Override
+            public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout) throws BackendException {
+                try {
+                    Thread.sleep(2000L);
+                } catch (InterruptedException e) {
+                    fail();
+                }
+                throw new TemporaryBackendException("slow backend");
+            }
+
+            @Override
+            public List<KeyRange> getLocalIDPartition() throws BackendException {
+                throw new IllegalArgumentException();
+            }
+
+            @Override
+            public void setIDBlockSizer(IDBlockSizer sizer) {
+                throw new IllegalArgumentException();
+            }
+
+            @Override
+            public void close() throws BackendException {
+                throw new IllegalArgumentException();
+            }
+
+            @Override
+            public String getUniqueID() {
+                throw new IllegalArgumentException();
+            }
+        });
+        expect(mockAuthority.getIDBlock(partition, idNamespace, timeout)).andReturn(new IDBlock() {
+            @Override
+            public long numIds() {
+                return 2;
+            }
+
+            @Override
+            public long getId(long index) {
+                return 200;
+            }
+        });
+
+        ctrl.replay();
+        StandardIDPool pool = new StandardIDPool(mockAuthority, partition, idNamespace, Integer.MAX_VALUE, timeout, 0.1);
+        try {
+            pool.nextID();
+            fail();
+        } catch (TitanException e) {
+
+        }
+
+        long nextID = pool.nextID();
+        assertEquals(200, nextID);
+
+        ctrl.verify();
     }
 
     @Test
