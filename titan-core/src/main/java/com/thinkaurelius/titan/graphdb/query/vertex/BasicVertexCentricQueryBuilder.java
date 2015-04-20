@@ -110,11 +110,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 	 * ---------------------------------------------------------------
 	 */
 
-    private boolean hasAllCanonicalTypes() {
+    protected boolean hasAllCanonicalTypes() {
         for (String typeName : types) {
             InternalRelationType type = QueryUtil.getType(tx, typeName);
-            if (type==null) continue;
-            if (!type.multiplicity().isUnique(dir)) return false;
+            if (type!=null && !type.isPropertyKey() && !type.multiplicity().isUnique(dir)) return false;
         }
         return true;
     }
@@ -212,7 +211,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     }
 
-    protected List<InternalVertex> allRepresentatives(InternalVertex partitionedVertex) {
+    protected List<InternalVertex> allRequiredRepresentatives(InternalVertex partitionedVertex) {
         if (hasAllCanonicalTypes()) {
             return ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
         }

@@ -154,12 +154,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             //Verify that properties are distributed correctly
             TitanVertexProperty p = (TitanVertexProperty) getOnlyElement(g.properties("gid"));
             assertEquals(canonicalPartition, getPartitionID(p, idManager));
-            Set<Integer> propPartitions = Sets.newHashSet();
             for (Iterator<VertexProperty<Object>> niter = g.properties("name"); niter.hasNext(); ) {
-                propPartitions.add(getPartitionID((TitanVertex) niter.next().element(), idManager));
+                assertEquals(canonicalPartition,getPartitionID((TitanVertex) niter.next().element(), idManager));
             }
-            //Verify spread across partitions; this number is a pessimistic lower bound but might fail since it is probabilistic
-            assertTrue(propPartitions.size() >= 3);
 
             //Copied from above
             assertCount(1, g.query().direction(Direction.BOTH).labels("one").edges());

@@ -1,15 +1,12 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.QueryProcessor;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +59,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         if (bq.isEmpty()) return resultConstructor.emptyResult();
         if (isPartitionedVertex(vertex)) {
-            List<InternalVertex> vertices = allRepresentatives(vertex);
+            List<InternalVertex> vertices = allRequiredRepresentatives(vertex);
             if (vertices.size()>1) {
                 for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
                     tx.executeMultiQuery(vertices, sq.getBackendQuery());
