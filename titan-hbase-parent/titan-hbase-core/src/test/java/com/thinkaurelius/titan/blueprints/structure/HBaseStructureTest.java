@@ -18,16 +18,12 @@ import java.io.IOException;
 @StructureStandardSuite.GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
 public class HBaseStructureTest {
 
-    @BeforeClass
-    public static void startHBase() throws IOException {
-        HBaseStorageSetup.startHBase();
-    }
-
-    @AfterClass
-    public static void stopHBase() {
-        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-        if (VersionInfo.getVersion().startsWith("0.96"))
-            HBaseStorageSetup.killIfRunning();
-    }
+    // TODO what is TP3's equivalent of @AfterClass?
+//    @AfterClass
+//    public static void stopHBase() {
+//        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
+//        if (VersionInfo.getVersion().startsWith("0.96"))
+//            HBaseStorageSetup.killIfRunning();
+//    }
 
 }

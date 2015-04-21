@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.blueprints.HBaseGraphProvider;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.AfterClass;
@@ -19,16 +20,13 @@ import java.io.IOException;
 @StructureStandardSuite.GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
 public class HBaseProcessTest {
 
-    @BeforeClass
-    public static void startHBase() throws IOException {
-        HBaseStorageSetup.startHBase();
-    }
 
-    @AfterClass
-    public static void stopHBase() {
-        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-        if (VersionInfo.getVersion().startsWith("0.96"))
-            HBaseStorageSetup.killIfRunning();
-    }
+    // TODO what is TP3's equivalent of @AfterClass?
+//    @AfterClass
+//    public static void stopHBase() {
+//        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
+//        if (VersionInfo.getVersion().startsWith("0.96"))
+//            HBaseStorageSetup.killIfRunning();
+//    }
 
 }
