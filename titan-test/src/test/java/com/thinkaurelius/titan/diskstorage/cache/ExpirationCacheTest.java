@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.ZeroDuration;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -22,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -35,7 +33,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
 
     @Override
     public KCVSCache getCache(KeyColumnValueStore store) {
-        return getCache(store,new StandardDuration(1,TimeUnit.DAYS),ZeroDuration.INSTANCE);
+        return getCache(store,new StandardDuration(1,TimeUnit.DAYS),StandardDuration.ZERO);
     }
 
     private static KCVSCache getCache(KeyColumnValueStore store, Duration expirationTime, Duration graceWait) {
@@ -54,7 +52,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         final int numKeys = 100, numCols = 10;
         loadStore(numKeys,numCols);
         //Replace cache with proper times
-        cache = getCache(store,expirationTime,ZeroDuration.INSTANCE);
+        cache = getCache(store,expirationTime,StandardDuration.ZERO);
 
         StaticBuffer key = BufferUtil.getIntBuffer(81);
         List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
@@ -90,7 +88,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
     @Test
     public void testGracePeriod() throws Exception {
         testGracePeriod(new StandardDuration(200,TimeUnit.MILLISECONDS));
-        testGracePeriod(ZeroDuration.INSTANCE);
+        testGracePeriod(StandardDuration.ZERO);
         testGracePeriod(new StandardDuration(1,TimeUnit.SECONDS));
     }
 

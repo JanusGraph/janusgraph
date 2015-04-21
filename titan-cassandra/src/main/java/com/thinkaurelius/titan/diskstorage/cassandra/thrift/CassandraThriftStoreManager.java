@@ -43,6 +43,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
+import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
+
 /**
  * This class creates {@see CassandraThriftKeyColumnValueStore}s and
  * handles Cassandra-backed allocation of vertex IDs for Titan (when so
@@ -91,11 +93,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public static final ConfigNamespace CPOOL_NS =
             new ConfigNamespace(THRIFT_NS, "cpool", "Options for the Apache commons-pool connection manager");
 
-    public static final ConfigOption<PoolExhaustedAction> CPOOL_WHEN_EXHAUSTED =
-            new ConfigOption<PoolExhaustedAction>(CPOOL_NS, "when-exhausted",
+    public static final ConfigOption<String> CPOOL_WHEN_EXHAUSTED =
+            new ConfigOption<>(CPOOL_NS, "when-exhausted",
             "What to do when clients concurrently request more active connections than are allowed " +
             "by the pool.  The value must be one of BLOCK, FAIL, or GROW.",
-            ConfigOption.Type.MASKABLE, PoolExhaustedAction.class, PoolExhaustedAction.BLOCK);
+            ConfigOption.Type.MASKABLE, String.class, PoolExhaustedAction.BLOCK.toString(),
+            disallowEmpty(String.class));
 
     public static final ConfigOption<Integer> CPOOL_MAX_TOTAL =
             new ConfigOption<Integer>(CPOOL_NS, "max-total",
@@ -175,12 +178,15 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             factoryConfig.setSSLTruststorePassword(config.get(SSL_TRUSTSTORE_PASSWORD));
         }
 
+        final PoolExhaustedAction poolExhaustedAction = ConfigOption.getEnumValue(
+                config.get(CPOOL_WHEN_EXHAUSTED), PoolExhaustedAction.class);
+
         CTConnectionPool p = new CTConnectionPool(factoryConfig.build());
         p.setTestOnBorrow(true);
         p.setTestOnReturn(true);
         p.setTestWhileIdle(config.get(CPOOL_IDLE_TESTS));
         p.setNumTestsPerEvictionRun(config.get(CPOOL_IDLE_TESTS_PER_EVICTION_RUN));
-        p.setWhenExhaustedAction(config.get(CPOOL_WHEN_EXHAUSTED).getByte());
+        p.setWhenExhaustedAction(poolExhaustedAction.getByte());
         p.setMaxActive(config.get(CPOOL_MAX_ACTIVE));
         p.setMaxTotal(config.get(CPOOL_MAX_TOTAL)); // maxTotal limits active + idle
         p.setMaxIdle(config.get(CPOOL_MAX_IDLE));

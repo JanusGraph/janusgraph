@@ -16,6 +16,9 @@ public class StandardDuration implements Duration {
     private final long length;
     private final TimeUnit unit;
 
+    public static final StandardDuration ZERO =
+            new StandardDuration(0L, TimeUnit.NANOSECONDS);
+
     private StandardDuration() {
         //For Kryo
         length=0;
@@ -66,7 +69,7 @@ public class StandardDuration implements Duration {
     @Override
     public Duration multiply(double multiplier) {
         Preconditions.checkArgument(0 <= multiplier, "Time multiplier %d is negative", multiplier);
-        if (isZeroLength() || multiplier==0) return ZeroDuration.INSTANCE;
+        if (isZeroLength() || multiplier==0) return StandardDuration.ZERO;
         else if (multiplier==1.0) return this;
 
         double actualLength = length * multiplier;

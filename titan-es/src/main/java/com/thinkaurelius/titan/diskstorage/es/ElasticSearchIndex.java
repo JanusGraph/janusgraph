@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
+import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
@@ -104,12 +105,13 @@ public class ElasticSearchIndex implements IndexProvider {
             "Enabling this option makes the TransportClient attempt to discover other cluster nodes " +
             "besides those in the initial host list provided at startup.", ConfigOption.Type.MASKABLE, true);
 
-    public static final ConfigOption<ElasticSearchSetup> INTERFACE =
-            new ConfigOption<ElasticSearchSetup>(ELASTICSEARCH_NS, "interface",
+    public static final ConfigOption<String> INTERFACE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "interface",
             "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
             "section of the ES manual for discussion of the difference).  Setting this option enables the " +
             "interface config track (see manual for more information about ES config tracks).",
-            ConfigOption.Type.MASKABLE, ElasticSearchSetup.class, ElasticSearchSetup.TRANSPORT_CLIENT);
+            ConfigOption.Type.MASKABLE, String.class, ElasticSearchSetup.TRANSPORT_CLIENT.toString(),
+            disallowEmpty(String.class));
 
     public static final ConfigOption<Boolean> IGNORE_CLUSTER_NAME =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "ignore-cluster-name",
@@ -235,7 +237,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * @return a node and client object open and ready for use
      */
     private ElasticSearchSetup.Connection interfaceConfiguration(Configuration config) {
-        ElasticSearchSetup clientMode = config.get(INTERFACE);
+        ElasticSearchSetup clientMode = ConfigOption.getEnumValue(config.get(INTERFACE), ElasticSearchSetup.class);
 
         try {
             return clientMode.connect(config);
