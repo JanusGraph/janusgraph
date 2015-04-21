@@ -52,7 +52,7 @@ public class KCVSManagerProxy implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String name) throws BackendException {
+    public KeyColumnValueStore openDatabase(String name, Configuration options) throws BackendException {
         return manager.openDatabase(name);
     }
 

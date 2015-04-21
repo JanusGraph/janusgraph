@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.StandardIndexProvider;
 import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import com.thinkaurelius.titan.graphdb.tinkerpop.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
@@ -647,6 +647,13 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<Boolean>(STORE_META_NS,"visibility",
             "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
             ConfigOption.Type.GLOBAL, true);
+
+    public static final ConfigNamespace STORE_TTL_NS = new ConfigNamespace(STORAGE_NS, "ttl", "Namespace of hidden TTL-related options");
+
+    public static final ConfigOption<Integer> STORE_TTL_SECONDS = new ConfigOption<Integer>(STORE_TTL_NS,"store-ttl-seconds",
+            "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, Integer.class).hide();
+
 
     // ################ CLUSTERING ###########################
     // ################################################
@@ -1454,7 +1461,7 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
         overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE,TRANSACTION_LOG);
-        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKVCSManager.supportsStoreTTL(storeFeatures)) {
+        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKCVSManager.supportsStoreTTL(storeFeatures)) {
             overwrite.set(LOG_STORE_TTL,TRANSACTION_LOG_DEFAULT_TTL,TRANSACTION_LOG);
         }
         //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true

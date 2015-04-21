@@ -320,7 +320,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public synchronized AstyanaxKeyColumnValueStore openDatabase(String name) throws BackendException {
+    public synchronized AstyanaxKeyColumnValueStore openDatabase(String name, Configuration options) throws BackendException {
         if (openStores.containsKey(name)) return openStores.get(name);
         else {
             ensureColumnFamilyExists(name);
