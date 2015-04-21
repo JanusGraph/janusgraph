@@ -134,7 +134,9 @@ public class SolrIndex implements IndexProvider {
             "Maximum number of HTTP connections in total to all Solr servers.",
             ConfigOption.Type.MASKABLE, 100);
 
-
+    public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<Boolean>(SOLR_NS, "wait-searcher",
+            "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
+            ConfigOption.Type.LOCAL, false);
 
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
@@ -147,6 +149,7 @@ public class SolrIndex implements IndexProvider {
     private final Map<String, String> keyFieldIds;
     private final String ttlField;
     private final int maxResults;
+    private final boolean waitSearcher;
 
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
@@ -157,6 +160,7 @@ public class SolrIndex implements IndexProvider {
         keyFieldIds = parseKeyFieldsForCollections(config);
         maxResults = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
+        waitSearcher = config.get(WAIT_SEARCHER);
 
         if (mode==Mode.CLOUD) {
             String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
@@ -816,9 +820,11 @@ public class SolrIndex implements IndexProvider {
         return map;
     }
 
-    private static UpdateRequest newUpdateRequest() {
+    private UpdateRequest newUpdateRequest() {
         UpdateRequest req = new UpdateRequest();
-        req.setAction(UpdateRequest.ACTION.COMMIT, true, true);
+        if(waitSearcher) {
+            req.setAction(UpdateRequest.ACTION.COMMIT, true, true);
+        }
         return req;
     }
 
