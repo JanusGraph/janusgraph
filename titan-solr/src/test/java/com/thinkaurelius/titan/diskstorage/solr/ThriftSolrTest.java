@@ -22,7 +22,7 @@ public class ThriftSolrTest extends SolrTitanIndexTest {
                 CassandraStorageSetup.getCassandraThriftConfiguration(ThriftSolrTest.class.getName());
         //Add index
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), INDEX);
-
+        config.set(SolrIndex.WAIT_SEARCHER, true, INDEX);
         config.set(INDEX_BACKEND,"solr",INDEX);
         //TODO: set SOLR specific config options
         return config.getConfiguration();

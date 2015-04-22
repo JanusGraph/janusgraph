@@ -62,7 +62,7 @@ public class LuceneIndex implements IndexProvider {
     private static final int MAX_STRING_FIELD_LEN = 256;
 
     private static final Version LUCENE_VERSION = Version.LUCENE_4_10_4;
-    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
+    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).build();
 
     private static final int GEO_MAX_LEVELS = 11;
 
@@ -445,9 +445,11 @@ public class LuceneIndex implements IndexProvider {
 
                 if (titanPredicate == Text.CONTAINS) {
                     value = ((String) value).toLowerCase();
-                    List<String> terms = Text.tokenize((String) value);
-                    TermsFilter termsFilter = new TermsFilter(terms.stream().map(s->new Term(key, s)).collect(Collectors.toList()));
-                    params.addFilter(termsFilter);
+                    BooleanFilter b = new BooleanFilter();
+                    for (String term : Text.tokenize((String)value)) {
+                        b.add(new TermsFilter(new Term(key, term)), BooleanClause.Occur.MUST);
+                    }
+                    params.addFilter(b);
                 } else if (titanPredicate == Text.CONTAINS_PREFIX) {
                     value = ((String) value).toLowerCase();
                     params.addFilter(new PrefixFilter(new Term(key, (String) value)));
@@ -529,7 +531,7 @@ public class LuceneIndex implements IndexProvider {
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Query q;
         try {
-            q = new QueryParser(LUCENE_VERSION,"_all",analyzer).parse(query.getQuery());
+            q = new QueryParser("_all",analyzer).parse(query.getQuery());
         } catch (ParseException e) {
             throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
         }
