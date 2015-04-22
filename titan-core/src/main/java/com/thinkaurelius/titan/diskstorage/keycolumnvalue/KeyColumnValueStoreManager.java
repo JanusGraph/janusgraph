@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
 import java.util.Map;
@@ -26,7 +28,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      *
      */
     default KeyColumnValueStore openDatabase(String name) throws BackendException {
-        return openDatabase(name, Configuration.EMPTY);
+        return openDatabase(name, ImmutableMap.of());
     }
 
     /**
@@ -34,12 +36,12 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      * created. If it has already been opened, the existing handle is returned.
      *
      * @param name Name of database
-     * @param options Configuration data specific to this store
+     * @param metaData options specific to this store
      * @return Database Handle
      * @throws com.thinkaurelius.titan.diskstorage.BackendException
      *
      */
-    KeyColumnValueStore openDatabase(String name, Configuration options) throws BackendException;
+    KeyColumnValueStore openDatabase(String name, Map<StoreMetaData, Object> metaData) throws BackendException;
 
     /**
      * Executes multiple mutations at once. For each store (identified by a string name) there is a map of (key,mutation) pairs

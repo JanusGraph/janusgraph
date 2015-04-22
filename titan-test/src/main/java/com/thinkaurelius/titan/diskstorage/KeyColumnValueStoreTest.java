@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -1091,9 +1092,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         final TimeUnit sec = TimeUnit.SECONDS;
         final int storeTTLSeconds = (int)TestGraphConfigs.getTTL(sec);
-        Configuration opts = GraphDatabaseConfiguration.buildGraphConfiguration().set(GraphDatabaseConfiguration.STORE_TTL_SECONDS, storeTTLSeconds);
-        KeyColumnValueStore storeWithTTL = storeManager.
-                openDatabase("testStore_with_TTL", opts);
+        Map<StoreMetaData, Object> opts = Maps.newHashMap();
+        opts.put(StoreMetaData.TTL, storeTTLSeconds);
+        KeyColumnValueStore storeWithTTL = storeManager.openDatabase("testStore_with_TTL", opts);
 
         populateDBWith100Keys(storeWithTTL);
 

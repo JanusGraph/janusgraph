@@ -3,7 +3,9 @@ package com.thinkaurelius.titan.diskstorage.log.kcvs;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -198,9 +200,9 @@ public class KCVSLogManager implements LogManager {
     @Override
     public synchronized KCVSLog openLog(final String name) throws BackendException {
         if (openLogs.containsKey(name)) return openLogs.get(name);
-        ModifiableConfiguration storeOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
+        Map<StoreMetaData, Object> storeOptions = Maps.newHashMap();
         if (0 < indexStoreTTL) {
-            storeOptions.set(STORE_TTL_SECONDS, indexStoreTTL);
+            storeOptions.put(StoreMetaData.TTL, indexStoreTTL);
         }
         KCVSLog log = new KCVSLog(name,this,storeManager.openDatabase(name, storeOptions),configuration);
         openLogs.put(name,log);

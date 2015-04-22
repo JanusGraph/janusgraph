@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
@@ -64,18 +65,18 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name, Configuration options)
+    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name) throws BackendException {
+        return openDatabase(name, ImmutableMap.of());
+    }
+
+    @Override
+    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name, Map<StoreMetaData, Object> metaData)
             throws BackendException {
         if (!stores.containsKey(name) || stores.get(name).isClosed()) {
             OrderedKeyValueStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name), keyLengths);
             stores.put(name, store);
         }
         return stores.get(name);
-    }
-
-    @Override
-    public OrderedKeyValueStoreAdapter openDatabase(String name) throws BackendException {
-        return openDatabase(name, Configuration.EMPTY);
     }
 
     @Override

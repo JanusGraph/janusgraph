@@ -320,7 +320,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
-    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name, final Configuration options) throws BackendException {
+    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name, final Map<StoreMetaData, Object> metaData) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 

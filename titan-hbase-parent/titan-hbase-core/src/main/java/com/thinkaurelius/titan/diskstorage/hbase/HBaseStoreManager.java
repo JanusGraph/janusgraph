@@ -21,6 +21,7 @@ import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -438,7 +439,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String longName, Configuration config) throws BackendException {
+    public KeyColumnValueStore openDatabase(String longName, Map<StoreMetaData, Object> metaData) throws BackendException {
 
         HBaseKeyColumnValueStore store = openStores.get(longName);
 
@@ -452,8 +453,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             if (store == null) {
                 if (!skipSchemaCheck) {
                     int cfTTLInSeconds = -1;
-                    if (config.has(STORE_TTL_SECONDS))
-                        cfTTLInSeconds = config.get(STORE_TTL_SECONDS);
+                    if (metaData.containsKey(StoreMetaData.TTL)) {
+                        cfTTLInSeconds = (Integer) metaData.get(StoreMetaData.TTL);
+                    }
                     ensureColumnFamilyExists(tableName, cfName, cfTTLInSeconds);
                 }
 
