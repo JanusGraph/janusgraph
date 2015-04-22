@@ -128,7 +128,29 @@ public class PartitionIDRangeTest {
         pr = getPIR(2,6,6,3);
         assertEquals(4,pr.getAllContainedIDs().length);
         pr = getPIR(2,7,7,3);
+        assertEquals(4,pr.getAllContainedIDs().length);
+        pr = getPIR(2,10,9,4);
         assertEquals(3,pr.getAllContainedIDs().length);
+        pr = getPIR(2,5,15,4);
+        assertEquals(1, pr.getAllContainedIDs().length);
+        pr = getPIR(2,9,16,4);
+        assertEquals(1, pr.getAllContainedIDs().length);
+        assertTrue(pr.contains(3));
+
+        assertNull(getPIR(2, 11, 12, 4));
+        assertNull(getPIR(2, 5, 11, 4));
+        assertNull(getPIR(2, 9, 12, 4));
+        assertNull(getPIR(2, 9, 11, 4));
+        assertNull(getPIR(2, 13, 15, 4));
+        assertNull(getPIR(2, 13, 3, 4));
+
+
+        pr = getPIR(2,15,14,4);
+        assertEquals(3,pr.getAllContainedIDs().length);
+
+        pr = getPIR(1,7,6,3);
+        assertEquals(1, pr.getAllContainedIDs().length);
+        assertTrue(pr.contains(0));
     }
 
 
@@ -144,7 +166,7 @@ public class PartitionIDRangeTest {
     }
 
     public static long convert(long id, int bitwidth) {
-        Preconditions.checkArgument(id>=0 && id<(1<<bitwidth));
+        Preconditions.checkArgument(id>=0 && id<=(1<<bitwidth));
         return id<<(64-bitwidth);
     }
 
