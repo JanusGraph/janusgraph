@@ -10,7 +10,9 @@ import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -125,6 +127,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(54,Timestamps.class, new EnumSerializer<>(Timestamps.class));
         registerClassInternal(55,TimeUnit.class, new EnumSerializer<>(TimeUnit.class));
         registerClassInternal(56,Mapping.class, new EnumSerializer<>(Mapping.class));
+        registerClassInternal(57,ConflictAvoidanceMode.class, new EnumSerializer<>(ConflictAvoidanceMode.class));
 
         registerClassInternal(60,Class.class, new ClassSerializer());
         registerClassInternal(61,Parameter.class, new ParameterSerializer());
@@ -132,31 +135,34 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(63,TypeDefinitionDescription.class, new TypeDefinitionDescriptionSerializer());
         //Needed for configuration and transaction logging
         registerClassInternal(64,StandardDuration.class, new StandardDurationSerializer());
-        registerClassInternal(65,StandardTimepoint.class, new StandardTimepointSerializer());
-        registerClassInternal(67,Timestamp.class, new TimestampSerializer());
+        registerClassInternal(65,Timepoint.class, new StandardTimepointSerializer());
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
+        registerClassInternal(67,Timestamp.class, new TimestampSerializer());
+
     }
 
     @Override
     public synchronized <V> void registerClass(int registrationNo, Class<V> datatype, AttributeSerializer<V> serializer) {
-        Preconditions.checkArgument(registrationNo>=0 && registrationNo<MAX_REGISTRATION_NO,"Registration number out of range [0,%s]: %s",MAX_REGISTRATION_NO,registrationNo);
-        registerClassInternal(CLASS_REGISTRATION_OFFSET + registrationNo, datatype,serializer);
+        Preconditions.checkArgument(registrationNo >= 0 && registrationNo < MAX_REGISTRATION_NO, "Registration number" +
+                " out of range [0,%s]: %s", MAX_REGISTRATION_NO, registrationNo);
+        registerClassInternal(CLASS_REGISTRATION_OFFSET + registrationNo, datatype, serializer);
     }
 
-    public synchronized <V> void registerClassInternal(int registrationNo, Class<V> datatype, AttributeSerializer<V> serializer) {
+    public synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {
         Preconditions.checkArgument(registrationNo>0); //must be bigger than 0 since 0 is used to indicate null values
         Preconditions.checkNotNull(datatype);
         Preconditions.checkArgument(!handlers.containsKey(datatype), "DataType has already been registered: %s", datatype);
         Preconditions.checkArgument(!registrations.containsKey(registrationNo), "A datatype has already been registered for no: %s",registrationNo);
         Preconditions.checkNotNull(serializer,"Need to provide a serializer for datatype: %s",datatype);
-        registrations.put(registrationNo,datatype);
+        registrations.put(registrationNo, datatype);
         if (serializer instanceof SerializerInjected) ((SerializerInjected)serializer).setSerializer(this);
-        handlers.put(datatype,serializer);
+        handlers.put(datatype, serializer);
     }
 
     private static Class normalizeDataType(Class datatype) {
         Class superClass = datatype.getSuperclass();
-        if (superClass!=null && superClass.isEnum()) return superClass;
+        if (null != superClass && superClass.isEnum()) return superClass;
+        if (StandardTimepoint.class.equals(datatype)) return Timepoint.class;
         return datatype;
     }
 

@@ -125,4 +125,22 @@ In addition when importing a graph via GraphSON Point may be represented by:
 link:http://geojson.org/[GeoJSON] may be specified as Point, Circle or Polygon. However polygons must form a box.
 Note that unlike the Titan API GeoJSON specifies coordinates as lng lat.
 
+Collections
+~~~~~~~~~~~
+If you are using <<elasticsearch,Elasticsearch>> then you can index properties with SET and LIST cardinality.
+For instance:
+
+[source,java]
+mgmt = g.openManagement();
+PropertyKey nameProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+mgmt.buildIndex("search",Vertex.class).addKey(nameProperty).buildMixedIndex("search");
+//Insert a vertex
+Vertex person = graph.addVertex();
+person.property("name", "Robert");
+person.property("name", "Bob");
+graph.tx().commit();
+//Now query it
+g.V.has("name", "Bob").count().next(); //1
+g.V.has("name", "Robert").count().next(); //1
+
 

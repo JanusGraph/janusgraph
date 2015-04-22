@@ -48,6 +48,11 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
         return true;
     }
 
+    @Override
+    protected boolean supportsCollections() {
+        return true;
+    }
+
     /**
      * Test {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#create(String)}.
      */

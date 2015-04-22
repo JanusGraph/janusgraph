@@ -63,7 +63,7 @@ public class ElasticSearchConfigTest {
         ElasticsearchRunner esr = new ElasticsearchRunner(".", "transportClient.yml");
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT.toString(), INDEX_NAME);
         config.set(INDEX_HOSTS, new String[]{ "127.0.0.1" }, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
@@ -71,7 +71,7 @@ public class ElasticSearchConfigTest {
         idx.close();
 
         config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.TRANSPORT_CLIENT.toString(), INDEX_NAME);
         config.set(INDEX_HOSTS, new String[]{ "10.11.12.13" }, INDEX_NAME);
         indexConfig = config.restrictTo(INDEX_NAME);
         Throwable failure = null;
@@ -103,7 +103,7 @@ public class ElasticSearchConfigTest {
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                         cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
         simpleWriteAndQuery(idx);
@@ -126,7 +126,7 @@ public class ElasticSearchConfigTest {
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                         cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         config.set(INDEX_DIRECTORY, baseDir, INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
@@ -144,7 +144,7 @@ public class ElasticSearchConfigTest {
         assertFalse(new File(baseDir + File.separator + "data").exists());
 
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         config.set(INDEX_CONF_FILE,
                 Joiner.on(File.separator).join("target", "test-classes", "es_jvmlocal.yml"), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
@@ -168,7 +168,7 @@ public class ElasticSearchConfigTest {
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                 cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
         simpleWriteAndQuery(idx);
@@ -177,7 +177,7 @@ public class ElasticSearchConfigTest {
         cc.set("index." + INDEX_NAME + ".elasticsearch.ext.discovery.zen.ping.unicast.hosts", "10.11.12.13");
         config = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                  cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         config.set(HEALTH_REQUEST_TIMEOUT, "5s", INDEX_NAME);
         indexConfig = config.restrictTo(INDEX_NAME);
 
@@ -197,7 +197,7 @@ public class ElasticSearchConfigTest {
         ElasticsearchRunner esr = new ElasticsearchRunner(".", "networkNodeUsingYaml.yml");
         esr.start();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         config.set(INDEX_CONF_FILE,
                 Joiner.on(File.separator).join("target", "test-classes", "es_cfg_nodeclient.yml"), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
@@ -206,7 +206,7 @@ public class ElasticSearchConfigTest {
         idx.close();
 
         config = GraphDatabaseConfiguration.buildGraphConfiguration();
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         config.set(HEALTH_REQUEST_TIMEOUT, "5s", INDEX_NAME);
         config.set(INDEX_CONF_FILE,
                 Joiner.on(File.separator).join("target", "test-classes", "es_cfg_bogus_nodeclient.yml"), INDEX_NAME);
@@ -235,7 +235,7 @@ public class ElasticSearchConfigTest {
         ModifiableConfiguration config =
                 new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                         cc, BasicConfiguration.Restriction.NONE);
-        config.set(INTERFACE, ElasticSearchSetup.NODE, INDEX_NAME);
+        config.set(INTERFACE, ElasticSearchSetup.NODE.toString(), INDEX_NAME);
         Configuration indexConfig = config.restrictTo(INDEX_NAME);
         IndexProvider idx = new ElasticSearchIndex(indexConfig);
         simpleWriteAndQuery(idx);

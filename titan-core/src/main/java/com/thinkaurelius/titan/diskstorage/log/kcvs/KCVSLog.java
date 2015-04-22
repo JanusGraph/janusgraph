@@ -66,15 +66,15 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     //########## Configuration Options #############
 
-    public static final ConfigOption<Duration> LOG_MAX_WRITE_TIME = new ConfigOption<Duration>(LOG_NS,"max-write-time",
+    public static final ConfigOption<StandardDuration> LOG_MAX_WRITE_TIME = new ConfigOption<>(LOG_NS,"max-write-time",
             "Maximum time in ms to try persisting log messages against the backend before failing.",
             ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
 
-    public static final ConfigOption<Duration> LOG_MAX_READ_TIME = new ConfigOption<Duration>(LOG_NS,"max-read-time",
+    public static final ConfigOption<StandardDuration> LOG_MAX_READ_TIME = new ConfigOption<>(LOG_NS,"max-read-time",
             "Maximum time in ms to try reading log messages from the backend before failing.",
             ConfigOption.Type.MASKABLE, new StandardDuration(4000L, TimeUnit.MILLISECONDS));
 
-    public static final ConfigOption<Duration> LOG_READ_LAG_TIME = new ConfigOption<Duration>(LOG_NS,"read-lag-time",
+    public static final ConfigOption<StandardDuration> LOG_READ_LAG_TIME = new ConfigOption<>(LOG_NS,"read-lag-time",
             "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become" +
                     "visible in the storage backend in this amount of time, a log reader might miss the message.",
             ConfigOption.Type.MASKABLE, new StandardDuration(500L, TimeUnit.MILLISECONDS));
@@ -504,7 +504,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         private Duration timeSinceFirstMsg() {
 
-            Duration sinceFirst =  ZeroDuration.INSTANCE;
+            Duration sinceFirst =  StandardDuration.ZERO;
 
             if (!toSend.isEmpty()) {
                 Timepoint firstTimestamp = toSend.get(0).message.getMessage().getTimestampMicro();

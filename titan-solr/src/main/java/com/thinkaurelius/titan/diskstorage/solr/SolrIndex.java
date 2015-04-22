@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -134,11 +135,13 @@ public class SolrIndex implements IndexProvider {
             "Maximum number of HTTP connections in total to all Solr servers.",
             ConfigOption.Type.MASKABLE, 100);
 
-
+    public static final ConfigOption<Boolean> WAIT_SEARCHER = new ConfigOption<Boolean>(SOLR_NS, "wait-searcher",
+            "When mutating - wait for the index to reflect new mutations before returning. This can have a negative impact on performance.",
+            ConfigOption.Type.LOCAL, false);
 
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).build();
 
     private final SolrClient solrClient;
     private final Configuration configuration;
@@ -147,6 +150,7 @@ public class SolrIndex implements IndexProvider {
     private final Map<String, String> keyFieldIds;
     private final String ttlField;
     private final int maxResults;
+    private final boolean waitSearcher;
 
     public SolrIndex(final Configuration config) throws BackendException {
         Preconditions.checkArgument(config!=null);
@@ -157,6 +161,7 @@ public class SolrIndex implements IndexProvider {
         keyFieldIds = parseKeyFieldsForCollections(config);
         maxResults = config.get(INDEX_MAX_RESULT_SET_SIZE);
         ttlField = config.get(TTL_FIELD);
+        waitSearcher = config.get(WAIT_SEARCHER);
 
         if (mode==Mode.CLOUD) {
             String zookeeperUrl = config.get(SolrIndex.ZOOKEEPER_URL);
@@ -732,6 +737,10 @@ public class SolrIndex implements IndexProvider {
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
 
+        if(information.getCardinality() != Cardinality.SINGLE) {
+            return false;
+        }
+
         if (Number.class.isAssignableFrom(dataType)) {
             return titanPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
@@ -758,6 +767,9 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
+        if(information.getCardinality() != Cardinality.SINGLE) {
+            return false;
+        }
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
@@ -816,9 +828,11 @@ public class SolrIndex implements IndexProvider {
         return map;
     }
 
-    private static UpdateRequest newUpdateRequest() {
+    private UpdateRequest newUpdateRequest() {
         UpdateRequest req = new UpdateRequest();
-        req.setAction(UpdateRequest.ACTION.COMMIT, true, true);
+        if(waitSearcher) {
+            req.setAction(UpdateRequest.ACTION.COMMIT, true, true);
+        }
         return req;
     }
 
