@@ -134,7 +134,6 @@ public abstract class IDAuthorityTest {
                 log.debug("Setting unique instance id: {}", uniqueGraphId);
                 sc.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
             }
-            sc.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
             sc.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,MAX_NUM_PARTITIONS);
 
             manager[i] = openStorageManager();

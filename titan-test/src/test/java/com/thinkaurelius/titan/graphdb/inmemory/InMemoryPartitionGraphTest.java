@@ -17,7 +17,6 @@ public class InMemoryPartitionGraphTest extends TitanPartitionGraphTest {
     public WriteConfiguration getBaseConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
-        config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
         config.set(GraphDatabaseConfiguration.IDS_FLUSH,false);
         return config.getConfiguration();
     }
@@ -27,9 +26,4 @@ public class InMemoryPartitionGraphTest extends TitanPartitionGraphTest {
         newTx();
     }
 
-    @Override
-    public void testUnorderedConfig() { }
-
-    @Override
-    public void testVLabelOnUnorderedStorage() { }
 }

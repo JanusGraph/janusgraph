@@ -124,10 +124,8 @@ public class KCVSLogManager implements LogManager {
         this.senderId=config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID);
         Preconditions.checkNotNull(senderId);
 
-        if (config.get(CLUSTER_PARTITION)) {
-            ConfigOption<Integer> maxPartitionConfig = config.has(LOG_MAX_PARTITIONS)?
-                                                        LOG_MAX_PARTITIONS:CLUSTER_MAX_PARTITIONS;
-            int maxPartitions = config.get(maxPartitionConfig);
+        if (config.has(LOG_MAX_PARTITIONS)) {
+            int maxPartitions = config.get(LOG_MAX_PARTITIONS);
             Preconditions.checkArgument(maxPartitions<=config.get(CLUSTER_MAX_PARTITIONS),
                     "Number of log partitions cannot be larger than number of cluster partitions");
             this.partitionBitWidth= NumberUtil.getPowerOf2(maxPartitions);
@@ -138,7 +136,7 @@ public class KCVSLogManager implements LogManager {
         final int numPartitions = (1<<partitionBitWidth);
 
         //Partitioning
-        if (config.get(CLUSTER_PARTITION) && !config.get(LOG_FIXED_PARTITION)) {
+        if (!config.get(LOG_FIXED_PARTITION)) {
             //Write partitions - default initialization: writing to all partitions
             int[] writePartitions = new int[numPartitions];
             for (int i=0;i<numPartitions;i++) writePartitions[i]=i;

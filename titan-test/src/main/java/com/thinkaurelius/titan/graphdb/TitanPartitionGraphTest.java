@@ -60,21 +60,20 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         return config;
     }
 
-    @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testOrderedConfig() {
-        assertTrue(graph.getConfiguration().isClusterPartitioned());
-    }
+//    @Test
+//    @Category({ OrderedKeyStoreTests.class })
+//    public void testOrderedConfig() {
+//        assertTrue(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
+//    }
+//
+//    @Test
+//    @Category({ UnorderedKeyStoreTests.class })
+//    public void testUnorderedConfig() {
+//        assertFalse(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
+//    }
 
     @Test
-    @Category({ UnorderedKeyStoreTests.class })
-    public void testUnorderedConfig() {
-        assertFalse(graph.getConfiguration().isClusterPartitioned());
-    }
-
-    @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testSetup() {
+    public void testPartitionHashes() {
         final IDManager idManager = graph.getIDManager();
         assertEquals(8, idManager.getPartitionBound());
         Set<Long> hashs = Sets.newHashSet();
@@ -84,7 +83,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
     public void testVertexPartitioning() throws Exception {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
@@ -276,7 +274,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
     public void testVertexPartitionOlap() throws Exception {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
@@ -338,21 +335,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ UnorderedKeyStoreTests.class })
-    public void testVLabelOnUnorderedStorage() {
-        final String label = "pl";
-        VertexLabelMaker maker = mgmt.makeVertexLabel(label);
-        try {
-            // Exception should be thrown in one of these two methods
-            maker.partition().make();
-            fail("Partitioned label must be rejected on unordered key stores");
-        } catch (IllegalArgumentException e) {
-            log.debug("Caught expected exception", e);
-        }
-    }
-
-    @Test
-    @Category({ OrderedKeyStoreTests.class })
     public void testVLabelOnOrderedStorage() {
         final String label = "pl";
         mgmt.makeVertexLabel(label).partition().make();

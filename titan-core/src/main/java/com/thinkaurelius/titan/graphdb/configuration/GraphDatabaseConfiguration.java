@@ -658,18 +658,18 @@ public class GraphDatabaseConfiguration {
      * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
      * of de-congesting a single id pool in the database.
      */
-    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
-            "Whether the graph's element should be randomly distributed across the cluster " +
-            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
-            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
-            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
-            ConfigOption.Type.FIXED, false);
+//    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
+//            "Whether the graph's element should be randomly distributed across the cluster " +
+//            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
+//            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
+//            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
+//            ConfigOption.Type.FIXED, false);
 
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
             "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
                     "in the Titan graph cluster. Must be bigger than 1 and a power of 2.",
-            ConfigOption.Type.FIXED, 64, new Predicate<Integer>() {
+            ConfigOption.Type.FIXED, 32, new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer integer) {
             return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
@@ -736,7 +736,6 @@ public class GraphDatabaseConfiguration {
     // ################ IDAUTHORITY ###################
     // ################################################
 
-    //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace IDAUTHORITY_NS = new ConfigNamespace(IDS_NS,"authority","Configuration options for graph element ID reservation/allocation");
 
     /**
@@ -746,8 +745,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(IDAUTHORITY_NS,"wait-time",
             "The number of milliseconds the system waits for an ID block reservation to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
-//    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
-//    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
 
     /**
      * Sets the strategy used by {@link ConsistentKeyIDAuthority} to avoid
@@ -761,8 +758,8 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
-     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
-     * enabled, it picks a random unique ID marker and attempts to allocate IDs
+     * When Titan allocates IDs with {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
+     * configured, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
      * partition + uniqueid combination is already completely allocated, then
@@ -771,14 +768,12 @@ public class GraphDatabaseConfiguration {
      * is allocated and fails the request. It must be set to at least 1 and
      * should generally be set to 3 or more.
      * <p/>
-     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
-     * is disabled.
+     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is not configured to
+     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 5);
-//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
-//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
      * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
@@ -787,17 +782,19 @@ public class GraphDatabaseConfiguration {
      *
      * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
      * same value. Otherwise, data corruption will occur.
+     *
+     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
+     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}. However, note that while the
+     * conflict avoidance mode can be changed, this setting cannot ever be changed and must therefore be considered a priori.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag-bits",
             "Configures the number of bits of Titan-assigned element IDs that are reserved for the conflict avoidance tag",
-            ConfigOption.Type.FIXED, 5 , new Predicate<Integer>() {
+            ConfigOption.Type.FIXED, 4 , new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer uniqueIdBitWidth) {
             return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
         }
     });
-//    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
-//    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
 
     /**
      * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
@@ -806,12 +803,13 @@ public class GraphDatabaseConfiguration {
      * that those instances don't conflict with one another when attempting to allocate new id blocks.
      *
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
+     *
+     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
+     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag",
             "Conflict avoidance tag to be used by this Titan instance when allocating IDs",
             ConfigOption.Type.LOCAL, 0);
-//    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
-//    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
 
 
     // ############## External Index ######################
@@ -1351,16 +1349,6 @@ public class GraphDatabaseConfiguration {
                 Preconditions.checkArgument(!globalWrite.has(INITIAL_TITAN_VERSION),"Database has already been initialized but not frozen");
                 globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
 
-                // If partitioning is unspecified, specify it now
-                if (!localbc.has(CLUSTER_PARTITION)) {
-                    boolean part = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
-                    globalWrite.set(CLUSTER_PARTITION, part);
-                    log.info("Set {}={} from store features", ConfigElement.getPath(CLUSTER_PARTITION), part);
-                } else {
-                    log.info("Set {}={} from local config", ConfigElement.getPath(CLUSTER_PARTITION), globalWrite.get(CLUSTER_PARTITION));
-                    Preconditions.checkState(globalWrite.get(CLUSTER_PARTITION).equals(localbc.get(CLUSTER_PARTITION)));
-                }
-
                 /* If the configuration does not explicitly set a timestamp provider and
                  * the storage backend both supports timestamps and has a preference for
                  * a specific timestamp provider, then apply the backend's preference.
@@ -1702,10 +1690,6 @@ public class GraphDatabaseConfiguration {
 
     public int getTxDirtyVertexSize() {
         return txDirtyVertexSize;
-    }
-
-    public boolean isClusterPartitioned() {
-        return configuration.get(CLUSTER_PARTITION);
     }
 
     public boolean isBatchLoading() {

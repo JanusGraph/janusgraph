@@ -77,7 +77,7 @@ public class CassandraScanJobTest extends TitanGraphBaseTest {
     public void testPartitionedVertexScan() throws Exception {
         tearDown();
         clearGraph(getConfiguration());
-        WriteConfiguration partConf = getConfiguration(true);
+        WriteConfiguration partConf = getConfiguration();
         open(partConf);
         mgmt.makeVertexLabel("part").partition().make();
         finishSchema();
@@ -105,7 +105,7 @@ public class CassandraScanJobTest extends TitanGraphBaseTest {
     public void testPartitionedVertexFilteredScan() throws Exception {
         tearDown();
         clearGraph(getConfiguration());
-        WriteConfiguration partConf = getConfiguration(true);
+        WriteConfiguration partConf = getConfiguration();
         open(partConf);
         mgmt.makeVertexLabel("part").partition().make();
         finishSchema();
@@ -149,14 +149,8 @@ public class CassandraScanJobTest extends TitanGraphBaseTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        return getConfiguration(null);
-    }
-
-    public WriteConfiguration getConfiguration(Boolean partitioning) {
         String className = getClass().getSimpleName();
         ModifiableConfiguration mc = CassandraStorageSetup.getEmbeddedConfiguration(className);
-        if (null != partitioning)
-            mc.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, partitioning);
         return mc.getConfiguration();
     }
 

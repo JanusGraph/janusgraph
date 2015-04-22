@@ -113,6 +113,9 @@ public class PartitionIDRange {
         return (random.nextInt(partitionWidth) + lowerID) % idUpperBound;
     }
 
+    /*
+    =========== Helper methods to generate PartitionIDRanges ============
+     */
 
     public static List<PartitionIDRange> getGlobalRange(final int partitionBits) {
         Preconditions.checkArgument(partitionBits>=0 && partitionBits<(Integer.SIZE-1),"Invalid partition bits: %s",partitionBits);
