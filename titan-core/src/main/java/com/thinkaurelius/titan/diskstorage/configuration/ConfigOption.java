@@ -74,6 +74,7 @@ public class ConfigOption<O> extends ConfigElement {
                 Boolean.class,
                 Short.class,
                 Integer.class,
+                Byte.class,
                 Long.class,
                 Float.class,
                 Double.class,
