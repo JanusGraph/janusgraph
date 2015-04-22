@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -140,7 +141,7 @@ public class SolrIndex implements IndexProvider {
 
 
     private static final IndexFeatures SOLR_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).build();
 
     private final SolrClient solrClient;
     private final Configuration configuration;
@@ -736,6 +737,10 @@ public class SolrIndex implements IndexProvider {
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
 
+        if(information.getCardinality() != Cardinality.SINGLE) {
+            return false;
+        }
+
         if (Number.class.isAssignableFrom(dataType)) {
             return titanPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
@@ -762,6 +767,9 @@ public class SolrIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
+        if(information.getCardinality() != Cardinality.SINGLE) {
+            return false;
+        }
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {

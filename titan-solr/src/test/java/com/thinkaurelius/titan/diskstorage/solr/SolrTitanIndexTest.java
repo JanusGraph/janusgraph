@@ -30,6 +30,11 @@ public abstract class SolrTitanIndexTest extends TitanIndexTest {
         return true;
     }
 
+    @Override
+    protected boolean supportsCollections() {
+        return false;
+    }
+
     @Test
     public void testRawQueries() {
         clopen(option(SolrIndex.DYNAMIC_FIELDS,TitanIndexTest.INDEX),false);

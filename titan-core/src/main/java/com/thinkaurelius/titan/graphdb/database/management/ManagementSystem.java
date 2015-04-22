@@ -480,8 +480,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(indexType instanceof MixedIndexType,"Can only add keys to an external index, not %s",index.name());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
             && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
-        Preconditions.checkArgument(key.cardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
-                "Can only index single-valued property keys on vertices [%s]",key);
+
         TitanSchemaVertex indexVertex = (TitanSchemaVertex)((IndexTypeWrapper)indexType).getSchemaBase();
 
         for (IndexField field : indexType.getFieldKeys())
@@ -499,6 +498,11 @@ public class ManagementSystem implements TitanManagement {
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         updateSchemaVertex(indexVertex);
         indexType.resetCache();
+        //Check to see if the index supports this
+        if(!graph.getIndexSerializer().supports((MixedIndexType)indexType, ParameterIndexField.of(key, parameters))) {
+            throw new TitanException("Could not register new index field '" + key.name() + "' with index backend as the data type, cardinality or parameter combination is not supported.");
+        }
+
         try {
             IndexSerializer.register((MixedIndexType) indexType,key,transaction.getTxHandle());
         } catch (BackendException e) {

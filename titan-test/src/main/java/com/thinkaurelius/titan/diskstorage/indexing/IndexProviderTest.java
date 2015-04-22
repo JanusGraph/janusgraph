@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
@@ -46,10 +47,10 @@ public abstract class IndexProviderTest {
     protected Map<String,KeyInformation> allKeys;
     protected KeyInformation.IndexRetriever indexRetriever;
 
-    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name";
+    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set";
 
-    public static StandardKeyInformation of(Class<?> clazz, Parameter... paras) {
-        return new StandardKeyInformation(clazz,paras);
+    public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter... paras) {
+        return new StandardKeyInformation(clazz, cardinality, paras);
     }
 
     public static final KeyInformation.IndexRetriever getIndexRetriever(final Map<String,KeyInformation> mappings) {
@@ -78,13 +79,21 @@ public abstract class IndexProviderTest {
                 (indexFeatures.supportsStringMapping(Mapping.TEXT) && indexFeatures.supportsStringMapping(Mapping.STRING)),
                 "Index must support string and text mapping");
         return new HashMap<String,KeyInformation>() {{
-            put(TEXT,new StandardKeyInformation(String.class, new Parameter("mapping",
+            put(TEXT,new StandardKeyInformation(String.class, Cardinality.SINGLE, new Parameter("mapping",
                     indexFeatures.supportsStringMapping(Mapping.TEXT)?Mapping.TEXT:Mapping.TEXTSTRING)));
-            put(TIME,new StandardKeyInformation(Long.class));
-            put(WEIGHT,new StandardKeyInformation(Double.class, new Parameter("mapping",Mapping.DEFAULT)));
-            put(LOCATION,new StandardKeyInformation(Geoshape.class));
-            put(NAME,new StandardKeyInformation(String.class, new Parameter("mapping",
+            put(TIME,new StandardKeyInformation(Long.class, Cardinality.SINGLE));
+            put(WEIGHT,new StandardKeyInformation(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT)));
+            put(LOCATION,new StandardKeyInformation(Geoshape.class, Cardinality.SINGLE));
+            put(NAME,new StandardKeyInformation(String.class, Cardinality.SINGLE, new Parameter("mapping",
                     indexFeatures.supportsStringMapping(Mapping.STRING)?Mapping.STRING:Mapping.TEXTSTRING)));
+            if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+                put(PHONE_LIST, new StandardKeyInformation(String.class, Cardinality.LIST, new Parameter("mapping",
+                        indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING : Mapping.TEXTSTRING)));
+            }
+            if(indexFeatures.supportsCardinality(Cardinality.SET)) {
+                put(PHONE_SET, new StandardKeyInformation(String.class, Cardinality.SET, new Parameter("mapping",
+                        indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING : Mapping.TEXTSTRING)));
+            }
         }};
     }
 
@@ -152,9 +161,9 @@ public abstract class IndexProviderTest {
 
     private void storeTest(String... stores) throws Exception {
 
-        Map<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0));
-        Map<String, Object> doc2 = getDocument("Tomorrow is the world", 1010, 8.5, Geoshape.point(49.0, 1.0));
-        Map<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0));
+        Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"));
+        Multimap<String, Object> doc2 = getDocument("Tomorrow is the world", 1010, 8.5, Geoshape.point(49.0, 1.0), Arrays.asList("4", "5", "6"), Sets.newHashSet("4", "5"));
+        Multimap<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0), Arrays.asList("7", "8", "9"), Sets.newHashSet("7", "8"));
 
         for (String store : stores) {
             initialize(store);
@@ -203,7 +212,7 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
             assertEquals(0,tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "bobi"))).size());
 
-            if (index.supports(new StandardKeyInformation(String.class), Text.CONTAINS_REGEX)) {
+            if (index.supports(new StandardKeyInformation(String.class, Cardinality.SINGLE), Text.CONTAINS_REGEX)) {
                 result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "he[l]+(.*)")));
                 assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
                 result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "[h]+e[l]+(.*)")));
@@ -231,12 +240,12 @@ public abstract class IndexProviderTest {
                     if (indexFeatures.supportsStringMapping(Mapping.STRING)) fail();
                 } catch (IllegalArgumentException e) {}
             }
-            if (index.supports(new StandardKeyInformation(String.class), Text.REGEX)) {
+            if (index.supports(new StandardKeyInformation(String.class, Cardinality.SINGLE), Text.REGEX)) {
                 assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomo[r]+ow is.*world"))).size());
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomorrow"))).size());
             }
 
-            if (index.supports(new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX)) {
+            if (index.supports(new StandardKeyInformation(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.REGEX)) {
                 assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomo[r]+ow is.*world"))).size());
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomorrow"))).size());
             }
@@ -315,13 +324,29 @@ public abstract class IndexProviderTest {
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"name:\"Hello world\"",NO_PARAS))));
             }
 
+            if (index.supports(new StandardKeyInformation(String.class, Cardinality.LIST, new Parameter("mapping", Mapping.STRING)), Cmp.EQUAL)) {
+                assertEquals("doc1", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "1"))).get(0));
+                assertEquals("doc1", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "2"))).get(0));
+                assertEquals("doc2", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "4"))).get(0));
+                assertEquals("doc2", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "5"))).get(0));
+                assertEquals("doc3", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "7"))).get(0));
+                assertEquals("doc3", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "8"))).get(0));
+                assertEquals("doc1", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "1"))).get(0));
+                assertEquals("doc1", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "2"))).get(0));
+                assertEquals("doc2", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "4"))).get(0));
+                assertEquals("doc2", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "5"))).get(0));
+                assertEquals("doc3", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "7"))).get(0));
+                assertEquals("doc3", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "8"))).get(0));
+
+            }
+
             //Update some data
-            add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(48.0, 8.0)), true);
+            add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(48.0, 8.0), Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11")), true);
             remove(store, "doc2", doc2, true);
-            remove(store, "doc3", ImmutableMap.of(WEIGHT, (Object) 10.1), false);
-            add(store, "doc3", ImmutableMap.of(TIME, (Object) 2000, TEXT, "Bob owns the world"), false);
-            remove(store, "doc1", ImmutableMap.of(TIME, (Object) 1001), false);
-            add(store, "doc1", ImmutableMap.of(TIME, (Object) 1005, WEIGHT, 11.1), false);
+            remove(store, "doc3", ImmutableMultimap.of(WEIGHT, (Object) 10.1), false);
+            add(store, "doc3", ImmutableMultimap.of(TIME, (Object) 2000, TEXT, "Bob owns the world"), false);
+            remove(store, "doc1", ImmutableMultimap.of(TIME, (Object) 1001), false);
+            add(store, "doc1", ImmutableMultimap.of(TIME, (Object) 1005, WEIGHT, 11.1), false);
 
 
         }
@@ -352,6 +377,15 @@ public abstract class IndexProviderTest {
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("blah", Cmp.GREATER_THAN, 10.0))));
             assertEquals(0, result.size());
 
+            if (index.supports(new StandardKeyInformation(String.class, Cardinality.LIST, new Parameter("mapping", Mapping.STRING)), Cmp.EQUAL)) {
+                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "10"))).get(0));
+                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "11"))).get(0));
+                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "10"))).get(0));
+                assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "11"))).get(0));
+                assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "4"))).size());
+                assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "5"))).size());
+            }
+
         }
 
     }
@@ -364,33 +398,33 @@ public abstract class IndexProviderTest {
 
     @Test
     public void testCommonSupport() {
-        assertTrue(index.supports(of(String.class)));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT))));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING))));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT))));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING))));
 
-        assertTrue(index.supports(of(Double.class)));
-        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT))));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE)));
+        assertFalse(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT))));
 
-        assertTrue(index.supports(of(Long.class)));
-        assertTrue(index.supports(of(Long.class, new Parameter("mapping",Mapping.DEFAULT))));
-        assertTrue(index.supports(of(Integer.class)));
-        assertTrue(index.supports(of(Short.class)));
-        assertTrue(index.supports(of(Byte.class)));
-        assertTrue(index.supports(of(Float.class)));
-        assertTrue(index.supports(of(Geoshape.class)));
-        assertFalse(index.supports(of(Object.class)));
-        assertFalse(index.supports(of(Exception.class)));
+        assertTrue(index.supports(of(Long.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Long.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT))));
+        assertTrue(index.supports(of(Integer.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Short.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Byte.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Float.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE)));
+        assertFalse(index.supports(of(Object.class, Cardinality.SINGLE)));
+        assertFalse(index.supports(of(Exception.class, Cardinality.SINGLE)));
 
-        assertTrue(index.supports(of(Double.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Double.class), Cmp.GREATER_THAN_EQUAL));
-        assertTrue(index.supports(of(Double.class), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Double.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
-        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Geoshape.class), Geo.WITHIN));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
+        assertFalse(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.WITHIN));
 
-        assertFalse(index.supports(of(Double.class), Geo.INTERSECT));
-        assertFalse(index.supports(of(Long.class), Text.CONTAINS));
-        assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
+        assertFalse(index.supports(of(Double.class, Cardinality.SINGLE), Geo.INTERSECT));
+        assertFalse(index.supports(of(Long.class, Cardinality.SINGLE), Text.CONTAINS));
+        assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.DISJOINT));
     }
 
     @Test
@@ -425,17 +459,8 @@ public abstract class IndexProviderTest {
         initialize(store2);
 
         // add couple of documents with weight > 4.0d
-        add(store1, "restore-doc1", new HashMap<String, Object>() {{
-            put(NAME, "first");
-            put(TIME, 1L);
-            put(WEIGHT, 10.2d);
-        }}, true);
-
-        add(store1, "restore-doc2", new HashMap<String, Object>() {{
-            put(NAME, "second");
-            put(TIME, 2L);
-            put(WEIGHT, 4.7d);
-        }}, true);
+        add(store1, "restore-doc1", ImmutableMultimap.of(NAME, "first", TIME, 1L, WEIGHT, 10.2d), true);
+        add(store1, "restore-doc2", ImmutableMultimap.of(NAME, "second", TIME, 2L, WEIGHT, 4.7d), true);
 
         clopen();
 
@@ -529,29 +554,10 @@ public abstract class IndexProviderTest {
         initialize(store);
 
         // add couple of documents with weight > 4.0d
-        add(store, "expiring-doc1", new HashMap<String, Object>() {{
-            put(NAME, "first");
-            put(TIME, 1L);
-            put(WEIGHT, 10.2d);
-        }}, true, 2);
-
-        add(store, "expiring-doc2", new HashMap<String, Object>() {{
-            put(NAME, "second");
-            put(TIME, 2L);
-            put(WEIGHT, 4.7d);
-        }}, true);
-
-        add(store, "expiring-doc3", new HashMap<String, Object>() {{
-            put(NAME, "third");
-            put(TIME, 3L);
-            put(WEIGHT, 5.2d);
-        }}, true, 2);
-
-        add(store, "expiring-doc4", new HashMap<String, Object>() {{
-            put(NAME, "fourth");
-            put(TIME, 3L);
-            put(WEIGHT, 7.7d);
-        }}, true, 7); // bigger ttl then one recycle interval, should still show up in the results
+        add(store, "expiring-doc1", ImmutableMultimap.of(NAME, "first", TIME, 1L, WEIGHT, 10.2d), true, 2);
+        add(store, "expiring-doc2", ImmutableMultimap.of(NAME, "second", TIME, 2L, WEIGHT, 4.7d), true);
+        add(store, "expiring-doc3", ImmutableMultimap.of(NAME, "third", TIME, 3L, WEIGHT, 5.2d), true, 2);
+        add(store, "expiring-doc4", ImmutableMultimap.of(NAME, "fourth", TIME, 3L, WEIGHT, 7.7d), true, 7);// bigger ttl then one recycle interval, should still show up in the results
 
         clopen();
 
@@ -587,7 +593,7 @@ public abstract class IndexProviderTest {
 
     private void runConflictingTx(TxJob job1, TxJob job2) throws Exception {
         initialize(defStore);
-        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, defTextValue);
+        Multimap<String, Object> initialProps = ImmutableMultimap.of(TEXT, defTextValue);
         add(defStore, defDoc, initialProps, true);
         clopen();
 
@@ -636,16 +642,16 @@ public abstract class IndexProviderTest {
     @Test
     public void testDeleteDocumentThenModifyField() throws Exception {
         runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.add(defStore, defDoc, TEXT, "the slow brown fox jumps over the lazy dog", false);
-                             }
-                         });
+            @Override
+            public void run(IndexTransaction tx) {
+                tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
+            }
+        }, new TxJob() {
+            @Override
+            public void run(IndexTransaction tx) {
+                tx.add(defStore, defDoc, TEXT, "the slow brown fox jumps over the lazy dog", false);
+            }
+        });
 
         //2nd tx should put document back into existence
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),defDoc);
@@ -678,16 +684,16 @@ public abstract class IndexProviderTest {
         final String nameValue = "jm keynes";
 
         runConflictingTx(new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.add(defStore, defDoc, NAME, nameValue, false);
-                             }
-                         }, new TxJob() {
-                             @Override
-                             public void run(IndexTransaction tx) {
-                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
-                             }
-                         });
+            @Override
+            public void run(IndexTransaction tx) {
+                tx.add(defStore, defDoc, NAME, nameValue, false);
+            }
+        }, new TxJob() {
+            @Override
+            public void run(IndexTransaction tx) {
+                tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
+            }
+        });
 
         //neither should be visible
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
@@ -700,13 +706,13 @@ public abstract class IndexProviderTest {
         runConflictingTx(new TxJob() {
                              @Override
                              public void run(IndexTransaction tx) {
-                                 Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, "sugar sugar");
+                                 Multimap<String, Object> initialProps = ImmutableMultimap.<String, Object>of(TEXT, "sugar sugar");
                                  add(defStore, doc2, initialProps, true);
                              }
                          }, new TxJob() {
                              @Override
                              public void run(IndexTransaction tx) {
-                                 Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, "honey honey");
+                                 Multimap<String, Object> initialProps = ImmutableMultimap.<String, Object>of(TEXT, "honey honey");
                                  add(defStore, doc2, initialProps, true);
                              }
                          });
@@ -760,7 +766,7 @@ public abstract class IndexProviderTest {
                          });
 
         // Should no longer return old text
-        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")), null);
         // but new one
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "sunny")),defDoc);
     }
@@ -800,12 +806,12 @@ public abstract class IndexProviderTest {
         }
     }
 
-    protected void add(String store, String docid, Map<String, Object> doc, boolean isNew) {
+    protected void add(String store, String docid, Multimap<String, Object> doc, boolean isNew) {
         add(store, docid, doc, isNew, 0);
     }
 
-    private void add(String store, String docid, Map<String, Object> doc, boolean isNew, int ttlInSeconds) {
-        for (Map.Entry<String, Object> kv : doc.entrySet()) {
+    private void add(String store, String docid, Multimap<String, Object> doc, boolean isNew, int ttlInSeconds) {
+        for (Map.Entry<String, Object> kv : doc.entries()) {
             if (!index.supports(allKeys.get(kv.getKey())))
                 continue;
 
@@ -817,8 +823,8 @@ public abstract class IndexProviderTest {
         }
     }
 
-    private void remove(String store, String docid, Map<String, Object> doc, boolean deleteAll) {
-        for (Map.Entry<String, Object> kv : doc.entrySet()) {
+    private void remove(String store, String docid, Multimap<String, Object> doc, boolean deleteAll) {
+        for (Map.Entry<String, Object> kv : doc.entries()) {
             if (index.supports(allKeys.get(kv.getKey()))) {
                 tx.delete(store, docid, kv.getKey(), kv.getValue(), deleteAll);
             }
@@ -826,26 +832,37 @@ public abstract class IndexProviderTest {
     }
 
 
-    public static Map<String, Object> getDocument(final String txt, final long time, final double weight, final Geoshape geo) {
-        return new HashMap<String, Object>() {{
-            put(TEXT, txt);
-            put(NAME, txt);
-            put(TIME, time);
-            put(WEIGHT, weight);
-            put(LOCATION, geo);
-        }};
+    public Multimap<String, Object> getDocument(final String txt, final long time, final double weight, final Geoshape geo, List<String> phoneList, Set<String> phoneSet) {
+        HashMultimap<String, Object> values = HashMultimap.create();
+        values.put(TEXT, txt);
+        values.put(NAME, txt);
+        values.put(TIME, time);
+        values.put(WEIGHT, weight);
+        values.put(LOCATION, geo);
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            for (String phone : phoneList) {
+                values.put(PHONE_LIST, phone);
+            }
+        }
+        if(indexFeatures.supportsCardinality(Cardinality.SET)) {
+            for (String phone : phoneSet) {
+                values.put(PHONE_SET, phone);
+            }
+        }
+        return values;
     }
 
-    public static Map<String, Object> getRandomDocument() {
+    public static Multimap<String, Object> getRandomDocument() {
         final StringBuilder s = new StringBuilder();
         for (int i = 0; i < 3; i++) s.append(RandomGenerator.randomString(5, 8)).append(" ");
-        return new HashMap<String, Object>() {{
-            put(TEXT, s.toString());
-            put(NAME, s.toString());
-            put(TIME, Math.abs(random.nextLong()));
-            put(WEIGHT, random.nextDouble());
-            put(LOCATION, Geoshape.point(random.nextDouble() * 180 - 90, random.nextDouble() * 360 - 180));
-        }};
+        Multimap values = HashMultimap.create();
+
+        values.put(TEXT, s.toString());
+        values.put(NAME, s.toString());
+        values.put(TIME, Math.abs(random.nextLong()));
+        values.put(WEIGHT, random.nextDouble());
+        values.put(LOCATION, Geoshape.point(random.nextDouble() * 180 - 90, random.nextDouble() * 360 - 180));
+        return values;
     }
 
     public static void printResult(Iterable<RawQuery.Result<String>> result) {
