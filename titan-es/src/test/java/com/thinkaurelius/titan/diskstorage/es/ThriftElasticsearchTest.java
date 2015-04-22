@@ -41,6 +41,10 @@ public class ThriftElasticsearchTest extends TitanIndexTest {
     public boolean supportsWildcardQuery() {
         return true;
     }
+    @Override
+    protected boolean supportsCollections() {
+        return true;
+    }
 
     @BeforeClass
     public static void beforeClass() {
