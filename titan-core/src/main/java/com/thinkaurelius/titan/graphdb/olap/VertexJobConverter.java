@@ -76,7 +76,7 @@ public class VertexJobConverter implements ScanJob {
         txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
         txb.dirtyVertexSize(0);
-        txb.vertexCacheSize(500);
+        txb.vertexCacheSize(0);
         return (StandardTitanTx)txb.start();
     }
 
