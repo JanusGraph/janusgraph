@@ -83,6 +83,7 @@ public class VertexIDAssigner implements AutoCloseable {
             //If no placement strategy is configured and the storage backend cannot exploit locality, use the default with one partition block
             placementStrategy = new SimpleBulkPlacementStrategy(1);
         }
+        placementStrategy.injectIDManager(idManager);
         log.debug("Partition IDs? [{}], Local Partitions? [{}]",true,hasLocalPartitions);
 
         long baseBlockSize = config.get(IDS_BLOCK_SIZE);

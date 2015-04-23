@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
@@ -36,6 +37,15 @@ public interface IDPlacementStrategy {
      * @param vertices Map containing all vertices and their partition placement.
      */
     public void getPartitions(Map<InternalVertex, PartitionAssignment> vertices);
+
+    /**
+     * After construction, the {@link com.thinkaurelius.titan.graphdb.idmanagement.IDManager} used by this graph instance
+     * is injected into this IDPlacementStrategy so that the id pattern of vertices can be inspected.
+     * This method is guaranteed to be called before any partition assignments are made.
+     *
+     * @param idManager
+     */
+    public void injectIDManager(IDManager idManager);
 
     /**
      * Whether this placement strategy supports bulk placement.
