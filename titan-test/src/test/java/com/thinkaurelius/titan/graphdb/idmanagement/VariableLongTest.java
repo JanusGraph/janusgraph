@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -289,7 +289,7 @@ public class VariableLongTest {
                 assertEquals(l[i], VariableLong.readPositiveBackward(res));
             }
 //            System.out.println(l[0] + " vs " + l[1]);
-            assertEquals(Math.signum(Long.compare(l[0],l[1])),Math.signum(b[0].compareTo(b[1])));
+            assertEquals(Math.signum(Long.compare(l[0],l[1])),Math.signum(b[0].compareTo(b[1])), 0.01);
         }
 
     }

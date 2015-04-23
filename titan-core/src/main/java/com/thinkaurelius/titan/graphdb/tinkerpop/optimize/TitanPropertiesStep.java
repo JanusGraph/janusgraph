@@ -70,6 +70,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         this.isVertexProperties = true;
     }
 
+    @SuppressWarnings("deprecation")
     private void initialize() {
         assert !initialized;
         initialized = true;
