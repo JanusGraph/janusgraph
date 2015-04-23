@@ -357,6 +357,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             assertCount(groupDegrees[i],g.edges(Direction.OUT,"contain"));
             assertCount(groupDegrees[i],g.edges(Direction.IN,"member"));
+            assertCount(groupDegrees[i],g.query().direction(Direction.OUT).edges());
+            assertCount(groupDegrees[i],g.query().direction(Direction.IN).edges());
+            assertCount(groupDegrees[i]*2,g.query().edges());
             for (TitanVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
                 int pid = getPartitionID(v);
                 partitionIds.add(pid);
@@ -393,7 +396,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
 
-        int[] groupDegrees = {10,20,30};
+//        int[] groupDegrees = {10,20,30};
+        int[] groupDegrees = {2};
+
         int numVertices = setupGroupClusters(groupDegrees,commitMode);
 
         Map<Long,Integer> degreeMap = new HashMap<>(groupDegrees.length);
@@ -406,7 +411,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         //Test OLAP works with partitioned vertices
         TitanGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
         computer.resultMode(TitanGraphComputer.ResultMode.NONE);
-        computer.workers(4);
+        computer.workers(1);
         computer.program(new OLAPTest.DegreeCounter());
         computer.mapReduce(new OLAPTest.DegreeMapper());
         ComputerResult result = computer.submit().get();
@@ -421,8 +426,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             long vid = entry.getKey();
             Integer degree = entry.getValue();
             if (idManager.isPartitionedVertex(vid)) {
-                System.out.println("Partitioned: " + degree );
-                //assertEquals(degreeMap.get(vid),degree);
+//                System.out.println("Partitioned: " + degree );
+                assertEquals(degreeMap.get(vid),degree);
             } else {
                 assertEquals(1, (long) degree);
             }

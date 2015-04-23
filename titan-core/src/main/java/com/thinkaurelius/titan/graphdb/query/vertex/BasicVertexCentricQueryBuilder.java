@@ -52,6 +52,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private boolean queryOnlyLoaded = false;
 
     /**
+     * Whether this query should only focus on the provided vertex representative of a (potentially) partitioned vertex.
+     * This effectively disables the automatic querying for other vertex representatives and focuses on the provided
+     * vertex object only. This is used in combination with {@link com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex}, for example.
+     */
+    private boolean queryOnlyGivenVertex = false;
+
+    /**
      * Whether to restrict this query to the specified "local" partitions in this transaction
      */
     private boolean restrict2Partitions = true;
@@ -102,7 +109,10 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return getThis();
     }
 
-
+    public Q queryOnlyGivenVertex() {
+        queryOnlyGivenVertex=true;
+        return getThis();
+    }
 
 
     /* ---------------------------------------------------------------
@@ -111,11 +121,16 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 	 */
 
     protected boolean hasAllCanonicalTypes() {
+        if (types.length==0) return false;
         for (String typeName : types) {
             InternalRelationType type = QueryUtil.getType(tx, typeName);
             if (type!=null && !type.isPropertyKey() && !type.multiplicity().isUnique(dir)) return false;
         }
         return true;
+    }
+
+    public boolean hasQueryOnlyGivenVertex() {
+        return queryOnlyGivenVertex;
     }
 
     /* ---------------------------------------------------------------
@@ -220,7 +235,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
 
     protected final boolean isPartitionedVertex(InternalVertex vertex) {
-        return tx.isPartitionedVertex(vertex);
+        return tx.isPartitionedVertex(vertex) && !queryOnlyGivenVertex;
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {

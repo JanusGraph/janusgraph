@@ -29,7 +29,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Tit
             LoggerFactory.getLogger(StandardScannerExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
-    private static final int TIMEOUT_MS = 60000; // 60 seconds
+    private static final int TIMEOUT_MS = 180000; // 60 seconds
     private static final int MAX_KEY_LENGTH = 128; //in bytes
 
     private final ScanJob job;
