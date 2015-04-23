@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 
@@ -25,5 +26,16 @@ public class InMemoryPartitionGraphTest extends TitanPartitionGraphTest {
     public void clopen(Object... settings) {
         newTx();
     }
+
+    @Override
+    public void testPartitionSpreadFlushBatch() {
+    }
+
+    @Override
+    public void testPartitionSpreadFlushNoBatch() {
+    }
+
+    @Override
+    public void testKeybasedGraphPartitioning() {}
 
 }

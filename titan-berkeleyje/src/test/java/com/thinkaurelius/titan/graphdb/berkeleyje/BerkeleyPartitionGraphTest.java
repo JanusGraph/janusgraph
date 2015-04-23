@@ -7,15 +7,16 @@ import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
 import org.junit.Ignore;
 
 
-/**
- * TODO: debug berkeley dbs keyslice method
- */
-@Ignore
+
 public class BerkeleyPartitionGraphTest extends TitanPartitionGraphTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {
         return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
     }
+
+    /**
+     * TODO: debug berkeley dbs keyslice method
+     */
 
 }

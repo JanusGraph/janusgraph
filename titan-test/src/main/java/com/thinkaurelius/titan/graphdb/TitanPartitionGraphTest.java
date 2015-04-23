@@ -304,6 +304,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         for (int i = 0; i < groupDegrees.length; i++) {
             groups[i]=tx.addVertex("group");
             groups[i].property("groupid","group"+i);
+            numVertices++;
             if (commitMode==CommitMode.PER_VERTEX) newTx();
             for (int noEdges = 0; noEdges < groupDegrees[i]; noEdges++) {
                 TitanVertex g = vInTx(groups[i],tx);
@@ -357,8 +358,13 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertCount(groupDegrees[i],g.edges(Direction.OUT,"contain"));
             assertCount(groupDegrees[i],g.edges(Direction.IN,"member"));
             for (TitanVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
-                partitionIds.add(getPartitionID(v));
-                assertEquals(g, getOnlyElement(v.vertices(Direction.OUT,"member")));
+                int pid = getPartitionID(v);
+                partitionIds.add(pid);
+                assertEquals(g, getOnlyElement(v.query().direction(Direction.OUT).labels("member").vertices()));
+                VertexList vlist = v.query().direction(Direction.IN).labels("contain").vertexIds();
+                assertEquals(1,vlist.size());
+                assertEquals(pid,idManager.getPartitionId(vlist.getID(0)));
+                assertEquals(g,vlist.get(0));
             }
         }
         if (flush || !batchCommit) { //In these cases we would expect significant spread across partitions
@@ -369,12 +375,26 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testVertexPartitionOlap() throws Exception {
+    public void testVertexPartitionOlapBatch() throws Exception {
+        testVertexPartitionOlap(CommitMode.BATCH);
+    }
+
+    @Test
+    public void testVertexPartitionOlapCluster() throws Exception {
+        testVertexPartitionOlap(CommitMode.PER_CLUSTER);
+    }
+
+    @Test
+    public void testVertexPartitionOlapIndividual() throws Exception {
+        testVertexPartitionOlap(CommitMode.PER_VERTEX);
+    }
+
+    private void testVertexPartitionOlap(CommitMode commitMode) throws Exception {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
 
         int[] groupDegrees = {10,20,30};
-        int numVertices = setupGroupClusters(groupDegrees,CommitMode.BATCH);
+        int numVertices = setupGroupClusters(groupDegrees,commitMode);
 
         Map<Long,Integer> degreeMap = new HashMap<>(groupDegrees.length);
         for (int i = 0; i < groupDegrees.length; i++) {
@@ -427,7 +447,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     public void testKeybasedGraphPartitioning() {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false,
                             option(VertexIDAssigner.PLACEMENT_STRATEGY), PropertyPlacementStrategy.class.getName(),
-                            option(PropertyPlacementStrategy.PARTITION_KEY), "clusterId"};
+                option(PropertyPlacementStrategy.PARTITION_KEY), "clusterId"};
         clopen(options);
 
         int[] groupDegrees = {5,5,5,5,5,5,5,5};
