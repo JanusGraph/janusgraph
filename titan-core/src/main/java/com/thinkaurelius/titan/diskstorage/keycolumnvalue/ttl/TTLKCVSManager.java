@@ -44,6 +44,9 @@ public class TTLKCVSManager extends KCVSManagerProxy {
         Preconditions.checkArgument(supportsStoreTTL(manager),
                 "Wrapped store must support cell or store level TTL: %s", manager);
         Preconditions.checkArgument(manager.getFeatures().hasCellTTL());
+        Preconditions.checkArgument(!manager.getFeatures().hasStoreTTL(),
+                "Using TTLKCVSManager with %s is redundant: underlying implementation already supports store-level ttl",
+                manager);
         this.features = new StandardStoreFeatures.Builder(manager.getFeatures()).storeTTL(true).build();
     }
 
@@ -62,14 +65,14 @@ public class TTLKCVSManager extends KCVSManagerProxy {
 
     @Override
     public KeyColumnValueStore openDatabase(String name) throws BackendException {
-        return openDatabase(name, ImmutableMap.of());
+        return openDatabase(name, StoreMetaData.EMPTY);
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String name, Map<StoreMetaData, Object> metaData) throws BackendException {
+    public KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
         KeyColumnValueStore store = manager.openDatabase(name);
         int storeTTL = -1;
-        if (metaData.containsKey(StoreMetaData.TTL)) {
+        if (metaData.contains(StoreMetaData.TTL)) {
             storeTTL = (Integer) metaData.get(StoreMetaData.TTL);
         }
         Preconditions.checkArgument(storeTTL>0,"TTL must be positive: %s", storeTTL);
@@ -96,7 +99,7 @@ public class TTLKCVSManager extends KCVSManagerProxy {
     public static void applyTTL(Collection<Entry> additions, int ttl) {
         for (Entry entry : additions) {
             assert entry instanceof MetaAnnotatable;
-            ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL,ttl);
+            ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL, ttl);
         }
     }
 

@@ -200,7 +200,7 @@ public class KCVSLogManager implements LogManager {
     @Override
     public synchronized KCVSLog openLog(final String name) throws BackendException {
         if (openLogs.containsKey(name)) return openLogs.get(name);
-        Map<StoreMetaData, Object> storeOptions = Maps.newHashMap();
+        StoreMetaData.Container storeOptions = new StoreMetaData.Container();
         if (0 < indexStoreTTL) {
             storeOptions.put(StoreMetaData.TTL, indexStoreTTL);
         }

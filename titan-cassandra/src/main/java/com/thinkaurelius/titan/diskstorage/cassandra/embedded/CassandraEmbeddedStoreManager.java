@@ -112,7 +112,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public synchronized KeyColumnValueStore openDatabase(String name, Map<StoreMetaData, Object> metaData) throws BackendException {
+    public synchronized KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 

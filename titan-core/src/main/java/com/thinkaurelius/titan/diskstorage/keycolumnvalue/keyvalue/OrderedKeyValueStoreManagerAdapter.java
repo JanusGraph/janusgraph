@@ -66,11 +66,11 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
 
     @Override
     public synchronized OrderedKeyValueStoreAdapter openDatabase(String name) throws BackendException {
-        return openDatabase(name, ImmutableMap.of());
+        return openDatabase(name, StoreMetaData.EMPTY);
     }
 
     @Override
-    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name, Map<StoreMetaData, Object> metaData)
+    public synchronized OrderedKeyValueStoreAdapter openDatabase(String name, StoreMetaData.Container metaData)
             throws BackendException {
         if (!stores.containsKey(name) || stores.get(name).isClosed()) {
             OrderedKeyValueStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name), keyLengths);

@@ -439,7 +439,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String longName, Map<StoreMetaData, Object> metaData) throws BackendException {
+    public KeyColumnValueStore openDatabase(String longName, StoreMetaData.Container metaData) throws BackendException {
 
         HBaseKeyColumnValueStore store = openStores.get(longName);
 
@@ -453,8 +453,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             if (store == null) {
                 if (!skipSchemaCheck) {
                     int cfTTLInSeconds = -1;
-                    if (metaData.containsKey(StoreMetaData.TTL)) {
-                        cfTTLInSeconds = (Integer) metaData.get(StoreMetaData.TTL);
+                    if (metaData.contains(StoreMetaData.TTL)) {
+                        cfTTLInSeconds = metaData.get(StoreMetaData.TTL);
                     }
                     ensureColumnFamilyExists(tableName, cfName, cfTTLInSeconds);
                 }

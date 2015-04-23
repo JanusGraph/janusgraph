@@ -1092,7 +1092,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
         final TimeUnit sec = TimeUnit.SECONDS;
         final int storeTTLSeconds = (int)TestGraphConfigs.getTTL(sec);
-        Map<StoreMetaData, Object> opts = Maps.newHashMap();
+        StoreMetaData.Container opts = new StoreMetaData.Container();
         opts.put(StoreMetaData.TTL, storeTTLSeconds);
         KeyColumnValueStore storeWithTTL = storeManager.openDatabase("testStore_with_TTL", opts);
 
