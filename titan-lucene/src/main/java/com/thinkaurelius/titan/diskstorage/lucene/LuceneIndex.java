@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.Mapping;
@@ -136,8 +137,8 @@ public class LuceneIndex implements IndexProvider {
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
-        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
-                "Specified illegal mapping [%s] for data type [%s]",map,dataType);    }
+        Preconditions.checkArgument(map == Mapping.DEFAULT || AttributeUtil.isString(dataType),
+                "Specified illegal mapping [%s] for data type [%s]", map, dataType);    }
 
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
@@ -263,7 +264,11 @@ public class LuceneIndex implements IndexProvider {
             doc = searcher.doc(docId);
             for (IndexableField field : doc.getFields()) {
                 if (field.stringValue().startsWith(GEOID)) {
-                    geofields.put(field.name(), ctx.readShape(field.stringValue().substring(GEOID.length())));
+                    try {
+                        geofields.put(field.name(), ctx.readShapeFromWkt(field.stringValue().substring(GEOID.length())));
+                    } catch (java.text.ParseException e) {
+                        throw new IllegalArgumentException("Geoshape was unparsable");
+                    }
                 }
             }
         }
@@ -312,7 +317,7 @@ public class LuceneIndex implements IndexProvider {
             } else if (e.value instanceof Geoshape) {
                 Shape shape = ((Geoshape) e.value).convert2Spatial4j();
                 geofields.put(e.field, shape);
-                doc.add(new StoredField(e.field, GEOID + ctx.toString(shape)));
+                doc.add(new StoredField(e.field, GEOID +  toWkt(shape)));
 
             } else if (e.value instanceof Date) {
                 doc.add(new LongField(e.field, (((Date) e.value).getTime()), Field.Store.YES));
@@ -333,6 +338,15 @@ public class LuceneIndex implements IndexProvider {
 
             for (IndexableField f : getSpatialStrategy(geo.getKey()).createIndexableFields(geo.getValue()))
                 doc.add(f);
+        }
+    }
+
+    private String toWkt(Shape shape) {
+        if(shape instanceof Point) {
+            return "POINT(" + ((Point) shape).getX() + " " + ((Point) shape).getY() + ")";
+        }
+        else {
+            throw new IllegalArgumentException("Only points are supported");
         }
     }
 

@@ -1625,6 +1625,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      * are bound to single-threaded graph transactions
      */
     @Test
+    @SuppressWarnings("deprecation")
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
         mgmt.buildIndex("etype",Edge.class).addKey(t).buildCompositeIndex();
@@ -2387,6 +2388,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      ==================================================================================*/
 
    @Test
+   @SuppressWarnings("deprecation")
    public void testVertexCentricQuery() {
        makeVertexIndexedUniqueKey("name",String.class);
        PropertyKey time = makeKey("time",Integer.class);

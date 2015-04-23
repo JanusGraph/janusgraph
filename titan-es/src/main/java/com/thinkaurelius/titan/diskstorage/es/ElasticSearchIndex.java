@@ -464,7 +464,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     public XContentBuilder getNewDocument(final List<IndexEntry> additions, KeyInformation.StoreRetriever informations, int ttl) throws BackendException {
-        Preconditions.checkArgument(ttl>=0);
+        Preconditions.checkArgument(ttl >= 0);
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
 
@@ -857,9 +857,11 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
+                IndexQuery.OrderEntry orderEntry = orders.get(i);
+                Class<?> datatype = orderEntry.getDatatype();
                 srb.addSort(new FieldSortBuilder(orders.get(i).getKey())
-                        .order(orders.get(i).getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC)
-                        .ignoreUnmapped(true));
+                        .order(orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC)
+                        .unmappedType(convertToEsDataType(datatype)));
             }
         }
         srb.setFrom(0);
@@ -878,6 +880,35 @@ public class ElasticSearchIndex implements IndexProvider {
             result.add(hit.id());
         }
         return result;
+    }
+
+    private String convertToEsDataType(Class<?> datatype) {
+        if(String.class.isAssignableFrom(datatype)) {
+            return "string";
+        }
+        else if (Integer.class.isAssignableFrom(datatype)) {
+            return "integer";
+        }
+        else if (Long.class.isAssignableFrom(datatype)) {
+            return "long";
+        }
+        else if (Float.class.isAssignableFrom(datatype)) {
+            return "float";
+        }
+        else if (Double.class.isAssignableFrom(datatype)) {
+            return "double";
+        }
+        else if (Boolean.class.isAssignableFrom(datatype)) {
+            return "boolean";
+        }
+        else if (Date.class.isAssignableFrom(datatype)) {
+            return "date";
+        }
+        else if (Geoshape.class.isAssignableFrom(datatype)) {
+            return "geo_point";
+        }
+
+        return null;
     }
 
     @Override
