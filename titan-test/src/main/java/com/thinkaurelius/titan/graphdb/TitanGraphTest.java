@@ -58,6 +58,7 @@ import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -4516,7 +4517,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        TitanVertex v1 = tx.addVertex(LABEL_NAME,"event","name", "some event","place", "somewhere");
+        TitanVertex v1 = tx.addVertex(T.label,"event","name", "some event","place", "somewhere");
 
         tx.commit();
         Object id = v1.id();
@@ -4562,7 +4563,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
         mgmt.commit();
 
-        TitanVertex v1 = tx.addVertex(LABEL_NAME, "event","name", "some event","time", System.currentTimeMillis());
+        TitanVertex v1 = tx.addVertex(T.label, "event","name", "some event","time", System.currentTimeMillis());
         tx.commit();
         Object id = v1.id();
 
