@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -9,7 +8,6 @@ import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.MetaAnnotatable;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StoreMetaData;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSManagerProxy;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -20,8 +18,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.Collection;
 import java.util.Map;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORE_TTL_SECONDS;
 
 /**
  * Turns a store with fine-grained cell-level TTL support into a store

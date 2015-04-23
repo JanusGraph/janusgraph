@@ -648,12 +648,6 @@ public class GraphDatabaseConfiguration {
             "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
             ConfigOption.Type.GLOBAL, true);
 
-    public static final ConfigNamespace STORE_TTL_NS = new ConfigNamespace(STORAGE_NS, "ttl", "Namespace of hidden TTL-related options");
-
-    public static final ConfigOption<Integer> STORE_TTL_SECONDS = new ConfigOption<Integer>(STORE_TTL_NS,"store-ttl-seconds",
-            "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
-            ConfigOption.Type.GLOBAL, Integer.class).hide();
-
 
     // ################ CLUSTERING ###########################
     // ################################################

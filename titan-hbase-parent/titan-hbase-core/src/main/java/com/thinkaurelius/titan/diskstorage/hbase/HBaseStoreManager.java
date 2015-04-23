@@ -6,7 +6,6 @@ import static com.thinkaurelius.titan.diskstorage.Backend.INDEXSTORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
 import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORE_TTL_SECONDS;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 import java.io.IOException;
