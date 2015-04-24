@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.encoding.ConversionHelper;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import com.thinkaurelius.titan.util.system.IOUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,13 @@ public class KCVSLogManager implements LogManager {
             return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
         }
     });
+
+    /**
+     * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured
+     * {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
+     * the number by this constant.
+     */
+    public static final int CLUSTER_SIZE_DIVIDER = 8;
 
 
     /**
@@ -124,19 +132,18 @@ public class KCVSLogManager implements LogManager {
         this.senderId=config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID);
         Preconditions.checkNotNull(senderId);
 
-        if (config.has(LOG_MAX_PARTITIONS)) {
-            int maxPartitions = config.get(LOG_MAX_PARTITIONS);
-            Preconditions.checkArgument(maxPartitions<=config.get(CLUSTER_MAX_PARTITIONS),
-                    "Number of log partitions cannot be larger than number of cluster partitions");
-            this.partitionBitWidth= NumberUtil.getPowerOf2(maxPartitions);
-        } else {
-            this.partitionBitWidth=0;
-        }
+        int maxPartitions;
+        if (config.has(LOG_MAX_PARTITIONS)) maxPartitions = config.get(LOG_MAX_PARTITIONS);
+        else maxPartitions = Math.max(1,config.get(CLUSTER_MAX_PARTITIONS)/CLUSTER_SIZE_DIVIDER);
+        Preconditions.checkArgument(maxPartitions<=config.get(CLUSTER_MAX_PARTITIONS),
+                "Number of log partitions cannot be larger than number of cluster partitions");
+        this.partitionBitWidth= NumberUtil.getPowerOf2(maxPartitions);
+
         Preconditions.checkArgument(partitionBitWidth>=0 && partitionBitWidth<32);
         final int numPartitions = (1<<partitionBitWidth);
 
         //Partitioning
-        if (!config.get(LOG_FIXED_PARTITION)) {
+        if (partitionBitWidth>0 && !config.get(LOG_FIXED_PARTITION)) {
             //Write partitions - default initialization: writing to all partitions
             int[] writePartitions = new int[numPartitions];
             for (int i=0;i<numPartitions;i++) writePartitions[i]=i;
@@ -154,8 +161,7 @@ public class KCVSLogManager implements LogManager {
                 }
 
                 if (!localPartitions.isEmpty()) {
-                    writePartitions = new int[localPartitions.size()];
-                    for (int i=0;i<localPartitions.size();i++) writePartitions[i]=localPartitions.get(i);
+                    writePartitions = ArrayUtils.toPrimitive(localPartitions.toArray(new Integer[localPartitions.size()]));
                 }
             }
             this.defaultWritePartitionIds = writePartitions;
