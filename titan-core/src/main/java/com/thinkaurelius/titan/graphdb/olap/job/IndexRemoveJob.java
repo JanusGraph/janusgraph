@@ -160,7 +160,14 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public Predicate<StaticBuffer> getKeyFilter() {
         if (isGlobalGraphIndex()) {
             assert graphIndexId>0;
-            return (k -> indexSerializer.getIndexIdFromKey(k)==graphIndexId);
+            return (k -> {
+                try {
+                    return indexSerializer.getIndexIdFromKey(k) == graphIndexId;
+                } catch (RuntimeException e) {
+                    log.debug("Filtering key {} due to exception", k, e);
+                    return false;
+                }
+            });
         } else {
             return buffer -> {
                 long vertexId = idManager.getKeyID(buffer);
