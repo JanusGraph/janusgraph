@@ -26,6 +26,7 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -1099,7 +1100,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(tx.containsRelationType("value"));
         assertTrue(tx.containsVertexLabel("person"));
         assertTrue(tx.containsRelationType("knows"));
-        v = getV(tx,v);
+        v = getV(tx, v);
 
         //Cannot create new labels
         try {
@@ -1111,7 +1112,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             fail();
         } catch (IllegalArgumentException ex) {}
         try {
-            v.addEdge("blub",v);
+            v.addEdge("blub", v);
             fail();
         } catch (IllegalArgumentException ex) {}
     }
@@ -1188,6 +1189,52 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(1, v.query().direction(Direction.IN).labels("know").edges());
         assertCount(0,v.query().direction(Direction.IN).labels("knows").edges());
         assertCount(1,v.query().direction(Direction.OUT).labels("know").has("time",11).edges());
+    }
+
+    @Test
+    public void testGotGIndexRemoval() throws InterruptedException, ExecutionException {
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        );
+
+        final String name = "name";
+
+        // Load Graph of the Gods
+        GraphOfTheGodsFactory.loadWithoutMixedIndex(graph,
+                true); // True makes the index on names unique.  Test fails when this is true.
+                       // Change to false and test will pass.
+        newTx();
+        finishSchema();
+
+        TitanGraphIndex gindex = mgmt.getGraphIndex(name);
+
+        // Sanity checks on the index that we assume GraphOfTheGodsFactory created
+        assertNotNull(gindex);
+        assertEquals(1, gindex.getFieldKeys().length);
+        assertEquals(name, gindex.getFieldKeys()[0].name());
+        assertEquals("internalindex", gindex.getBackingIndex());
+        assertEquals(SchemaStatus.ENABLED, gindex.getIndexStatus(gindex.getFieldKeys()[0]));
+        finishSchema();
+
+        // Disable name index
+        gindex = mgmt.getGraphIndex(name);
+        mgmt.updateIndex(gindex, SchemaAction.DISABLE_INDEX);
+        mgmt.commit();
+        tx.commit();
+
+        ManagementUtil.awaitGraphIndexUpdate(graph, name, 5, TimeUnit.SECONDS);
+        finishSchema();
+
+        // Remove name index
+        gindex = mgmt.getGraphIndex(name);
+        mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX);
+        TitanManagement.IndexJobFuture gmetrics = mgmt.getIndexJobStatus(gindex);
+        finishSchema();
+        waitForReindex(graph, mgmt -> mgmt.getGraphIndex(name));
+
+        // Should have deleted at least one record
+        assertNotEquals(0, gmetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
     @Test
