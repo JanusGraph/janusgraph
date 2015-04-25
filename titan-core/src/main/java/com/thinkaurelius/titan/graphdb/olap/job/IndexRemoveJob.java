@@ -164,7 +164,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
                 try {
                     return indexSerializer.getIndexIdFromKey(k) == graphIndexId;
                 } catch (RuntimeException e) {
-                    log.debug("Filtering key {} due to exception", k, e);
+                    log.error("Filtering key {} due to exception", k, e);
                     return false;
                 }
             });
