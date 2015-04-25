@@ -137,7 +137,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public List<SliceQuery> getQueries() {
         if (isGlobalGraphIndex()) {
             //Everything
-            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)));
+            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)));
         } else {
             RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
             InternalRelationType wrappedType = wrapper.getWrappedType();
