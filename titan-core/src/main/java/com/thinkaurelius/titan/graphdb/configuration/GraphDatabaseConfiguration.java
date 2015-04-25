@@ -1295,7 +1295,6 @@ public class GraphDatabaseConfiguration {
     private String uniqueGraphId;
     private ModifiableConfiguration localConfiguration;
 
-
     private boolean readOnly;
     private boolean flushIDs;
     private boolean forceIndexUsage;
@@ -1852,7 +1851,6 @@ public class GraphDatabaseConfiguration {
         config.setProperty(Graph.GRAPH, TitanFactory.class.getName());
         return config;
     }
-
 
 
 	/* ----------------------------------------

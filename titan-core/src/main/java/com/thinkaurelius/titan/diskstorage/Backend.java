@@ -498,6 +498,14 @@ public class Backend implements LockerProvider, AutoCloseable {
         return storeFeatures;
     }
 
+    public Class<? extends KeyColumnValueStoreManager> getStoreManagerClass() {
+        return storeManager.getClass();
+    }
+
+    public StoreManager getStoreManager() {
+        return storeManager;
+    }
+
     /**
      * Returns the {@link IndexFeatures} of all configured index backends
      */

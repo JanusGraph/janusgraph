@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.config;
 
+import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 
 public class TitanHadoopConfiguration {
@@ -40,5 +41,10 @@ public class TitanHadoopConfiguration {
                     "input; if it is false when a partitioned vertex is encountered, then an exception is thrown.  " +
                     "This limitation may be lifted in a later version of Titan-Hadoop.",
                     ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<String> COLUMN_FAMILY_NAME =
+            new ConfigOption<>(INPUT_NS, "cf-name",
+                    "The name of the column family from which the input format should read.  " +
+                    "Usually edgestore or graphindex.", ConfigOption.Type.LOCAL, Backend.EDGESTORE_NAME);
 
 }

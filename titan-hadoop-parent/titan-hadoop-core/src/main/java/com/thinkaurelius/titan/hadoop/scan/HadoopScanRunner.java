@@ -84,7 +84,8 @@ public class HadoopScanRunner {
             ConfigNamespace confRoot = HadoopScanMapper.getJobRoot(confRootField);
 
             // Create writable view of scanjob configuration atop the Hadoop Configuration instance, where all keys are prefixed with SCAN_JOB_CONFIG_KEYS
-            ModifiableConfiguration hadoopJobConf = ModifiableHadoopConfiguration.subset(confRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, scanConf);
+            ModifiableConfiguration hadoopJobConf = ModifiableHadoopConfiguration.prefixView(confRoot,
+                    TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, scanConf);
 
             // Copy scanjob settings from the Titan Configuration instance to the Hadoop Configuration instance
             Map<String, Object> jobConfMap = conf.getSubset(confRoot);
@@ -93,7 +94,15 @@ public class HadoopScanRunner {
             }
         }
 
-        Job job = Job.getInstance(scanConf.getHadoopConfiguration());
+        return runJob(scanConf.getHadoopConfiguration(), inputFormat, jobName, mapperClass);
+    }
+
+    public static ScanMetrics runJob(org.apache.hadoop.conf.Configuration hadoopConf,
+                                     Class<? extends InputFormat> inputFormat, String jobName,
+                                     Class<? extends Mapper> mapperClass)
+            throws IOException, InterruptedException, ClassNotFoundException {
+
+        Job job = Job.getInstance(hadoopConf);
 
         //job.setJarByClass(HadoopScanMapper.class);
         job.setJarByClass(mapperClass);

@@ -228,7 +228,8 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
             return null;
         }
         ConfigNamespace jobRoot = getJobRoot(scanConf.get(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT));
-        return ModifiableHadoopConfiguration.subset(jobRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, scanConf);
+        return ModifiableHadoopConfiguration.prefixView(jobRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS,
+                scanConf);
     }
 
     static ConfigNamespace getJobRoot(String confRootName) {
