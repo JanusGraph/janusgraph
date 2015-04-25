@@ -169,7 +169,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         List<Entry> result = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
             @Override
             public List<Entry> call(StoreTransaction txh) throws BackendException {
-                return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)),txh);
+                return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)),txh);
             }
 
             @Override

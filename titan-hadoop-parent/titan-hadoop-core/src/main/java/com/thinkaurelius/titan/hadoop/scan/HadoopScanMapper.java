@@ -72,7 +72,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         if (0 < subsequentQueries.size()) {
             //It is assumed that the first query is the grounding query if multiple queries exist
             StaticBuffer start = initialQuery.getSliceStart();
-            Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(start.length())),
+            Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(1)),
                     "Expected start of first query to be all 0s: %s", start);
             StaticBuffer end = initialQuery.getSliceEnd();
             Preconditions.checkArgument(end.equals(BufferUtil.oneBuffer(end.length())),

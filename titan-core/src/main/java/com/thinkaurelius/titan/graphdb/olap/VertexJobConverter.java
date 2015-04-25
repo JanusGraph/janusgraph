@@ -36,7 +36,7 @@ public class VertexJobConverter implements ScanJob {
     private static final Logger log =
             LoggerFactory.getLogger(VertexJobConverter.class);
 
-    protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
+    protected static final SliceQuery VERTEX_EXISTS_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4)).setLimit(1);
 
     public static final String GHOST_VERTEX_COUNT = "ghost-vertices";
     /**
