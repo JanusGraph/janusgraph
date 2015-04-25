@@ -736,6 +736,7 @@ public class GraphDatabaseConfiguration {
     // ################ IDAUTHORITY ###################
     // ################################################
 
+    //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace IDAUTHORITY_NS = new ConfigNamespace(IDS_NS,"authority","Configuration options for graph element ID reservation/allocation");
 
     /**
@@ -776,6 +777,8 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
             ConfigOption.Type.MASKABLE, 5);
+//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
+//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
      * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that

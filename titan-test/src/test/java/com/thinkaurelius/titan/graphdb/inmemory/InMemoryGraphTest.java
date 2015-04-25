@@ -7,6 +7,8 @@ import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
+import java.util.Map;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -21,7 +23,20 @@ public class InMemoryGraphTest extends TitanGraphTest {
 
     @Override
     public void clopen(Object... settings) {
-        Preconditions.checkArgument(settings==null || settings.length==0);
+        if (settings!=null && settings.length>0) {
+            if (graph!=null && graph.isOpen()) {
+                Preconditions.checkArgument(!graph.vertices().hasNext() &&
+                    !graph.edges().hasNext(),"Graph cannot be re-initialized for InMemory since that would delete all data");
+                graph.close();
+            }
+            Map<TestConfigOption,Object> options = validateConfigOptions(settings);
+            ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
+            config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
+            for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
+                config.set(option.getKey().option, option.getValue(), option.getKey().umbrella);
+            }
+            open(config.getConfiguration());
+        }
         newTx();
     }
 
