@@ -162,7 +162,9 @@ public class MapReduceIndexManagement {
         titanmrConf.set(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
                 GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
         // Copy the StandardTitanGraph configuration under TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS
-        copyInputKeys(hadoopConf, graph.getConfiguration().getLocalConfiguration());
+        org.apache.commons.configuration.Configuration localbc = graph.getConfiguration().getLocalConfiguration();
+        localbc.clearProperty(Graph.GRAPH);
+        copyInputKeys(hadoopConf, localbc);
 
         String jobName = HadoopScanMapper.class.getSimpleName() + "[" + indexJobClass.getSimpleName() + "]";
 
