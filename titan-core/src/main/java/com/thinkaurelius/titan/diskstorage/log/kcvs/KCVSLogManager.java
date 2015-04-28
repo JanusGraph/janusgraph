@@ -127,9 +127,11 @@ public class KCVSLogManager implements LogManager {
         Preconditions.checkArgument(storeManager!=null && config!=null);
         if (config.has(LOG_STORE_TTL)) {
             indexStoreTTL = ConversionHelper.getTTLSeconds(config.get(LOG_STORE_TTL));
-            if (storeManager.getFeatures().hasCellTTL()) {
+            StoreFeatures storeFeatures = storeManager.getFeatures();
+            if (storeFeatures.hasCellTTL() && !storeFeatures.hasStoreTTL()) {
+                // Reduce cell-level TTL (fine-grained) to store-level TTL (coarse-grained)
                 storeManager = new TTLKCVSManager(storeManager);
-            } else if (!storeManager.getFeatures().hasStoreTTL()){
+            } else if (!storeFeatures.hasStoreTTL()){
                 log.warn("Log is configured with TTL but underlying storage backend does not support TTL, hence this" +
                         "configuration option is ignored and entries must be manually removed from the backend.");
             }

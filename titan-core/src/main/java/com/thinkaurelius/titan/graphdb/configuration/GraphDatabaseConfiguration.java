@@ -1447,7 +1447,7 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
         overwrite.set(LOG_SEND_DELAY, StandardDuration.ZERO,TRANSACTION_LOG);
-        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKCVSManager.supportsStoreTTL(storeFeatures)) {
+        if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKCVSManager.supportsAnyTTL(storeFeatures)) {
             overwrite.set(LOG_STORE_TTL,TRANSACTION_LOG_DEFAULT_TTL,TRANSACTION_LOG);
         }
         //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true

@@ -37,8 +37,6 @@ public class TTLKCVSManager extends KCVSManagerProxy {
 
     public TTLKCVSManager(KeyColumnValueStoreManager manager) {
         super(manager);
-        Preconditions.checkArgument(supportsStoreTTL(manager),
-                "Wrapped store must support cell or store level TTL: %s", manager);
         Preconditions.checkArgument(manager.getFeatures().hasCellTTL());
         Preconditions.checkArgument(!manager.getFeatures().hasStoreTTL(),
                 "Using TTLKCVSManager with %s is redundant: underlying implementation already supports store-level ttl",
@@ -46,11 +44,18 @@ public class TTLKCVSManager extends KCVSManagerProxy {
         this.features = new StandardStoreFeatures.Builder(manager.getFeatures()).storeTTL(true).build();
     }
 
-    public static boolean supportsStoreTTL(KeyColumnValueStoreManager manager) {
-        return supportsStoreTTL(manager.getFeatures());
-    }
-
-    public static boolean supportsStoreTTL(StoreFeatures features) {
+    /**
+     * Returns true if the parameter supports at least one of the following:
+     *
+     * <ul>
+     * <li>cell-level TTL {@link StoreFeatures#hasCellTTL()}</li>
+     * <li>store-level TTL {@link StoreFeatures#hasStoreTTL()}</li>
+     * </ul>
+     *
+     * @param features an arbitrary {@code StoreFeatures} instance
+     * @return true if and only if at least one TTL mode is supported
+     */
+    public static boolean supportsAnyTTL(StoreFeatures features) {
         return features.hasCellTTL() || features.hasStoreTTL();
     }
 
