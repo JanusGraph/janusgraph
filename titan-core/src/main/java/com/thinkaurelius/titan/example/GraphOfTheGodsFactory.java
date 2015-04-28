@@ -39,20 +39,33 @@ public class GraphOfTheGodsFactory {
         return graph;
     }
 
+    public static void loadWithoutMixedIndex(final TitanGraph graph, boolean uniqueNameCompositeIndex) {
+        load(graph, null, uniqueNameCompositeIndex);
+    }
+
     public static void load(final TitanGraph graph) {
+        load(graph, INDEX_NAME, true);
+    }
+
+    public static void load(final TitanGraph graph, String mixedIndexName, boolean uniqueNameCompositeIndex) {
+
         //Create Schema
         TitanManagement mgmt = graph.openManagement();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).addKey(name).unique().buildCompositeIndex();
+        TitanManagement.IndexBuilder nameIndexBuilder = mgmt.buildIndex("name", Vertex.class).addKey(name);
+        if (uniqueNameCompositeIndex)
+            nameIndexBuilder.unique();
+        TitanGraphIndex namei = nameIndexBuilder.buildCompositeIndex();
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.buildIndex("vertices",Vertex.class).addKey(age).buildMixedIndex(INDEX_NAME);
+        if (null != mixedIndexName)
+            mgmt.buildIndex("vertices",Vertex.class).addKey(age).buildMixedIndex(mixedIndexName);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
         final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-        TitanGraphIndex eindex = mgmt.buildIndex("edges",Edge.class)
-                .addKey(reason).addKey(place).buildMixedIndex(INDEX_NAME);
+        if (null != mixedIndexName)
+            mgmt.buildIndex("edges",Edge.class).addKey(reason).addKey(place).buildMixedIndex(mixedIndexName);
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();

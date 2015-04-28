@@ -144,7 +144,9 @@ public class VertexIDAssignerTest {
                         assertTrue(relationIds.add(id));
                     }
                 } catch (IDPoolExhaustedException e) {
-                    assertTrue(totalRelations>maxIDAssignments || totalVertices>maxIDAssignments);
+                    //Since the id assignment process is randomized, we divide by 3/2 to account for minor variations
+                    assertTrue("Max Avail: " + maxIDAssignments + " vs. ["+totalVertices+","+totalRelations+"]",
+                            totalRelations>=maxIDAssignments/3*2 || totalVertices>=maxIDAssignments/3*2);
                 } finally {
                     graph.tx().rollback();
                     graph.close();

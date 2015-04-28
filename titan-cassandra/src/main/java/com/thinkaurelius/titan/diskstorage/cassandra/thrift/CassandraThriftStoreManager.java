@@ -348,6 +348,10 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
 
         try {
+            // Resist the temptation to describe SYSTEM_KS.  It has no ring.
+            // Instead, we'll create our own keyspace (or check that it exists), then describe it.
+            ensureKeyspaceExists(keySpaceName);
+
             conn = pool.borrowObject(keySpaceName);
             List<TokenRange> ranges  = conn.getClient().describe_ring(keySpaceName);
             List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());

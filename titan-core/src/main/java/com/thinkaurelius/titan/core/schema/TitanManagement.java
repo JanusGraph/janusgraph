@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Order;
 
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -223,14 +224,20 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
          * on the same values in the object returned by {@link #get()}, though
          * the implementation should attempt to provide both properties when
          * practical.
-         *
+         * <p>
          * The metrics visible through the object returned by this method may
          * also change their values between reads.  In other words, this is not
          * necessarily an immutable snapshot.
+         * <p>
+         * If the index job has failed and the implementation is capable of
+         * quickly detecting that, then the implementation should throw an
+         * {@code ExecutionException}.  Returning metrics in case of failure is
+         * acceptable, but throwing an exception is preferred.
          *
          * @return metrics for a potentially still-running job
+         * @throws ExecutionException if the index job threw an exception
          */
-        public ScanMetrics getIntermediateResult();
+        public ScanMetrics getIntermediateResult() throws ExecutionException;
     }
 
     /*

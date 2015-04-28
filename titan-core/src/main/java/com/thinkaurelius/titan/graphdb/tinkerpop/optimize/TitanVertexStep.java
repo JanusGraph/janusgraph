@@ -53,6 +53,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         return query;
     }
 
+    @SuppressWarnings("deprecation")
     private void initialize() {
         assert !initialized;
         initialized = true;

@@ -72,7 +72,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         if (0 < subsequentQueries.size()) {
             //It is assumed that the first query is the grounding query if multiple queries exist
             StaticBuffer start = initialQuery.getSliceStart();
-            Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(start.length())),
+            Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(1)),
                     "Expected start of first query to be all 0s: %s", start);
             StaticBuffer end = initialQuery.getSliceEnd();
             Preconditions.checkArgument(end.equals(BufferUtil.oneBuffer(end.length())),
@@ -228,7 +228,8 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
             return null;
         }
         ConfigNamespace jobRoot = getJobRoot(scanConf.get(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT));
-        return ModifiableHadoopConfiguration.subset(jobRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, scanConf);
+        return ModifiableHadoopConfiguration.prefixView(jobRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS,
+                scanConf);
     }
 
     static ConfigNamespace getJobRoot(String confRootName) {

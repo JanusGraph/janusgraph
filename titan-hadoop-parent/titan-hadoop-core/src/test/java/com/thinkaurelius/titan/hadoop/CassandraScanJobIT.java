@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.hadoop;
 
 
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -9,11 +8,8 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStore
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
@@ -31,15 +27,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
 
-public class CassandraScanJobTest extends TitanGraphBaseTest {
+public class CassandraScanJobIT extends TitanGraphBaseTest {
 
-    private static final Logger log = LoggerFactory.getLogger(CassandraScanJobTest.class);
+    private static final Logger log = LoggerFactory.getLogger(CassandraScanJobIT.class);
 
     @Test
     public void testSimpleScan()

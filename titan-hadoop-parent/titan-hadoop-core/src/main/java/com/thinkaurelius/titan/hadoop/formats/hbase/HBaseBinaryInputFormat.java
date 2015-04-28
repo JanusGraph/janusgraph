@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.hadoop.formats.hbase;
 
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.util.AbstractBinaryInputFormat;
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
@@ -32,7 +33,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private TableRecordReader tableReader;
-    private byte[] edgestoreFamily;
+    private byte[] inputCFBytes;
     private RecordReader<StaticBuffer, Iterable<Entry>> titanRecordReader;
 
     @Override
@@ -45,7 +46,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         tableReader =
                 (TableRecordReader) tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
         titanRecordReader =
-                new HBaseBinaryRecordReader(tableReader, edgestoreFamily);
+                new HBaseBinaryRecordReader(tableReader, inputCFBytes);
         return titanRecordReader;
     }
 
@@ -63,14 +64,18 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         config.set("autotype", "none");
         log.debug("hbase.security.authentication={}", config.get("hbase.security.authentication"));
         Scan scanner = new Scan();
-        // TODO the mapping is private in HBaseStoreManager and leaks here -- replace String database/CF names with an enum where each value has both a short and long name
+        String cfName = mrConf.get(TitanHadoopConfiguration.COLUMN_FAMILY_NAME);
+        // TODO the space-saving short name mapping leaks from HBaseStoreManager here
         if (titanConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
-            scanner.addFamily("e".getBytes());
-            edgestoreFamily = Bytes.toBytes("e");
-        } else {
-            scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
-            edgestoreFamily = Bytes.toBytes(Backend.EDGESTORE_NAME);
+            try {
+                cfName = HBaseStoreManager.shortenCfName(cfName);
+            } catch (PermanentBackendException e) {
+                throw new RuntimeException(e);
+            }
         }
+        scanner.addFamily(cfName.getBytes());
+        inputCFBytes = Bytes.toBytes(cfName);
+
         //scanner.setFilter(getColumnFilter(titanSetup.inputSlice(this.vertexQuery))); // TODO
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
         Method converter;
@@ -90,7 +95,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     }
 
     public byte[] getEdgeStoreFamily() {
-        return edgestoreFamily;
+        return inputCFBytes;
     }
 
     private Filter getColumnFilter(SliceQuery query) {

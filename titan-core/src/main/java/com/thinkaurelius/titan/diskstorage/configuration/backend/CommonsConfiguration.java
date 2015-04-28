@@ -140,8 +140,13 @@ public class CommonsConfiguration implements WriteConfiguration {
 
     @Override
     public <O> void set(String key, O value) {
-        if (value==null) config.clearProperty(key);
-        else config.setProperty(key,value);
+        if (value==null) {
+            config.clearProperty(key);
+        } else if (Duration.class.isAssignableFrom(value.getClass())) {
+            config.setProperty(key,((Duration)value).getLength(TimeUnit.MILLISECONDS));
+        } else {
+            config.setProperty(key,value);
+        }
     }
 
     @Override

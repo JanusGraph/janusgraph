@@ -920,7 +920,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
-        srb.setQuery(QueryBuilders.queryString(query.getQuery()));
+        srb.setQuery(QueryBuilders.queryStringQuery(query.getQuery()));
 
         srb.setFrom(query.getOffset());
         if (query.hasLimit()) srb.setSize(query.getLimit());
