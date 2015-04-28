@@ -126,8 +126,8 @@ public class HadoopScanRunner {
                 // Just in case one of Job's methods throws an exception
                 f = String.format("MapReduce JobID %s terminated in state %s",
                         job.getJobID().toString(), job.getStatus().getState().name());
-            } catch (Throwable t) {
-                f = "Job failed (see MapReduce logs for more information)";
+            } catch (RuntimeException e) {
+                f = "Job failed (unable to read job status programmatically -- see MapReduce logs for information)";
             }
             throw new IOException(f);
         } else {
