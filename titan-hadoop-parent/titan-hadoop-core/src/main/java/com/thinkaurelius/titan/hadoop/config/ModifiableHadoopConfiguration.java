@@ -41,9 +41,14 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         return new ModifiableHadoopConfiguration(root, c, Restriction.NONE);
     }
 
-    public static ModifiableConfiguration subset(ConfigNamespace newRoot, ConfigNamespace prefixRoot, ModifiableHadoopConfiguration mc) {
+    public static ModifiableConfiguration prefixView(ConfigNamespace newRoot, ConfigNamespace prefixRoot,
+                                                     ModifiableHadoopConfiguration mc) {
         HadoopConfiguration prefixConf = new HadoopConfiguration(mc.getHadoopConfiguration(), ConfigElement.getPath(prefixRoot) + ".");
         return new ModifiableConfiguration(newRoot, prefixConf,  Restriction.NONE);
+    }
+
+    public ModifiableConfiguration prefixView(ConfigNamespace newRoot, ConfigNamespace prefixRoot) {
+        return prefixView(newRoot, prefixRoot, this);
     }
 
     public Configuration getHadoopConfiguration() {
@@ -51,10 +56,10 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
     }
 
     public ModifiableConfiguration getTitanInputConf() {
-        return subset(GraphDatabaseConfiguration.ROOT_NS, TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS, this);
+        return prefixView(GraphDatabaseConfiguration.ROOT_NS, TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS, this);
     }
 
     public ModifiableConfiguration getScanJobConf(ConfigNamespace scanJobConfRoot) {
-        return subset(scanJobConfRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, this);
+        return prefixView(scanJobConfRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, this);
     }
 }

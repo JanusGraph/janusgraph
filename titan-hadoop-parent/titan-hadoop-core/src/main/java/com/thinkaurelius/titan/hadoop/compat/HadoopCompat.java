@@ -119,4 +119,6 @@ public interface HadoopCompat {
     public Configuration newImmutableConfiguration(Configuration base);
 
     public ScanMetrics getMetrics(Counters c);
+
+    public String getJobFailureString(Job j);
 }

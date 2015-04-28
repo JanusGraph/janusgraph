@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats.cassandra;
 
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.util.AbstractBinaryInputFormat;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
@@ -14,7 +14,10 @@ import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +74,8 @@ public class CassandraBinaryInputFormat extends AbstractBinaryInputFormat {
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         final boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
-        ConfigHelper.setInputColumnFamily(config, titanConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE), Backend.EDGESTORE_NAME, wideRows);
+        ConfigHelper.setInputColumnFamily(config, titanConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE),
+                mrConf.get(TitanHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
         log.debug("Set keyspace: {}", titanConf.get(AbstractCassandraStoreManager.CASSANDRA_KEYSPACE));
 
         // Set the column slice bounds via Faunus's vertex query filter
