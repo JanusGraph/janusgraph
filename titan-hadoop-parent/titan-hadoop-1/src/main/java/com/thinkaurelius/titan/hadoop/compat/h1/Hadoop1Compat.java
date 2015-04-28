@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.compat.h1;
 
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
@@ -79,5 +80,10 @@ public class Hadoop1Compat implements HadoopCompat {
     @Override
     public ScanMetrics getMetrics(Counters c) {
         return new Hadoop1CountersScanMetrics(c);
+    }
+
+    @Override
+    public String getJobFailureString(Job j) {
+        return j.toString();
     }
 }

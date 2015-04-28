@@ -32,7 +32,7 @@ public class GhostVertexRemover extends VertexJobConverter {
 
     private static final int RELATION_COUNT_LIMIT = 10000;
 
-    private static final SliceQuery EVERYTHING_QUERY = new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4));
+    private static final SliceQuery EVERYTHING_QUERY = new SliceQuery(BufferUtil.zeroBuffer(1),BufferUtil.oneBuffer(4));
 
     public static final String REMOVED_RELATION_COUNT = "removed-relations";
     public static final String REMOVED_VERTEX_COUNT = "removed-vertices";

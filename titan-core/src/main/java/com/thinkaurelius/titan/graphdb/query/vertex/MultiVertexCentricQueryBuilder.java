@@ -87,7 +87,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
                 for (InternalVertex v : vertices) {
                     if (isPartitionedVertex(v)) {
                         adjVertices.remove(v);
-                        adjVertices.addAll(allRepresentatives(v));
+                        adjVertices.addAll(allRequiredRepresentatives(v));
                     }
                 }
                 tx.executeMultiQuery(adjVertices, sq.getBackendQuery());

@@ -11,7 +11,6 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.ZeroDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.ConcurrentWriteConfiguration;
@@ -22,7 +21,6 @@ import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 
@@ -69,7 +67,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
     public void setMaxOperationWaitTime(Duration waitTime) {
 
-        Preconditions.checkArgument(ZeroDuration.INSTANCE.compareTo(waitTime) < 0,
+        Preconditions.checkArgument(StandardDuration.ZERO.compareTo(waitTime) < 0,
                 "Wait time must be nonnegative: %s", waitTime);
         this.maxOperationWaitTime = waitTime;
     }
@@ -171,7 +169,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         List<Entry> result = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
             @Override
             public List<Entry> call(StoreTransaction txh) throws BackendException {
-                return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)),txh);
+                return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)),txh);
             }
 
             @Override

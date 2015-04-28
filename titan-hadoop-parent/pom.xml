@@ -273,19 +273,6 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <executions>
                         <execution>
-                            <id>faunus-pipeline-test</id>
-                            <goals>
-                                <goal>integration-test</goal>
-                            </goals>
-                            <configuration>
-                                <includes>
-                                    <include>**/*PipelineTest.java</include>
-                                </includes>
-                                <skipTests>${skipPipeline}</skipTests>
-                                <summaryFile>target/failsafe-reports/failsafe-faunus-pipeline.xml</summaryFile>
-                            </configuration>
-                        </execution>
-                        <execution>
                             <id>titan-cassandra-test</id>
                             <goals>
                                 <goal>integration-test</goal>
@@ -293,9 +280,7 @@
                             <configuration>
                                 <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
                                 <includes>
-                                    <include>**/TitanCassandraOutputFormatTest.java</include>
-                                    <include>**/*ReindexTest.java</include>
-                                    <include>**/*ScanJobTest.java</include>
+                                    <include>**/*Cassandra*IT.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
@@ -310,7 +295,7 @@
                             <configuration>
                                 <argLine>-Dtest.hbase.parentdir=${top.level.basedir}/titan-hbase-parent/</argLine>
                                 <includes>
-                                    <include>**/TitanHBaseOutputFormatTest.java</include>
+                                    <include>**/*HBase*IT.java</include>
                                 </includes>
                                 <skipTests>${skipHBase}</skipTests>
                                 <summaryFile>target/failsafe-reports/failsafe-titan-hbase.xml</summaryFile>
@@ -319,18 +304,6 @@
                         <!-- ************ -->
                         <!-- VERIFICATION -->
                         <!-- ************ -->
-                        <execution>
-                            <id>verify-faunus-pipeline-test</id>
-                            <goals>
-                                <goal>verify</goal>
-                            </goals>
-                            <configuration>
-                                <skipTests>${skipPipeline}</skipTests>
-                                <summaryFiles>
-                                    <summaryFile>target/failsafe-reports/failsafe-faunus-pipeline.xml</summaryFile>
-                                </summaryFiles>
-                            </configuration>
-                        </execution>
                         <execution>
                             <id>verify-titan-cassandra-test</id>
                             <goals>

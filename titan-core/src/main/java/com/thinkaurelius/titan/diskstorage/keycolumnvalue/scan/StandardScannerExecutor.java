@@ -29,7 +29,7 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Tit
             LoggerFactory.getLogger(StandardScannerExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
-    private static final int TIMEOUT_MS = 60000; // 60 seconds
+    private static final int TIMEOUT_MS = 180000; // 60 seconds
     private static final int MAX_KEY_LENGTH = 128; //in bytes
 
     private final ScanJob job;
@@ -93,8 +93,8 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Tit
                 //It is assumed that the first query is the grounding query if multiple queries exist
                 SliceQuery ground = queries.get(0);
                 StaticBuffer start = ground.getSliceStart();
-                Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(start.length())),
-                        "Expected start of first query to be all 0s: %s",start);
+                Preconditions.checkArgument(start.equals(BufferUtil.zeroBuffer(1)),
+                        "Expected start of first query to be a single 0s: %s",start);
                 StaticBuffer end = ground.getSliceEnd();
                 Preconditions.checkArgument(end.equals(BufferUtil.oneBuffer(end.length())),
                         "Expected end of first query to be all 1s: %s",end);

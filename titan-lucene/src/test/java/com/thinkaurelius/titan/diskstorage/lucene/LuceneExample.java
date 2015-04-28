@@ -65,8 +65,8 @@ public abstract class LuceneExample {
     @Test
     public void example1() throws Exception {
         Directory dir = FSDirectory.open(path);
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
-        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_41, analyzer);
+        Analyzer analyzer = new StandardAnalyzer();
+        IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_4_10_4, analyzer);
 
         iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
         IndexWriter writer = new IndexWriter(dir, iwc);
@@ -93,7 +93,7 @@ public abstract class LuceneExample {
         //Search
         IndexReader reader = DirectoryReader.open(FSDirectory.open(path));
         IndexSearcher searcher = new IndexSearcher(reader);
-        analyzer = new StandardAnalyzer(Version.LUCENE_41);
+        analyzer = new StandardAnalyzer();
 
         //Auesee
         BooleanFilter filter = new BooleanFilter();

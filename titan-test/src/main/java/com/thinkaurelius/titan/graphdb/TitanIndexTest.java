@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.*;
@@ -134,7 +135,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
 
         TitanVertex v = tx.addVertex("name", "Marko Rodriguez");
-        Edge e = v.addEdge("knows",v, "name","Hulu Bubab");
+        Edge e = v.addEdge("knows", v, "name", "Hulu Bubab");
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
         for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez",u.value("name"));
@@ -710,7 +711,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
 
     private void setupChainGraph(int numV, String[] strs, boolean sameNameMapping) {
-        clopen(option(INDEX_NAME_MAPPING,INDEX),sameNameMapping);
+        clopen(option(INDEX_NAME_MAPPING, INDEX), sameNameMapping);
         TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
         TitanGraphIndex pindex = getExternalIndex(TitanVertexProperty.class,INDEX);
@@ -720,7 +721,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.addIndexKey(eindex, name, getStringMapping());
         mgmt.addIndexKey(pindex, name, getStringMapping(), Parameter.of("mapped-name", "xstr"));
         PropertyKey text = makeKey("text",String.class);
-        mgmt.addIndexKey(vindex, text, getTextMapping(), Parameter.of("mapped-name","xtext"));
+        mgmt.addIndexKey(vindex, text, getTextMapping(), Parameter.of("mapped-name", "xtext"));
         mgmt.addIndexKey(eindex, text, getTextMapping());
         mgmt.addIndexKey(pindex, text, getTextMapping());
         mgmt.makeEdgeLabel("knows").signature(name).make();
@@ -919,22 +920,26 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mixed.name();
         finishSchema();
 
-        TitanVertex v = tx.addVertex("name","Long John Don");
-        v = tx.addVertex("name","Long Little Lewis");
+
+        tx.addVertex("name", "Long John Don");
+        tx.addVertex("name", "Long Little Lewis");
+        tx.addVertex("name", "Middle Sister Mabel");
 
         clopen();
-        evaluateQuery(tx.query().has("name",Cmp.EQUAL,"Long John Don"),ElementCategory.VERTEX,
-                1,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"Long"),ElementCategory.VERTEX,
-                2,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"Long Don"),ElementCategory.VERTEX,
-                1,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS_PREFIX,"Lon"),ElementCategory.VERTEX,
-                2,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS_REGEX,"Lit*le"),ElementCategory.VERTEX,
-                1,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.REGEX,"Long.*"),ElementCategory.VERTEX,
-                2,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, "Long John Don"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "Long"), ElementCategory.VERTEX,
+                2, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "Long Don"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS_PREFIX, "Lon"), ElementCategory.VERTEX,
+                2, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS_REGEX, "Lit*le"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.REGEX, "Long.*"), ElementCategory.VERTEX,
+                2, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.PREFIX, "Middle"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
 
         for (Vertex u : tx.getVertices()) {
             String n = u.<String>value("name");
@@ -943,16 +948,22 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             } else if (n.endsWith("Lewis")) {
                 u.property(VertexProperty.Cardinality.single, "name",  "Big Brother Bob");
             }
+            else if (n.endsWith("Mabel")) {
+                u.property("name").remove();
+            }
         }
 
         clopen();
 
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"Long"),ElementCategory.VERTEX,
-                0,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.CONTAINS,"Big"),ElementCategory.VERTEX,
-                1,new boolean[]{true,true},"mixed");
-        evaluateQuery(tx.query().has("name",Text.PREFIX,"Big"),ElementCategory.VERTEX,
-                1,new boolean[]{true,true},"mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "Long"), ElementCategory.VERTEX,
+                0, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.CONTAINS, "Big"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.PREFIX, "Big"), ElementCategory.VERTEX,
+                1, new boolean[]{true, true}, "mixed");
+        evaluateQuery(tx.query().has("name", Text.PREFIX, "Middle"), ElementCategory.VERTEX,
+                0, new boolean[]{true, true}, "mixed");
+
     }
 
     @Category({ BrittleTests.class })
@@ -1039,41 +1050,51 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         final String defText = "Mountain rocks are great friends";
         final int defTime = 5;
         final double defHeight = 101.1;
+        final String[] defPhones = new String[]{"1234", "5678"};
 
-        //Creates types and index only one key
-        PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        //Creates types and index only two keys key
+        mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
-        PropertyKey height = mgmt.makePropertyKey("height").dataType(Double.class).make();
-        TitanGraphIndex index = mgmt.buildIndex("theIndex",Vertex.class)
-                .addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
+
+        mgmt.makePropertyKey("height").dataType(Double.class).make();
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            mgmt.makePropertyKey("phone").dataType(String.class).cardinality(Cardinality.LIST).make();
+        }
+        mgmt.buildIndex("theIndex", Vertex.class).addKey(text, getTextMapping(), getFieldMap(text)).buildMixedIndex(INDEX);
         finishSchema();
 
         //Add initial data
-        addVertex(defTime,defText,defHeight);
+        addVertex(defTime, defText, defHeight, defPhones);
 
         //Indexes should not yet be in use
         clopen(settings);
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("time",5),
-                ElementCategory.VERTEX,1,new boolean[]{false,true});
-        evaluateQuery(tx.query().interval("height",100,200),
-                ElementCategory.VERTEX,1,new boolean[]{false,true});
-        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
-                ElementCategory.VERTEX,1,new boolean[]{false,true});
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
-                ElementCategory.VERTEX,1,new boolean[]{false,true},"theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("time", 5),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        evaluateQuery(tx.query().interval("height", 100, 200),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        evaluateQuery(tx.query().interval("height", 100, 200).has("time", 5),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks").has("time", 5).interval("height", 100, 200),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true}, "theIndex");
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "1234"),
+                    ElementCategory.VERTEX, 1, new boolean[]{false, true});
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "5678"),
+                    ElementCategory.VERTEX, 1, new boolean[]{false, true});
+        }
         newTx();
 
         //Add another key to index ------------------------------------------------------
         finishSchema();
-        time = mgmt.getPropertyKey("time");
-        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),time, getFieldMap(time));
+        PropertyKey time = mgmt.getPropertyKey("time");
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"), time, getFieldMap(time));
         finishSchema();
         newTx();
 
         //Add more data
-        addVertex(defTime,defText,defHeight);
+        addVertex(defTime, defText, defHeight, defPhones);
         tx.commit();
         //Should not yet be able to enable since not yet registered
         assertNull(mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX));
@@ -1088,30 +1109,40 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
 
         //Add more data
-        addVertex(defTime,defText,defHeight);
+        addVertex(defTime, defText, defHeight, defPhones);
 
         //One more key should be indexed but only sees partial data
         clopen(settings);
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
-                ElementCategory.VERTEX,3,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("time",5),
-                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().interval("height",100,200),
-                ElementCategory.VERTEX,3,new boolean[]{false,true});
-        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
-                ElementCategory.VERTEX,2,new boolean[]{false,true},"theIndex");
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
-                ElementCategory.VERTEX,2,new boolean[]{false,true},"theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 3, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("time", 5),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().interval("height", 100, 200),
+                ElementCategory.VERTEX, 3, new boolean[]{false, true});
+        evaluateQuery(tx.query().interval("height", 100, 200).has("time", 5),
+                ElementCategory.VERTEX, 2, new boolean[]{false, true}, "theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks").has("time", 5).interval("height", 100, 200),
+                ElementCategory.VERTEX, 2, new boolean[]{false, true}, "theIndex");
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "1234"),
+                    ElementCategory.VERTEX, 3, new boolean[]{false, true});
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "5678"),
+                    ElementCategory.VERTEX, 3, new boolean[]{false, true});
+        }
         newTx();
 
         //Add another key to index ------------------------------------------------------
         finishSchema();
-        height = mgmt.getPropertyKey("height");
-        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"),height);
+        PropertyKey height = mgmt.getPropertyKey("height");
+        mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"), height);
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            PropertyKey phone = mgmt.getPropertyKey("phone");
+            mgmt.addIndexKey(mgmt.getGraphIndex("theIndex"), phone, new Parameter("mapping", Mapping.STRING));
+        }
         finishSchema();
 
         //Add more data
-        addVertex(defTime,defText,defHeight);
+        addVertex(defTime, defText, defHeight, defPhones);
         tx.commit();
         mgmt.commit();
 
@@ -1121,26 +1152,32 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
         finishSchema();
 
-        index = mgmt.getGraphIndex("theIndex");
+        TitanGraphIndex index = mgmt.getGraphIndex("theIndex");
         for (PropertyKey key : index.getFieldKeys()) {
             assertEquals(SchemaStatus.ENABLED, index.getIndexStatus(key));
         }
 
         //Add more data
-        addVertex(defTime,defText,defHeight);
+        addVertex(defTime, defText, defHeight, defPhones);
 
         //One more key should be indexed but only sees partial data
         clopen(settings);
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
-                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("time",5),
-                ElementCategory.VERTEX,4,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().interval("height",100,200),
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("time", 5),
+                ElementCategory.VERTEX, 4, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().interval("height", 100, 200),
                 ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
-                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
-                ElementCategory.VERTEX,2,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().interval("height", 100, 200).has("time", 5),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks").has("time", 5).interval("height", 100, 200),
+                ElementCategory.VERTEX, 2, new boolean[]{true, true}, "theIndex");
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "1234"),
+                    ElementCategory.VERTEX, 2, new boolean[]{true, true}, "theIndex");
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "5678"),
+                    ElementCategory.VERTEX, 2, new boolean[]{true, true}, "theIndex");
+        }
         newTx();
         finishSchema();
 
@@ -1153,16 +1190,22 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         //All the data should now be in the index
         clopen(settings);
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks"),
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks"),
+                ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("time", 5),
+                ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().interval("height", 100, 200),
+                ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().interval("height", 100, 200).has("time",5),
                 ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("time",5),
-                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().interval("height",100,200),
-                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().interval("height",100,200).has("time",5),
-                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"rocks").has("time",5).interval("height",100,200),
-                ElementCategory.VERTEX,5,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "rocks").has("time", 5).interval("height", 100, 200),
+                ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+        if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "1234"),
+                    ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+            evaluateQuery(tx.query().has("phone", Cmp.EQUAL, "5678"),
+                    ElementCategory.VERTEX, 5, new boolean[]{true, true}, "theIndex");
+        }
 
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"),SchemaAction.DISABLE_INDEX).get();
         tx.commit();
@@ -1178,14 +1221,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         newTx();
         //This now requires a full graph scan
-        evaluateQuery(tx.query().has("time",5),
+        evaluateQuery(tx.query().has("time", 5),
                 ElementCategory.VERTEX,5,new boolean[]{false,true});
 
     }
 
-    private void addVertex(int time, String text, double height) {
+    private void addVertex(int time, String text, double height, String[] phones) {
         newTx();
         TitanVertex v = tx.addVertex("text",text,"time",time,"height",height);
+        for(String phone : phones) {
+            v.property("phone", phone);
+        }
+
         newTx();
     }
 
@@ -1220,46 +1267,46 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
 
         TitanVertex v1 = tx.addVertex("event");
-        v1.property(VertexProperty.Cardinality.single, "name",  "first event");
-        v1.property(VertexProperty.Cardinality.single, "text",  "this text will help to identify the first event");
+        v1.property(VertexProperty.Cardinality.single, "name", "first event");
+        v1.property(VertexProperty.Cardinality.single, "text", "this text will help to identify the first event");
         long time1 = System.currentTimeMillis();
-        v1.property(VertexProperty.Cardinality.single, "time",  time1);
+        v1.property(VertexProperty.Cardinality.single, "time", time1);
         TitanVertex v2 = tx.addVertex("event");
-        v2.property(VertexProperty.Cardinality.single, "name",  "second event");
-        v2.property(VertexProperty.Cardinality.single, "text",  "this text won't match");
+        v2.property(VertexProperty.Cardinality.single, "name", "second event");
+        v2.property(VertexProperty.Cardinality.single, "text", "this text won't match");
         long time2 = time1 + 1;
-        v2.property(VertexProperty.Cardinality.single, "time",  time2);
+        v2.property(VertexProperty.Cardinality.single, "time", time2);
 
         evaluateQuery(tx.query().has("name","first event").orderBy("time", decr),
                 ElementCategory.VERTEX,1,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has(LABEL_NAME,"event"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "help").has(LABEL_NAME, "event"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "index2");
 
         clopen();
 
         Object v1Id = v1.id();
         Object v2Id = v2.id();
 
-        evaluateQuery(tx.query().has("name","first event").orderBy("time", decr),
-                ElementCategory.VERTEX,1,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has(LABEL_NAME,"event"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"index2");
+        evaluateQuery(tx.query().has("name", "first event").orderBy("time", decr),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC, "index1");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "help").has(LABEL_NAME, "event"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "index2");
 
         v1 = getV(tx,v1Id);
         v2 = getV(tx,v1Id);
         assertNotNull(v1);
         assertNotNull(v2);
 
-        Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(eventTTLSeconds * 1.25), TimeUnit.SECONDS));
+        Thread.sleep(TimeUnit.MILLISECONDS.convert((long) Math.ceil(eventTTLSeconds * 1.25), TimeUnit.SECONDS));
 
         clopen();
 
-        Thread.sleep(TimeUnit.MILLISECONDS.convert((long)Math.ceil(eventTTLSeconds * 1.25), TimeUnit.SECONDS));
+        Thread.sleep(TimeUnit.MILLISECONDS.convert((long) Math.ceil(eventTTLSeconds * 1.25), TimeUnit.SECONDS));
 
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,"help").has(LABEL_NAME,"event"),
-                ElementCategory.VERTEX,0,new boolean[]{true,true},"index2");
-        evaluateQuery(tx.query().has("name","first event").orderBy("time", decr),
-                ElementCategory.VERTEX,0,new boolean[]{true,true}, tx.getPropertyKey("time"), Order.DESC,"index1");
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, "help").has(LABEL_NAME, "event"),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, "index2");
+        evaluateQuery(tx.query().has("name", "first event").orderBy("time", decr),
+                ElementCategory.VERTEX, 0, new boolean[]{true, true}, tx.getPropertyKey("time"), Order.DESC, "index1");
 
 
         v1 = getV(tx,v1Id);
@@ -1425,7 +1472,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         Thread.sleep(2000);
 
-        TitanVertex r = Iterables.<TitanVertex>get(graph.query().has("name", Text.CONTAINS, "was here").vertices(), 0);
+        TitanVertex r = Iterables.<TitanVertex>get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
         Assert.assertEquals(r.property("name").value(), "hercules was here");
     }
 
@@ -1508,4 +1555,126 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         }
 
     }
+
+
+    /**
+     * Tests indexing lists
+     */
+    @Test
+    public void testListIndexing() {
+        testIndexing(Cardinality.LIST);
+    }
+
+    protected abstract boolean supportsCollections();
+
+    /**
+     * Tests indexing sets
+     */
+    @Test
+    public void testSetIndexing() {
+        testIndexing(Cardinality.SET);
+    }
+
+
+    private void testIndexing(Cardinality cardinality) {
+        if(supportsCollections()) {
+            PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
+            PropertyKey intProperty = mgmt.makePropertyKey("age").dataType(Integer.class).cardinality(cardinality).make();
+            PropertyKey longProperty = mgmt.makePropertyKey("long").dataType(Long.class).cardinality(cardinality).make();
+            PropertyKey uuidProperty = mgmt.makePropertyKey("uuid").dataType(UUID.class).cardinality(cardinality).make();
+            PropertyKey geoProperty = mgmt.makePropertyKey("geo").dataType(Geoshape.class).cardinality(cardinality).make();
+            mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).addKey(intProperty).addKey(longProperty).addKey(uuidProperty).addKey(geoProperty).buildMixedIndex(INDEX);
+
+            finishSchema();
+            testCollection(cardinality, "name", "Totoro", "Hiro");
+            testCollection(cardinality, "age", 1, 2);
+            testCollection(cardinality, "long", 1L, 2L);
+            testCollection(cardinality, "uuid", UUID.randomUUID(), UUID.randomUUID());
+            testCollection(cardinality, "geo", Geoshape.point(1.0, 1.0), Geoshape.point(2.0, 2.0));
+        }
+        else {
+            try {
+                PropertyKey stringProperty = mgmt.makePropertyKey("name").dataType(String.class).cardinality(cardinality).make();
+                //This should throw an exception
+                mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).buildMixedIndex(INDEX);
+                Assert.fail("Should have thrown an exception");
+            } catch(TitanException e) {
+
+            }
+        }
+    }
+
+    private void testCollection(Cardinality cardinality, String property, Object value1, Object value2) {
+        clopen();
+
+        Vertex v1 = graph.addVertex();
+
+        //Adding properties one at a time
+        v1.property(property, value1);
+        clopen();//Flush the index
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+
+        v1 = getV(graph, v1.id());
+        v1.property(property, value2);
+
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+        clopen();//Flush the index
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+
+        //Remove the properties
+        v1 = getV(graph, v1.id());
+        v1.properties(property).forEachRemaining(p -> {
+            if (p.value().equals(value1)) {
+                p.remove();
+            }
+        });
+
+        assertFalse(graph.query().has(property, value1).vertices().iterator().hasNext());
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+        clopen();//Flush the index
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+        assertFalse(graph.query().has(property, value1).vertices().iterator().hasNext());
+
+        //Re add the properties
+        v1 = getV(graph, v1.id());
+        v1.property(property, value1);
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+        clopen();//Flush the index
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+
+        //Add a duplicate property
+        v1 = getV(graph, v1.id());
+        v1.property(property, value1);
+
+
+        assertEquals(Cardinality.SET.equals(cardinality) ? 2 : 3, Iterators.size(getOnlyVertex(graph.query().has(property, value1)).properties(property)));
+        clopen();//Flush the index
+        assertEquals(Cardinality.SET.equals(cardinality) ? 2 : 3, Iterators.size(getOnlyVertex(graph.query().has(property, value1)).properties(property)));
+
+
+        //Add two properties at once to a fresh vertex
+        graph.vertices().forEachRemaining(v->v.remove());
+        v1 = graph.addVertex();
+        v1.property(property, value1);
+        v1.property(property, value2);
+
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+        clopen();//Flush the index
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value1).vertices()));
+        assertEquals(v1, getOnlyElement(graph.query().has(property, value2).vertices()));
+
+        //If this is a geo test then try a within query
+        if(value1 instanceof Geoshape) {
+            assertEquals(v1, getOnlyElement(graph.query().has(property, Geo.WITHIN, Geoshape.circle(1.0, 1.0, 0.1)).vertices()));
+            assertEquals(v1, getOnlyElement(graph.query().has(property, Geo.WITHIN, Geoshape.circle(2.0, 2.0, 0.1)).vertices()));
+        }
+
+
+    }
+
 }

@@ -1,15 +1,13 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.QueryProcessor;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +38,6 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
      */
     private final InternalVertex vertex;
 
-
-
     public VertexCentricQueryBuilder(InternalVertex v) {
         super(v.tx());
         Preconditions.checkNotNull(v);
@@ -61,8 +57,8 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     protected<Q> Q execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         if (bq.isEmpty()) return resultConstructor.emptyResult();
-        if (isPartitionedVertex(vertex)) {
-            List<InternalVertex> vertices = allRepresentatives(vertex);
+        if (isPartitionedVertex(vertex) && !hasQueryOnlyGivenVertex()) { //If it's a preloaded vertex we shouldn't preload data explicitly
+            List<InternalVertex> vertices = allRequiredRepresentatives(vertex);
             if (vertices.size()>1) {
                 for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
                     tx.executeMultiQuery(vertices, sq.getBackendQuery());

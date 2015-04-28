@@ -1,7 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +18,7 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -44,7 +52,48 @@ public class ConfigOption<O> extends ConfigElement {
         LOCAL;
     }
 
+    private static final Logger log =
+            LoggerFactory.getLogger(ConfigOption.class);
+
     private static final EnumSet<Type> managedTypes = EnumSet.of(Type.FIXED, Type.GLOBAL_OFFLINE, Type.GLOBAL);
+
+    /**
+     * This is a subset of types accepted by StandardSerializer.
+     * Its subset-ness is enforced in the static initializer block further down this file.
+     */
+    private static final Set<Class<?>> ACCEPTED_DATATYPES;
+
+    private static final String ACCEPTED_DATATYPES_STRING;
+
+    static {
+        ACCEPTED_DATATYPES = ImmutableSet.of(
+                ConflictAvoidanceMode.class,
+                StandardDuration.class,
+                Timestamps.class,
+                Timepoint.class,
+                Boolean.class,
+                Short.class,
+                Integer.class,
+                Byte.class,
+                Long.class,
+                Float.class,
+                Double.class,
+                String.class,
+                String[].class
+        );
+
+        StandardSerializer ss = new StandardSerializer();
+        for (Class<?> c : ACCEPTED_DATATYPES) {
+            if (!ss.validDataType(c)) {
+                String msg = String.format("%s datatype %s is not accepted by %s",
+                        ConfigOption.class.getSimpleName(), c, StandardSerializer.class.getSimpleName());
+                log.error(msg);
+                throw new IllegalStateException(msg);
+            }
+        }
+
+        ACCEPTED_DATATYPES_STRING = Joiner.on(", ").join(ACCEPTED_DATATYPES);
+    }
 
     private final Type type;
     private final Class<O> datatype;
@@ -87,6 +136,12 @@ public class ConfigOption<O> extends ConfigElement {
         this.defaultValue = defaultValue;
         this.verificationFct = verificationFct;
         this.supersededBy = supersededBy;
+        // This constructor tends to get called by static initializers, so log before throwing the IAE
+        if (!ACCEPTED_DATATYPES.contains(datatype)) {
+            String msg = String.format("Datatype %s is not one of %s", datatype, ACCEPTED_DATATYPES_STRING);
+            log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
     }
 
     public ConfigOption<O> hide() {

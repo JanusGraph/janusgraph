@@ -1,9 +1,14 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.IntSet;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PropertyPlacementStrategy;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
@@ -13,6 +18,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.olap.OLAPTest;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
@@ -23,6 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -56,26 +63,32 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         //mconf.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
         mconf.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,numPartitions);
         //uses SimpleBulkPlacementStrategy by default
-        mconf.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS,16);
+        mconf.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS,3*numPartitions);
         return config;
     }
 
-    @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testOrderedConfig() {
-        assertTrue(graph.getConfiguration().isClusterPartitioned());
+    private IDManager idManager;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        idManager = graph.getIDManager();
     }
 
-    @Test
-    @Category({ UnorderedKeyStoreTests.class })
-    public void testUnorderedConfig() {
-        assertFalse(graph.getConfiguration().isClusterPartitioned());
-    }
+//    @Test
+//    @Category({ OrderedKeyStoreTests.class })
+//    public void testOrderedConfig() {
+//        assertTrue(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
+//    }
+//
+//    @Test
+//    @Category({ UnorderedKeyStoreTests.class })
+//    public void testUnorderedConfig() {
+//        assertFalse(graph.getConfiguration().getStoreFeatures().isKeyOrdered());
+//    }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testSetup() {
-        final IDManager idManager = graph.getIDManager();
+    public void testPartitionHashes() {
         assertEquals(8, idManager.getPartitionBound());
         Set<Long> hashs = Sets.newHashSet();
         for (long i=1;i<idManager.getPartitionBound()*2;i++) hashs.add(idManager.getPartitionHashForId(i));
@@ -84,7 +97,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
     public void testVertexPartitioning() throws Exception {
         Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
         clopen(options);
@@ -100,7 +112,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         VertexLabel group = mgmt.makeVertexLabel("group").partition().make();
 
         finishSchema();
-        final IDManager idManager = graph.getIDManager();
         final Set<String> names = ImmutableSet.of("Marko", "Dan", "Stephen", "Daniel", "Josh", "Thad", "Pavel", "Matthias");
         final int numG = 10;
         final long[] gids = new long[numG];
@@ -146,20 +157,17 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertTrue(idManager.isPartitionedVertex(gId));
             assertEquals(idManager.getCanonicalVertexId(gId), gId);
             TitanVertex g = getV(tx, gId);
-            final int canonicalPartition = getPartitionID(g, idManager);
+            final int canonicalPartition = getPartitionID(g);
             assertEquals(g, (Vertex) getOnlyElement(tx.query().has("gid", i).vertices()));
             assertEquals(i, g.<Integer>value("gid").intValue());
             assertCount(names.size(), g.properties("name"));
 
             //Verify that properties are distributed correctly
             TitanVertexProperty p = (TitanVertexProperty) getOnlyElement(g.properties("gid"));
-            assertEquals(canonicalPartition, getPartitionID(p, idManager));
-            Set<Integer> propPartitions = Sets.newHashSet();
+            assertEquals(canonicalPartition, getPartitionID(p));
             for (Iterator<VertexProperty<Object>> niter = g.properties("name"); niter.hasNext(); ) {
-                propPartitions.add(getPartitionID((TitanVertex) niter.next().element(), idManager));
+                assertEquals(canonicalPartition,getPartitionID((TitanVertex) niter.next().element()));
             }
-            //Verify spread across partitions; this number is a pessimistic lower bound but might fail since it is probabilistic
-            assertTrue(propPartitions.size() >= 3);
 
             //Copied from above
             assertCount(1, g.query().direction(Direction.BOTH).labels("one").edges());
@@ -203,14 +211,14 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             int partition = -1;
             for (int vi = 0; vi < vPerTx; vi++) {
                 assertTrue(vs[vi].hasId());
-                int pid = getPartitionID(vs[vi], idManager);
+                int pid = getPartitionID(vs[vi]);
                 if (partition < 0) partition = pid;
                 else assertEquals(partition, pid);
                 int numRels = 0;
                 TitanVertex v = getV(txx, vs[vi].longId());
                 for (TitanRelation r : v.query().relations()) {
                     numRels++;
-                    assertEquals(partition, getPartitionID(r, idManager));
+                    assertEquals(partition, getPartitionID(r));
                     if (r instanceof TitanEdge) {
                         TitanVertex o = ((TitanEdge) r).otherVertex(v);
                         assertTrue(o.equals(g1) || o.equals(g2));
@@ -278,38 +286,124 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         }
     }
 
-    @Test
-    @Category({ OrderedKeyStoreTests.class })
-    public void testVertexPartitionOlap() throws Exception {
-        Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
-        clopen(options);
+    private enum CommitMode { BATCH, PER_VERTEX, PER_CLUSTER }
 
-        PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.SINGLE).dataType(String.class).make();
-        EdgeLabel member = mgmt.makeEdgeLabel("member").make();
-        EdgeLabel contain = mgmt.makeEdgeLabel("contain").make();
-        VertexLabel person = mgmt.makeVertexLabel("person").make();
-        VertexLabel group = mgmt.makeVertexLabel("group").partition().make();
+    private int setupGroupClusters(int[] groupDegrees, CommitMode commitMode) {
+        mgmt.makeVertexLabel("person").make();
+        mgmt.makeVertexLabel("group").partition().make();
+        makeVertexIndexedKey("groupid", String.class);
+        makeKey("name", String.class);
+        makeKey("clusterId",String.class);
+        makeLabel("member");
+        makeLabel("contain");
 
         finishSchema();
 
-        int[] groupDegrees = {10,20,30};
-        int numVertices = Arrays.stream(groupDegrees).reduce(0,(a,b)->a+b)+groupDegrees.length;
-
+        int numVertices = 0;
         TitanVertex[] groups = new TitanVertex[groupDegrees.length];
         for (int i = 0; i < groupDegrees.length; i++) {
             groups[i]=tx.addVertex("group");
-            groups[i].property("name","group"+i);
+            groups[i].property("groupid","group"+i);
+            numVertices++;
+            if (commitMode==CommitMode.PER_VERTEX) newTx();
             for (int noEdges = 0; noEdges < groupDegrees[i]; noEdges++) {
-                TitanVertex p = tx.addVertex("name","person"+i+":"+noEdges);
-                p.addEdge("member",groups[i]);
-                groups[i].addEdge("contain",p);
+                TitanVertex g = vInTx(groups[i],tx);
+                TitanVertex p = tx.addVertex("name","person"+i+":"+noEdges,"clusterId","group"+i);
+                numVertices++;
+                p.addEdge("member",g);
+                g.addEdge("contain", p);
+                if (commitMode==CommitMode.PER_VERTEX) newTx();
+            }
+            if (commitMode==CommitMode.PER_CLUSTER) newTx();
+        }
+        newTx();
+        return numVertices;
+    }
+
+    private static TitanVertex vInTx(TitanVertex v, TitanTransaction tx) {
+        if (!v.hasId()) return v;
+        else return tx.getVertex(v.longId());
+    }
+
+    @Test
+    public void testPartitionSpreadFlushBatch() {
+        testPartitionSpread(true,true);
+    }
+
+    @Test
+    public void testPartitionSpreadFlushNoBatch() {
+        testPartitionSpread(true,false);
+    }
+
+    @Test
+    public void testPartitionSpreadNoFlushBatch() {
+        testPartitionSpread(false,true);
+    }
+
+    @Test
+    public void testPartitionSpreadNoFlushNoBatch() {
+        testPartitionSpread(false,false);
+    }
+
+    private void testPartitionSpread(boolean flush, boolean batchCommit) {
+        Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), flush};
+        clopen(options);
+
+        int[] groupDegrees = {10,15,10,17,10,4,7,20,11};
+        int numVertices = setupGroupClusters(groupDegrees,batchCommit?CommitMode.BATCH:CommitMode.PER_VERTEX);
+
+        IntSet partitionIds = new IntOpenHashSet(numVertices); //to track the "spread" of partition ids
+        for (int i=0;i<groupDegrees.length;i++) {
+            TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
+            assertCount(groupDegrees[i],g.edges(Direction.OUT,"contain"));
+            assertCount(groupDegrees[i],g.edges(Direction.IN,"member"));
+            assertCount(groupDegrees[i],g.query().direction(Direction.OUT).edges());
+            assertCount(groupDegrees[i],g.query().direction(Direction.IN).edges());
+            assertCount(groupDegrees[i]*2,g.query().edges());
+            for (TitanVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
+                int pid = getPartitionID(v);
+                partitionIds.add(pid);
+                assertEquals(g, getOnlyElement(v.query().direction(Direction.OUT).labels("member").vertices()));
+                VertexList vlist = v.query().direction(Direction.IN).labels("contain").vertexIds();
+                assertEquals(1,vlist.size());
+                assertEquals(pid,idManager.getPartitionId(vlist.getID(0)));
+                assertEquals(g,vlist.get(0));
             }
         }
+        if (flush || !batchCommit) { //In these cases we would expect significant spread across partitions
+            assertTrue(partitionIds.size()>numPartitions/2); //This is a probabilistic test that might fail
+        } else {
+            assertEquals(1,partitionIds.size()); //No spread in this case
+        }
+    }
 
-        newTx();
+    @Test
+    public void testVertexPartitionOlapBatch() throws Exception {
+        testVertexPartitionOlap(CommitMode.BATCH);
+    }
+
+    @Test
+    public void testVertexPartitionOlapCluster() throws Exception {
+        testVertexPartitionOlap(CommitMode.PER_CLUSTER);
+    }
+
+    @Test
+    public void testVertexPartitionOlapIndividual() throws Exception {
+        testVertexPartitionOlap(CommitMode.PER_VERTEX);
+    }
+
+    private void testVertexPartitionOlap(CommitMode commitMode) throws Exception {
+        Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false};
+        clopen(options);
+
+//        int[] groupDegrees = {10,20,30};
+        int[] groupDegrees = {2};
+
+        int numVertices = setupGroupClusters(groupDegrees,commitMode);
+
         Map<Long,Integer> degreeMap = new HashMap<>(groupDegrees.length);
         for (int i = 0; i < groupDegrees.length; i++) {
-            degreeMap.put(groups[i].longId(),groupDegrees[i]);
+            degreeMap.put(getOnlyVertex(tx.query().has("groupid","group"+i)).longId(),groupDegrees[i]);
         }
 
         clopen(options);
@@ -317,7 +411,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         //Test OLAP works with partitioned vertices
         TitanGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
         computer.resultMode(TitanGraphComputer.ResultMode.NONE);
-        computer.workers(4);
+        computer.workers(1);
         computer.program(new OLAPTest.DegreeCounter());
         computer.mapReduce(new OLAPTest.DegreeMapper());
         ComputerResult result = computer.submit().get();
@@ -332,8 +426,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             long vid = entry.getKey();
             Integer degree = entry.getValue();
             if (idManager.isPartitionedVertex(vid)) {
-                System.out.println("Partitioned: " + degree );
-                //assertEquals(degreeMap.get(vid),degree);
+//                System.out.println("Partitioned: " + degree );
+                assertEquals(degreeMap.get(vid),degree);
             } else {
                 assertEquals(1, (long) degree);
             }
@@ -341,21 +435,6 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ UnorderedKeyStoreTests.class })
-    public void testVLabelOnUnorderedStorage() {
-        final String label = "pl";
-        VertexLabelMaker maker = mgmt.makeVertexLabel(label);
-        try {
-            // Exception should be thrown in one of these two methods
-            maker.partition().make();
-            fail("Partitioned label must be rejected on unordered key stores");
-        } catch (IllegalArgumentException e) {
-            log.debug("Caught expected exception", e);
-        }
-    }
-
-    @Test
-    @Category({ OrderedKeyStoreTests.class })
     public void testVLabelOnOrderedStorage() {
         final String label = "pl";
         mgmt.makeVertexLabel(label).partition().make();
@@ -369,13 +448,37 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         mgmt.rollback();
     }
 
-    public static int getPartitionID(TitanVertex vertex, IDManager idManager) {
+    @Test
+    public void testKeybasedGraphPartitioning() {
+        Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH), false,
+                            option(VertexIDAssigner.PLACEMENT_STRATEGY), PropertyPlacementStrategy.class.getName(),
+                option(PropertyPlacementStrategy.PARTITION_KEY), "clusterId"};
+        clopen(options);
+
+        int[] groupDegrees = {5,5,5,5,5,5,5,5};
+        int numVertices = setupGroupClusters(groupDegrees,CommitMode.PER_VERTEX);
+
+        IntSet partitionIds = new IntOpenHashSet(numVertices); //to track the "spread" of partition ids
+        for (int i=0;i<groupDegrees.length;i++) {
+            TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
+            int partitionId = -1;
+            for (TitanVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
+                if (partitionId<0) partitionId = getPartitionID(v);
+                assertEquals(partitionId,getPartitionID(v));
+                partitionIds.add(partitionId);
+            }
+        }
+        assertTrue(partitionIds.size()>numPartitions/2); //This is a probabilistic test that might fail
+    }
+
+
+    public int getPartitionID(TitanVertex vertex) {
         long p = idManager.getPartitionId(vertex.longId());
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }
 
-    public static int getPartitionID(TitanRelation relation, IDManager idManager) {
+    public int getPartitionID(TitanRelation relation) {
         long p = relation.longId() & (idManager.getPartitionBound()-1);
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;

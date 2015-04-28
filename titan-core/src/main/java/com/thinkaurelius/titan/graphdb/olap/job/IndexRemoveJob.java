@@ -137,7 +137,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public List<SliceQuery> getQueries() {
         if (isGlobalGraphIndex()) {
             //Everything
-            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)));
+            return ImmutableList.of(new SliceQuery(BufferUtil.zeroBuffer(1), BufferUtil.oneBuffer(128)));
         } else {
             RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper)index;
             InternalRelationType wrappedType = wrapper.getWrappedType();
@@ -160,7 +160,14 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     public Predicate<StaticBuffer> getKeyFilter() {
         if (isGlobalGraphIndex()) {
             assert graphIndexId>0;
-            return (k -> indexSerializer.getIndexIdFromKey(k)==graphIndexId);
+            return (k -> {
+                try {
+                    return indexSerializer.getIndexIdFromKey(k) == graphIndexId;
+                } catch (RuntimeException e) {
+                    log.error("Filtering key {} due to exception", k, e);
+                    return false;
+                }
+            });
         } else {
             return buffer -> {
                 long vertexId = idManager.getKeyID(buffer);

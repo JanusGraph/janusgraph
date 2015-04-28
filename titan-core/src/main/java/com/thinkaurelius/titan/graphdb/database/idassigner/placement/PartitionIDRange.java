@@ -113,6 +113,9 @@ public class PartitionIDRange {
         return (random.nextInt(partitionWidth) + lowerID) % idUpperBound;
     }
 
+    /*
+    =========== Helper methods to generate PartitionIDRanges ============
+     */
 
     public static List<PartitionIDRange> getGlobalRange(final int partitionBits) {
         Preconditions.checkArgument(partitionBits>=0 && partitionBits<(Integer.SIZE-1),"Invalid partition bits: %s",partitionBits);
@@ -129,7 +132,7 @@ public class PartitionIDRange {
         for (KeyRange local : locals) {
             Preconditions.checkArgument(local.getStart().length() >= 4);
             Preconditions.checkArgument(local.getEnd().length() >= 4);
-            if (local.getStart().equals(local.getEnd())) { //Partition spans entire range
+            if (local.getStart().equals(local.getEnd())) { //Start=End => Partition spans entire range
                 partitionRanges.add(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
                 continue;
             }
@@ -144,19 +147,25 @@ public class PartitionIDRange {
                 if (start.getByte(i)!=0) truncatedBits=true;
             }
             if (truncatedBits) lowerID+=1; //adjust to make sure we are inclusive
-            lowerID = lowerID%partitionIdBound; //ensure that lowerID remains within range
-
             int upperID = local.getEnd().getInt(0) >>> backShift; //upper id is exclusive
-
-            if (lowerID==upperID || (Math.signum(Integer.compare(lowerID,upperID))!=Math.signum(local.getStart().compareTo(local.getEnd())))) {
-                log.warn("Individual key range is too small for partition block - result would be empty: {}",local);
+            //Check that we haven't jumped order indicating that the interval was too small
+            if ((local.getStart().compareTo(local.getEnd())<0 && lowerID>=upperID)) {
+                discardRange(local);
                 continue;
-            } else {
-                partitionRanges.add(new PartitionIDRange(lowerID, upperID, partitionIdBound));
             }
+            lowerID = lowerID%partitionIdBound; //ensure that lowerID remains within range
+            if (lowerID==upperID) { //After re-normalizing, check for interval colision
+                discardRange(local);
+                continue;
+            }
+            partitionRanges.add(new PartitionIDRange(lowerID, upperID, partitionIdBound));
         }
         return partitionRanges;
     }
 
+
+    private static void discardRange(KeyRange local) {
+        log.warn("Individual key range is too small for partition block - result would be empty; hence ignored: {}",local);
+    }
 
 }

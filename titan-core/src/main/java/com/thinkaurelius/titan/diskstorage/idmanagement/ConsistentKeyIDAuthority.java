@@ -86,7 +86,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         this.waitGracePeriod = idApplicationWaitMS.multiply(0.1D);
         Preconditions.checkNotNull(times);
 
-        partitionBitWdith = config.has(CLUSTER_PARTITION)? NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS)):0;
+        partitionBitWdith = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
         Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=16);
 
         uniqueIdBitWidth = config.get(IDAUTHORITY_CAV_BITS);

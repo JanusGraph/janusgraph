@@ -85,7 +85,7 @@ public class IndexSerializer {
         Preconditions.checkArgument(containsIndex(indexName),"Unknown backing index: %s",indexName);
         String fieldname = configuration.get(INDEX_NAME_MAPPING,indexName)?key.name():keyID2Name(key);
         return mixedIndexes.get(indexName).mapKey2Field(fieldname,
-                new StandardKeyInformation(key.dataType(),parameters));
+                new StandardKeyInformation(key,parameters));
     }
 
     public static void register(final MixedIndexType index, final PropertyKey key, final BackendTransaction tx) throws BackendException {
@@ -99,6 +99,12 @@ public class IndexSerializer {
 //        return indexinfo.supports(new StandardKeyInformation(dataType,parameters));
 //    }
 
+    public boolean supports(final MixedIndexType index, final ParameterIndexField field) {
+        IndexInformation indexinfo = mixedIndexes.get(index.getBackingIndexName());
+        Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", index.getBackingIndexName());
+        return indexinfo.supports(getKeyInformation(field));
+    }
+
     public boolean supports(final MixedIndexType index, final ParameterIndexField field, final TitanPredicate predicate) {
         IndexInformation indexinfo = mixedIndexes.get(index.getBackingIndexName());
         Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", index.getBackingIndexName());
@@ -106,7 +112,7 @@ public class IndexSerializer {
     }
 
     private static StandardKeyInformation getKeyInformation(final ParameterIndexField field) {
-        return new StandardKeyInformation(field.getFieldKey().dataType(),field.getParameters());
+        return new StandardKeyInformation(field.getFieldKey(),field.getParameters());
     }
 
     public IndexInfoRetriever getIndexInfoRetriever(StandardTitanTx tx) {
@@ -337,9 +343,8 @@ public class IndexSerializer {
         for (ParameterIndexField field: index.getFieldKeys()) {
             PropertyKey key = field.getFieldKey();
             if (field.getStatus()==SchemaStatus.DISABLED) continue;
-            if (element.property(key.name()).isPresent()) {
-                Object value = element.value(key.name());
-                entries.add(new IndexEntry(key2Field(field), value));
+            if (element.properties(key.name()).hasNext()) {
+                element.values(key.name()).forEachRemaining(value->entries.add(new IndexEntry(key2Field(field), value)));
             }
         }
         Map<String,List<IndexEntry>> documents = documentsPerStore.get(index.getStoreName());

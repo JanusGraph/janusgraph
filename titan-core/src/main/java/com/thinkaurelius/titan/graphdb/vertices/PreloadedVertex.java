@@ -72,7 +72,7 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public VertexCentricQueryBuilder query() {
-        if (super.getQueryCacheSize()>0) return super.query();
+        if (super.getQueryCacheSize()>0) return super.query().queryOnlyGivenVertex();
         else throw stubVertexException();
     }
 

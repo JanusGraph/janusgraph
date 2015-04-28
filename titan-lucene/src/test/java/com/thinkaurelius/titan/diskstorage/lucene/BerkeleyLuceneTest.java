@@ -38,4 +38,9 @@ public class BerkeleyLuceneTest extends TitanIndexTest {
     public boolean supportsWildcardQuery() {
         return false;
     }
+
+    @Override
+    protected boolean supportsCollections() {
+        return false;
+    }
 }

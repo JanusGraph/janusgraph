@@ -2,11 +2,13 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.graphdb.internal.Order;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -15,21 +17,27 @@ import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
+import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
+import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
-
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
+import org.elasticsearch.action.ActionFuture;
+import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
+import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -38,6 +46,7 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -46,6 +55,7 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -54,12 +64,16 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -71,7 +85,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
     private static final String TTL_FIELD = "_ttl";
-    private static final String STRING_MAPPING_SUFFIX = "$STRING";
+    private static final String STRING_MAPPING_SUFFIX = "__STRING";
 
     public static final ImmutableList<String> DATA_SUBDIRS = ImmutableList.of("data", "work", "logs");
 
@@ -104,12 +118,13 @@ public class ElasticSearchIndex implements IndexProvider {
             "Enabling this option makes the TransportClient attempt to discover other cluster nodes " +
             "besides those in the initial host list provided at startup.", ConfigOption.Type.MASKABLE, true);
 
-    public static final ConfigOption<ElasticSearchSetup> INTERFACE =
-            new ConfigOption<ElasticSearchSetup>(ELASTICSEARCH_NS, "interface",
+    public static final ConfigOption<String> INTERFACE =
+            new ConfigOption<>(ELASTICSEARCH_NS, "interface",
             "Whether to connect to ES using the Node or Transport client (see the \"Talking to Elasticsearch\" " +
             "section of the ES manual for discussion of the difference).  Setting this option enables the " +
             "interface config track (see manual for more information about ES config tracks).",
-            ConfigOption.Type.MASKABLE, ElasticSearchSetup.class, ElasticSearchSetup.TRANSPORT_CLIENT);
+            ConfigOption.Type.MASKABLE, String.class, ElasticSearchSetup.TRANSPORT_CLIENT.toString(),
+            disallowEmpty(String.class));
 
     public static final ConfigOption<Boolean> IGNORE_CLUSTER_NAME =
             new ConfigOption<Boolean>(ELASTICSEARCH_NS, "ignore-cluster-name",
@@ -153,7 +168,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).build();
 
     public static final int HOST_PORT_DEFAULT = 9300;
 
@@ -235,7 +250,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * @return a node and client object open and ready for use
      */
     private ElasticSearchSetup.Connection interfaceConfiguration(Configuration config) {
-        ElasticSearchSetup clientMode = config.get(INTERFACE);
+        ElasticSearchSetup clientMode = ConfigOption.getEnumValue(config.get(INTERFACE), ElasticSearchSetup.class);
 
         try {
             return clientMode.connect(config);
@@ -453,81 +468,86 @@ public class ElasticSearchIndex implements IndexProvider {
         return AttributeUtil.isString(information.getDataType()) && getStringMapping(information)==Mapping.TEXTSTRING;
     }
 
-    public XContentBuilder getContent(final List<IndexEntry> additions, KeyInformation.StoreRetriever informations, int ttl) throws BackendException {
-        Preconditions.checkArgument(ttl>=0);
+    public XContentBuilder getNewDocument(final List<IndexEntry> additions, KeyInformation.StoreRetriever informations, int ttl) throws BackendException {
+        Preconditions.checkArgument(ttl >= 0);
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
 
             // JSON writes duplicate fields one after another, which forces us
             // at this stage to make de-duplication on the IndexEntry list. We don't want to pay the
             // price map storage on the Mutation level because non of other backends need that.
-            Map<String, IndexEntry> uniq = new HashMap<String, IndexEntry>(additions.size()) {{
-                for (IndexEntry e : additions)
-                    put(e.field, e);
-            }};
 
-            for (IndexEntry add : uniq.values()) {
-                if (add.value instanceof Number) {
-                    if (AttributeUtil.isWholeNumber((Number) add.value)) {
-                        builder.field(add.field, ((Number) add.value).longValue());
-                    } else { //double or float
-                        builder.field(add.field, ((Number) add.value).doubleValue());
-                    }
-                } else if (AttributeUtil.isString(add.value)) {
-                    builder.field(add.field, (String) add.value);
-                    if (hasDualStringMapping(informations.get(add.field))) {
-                        builder.field(getDualMappingName(add.field), (String) add.value);
-                    }
-                } else if (add.value instanceof Geoshape) {
-                    Geoshape shape = (Geoshape) add.value;
-                    if (shape.getType() == Geoshape.Type.POINT) {
-                        Geoshape.Point p = shape.getPoint();
-                        builder.field(add.field, new double[]{p.getLongitude(), p.getLatitude()});
-                    } else throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
+            Multimap<String, IndexEntry> uniq = LinkedListMultimap.create();
+            for (IndexEntry e : additions) {
+                uniq.put(e.field, e);
+            }
 
-//                    builder.startObject(add.key);
-//                    switch (shape.getType()) {
-//                        case POINT:
-//                            Geoshape.Point p = shape.getPoint();
-//                            builder.field("type","point");
-//                            builder.field("coordinates",new double[]{p.getLongitude(),p.getLatitude()});
-//                            break;
-//                        case BOX:
-//                        Geoshape.Point southwest = shape.getPoint(0), northeast = shape.getPoint(1);
-//                            builder.field("type","envelope");
-//                            builder.field("coordinates",new double[][]{
-//                                    {southwest.getLongitude(),northeast.getLatitude()},
-//                                    {northeast.getLongitude(),southwest.getLatitude()}});
-//                            break;
-//                        default: throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
-//                    }
-//                    builder.endObject();
-                } else if (add.value instanceof Date) {
-                    builder.field(add.field, ((Date) add.value));
-                } else if (add.value instanceof Boolean) {
-                    builder.field(add.field, ((Boolean) add.value));
-                } else if (add.value instanceof UUID) {
-                    builder.field(add.field, add.value.toString());
-                } else throw new IllegalArgumentException("Unsupported type: " + add.value);
+            for (Map.Entry<String, Collection<IndexEntry>> add : uniq.asMap().entrySet()) {
+                KeyInformation keyInformation = informations.get(add.getKey());
+                Object value = null;
+                switch (keyInformation.getCardinality()) {
+                    case SINGLE:
+                        value = convertToEsType(Iterators.getLast(add.getValue().iterator()).value);
+                        break;
+                    case SET:
+                    case LIST:
+                        value = add.getValue().stream().map(v -> convertToEsType(v.value)).collect(Collectors.toList()).toArray();
+                        break;
+                }
+
+
+                builder.field(add.getKey(), value);
+                if (hasDualStringMapping(informations.get(add.getKey())) && keyInformation.getDataType() == String.class) {
+                    builder.field(getDualMappingName(add.getKey()), value);
+                }
+
 
             }
             if (ttl>0) builder.field(TTL_FIELD, TimeUnit.MILLISECONDS.convert(ttl,TimeUnit.SECONDS));
 
             builder.endObject();
+
             return builder;
         } catch (IOException e) {
             throw new PermanentBackendException("Could not write json");
         }
     }
 
+    private static Object convertToEsType(Object value) {
+        if (value instanceof Number) {
+            if (AttributeUtil.isWholeNumber((Number) value)) {
+                return ((Number) value).longValue();
+            } else { //double or float
+                return ((Number) value).doubleValue();
+            }
+        } else if (AttributeUtil.isString(value)) {
+            return value;
+        } else if (value instanceof Geoshape) {
+            Geoshape shape = (Geoshape) value;
+            if (shape.getType() == Geoshape.Type.POINT) {
+                Geoshape.Point p = shape.getPoint();
+                return new double[]{p.getLongitude(), p.getLatitude()};
+            } else throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
+
+        } else if (value instanceof Date) {
+            return value;
+        } else if (value instanceof Boolean) {
+            return value;
+        } else if (value instanceof UUID) {
+            return value.toString();
+        } else throw new IllegalArgumentException("Unsupported type: " + value);
+    }
+
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         BulkRequestBuilder brb = client.prepareBulk();
+
         int bulkrequests = 0;
         try {
             for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
+
                     String docid = entry.getKey();
                     IndexMutation mutation = entry.getValue();
                     assert mutation.isConsolidated();
@@ -540,16 +560,9 @@ public class ElasticSearchIndex implements IndexProvider {
                             log.trace("Deleting entire document {}", docid);
                             brb.add(new DeleteRequest(indexName, storename, docid));
                         } else {
-                            StringBuilder script = new StringBuilder();
-                            for (String key : Iterables.transform(mutation.getDeletions(),IndexMutation.ENTRY2FIELD_FCT)) {
-                                script.append("ctx._source.remove(\"" + key + "\"); ");
-                                if (hasDualStringMapping(informations.get(storename,key))) {
-                                    script.append("ctx._source.remove(\"" + getDualMappingName(key) + "\"); ");
-                                }
-                                log.trace("Deleting individual field [{}] for document {}", key, docid);
-                            }
-                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString(), ScriptService.ScriptType.INLINE));
-                            bulkrequests++;
+                            String script = getDeletionScript(informations, storename, mutation);
+                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script, ScriptService.ScriptType.INLINE));
+                            log.trace("Adding script {}", script);
                         }
 
                         bulkrequests++;
@@ -560,16 +573,21 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
                             brb.add(new IndexRequest(indexName, storename, docid)
-                                    .source(getContent(mutation.getAdditions(), informations.get(storename), ttl)));
+                                    .source(getNewDocument(mutation.getAdditions(), informations.get(storename), ttl)));
+
                         } else {
-                            Preconditions.checkArgument(ttl==0,"Elasticsearch only supports TTL on new documents [%s]",docid);
+                            Preconditions.checkArgument(ttl == 0, "Elasticsearch only supports TTL on new documents [%s]", docid);
+
                             boolean needUpsert = !mutation.hasDeletions();
-                            XContentBuilder builder = getContent(mutation.getAdditions(),informations.get(storename),ttl);
-                            UpdateRequestBuilder update = client.prepareUpdate(indexName, storename, docid).setDoc(builder);
-                            if (needUpsert) update.setUpsert(builder);
-                            log.trace("Updating document {} with upsert {}", docid, needUpsert);
+                            String script = getAdditionScript(informations, storename, mutation);
+                            UpdateRequestBuilder update = client.prepareUpdate(indexName, storename, docid).setScript(script, ScriptService.ScriptType.INLINE);
+                            if (needUpsert) {
+                                XContentBuilder doc = getNewDocument(mutation.getAdditions(), informations.get(storename), ttl);
+                                update.setUpsert(doc);
+                            }
+
                             brb.add(update);
-                            bulkrequests++;
+                            log.trace("Adding script {}", script);
                         }
 
                         bulkrequests++;
@@ -577,11 +595,99 @@ public class ElasticSearchIndex implements IndexProvider {
 
                 }
             }
-            if (bulkrequests > 0) brb.execute().actionGet();
+            if (bulkrequests > 0) {
+                BulkResponse bulkItemResponses = brb.execute().actionGet();
+                if (bulkItemResponses.hasFailures()) {
+                    boolean actualFailure = false;
+                    for(BulkItemResponse response : bulkItemResponses.getItems()) {
+                        //The document may have been deleted, which is OK
+                        if(response.getFailure().getStatus() != RestStatus.NOT_FOUND) {
+                            log.error("Failed to execute ES query {}", response.getFailureMessage());
+                            actualFailure = true;
+                        }
+                    }
+                    if(actualFailure) {
+                        throw new Exception(bulkItemResponses.buildFailureMessage());
+                    }
+                }
+            }
         } catch (Exception e) {
+            log.error("Failed to execute ES query {}", brb.request().timeout(), e);
             throw convert(e);
         }
     }
+
+    private String getDeletionScript(KeyInformation.IndexRetriever informations, String storename, IndexMutation mutation) throws PermanentBackendException {
+        StringBuilder script = new StringBuilder();
+        for (IndexEntry deletion : mutation.getDeletions()) {
+            KeyInformation keyInformation = informations.get(storename).get(deletion.field);
+
+            switch (keyInformation.getCardinality()) {
+                case SINGLE:
+                    script.append("ctx._source.remove(\"" + deletion.field + "\");");
+                    if (hasDualStringMapping(informations.get(storename, deletion.field))) {
+                        script.append("ctx._source.remove(\"" + getDualMappingName(deletion.field) + "\");");
+                    }
+                    break;
+                case SET:
+                case LIST:
+                    String jsValue = convertToJsType(deletion.value);
+                    script.append("def index = ctx._source[\"" + deletion.field + "\"].indexOf(" + jsValue + "); ctx._source[\"" + deletion.field + "\"].remove(index);");
+                    if (hasDualStringMapping(informations.get(storename, deletion.field))) {
+                        script.append("def index = ctx._source[\"" + getDualMappingName(deletion.field) + "\"].indexOf(" + jsValue + "); ctx._source[\"" + getDualMappingName(deletion.field) + "\"].remove(index);");
+                    }
+                    break;
+
+            }
+        }
+        return script.toString();
+    }
+
+    private String getAdditionScript(KeyInformation.IndexRetriever informations, String storename, IndexMutation mutation) throws PermanentBackendException {
+        StringBuilder script = new StringBuilder();
+        for (IndexEntry e : mutation.getAdditions()) {
+            KeyInformation keyInformation = informations.get(storename).get(e.field);
+            switch (keyInformation.getCardinality()) {
+                case SINGLE:
+                    script.append("ctx._source[\"" + e.field + "\"] = " + convertToJsType(e.value) + ";");
+                    if (hasDualStringMapping(keyInformation)) {
+                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"] = " + convertToJsType(e.value) + ";");
+                    }
+                    break;
+                case SET:
+                case LIST:
+                    script.append("if(ctx._source[\"" + e.field + "\"] == null) {ctx._source[\"" + e.field + "\"] = []};");
+                    script.append("ctx._source[\"" + e.field + "\"].add(" + convertToJsType(e.value) + ");");
+                    if (hasDualStringMapping(keyInformation)) {
+                        script.append("if(ctx._source[\"" + getDualMappingName(e.field) + "\"] == null) {ctx._source[\"" + e.field + "\"] = []};");
+                        script.append("ctx._source[\"" + getDualMappingName(e.field) + "\"].add(" + convertToJsType(e.value) + ");");
+                    }
+                    break;
+
+            }
+
+        }
+        return script.toString();
+    }
+
+    private static String convertToJsType(Object value) throws PermanentBackendException {
+        try {
+            XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
+
+            builder.field("value", convertToEsType(value));
+
+            String s = builder.string();
+            int prefixLength = "{\"value\":".length();
+            int suffixLength = "}".length();
+            String result = s.substring(prefixLength, s.length() - suffixLength);
+            return result;
+        } catch (IOException e) {
+            throw new PermanentBackendException("Could not write json");
+        }
+
+
+    }
+
 
     public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         BulkRequestBuilder bulk = client.prepareBulk();
@@ -605,7 +711,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         // Add
                         if (log.isTraceEnabled())
                             log.trace("Adding entire document {}", docID);
-                        bulk.add(new IndexRequest(indexName, store, docID).source(getContent(content, informations.get(store), IndexMutation.determineTTL(content))));
+                        bulk.add(new IndexRequest(indexName, store, docID).source(getNewDocument(content, informations.get(store), IndexMutation.determineTTL(content))));
                         requests++;
                     }
                 }
@@ -756,9 +862,11 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
+                IndexQuery.OrderEntry orderEntry = orders.get(i);
+                Class<?> datatype = orderEntry.getDatatype();
                 srb.addSort(new FieldSortBuilder(orders.get(i).getKey())
-                        .order(orders.get(i).getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC)
-                        .ignoreUnmapped(true));
+                        .order(orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC)
+                        .unmappedType(convertToEsDataType(datatype)));
             }
         }
         srb.setFrom(0);
@@ -779,11 +887,40 @@ public class ElasticSearchIndex implements IndexProvider {
         return result;
     }
 
+    private String convertToEsDataType(Class<?> datatype) {
+        if(String.class.isAssignableFrom(datatype)) {
+            return "string";
+        }
+        else if (Integer.class.isAssignableFrom(datatype)) {
+            return "integer";
+        }
+        else if (Long.class.isAssignableFrom(datatype)) {
+            return "long";
+        }
+        else if (Float.class.isAssignableFrom(datatype)) {
+            return "float";
+        }
+        else if (Double.class.isAssignableFrom(datatype)) {
+            return "double";
+        }
+        else if (Boolean.class.isAssignableFrom(datatype)) {
+            return "boolean";
+        }
+        else if (Date.class.isAssignableFrom(datatype)) {
+            return "date";
+        }
+        else if (Geoshape.class.isAssignableFrom(datatype)) {
+            return "geo_point";
+        }
+
+        return null;
+    }
+
     @Override
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
-        srb.setQuery(QueryBuilders.queryString(query.getQuery()));
+        srb.setQuery(QueryBuilders.queryStringQuery(query.getQuery()));
 
         srb.setFrom(query.getOffset());
         if (query.hasLimit()) srb.setSize(query.getLimit());
@@ -865,10 +1002,12 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void close() throws BackendException {
-        client.close();
+
         if (node != null && !node.isClosed()) {
             node.close();
         }
+        client.close();
+
     }
 
     @Override

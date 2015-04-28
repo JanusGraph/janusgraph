@@ -157,7 +157,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS,"system-registration",
             "This is used internally to keep track of open instances.",true);
 
-    public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
+    public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<>(REGISTRATION_NS,"startup-time",
             "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class).hide();
 
 
@@ -188,7 +188,7 @@ public class GraphDatabaseConfiguration {
             "Whether transaction mutations should be logged to Titan's write-ahead transaction log which can be used for recovery of partially failed transactions",
             ConfigOption.Type.GLOBAL, false);
 
-    public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<Duration>(TRANSACTION_NS,"max-commit-time",
+    public static final ConfigOption<StandardDuration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
             "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
                     "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
                     "Must be longer than the maximum allowed write time.",
@@ -470,12 +470,12 @@ public class GraphDatabaseConfiguration {
 //    public static final String READ_ATTEMPTS_KEY = "read-attempts";
 //    public static final int READ_ATTEMPTS_DEFAULT = 3;
 
-    public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
+    public static final ConfigOption<StandardDuration> STORAGE_WRITE_WAITTIME = new ConfigOption<>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
             "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, new StandardDuration(100L, TimeUnit.SECONDS));
 
-    public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
+    public static final ConfigOption<StandardDuration> STORAGE_READ_WAITTIME = new ConfigOption<>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, new StandardDuration(10L, TimeUnit.SECONDS));
@@ -529,9 +529,9 @@ public class GraphDatabaseConfiguration {
      * Default timeout when connecting to a remote database instance
      * <p/>
      */
-    public static final ConfigOption<Duration> CONNECTION_TIMEOUT = new ConfigOption<Duration>(STORAGE_NS,"connection-timeout",
+    public static final ConfigOption<StandardDuration> CONNECTION_TIMEOUT = new ConfigOption<>(STORAGE_NS,"connection-timeout",
             "Default timeout, in milliseconds, when connecting to a remote database instance",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
 //    public static final int CONNECTION_TIMEOUT_DEFAULT = 10000;
 //    public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
 
@@ -544,9 +544,9 @@ public class GraphDatabaseConfiguration {
      * A wait time of 0 disables waiting.
      * <p/>
      */
-    public static final ConfigOption<Duration> SETUP_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"setup-wait",
+    public static final ConfigOption<StandardDuration> SETUP_WAITTIME = new ConfigOption<>(STORAGE_NS,"setup-wait",
             "Time in milliseconds for backend manager to wait for the storage backends to become available when Titan is run in server mode",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
 //    public static final int SETUP_WAITTIME_DEFAULT = 60000;
 //    public static final String SETUP_WAITTIME_KEY = "setup-wait";
 
@@ -580,9 +580,9 @@ public class GraphDatabaseConfiguration {
      * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
      * This value should be a small multiple of the average consistent write time.
      */
-    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(LOCK_NS, "wait-time",
+    public static final ConfigOption<StandardDuration> LOCK_WAIT = new ConfigOption<>(LOCK_NS, "wait-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.GLOBAL_OFFLINE, new StandardDuration(100L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_WAIT_MS = "lock-wait-time";
 //    public static final long LOCK_WAIT_MS_DEFAULT = 100;
 
@@ -592,9 +592,9 @@ public class GraphDatabaseConfiguration {
      * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
      * held applications are expired pre-maturely and as small as possible to avoid dead lock.
      */
-    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(LOCK_NS, "expiry-time",
+    public static final ConfigOption<StandardDuration> LOCK_EXPIRE = new ConfigOption<>(LOCK_NS, "expiry-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.GLOBAL_OFFLINE, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
 //    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
@@ -659,18 +659,18 @@ public class GraphDatabaseConfiguration {
      * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
      * of de-congesting a single id pool in the database.
      */
-    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
-            "Whether the graph's element should be randomly distributed across the cluster " +
-            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
-            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
-            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
-            ConfigOption.Type.FIXED, false);
+//    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
+//            "Whether the graph's element should be randomly distributed across the cluster " +
+//            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
+//            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
+//            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
+//            ConfigOption.Type.FIXED, false);
 
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
             "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
                     "in the Titan graph cluster. Must be bigger than 1 and a power of 2.",
-            ConfigOption.Type.FIXED, 64, new Predicate<Integer>() {
+            ConfigOption.Type.FIXED, 32, new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer integer) {
             return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
@@ -715,9 +715,9 @@ public class GraphDatabaseConfiguration {
      * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
      * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
      */
-    public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<Duration>(IDS_NS,"renew-timeout",
+    public static final ConfigOption<StandardDuration> IDS_RENEW_TIMEOUT = new ConfigOption<>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(120000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(120000L, TimeUnit.MILLISECONDS));
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
 //    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
 
@@ -744,9 +744,9 @@ public class GraphDatabaseConfiguration {
      * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
      * Also, the time waited after the application before verifying that the application was successful.
      */
-    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(IDAUTHORITY_NS,"wait-time",
+    public static final ConfigOption<StandardDuration> IDAUTHORITY_WAIT = new ConfigOption<>(IDAUTHORITY_NS,"wait-time",
             "The number of milliseconds the system waits for an ID block reservation to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.GLOBAL_OFFLINE, new StandardDuration(300L, TimeUnit.MILLISECONDS));
 //    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
 //    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
 
@@ -762,8 +762,8 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
-     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
-     * enabled, it picks a random unique ID marker and attempts to allocate IDs
+     * When Titan allocates IDs with {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
+     * configured, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
      * partition + uniqueid combination is already completely allocated, then
@@ -772,8 +772,8 @@ public class GraphDatabaseConfiguration {
      * is allocated and fails the request. It must be set to at least 1 and
      * should generally be set to 3 or more.
      * <p/>
-     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
-     * is disabled.
+     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is not configured to
+     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
@@ -788,17 +788,19 @@ public class GraphDatabaseConfiguration {
      *
      * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
      * same value. Otherwise, data corruption will occur.
+     *
+     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
+     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}. However, note that while the
+     * conflict avoidance mode can be changed, this setting cannot ever be changed and must therefore be considered a priori.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag-bits",
             "Configures the number of bits of Titan-assigned element IDs that are reserved for the conflict avoidance tag",
-            ConfigOption.Type.FIXED, 5 , new Predicate<Integer>() {
+            ConfigOption.Type.FIXED, 4 , new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer uniqueIdBitWidth) {
             return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
         }
     });
-//    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
-//    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
 
     /**
      * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
@@ -807,12 +809,13 @@ public class GraphDatabaseConfiguration {
      * that those instances don't conflict with one another when attempting to allocate new id blocks.
      *
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
+     *
+     * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
+     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag",
             "Conflict avoidance tag to be used by this Titan instance when allocating IDs",
             ConfigOption.Type.LOCAL, 0);
-//    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
-//    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
 
 
     // ############## External Index ######################
@@ -899,27 +902,27 @@ public class GraphDatabaseConfiguration {
             "Maximum number of log messages to read at a time for logging implementations that read messages in batches",
             ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
 
-    public static final ConfigOption<Duration> LOG_SEND_DELAY = new ConfigOption<Duration>(LOG_NS,"send-delay",
+    public static final ConfigOption<StandardDuration> LOG_SEND_DELAY = new ConfigOption<>(LOG_NS,"send-delay",
             "Maximum time in ms that messages can be buffered locally before sending in batch",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(1000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(1000L, TimeUnit.MILLISECONDS));
 
-    public static final ConfigOption<Duration> LOG_READ_INTERVAL = new ConfigOption<Duration>(LOG_NS,"read-interval",
+    public static final ConfigOption<StandardDuration> LOG_READ_INTERVAL = new ConfigOption<>(LOG_NS,"read-interval",
             "Time in ms between message readings from the backend for this logging implementations that read message in batch",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(5000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(5000L, TimeUnit.MILLISECONDS));
 
     public static final ConfigOption<Integer> LOG_READ_THREADS = new ConfigOption<Integer>(LOG_NS,"read-threads",
             "Number of threads to be used in reading and processing log messages",
             ConfigOption.Type.MASKABLE, 1, ConfigOption.positiveInt());
 
-    public static final ConfigOption<Duration> LOG_STORE_TTL = new ConfigOption<Duration>(LOG_NS,"ttl",
+    public static final ConfigOption<StandardDuration> LOG_STORE_TTL = new ConfigOption<StandardDuration>(LOG_NS,"ttl",
             "Sets a TTL on all log entries, meaning" +
                     "that all entries added to this log expire after the configured amount of time. Requires" +
                     "that the log implementation supports TTL.",
-            ConfigOption.Type.GLOBAL, Duration.class, new Predicate<Duration>() {
+            ConfigOption.Type.GLOBAL, StandardDuration.class, new Predicate<StandardDuration>() {
+
         @Override
-        public boolean apply(@Nullable Duration duration) {
-            if (duration==null || duration.isZeroLength()) return false;
-            return true;
+        public boolean apply(@Nullable StandardDuration sd) {
+            return null != sd && !sd.isZeroLength();
         }
     });
 
@@ -1016,9 +1019,9 @@ public class GraphDatabaseConfiguration {
      * Metrics console reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the console reporter.
      */
-    public static final ConfigOption<Duration> METRICS_CONSOLE_INTERVAL = new ConfigOption<Duration>(METRICS_CONSOLE_NS,"interval",
+    public static final ConfigOption<StandardDuration> METRICS_CONSOLE_INTERVAL = new ConfigOption<>(METRICS_CONSOLE_NS,"interval",
             "Time between Metrics reports printing to the console, in milliseconds",
-            ConfigOption.Type.MASKABLE, Duration.class);
+            ConfigOption.Type.MASKABLE, StandardDuration.class);
 //    public static final String METRICS_CONSOLE_INTERVAL_KEY = "console.interval";
 //    public static final Long METRICS_CONSOLE_INTERVAL_DEFAULT = null;
 
@@ -1028,9 +1031,9 @@ public class GraphDatabaseConfiguration {
      * Metrics CSV reporter interval in milliseconds. Leaving this configuration
      * key absent or null disables the CSV reporter.
      */
-    public static final ConfigOption<Duration> METRICS_CSV_INTERVAL = new ConfigOption<Duration>(METRICS_CSV_NS,"interval",
+    public static final ConfigOption<StandardDuration> METRICS_CSV_INTERVAL = new ConfigOption<>(METRICS_CSV_NS,"interval",
             "Time between dumps of CSV files containing Metrics data, in milliseconds",
-            ConfigOption.Type.MASKABLE, Duration.class);
+            ConfigOption.Type.MASKABLE, StandardDuration.class);
 //    public static final String METRICS_CSV_INTERVAL_KEY = "csv.interval";
 //    public static final Long METRICS_CSV_INTERVAL_DEFAULT = null;
 
@@ -1088,9 +1091,9 @@ public class GraphDatabaseConfiguration {
      * Metrics Slf4j reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the Slf4j reporter.
      */
-    public static final ConfigOption<Duration> METRICS_SLF4J_INTERVAL = new ConfigOption<Duration>(METRICS_SLF4J_NS,"interval",
+    public static final ConfigOption<StandardDuration> METRICS_SLF4J_INTERVAL = new ConfigOption<>(METRICS_SLF4J_NS,"interval",
             "Time between slf4j logging reports of Metrics data, in milliseconds",
-            ConfigOption.Type.MASKABLE, Duration.class);
+            ConfigOption.Type.MASKABLE, StandardDuration.class);
 //    public static final String METRICS_SLF4J_INTERVAL_KEY = "slf4j.interval";
 //    public static final Long METRICS_SLF4J_INTERVAL_DEFAULT = null;
 
@@ -1128,9 +1131,9 @@ public class GraphDatabaseConfiguration {
      * host or group specified by {@link #GANGLIA_HOST_OR_GROUP}. This has no
      * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
      */
-    public static final ConfigOption<Duration> GANGLIA_INTERVAL = new ConfigOption<Duration>(METRICS_GANGLIA_NS,"interval",
+    public static final ConfigOption<StandardDuration> GANGLIA_INTERVAL = new ConfigOption<>(METRICS_GANGLIA_NS,"interval",
             "The number of milliseconds to wait between sending Metrics data to Ganglia",
-            ConfigOption.Type.MASKABLE, Duration.class);
+            ConfigOption.Type.MASKABLE, StandardDuration.class);
 
 //    public static final String GANGLIA_INTERVAL_KEY = "interval";
 
@@ -1244,9 +1247,9 @@ public class GraphDatabaseConfiguration {
      * host specified {@link #GRAPHITE_HOST}. This has no effect unless
      * {@link #GRAPHITE_HOST} is also set.
      */
-    public static final ConfigOption<Duration> GRAPHITE_INTERVAL = new ConfigOption<Duration>(METRICS_GRAPHITE_NS,"interval",
+    public static final ConfigOption<StandardDuration> GRAPHITE_INTERVAL = new ConfigOption<>(METRICS_GRAPHITE_NS,"interval",
             "The number of milliseconds to wait between sending Metrics data",
-            ConfigOption.Type.MASKABLE, Duration.class);
+            ConfigOption.Type.MASKABLE, StandardDuration.class);
 //    public static final String GRAPHITE_INTERVAL_KEY = "interval";
 
     /**
@@ -1292,7 +1295,6 @@ public class GraphDatabaseConfiguration {
     private final Configuration configuration;
     private String uniqueGraphId;
     private ModifiableConfiguration localConfiguration;
-
 
     private boolean readOnly;
     private boolean flushIDs;
@@ -1351,16 +1353,6 @@ public class GraphDatabaseConfiguration {
                 //Write Titan version
                 Preconditions.checkArgument(!globalWrite.has(INITIAL_TITAN_VERSION),"Database has already been initialized but not frozen");
                 globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
-
-                // If partitioning is unspecified, specify it now
-                if (!localbc.has(CLUSTER_PARTITION)) {
-                    boolean part = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
-                    globalWrite.set(CLUSTER_PARTITION, part);
-                    log.info("Set {}={} from store features", ConfigElement.getPath(CLUSTER_PARTITION), part);
-                } else {
-                    log.info("Set {}={} from local config", ConfigElement.getPath(CLUSTER_PARTITION), globalWrite.get(CLUSTER_PARTITION));
-                    Preconditions.checkState(globalWrite.get(CLUSTER_PARTITION).equals(localbc.get(CLUSTER_PARTITION)));
-                }
 
                 /* If the configuration does not explicitly set a timestamp provider and
                  * the storage backend both supports timestamps and has a preference for
@@ -1454,7 +1446,7 @@ public class GraphDatabaseConfiguration {
                 "Must use default log backend for transaction log");
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
-        overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE,TRANSACTION_LOG);
+        overwrite.set(LOG_SEND_DELAY, StandardDuration.ZERO,TRANSACTION_LOG);
         if (!combinedConfig.has(LOG_STORE_TTL,TRANSACTION_LOG) && TTLKCVSManager.supportsStoreTTL(storeFeatures)) {
             overwrite.set(LOG_STORE_TTL,TRANSACTION_LOG_DEFAULT_TTL,TRANSACTION_LOG);
         }
@@ -1463,7 +1455,7 @@ public class GraphDatabaseConfiguration {
                 "Must use default log backend for system log");
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,MANAGEMENT_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY,MANAGEMENT_LOG).isZeroLength(),"Send delay must be 0 for system log.");
-        overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE, MANAGEMENT_LOG);
+        overwrite.set(LOG_SEND_DELAY, StandardDuration.ZERO, MANAGEMENT_LOG);
         Preconditions.checkArgument(!combinedConfig.has(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG) ||
                 combinedConfig.get(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG), "Management log must be configured to be key-consistent");
         overwrite.set(KCVSLog.LOG_KEY_CONSISTENT,true,MANAGEMENT_LOG);
@@ -1705,10 +1697,6 @@ public class GraphDatabaseConfiguration {
         return txDirtyVertexSize;
     }
 
-    public boolean isClusterPartitioned() {
-        return configuration.get(CLUSTER_PARTITION);
-    }
-
     public boolean isBatchLoading() {
         return batchLoading;
     }
@@ -1864,7 +1852,6 @@ public class GraphDatabaseConfiguration {
         config.setProperty(Graph.GRAPH, TitanFactory.class.getName());
         return config;
     }
-
 
 
 	/* ----------------------------------------

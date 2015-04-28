@@ -131,6 +131,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * (unparameterized) type.
      */
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
+        ensureKeyspaceExists(keySpaceName);
+
         @SuppressWarnings("rawtypes")
         Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());

@@ -37,9 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.USER_LOG;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -230,7 +228,10 @@ public abstract class TitanGraphBaseTest {
             }
             StoreFeatures f = logStoreManager.getFeatures();
             boolean part = f.isDistributed() && f.isKeyOrdered();
-            configuration.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, part);
+            if (part) {
+                for (String logname : new String[]{USER_LOG,TRANSACTION_LOG,MANAGEMENT_LOG})
+                configuration.set(KCVSLogManager.LOG_MAX_PARTITIONS,8,logname);
+            }
             assert logStoreManager!=null;
             if (!logManagers.containsKey(logManagerName)) {
                 //Open log manager - only supports KCVSLog

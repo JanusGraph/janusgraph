@@ -165,11 +165,13 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
+    @Deprecated
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }
 
     @Override
+    @Deprecated
     public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }

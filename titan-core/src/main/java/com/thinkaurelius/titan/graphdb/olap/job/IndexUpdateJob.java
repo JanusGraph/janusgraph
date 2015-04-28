@@ -42,7 +42,7 @@ public abstract class IndexUpdateJob {
     public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<String>(INDEX_JOB_NS,"relation-type",
             "For a vertex-centric index, this is the name of the index associated with the " +
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
-            ConfigOption.Type.LOCAL, "");
+            ConfigOption.Type.LOCAL, "", str -> null != str);
 
 
     protected String indexRelationTypeName = null;

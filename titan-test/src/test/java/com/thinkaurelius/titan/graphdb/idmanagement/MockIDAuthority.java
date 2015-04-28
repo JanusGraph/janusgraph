@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
@@ -27,7 +28,7 @@ public class MockIDAuthority implements IDAuthority {
     private IDBlockSizer blockSizer;
     private final int blockSizeLimit;
     private final int delayAcquisitionMS;
-    private int[] localPartition = {0, -1};
+    private List<KeyRange> localPartition = null;
 
     public MockIDAuthority() {
         this(100);
@@ -97,16 +98,14 @@ public class MockIDAuthority implements IDAuthority {
         }
     }
 
-    public void setLocalPartition(int[] local) {
+    public void setLocalPartition(List<KeyRange> local) {
         this.localPartition = local;
     }
 
     @Override
     public List<KeyRange> getLocalIDPartition() throws BackendException {
-        StaticBuffer lower = new WriteByteBuffer(4).putInt(localPartition[0]).getStaticBuffer();
-        StaticBuffer upper = new WriteByteBuffer(4).putInt(localPartition[1]).getStaticBuffer();
-        Preconditions.checkArgument(lower.compareTo(upper)<0, Arrays.toString(localPartition));
-        return Lists.newArrayList(new KeyRange(lower, upper));
+        Preconditions.checkNotNull(localPartition);
+        return localPartition;
     }
 
     @Override

@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
@@ -74,6 +75,9 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
+    public void injectIDManager(IDManager idManager) {} //We don't need the IDManager here
+
+    @Override
     public int getPartition(InternalElement element) {
         return nextPartitionID();
     }
@@ -98,6 +102,10 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
         for (int i = 0; i < currentPartitions.length; i++) {
             updateElement(i);
         }
+    }
+
+    public boolean isExhaustedPartition(int partitionID) {
+        return exhaustedPartitions.contains(partitionID);
     }
 
     @Override

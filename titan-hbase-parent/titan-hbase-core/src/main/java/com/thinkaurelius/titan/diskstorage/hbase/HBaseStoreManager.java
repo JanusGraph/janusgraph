@@ -715,7 +715,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return padded;
     }
 
-    private String shortenCfName(String longName) throws PermanentBackendException {
+    public static String shortenCfName(String longName) throws PermanentBackendException {
         final String s;
         if (SHORT_CF_NAME_MAP.containsKey(longName)) {
             s = SHORT_CF_NAME_MAP.get(longName);

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.solr;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -54,65 +55,65 @@ public class SolrIndexTest extends IndexProviderTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
 
         config.set(SolrIndex.ZOOKEEPER_URL, SolrRunner.getMiniCluster().getZkServer().getZkAddress(), index);
-
+        config.set(SolrIndex.WAIT_SEARCHER, true, index);
         return config.restrictTo(index);
     }
 
     @Test
     public void testSupport() {
-        assertTrue(index.supports(of(String.class)));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT))));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING))));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING))));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT))));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING))));
+        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXTSTRING))));
 
-        assertTrue(index.supports(of(Double.class)));
-        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT))));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE)));
+        assertFalse(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT))));
 
-        assertTrue(index.supports(of(Long.class)));
-        assertTrue(index.supports(of(Long.class, new Parameter("mapping",Mapping.DEFAULT))));
-        assertTrue(index.supports(of(Integer.class)));
-        assertTrue(index.supports(of(Short.class)));
-        assertTrue(index.supports(of(Byte.class)));
-        assertTrue(index.supports(of(Float.class)));
-        assertTrue(index.supports(of(Geoshape.class)));
-        assertFalse(index.supports(of(Object.class)));
-        assertFalse(index.supports(of(Exception.class)));
+        assertTrue(index.supports(of(Long.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Long.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT))));
+        assertTrue(index.supports(of(Integer.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Short.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Byte.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Float.class, Cardinality.SINGLE)));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE)));
+        assertFalse(index.supports(of(Object.class, Cardinality.SINGLE)));
+        assertFalse(index.supports(of(Exception.class, Cardinality.SINGLE)));
 
-        assertTrue(index.supports(of(String.class), Text.CONTAINS));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.CONTAINS_PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXTSTRING)), Text.REGEX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXT)), Text.CONTAINS));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.TEXTSTRING)), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.DEFAULT)), Text.CONTAINS_PREFIX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
+        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXTSTRING)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT)), Text.CONTAINS));
+        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.DEFAULT)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
+        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXTSTRING)), Cmp.NOT_EQUAL));
 
-        assertTrue(index.supports(of(Double.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Double.class), Cmp.GREATER_THAN_EQUAL));
-        assertTrue(index.supports(of(Double.class), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Double.class, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
-        assertFalse(index.supports(of(Double.class, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Geoshape.class), Geo.WITHIN));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.DEFAULT)), Cmp.LESS_THAN));
+        assertFalse(index.supports(of(Double.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.TEXT)), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.WITHIN));
 
-        assertFalse(index.supports(of(Double.class), Geo.INTERSECT));
-        assertFalse(index.supports(of(Long.class), Text.CONTAINS));
-        assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
+        assertFalse(index.supports(of(Double.class, Cardinality.SINGLE), Geo.INTERSECT));
+        assertFalse(index.supports(of(Long.class, Cardinality.SINGLE), Text.CONTAINS));
+        assertFalse(index.supports(of(Geoshape.class, Cardinality.SINGLE), Geo.DISJOINT));
 
-        assertTrue(index.supports(of(Date.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN_EQUAL));
-        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN));
-        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN_EQUAL));
-        assertTrue(index.supports(of(Date.class), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.LESS_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.GREATER_THAN));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
 
-        assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(Boolean.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(Boolean.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
 
-        assertTrue(index.supports(of(UUID.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(UUID.class), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
     }
 
 }

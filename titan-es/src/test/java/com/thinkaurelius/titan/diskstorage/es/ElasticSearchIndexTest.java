@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -54,28 +55,28 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     @Test
     public void testSupport() {
-        assertTrue(index.supports(of(String.class), Text.CONTAINS));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
-        assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Text.CONTAINS));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_PREFIX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
+        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
+        assertFalse(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
+        assertTrue(index.supports(of(String.class, Cardinality.SINGLE, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
 
-        assertTrue(index.supports(of(Date.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN_EQUAL));
-        assertTrue(index.supports(of(Date.class), Cmp.LESS_THAN));
-        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN));
-        assertTrue(index.supports(of(Date.class), Cmp.GREATER_THAN_EQUAL));
-        assertTrue(index.supports(of(Date.class), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.LESS_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.LESS_THAN));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.GREATER_THAN));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.GREATER_THAN_EQUAL));
+        assertTrue(index.supports(of(Date.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
 
-        assertTrue(index.supports(of(Boolean.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(Boolean.class), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(Boolean.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(Boolean.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
 
-        assertTrue(index.supports(of(UUID.class), Cmp.EQUAL));
-        assertTrue(index.supports(of(UUID.class), Cmp.NOT_EQUAL));
+        assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.EQUAL));
+        assertTrue(index.supports(of(UUID.class, Cardinality.SINGLE), Cmp.NOT_EQUAL));
     }
 
     @Test

@@ -145,7 +145,7 @@ public class ConsistentKeyLockerTest {
         Method timeInSpecifiedUnit = FakeTimestampProvider.class.getMethod("getTime", long.class, TimeUnit.class);
         Method sleepPast = FakeTimestampProvider.class.getMethod("sleepPast", Timepoint.class);
 
-        times = ctrl.createMock(FakeTimestampProvider.class, timeInNativeUnit, timeInSpecifiedUnit, sleepPast);
+        times = EasyMock.createMockBuilder(FakeTimestampProvider.class).addMockedMethod(timeInNativeUnit).addMockedMethod(timeInSpecifiedUnit).addMockedMethod(sleepPast).createMock(ctrl);
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
         lockState = ctrl.createMock(LockerState.class);

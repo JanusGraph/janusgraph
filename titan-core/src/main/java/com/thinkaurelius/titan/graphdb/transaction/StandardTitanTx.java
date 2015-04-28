@@ -1005,6 +1005,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
+    @Deprecated
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
         MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
         for (TitanVertex v : vertices) builder.addVertex(v);
@@ -1012,6 +1013,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
+    @Deprecated
     public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
         MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
         builder.addAllVertices(vertices);

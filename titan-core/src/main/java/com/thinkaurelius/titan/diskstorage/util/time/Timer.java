@@ -50,7 +50,7 @@ public class Timer {
 
     public Duration elapsed() {
         if (null == start) {
-            return ZeroDuration.INSTANCE;
+            return StandardDuration.ZERO;
         }
         final Timepoint stopTime = (null==stop? times.getTime() : stop);
         return new StandardDuration(stopTime.getNativeTimestamp() - start.getNativeTimestamp(), times.getUnit());
