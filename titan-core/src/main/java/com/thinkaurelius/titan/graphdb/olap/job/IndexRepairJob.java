@@ -21,7 +21,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
@@ -36,7 +35,17 @@ import java.util.*;
  */
 public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
+    /**
+     * The number of composite-index entries modified or added to the storage
+     * backend by this job.
+     */
     public static final String ADDED_RECORDS_COUNT = "adds";
+
+    /**
+     * The number of mixed-index documents (or whatever idiom is equivalent to the
+     * document in the backend implementation) modified by this job
+     */
+    public static final String DOCUMENT_UPDATES_COUNT = "doc-updates";
 
     public IndexRepairJob() {
         super();
@@ -164,6 +173,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                     Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
                     for (TitanElement element : elements) {
                         indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore);
+                        metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
                     }
                     mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
                 }
