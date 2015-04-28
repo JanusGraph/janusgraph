@@ -120,7 +120,7 @@ public class MapReduceIndexManagement {
             readCF = Backend.EDGESTORE_NAME;
         } else {
             TitanGraphIndex gindex = (TitanGraphIndex)index;
-            if (gindex.isMixedIndex())
+            if (gindex.isMixedIndex() && !updateAction.equals(SchemaAction.REINDEX))
                 throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
 
             Preconditions.checkState(TitanGraphIndex.class.isAssignableFrom(index.getClass()));
