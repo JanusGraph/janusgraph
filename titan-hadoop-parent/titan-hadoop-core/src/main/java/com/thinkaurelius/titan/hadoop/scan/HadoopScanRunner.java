@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
+import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import org.apache.hadoop.io.NullWritable;
@@ -124,8 +125,8 @@ public class HadoopScanRunner {
             String f;
             try {
                 // Just in case one of Job's methods throws an exception
-                f = String.format("MapReduce JobID %s terminated in state %s",
-                        job.getJobID().toString(), job.getStatus().getState().name());
+                f = String.format("MapReduce JobID %s terminated abnormally: %s",
+                        job.getJobID().toString(), HadoopCompatLoader.DEFAULT_COMPAT.getJobFailureString(job));
             } catch (RuntimeException e) {
                 f = "Job failed (unable to read job status programmatically -- see MapReduce logs for information)";
             }

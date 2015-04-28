@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.compat.h2;
 
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import org.apache.hadoop.conf.Configuration;
@@ -9,6 +10,8 @@ import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompat;
 import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+
+import java.io.IOException;
 
 public class Hadoop2Compat implements HadoopCompat {
 
@@ -82,5 +85,17 @@ public class Hadoop2Compat implements HadoopCompat {
     @Override
     public ScanMetrics getMetrics(Counters c) {
         return new Hadoop2CountersScanMetrics(c);
+    }
+
+    @Override
+    public String getJobFailureString(Job j) {
+        try {
+            JobStatus js = j.getStatus();
+            return String.format("state=%s, failureinfo=%s", js.getState(), js.getFailureInfo());
+        } catch (IOException e) {
+            throw new TitanException(e);
+        } catch (InterruptedException e) {
+            throw new TitanException(e);
+        }
     }
 }
