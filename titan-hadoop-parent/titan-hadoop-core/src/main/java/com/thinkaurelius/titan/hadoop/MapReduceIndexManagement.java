@@ -15,12 +15,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManag
 import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -37,13 +32,12 @@ import com.thinkaurelius.titan.hadoop.scan.HadoopScanMapper;
 import com.thinkaurelius.titan.hadoop.scan.HadoopScanRunner;
 import com.thinkaurelius.titan.hadoop.scan.HadoopVertexScanMapper;
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -51,7 +45,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.JOB_NS;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 public class MapReduceIndexManagement {
@@ -73,7 +66,7 @@ public class MapReduceIndexManagement {
     private static final Set<Class<? extends KeyColumnValueStoreManager>> HBASE_STORE_MANAGER_CLASSES =
             ImmutableSet.of(HBaseStoreManager.class);
 
-    private MapReduceIndexManagement(TitanGraph g) {
+    public MapReduceIndexManagement(TitanGraph g) {
         this.graph = (StandardTitanGraph)g;
     }
 
@@ -84,11 +77,11 @@ public class MapReduceIndexManagement {
      * @param index the index to process
      * @param updateAction either {@code REINDEX} or {@code REMOVE_INDEX}
      * @return a future that returns immediately;
-     *         the implementation of this method internally blocks until the Hadoop MapReduce job completes
+     *         this method blocks until the Hadoop MapReduce job completes
      */
     // TODO make this future actually async and update javadoc @return accordingly
-    public TitanManagement.IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction) throws
-            InterruptedException, IOException, ClassNotFoundException, BackendException {
+    public TitanManagement.IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction)
+            throws BackendException {
 
         Preconditions.checkNotNull(index, "Index parameter must not be null", index);
         Preconditions.checkNotNull(updateAction, "%s parameter must not be null", SchemaAction.class.getSimpleName());
@@ -173,7 +166,11 @@ public class MapReduceIndexManagement {
 
         String jobName = HadoopScanMapper.class.getSimpleName() + "[" + indexJobClass.getSimpleName() + "]";
 
-        return new CompletedJobFuture(HadoopScanRunner.runJob(hadoopConf, inputFormat, jobName, mapperClass));
+        try {
+            return new CompletedJobFuture(HadoopScanRunner.runJob(hadoopConf, inputFormat, jobName, mapperClass));
+        } catch (Exception e) {
+            return new FailedJobFuture(e);
+        }
     }
 
     private static void copyInputKeys(org.apache.hadoop.conf.Configuration hadoopConf, org.apache.commons.configuration.Configuration source) {
@@ -208,17 +205,8 @@ public class MapReduceIndexManagement {
                 ConfigElement.getPath(IndexUpdateJob.INDEX_RELATION_TYPE), relationType);
 
         hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS) + "." +
-                ConfigElement.getPath(GraphDatabaseConfiguration.JOB_START_TIME), String.valueOf(System.currentTimeMillis()));
-
-    }
-
-    private static ModifiableConfiguration getIndexJobConf(String indexName, String relationType) {
-        ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.JOB_NS,
-                new CommonsConfiguration(new BaseConfiguration()), BasicConfiguration.Restriction.NONE);
-        mc.set(IndexUpdateJob.INDEX_NAME, indexName);
-        mc.set(IndexUpdateJob.INDEX_RELATION_TYPE, relationType);
-        mc.set(GraphDatabaseConfiguration.JOB_START_TIME, System.currentTimeMillis());
-        return mc;
+                ConfigElement.getPath(GraphDatabaseConfiguration.JOB_START_TIME),
+                String.valueOf(System.currentTimeMillis()));
     }
 
     private static class CompletedJobFuture implements TitanManagement.IndexJobFuture  {
@@ -257,6 +245,45 @@ public class MapReduceIndexManagement {
         @Override
         public ScanMetrics get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             return completedJobMetrics;
+        }
+    }
+
+    private static class FailedJobFuture implements TitanManagement.IndexJobFuture {
+
+        private final Throwable cause;
+
+        public FailedJobFuture(Throwable cause) {
+            this.cause = cause;
+        }
+
+        @Override
+        public ScanMetrics getIntermediateResult() throws ExecutionException {
+            throw new ExecutionException(cause);
+        }
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return true;
+        }
+
+        @Override
+        public ScanMetrics get() throws InterruptedException, ExecutionException {
+            throw new ExecutionException(cause);
+        }
+
+        @Override
+        public ScanMetrics get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            throw new ExecutionException(cause);
         }
     }
 }

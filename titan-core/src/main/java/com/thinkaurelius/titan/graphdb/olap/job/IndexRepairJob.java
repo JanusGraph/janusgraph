@@ -36,6 +36,8 @@ import java.util.*;
  */
 public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
+    public static final String ADDED_RECORDS_COUNT = "adds";
+
     public IndexRepairJob() {
         super();
     }
@@ -122,6 +124,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 }
                 StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.longId());
                 mutator.mutateEdges(vertexKey, additions, KCVSCache.NO_DELETIONS);
+                metrics.incrementCustom(ADDED_RECORDS_COUNT, additions.size());
             } else if (index instanceof TitanGraphIndex) {
                 IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
                 assert indexType!=null;
@@ -153,6 +156,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                         for (IndexSerializer.IndexUpdate<StaticBuffer,Entry> update : updates) {
                             log.debug("Mutating index {}: {}", indexType, update.getEntry());
                             mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
+                            metrics.incrementCustom(ADDED_RECORDS_COUNT);
                         }
                     }
                 } else {
