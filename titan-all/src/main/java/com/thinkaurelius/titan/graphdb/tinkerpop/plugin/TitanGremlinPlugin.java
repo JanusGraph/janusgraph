@@ -27,7 +27,7 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         add(IMPORT + "com.thinkaurelius.titan.core.schema" + DOT_STAR);
         add(IMPORT + GraphOfTheGodsFactory.class.getName());
         add(IMPORT + BulkLoaderVertexProgram.class.getPackage().getName() + DOT_STAR);
-        add(IMPORT + "com.thinkaurelius.titan.hadoop.MapReduceIndexJobs");
+        add(IMPORT + "com.thinkaurelius.titan.hadoop.MapReduceIndexManagement");
 
         // Static imports on enum values used in query constraint expressions
         add(IMPORT_STATIC + Geo.class.getName() + DOT_STAR);
