@@ -15,7 +15,7 @@ for %%i in (%LIBDIR%\*.jar) do call :concatsep %%i
 
 :: cd ..\..\..\
 
-set JAVA_OPTIONS=-Xms32m -Xmx512m
+set JAVA_OPTIONS=-Xms32m -Xmx512m -javaagent:%LIBDIR%\jamm-0.2.5.jar
 
 :: Launch the application
 

@@ -36,7 +36,7 @@ fi
 
 # Set Java options
 if [ "$JAVA_OPTIONS" = "" ] ; then
-    JAVA_OPTIONS="-Xms32m -Xmx512m"
+    JAVA_OPTIONS="-Xms32m -Xmx512m -javaagent:$DIR/../lib/jamm-0.2.5.jar"
 fi
 
 # Execute the application and return its exit code

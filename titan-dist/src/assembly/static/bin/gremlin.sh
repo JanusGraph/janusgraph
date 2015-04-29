@@ -77,7 +77,7 @@ if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
 fi
 
 if [ -z "${JAVA_OPTIONS:-}" ]; then
-    JAVA_OPTIONS="-Dtinkerpop.ext=$DIR/../ext -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL"
+    JAVA_OPTIONS="-Dtinkerpop.ext=$DIR/../ext -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:$DIR/../lib/jamm-0.2.5.jar"
 fi
 
 if [ "$PROFILING_ENABLED" = true ]; then
