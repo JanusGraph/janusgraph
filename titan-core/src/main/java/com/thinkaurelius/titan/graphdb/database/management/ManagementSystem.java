@@ -1081,7 +1081,10 @@ public class ManagementSystem implements TitanManagement {
         } else {
             throw new IllegalArgumentException("given type does not support TTL: " + type.getClass());
         }
-        return new StandardDuration(ttl, TimeUnit.SECONDS);
+
+        return (-1 == ttl) ?
+                null :
+                new StandardDuration(ttl, TimeUnit.SECONDS);
     }
 
     /**
