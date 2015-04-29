@@ -4756,7 +4756,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         graph.tx().commit();
 
         // Let the edge die
-        Thread.sleep((long)Math.ceil(initialTTLMillis * 1.25));
+        Thread.sleep((long) Math.ceil(initialTTLMillis * 1.25));
 
         // Edge should be gone
         assertEquals(2, Iterators.size(graph.vertices()));
@@ -4765,7 +4765,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Remove the TTL on the edge label
         mgmt = graph.openManagement();
-        mgmt.setTTL(likes, -1, TimeUnit.SECONDS);
+        mgmt.setTTL(mgmt.getEdgeLabel("likes"), 0, TimeUnit.SECONDS);
         mgmt.commit();
 
         Thread.sleep(1L);
@@ -4796,7 +4796,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Check getTTL on edge label
         mgmt = graph.openManagement();
-        assertNull(mgmt.getTTL(mgmt.getEdgeLabel("likes")));
+        assertEquals(0, mgmt.getTTL(mgmt.getEdgeLabel("likes")).getLength(TimeUnit.NANOSECONDS));
         mgmt.rollback();
     }
 
@@ -4809,7 +4809,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Check getTTL on vertex label
         mgmt = graph.openManagement();
-        assertNull(mgmt.getTTL(mgmt.getVertexLabel("foo")));
+        assertEquals(0, mgmt.getTTL(mgmt.getVertexLabel("foo")).getLength(TimeUnit.NANOSECONDS));
         mgmt.rollback();
     }
 
