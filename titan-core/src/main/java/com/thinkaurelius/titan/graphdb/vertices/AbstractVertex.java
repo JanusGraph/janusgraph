@@ -92,7 +92,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         //Remove all system types on the vertex
         for (TitanRelation r : it().query().noPartitionRestriction().system().relations()) {
             RelationType t = r.getType();
-            assert t==BaseLabel.VertexLabelEdge || t==BaseKey.VertexExists;
+            assert t==BaseLabel.VertexLabelEdge || t==BaseKey.VertexExists || t==BaseKey.SchemaDefinitionProperty || t==BaseKey.SchemaCategory || t==BaseKey.SchemaUpdateTime;
             r.remove();
         }
     }
