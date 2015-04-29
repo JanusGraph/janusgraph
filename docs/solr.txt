@@ -3,7 +3,7 @@ Solr
 ----
 
 
-[quote,'http://lucene.apache.org/solr/[Solr Homepage]']
+[quote, 'http://lucene.apache.org/solr/[Solr Homepage]']
 Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project. Solr is a standalone enterprise search server with a REST-like API. Solr is highly reliable, scalable and fault tolerant, providing distributed indexing, replication and load-balanced querying, automated failover and recovery, centralized configuration and more.
 
 Titan supports http://lucene.apache.org/solr/[Solr] as an index backend.  Here are some of the Solr features supported by Titan:
@@ -28,7 +28,7 @@ Connecting to SolrCloud
 
 When connecting to a SolrCloud enabled cluster by setting the `mode` equal to `cloud`, the Zookeeper URL (and optionally port) must be specified so that Titan can discover and interact with the Solr cluster.
 
-[source,properties]
+[source, properties]
 ----
 index.search.backend=solr
 index.search.solr.mode=cloud
@@ -43,7 +43,7 @@ Connecting via HTTP
 
 When connecting to Solr via HTTP by setting the `mode` equal to `http` a single or list of URLs for the Solr instances must be provided.
 
-[source,properties]
+[source, properties]
 ----
 index.search.backend=solr
 index.search.solr.mode=http
@@ -67,13 +67,13 @@ To create a new core that is compatible with Titan:
 . Copy the contents of titan/conf/solr to server/solr/{core_name}/conf
 . Open the Solr web interface and select Core Admin->Add Core
 . Change the name and instance dir to match your {core_name}
-. Finish by clicking Add Core
+. Finish by clicking 'Add Core'
 
 The core_name must match the index name used to build the index:
 
-[source,gremlin]
+[source, gremlin]
 ----
-mgmt.buildIndex('{core_name}',Vertex.class).addKey(name).buildMixedIndex("search")
+mgmt.buildIndex('{core_name}', Vertex.class).addKey(name).buildMixedIndex("search")
 ----
 
 Dynamic Field Definition
@@ -83,7 +83,7 @@ By default, Titan uses Solr's https://cwiki.apache.org/confluence/display/solr/D
 
 Titan assumes the following dynamic field tags are defined in the backing Solr collection's schema.xml file:
 
-[source,xml]
+[source, xml]
 ----
    <dynamicField name="*_i"    type="int"          indexed="true"  stored="true"/>
    <dynamicField name="*_s"    type="string"       indexed="true"  stored="true" />
@@ -138,9 +138,9 @@ Solr relies on Spatial4j for geo processing.  Spatial4j declares an optional dep
 
 Here's a representative example from a Solr server log:
 
-[source,text]
+[source, text]
 ----
-ERROR [http-8983-exec-5] 2014-10-07 02:54:06,665 SolrCoreResourceManager.java (line 344) com/vividsolutions/jts/geom/Geometry
+ERROR [http-8983-exec-5] 2014-10-07 02:54:06, 665 SolrCoreResourceManager.java (line 344) com/vividsolutions/jts/geom/Geometry
 java.lang.NoClassDefFoundError: com/vividsolutions/jts/geom/Geometry
         at com.spatial4j.core.context.jts.JtsSpatialContextFactory.newSpatialContext(JtsSpatialContextFactory.java:30)
         at com.spatial4j.core.context.SpatialContextFactory.makeSpatialContext(SpatialContextFactory.java:83)
@@ -163,7 +163,7 @@ java.lang.NoClassDefFoundError: com/vividsolutions/jts/geom/Geometry
 
 Here's what normally appears in the output of the client that issued the associated `CREATE` command to the CoreAdmin API:
 
-[source,text]
+[source, text]
 ----
 org.apache.solr.common.SolrException: com/vividsolutions/jts/geom/Geometry
         at com.datastax.bdp.search.solr.core.SolrCoreResourceManager.createCore(SolrCoreResourceManager.java:345)
@@ -190,13 +190,13 @@ Install DataStax Enterprise as directed by the page http://www.datastax.com/docu
 
 Export `DSE_HOME` and append to `PATH` in your shell environment.  Here's an example using Bash syntax:
 
-[source,bourne]
+[source, bourne]
 export DSE_HOME=/path/to/dse-version.number
 export PATH="$DSE_HOME"/bin:"$PATH"
 
 Install JTS for Solr.  The appropriate version varies with the Spatial4j version.  As of DSE 4.5.2, the appropriate version is 1.13.
 
-[source,bourne]
+[source, bourne]
 ----
 cd $DSE_HOME/resources/solr/lib
 curl -O 'http://central.maven.org/maven2/com/vividsolutions/jts/1.13/jts-1.13.jar'
@@ -204,7 +204,7 @@ curl -O 'http://central.maven.org/maven2/com/vividsolutions/jts/1.13/jts-1.13.ja
 
 Start DSE Cassandra and Solr in a single background daemon:
 
-[source,bourne]
+[source, bourne]
 ----
 # The "dse-data" path below was chosen to match the 
 # "Installing DataStax Enterprise using the binary tarball"
@@ -217,7 +217,7 @@ The previous command will write some startup information to the console and to t
 
 Once DSE with Cassandra and Solr has started normally, check the cluster health with `nodetool status`.  A single-instance ring should show one node with flags *U*p and *N*ormal:
 
-[source,bourne]
+[source, bourne]
 ----
 nodetool status
 Note: Ownership information does not include topology; for complete information, specify a keyspace
@@ -230,14 +230,14 @@ UN  127.0.0.1  99.89 KB   100.0%  5484ef7b-ebce-4560-80f0-cbdcd9e9f496  -7317038
 ----
 
 Next, switch to `gremlin.sh` and open a Titan database against the DSE instance.  This will create Titan's keyspace and column families.
-[source,gremlin]
+[source, gremlin]
 ----
 cd $TITAN_HOME
 bin/gremlin.sh 
 
          \,,,/
          (o o)
------oOOo-(_)-oOOo-----
+-----oOOo-(3)-oOOo-----
 gremlin> g = TitanFactory.open('conf/titan-cassandra-solr.properties')
 ==>titangraph[cassandrathrift:[127.0.0.1]]
 gremlin>
@@ -250,7 +250,7 @@ data.
 Next, upload configuration files for Titan's Solr collection, then
 create the core in DSE:
 
-[source,bourne]
+[source, bourne]
 ----
 # Change to the directory where Titan was extracted.  Later commands
 # use relative paths to the Solr config files shipped with the Titan
@@ -276,11 +276,11 @@ SOLR_HOST=localhost:8983
 # ships with this http-urls value.
 
 # Upload Solr config files to DSE Search daemon
-for xml in conf/solr/{solrconfig,schema,elevate}.xml ; do
+for xml in conf/solr/{solrconfig, schema, elevate}.xml ; do
     curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$xml" \
       --data-binary @"$xml" -H 'Content-type:text/xml; charset=utf-8'
 done
-for txt in conf/solr/{protwords,stopwords,synonyms}.txt ; do
+for txt in conf/solr/{protwords, stopwords, synonyms}.txt ; do
     curl -v http://"$SOLR_HOST"/solr/resource/"$CORE_NAME/$txt" \
       --data-binary @"$txt" -H 'Content-type:text/plain; charset=utf-8'
 done
@@ -295,10 +295,10 @@ curl "http://localhost:8983/solr/admin/cores?action=STATUS&core=$CORE_NAME"
 ----
 
 Now the Titan database and backing Solr core are ready for use.  We
-can test it out with the <<getting-started,Graph of the Gods>>
+can test it out with the <<getting-started, Graph of the Gods>>
 dataset.  Picking up the gremlin.sh session started above:
 
-[source,gremlin]
+[source, gremlin]
 ----
 // Assuming g = TitanFactory.open('conf/titan-cassandra-solr.properties')...
 gremlin> GraphOfTheGodsFactory.load(g)

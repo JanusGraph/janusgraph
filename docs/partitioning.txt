@@ -6,7 +6,7 @@ When the Titan cluster consists of multiple storage backend instances, the graph
 
 To enable explicit graph partitioning in Titan, the following configuration options must be set when the Titan cluster is initialized.
 
-[source,properties]
+[source, properties]
 cluster.partition = true
 cluster.max-partitions = 32
 ids.flush = false
@@ -29,18 +29,18 @@ In assigning vertices to partitions one strives to optimize the assignmet such t
 
 Vertices are placed in a partition by way of the assigned vertex id. a partition is essentially a sequential range of vertex ids. To place a vertex in a particular partition, Titan chooses an id from the partition's range of vertex ids. Titan controls the vertex-to-partition assigment through the configured placement strategy. By default, vertices created in the same transaction are assigned to the same partition. This strategy is easy to reason about and works well in situations where frequently co-traversed vertices are created in the same transaction - either by optimizing the loading strategy to that effect or because vertices are naturally added to the graph that way. However, the strategy is limited, leads to imbalanced partitions when data is loaded in large transactions and not the optimal strategy for many use cases. The user can provide a use case specific vertex placement strategy by implementing the `IDPlacementStrategy` interface and registering it in the configuration through the `ids.placement` option.
 
-When implementing `IDPlacementStrategy`, note that partitions are identified by an integer id in the range from 0 to the number of configured virtual partitions minus 1. For our example configuration, there are partitions 0,1,2,3,..31. Partition ids are not the same as vertex ids. 
+When implementing `IDPlacementStrategy`, note that partitions are identified by an integer id in the range from 0 to the number of configured virtual partitions minus 1. For our example configuration, there are partitions 0, 1, 2, 3, ..31. Partition ids are not the same as vertex ids.
 
 Vertex Cut
 ~~~~~~~~~~
 
-While edge cut optimization aims to reduce the cross communication and thereby improve query execution, vertex cuts address the hotspot issue caused by vertices with a large number of incident edges. While <<vertex-indexes,vertex-centric indexes>> effectively address query performance for large degree vertices, vertex cuts are needed to address the hot spot issue on very large grahps.
+While edge cut optimization aims to reduce the cross communication and thereby improve query execution, vertex cuts address the hotspot issue caused by vertices with a large number of incident edges. While <<vertex-indexes, vertex-centric indexes>> effectively address query performance for large degree vertices, vertex cuts are needed to address the hot spot issue on very large grahps.
 
 Cutting a vertex means storing a subset of that vertex's adjacency list on each partition in the graph. In other words, the vertex and its adjacency list is partitioned thereby effectively distributing the load on that single vertex across all of the instances in the cluster and removing the hot spot.
 
 Titan cuts vertices by label. A vertex label can be defined as _partitioned_ which means that all vertices of that label will be partitiond across the cluster in the manner described above.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 mgmt.makeVertexLabel('user').make()
 mgmt.makeVertexLabel('product').partition().make()

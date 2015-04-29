@@ -166,7 +166,7 @@ ManagementSystem.awaitGraphIndexStatus(g, 'names').status(SchemaStatus.REGISTERE
 // Reindex using TitanManagement
 m = g.openManagement()
 i = m.getGraphIndex('names')
-m.updateIndex(i, SchemaAction.REINDEX).get()
+m.updateIndex(i, SchemaAction.REINDEX)
 m.commit()
 
 // Enable the index

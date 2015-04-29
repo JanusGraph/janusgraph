@@ -33,7 +33,7 @@ Namespaces marked with an asterisk are *umbrella namespaces* which means that th
 
 For example, the `log` namespace is an umbrella namespace because Titan can interface with multiple logging backends, such as the `user` log, each of which has the same core set of configuration options. To configure the send batch size of the `user` log to 100 transaction changes, one would have to set the following option in the configuration
 
-[source,text]
+[source, text]
 log.user.send-batch-size = 100
 
 Configuration Namespaces and Options

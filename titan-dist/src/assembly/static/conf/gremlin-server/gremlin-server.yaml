@@ -17,8 +17,8 @@ scriptEngines: {
       imports: [java.lang.Math],
       staticImports: [java.lang.Math.PI]}}
 serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.KryoMessageSerializerV1d0 }
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.KryoMessageSerializerV1d0, config: { serializeResultToString: true }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0 }
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
   - { className: org.apache.tinkerpop.gremlin.driver.ser.JsonMessageSerializerGremlinV1d0 }
   - { className: org.apache.tinkerpop.gremlin.driver.ser.JsonMessageSerializerV1d0 }
 processors:

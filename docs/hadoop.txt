@@ -13,12 +13,12 @@ Here's a three step example showing some basic integrated Titan-TinkerPop functi
 
 
 [WARNING]
-Titan 0.9.0's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as Titan 0.9.0 and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
+Titan 1.0.0's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as Titan 1.0.0 and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
 
 Defining defining schema and loading data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,gremlin]
+[source, gremlin]
 ----
 bin/gremlin.sh 
 
@@ -63,11 +63,11 @@ gremlin> g = GraphFactory.open('conf/hadoop-load.properties')
 ==>hadoopgraph[kryoinputformat->kryooutputformat]
 gremlin> r = g.compute().program(BulkLoaderVertexProgram.build().titan('conf/titan-cassandra.properties').create()).submit().get()
 ...
-==>result[hadoopgraph[kryoinputformat->kryooutputformat],memory[size:0]]
+==>result[hadoopgraph[kryoinputformat->kryooutputformat], memory[size:0]]
 gremlin>
 ----
 
-[source,properties]
+[source, properties]
 ----
 # hadoop-load.properties
 
@@ -87,7 +87,7 @@ giraph.minWorkers=1
 giraph.maxWorkers=1
 ----
 
-[source,gremlin]
+[source, gremlin]
 ----
 // grateful-dead-titan-schema.groovy
 
@@ -117,18 +117,18 @@ titanGraph.close()
 Running PageRank
 ~~~~~~~~~~~~~~~~
 
-[source,gremlin]
+[source, gremlin]
 ----
 gremlin> g = GraphFactory.open('conf/run-pagerank.properties')
 ==>hadoopgraph[cassandrainputformat->kryooutputformat]
 gremlin> r = g.compute().program(PageRankVertexProgram.build().create()).submit().get()
-INFO  com.tinkerpop.gremlin.hadoop.process.computer.giraph.GiraphGraphComputer  - HadoopGremlin(Giraph): PageRankVertexProgram[alpha=0.85,iterations=30]
+INFO  com.tinkerpop.gremlin.hadoop.process.computer.giraph.GiraphGraphComputer  - HadoopGremlin(Giraph): PageRankVertexProgram[alpha=0.85, iterations=30]
 ...
-==>result[hadoopgraph[cassandrainputformat->kryooutputformat],memory[size:0]]
+==>result[hadoopgraph[cassandrainputformat->kryooutputformat], memory[size:0]]
 gremlin>
 ----
 
-[source,properties]
+[source, properties]
 ----
 # run-pagerank.properties
 
@@ -154,7 +154,7 @@ giraph.maxWorkers=1
 Reading vertices and printing ranks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,gremlin]
+[source, gremlin]
 ----
 gremlin> g = GraphFactory.open('conf/read-pagerank-results.properties')
 ==>hadoopgraph[kryoinputformat->nulloutputformat]
@@ -169,7 +169,7 @@ gremlin> g.V().map{[it.get().value('name'), it.get().value(PageRankVertexProgram
 gremlin>
 ----
 
-[source,properties]
+[source, properties]
 ----
 # read-pagerank-results.properties
 # Hadoop-Gremlin settings
