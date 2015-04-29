@@ -15,9 +15,10 @@ import org.junit.runner.RunWith;
 @ProcessComputerSuite.GraphProviderClass(provider = ThriftGraphComputerProvider.class, graph = TitanGraph.class)
 public class ThriftComputerTest {
 
-    @BeforeClass
-    public static void beforeSuite() {
-        CassandraStorageSetup.startCleanEmbedded();
-    }
+//    TP3 ignores @BeforeClass -- the following method is never executed
+//    @BeforeClass
+//    public static void beforeSuite() {
+//        CassandraStorageSetup.startCleanEmbedded();
+//    }
 
 }
