@@ -9,14 +9,14 @@ This page summarizes some of the aspects to consider when running Titan on top o
 Data Consistency
 ~~~~~~~~~~~~~~~~
 
-On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency because the underlying storage backend does not provide transactional isolation. In the interest of efficiency, Titan does not use locking by default. Hence, the user has to decide for each schema element that defines a consistency constraint whether or not to use locking. Use `TitanManagement.setConsistency(element,ConsistencyModifier.LOCK)` to explicitly enable locking on a schema element as shown in the following examples.
+On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency because the underlying storage backend does not provide transactional isolation. In the interest of efficiency, Titan does not use locking by default. Hence, the user has to decide for each schema element that defines a consistency constraint whether or not to use locking. Use `TitanManagement.setConsistency(element, ConsistencyModifier.LOCK)` to explicitly enable locking on a schema element as shown in the following examples.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
-name = mgmt.makePropertyKey('name').dataType(String.class).make()
-index = mgmt.buildIndex('byName',Vertex.class).addKey(name).unique().buildCompositeIndex()
-mgmt.setConsistency(name,ConsistencyModifier.LOCK) //Ensures only one name per vertex
-mgmt.setConsistency(index,ConsistencyModifier.LOCK) //Ensures name uniqueness in the graph
+name = mgmt.makePropertyKey('consistentName').dataType(String.class).make()
+index = mgmt.buildIndex('byConsistentName', Vertex.class).addKey(name).unique().buildCompositeIndex()
+mgmt.setConsistency(name, ConsistencyModifier.LOCK) //Ensures only one name per vertex
+mgmt.setConsistency(index, ConsistencyModifier.LOCK) //Ensures name uniqueness in the graph
 mgmt.commit()
 
 When updating an element that is guarded by a uniqueness constraint, Titan uses the following protocol at the end of a transaction when calling `tx.commit()`:
@@ -56,9 +56,10 @@ Forking Edges
 
 Because edge are stored as single records in the underlying storage backend, concurrently modifying a single edge would lead to conflict. Instead of locking, an edge label can be configured to use `ConsistencyModifier.FORK`. The following example creates a new edge label `related` and defines its consistency to FORK.
 
-[source,gremlin]
+[source, gremlin]
+mgmt = g.openManagement()
 related = mgmt.makeEdgeLabel('related').make()
-mgmt.setConsistency(related,ConsistencyModifier.FORK)
+mgmt.setConsistency(related, ConsistencyModifier.FORK)
 mgmt.commit()
 
 When modifying an edge whose label is configured to FORK the edge is deleted and the modified edge is added as a new one. Hence, if two concurrent transactions modify the same edge, two modified copies of the edge will exist upon commit which can be resolved during querying traversals if needed.
@@ -71,7 +72,7 @@ Multi-Properties
 
 Modifying single valued properties on vertices concurrently can result in a conflict. Similarly to edges, one can allow an arbitrary number of properties on a vertex for a particular property key defined with cardinality LIST and FORK on modification. Hence, instead of conflict one reads multiple properties. Since Titan allows properties on properties, provenance information like `author` can be added to the properties to facilitate resolution at read time.
 
-See <<property-cardinality,multi-properties>> to learn how to define those.
+See <<property-cardinality, multi-properties>> to learn how to define those.
 
 Data Inconsistency
 ~~~~~~~~~~~~~~~~~~

@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
 import java.util.HashSet;;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -34,6 +35,7 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         add(IMPORT_STATIC + Text.class.getName() + DOT_STAR);
         add(IMPORT_STATIC + Multiplicity.class.getName() + DOT_STAR);
         add(IMPORT_STATIC + Cardinality.class.getName() + DOT_STAR);
+        add(IMPORT_STATIC + TimeUnit.class.getName() + DOT_STAR);
     }};
 
     @Override

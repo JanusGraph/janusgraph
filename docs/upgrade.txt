@@ -223,7 +223,7 @@ When upgrading to Titan 0.3.0, please note the following interface changes:
 
 * In `TypeMaker`, `functional()` has been replaced by `unique(Direction.OUT)`. Likewise, `functional(boolean)` has been replaced by `unique(Direction.OUT, UniquenessConsistency)`, where the argument `true` corresponds to `UniquenessConsistency.LOCK` and `false` corresponds to `UniquenessConsistency.NO_LOCK`.
 * In `TypeMaker`, `unique()` for property keys has been replaced by `unique(Direction.IN)`.
-* In `TypeMaker`, `indexed()` takes additional arguments because Titan now supports vertex _and_ edge indexing. Use `indexed(Class<? extends Element>)` to create a standard index for the key. Use `indexed(String,Class<? extends Element>)` to create an external index for the key.
+* In `TypeMaker`, `indexed()` takes additional arguments because Titan now supports vertex _and_ edge indexing. Use `indexed(Class<? extends Element>)` to create a standard index for the key. Use `indexed(String, Class<? extends Element>)` to create an external index for the key.
 * In `TypeMaker`, `simple()` is no longer available. Simply remove it.
 * In `TitanFactory`, `openInMemoryGraph()` is no longer available. Instead, use `open(Configuration)` where the configuration sets `storage.backend=inmemory`.
 * In `AttributeSerializer`, `writeObjectData()` now uses `DataOutput` to write elements instead of `ByteBuffer`. A simple replace in any particular implementation of `AttributeSerializer` should do the trick.
@@ -234,7 +234,7 @@ Version 0.2.1 (March 22, 2013)
 From Version 0.2.0
 ^^^^^^^^^^^^^^^^^^
 
-No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, `Graph.startTransaction()` has been renamed to `Graph.newTransaction()`. Please refer to the https://github.com/tinkerpop/blueprints/wiki[Blueprints documentation] for more information.
+No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, `Graph.startTransaction()` has been renamed to `Graph.newTransaction()`. Please refer to the http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#transactions[Blueprints documentation] for more information.
 
 From prior versions
 ^^^^^^^^^^^^^^^^^^^

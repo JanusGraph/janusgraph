@@ -7,7 +7,7 @@ The purpose of the trigger log is to capture the mutations of a transaction so t
 
 The trigger log consists of multiple sub-logs as configured by the user. When opening a transaction, the identifier for the trigger sub-log can be specified:
 
-    tx = graph.buildTransaction().setLogIdentifier("purchase").start();
+    tx = g.buildTransaction().logIdentifier("purchase").start();
 
 In this case, the identifier is "purchase" which means that the mutations of this transaction will be written to a log with the name "trigger_purchase". This gives the user control over where transactional mutations are logged. If no trigger log is specified, no trigger log entry will be created.
 

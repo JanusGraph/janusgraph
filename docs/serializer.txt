@@ -5,7 +5,7 @@ Datatype and Attribute Serializer Configuration
 Titan supports a number of classes for attribute values on properties. Titan efficiently serializes primitives, primitive arrays, `Date`, `ArrayList` and `HashMap`. By default, Titan allows arbitrary objects as attribute values on properties, but those use default serializer which have significant overhead and may not be as efficient.  
 
 .Serialization Configuration Options
-[cols="4,7,2,2,1",options="header"]
+[cols="4, 7, 2, 2, 1", options="header"]
 |==========================
 |Option |Description |Value |Default |Modifiable
 |attributes.allow-all |
@@ -30,9 +30,10 @@ attributes.custom.attribute10.serializer-class = com.example.SpecialIntSerialize
 Custom Object Serialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan supports arbitrary objects as property attributes and uses http://code.google.com/p/kryo/[Kryo's] http://code.google.com/p/kryo/#Default_serializers[default serializers] to serialize such objects to disk. For this default serializer to work for a custom class, the following two conditions must be fulfilled:
+Titan supports arbitrary objects as property attributes an can serialize such objects to disk. For this default serializer to work for a custom class, the following conditions must be fulfilled:
 
+* The class must implement AttributeSerializer
 * The class must have a no-argument constructor
 * The class must implement the `equals(Object)` method
 
-The second requirement is Titan specific because Titan will test both serialization and deserialization of a custom class before persisting data to disk.
+The last requirement is Titan specific because Titan will test both serialization and deserialization of a custom class before persisting data to disk.

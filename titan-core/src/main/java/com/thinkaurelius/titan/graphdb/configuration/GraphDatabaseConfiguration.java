@@ -1284,6 +1284,12 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.LOCAL, Boolean.class, false);
 
 
+    public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS,"gremlin",
+            "Gremlin configuration options");
+
+    public static final ConfigOption<String> GREMLIN_GRAPH = new ConfigOption<String>(GREMLIN_NS, "graph",
+            "The implementation of graph factory that will be sued by gremlin server", ConfigOption.Type.LOCAL, "com.thinkaurelius.titan.core.TitanFactory");
+
     // ################ Begin Class Definition #######################
     // ###############################################################
 

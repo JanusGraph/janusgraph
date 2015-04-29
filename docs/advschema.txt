@@ -10,7 +10,7 @@ Static Vertices
 
 Vertex labels can be defined as *static* which means that vertices with that label cannot be modified outside the transaction in which they were created. 
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
 mgmt.commit()
@@ -30,12 +30,12 @@ The following storage backends support vertex and edge label TTL.
 Edge TTL
 ^^^^^^^^
 
-Edge TTL is defined on a per-edge label basis, meaning that all edges of that label have the same time-to-live.
+Edge TTL is defined on a per-edge label basis, meaning that all edges of that label have the same time-to-live. Note that the backend must support cell level TTL. Currently only Cassandra supports this.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 visits = mgmt.makeEdgeLabel('visits').make()
-mgmt.setTTL(visits,7,TimeUnit.DAYS)
+mgmt.setTTL(visits, 7, DAYS)
 mgmt.commit()
 
 Note, that modifying an edge resets the TTL for that edge. Also note, that the TTL of an edge label can be modified but it might take some time for this change to propagate to all running Titan instances which means that two different TTLs can be temporarily in use for the same label.
@@ -43,12 +43,12 @@ Note, that modifying an edge resets the TTL for that edge. Also note, that the T
 Property TTL
 ^^^^^^^^^^^^
 
-Property TTL is very similar to edge TTL and defined on a per-property key basis, meaning that all properties of that key have the same time-to-live.
+Property TTL is very similar to edge TTL and defined on a per-property key basis, meaning that all properties of that key have the same time-to-live. Note that the backend must support cell level TTL. Currently only Cassandra supports this.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 sensor = mgmt.makePropertyKey('sensor').cardinality(Cardinality.LIST).dataType(Double.class).make()
-mgmt.setTTL(sensor,21,TimeUnit.DAYS)
+mgmt.setTTL(sensor, 21, DAYS)
 mgmt.commit()
 
 As with edge TTL, modifying an existing property resets the TTL for that property and modifying the TTL for a property key might not immediately take effect.
@@ -56,12 +56,12 @@ As with edge TTL, modifying an existing property resets the TTL for that propert
 Vertex TTL
 ^^^^^^^^^^
 
-Vertex TTL is defined on a per-vertex label basis, meaning that all vertices of that label have the same time-to-live. The configured TTL applies to the vertex, its properties, and all incident edges to ensure that the entire vertex is removed from the graph. For this reason, a vertex label must be defined as _static_ before a TTL can be set to rule out any modifications that would invalidate the vertex TTL. Vertex TTL only applies to static vertex labels.
+Vertex TTL is defined on a per-vertex label basis, meaning that all vertices of that label have the same time-to-live. The configured TTL applies to the vertex, its properties, and all incident edges to ensure that the entire vertex is removed from the graph. For this reason, a vertex label must be defined as _static_ before a TTL can be set to rule out any modifications that would invalidate the vertex TTL. Vertex TTL only applies to static vertex labels. Note that the backend must support store level TTL. Currently only Cassandra and HBase support this.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 tweet = mgmt.makeVertexLabel('tweet').setStatic().make()
-mgmt.setTTL(tweet,36,TimeUnit.HOURS)
+mgmt.setTTL(tweet, 36, HOURS)
 mgmt.commit()
 
 Note, that the TTL of a vertex label can be modified but it might take some time for this change to propagate to all running Titan instances which means that two different TTLs can be temporarily in use for the same label.
@@ -71,16 +71,16 @@ Multi-Properties
 
 As dicussed in <<schema>>, Titan supports property keys with SET and LIST cardinality. Hence, Titan supports multiple properties with the same key on a single vertex. Furthermore, Titan treats properties similarly to edges in that single-valued property annotations are allowed on properties as shown in the following example.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.LIST).make()
 mgmt.commit()
 v = g.addVertex()
-p1 = v.property('name','Dan LaRocque')
-p1.property('source','web')
-p2 = v.property('name','dalaro')
-p2.property('source','github')
-g.commit()
+p1 = v.property('name', 'Dan LaRocque')
+p1.property('source', 'web')
+p2 = v.property('name', 'dalaro')
+p2.property('source', 'github')
+g.tx().commit()
 v.properties('name')
 ==> Iterable over all name properties
 
@@ -93,20 +93,29 @@ Unidirected Edges
 
 Unidirected edges are edges that can only be traversed in the out-going direction. Unidirected edges have a lower storage footprint but are limited in the types of traversals they support. Unidirected edges are conceptually similar to hyperlinks in the world-wide-web in the sense that the out-vertex can traverse through the edge, but the in-vertex is unaware of its existence.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 link = mgmt.makeEdgeLabel('link').unidirected().make()
 mgmt.commit()
 
 Unidirected edges can be added on edges and properties, thereby giving Titan limited support for hyper-edges. For example, this can be useful for capturing authorship provenance information for edges as shown in the following example, where we add a unidirected `author` edge on the `knows` edge to store the fact that `user` added this edge to the graph.
 
-[source,gremlin]
+[source, gremlin]
 mgmt = g.openManagement()
 mgmt.makeEdgeLabel('author').unidirected().make()
 mgmt.commit()
 user = g.v(4)
 u = g.v(8)
 v = g.v(16)
-v.addEdge('knows',u).property('author',user)
+v.addEdge('knows', u).property('author', user)
+
+
+mgmt = g.openManagement()
+mgmt.makeEdgeLabel('author').unidirected().make()
+mgmt.commit()
+user = g.addVertex(T.label, 'author');
+book = g.addVertex();
+author = g.addVertex();
+user.addE('knows', book).property('author', author)
 
 Note, that unidirected edges do not get automatically deleted when their in-vertices are deleted. The user must ensure that such inconsistencies do not arise or resolve them at query time by explicitly checking vertex existence in a transaction. See the discussion in <<ghost-vertices>> for more information.

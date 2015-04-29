@@ -3,9 +3,9 @@ Cassandra
 ---------
 
 [.tss-center.tss-width-250]
-image:http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/",width=250]
+image:http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/", width=250]
 
-[quote,'http://cassandra.apache.org/[Apache Cassandra Homepage]']
+[quote, 'http://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
 scalability and high availability without compromising
 performance. Linear scalability and proven fault-tolerance on
@@ -31,11 +31,11 @@ Cassandra can be run as a standalone database on the same local host as Titan an
 
 Now, you can create a Cassandra TitanGraph as follows::
 
-[source,java]
-TitanGraph g = TitanFactory.build()
-	.set("storage.backend","cassandra")
-	.set("storage.hostname","127.0.0.1")
-	.open();
+[source, java]
+TitanGraph g = TitanFactory.build().
+set("storage.backend", "cassandra").
+set("storage.hostname", "127.0.0.1").
+open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
@@ -48,29 +48,32 @@ When the graph needs to scale beyond the confines of a single machine, then Cass
 
 For example, suppose we have a running Cassandra cluster where one of the machines has the IP address 77.77.77.77, then connecting Titan with the cluster is accomplished as follows (comma separate IP addresses to reference more than one machine):
 
-[source,java]
-TitanGraph g = TitanFactory.build()
-	.set("storage.backend","cassandra")
-	.set("storage.hostname","77.77.77.77")
-	.open();
+[source, java]
+TitanGraph g = TitanFactory.build().
+set("storage.backend", "cassandra").
+set("storage.hostname", "77.77.77.77").
+open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode with Gremlin Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-image:titan-modes-rexster.png[]
+image:http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/images/gremlin-server.png[]
 
 Gremlin Server can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin Server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
+Start gremlin server using bin/gremlin-server.sh and then in an external gremlin.sh session you can send gremlin commands over the wire:
+
 ----
-http://rexster.titan.machine1/mygraph/vertices/1
-http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
+:plugin use tinkerpop.server
+:remote connect tinkerpop.server conf/remote.yaml
+:> v = g.addVertex()
 ----
 
 In this case, each Gremlin server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
 
-[source,yaml]
+[source, yaml]
 ----
 ...
 graphs: {
@@ -79,7 +82,7 @@ plugins:
   - aurelius.titan
 ...
 ----
-
+For more information about gremlin server see the latest http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/#gremlin-server[Tinkerpop documentation]
 
 Titan Embedded Mode
 ~~~~~~~~~~~~~~~~~~~
@@ -90,7 +93,7 @@ Finally, Cassandra can be embedded in Titan, which means, that Titan and Cassand
 
 To use Titan in embedded mode, simply configure `embeddedcassandra` as the storage backend. The configuration options listed below also apply to embedded Cassandra. In creating a Titan cluster, ensure that the individual nodes can discover each other via the Gossip protocol, so setup a Titan-with-Cassandra-embedded cluster much like you would a stand alone Cassandra cluster. When running Titan in embedded mode, the Cassandra yaml file is configured using the additional configuration option `storage.conf-file`, which specifies the yaml file as a full url, e.g. `storage.conf-file = file:///home/cassandra.yaml`.
 
-When running a cluster with Titan and Cassandra embedded, it is advisable to expose Titan through the Rexster server so that applications can remotely connect to the Titan graph database and execute queries.
+When running a cluster with Titan and Cassandra embedded, it is advisable to expose Titan through the Gremlin Server so that applications can remotely connect to the Titan graph database and execute queries.
 
 Note, that running Titan with Cassandra embedded requires GC tuning. While embedded Cassandra can provide lower latency query answering, its GC behavior under load is less predictable.
 
@@ -120,7 +123,7 @@ Deploying on Amazon EC2
 [.tss-center.tss-width-250]
 image:http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png[link="http://aws.amazon.com/ec2/"]
 
-[quote,'http://aws.amazon.com/ec2/[Amazon EC2]']
+[quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon Elastic Compute Cloud (Amazon EC2) is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
 
 Follow these steps to setup a Cassandra cluster on EC2 and deploy Titan over Cassandra. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
@@ -128,7 +131,7 @@ Follow these steps to setup a Cassandra cluster on EC2 and deploy Titan over Cas
 Setup Cassandra Cluster
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://www.datastax.com/docs/datastax_enterprise2.0/ami/install_dse_ami[DataStax AMI Docs] and focus on aspects relevant for a Titan deployment.
+These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://docs.datastax.com/en/cassandra/2.1/cassandra/install/installAMILaunch.html[DataStax AMI Docs] and focus on aspects relevant for a Titan deployment.
 
 Setting up Security Group
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -182,7 +185,7 @@ Note, that the AMI takes a few minutes to configure each instance. A shell promp
 Launch Titan Instances
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Launch additional EC2 instances to run Titan which are either configured in Remote Server Mode or Remote Server Mode with Rexster as described above. You only need to note the IP address of one of the Cassandra cluster instances and configure it as the host name. The particular EC2 instance to run and the particular configuration depends on your use case. 
+Launch additional EC2 instances to run Titan which are either configured in Remote Server Mode or Remote Server Mode with Gremlin-Server as described above. You only need to note the IP address of one of the Cassandra cluster instances and configure it as the host name. The particular EC2 instance to run and the particular configuration depends on your use case.
 
 Example Titan Instance on Amazon Linux AMI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

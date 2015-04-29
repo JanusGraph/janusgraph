@@ -5,7 +5,7 @@ BerkeleyDB
 //[.tss-center.tss-width-250]
 //image:http://download.oracle.com/berkeley-db/docs/je/3.2.76/images/Oracle_BerkeleyDB_clr.bmp[link="http://www.oracle.com/technetwork/products/berkeleydb"]
 
-[quote,'http://www.oracle.com/technetwork/products/berkeleydb[BerkeleyDB Homepage]']
+[quote, 'http://www.oracle.com/technetwork/products/berkeleydb[BerkeleyDB Homepage]']
 Berkeley DB enables the development of custom data management
 solutions, without the overhead traditionally associated with such
 custom projects. Berkeley DB provides a collection of well-proven
@@ -22,11 +22,11 @@ BerkeleyDB Setup
 
 Since BerkeleyDB runs in the same JVM as Titan, connecting the two only requires a simple configuration and no additional setup:
 
-[source,java]
-TitanGraph g = TitanFactory.build()
-	.set("storage.backend", "berkeleyje")
-	.set("storage.directory", "/tmp/graph")
-	.open();
+[source, java]
+TitanGraph g = TitanFactory.build().
+set("storage.backend", "berkeleyje").
+set("storage.directory", "/tmp/graph").
+open();
 
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration. 
 

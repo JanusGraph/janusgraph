@@ -5,7 +5,7 @@ HBase
 [.tss-center.tss-width-250]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
 
-[quote,'http://hbase.apache.org/[Apache HBase Homepage]']
+[quote, 'http://hbase.apache.org/[Apache HBase Homepage]']
 Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
 
 HBase Setup
@@ -23,15 +23,15 @@ HBase can be run as a standalone database on the same local host as Titan and th
 * Download and extract a stable HBase from http://www.apache.org/dyn/closer.cgi/hbase/stable/.
 * Start HBase by invoking the `start-hbase.sh` script in the _bin_ directory inside the extracted HBase directory. To stop HBase, use `stop-hbase.sh`.
 
-[source,bourne]
+[source, bourne]
 $ ./bin/start-hbase.sh 
 starting master, logging to ../logs/hbase-master-machine-name.local.out
 
 Now, you can create an HBase TitanGraph as follows:
 
-[source,java]
+[source, java]
 TitanGraph g = TitanFactory.build()
-	.set("storage.backend","hbase")
+	.set("storage.backend", "hbase")
 	.open();
 
 Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
@@ -45,10 +45,10 @@ When the graph needs to scale beyond the confines of a single machine, then HBas
 
 For example, suppose we have a running HBase cluster with a ZooKeeper quorum composed of three machines at IP address 77.77.77.77, 77.77.77.78, and 77.77.77.79, then connecting Titan with the cluster is accomplished as follows:
 
-[source,java]
+[source, java]
 TitanGraph g = TitanFactory.build()
-	.set("storage.backend","hbase")
-	.set("storage.hostname","77.77.77.77,77.77.77.78,77.77.77.79")
+	.set("storage.backend", "hbase")
+	.set("storage.hostname", "77.77.77.77, 77.77.77.78, 77.77.77.79")
 	.open();
 
 `storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
@@ -67,7 +67,7 @@ http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').ou
 
 In this case, each Gremlin server server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
 
-[source,yaml]
+[source, yaml]
 ----
 ...
 graphs: {
@@ -99,7 +99,7 @@ Deploying on Amazon EC2
 [.tss-center.tss-width-250]
 image:http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick/logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png[link="http://aws.amazon.com/ec2/"]
 
-[quote,'http://aws.amazon.com/ec2/[Amazon EC2]']
+[quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon EC2 is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
 
 Follow these steps to setup an HBase cluster on EC2 and deploy Titan over HBase. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
@@ -110,7 +110,7 @@ The configuration described below puts one HBase master server in charge of thre
 
 Whirr 0.7.1 sometimes fails when run on a machine behind a NAT https://issues.apache.org/jira/browse/WHIRR-459[WHIRR-459].  For this reason, it's recommended to use at least Whirr 0.7.2.  Whirr 0.8.0 was used to test the following commands on a t1.micro instance running Amazon Linux 2012.03.  These commands might need tweaking to produce the intended results on environments besides a t1.micro instance running Amazon Linux 2012.03.
 
-[source,bourne]
+[source, bourne]
 ----
 # These commands were executed on a t1.micro instance running Amazon Linux 2012.03 x86_64.
 # The AMI identifier for Amazon Linux 2012.03 x86_64 is ami-aecd60c7.
@@ -181,31 +181,31 @@ Tips and Tricks for Managing an HBase Cluster
 
 The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overal status check of the cluster.
 
-[source,bourne]
+[source, bourne]
 $HBASE_HOME/bin/hbase shell
 
 From the shell, the following commands are generally useful for understanding the status of the cluster.
 
-[source,ruby]
+[source, ruby]
 status 'titan'
 status 'simple'
 status 'detailed'
 
 The above commands can identify if a region server has gone down. If so, it is possible to `ssh` into the failed region server machines and do the following:
 
-[source,bourne]
+[source, bourne]
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
 
 The use of http://code.google.com/p/parallel-ssh/[pssh] can make this process easy as there is no need to log into each machine individually to run the commands. Put the IP addresses of the regionservers into a `hosts.txt` file and then execute the following.
 
-[source,bourne]
+[source, bourne]
 pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop regionserver
 pssh -h host.txt sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start regionserver
 
 Next, sometimes you need to restart the master server (e.g. connection refused exceptions). To do so, on the master execute the following:
 
-[source,bourne]
+[source, bourne]
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh stop master
 sudo -u hadoop $HBASE_HOME/bin/hbase-daemon.sh start master
 

@@ -15,7 +15,7 @@ Depending on Titan Snapshots
 
 For developing against the most current version of Titan, depend on Titan snapshot releases. Note, that these releases are development releases and therefore unstable and likely to change. Unless one is interested in the most recent development status of Titan, we recommend to use the stable Titan release instead.
 
-[source,xml]
+[source, xml]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -27,7 +27,7 @@ SNAPSHOTs are available through the https://oss.sonatype.org/content/repositorie
 
 When adding this dependency, be sure to add the following repository to the `pom.xml`:
 
-[source,xml]
+[source, xml]
 <repository>
   <id>sonatype-nexus-snapshots</id>
   <name>Sonatype Nexus Snapshots</name>

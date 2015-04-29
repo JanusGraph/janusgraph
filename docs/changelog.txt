@@ -6,7 +6,7 @@ Release Notes
 Version 0.9.0-M1 (December 4, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -52,7 +52,7 @@ Version 0.5.3 (January 12, 2015)
 Version 0.5.2 (November 24, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -94,7 +94,7 @@ Version 0.5.2 (November 24, 2014)
 Version 0.5.1 (October 10, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -133,7 +133,7 @@ Version 0.5.1 (October 10, 2014)
 Version 0.5.0 (August 15, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -216,7 +216,7 @@ Version 0.5.0 (August 15, 2014)
 Version 0.4.4 (April 22, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -240,7 +240,7 @@ Added 0.4.2 to compatible-version string (and 0.4.3)
 Version 0.4.3 (April 21, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -274,7 +274,7 @@ Version 0.4.3 (April 21, 2014)
 Version 0.4.2 (December 30, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -309,7 +309,7 @@ Version 0.4.2 (December 30, 2013)
 Version 0.4.1 (November 24, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -337,7 +337,7 @@ Version 0.4.1 (November 24, 2013)
 * Better caching implementation for relations (RelationCache) to provide faster de-serialization performance
 * Addition of a new query optimizer that can significantly speed up a subset of traversals
 * Support for reverse ordering in vertex centric queries by defining: makeLabel(..).sortKey(..).sortOrder(Order.DESC).make()
-* Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
+* Support for index configuration parameters passed into KeyMaker.indexed(String, Class, Parameter...) to change the default indexing behavior of an indexing backend.
 * Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter. Learn more about [[Full Text and String Search]]
 * Refactored Text.REGEX/PREFIX to Text.CONTAINS_REGEX/CONTAINS_PREFIX to accurately reflect their semantics. Added Text.REGEX/PREFIX for full string matching. See [[Indexing Backend Overview]]
 * Added support for scaling the id allocation to hundreds of parallel Titan instances through additional configuration options. See [[Bulk Loading]].
@@ -352,7 +352,7 @@ Version 0.4.1 (November 24, 2013)
 Version 0.4.0 (October 16, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -419,7 +419,7 @@ Check the issue tracker for a full list of fixed issues.
 Version 0.3.2 (July 29, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -454,7 +454,7 @@ Check the issue tracker for a full list of fixed issues.
 Version 0.3.1 (May 14, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -498,7 +498,7 @@ Check the issue tracker for a full list of fixed issues.
 Version 0.3.0 (March 29, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -535,7 +535,7 @@ Version 0.3.0 (March 29, 2013)
 Version 0.2.1 (March 22, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
@@ -577,7 +577,7 @@ Version 0.2.1 (March 22, 2013)
 Version 0.2.0 (December 24, 2012)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan</artifactId>
@@ -617,7 +617,7 @@ Version 0.2.0 (December 24, 2012)
 Version 0.1.0 (September 7, 2012)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[source,m2]
+[source, m2]
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan</artifactId>
