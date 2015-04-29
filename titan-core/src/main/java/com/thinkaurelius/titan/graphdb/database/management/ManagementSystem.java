@@ -1082,9 +1082,7 @@ public class ManagementSystem implements TitanManagement {
             throw new IllegalArgumentException("given type does not support TTL: " + type.getClass());
         }
 
-        return (-1 == ttl) ?
-                null :
-                new StandardDuration(ttl, TimeUnit.SECONDS);
+        return new StandardDuration(ttl, TimeUnit.SECONDS);
     }
 
     /**
@@ -1102,17 +1100,22 @@ public class ManagementSystem implements TitanManagement {
             Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
         }
         Preconditions.checkArgument(type instanceof TitanSchemaVertex);
-        setTypeModifier(type, ModifierType.TTL, ConversionHelper.getTTLSeconds(ttl,unit));
+
+        Integer ttlSeconds = (0 == ttl) ?
+                              null :
+                              ConversionHelper.getTTLSeconds(ttl, unit);
+
+        setTypeModifier(type, ModifierType.TTL, ttlSeconds);
     }
 
     private void setTypeModifier(final TitanSchemaElement element,
                                  final ModifierType modifierType,
                                  final Object value) {
         Preconditions.checkArgument(element != null, "null schema element");
-        Preconditions.checkArgument(value != null, "null value for type modifier " + modifierType);
 
         TypeDefinitionCategory cat = modifierType.getCategory();
-        if (cat.hasDataType()) {
+
+        if (cat.hasDataType() && null != value) {
             Preconditions.checkArgument(cat.getDataType().equals(value.getClass()), "modifier value is not of expected type " + cat.getDataType());
         }
 
@@ -1143,10 +1146,13 @@ public class ManagementSystem implements TitanManagement {
             }
         }
 
-        TypeDefinitionMap def = new TypeDefinitionMap();
-        def.setValue(cat, value);
-        TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.TYPE_MODIFIER, null, def);
-        addSchemaEdge(typeVertex, cVertex, TypeDefinitionCategory.TYPE_MODIFIER, null);
+        if (null != value) {
+            TypeDefinitionMap def = new TypeDefinitionMap();
+            def.setValue(cat, value);
+            TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.TYPE_MODIFIER, null, def);
+            addSchemaEdge(typeVertex, cVertex, TypeDefinitionCategory.TYPE_MODIFIER, null);
+        }
+
         updateSchemaVertex(typeVertex);
         updatedTypes.add(typeVertex);
     }

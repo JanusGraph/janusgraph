@@ -121,6 +121,6 @@ public class TypeUtil {
     }
 
     public static int getTTL(final SchemaSource schema) {
-        return getTypeModifier(schema, ModifierType.TTL, -1).intValue();
+        return getTypeModifier(schema, ModifierType.TTL, 0).intValue();
     }
 }
