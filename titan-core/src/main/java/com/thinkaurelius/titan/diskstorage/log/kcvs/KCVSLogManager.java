@@ -3,11 +3,14 @@ package com.thinkaurelius.titan.diskstorage.log.kcvs;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -98,6 +101,11 @@ public class KCVSLogManager implements LogManager {
     private final Map<String,KCVSLog> openLogs;
 
     /**
+     * The time-to-live of all data in the index store/CF, expressed in seconds.
+     */
+    private final int indexStoreTTL;
+
+    /**
      * Opens a log manager against the provided KCVS store with the given configuration.
      * @param storeManager
      * @param config
@@ -118,13 +126,19 @@ public class KCVSLogManager implements LogManager {
                           final int[] readPartitionIds) {
         Preconditions.checkArgument(storeManager!=null && config!=null);
         if (config.has(LOG_STORE_TTL)) {
-            if (TTLKVCSManager.supportsStoreTTL(storeManager)) {
-                storeManager = new TTLKVCSManager(storeManager, ConversionHelper.getTTLSeconds(config.get(LOG_STORE_TTL)));
-            } else {
+            indexStoreTTL = ConversionHelper.getTTLSeconds(config.get(LOG_STORE_TTL));
+            StoreFeatures storeFeatures = storeManager.getFeatures();
+            if (storeFeatures.hasCellTTL() && !storeFeatures.hasStoreTTL()) {
+                // Reduce cell-level TTL (fine-grained) to store-level TTL (coarse-grained)
+                storeManager = new TTLKCVSManager(storeManager);
+            } else if (!storeFeatures.hasStoreTTL()){
                 log.warn("Log is configured with TTL but underlying storage backend does not support TTL, hence this" +
                         "configuration option is ignored and entries must be manually removed from the backend.");
             }
+        } else {
+            indexStoreTTL = -1;
         }
+
         this.storeManager = storeManager;
         this.configuration = config;
         openLogs = new HashMap<String, KCVSLog>();
@@ -186,13 +200,17 @@ public class KCVSLogManager implements LogManager {
     }
 
     private static void checkValidPartitionId(int partitionId, int partitionBitWidth) {
-        Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<partitionBitWidth));
+        Preconditions.checkArgument(partitionId >= 0 && partitionId < (1 << partitionBitWidth));
     }
 
     @Override
     public synchronized KCVSLog openLog(final String name) throws BackendException {
         if (openLogs.containsKey(name)) return openLogs.get(name);
-        KCVSLog log = new KCVSLog(name,this,storeManager.openDatabase(name),configuration);
+        StoreMetaData.Container storeOptions = new StoreMetaData.Container();
+        if (0 < indexStoreTTL) {
+            storeOptions.put(StoreMetaData.TTL, indexStoreTTL);
+        }
+        KCVSLog log = new KCVSLog(name,this,storeManager.openDatabase(name, storeOptions),configuration);
         openLogs.put(name,log);
         return log;
     }

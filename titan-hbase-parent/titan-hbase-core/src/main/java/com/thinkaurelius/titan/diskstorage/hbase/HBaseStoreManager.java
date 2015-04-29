@@ -20,6 +20,7 @@ import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -66,7 +67,6 @@ import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CustomizeStoreKCVSManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -88,7 +88,7 @@ import com.thinkaurelius.titan.util.system.NetworkUtil;
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 @PreInitializeConfigOptions
-public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager, CustomizeStoreKCVSManager {
+public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseStoreManager.class);
 
@@ -438,12 +438,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String longName) throws BackendException {
-        return openDatabase(longName, -1);
-    }
-
-    @Override
-    public KeyColumnValueStore openDatabase(final String longName, int ttlInSeconds) throws BackendException {
+    public KeyColumnValueStore openDatabase(String longName, StoreMetaData.Container metaData) throws BackendException {
 
         HBaseKeyColumnValueStore store = openStores.get(longName);
 
@@ -455,8 +450,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
             if (store == null) {
-                if (!skipSchemaCheck)
-                    ensureColumnFamilyExists(tableName, cfName, ttlInSeconds);
+                if (!skipSchemaCheck) {
+                    int cfTTLInSeconds = -1;
+                    if (metaData.contains(StoreMetaData.TTL)) {
+                        cfTTLInSeconds = metaData.get(StoreMetaData.TTL);
+                    }
+                    ensureColumnFamilyExists(tableName, cfName, cfTTLInSeconds);
+                }
 
                 store = newStore;
             }

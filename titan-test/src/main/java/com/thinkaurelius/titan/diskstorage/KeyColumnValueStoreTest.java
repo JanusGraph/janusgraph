@@ -4,20 +4,20 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKVCSManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
@@ -1081,18 +1081,20 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     public void testStoreTTL() throws Exception {
         KeyColumnValueStoreManager storeManager = manager;
         if (storeManager.getFeatures().hasCellTTL()) {
-            storeManager = new TTLKVCSManager(storeManager,101);
+            //storeManager = new TTLKCVSManager(storeManager,101);
+            storeManager = new TTLKCVSManager(storeManager);
         } else if (!storeManager.getFeatures().hasStoreTTL()) {
             return;
         }
 
+
         assertTrue(storeManager.getFeatures().hasStoreTTL());
-        assertTrue(storeManager instanceof CustomizeStoreKCVSManager);
 
         final TimeUnit sec = TimeUnit.SECONDS;
         final int storeTTLSeconds = (int)TestGraphConfigs.getTTL(sec);
-        KeyColumnValueStore storeWithTTL = ((CustomizeStoreKCVSManager) storeManager).
-                openDatabase("testStore_with_TTL", storeTTLSeconds);
+        StoreMetaData.Container opts = new StoreMetaData.Container();
+        opts.put(StoreMetaData.TTL, storeTTLSeconds);
+        KeyColumnValueStore storeWithTTL = storeManager.openDatabase("testStore_with_TTL", opts);
 
         populateDBWith100Keys(storeWithTTL);
 

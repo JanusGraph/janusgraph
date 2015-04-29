@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StoreMetaData;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
 import java.util.List;
@@ -52,8 +53,8 @@ public class KCVSManagerProxy implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String name) throws BackendException {
-        return manager.openDatabase(name);
+    public KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
+        return manager.openDatabase(name, metaData);
     }
 
     @Override

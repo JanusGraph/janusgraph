@@ -110,17 +110,21 @@ public interface StoreFeatures {
     /**
      * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
      * is provided as a meta-data annotation on the {@link com.thinkaurelius.titan.diskstorage.Entry}, the entry will
-     * disappear from the storage backend after the given amount of time.
+     * disappear from the storage backend after the given amount of time. See references to
+     * {@link com.thinkaurelius.titan.diskstorage.EntryMetaData#TTL} for example usage in Titan internals.
+     * This is the finer-grained of the two TTL modes.
      *
-     * @return true if the storage backend supports TTL, else false
+     * @return true if the storage backend supports cell-level TTL, else false
      */
     public boolean hasCellTTL();
 
     /**
      * Returns true if this storage backend supports time-to-live (TTL) settings on a per-store basis. That means, that
-     * entries added to such a store will require after a configured amount of time.
+     * entries added to such a store will require after a configured amount of time.  Per-store TTL is represented
+     * by {@link com.thinkaurelius.titan.diskstorage.StoreMetaData#TTL}.  This is the coarser-grained of the two
+     * TTL modes.
      *
-     * @return
+     * @return true if the storage backend supports store-level TTL, else false
      */
     public boolean hasStoreTTL();
 
