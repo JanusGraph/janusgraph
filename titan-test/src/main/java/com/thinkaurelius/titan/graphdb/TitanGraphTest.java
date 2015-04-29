@@ -1604,21 +1604,21 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testImplicitKey() {
         TitanVertex v = graph.addVertex("name","Dan"), u = graph.addVertex();
-        Edge e = v.addEdge("knows",u);
+        Edge e = v.addEdge("knows", u);
         graph.tx().commit();
         RelationIdentifier eid = (RelationIdentifier)e.id();
 
         assertEquals(v.id(),v.value(ID_NAME));
-        assertEquals(eid,e.value(ID_NAME));
-        assertEquals("knows",e.value(LABEL_NAME));
+        assertEquals(eid, e.value(ID_NAME));
+        assertEquals("knows", e.value(LABEL_NAME));
         assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(), v.value(LABEL_NAME));
         assertCount(1, v.query().direction(Direction.BOTH).labels("knows").has(ID_NAME, eid).edges());
         assertCount(0, v.query().direction(Direction.BOTH).labels("knows").has(ID_NAME, RelationIdentifier.get(new long[]{4, 5, 6, 7})).edges());
         assertCount(1, v.query().direction(Direction.BOTH).labels("knows").has("~nid", eid.getRelationId()).edges());
         assertCount(0, v.query().direction(Direction.BOTH).labels("knows").has("~nid", 110111).edges());
         //Test edge retrieval
-        assertNotNull(getE(graph,eid));
-        assertEquals(eid,getE(graph,eid).id());
+        assertNotNull(getE(graph, eid));
+        assertEquals(eid, getE(graph, eid).id());
         //Test adjacent constraint
         assertEquals(1, v.query().direction(BOTH).has("~adjacent", u.id()).edgeCount());
         assertCount(1, v.query().direction(BOTH).has("~adjacent", (int) getId(u)).edges());
@@ -1754,6 +1754,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v3 = graph.addVertex();
         Edge e = v1.addEdge("knows",v3);
         assertFalse(e.property("age").isPresent());
+    }
+
+    @Test
+    public void testNestedTransactions() {
+        Vertex v1 = graph.addVertex();
+        newTx();
+        Vertex v2 = tx.addVertex();
+        v2.property("name", "foo");
+        tx.commit();
+        v1.addEdge("related", graph.traversal().V(v2).next());
+        graph.tx().commit();
+        assertCount(1,v1.edges(OUT));
     }
 
     @Test
