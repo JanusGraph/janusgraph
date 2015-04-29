@@ -16,11 +16,7 @@ h2. Features
 * Support for various "indexing backends":https://github.com/thinkaurelius/titan/wiki/Indexing-Backend-Overview:
 ** "ElasticSearch":http://www.elasticsearch.org/
 ** "Apache Lucene":http://lucene.apache.org/
-* Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
-** "Gremlin":http://gremlin.tinkerpop.com graph query language
-** "Frames":http://frames.tinkerpop.com object-to-graph mapper
-** "Rexster":http://rexster.tinkerpop.com graph server
-** "Blueprints":http://blueprints.tinkerpop.com standard graph API
+* Native integration with the "TinkerPop":http://tinkerpop.incubator.apache.org/ graph stack
 * Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
 
 h2. Getting Started
