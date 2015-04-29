@@ -264,7 +264,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * Retrieves the time-to-live for the given {@link TitanSchemaType} as a {@link Duration}.
-     * If none has been explicitly defined, a zero-length {@link Duration} is returned.
+     * If none has been explicitly defined, null is returned.
      *
      * @param type
      * @return
@@ -273,7 +273,9 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * Sets the time-to-live for the given {@link TitanSchemaType}. The most granular time unit used for TTL values
-     *  is seconds. Any argument will be rounded to seconds if it is more granular than that.
+     * is seconds. Any argument will be rounded to seconds if it is more granular than that.  {@code ttl} must be
+     * either positive or -1.  When {@code ttl} is -1, any existing TTL on {@code type} is removed ("live forever").
+     * Positive {@code ttl} values are interpreted literally.
      *
      * @param type the affected type
      * @param ttl time-to-live

@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
@@ -4735,6 +4736,81 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         TitanSchemaType type = ImplicitKey.ID;
         mgmt.setTTL(type, 0, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testUnsettingTTL() throws InterruptedException {
+
+        int initialTTLMillis = 2000;
+
+        // Define schema: one edge label with a short ttl
+        EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTTL(likes, initialTTLMillis, TimeUnit.MILLISECONDS);
+        mgmt.commit();
+        graph.tx().rollback();
+
+        // Insert two vertices with a TTLed edge
+        TitanVertex v1 = graph.addVertex();
+        TitanVertex v2 = graph.addVertex();
+        v1.addEdge("likes", v2);
+        graph.tx().commit();
+
+        // Let the edge die
+        Thread.sleep((long)Math.ceil(initialTTLMillis * 1.25));
+
+        // Edge should be gone
+        assertEquals(2, Iterators.size(graph.vertices()));
+        assertEquals(0, Iterators.size(graph.edges()));
+        graph.tx().rollback();
+
+        // Remove the TTL on the edge label
+        mgmt = graph.openManagement();
+        mgmt.setTTL(likes, -1, TimeUnit.SECONDS);
+        mgmt.commit();
+
+        Thread.sleep(1L);
+
+        // Check that the edge is still gone, add a new edge
+        assertEquals(2, Iterators.size(graph.vertices()));
+        assertEquals(0, Iterators.size(graph.edges()));
+        v1 = graph.addVertex();
+        v2 = graph.addVertex();
+        v1.addEdge("likes", v2);
+        graph.tx().commit();
+
+        // Sleep past when it would have expired under the original config
+        Thread.sleep((long)Math.ceil(initialTTLMillis * 1.25));
+
+        // Edge must not be dead
+        assertEquals(4, Iterators.size(graph.vertices()));
+        assertEquals(1, Iterators.size(graph.edges()));
+        graph.tx().rollback();
+    }
+
+    @Test
+    public void testGettingUndefinedEdgeLabelTTL() {
+        // getTTL should return a null duration on an extant type without a TTL
+        mgmt.makeEdgeLabel("likes").make();
+        mgmt.commit();
+        graph.tx().rollback();
+
+        // Check getTTL on edge label
+        mgmt = graph.openManagement();
+        assertNull(mgmt.getTTL(mgmt.getEdgeLabel("likes")));
+        mgmt.rollback();
+    }
+
+    @Test
+    public void testGettingUndefinedVertexLabelTTL() {
+        // getTTL should return a null duration on an extant type without a TTL
+        mgmt.makeVertexLabel("foo").make();
+        mgmt.commit();
+        graph.tx().rollback();
+
+        // Check getTTL on vertex label
+        mgmt = graph.openManagement();
+        assertNull(mgmt.getTTL(mgmt.getVertexLabel("foo")));
+        mgmt.rollback();
     }
 
     @Test(expected = IllegalArgumentException.class)
