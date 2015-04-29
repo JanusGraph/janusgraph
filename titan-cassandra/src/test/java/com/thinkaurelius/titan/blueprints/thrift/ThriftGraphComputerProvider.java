@@ -12,7 +12,7 @@ public class ThriftGraphComputerProvider extends AbstractTitanGraphComputerProvi
 
     @Override
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
-//        CassandraStorageSetup.startCleanEmbedded();
+        CassandraStorageSetup.startCleanEmbedded();
         return CassandraStorageSetup.getCassandraThriftConfiguration(graphName);
     }
 
