@@ -2,11 +2,12 @@ package com.thinkaurelius.titan.core.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +40,7 @@ public class TitanCleanup {
             }
             @Override
             public String toString() { return "ClearBackend"; }
-        },new StandardDuration(20, TimeUnit.SECONDS));
+        }, Duration.ofSeconds(20));
     }
 
 

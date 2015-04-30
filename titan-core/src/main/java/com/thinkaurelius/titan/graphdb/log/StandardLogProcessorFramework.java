@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+
 import com.thinkaurelius.titan.core.log.LogProcessorBuilder;
 import com.thinkaurelius.titan.core.log.LogProcessorFramework;
 import com.thinkaurelius.titan.core.schema.TitanSchemaElement;
@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -103,7 +104,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         private final List<ChangeProcessor> processors;
 
         private String readMarkerName = null;
-        private Timestamp startTime = null;
+        private Instant startTime = null;
         private int retryAttempts = 1;
 
 
@@ -126,8 +127,8 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         }
 
         @Override
-        public LogProcessorBuilder setStartTime(long sinceEpoch, TimeUnit unit) {
-            this.startTime = new Timestamp(sinceEpoch,unit);
+        public LogProcessorBuilder setStartTime(Instant startTime) {
+            this.startTime = startTime;
             return this;
         }
 
@@ -158,11 +159,11 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             if (startTime==null && readMarkerName==null) {
                 readMarker = ReadMarker.fromNow();
             } else if (readMarkerName==null) {
-                readMarker = ReadMarker.fromTime(startTime.sinceEpoch(startTime.getNativeUnit()),startTime.getNativeUnit());
+                readMarker = ReadMarker.fromTime(startTime);
             } else if (startTime==null) {
                 readMarker = ReadMarker.fromIdentifierOrNow(readMarkerName);
             } else {
-                readMarker = ReadMarker.fromIdentifierOrTime(readMarkerName, startTime.sinceEpoch(startTime.getNativeUnit()), startTime.getNativeUnit());
+                readMarker = ReadMarker.fromIdentifierOrTime(readMarkerName, startTime);
             }
             synchronized (StandardLogProcessorFramework.this) {
                 Preconditions.checkArgument(!processorLogs.containsKey(userLogName),
@@ -226,8 +227,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                     if (txentry.getMetadata().containsKey(LogTxMeta.SOURCE_TRANSACTION)) {
                         transactionId = (StandardTransactionId)txentry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
                     } else {
-                        transactionId = new StandardTransactionId(senderId,txentry.getHeader().getId(),
-                                new Timestamp(txentry.getHeader().getTimestamp(times.getUnit()),times.getUnit()));
+                        transactionId = new StandardTransactionId(senderId,txentry.getHeader().getId(), txentry.getHeader().getTimestamp());
                     }
                     readRelations(txentry,tx,changes);
                 } catch (Throwable e) {

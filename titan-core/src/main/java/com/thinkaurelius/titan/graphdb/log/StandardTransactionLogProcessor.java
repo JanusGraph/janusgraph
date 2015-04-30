@@ -9,16 +9,14 @@ import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -42,6 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,15 +60,15 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private static final Logger logger =
             LoggerFactory.getLogger(StandardTransactionLogProcessor.class);
 
-    private static final Duration CLEAN_SLEEP_TIME = new StandardDuration(5,TimeUnit.SECONDS);
-    private static final Duration MIN_TX_LENGTH = new StandardDuration(5, TimeUnit.SECONDS);
+    private static final Duration CLEAN_SLEEP_TIME = Duration.ofSeconds(5);
+    private static final Duration MIN_TX_LENGTH = Duration.ofSeconds(5);
 
     private final StandardTitanGraph graph;
     private final Serializer serializer;
     private final TimestampProvider times;
     private final Log txLog;
     private final Duration persistenceTime;
-    private final Duration readTime = new StandardDuration(1,TimeUnit.SECONDS);
+    private final Duration readTime = Duration.ofSeconds(1);
     private final AtomicLong txCounter = new AtomicLong(0);
     private final BackgroundCleaner cleaner;
     private final boolean verboseLogging;
@@ -80,13 +80,13 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
 
     public StandardTransactionLogProcessor(StandardTitanGraph graph,
-                                           Timestamp startTime) {
+                                           Instant startTime) {
         Preconditions.checkArgument(graph != null && graph.isOpen());
         Preconditions.checkArgument(startTime!=null);
         Preconditions.checkArgument(graph.getConfiguration().hasLogTransactions(),"Transaction logging must be enabled for recovery to work");
         Duration maxTxLength = graph.getConfiguration().getMaxCommitTime();
         if (maxTxLength.compareTo(MIN_TX_LENGTH)<0) maxTxLength= MIN_TX_LENGTH;
-        Preconditions.checkArgument(maxTxLength != null && !maxTxLength.isZeroLength(), "Max transaction time cannot be 0");
+        Preconditions.checkArgument(maxTxLength != null && !maxTxLength.isZero(), "Max transaction time cannot be 0");
         this.graph = graph;
         this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
@@ -96,7 +96,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         this.txCache = CacheBuilder.newBuilder()
                 .concurrencyLevel(2)
                 .initialCapacity(100)
-                .expireAfterWrite(maxTxLength.getLength(maxTxLength.getNativeUnit()), maxTxLength.getNativeUnit())
+                .expireAfterWrite(maxTxLength.toNanos(), TimeUnit.NANOSECONDS)
                 .removalListener(new RemovalListener<StandardTransactionId, TxEntry>() {
                     @Override
                     public void onRemoval(RemovalNotification<StandardTransactionId, TxEntry> notification) {
@@ -114,7 +114,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                 })
                 .build();
 
-        ReadMarker start = ReadMarker.fromTime(startTime.sinceEpoch(startTime.getNativeUnit()),startTime.getNativeUnit());
+        ReadMarker start = ReadMarker.fromTime(startTime);
         this.txLog.registerReader(start,new TxLogMessageReader());
 
         cleaner = new BackgroundCleaner();
@@ -126,7 +126,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     }
 
     public synchronized void shutdown() throws TitanException {
-        cleaner.close(CLEAN_SLEEP_TIME.getLength(CLEAN_SLEEP_TIME.getNativeUnit()),CLEAN_SLEEP_TIME.getNativeUnit());
+        cleaner.close(CLEAN_SLEEP_TIME);
     }
 
     private void logRecoveryMsg(String message, Object... args) {
@@ -241,7 +241,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         // II) Restore log messages
         final String logTxIdentifier = (String)commitEntry.getMetadata().get(LogTxMeta.LOG_ID);
         if (userLogFailure && logTxIdentifier!=null) {
-            TransactionLogHeader txHeader = new TransactionLogHeader(txCounter.incrementAndGet(),times.getTime());
+            TransactionLogHeader txHeader = new TransactionLogHeader(txCounter.incrementAndGet(),times.getTime(), times);
             final StaticBuffer userLogContent = txHeader.serializeUserLog(serializer,commitEntry,txId);
             BackendOperation.execute(new Callable<Boolean>(){
                 @Override
@@ -324,7 +324,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content,serializer,times);
             TransactionLogHeader txheader = txentry.getHeader();
             StandardTransactionId transactionId = new StandardTransactionId(senderId,txheader.getId(),
-                    new Timestamp(txheader.getTimestamp(times.getUnit()),times.getUnit()));
+                    txheader.getTimestamp());
 
             TxEntry entry;
             try {
@@ -372,7 +372,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private class BackgroundCleaner extends BackgroundThread {
 
-        private Timepoint lastInvocation = null;
+        private Instant lastInvocation = null;
 
         public BackgroundCleaner() {
             super("TxLogProcessorCleanup", false);
@@ -380,7 +380,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
         @Override
         protected void waitCondition() throws InterruptedException {
-            if (lastInvocation!=null) times.sleepPast(lastInvocation.add(CLEAN_SLEEP_TIME));
+            if (lastInvocation!=null) times.sleepPast(lastInvocation.plus(CLEAN_SLEEP_TIME));
         }
 
         @Override

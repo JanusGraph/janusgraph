@@ -12,6 +12,7 @@ Titan supports http://lucene.apache.org/solr/[Solr] as an index backend.  Here a
 * *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given circle. Only supports points for indexing and circles for querying.
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
 * *TTL*: Supports automatically expiring indexed elements.
+* *Temporal*: Millisecond granularity temporal indexing.
 
 Please see <<version-compat>> for details on what versions of Solr will work with Titan.
 

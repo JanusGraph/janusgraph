@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
@@ -9,7 +10,7 @@ import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -58,7 +59,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private int[] restrictedPartitions = new int[0];
 
-    private Timepoint userCommitTime = null;
+    private Instant userCommitTime = null;
 
     private String groupName;
 
@@ -171,13 +172,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder commitTime(long timestampSinceEpoch, TimeUnit unit) {
-        this.userCommitTime = getTimestampProvider().getTime(timestampSinceEpoch,unit);
+    public StandardTransactionBuilder commitTime(Instant timestampSinceEpoch) {
+        this.userCommitTime = timestampSinceEpoch;
         return this;
     }
 
     @Override
-    public void setCommitTime(Timepoint time) {
+    public void setCommitTime(Instant time) {
         throw new UnsupportedOperationException("Use setCommitTime(lnog,TimeUnit)");
     }
 
@@ -334,7 +335,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public Timepoint getCommitTime() {
+    public Instant getCommitTime() {
         return userCommitTime;
     }
 
@@ -390,7 +391,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, TimestampProvider times, Timepoint commitTime,
+                boolean isThreadBound, TimestampProvider times, Instant commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                 int[] restrictedPartitions,
                 String groupName, DefaultSchemaMaker defaultSchemaMaker,
@@ -516,12 +517,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public Timepoint getCommitTime() {
+        public Instant getCommitTime() {
             return handleConfig.getCommitTime();
         }
 
         @Override
-        public void setCommitTime(Timepoint time) {
+        public void setCommitTime(Instant time) {
             handleConfig.setCommitTime(time);
         }
 

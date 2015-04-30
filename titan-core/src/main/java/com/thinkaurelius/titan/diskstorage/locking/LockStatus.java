@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
+import java.time.Instant;
 
 /**
  * A single held lock's expiration time. This is used by {@link AbstractLocker}.
@@ -15,5 +16,5 @@ public interface LockStatus {
      *
      * @return The expiration instant of this lock
      */
-    public Timepoint getExpirationTimestamp();
+    public Instant getExpirationTimestamp();
 }

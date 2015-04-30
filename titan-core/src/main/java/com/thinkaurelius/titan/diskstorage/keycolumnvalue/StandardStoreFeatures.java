@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 
 /**
  * Immutable, {@link Builder}-customizable implementation of StoreFeatures.
@@ -19,7 +19,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean transactional;
     private final boolean keyConsistent;
     private final boolean timestamps;
-    private final Timestamps preferredTimestamps;
+    private final TimestampProviders preferredTimestamps;
     private final boolean cellLevelTTL;
     private final boolean storeLevelTTL;
     private final boolean visibility;
@@ -83,7 +83,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public Timestamps getPreferredTimestamps() {
+    public TimestampProviders getPreferredTimestamps() {
         return preferredTimestamps;
     }
 
@@ -137,7 +137,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean distributed;
         private boolean transactional;
         private boolean timestamps;
-        private Timestamps preferredTimestamps;
+        private TimestampProviders preferredTimestamps;
         private boolean cellLevelTTL;
         private boolean storeLevelTTL;
         private boolean visibility;
@@ -226,7 +226,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
-        public Builder preferredTimestamps(Timestamps t) {
+        public Builder preferredTimestamps(TimestampProviders t) {
             preferredTimestamps = t;
             return this;
         }
@@ -284,7 +284,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             boolean multiQuery, boolean locking, boolean batchMutation,
             boolean localKeyPartition, boolean keyOrdered, boolean distributed,
             boolean transactional, boolean keyConsistent,
-            boolean timestamps, Timestamps preferredTimestamps,
+            boolean timestamps, TimestampProviders preferredTimestamps,
             boolean cellLevelTTL, boolean storeLevelTTL,
             boolean visibility,
             Configuration keyConsistentTxConfig,

@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -8,6 +10,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +33,8 @@ public class StandardLockCleanerService implements LockCleanerService {
     private static final long KEEPALIVE_TIME = 5L;
     private static final TimeUnit KEEPALIVE_UNIT = TimeUnit.SECONDS;
 
-    private static final long COOLDOWN_TIME = 30L;
-    private static final TimeUnit COOLDOWN_UNIT = TimeUnit.SECONDS;
+    private static final Duration COOLDOWN_TIME = Duration.ofSeconds(30);
+
     private static final int COOLDOWN_CONCURRENCY_LEVEL = 4;
 
     private static final ThreadFactory THREAD_FACTORY =
@@ -43,35 +46,37 @@ public class StandardLockCleanerService implements LockCleanerService {
 
     private final KeyColumnValueStore store;
     private final ExecutorService exec;
-    private final ConcurrentMap<KeyColumn, Long> blocked;
+    private TimestampProvider times;
+    private final ConcurrentMap<KeyColumn, Instant> blocked;
     private final ConsistentKeyLockerSerializer serializer;
 
     private static final Logger log =
             LoggerFactory.getLogger(LockCleanerService.class);
 
-    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer, ExecutorService exec, long cooldownTime, TimeUnit cooldownUnit) {
+    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer, ExecutorService exec, Duration cooldown, TimestampProvider times) {
         this.store = store;
         this.serializer = serializer;
         this.exec = exec;
+        this.times = times;
         blocked = CacheBuilder.newBuilder()
-                .expireAfterWrite(cooldownTime, cooldownUnit)
+                .expireAfterWrite(cooldown.toNanos(), TimeUnit.NANOSECONDS)
                 .concurrencyLevel(COOLDOWN_CONCURRENCY_LEVEL)
-                .<KeyColumn, Long>build()
+                .<KeyColumn, Instant>build()
                 .asMap();
     }
 
-    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer) {
-        this (store, serializer, getDefaultExecutor(), COOLDOWN_TIME, COOLDOWN_UNIT);
+    public StandardLockCleanerService(KeyColumnValueStore store, ConsistentKeyLockerSerializer serializer, TimestampProvider times) {
+        this (store, serializer, getDefaultExecutor(), COOLDOWN_TIME, times);
     }
 
     @Override
-    public void clean(KeyColumn target, long cutoff, StoreTransaction tx) {
-        Long b = blocked.putIfAbsent(target, cutoff);
+    public void clean(KeyColumn target, Instant cutoff, StoreTransaction tx) {
+        Instant b = blocked.putIfAbsent(target, cutoff);
         if (null == b) {
             log.info("Enqueuing expired lock cleaner task for target={}, tx={}, cutoff={}",
                     new Object[] { target, tx, cutoff });
             try {
-                exec.submit(new StandardLockCleanerRunnable(store, target, tx, serializer, cutoff));
+                exec.submit(new StandardLockCleanerRunnable(store, target, tx, serializer, cutoff, times));
             } catch (RejectedExecutionException e) {
                 log.debug("Failed to enqueue expired lock cleaner for target={}, tx={}, cutoff={}",
                         new Object[] { target, tx, cutoff, e });

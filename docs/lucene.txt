@@ -27,10 +27,9 @@ Feature Support
 ~~~~~~~~~~~~~~~
 
 * *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
-
 * *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given geographic shape. Only supports points for indexing and circles and boxes for querying.
-
 * *Numeric Range*: Supports all numeric comparisons in `Compare`.
+* *Temporal*: Nanosecond granularity temporal indexing.
 
 Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~

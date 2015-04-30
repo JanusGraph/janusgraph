@@ -1,35 +1,25 @@
 package com.thinkaurelius.titan.util.stats;
 
-import info.ganglia.gmetric4j.gmetric.GMetric;
-import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.CsvReporter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.JmxReporter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Slf4jReporter;
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.*;
 import com.codahale.metrics.ganglia.GangliaReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Duration;
+import info.ganglia.gmetric4j.gmetric.GMetric;
+import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * Singleton that contains and configures Titan's {@code MetricRegistry}.
@@ -40,8 +30,7 @@ public enum MetricManager {
     private static final Logger log =
             LoggerFactory.getLogger(MetricManager.class);
 
-    private static final TimeUnit SCHEDULING_TIME_UNIT =
-            TimeUnit.MILLISECONDS;
+
 
     private final MetricRegistry registry     = new MetricRegistry();
     private ConsoleReporter consoleReporter   = null;
@@ -74,7 +63,7 @@ public enum MetricManager {
         }
 
         consoleReporter = ConsoleReporter.forRegistry(getRegistry()).build();
-        consoleReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+        consoleReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -121,7 +110,7 @@ public enum MetricManager {
         }
 
         csvReporter = CsvReporter.forRegistry(getRegistry()).build(outputDir);
-        csvReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+        csvReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -224,7 +213,7 @@ public enum MetricManager {
         }
 
         slf4jReporter = b.build();
-        slf4jReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+        slf4jReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -294,7 +283,7 @@ public enum MetricManager {
         GangliaReporter.Builder b = GangliaReporter.forRegistry(getRegistry());
 
         gangliaReporter = b.build(ganglia);
-        gangliaReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+        gangliaReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
 
         log.info("Configured Ganglia Metrics reporter host={} interval={} port={} addrmode={} ttl={} proto31={} uuid={} spoof={}",
                 new Object[] { groupOrHost, reportInterval, port, addressingMode, ttl, protocol31, hostUUID, spoof });
@@ -345,7 +334,7 @@ public enum MetricManager {
         b.filter(MetricFilter.ALL);
 
         graphiteReporter = b.build(graphite);
-        graphiteReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+        graphiteReporter.start(reportInterval.toMillis(), TimeUnit.MILLISECONDS);
         log.info("Configured Graphite reporter host={} interval={} port={} prefix={}",
                 new Object[] { host, reportInterval, port, prefix });
     }

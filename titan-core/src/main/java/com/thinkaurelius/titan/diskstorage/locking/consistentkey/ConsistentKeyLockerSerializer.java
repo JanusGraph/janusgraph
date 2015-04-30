@@ -6,6 +6,9 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+
+import java.time.Instant;
 
 /**
  * Translate locking coordinates and metadata (data keys, data columns, data
@@ -22,14 +25,14 @@ public class ConsistentKeyLockerSerializer {
         return b.getStaticBuffer();
     }
     
-    public StaticBuffer toLockCol(long ts, StaticBuffer rid) {
+    public StaticBuffer toLockCol(Instant ts, StaticBuffer rid, TimestampProvider provider) {
         WriteBuffer b = new WriteByteBuffer(rid.length() + 8);
-        b.putLong(ts);
+        b.putLong(provider.getTime(ts));
         WriteBufferUtil.put(b, rid);
         return b.getStaticBuffer();
     }
     
-    public TimestampRid fromLockColumn(StaticBuffer lockKey) {
+    public TimestampRid fromLockColumn(StaticBuffer lockKey, TimestampProvider provider) {
         ReadBuffer r = lockKey.asReadBuffer();
         int len = r.length();
         long tsNS = r.getLong();
@@ -39,6 +42,7 @@ public class ConsistentKeyLockerSerializer {
             curRid[i] = r.getByte();
         }
         StaticBuffer rid = new StaticArrayBuffer(curRid);
-        return new TimestampRid(tsNS, rid);
+        Instant time = provider.getTime(tsNS);
+        return new TimestampRid(time, rid);
     }
 }

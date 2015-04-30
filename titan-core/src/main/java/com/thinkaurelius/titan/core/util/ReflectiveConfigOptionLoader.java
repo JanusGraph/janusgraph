@@ -10,7 +10,7 @@ import java.util.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -118,7 +118,7 @@ public enum ReflectiveConfigOptionLoader {
             //"com.thinkaurelius.titan.graphdb.TestMockLog",
             "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
 
-        Timer t = new Timer(Timestamps.MILLI);
+        Timer t = new Timer(TimestampProviders.MILLI);
         t.start();
 
         List<ClassLoader> loaders = getClassLoaders(cfg, caller);

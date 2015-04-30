@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -10,7 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
@@ -114,7 +115,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             sc.set(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP,concreteClassName + i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
-            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new StandardDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
+            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, Duration.ofMillis(EXPIRE_MS));
 
             if (!storeFeatures.hasLocking()) {
                 Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
@@ -365,7 +366,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         // Create EVCSManager with mockLockerProvider
         ExpectedValueCheckingStoreManager expManager =
                 new ExpectedValueCheckingStoreManager(manager[0], "multi_store_lock_mgr",
-                        mockLockerProvider, new StandardDuration(100L, TimeUnit.MILLISECONDS));
+                        mockLockerProvider, Duration.ofMillis(100L));
 
         // Begin EVCTransaction
         BaseTransactionConfig txCfg = StandardBaseTransactionConfig.of(times);

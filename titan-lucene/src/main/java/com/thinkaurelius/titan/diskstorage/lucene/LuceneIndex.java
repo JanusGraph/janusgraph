@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -63,7 +64,7 @@ public class LuceneIndex implements IndexProvider {
     private static final int MAX_STRING_FIELD_LEN = 256;
 
     private static final Version LUCENE_VERSION = Version.LUCENE_4_10_4;
-    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).build();
+    private static final IndexFeatures LUCENE_FEATURES = new IndexFeatures.Builder().supportedStringMappings(Mapping.TEXT, Mapping.STRING).supportsCardinality(Cardinality.SINGLE).supportsNanoseconds().build();
 
     private static final int GEO_MAX_LEVELS = 11;
 
@@ -321,6 +322,8 @@ public class LuceneIndex implements IndexProvider {
 
             } else if (e.value instanceof Date) {
                 doc.add(new LongField(e.field, (((Date) e.value).getTime()), Field.Store.YES));
+            } else if (e.value instanceof Instant) {
+                doc.add(new LongField(e.field, (((Instant) e.value).toEpochMilli()), Field.Store.YES));
             } else if (e.value instanceof Boolean) {
                 doc.add(new IntField(e.field, ((Boolean)e.value)? 1 : 0, Field.Store.YES));
             } else if (e.value instanceof UUID) {
@@ -492,7 +495,10 @@ public class LuceneIndex implements IndexProvider {
             } else if (value instanceof Date) {
                 Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
                 params.addFilter(numericFilter(key, (Cmp) titanPredicate, ((Date) value).getTime()));
-            } else if (value instanceof Boolean) {
+            } else if (value instanceof Instant) {
+                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on instant types: " + titanPredicate);
+                params.addFilter(numericFilter(key, (Cmp) titanPredicate, ((Instant) value).toEpochMilli()));
+            }else if (value instanceof Boolean) {
                 Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on boolean types: " + titanPredicate);
                 int intValue;
                 switch ((Cmp)titanPredicate) {
@@ -596,7 +602,7 @@ public class LuceneIndex implements IndexProvider {
                 case STRING:
                     return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.PREFIX || titanPredicate==Text.REGEX;
             }
-        } else if (dataType == Date.class) {
+        } else if (dataType == Date.class || dataType == Instant.class) {
             if (titanPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
             return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
@@ -611,7 +617,7 @@ public class LuceneIndex implements IndexProvider {
         if (information.getCardinality()!= Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING || mapping==Mapping.TEXT) return true;

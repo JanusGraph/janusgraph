@@ -7,16 +7,16 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.log.util.FutureMessage;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -132,7 +132,7 @@ public class TestMockLog implements LogManager {
 
     private class TestMessage implements Message {
 
-        private final Timepoint time;
+        private final Instant time;
         private final StaticBuffer content;
 
         private TestMessage(StaticBuffer content) {
@@ -146,8 +146,8 @@ public class TestMockLog implements LogManager {
         }
 
         @Override
-        public long getTimestamp(TimeUnit unit) {
-            return time.getTimestamp(unit);
+        public Instant getTimestamp() {
+            return time;
         }
 
         @Override

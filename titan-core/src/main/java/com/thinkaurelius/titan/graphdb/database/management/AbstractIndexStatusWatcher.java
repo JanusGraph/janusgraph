@@ -2,10 +2,11 @@ package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 
+
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -19,8 +20,8 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
     public AbstractIndexStatusWatcher(TitanGraph g) {
         this.g = g;
         this.status = SchemaStatus.REGISTERED;
-        this.timeout = new StandardDuration(60L, TimeUnit.SECONDS);
-        this.poll = new StandardDuration(500L, TimeUnit.MILLISECONDS);
+        this.timeout = Duration.ofSeconds(60L);
+        this.poll = Duration.ofMillis(500L);
     }
 
     protected abstract S self();
@@ -52,11 +53,11 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
      * @param timeoutUnit the time unit
      * @return this builder
      */
-    public S timeout(long timeout, TimeUnit timeoutUnit) {
+    public S timeout(long timeout, TemporalUnit timeoutUnit) {
         if (0 > timeout) {
             this.timeout = null;
         } else {
-            this.timeout = new StandardDuration(timeout, timeoutUnit);
+            this.timeout = Duration.of(timeout, timeoutUnit);
         }
         return self();
     }
@@ -66,9 +67,9 @@ public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatu
      * at least this long between repeated attempts to read schema information
      * and determine whether the index has reached its target state.
      */
-    public S pollInterval(long poll, TimeUnit pollUnit) {
+    public S pollInterval(long poll, TemporalUnit pollUnit) {
         Preconditions.checkArgument(0 <= poll);
-        this.poll = new StandardDuration(poll, pollUnit);
+        this.poll = Duration.of(poll, pollUnit);
         return self();
     }
 

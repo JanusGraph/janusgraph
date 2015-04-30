@@ -14,6 +14,8 @@ import static org.junit.Assert.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -116,7 +118,7 @@ public abstract class LogTest {
 
         l = manager.openLog("durable");
         CountingReader count = new CountingReader(2, true);
-        l.registerReader(ReadMarker.fromTime(past, TimeUnit.MILLISECONDS),count);
+        l.registerReader(ReadMarker.fromTime(Instant.ofEpochMilli(past)),count);
         count.await(TIMEOUT_MS);
         assertEquals(2, count.totalMsg.get());
         assertEquals(3L, count.totalValue.get());
@@ -203,13 +205,13 @@ public abstract class LogTest {
     public void testReadMarkerCompatibility() throws Exception {
         Log l1 = manager.openLog("testx");
         l1.registerReader(ReadMarker.fromIdentifierOrNow("mark"),new StoringReader(0));
-        l1.registerReader(ReadMarker.fromIdentifierOrTime("mark", System.currentTimeMillis() - 100, TimeUnit.MILLISECONDS),new StoringReader(1));
+        l1.registerReader(ReadMarker.fromIdentifierOrTime("mark", Instant.now().minusMillis(100)),new StoringReader(1));
         try {
             l1.registerReader(ReadMarker.fromIdentifierOrNow("other"));
             fail();
         } catch (IllegalArgumentException e) {}
         try {
-            l1.registerReader(ReadMarker.fromTime(System.currentTimeMillis()-100,TimeUnit.MILLISECONDS));
+            l1.registerReader(ReadMarker.fromTime(Instant.now().minusMillis(100)));
             fail();
         } catch (IllegalArgumentException e) {}
         l1.registerReader(ReadMarker.fromNow(), new StoringReader(2));
@@ -282,7 +284,8 @@ public abstract class LogTest {
             assertNotNull(message);
             assertNotNull(message.getSenderId());
             assertNotNull(message.getContent());
-            assertTrue(System.currentTimeMillis() >= message.getTimestamp(TimeUnit.MILLISECONDS));
+            Instant now = Instant.now();
+            assertTrue(now.isAfter(message.getTimestamp()) || now.equals(message.getTimestamp()));
             processMessage(message);
             latch.countDown();
         }

@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
@@ -19,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,7 +54,7 @@ public abstract class IndexUpdateJob {
     protected StandardTitanTx writeTx;
     protected TitanIndex index;
     protected RelationType indexRelationType;
-    protected long jobStartTimeMS;
+    protected Instant jobStartTime;
 
     public IndexUpdateJob() { }
 
@@ -79,7 +79,7 @@ public abstract class IndexUpdateJob {
     public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
         this.graph = (StandardTitanGraph)graph;
         Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
-        this.jobStartTimeMS = config.get(GraphDatabaseConfiguration.JOB_START_TIME);
+        this.jobStartTime = Instant.ofEpochMilli(config.get(GraphDatabaseConfiguration.JOB_START_TIME));
         if (indexName == null) {
             Preconditions.checkArgument(config.has(INDEX_NAME), "Need to configure the name of the index to be repaired");
             indexName = config.get(INDEX_NAME);
@@ -102,7 +102,7 @@ public abstract class IndexUpdateJob {
             validateIndexStatus();
 
             StandardTransactionBuilder txb = this.graph.buildTransaction();
-            txb.commitTime(jobStartTimeMS, TimeUnit.MILLISECONDS);
+            txb.commitTime(jobStartTime);
             writeTx = (StandardTitanTx)txb.start();
         } catch (final Exception e) {
             if (null != mgmt && mgmt.isOpen())

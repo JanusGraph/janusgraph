@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.util.time;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Duration;
 
 /**
  * A utility to measure time durations.
@@ -19,8 +21,8 @@ import com.thinkaurelius.titan.core.attribute.Duration;
 public class Timer {
 
     private final TimestampProvider times;
-    private Timepoint start;
-    private Timepoint stop;
+    private Instant start;
+    private Instant stop;
 
     public Timer(final TimestampProvider times) {
         this.times = times;
@@ -32,12 +34,7 @@ public class Timer {
         return this;
     }
 
-    public long getStartTime(TimeUnit u) {
-        Preconditions.checkState(null != start, "Timer never started");
-        return start.getTimestamp(u);
-    }
-
-    public Timepoint getStartTime() {
+    public Instant getStartTime() {
         Preconditions.checkState(null != start, "Timer never started");
         return start;
     }
@@ -50,16 +47,16 @@ public class Timer {
 
     public Duration elapsed() {
         if (null == start) {
-            return StandardDuration.ZERO;
+            return Duration.ZERO;
         }
-        final Timepoint stopTime = (null==stop? times.getTime() : stop);
-        return new StandardDuration(stopTime.getNativeTimestamp() - start.getNativeTimestamp(), times.getUnit());
+        final Instant stopTime = (null==stop? times.getTime() : stop);
+        return Duration.between(start, stopTime);
     }
 
     public String toString() {
-        TimeUnit u = times.getUnit();
+        TemporalUnit u = times.getUnit();
         if (start==null) return "Initialized";
-        if (stop==null) return String.format("Started at %d %s",start.getNativeTimestamp(),u);
-        return String.format("%d %s", stop.getNativeTimestamp() - start.getNativeTimestamp(), u);
+        if (stop==null) return String.format("Started at %d %s",times.getTime(start),u);
+        return String.format("%d %s", times.getTime(stop) - times.getTime(start), u);
     }
 }

@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,16 +33,18 @@ public class StandardLockCleanerRunnable implements Runnable {
     private final KeyColumn target;
     private final ConsistentKeyLockerSerializer serializer;
     private final StoreTransaction tx;
-    private final long cutoff;
+    private final Instant cutoff;
+    private TimestampProvider times;
 
     private static final Logger log = LoggerFactory.getLogger(StandardLockCleanerRunnable.class);
 
-    public StandardLockCleanerRunnable(KeyColumnValueStore store, KeyColumn target, StoreTransaction tx, ConsistentKeyLockerSerializer serializer, long cutoff) {
+    public StandardLockCleanerRunnable(KeyColumnValueStore store, KeyColumn target, StoreTransaction tx, ConsistentKeyLockerSerializer serializer, Instant cutoff, TimestampProvider times) {
         this.store = store;
         this.target = target;
         this.serializer = serializer;
         this.tx = tx;
         this.cutoff = cutoff;
+        this.times = times;
     }
 
     @Override
@@ -59,8 +63,8 @@ public class StandardLockCleanerRunnable implements Runnable {
         ImmutableList.Builder<StaticBuffer> b = ImmutableList.builder();
 
         for (Entry lc : locks) {
-            TimestampRid tr = serializer.fromLockColumn(lc.getColumn());
-            if (tr.getTimestamp() < cutoff) {
+            TimestampRid tr = serializer.fromLockColumn(lc.getColumn(), times);
+            if (tr.getTimestamp().isBefore(cutoff)) {
                 log.info("Deleting expired lock on {} by rid {} with timestamp {} (before or at cutoff {})",
                         new Object[] { target, tr.getRid(), tr.getTimestamp(), cutoff });
                 b.add(lc.getColumn());
@@ -82,7 +86,7 @@ public class StandardLockCleanerRunnable implements Runnable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + (int) (cutoff ^ (cutoff >>> 32));
+        result = prime * result + ((cutoff == null) ? 0 : cutoff.hashCode());
         result = prime * result + ((serializer == null) ? 0 : serializer.hashCode());
         result = prime * result + ((store == null) ? 0 : store.hashCode());
         result = prime * result + ((target == null) ? 0 : target.hashCode());
@@ -99,7 +103,10 @@ public class StandardLockCleanerRunnable implements Runnable {
         if (getClass() != obj.getClass())
             return false;
         StandardLockCleanerRunnable other = (StandardLockCleanerRunnable) obj;
-        if (cutoff != other.cutoff)
+        if (cutoff == null) {
+            if (other.cutoff != null)
+                return false;
+        } else if (!cutoff.equals(other.cutoff))
             return false;
         if (serializer == null) {
             if (other.serializer != null)

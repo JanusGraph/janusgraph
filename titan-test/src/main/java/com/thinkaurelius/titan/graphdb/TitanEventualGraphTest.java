@@ -5,8 +5,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+
+
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
@@ -24,6 +24,8 @@ import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
@@ -76,10 +78,10 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     public void testTimestampSetting() {
         clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS,"edgestore"),true,
                 option(GraphDatabaseConfiguration.STORE_META_TTL,"edgestore"),true);
-        final TimeUnit unit = TimeUnit.SECONDS;
+
 
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
-        TitanTransaction tx1 = graph.buildTransaction().commitTime(100, unit).start();
+        TitanTransaction tx1 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(100)).start();
         String name = "name";
         String age = "age";
         String address = "address";
@@ -94,24 +96,24 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
-        TitanTransaction tx2 = graph.buildTransaction().commitTime(1000, unit).start();
+        TitanTransaction tx2 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1000)).start();
         v1 = getV(tx2,id1);
         v2 = getV(tx2,id2);
         for (Iterator<VertexProperty<Object>> propiter = v1.properties(name); propiter.hasNext(); ) {
             VertexProperty prop = propiter.next();
             if (features.hasTimestamps()) {
-                Timestamp t = prop.value("^timestamp");
-                assertEquals(100,t.sinceEpoch(unit));
-                assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
+                Instant t = prop.value("^timestamp");
+                assertEquals(100,t.getEpochSecond());
+                assertEquals(Instant.ofEpochSecond(0, 100),t.getNano());
             }
             if (features.hasCellTTL()) {
                 Duration d = prop.value("^ttl");
-                assertEquals(0l,d.getLength(unit));
-                assertTrue(d.isZeroLength());
+                assertEquals(0l, d.getSeconds());
+                assertTrue(d.isZero());
             }
         }
-        assertEquals(1, v1.query().has("$timestamp", new Timestamp(100, unit)).propertyCount());
-        assertEquals(1, v1.query().has("$timestamp", Cmp.GREATER_THAN, new Timestamp(10, unit)).propertyCount());
+        assertEquals(1, v1.query().has("$timestamp", Instant.ofEpochSecond(100)).propertyCount());
+        assertEquals(1, v1.query().has("$timestamp", Cmp.GREATER_THAN, Instant.ofEpochSecond(10)).propertyCount());
         v1.property(name).remove();
         v1.property(VertexProperty.Cardinality.single, address,  "xyz");
         Edge edge = v2.addEdge("parent",v1);
@@ -132,7 +134,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
-        TitanTransaction tx3 = graph.buildTransaction().commitTime(200, unit).start();
+        TitanTransaction tx3 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(200)).start();
         v1 = getV(tx3,id1);
         v1.property(address).remove();
         tx3.commit();
@@ -143,7 +145,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("xyz", afterTx3.value(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
-        TitanTransaction tx4 = graph.buildTransaction().commitTime(2000, unit).start();
+        TitanTransaction tx4 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(2000)).start();
         v2 = getV(tx4,id2);
         v2.property(VertexProperty.Cardinality.single, age,  "15");
         getE(tx4,edgeId).remove();
@@ -158,7 +160,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertNull(getE(graph,edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
-        TitanTransaction tx5 = graph.buildTransaction().commitTime(1500, unit).start();
+        TitanTransaction tx5 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1500)).start();
         v2 = getV(tx5,id2);
         v2.property(VertexProperty.Cardinality.single, age,  "16");
         tx5.commit();
@@ -175,17 +177,15 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     public void testTimestampedEdgeUpdates() {
         clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS, "edgestore"), true,
                 option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
-        final TimeUnit unit = TimeUnit.SECONDS;
-
         // Transaction 1: Init graph with two vertices and one edge
-        TitanTransaction tx = graph.buildTransaction().commitTime(100, unit).start();
+        TitanTransaction tx = graph.buildTransaction().commitTime(Instant.ofEpochSecond(100)).start();
         TitanVertex v1 = tx.addVertex();
         TitanVertex v2 = tx.addVertex();
         Edge e = v1.addEdge("related",v2);
         e.property("time", 25);
         tx.commit();
 
-        tx = graph.buildTransaction().commitTime(200, unit).start();
+        tx = graph.buildTransaction().commitTime(Instant.ofEpochSecond(200)).start();
         v1 = tx.getVertex(v1.longId());
         assertNotNull(v1);
         e = Iterators.getOnlyElement(v1.edges(Direction.OUT, "related"));
@@ -194,7 +194,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         e.property("time", 125);
         tx.commit();
 
-        tx = graph.buildTransaction().commitTime(300, unit).start();
+        tx = graph.buildTransaction().commitTime(Instant.ofEpochSecond(300)).start();
         v1 = tx.getVertex(v1.longId());
         assertNotNull(v1);
         e = Iterators.getOnlyElement(v1.edges(Direction.OUT, "related"));

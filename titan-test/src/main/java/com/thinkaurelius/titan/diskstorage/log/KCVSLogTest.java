@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -7,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -29,7 +30,7 @@ public abstract class KCVSLogTest extends LogTest {
         storeManager = openStorageManager();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,senderId);
-        config.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, new StandardDuration(500L, TimeUnit.MILLISECONDS), LOG_NAME);
+        config.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, Duration.ofMillis(500L), LOG_NAME);
         //To ensure that the write order is preserved in reading, we need to ensure that all writes go to the same partition
         //otherwise readers will independently read from the partitions out-of-order by design to avoid having to synchronize
         config.set(KCVSLogManager.LOG_FIXED_PARTITION, requiresOrderPreserving, LOG_NAME);

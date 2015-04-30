@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
 
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -13,26 +15,23 @@ import java.util.concurrent.TimeUnit;
  */
 public class ConsistentKeyLockStatus implements LockStatus {
 
-    private final Timepoint write;
-    private final Timepoint expire;
+    private final Instant write;
+    private final Instant expire;
     private boolean checked;
 
-    public ConsistentKeyLockStatus(Timepoint written, Timepoint expire) {
+    public ConsistentKeyLockStatus(Instant written, Instant expire) {
         this.write = written;
         this.expire = expire;
         this.checked = false;
     }
 
     @Override
-    public Timepoint getExpirationTimestamp() {
+    public Instant getExpirationTimestamp() {
         return expire;
     }
 
-    public long getWriteTimestamp(TimeUnit tu) {
-        return write.getTimestamp(tu);
-    }
 
-    public Timepoint getWriteTimestamp() {
+    public Instant getWriteTimestamp() {
         return write;
     }
 

@@ -2,8 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -13,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -27,13 +27,13 @@ public class BackendOperation {
             LoggerFactory.getLogger(BackendOperation.class);
     private static final Random random = new Random();
 
-    private static final Duration BASE_REATTEMPT_TIME=new StandardDuration(50,TimeUnit.MILLISECONDS);
+    private static final Duration BASE_REATTEMPT_TIME= Duration.ofMillis(50);
     private static final double PERTURBATION_PERCENTAGE = 0.2;
 
 
     private static final Duration pertubateTime(Duration duration) {
-        Duration newDuration = duration.multiply(1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE);
-        assert !duration.isZeroLength() : duration;
+        Duration newDuration = duration.dividedBy((int)(2.0 / (1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE)));
+        assert !duration.isZero() : duration;
         return newDuration;
     }
 
@@ -47,8 +47,8 @@ public class BackendOperation {
 
 
     public static final<V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
-        Preconditions.checkArgument(!totalWaitTime.isZeroLength(),"Need to specify a positive waitTime: %s",totalWaitTime);
-        long maxTime = System.currentTimeMillis()+totalWaitTime.getLength(TimeUnit.MILLISECONDS);
+        Preconditions.checkArgument(!totalWaitTime.isZero(),"Need to specify a positive waitTime: %s",totalWaitTime);
+        long maxTime = System.currentTimeMillis()+totalWaitTime.toMillis();
         Duration waitTime = pertubateTime(BASE_REATTEMPT_TIME);
         BackendException lastException;
         while (true) {
@@ -71,17 +71,17 @@ public class BackendOperation {
             }
             //Wait and retry
             assert lastException!=null;
-            if (System.currentTimeMillis()+waitTime.getLength(TimeUnit.MILLISECONDS)<maxTime) {
+            if (System.currentTimeMillis()+waitTime.toMillis()<maxTime) {
                 log.info("Temporary exception during backend operation ["+exe.toString()+"]. Attempting backoff retry.",lastException);
                 try {
-                    Thread.sleep(waitTime.getLength(TimeUnit.MILLISECONDS));
+                    Thread.sleep(waitTime.toMillis());
                 } catch (InterruptedException r) {
                     throw new PermanentBackendException("Interrupted while waiting to retry failed backend operation", r);
                 }
             } else {
                 break;
             }
-            waitTime = pertubateTime(waitTime.multiply(2.0));
+            waitTime = pertubateTime(waitTime.multipliedBy(2));
         }
         throw new TemporaryBackendException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }

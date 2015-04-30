@@ -81,6 +81,8 @@ While Titan's composite indexes support any data type that can be stored in Tita
  * Precision
  * String
  * Geoshape
+ * Date
+ * Instant
  
 Additional data types will be supported in the future.
 

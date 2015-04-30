@@ -24,7 +24,6 @@ import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
@@ -65,6 +64,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -642,7 +642,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
         if (!tx.getConfiguration().hasCommitTime()) tx.getConfiguration().setCommitTime(times.getTime());
-        final Timepoint txTimestamp = tx.getConfiguration().getCommitTime();
+        final Instant txTimestamp = tx.getConfiguration().getCommitTime();
         final long transactionId = txCounter.incrementAndGet();
 
         //2. Assign TitanVertex IDs
@@ -655,7 +655,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final boolean hasTxIsolation = backend.getStoreFeatures().hasTxIsolation();
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
         final KCVSLog txLog = logTransaction?backend.getSystemTxLog():null;
-        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp);
+        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times);
         ModificationSummary commitSummary;
 
         try {

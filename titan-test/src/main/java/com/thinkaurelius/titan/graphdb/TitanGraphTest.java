@@ -25,8 +25,8 @@ import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -84,6 +84,10 @@ import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -937,7 +941,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey boolval = makeKey("boolval",Boolean.class);
 
-        PropertyKey birthday = makeKey("birthday",Timestamp.class);
+        PropertyKey birthday = makeKey("birthday", Instant.class);
 
         PropertyKey geo = makeKey("geo", Geoshape.class);
 
@@ -974,7 +978,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(byte[].class, barr.dataType());
         assertEquals(Object.class, any.dataType());
 
-        final Timestamp c = new Timestamp(1429225756,TimeUnit.SECONDS);
+        final Instant c = Instant.ofEpochSecond(1429225756);
         final Geoshape shape = Geoshape.box(10.0, 10.0, 20.0, 20.0);
 
         TitanVertex v = tx.addVertex();
@@ -1200,9 +1204,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testGotGIndexRemoval() throws InterruptedException, ExecutionException {
-        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
-                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG), Duration.ZERO,
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG),Duration.ofMillis(250)
         );
 
         final String name = "name";
@@ -1230,7 +1234,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.commit();
         tx.commit();
 
-        ManagementUtil.awaitGraphIndexUpdate(graph, name, 5, TimeUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph, name, 5, ChronoUnit.SECONDS);
         finishSchema();
 
         // Remove name index
@@ -1245,9 +1249,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testIndexUpdatesWithReindexAndRemove() throws InterruptedException, ExecutionException {
-        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
-                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG),Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG),Duration.ofMillis(250)
         );
         //Types without index
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
@@ -1323,8 +1327,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.commit();
 
 
-        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, TimeUnit.SECONDS);
-        ManagementUtil.awaitGraphIndexUpdate(graph,"bySensorReading", 5, TimeUnit.SECONDS);
+        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, ChronoUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph,"bySensorReading", 5, ChronoUnit.SECONDS);
 
         finishSchema();
         //Verify new status
@@ -1340,7 +1344,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.updateIndex(eindex, SchemaAction.ENABLE_INDEX);
         finishSchema();
         assertTrue(ManagementSystem.awaitRelationIndexStatus(graph, "byTime", "friend").status(SchemaStatus.ENABLED)
-                .timeout(10L, TimeUnit.SECONDS).call().getSucceeded());
+                .timeout(10L, ChronoUnit.SECONDS).call().getSucceeded());
 
         //Reindex the other two
         pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
@@ -1417,8 +1421,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.commit();
         tx.commit();
 
-        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, TimeUnit.SECONDS);
-        ManagementUtil.awaitGraphIndexUpdate(graph, "bySensorReading", 5, TimeUnit.SECONDS);
+        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, ChronoUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "bySensorReading", 5, ChronoUnit.SECONDS);
 
         finishSchema();
 
@@ -1464,9 +1468,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Category({ BrittleTests.class })
     @Test
     public void testIndexUpdateSyncWithMultipleInstances() throws InterruptedException {
-        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0,TimeUnit.MILLISECONDS),
-                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),Duration.ofMillis(250)
         );
 
         StandardTitanGraph graph2 = (StandardTitanGraph) TitanFactory.open(config);
@@ -1502,7 +1506,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx2.commit(); //Release transaction and wait a little for registration which should make enabling possible
         mgmt.rollback();
         assertTrue(ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").status(SchemaStatus.REGISTERED)
-                .timeout(TestGraphConfigs.getSchemaConvergenceTime(TimeUnit.SECONDS), TimeUnit.SECONDS)
+                .timeout(TestGraphConfigs.getSchemaConvergenceTime(ChronoUnit.SECONDS), ChronoUnit.SECONDS)
                 .call().getSucceeded());
         finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
@@ -1965,7 +1969,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Check this test's assumptions about option default values
 
-        StandardDuration customCommitTime = new StandardDuration(456L, TimeUnit.MILLISECONDS);
+        Duration customCommitTime = Duration.ofMillis(456L);
         Preconditions.checkState(true == ALLOW_STALE_CONFIG.getDefaultValue());
         Preconditions.checkState(ALLOW_STALE_CONFIG.getType().equals(ConfigOption.Type.MASKABLE));
         Preconditions.checkState(!customCommitTime.equals(MAX_COMMIT_TIME.getDefaultValue()));
@@ -1974,7 +1978,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         close();
         WriteConfiguration wc = getConfiguration();
         wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), false);
-        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime);
         try {
             graph = (StandardTitanGraph) TitanFactory.open(wc);
             fail("Masking managed config options should be disabled in this configuration");
@@ -1988,7 +1992,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         close();
         wc = getConfiguration();
         wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), true);
-        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime);
         graph = (StandardTitanGraph) TitanFactory.open(wc);
         // Local value should be overridden by the default that already exists in the backend
         assertEquals(MAX_COMMIT_TIME.getDefaultValue(), graph.getConfiguration().getMaxCommitTime());
@@ -2009,7 +2013,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Check for expected exception
         wc = getConfiguration();
-        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime);
         try {
             graph = (StandardTitanGraph) TitanFactory.open(wc);
             fail("Masking managed config options should be disabled in this configuration");
@@ -2021,7 +2025,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Now check that ALLOW_STALE_CONFIG is actually MASKABLE -- enable it in the local config
         wc = getConfiguration();
         wc.set(ConfigElement.getPath(ALLOW_STALE_CONFIG), true);
-        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime.getLength(TimeUnit.MILLISECONDS));
+        wc.set(ConfigElement.getPath(MAX_COMMIT_TIME), customCommitTime);
         graph = (StandardTitanGraph) TitanFactory.open(wc);
         // Local value should be overridden by the default that already exists in the backend
         assertEquals(MAX_COMMIT_TIME.getDefaultValue(), graph.getConfiguration().getMaxCommitTime());
@@ -2049,10 +2053,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         customLogIDTx.rollback();
 
         // Test timestamp
-        long customTimestamp = -42L;
-        StandardTitanTx customTimeTx = (StandardTitanTx)graph.buildTransaction().commitTime(customTimestamp, TimeUnit.MILLISECONDS).start();
+        Instant customTimestamp = Instant.ofEpochMilli(-42L);
+        StandardTitanTx customTimeTx = (StandardTitanTx)graph.buildTransaction().commitTime(customTimestamp).start();
         assertTrue(customTimeTx.getConfiguration().hasCommitTime());
-        assertEquals(customTimestamp, customTimeTx.getConfiguration().getCommitTime().getTimestamp(TimeUnit.MILLISECONDS));
+        assertEquals(customTimestamp, customTimeTx.getConfiguration().getCommitTime());
         customTimeTx.rollback();
     }
 
@@ -3375,17 +3379,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final Serializer serializer = graph.getDataSerializer();
         final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
-        final TimeUnit unit = times.getUnit();
-        final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+        final Instant startTime = times.getTime();
         clopen( option(SYSTEM_LOG_TRANSACTIONS), true,
                 option(LOG_BACKEND, USER_LOG),(withLogFailure?TestMockLog.class.getName():LOG_BACKEND.getDefaultValue()),
                 option(TestMockLog.LOG_MOCK_FAILADD, USER_LOG),withLogFailure,
-                option(KCVSLog.LOG_READ_LAG_TIME, USER_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL, USER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
-                option(LOG_SEND_DELAY, USER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
-                option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
-                option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
+                option(KCVSLog.LOG_READ_LAG_TIME, USER_LOG),Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, USER_LOG),Duration.ofMillis(250),
+                option(LOG_SEND_DELAY, USER_LOG),Duration.ofMillis(100),
+                option(KCVSLog.LOG_READ_LAG_TIME, TRANSACTION_LOG),Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, TRANSACTION_LOG),Duration.ofMillis(250),
+                option(MAX_COMMIT_TIME),Duration.ofSeconds(1)
         );
         final String instanceid = graph.getConfiguration().getUniqueGraphId();
 
@@ -3394,7 +3397,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanVertex n1 = tx.addVertex("weight", 10.5);
         newTx();
 
-        final Timepoint txTimes[] = new Timepoint[4];
+        final Instant txTimes[] = new Instant[4];
         //Transaction with custom userlog name
         txTimes[0] = times.getTime();
         TitanTransaction tx2 = graph.buildTransaction().logIdentifier(userlogName).start();
@@ -3431,9 +3434,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         e.property("weight", 44.4);
         tx2.commit();
         close();
-        final long endTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+        final Instant endTime = times.getTime();
 
-        final ReadMarker startMarker = ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS);
+        final ReadMarker startMarker = ReadMarker.fromTime(startTime);
 
         Log txlog = openTxLog();
         Log userLog = openUserLog(userlogName);
@@ -3443,14 +3446,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         txlog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
-                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(msgTime>=startTime);
+                Instant msgTime = message.getTimestamp();
+                assertTrue(msgTime.isAfter(startTime) || msgTime.equals(startTime));
                 assertNotNull(message.getSenderId());
                 TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer, times);
                 TransactionLogHeader header = txEntry.getHeader();
 //                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
-                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
-                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
+                assertTrue(header.getTimestamp().isAfter(startTime) || header.getTimestamp().equals(startTime));
+                assertTrue(header.getTimestamp().isBefore(msgTime) || header.getTimestamp().equals(msgTime));
                 assertNotNull(txEntry.getMetadata());
                 assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
                 LogTxStatus status = txEntry.getStatus();
@@ -3482,16 +3485,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         userLog.registerReader(startMarker, new MessageReader() {
             @Override
             public void read(Message message) {
-                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(msgTime >= startTime);
+                Instant msgTime = message.getTimestamp();
+                assertTrue(msgTime.isAfter(startTime) || msgTime.equals(startTime));
                 assertNotNull(message.getSenderId());
                 StaticBuffer content = message.getContent();
                 assertTrue(content != null && content.length() > 0);
                 TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
 
-                long txTime = txentry.getHeader().getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(txTime <= msgTime);
-                assertTrue(txTime >= startTime);
+                Instant txTime = txentry.getHeader().getTimestamp();
+                assertTrue(txTime.isBefore(msgTime) || txTime.equals(msgTime));
+                assertTrue(txTime.isAfter(startTime) || txTime.equals(msgTime));
                 long txid = txentry.getHeader().getId();
                 assertTrue(txid > 0);
                 for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
@@ -3521,7 +3524,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         /*
         Transaction Recovery
          */
-        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph,startTime,TimeUnit.MILLISECONDS);
+        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph,startTime);
 
 
         /*
@@ -3529,26 +3532,26 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
          */
         final AtomicInteger userLogCount = new AtomicInteger(0);
         LogProcessorFramework userlogs = TitanFactory.openTransactionLog(graph);
-        userlogs.addLogProcessor(userlogName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
+        userlogs.addLogProcessor(userlogName).setStartTime(startTime).setRetryAttempts(1)
         .addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
                 assertEquals(instanceid, txId.getInstanceId());
                 assertTrue(txId.getTransactionId() > 0 && txId.getTransactionId() < 100); //Just some reasonable upper bound
-                final long txTime = txId.getTransactionTime().sinceEpoch(TimeUnit.MILLISECONDS);
+                final Instant txTime = txId.getTransactionTime();
                 assertTrue(String.format("tx timestamp %s not between start %s and end time %s",
                                 txTime, startTime, endTime),
-                        txTime >= startTime && txTime <= endTime); //Times should be within a second
+                        (txTime.isAfter(startTime) || txTime.equals(startTime)) && (txTime.isBefore(endTime) || txTime.equals(endTime))); //Times should be within a second
 
                 assertTrue(tx.containsRelationType("knows"));
                 assertTrue(tx.containsRelationType("weight"));
                 EdgeLabel knows = tx.getEdgeLabel("knows");
                 PropertyKey weight = tx.getPropertyKey("weight");
 
-                long txTimeMicro = txId.getTransactionTime().sinceEpoch(TimeUnit.MICROSECONDS);
+                Instant txTimeMicro = txId.getTransactionTime();
 
                 int txNo;
-                if (txTimeMicro < txTimes[1].getTimestamp(TimeUnit.MICROSECONDS)) {
+                if (txTimeMicro.isBefore(txTimes[1])) {
                     txNo = 1;
                     //v1 addition transaction
                     assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
@@ -3566,7 +3569,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     assertEquals(111.1, p.value().doubleValue(), 0.01);
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
-                } else if (txTimeMicro < txTimes[2].getTimestamp(TimeUnit.MICROSECONDS)) {
+                } else if (txTimeMicro.isBefore(txTimes[2])) {
                     txNo = 2;
                     //v2 addition transaction
                     assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
@@ -3584,7 +3587,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     assertEquals(222.2, p.value().doubleValue(), 0.01);
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
                     assertEquals(1, Iterables.size(changes.getEdges(v, Change.ADDED, BOTH)));
-                } else if (txTimeMicro < txTimes[3].getTimestamp(TimeUnit.MICROSECONDS)) {
+                } else if (txTimeMicro.isBefore(txTimes[3])) {
                     txNo = 3;
                     //v2 deletion transaction
                     assertEquals(0, Iterables.size(changes.getVertices(Change.ADDED)));
@@ -4443,13 +4446,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         int ttl1 = 1;
         int ttl2 = 4;
-        mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
+        mgmt.setTTL(label1, Duration.ofSeconds(ttl1));
         EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
-        mgmt.setTTL(label2, ttl2, TimeUnit.SECONDS);
+        mgmt.setTTL(label2, Duration.ofSeconds(ttl2));
         EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
-        assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
-        assertEquals(ttl2, mgmt.getTTL(label2).getLength(TimeUnit.SECONDS));
-        assertEquals(0, mgmt.getTTL(label3).getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ofSeconds(ttl1), mgmt.getTTL(label1));
+        assertEquals(Duration.ofSeconds(ttl2), mgmt.getTTL(label2));
+        assertEquals(Duration.ZERO, mgmt.getTTL(label3));
         mgmt.commit();
 
         TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex(), v3 = graph.addVertex();
@@ -4495,8 +4498,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
-        assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(label1, Duration.ofSeconds(1));
+        assertEquals(Duration.ofSeconds(1), mgmt.getTTL(label1));
         mgmt.commit();
 
         TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex();
@@ -4538,9 +4541,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
         mgmt.buildEdgeIndex(wavedAt, "timeindex", Direction.BOTH, decr, time);
         mgmt.buildIndex("edge-time", Edge.class).addKey(time).buildCompositeIndex();
-        mgmt.setTTL(wavedAt, ttl, TimeUnit.SECONDS);
-        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
-        assertEquals(ttl, mgmt.getTTL(wavedAt).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(wavedAt, Duration.ofSeconds(ttl));
+        assertEquals(Duration.ZERO, mgmt.getTTL(time));
+        assertEquals(Duration.ofSeconds(ttl), mgmt.getTTL(wavedAt));
         mgmt.commit();
 
         TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex();
@@ -4574,15 +4577,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         PropertyKey place = mgmt.makePropertyKey("place").dataType(String.class).make();
-        mgmt.setTTL(name, 42, TimeUnit.SECONDS);
-        mgmt.setTTL(place, 1, TimeUnit.SECONDS);
+        mgmt.setTTL(name, Duration.ofSeconds(42));
+        mgmt.setTTL(place, Duration.ofSeconds(1));
         TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).addKey(name).buildCompositeIndex();
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).addKey(name).addKey(place).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
-        assertEquals(42, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
-        assertEquals(1, mgmt.getTTL(place).getLength(TimeUnit.SECONDS));
-        assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(label1, Duration.ofSeconds(2));
+        assertEquals(Duration.ofSeconds(42), mgmt.getTTL(name));
+        assertEquals(Duration.ofSeconds(1), mgmt.getTTL(place));
+        assertEquals(Duration.ofSeconds(2), mgmt.getTTL(label1));
         mgmt.commit();
 
         TitanVertex v1 = tx.addVertex(T.label,"event","name", "some event","place", "somewhere");
@@ -4625,10 +4628,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).addKey(name).buildCompositeIndex();
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).addKey(name).addKey(time).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(label1, 1, TimeUnit.SECONDS);
-        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
-        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
-        assertEquals(1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(label1, Duration.ofSeconds(1));
+        assertEquals(Duration.ZERO, mgmt.getTTL(name));
+        assertEquals(Duration.ZERO, mgmt.getTTL(time));
+        assertEquals(Duration.ofSeconds(1), mgmt.getTTL(label1));
         mgmt.commit();
 
         TitanVertex v1 = tx.addVertex(T.label, "event","name", "some event","time", System.currentTimeMillis());
@@ -4660,16 +4663,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(likes, 42, TimeUnit.SECONDS); // long edge TTL will be overridden by short vertex TTL
+        mgmt.setTTL(likes, Duration.ofSeconds(42)); // long edge TTL will be overridden by short vertex TTL
         EdgeLabel dislikes = mgmt.makeEdgeLabel("dislikes").make();
-        mgmt.setTTL(dislikes, 1, TimeUnit.SECONDS);
+        mgmt.setTTL(dislikes, Duration.ofSeconds(1));
         EdgeLabel indifferentTo = mgmt.makeEdgeLabel("indifferentTo").make();
         VertexLabel label1 = mgmt.makeVertexLabel("person").setStatic().make();
-        mgmt.setTTL(label1, 2, TimeUnit.SECONDS);
-        assertEquals(42, mgmt.getTTL(likes).getLength(TimeUnit.SECONDS));
-        assertEquals(1, mgmt.getTTL(dislikes).getLength(TimeUnit.SECONDS));
-        assertEquals(0, mgmt.getTTL(indifferentTo).getLength(TimeUnit.SECONDS));
-        assertEquals(2, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(label1, Duration.ofSeconds(2));
+        assertEquals(Duration.ofSeconds(42), mgmt.getTTL(likes));
+        assertEquals(Duration.ofSeconds(1), mgmt.getTTL(dislikes));
+        assertEquals(Duration.ZERO, mgmt.getTTL(indifferentTo));
+        assertEquals(Duration.ofSeconds(2), mgmt.getTTL(label1));
         mgmt.commit();
 
         TitanVertex v1 = tx.addVertex("person");
@@ -4755,7 +4758,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         TitanSchemaType type = ImplicitKey.ID;
-        mgmt.setTTL(type, 0, TimeUnit.SECONDS);
+        mgmt.setTTL(type, Duration.ZERO);
     }
 
     @Test
@@ -4768,7 +4771,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Define schema: one edge label with a short ttl
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTTL(likes, initialTTLMillis, TimeUnit.MILLISECONDS);
+        mgmt.setTTL(likes, Duration.ofMillis(initialTTLMillis));
         mgmt.commit();
         graph.tx().rollback();
 
@@ -4788,7 +4791,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Remove the TTL on the edge label
         mgmt = graph.openManagement();
-        mgmt.setTTL(mgmt.getEdgeLabel("likes"), 0, TimeUnit.SECONDS);
+        mgmt.setTTL(mgmt.getEdgeLabel("likes"), Duration.ZERO);
         mgmt.commit();
 
         Thread.sleep(1L);
@@ -4823,7 +4826,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Check getTTL on edge label
         mgmt = graph.openManagement();
-        assertEquals(0, mgmt.getTTL(mgmt.getEdgeLabel("likes")).getLength(TimeUnit.NANOSECONDS));
+        assertEquals(Duration.ZERO, mgmt.getTTL(mgmt.getEdgeLabel("likes")));
         mgmt.rollback();
     }
 
@@ -4840,7 +4843,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Check getTTL on vertex label
         mgmt = graph.openManagement();
-        assertEquals(0, mgmt.getTTL(mgmt.getVertexLabel("foo")).getLength(TimeUnit.NANOSECONDS));
+        assertEquals(Duration.ZERO, mgmt.getTTL(mgmt.getVertexLabel("foo")));
         mgmt.rollback();
     }
 
@@ -4861,7 +4864,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         VertexLabel label1 = mgmt.makeVertexLabel("event").make();
-        mgmt.setTTL(label1, 42, TimeUnit.SECONDS);
+        mgmt.setTTL(label1, Duration.ofSeconds(42));
     }
 
     @Test
@@ -4879,9 +4882,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int ttl = 24*60*60;
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
         EdgeLabel hasLiked = mgmt.makeEdgeLabel("hasLiked").make();
-        mgmt.setTTL(likes, ttl, TimeUnit.SECONDS);
-        assertEquals(ttl, mgmt.getTTL(likes).getLength(TimeUnit.SECONDS));
-        assertEquals(0, mgmt.getTTL(hasLiked).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(likes, Duration.ofSeconds(ttl));
+        assertEquals(Duration.ofSeconds(ttl), mgmt.getTTL(likes));
+        assertEquals(Duration.ZERO, mgmt.getTTL(hasLiked));
         mgmt.commit();
 
         TitanVertex v1 = graph.addVertex(), v2 = graph.addVertex();
@@ -4892,23 +4895,23 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // read from the edge created in this transaction
         d = e1.value("~ttl");
-        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ofDays(1), d);
 
         // get the edge via a vertex
         e1 = getOnlyElement(v1.query().direction(Direction.OUT).labels("likes").edges());
         d = e1.value("~ttl");
-        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ofDays(1), d);
 
         // returned value of ^ttl is the total time to live since commit, not remaining time
         Thread.sleep(1001);
         graph.tx().rollback();
         e1 = getOnlyElement(v1.query().direction(Direction.OUT).labels("likes").edges());
         d = e1.value("~ttl");
-        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ofDays(1), d);
 
         // no ttl on edges of this label
         d = e2.value("~ttl");
-        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ZERO, d);
     }
 
     @Test
@@ -4923,8 +4926,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         int ttl1 = 1;
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
-        mgmt.setTTL(label1, ttl1, TimeUnit.SECONDS);
-        assertEquals(ttl1, mgmt.getTTL(label1).getLength(TimeUnit.SECONDS));
+        mgmt.setTTL(label1, Duration.ofSeconds(ttl1));
+        assertEquals(Duration.ofSeconds(ttl1), mgmt.getTTL(label1));
         mgmt.commit();
 
         TitanVertex v1 = tx.addVertex("event");
@@ -4933,9 +4936,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         /* TODO: this fails
         d = v1.getProperty("~ttl");
-        assertEquals(1, d.getLength(TimeUnit.SECONDS));
+        assertEquals(1, d);
         d = v2.getProperty("~ttl");
-        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+        assertEquals(0, d);
         */
 
         Object v1id = v1.id();
@@ -4944,8 +4947,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v2 = getV(graph,v2id);
 
         d = v1.value("~ttl");
-        assertEquals(1, d.getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ofSeconds(1), d);
         d = v2.value("~ttl");
-        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ZERO, d);
     }
 }

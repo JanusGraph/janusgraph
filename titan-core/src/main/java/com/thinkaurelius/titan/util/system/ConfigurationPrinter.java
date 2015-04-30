@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.util.system;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
@@ -212,7 +213,7 @@ public class ConfigurationPrinter {
             return "(no default value)";
         } else if (o instanceof Duration) {
             Duration d = (Duration)o;
-            return d.getLength(TimeUnit.MILLISECONDS) + " ms";
+            return d.toMillis() + " ms";
         } else if (o instanceof String[]) {
             return Joiner.on(",").join((String[])o);
         }

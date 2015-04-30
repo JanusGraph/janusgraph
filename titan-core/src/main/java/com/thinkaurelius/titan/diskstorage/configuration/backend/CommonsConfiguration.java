@@ -2,20 +2,21 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.util.time.Durations;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -86,16 +87,16 @@ public class CommonsConfiguration implements WriteConfiguration {
                 return (O) o;
             } else {
                 String[] comps = o.toString().split("\\s");
-                TimeUnit unit = null;
+                TemporalUnit unit = null;
                 if (comps.length == 1) {
                     //By default, times are in milli seconds
-                    unit = TimeUnit.MILLISECONDS;
+                    unit = ChronoUnit.MILLIS;
                 } else if (comps.length == 2) {
                     unit = Durations.parse(comps[1]);
                 } else {
                     throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
                 }
-                return (O) new StandardDuration(Long.valueOf(comps[0]), unit);
+                return (O) Duration.of(Long.valueOf(comps[0]), unit);
             }
         // Lists are deliberately not supported.  List's generic parameter
         // is subject to erasure and can't be checked at runtime.  Someone
@@ -143,7 +144,7 @@ public class CommonsConfiguration implements WriteConfiguration {
         if (value==null) {
             config.clearProperty(key);
         } else if (Duration.class.isAssignableFrom(value.getClass())) {
-            config.setProperty(key,((Duration)value).getLength(TimeUnit.MILLISECONDS));
+            config.setProperty(key,((Duration)value).toMillis());
         } else {
             config.setProperty(key,value);
         }

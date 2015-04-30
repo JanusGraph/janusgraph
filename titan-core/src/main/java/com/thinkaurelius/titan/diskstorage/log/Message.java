@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.log;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,7 +24,7 @@ public interface Message {
      * @param unit
      * @return
      */
-    public long getTimestamp(TimeUnit unit);
+    public Instant getTimestamp();
 
     /**
      * Returns the content of the message

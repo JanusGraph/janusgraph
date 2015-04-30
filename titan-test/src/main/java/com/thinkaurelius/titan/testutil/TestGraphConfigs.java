@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.testutil;
 
 import java.io.File;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.util.time.Temporals;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -75,9 +77,9 @@ public class TestGraphConfigs {
     // This is used as a timeout argument to a loop that only sleeps briefly and checks
     // for covergence much more often than the timeout argument; it can safely be set
     // high without delaying successful tests
-    public static long getSchemaConvergenceTime(TimeUnit u) {
+    public static long getSchemaConvergenceTime(ChronoUnit u) {
         final long sec = 60L;
-        long l = u.convert(sec, TimeUnit.SECONDS);
+        long l = Temporals.timeUnit(u).convert(sec, TimeUnit.SECONDS);
         // Check that a narrowing cast to int will not overflow, in case a test decides to try it.
         Preconditions.checkState(Integer.MIN_VALUE <= l && Integer.MAX_VALUE >= l,
                 "Schema convergence time %d is too large to express as an integer in %s", sec, u);

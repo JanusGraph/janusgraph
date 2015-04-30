@@ -8,12 +8,15 @@ import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,23 +39,23 @@ public class ManagementUtil {
      * @param time
      * @param unit
      */
-    public static void awaitGraphIndexUpdate(TitanGraph g, String indexName, long time, TimeUnit unit) {
+    public static void awaitGraphIndexUpdate(TitanGraph g, String indexName, long time, TemporalUnit unit) {
         awaitIndexUpdate(g,indexName,null,time,unit);
     }
 
-    public static void awaitVertexIndexUpdate(TitanGraph g, String indexName, String relationTypeName, long time, TimeUnit unit) {
+    public static void awaitVertexIndexUpdate(TitanGraph g, String indexName, String relationTypeName, long time, TemporalUnit unit) {
         awaitIndexUpdate(g,indexName,relationTypeName,time,unit);
     }
 
-    private static void awaitIndexUpdate(TitanGraph g, String indexName, String relationTypeName, long time, TimeUnit unit) {
+    private static void awaitIndexUpdate(TitanGraph g, String indexName, String relationTypeName, long time, TemporalUnit unit) {
         Preconditions.checkArgument(g!=null && g.isOpen(),"Need to provide valid, open graph instance");
         Preconditions.checkArgument(time>0 && unit!=null,"Need to provide valid time interval");
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName),"Need to provide an index name");
         StandardTitanGraph graph = (StandardTitanGraph)g;
         TimestampProvider times = graph.getConfiguration().getTimestampProvider();
-        Timepoint end = times.getTime().add(new StandardDuration(time,unit));
+        Instant end = times.getTime().plus(Duration.of(time,unit));
         boolean isStable = false;
-        while (times.getTime().compareTo(end)<0) {
+        while (times.getTime().isBefore(end)) {
             TitanManagement mgmt = graph.openManagement();
             try {
                 if (StringUtils.isNotBlank(relationTypeName)) {
@@ -73,7 +76,7 @@ public class ManagementUtil {
             }
             if (isStable) break;
             try {
-                times.sleepFor(new StandardDuration(500, TimeUnit.MILLISECONDS));
+                times.sleepFor(Duration.ofMillis(500));
             } catch (InterruptedException e) {
 
             }

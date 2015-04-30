@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -15,9 +16,10 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.IDBlock;
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 
+import com.thinkaurelius.titan.diskstorage.util.time.Temporals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +32,6 @@ public class StandardIDPool implements IDPool {
     private static final Logger log =
             LoggerFactory.getLogger(StandardIDPool.class);
 
-    private static final TimeUnit SCHEDULING_TIME_UNIT =
-            TimeUnit.MILLISECONDS; // TODO
 
     private static final IDBlock ID_POOL_EXHAUSTION = new IDBlock() {
         @Override
@@ -88,7 +88,7 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(idNamespace>=0);
         this.idNamespace = idNamespace;
         this.idUpperBound = idUpperBound;
-        Preconditions.checkArgument(!renewTimeout.isZeroLength(), "Renew-timeout must be positive");
+        Preconditions.checkArgument(!renewTimeout.isZero(), "Renew-timeout must be positive");
         this.renewTimeout = renewTimeout;
         Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
         this.renewBufferPercentage = renewBufferPercentage;
@@ -116,7 +116,7 @@ public class StandardIDPool implements IDPool {
         Stopwatch sw = Stopwatch.createStarted();
         if (null != idBlockFuture) {
             try {
-                nextBlock = idBlockFuture.get(renewTimeout.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+                nextBlock = idBlockFuture.get(renewTimeout.toMillis(), TimeUnit.MILLISECONDS);
             } catch (ExecutionException e) {
                 String msg = String.format("ID block allocation on partition(%d)-namespace(%d) failed with an exception in %s",
                         partition, idNamespace, sw.stop());

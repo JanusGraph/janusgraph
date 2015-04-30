@@ -8,13 +8,12 @@ import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class GraphIndexStatusWatcher
         extends AbstractIndexStatusWatcher<GraphIndexStatusReport, GraphIndexStatusWatcher> {
@@ -43,7 +42,7 @@ public class GraphIndexStatusWatcher
         Map<String, SchemaStatus> converged = new HashMap<>();
         TitanGraphIndex idx;
 
-        Timer t = new Timer(Timestamps.MILLI).start();
+        Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
             TitanManagement mgmt = null;
@@ -81,7 +80,7 @@ public class GraphIndexStatusWatcher
             notConverged.clear();
             converged.clear();
 
-            Thread.sleep(poll.getLength(TimeUnit.MILLISECONDS));
+            Thread.sleep(poll.toMillis());
         }
     }
 }

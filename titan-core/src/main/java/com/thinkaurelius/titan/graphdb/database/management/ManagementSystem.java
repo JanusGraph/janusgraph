@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
@@ -63,6 +62,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,7 +105,7 @@ public class ManagementSystem implements TitanManagement {
     private final Set<TitanSchemaVertex> updatedTypes;
     private final Set<Callable<Boolean>> updatedTypeTriggers;
 
-    private final Timepoint txStartTime;
+    private final Instant txStartTime;
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
@@ -170,7 +172,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(!graph.getConfiguration().getUniqueGraphId().equals(instanceId),
                 "Cannot force close this current instance [%s]. Properly shut down the graph instead.",instanceId);
         Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME,instanceId),"Instance [%s] is not currently open",instanceId);
-        Timepoint registrationTime = modifyConfig.get(REGISTRATION_TIME,instanceId);
+        Instant registrationTime = modifyConfig.get(REGISTRATION_TIME,instanceId);
         Preconditions.checkArgument(registrationTime.compareTo(txStartTime)<0,"The to-be-closed instance [%s] was started after this transaction" +
                 "which indicates a successful restart and can hence not be closed: %s vs %s",instanceId,registrationTime,txStartTime);
         modifyConfig.remove(REGISTRATION_TIME,instanceId);
@@ -1080,18 +1082,17 @@ public class ManagementSystem implements TitanManagement {
         } else {
             throw new IllegalArgumentException("given type does not support TTL: " + type.getClass());
         }
-
-        return new StandardDuration(ttl, TimeUnit.SECONDS);
+        return Duration.ofSeconds(ttl);
     }
 
     /**
      * Sets time-to-live for those schema types that support it
      * @param type
-     * @param ttl time-to-live, in seconds
+     * @param duration Note that only 'seconds' granularity is supported
      */
     @Override
     public void setTTL(final TitanSchemaType type,
-                       final int ttl, TimeUnit unit) {
+                       final Duration duration) {
         if (!graph.getBackend().getStoreFeatures().hasCellTTL()) throw new UnsupportedOperationException("The storage engine does not support TTL");
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static to allow setting TTL");
@@ -1100,9 +1101,9 @@ public class ManagementSystem implements TitanManagement {
         }
         Preconditions.checkArgument(type instanceof TitanSchemaVertex);
 
-        Integer ttlSeconds = (0 == ttl) ?
+        Integer ttlSeconds = (duration.isZero()) ?
                               null :
-                              ConversionHelper.getTTLSeconds(ttl, unit);
+                (int) duration.getSeconds();
 
         setTypeModifier(type, ModifierType.TTL, ttlSeconds);
     }

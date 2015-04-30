@@ -12,9 +12,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
@@ -28,13 +26,14 @@ import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
+
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -55,8 +54,8 @@ public class StandardSerializer implements AttributeHandler, Serializer {
                     Parameter.class, Parameter[].class, ParameterType.class, RelationCategory.class,
                     Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
                     ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
-                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class, Timestamp.class,
-                    Timestamps.class
+                    Duration.class, StandardTransactionId.class, Instant.class,
+                    TimestampProviders.class
             );
 
 
@@ -124,7 +123,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(51,SchemaStatus.class, new EnumSerializer<>(SchemaStatus.class));
         registerClassInternal(52,LogTxStatus.class, new EnumSerializer<>(LogTxStatus.class));
         registerClassInternal(53,MgmtLogType.class, new EnumSerializer<>(MgmtLogType.class));
-        registerClassInternal(54,Timestamps.class, new EnumSerializer<>(Timestamps.class));
+        registerClassInternal(54,TimestampProviders.class, new EnumSerializer<>(TimestampProviders.class));
         registerClassInternal(55,TimeUnit.class, new EnumSerializer<>(TimeUnit.class));
         registerClassInternal(56,Mapping.class, new EnumSerializer<>(Mapping.class));
         registerClassInternal(57,ConflictAvoidanceMode.class, new EnumSerializer<>(ConflictAvoidanceMode.class));
@@ -134,10 +133,9 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(62,Parameter[].class, new ParameterArraySerializer());
         registerClassInternal(63,TypeDefinitionDescription.class, new TypeDefinitionDescriptionSerializer());
         //Needed for configuration and transaction logging
-        registerClassInternal(64,StandardDuration.class, new StandardDurationSerializer());
-        registerClassInternal(65,Timepoint.class, new StandardTimepointSerializer());
+        registerClassInternal(64,Duration.class, new DurationSerializer());
+        registerClassInternal(65,Instant.class, new InstantSerializer());
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
-        registerClassInternal(67,Timestamp.class, new TimestampSerializer());
 
     }
 
@@ -162,7 +160,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     private static Class normalizeDataType(Class datatype) {
         Class superClass = datatype.getSuperclass();
         if (null != superClass && superClass.isEnum()) return superClass;
-        if (StandardTimepoint.class.equals(datatype)) return Timepoint.class;
+        if (Instant.class.equals(datatype)) return Instant.class;
         return datatype;
     }
 

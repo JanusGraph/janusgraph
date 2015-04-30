@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core.log;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,11 +33,10 @@ public interface LogProcessorBuilder {
     /**
      * Sets the time at which this log processor should start processing transaction log entries
      *
-     * @param sinceEpoch
-     * @param unit
+     * @param startTime
      * @return
      */
-    public LogProcessorBuilder setStartTime(long sinceEpoch, TimeUnit unit);
+    public LogProcessorBuilder setStartTime(Instant startTime);
 
     /**
      * Indicates that the transaction log processor should process newly added events.

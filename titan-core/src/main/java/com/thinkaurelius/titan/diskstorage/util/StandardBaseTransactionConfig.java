@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+
+import java.time.Instant;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -14,14 +16,14 @@ import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
  */
 public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
-    private volatile Timepoint commitTime;
+    private volatile Instant commitTime;
     private final TimestampProvider times;
     private final String groupName;
     private final Configuration customOptions;
 
     private StandardBaseTransactionConfig(String groupName,
                                           TimestampProvider times,
-                                          Timepoint commitTime,
+                                          Instant commitTime,
                                           Configuration customOptions) {
         Preconditions.checkArgument(customOptions!=null);
         Preconditions.checkArgument(null != times || null != commitTime);
@@ -32,7 +34,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
     }
 
     @Override
-    public synchronized Timepoint getCommitTime() {
+    public synchronized Instant getCommitTime() {
         if (commitTime==null) {
             //set commit time to current time
             commitTime = times.getTime();
@@ -41,7 +43,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
     }
 
     @Override
-    public synchronized void setCommitTime(Timepoint time) {
+    public synchronized void setCommitTime(Instant time) {
         Preconditions.checkArgument(commitTime==null,"A commit time has already been set");
         this.commitTime=time;
     }
@@ -78,7 +80,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
     public static class Builder {
 
-        private Timepoint commitTime = null;
+        private Instant commitTime = null;
         private TimestampProvider times;
         private String groupName = GraphDatabaseConfiguration.getSystemMetricsPrefix();
         private Configuration customOptions = Configuration.EMPTY;
@@ -104,7 +106,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
             return this;
         }
 
-        public Builder commitTime(Timepoint commit) {
+        public Builder commitTime(Instant commit) {
             commitTime = commit;
             return this;
         }

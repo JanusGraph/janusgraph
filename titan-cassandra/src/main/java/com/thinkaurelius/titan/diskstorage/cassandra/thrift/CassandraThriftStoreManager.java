@@ -165,7 +165,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
          * This is eventually passed to Thrift's TSocket constructor. The
          * constructor parameter is of type int.
          */
-        int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).getLength(TimeUnit.MILLISECONDS);
+        int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).toMillis();
 
         thriftFrameSizeBytes = config.get(THRIFT_FRAME_SIZE) * 1024 * 1024;
 
@@ -276,7 +276,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         SlicePredicate sp = new SlicePredicate();
                         sp.addToColumn_names(buf.as(StaticBuffer.BB_FACTORY));
                         d.setPredicate(sp);
-                        d.setTimestamp(commitTime.getDeletionTime(times.getUnit()));
+                        d.setTimestamp(commitTime.getDeletionTime(times));
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setDeletion(d);
                         thriftMutation.add(m);
@@ -289,7 +289,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
 
-                        column.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
+                        column.setTimestamp(commitTime.getAdditionTime(times));
 
                         Integer ttl = (Integer) ent.getMetaData().get(EntryMetaData.TTL);
                         if (null != ttl && ttl > 0) {

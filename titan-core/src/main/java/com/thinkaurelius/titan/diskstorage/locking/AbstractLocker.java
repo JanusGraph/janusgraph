@@ -1,18 +1,19 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
@@ -52,16 +53,6 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
      * flow of time.
      */
     protected final TimestampProvider times;
-
-    /**
-     * This is a copy of {@code times.getUnit()}. This field shouldn't exist.
-     * The JIT will undoubtedly inline {@code getUnit()} so this just wastes
-     * space and duplicates information. It's only here to ease testing with
-     * EasyMock. By calling {@code getUnit()} only during construction and never
-     * during normal operation, it's easier to create a strict
-     * method-order-checking mock of TimestampProvider in testing.
-     */
-    protected final TimeUnit timeUnit;
 
     /**
      * This is sort-of Cassandra/HBase specific. It concatenates
@@ -123,7 +114,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
 
         public Builder() {
             this.rid = null; //TODO: can we ensure that this is always set correctly? Check the AstyanaxRecipe
-            this.times = Timestamps.NANO;
+            this.times = TimestampProviders.NANO;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
             this.lockState = new LockerState<S>();
@@ -221,7 +212,6 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             Duration lockExpire, Logger log) {
         this.rid = rid;
         this.times = times;
-        this.timeUnit = times.getUnit();
         this.serializer = serializer;
         this.llm = llm;
         this.lockState = lockState;
@@ -395,10 +385,10 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     }
 
     private boolean lockLocally(KeyColumn lockID, StoreTransaction tx) {
-        return lockLocally(lockID, times.getTime().add(lockExpire), tx);
+        return lockLocally(lockID, times.getTime().plus(lockExpire), tx);
     }
 
-    private boolean lockLocally(KeyColumn lockID, Timepoint expire, StoreTransaction tx) {
+    private boolean lockLocally(KeyColumn lockID, Instant expire, StoreTransaction tx) {
         return llm.lock(lockID, tx, expire);
     }
 

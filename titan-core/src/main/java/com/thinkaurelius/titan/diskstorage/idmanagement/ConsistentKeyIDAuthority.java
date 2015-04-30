@@ -2,13 +2,14 @@ package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
@@ -72,7 +73,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     private final TimestampProvider times;
 
     private final int rollbackAttempts = 5;
-    private final Duration rollbackWaitTime = new StandardDuration(200L, TimeUnit.MILLISECONDS);
+    private final Duration rollbackWaitTime = Duration.ofMillis(200L);
 
     private final int partitionBitWdith;
 
@@ -93,7 +94,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         this.manager = manager;
         this.idStore = idStore;
         this.times = config.get(TIMESTAMP_PROVIDER);
-        this.waitGracePeriod = idApplicationWaitMS.multiply(0.1D);
+        this.waitGracePeriod = idApplicationWaitMS.dividedBy(10);
         Preconditions.checkNotNull(times);
 
         partitionBitWdith = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
@@ -263,7 +264,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                          * the same id block from another machine
                          */
 
-                        sleepAndConvertInterrupts(idApplicationWaitMS.add(waitGracePeriod));
+                        sleepAndConvertInterrupts(idApplicationWaitMS.plus(waitGracePeriod));
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
@@ -320,7 +321,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                                 break;
                             } catch (BackendException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
-                                if (!rollbackWaitTime.isZeroLength())
+                                if (!rollbackWaitTime.isZero())
                                     sleepAndConvertInterrupts(rollbackWaitTime);
                             }
                         }
@@ -330,7 +331,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                 // No need to increment the backoff wait time or to sleep
                 log.warn(e.getMessage());
             } catch (TemporaryBackendException e) {
-                backoffMS = Durations.min(backoffMS.multiply(2), idApplicationWaitMS.multiply(32));
+                backoffMS = Durations.min(backoffMS.multipliedBy(2), idApplicationWaitMS.multipliedBy(32));
                 log.warn("Temporary storage exception while acquiring id block - retrying in {}: {}", backoffMS, e);
                 sleepAndConvertInterrupts(backoffMS);
             }
@@ -348,13 +349,13 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         return slice;
     }
 
-    private final StaticBuffer getBlockApplication(long blockValue, Timepoint timestamp) {
+    private final StaticBuffer getBlockApplication(long blockValue, Instant timestamp) {
         WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
                         + uidBytes.length);
 
-        bb.putLong(-blockValue).putLong(timestamp.getNativeTimestamp());
+        bb.putLong(-blockValue).putLong(times.getTime(timestamp));
         WriteBufferUtil.put(bb, uidBytes);
         return bb.getStaticBuffer();
     }
@@ -365,7 +366,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private void sleepAndConvertInterrupts(Duration d) throws BackendException {
         try {
-            times.sleepPast(times.getTime().add(d));
+            times.sleepPast(times.getTime().plus(d));
         } catch (InterruptedException e) {
             throw new PermanentBackendException(e);
         }

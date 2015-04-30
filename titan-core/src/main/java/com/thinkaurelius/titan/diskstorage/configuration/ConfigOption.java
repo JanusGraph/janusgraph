@@ -5,9 +5,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+
+
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.lang.reflect.Array;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
@@ -68,9 +70,9 @@ public class ConfigOption<O> extends ConfigElement {
     static {
         ACCEPTED_DATATYPES = ImmutableSet.of(
                 ConflictAvoidanceMode.class,
-                StandardDuration.class,
-                Timestamps.class,
-                Timepoint.class,
+                Duration.class,
+                TimestampProviders.class,
+                Instant.class,
                 Boolean.class,
                 Short.class,
                 Integer.class,

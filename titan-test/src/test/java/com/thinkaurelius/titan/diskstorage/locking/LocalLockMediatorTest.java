@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Instant;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -28,16 +28,16 @@ public class LocalLockMediatorTest {
 
     @Test
     public void testLockExpiration() throws InterruptedException {
-        TimestampProvider times = Timestamps.MICRO;
+        TimestampProvider times = TimestampProviders.MICRO;
         LocalLockMediator<ExpectedValueCheckingTransaction> llm =
                 new LocalLockMediator<ExpectedValueCheckingTransaction>(LOCK_NAMESPACE, times);
 
-        assertTrue(llm.lock(kc, mockTx1, times.getTime(0, TimeUnit.NANOSECONDS)));
-        assertTrue(llm.lock(kc, mockTx2, times.getTime(Long.MAX_VALUE, TimeUnit.NANOSECONDS)));
+        assertTrue(llm.lock(kc, mockTx1, Instant.EPOCH));
+        assertTrue(llm.lock(kc, mockTx2, Instant.MAX));
 
         llm = new LocalLockMediator<ExpectedValueCheckingTransaction>(LOCK_NAMESPACE, times);
 
-        assertTrue(llm.lock(kc, mockTx1, times.getTime(Long.MAX_VALUE, TimeUnit.NANOSECONDS)));
-        assertFalse(llm.lock(kc, mockTx2, times.getTime(Long.MAX_VALUE, TimeUnit.NANOSECONDS)));
+        assertTrue(llm.lock(kc, mockTx1, Instant.MAX));
+        assertFalse(llm.lock(kc, mockTx2, Instant.MAX));
     }
 }

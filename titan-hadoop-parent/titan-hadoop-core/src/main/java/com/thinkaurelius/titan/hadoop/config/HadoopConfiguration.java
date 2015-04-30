@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.hadoop.config;
 
 import java.lang.reflect.Constructor;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
@@ -12,10 +15,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.time.Durations;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 
 import javax.annotation.Nullable;
 
@@ -70,16 +72,16 @@ public class HadoopConfiguration implements WriteConfiguration {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             String s = config.get(internalKey);
             String[] comps = s.split("\\s");
-            TimeUnit unit = null;
+            TemporalUnit unit = null;
             if (comps.length == 1) {
                 //By default, times are in milli seconds
-                unit = TimeUnit.MILLISECONDS;
+                unit = ChronoUnit.MILLIS;
             } else if (comps.length == 2) {
                 unit = Durations.parse(comps[1]);
             } else {
                 throw new IllegalArgumentException("Cannot parse time duration from: " + s);
             }
-            return (O) new StandardDuration(Long.valueOf(comps[0]), unit);
+            return (O) Duration.of(Long.valueOf(comps[0]), unit);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 
@@ -150,7 +152,7 @@ public class HadoopConfiguration implements WriteConfiguration {
             config.set(internalKey, value.toString());
         } else if (Duration.class.isAssignableFrom(datatype)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
-            String millis = String.valueOf(((Duration)value).getLength(TimeUnit.MILLISECONDS));
+            String millis = String.valueOf(((Duration)value).toMillis());
             config.set(internalKey, millis);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }

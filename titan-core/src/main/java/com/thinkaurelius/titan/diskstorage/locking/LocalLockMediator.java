@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -83,7 +84,7 @@ public class LocalLockMediator<T> {
      * @param expires   instant at which this lock will automatically expire
      * @return true if the lock is acquired, false if it was not acquired
      */
-    public boolean lock(KeyColumn kc, T requestor, Timepoint expires) {
+    public boolean lock(KeyColumn kc, T requestor, Instant expires) {
         assert null != kc;
         assert null != requestor;
 
@@ -199,7 +200,7 @@ public class LocalLockMediator<T> {
         /**
          * The expiration time of a the lock.
          */
-        private final Timepoint expires;
+        private final Instant expires;
         /**
          * Cached hashCode.
          */
@@ -210,7 +211,7 @@ public class LocalLockMediator<T> {
          */
         private StackTraceElement[] acquiredAt;
 
-        private AuditRecord(T holder, Timepoint expires, StackTraceElement[] acquiredAt) {
+        private AuditRecord(T holder, Instant expires, StackTraceElement[] acquiredAt) {
             this.holder = holder;
             this.expires = expires;
             this.acquiredAt = acquiredAt;
