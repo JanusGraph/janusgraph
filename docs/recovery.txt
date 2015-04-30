@@ -41,10 +41,14 @@ To remove the failed instance, open a management transaction against any of the 
 
 [source, gremlin]
 mgmt = g.openManagement()
-instances = mgmt.getOpenInstances() //all open instances
-mgmt.forceCloseInstance(instances.iterator().next()) //remove 1st instance
+mgmt.getOpenInstances() //all open instances
+==>7f0001016161-dunwich1(current)
+==>7f0001016161-atlantis1
+mgmt.forceCloseInstance('7f0001016161-atlantis1') //remove an instance
 mgmt.commit()
 
-The unique identifier of the current Titan instance is marked with the suffix `(current)` so that it can be easily identified.
+The unique identifier of the current Titan instance is marked with the suffix `(current)` so that it can be easily identified. This instance cannot be closed via the `forceCloseInstance` method and instead should be closed via `g.close()`
+
+
 
 It must be ensured that the manually removed instance is indeed no longer active. Removing an active Titan instance from a cluster can cause data inconsistencies. Hence, use this method with great care in particular when Titan is operated in an environment where instances are automatically restarted.
