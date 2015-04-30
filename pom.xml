@@ -219,9 +219,11 @@
                         <failIfNoTests>false</failIfNoTests>
                         <!-- six hours -->
                         <forkedProcessTimeoutInSeconds>21600</forkedProcessTimeoutInSeconds>
+                        <reuseForks>false</reuseForks>
                         <excludes>
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
+                            <!-- <exclude>**/*Groovy*Test.java</exclude> -->
                         </excludes>
                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                         <skip>${test.skip.default}</skip>
