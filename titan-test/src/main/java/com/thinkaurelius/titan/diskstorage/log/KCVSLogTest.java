@@ -25,11 +25,14 @@ public abstract class KCVSLogTest extends LogTest {
     private KeyColumnValueStoreManager storeManager;
 
     @Override
-    public LogManager openLogManager(String senderId) throws BackendException {
+    public LogManager openLogManager(String senderId, boolean requiresOrderPreserving) throws BackendException {
         storeManager = openStorageManager();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,senderId);
         config.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, new StandardDuration(500L, TimeUnit.MILLISECONDS), LOG_NAME);
+        //To ensure that the write order is preserved in reading, we need to ensure that all writes go to the same partition
+        //otherwise readers will independently read from the partitions out-of-order by design to avoid having to synchronize
+        config.set(KCVSLogManager.LOG_FIXED_PARTITION, requiresOrderPreserving, LOG_NAME);
         return new KCVSLogManager(storeManager,config.restrictTo(LOG_NAME));
     }
 

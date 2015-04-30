@@ -34,7 +34,14 @@ public abstract class LogTest {
 
     private static final long TIMEOUT_MS = 30000;
 
-    public abstract LogManager openLogManager(String senderId) throws BackendException;
+    /**
+     *
+     * @param senderId The unique id identifying the sending instance
+     * @param requiresOrderPreserving whether it is required by the test case that write order is preserved when reading.
+     * @return
+     * @throws BackendException
+     */
+    public abstract LogManager openLogManager(String senderId, boolean requiresOrderPreserving) throws BackendException;
 
     private LogManager manager;
 
@@ -45,8 +52,10 @@ public abstract class LogTest {
 
     @Before
     public void setup() throws Exception {
-        log.debug("Starting {}.{}", getClass().getSimpleName(), testName.getMethodName());
-        manager = openLogManager(DEFAULT_SENDER_ID);
+        //Tests that assume that write order is preserved when reading from the log must suffix their test names with "serial"
+        boolean requiresOrderPreserving = testName.getMethodName().toLowerCase().endsWith("serial");
+        log.debug("Starting {}.{} - Order preserving {}", getClass().getSimpleName(), testName.getMethodName(), requiresOrderPreserving);
+        manager = openLogManager(DEFAULT_SENDER_ID,requiresOrderPreserving);
     }
 
     @After
@@ -60,18 +69,23 @@ public abstract class LogTest {
     }
 
     @Test
-    public void smallSendReceive() throws Exception {
-        simpleSendReceive(100,50);
+    public void smallSendReceiveSerial() throws Exception {
+        simpleSendReceive(100, 50);
     }
 
     @Test
-    public void mediumSendReceive() throws Exception {
+    public void mediumSendReceiveSerial() throws Exception {
         simpleSendReceive(2000,1);
     }
 
     @Test
+    public void testMultipleReadersOnSingleLogSerial() throws Exception {
+        sendReceive(4, 2000, 5, true);
+    }
+
+    @Test
     public void testMultipleReadersOnSingleLog() throws Exception {
-        sendReceive(4, 2000, 5);
+        sendReceive(4, 2000, 5, false);
     }
 
     @Test
@@ -89,7 +103,7 @@ public abstract class LogTest {
     }
 
     @Test
-    public void testLogIsDurableAcrossReopen() throws Exception {
+    public void testLogIsDurableAcrossReopenSerial() throws Exception {
         final long past = System.currentTimeMillis() - 10L;
         Log l;
         l = manager.openLog("durable");
@@ -109,7 +123,7 @@ public abstract class LogTest {
     }
 
     @Test
-    public void testMultipleLogsWithSingleReader() throws Exception {
+    public void testMultipleLogsWithSingleReaderSerial() throws Exception {
         final int nl = 3;
         Log logs[] = new Log[nl];
         CountingReader count = new CountingReader(3, false);
@@ -158,7 +172,7 @@ public abstract class LogTest {
     }
 
     @Test
-    public void testFuzzMessages() throws Exception {
+    public void testFuzzMessagesSerial() throws Exception {
         final int maxLen = 1024 * 4;
         final int rounds = 32;
 
@@ -202,7 +216,7 @@ public abstract class LogTest {
     }
 
     @Test
-    public void testUnregisterReader() throws Exception {
+    public void testUnregisterReaderSerial() throws Exception {
         Log log = manager.openLog("test1");
 
         // Register two readers and verify they receive messages.
@@ -224,16 +238,16 @@ public abstract class LogTest {
     }
 
     private void simpleSendReceive(int numMessages, int delayMS) throws Exception {
-        sendReceive(1, numMessages, delayMS);
+        sendReceive(1, numMessages, delayMS, true);
     }
 
-    public void sendReceive(int readers, int numMessages, int delayMS) throws Exception {
+    public void sendReceive(int readers, int numMessages, int delayMS, boolean expectMessageOrder) throws Exception {
         Preconditions.checkState(0 < readers);
         Log log1 = manager.openLog("test1");
         assertEquals("test1",log1.getName());
         CountingReader counts[] = new CountingReader[readers];
         for (int i = 0; i < counts.length; i++) {
-            counts[i] = new CountingReader(numMessages, true);
+            counts[i] = new CountingReader(numMessages, expectMessageOrder);
             log1.registerReader(ReadMarker.fromNow(),counts[i]);
         }
         for (long i=1;i<=numMessages;i++) {
