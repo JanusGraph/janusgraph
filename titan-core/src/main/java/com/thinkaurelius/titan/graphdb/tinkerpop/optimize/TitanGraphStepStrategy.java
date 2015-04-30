@@ -9,8 +9,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -31,12 +37,26 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
         if (startStep instanceof GraphStep) {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             if (originalGraphStep.getIds()==null || originalGraphStep.getIds().length==0) {
+                //Try to optimize for index calls
                 final TitanGraphStep<?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(startStep, (Step)titanGraphStep, traversal);
 
                 HasStepFolder.foldInHasContainer(titanGraphStep,traversal);
                 HasStepFolder.foldInOrder(titanGraphStep,traversal,traversal,titanGraphStep.returnsVertices());
                 HasStepFolder.foldInRange(titanGraphStep,traversal);
+            } else {
+                //Make sure that any provided "start" elements are instantiated in the current transaction
+                Object[] ids = originalGraphStep.getIds();
+                if (ids[0] instanceof Element) {
+                    //GraphStep constructor ensures that the entire array is elements
+                    final Object[] elementIds = new Object[ids.length];
+                    for (int i = 0; i < ids.length; i++) {
+                        elementIds[i]=((Element)ids[i]).id();
+                    }
+                    originalGraphStep.setIteratorSupplier(() -> (Iterator) (originalGraphStep.returnsVertices() ?
+                            originalGraphStep.getTraversal().getGraph().get().vertices(elementIds) :
+                            originalGraphStep.getTraversal().getGraph().get().edges(elementIds)));
+                }
             }
         }
     }

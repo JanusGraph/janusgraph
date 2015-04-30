@@ -82,9 +82,11 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     }
 
     public static void foldInHasContainer(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal) {
+
+        //boolean previouslyLabeled = titanStep.getLabel().isPresent();
         Step currentStep = titanStep.getNextStep();
         while (true) {
-            if (currentStep.getLabel().isPresent()) break;
+            //if (previouslyLabeled) break;
 
             if (currentStep instanceof HasContainerHolder) {
                 Iterable<HasContainer> containers = getHasContainers((HasContainerHolder) currentStep);
@@ -102,16 +104,18 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             } else {
                 break;
             }
+//            previouslyLabeled = currentStep.getLabel().isPresent();
             currentStep = currentStep.getNextStep();
         }
     }
 
-    public static void addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal.Admin<?, ?> traversal) {
-        currentStep.getLabel().ifPresent(label -> {
+    public static boolean addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal.Admin<?, ?> traversal) {
+        if (currentStep.getLabel().isPresent()) {
             final IdentityStep identityStep = new IdentityStep<>(traversal);
-            identityStep.setLabel(label);
+            identityStep.setLabel(currentStep.getLabel().get());
             TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-        });
+            return true;
+        } else return false;
     }
 
     public static void foldInOrder(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal,

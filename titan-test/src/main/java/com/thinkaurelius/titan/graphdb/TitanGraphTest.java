@@ -66,7 +66,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MarkerIdentityStep;
 import org.apache.tinkerpop.gremlin.structure.*;
 
 import static org.apache.tinkerpop.gremlin.structure.Direction.*;
@@ -1604,21 +1606,21 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testImplicitKey() {
         TitanVertex v = graph.addVertex("name","Dan"), u = graph.addVertex();
-        Edge e = v.addEdge("knows",u);
+        Edge e = v.addEdge("knows", u);
         graph.tx().commit();
         RelationIdentifier eid = (RelationIdentifier)e.id();
 
         assertEquals(v.id(),v.value(ID_NAME));
-        assertEquals(eid,e.value(ID_NAME));
-        assertEquals("knows",e.value(LABEL_NAME));
+        assertEquals(eid, e.value(ID_NAME));
+        assertEquals("knows", e.value(LABEL_NAME));
         assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL.name(), v.value(LABEL_NAME));
         assertCount(1, v.query().direction(Direction.BOTH).labels("knows").has(ID_NAME, eid).edges());
         assertCount(0, v.query().direction(Direction.BOTH).labels("knows").has(ID_NAME, RelationIdentifier.get(new long[]{4, 5, 6, 7})).edges());
         assertCount(1, v.query().direction(Direction.BOTH).labels("knows").has("~nid", eid.getRelationId()).edges());
         assertCount(0, v.query().direction(Direction.BOTH).labels("knows").has("~nid", 110111).edges());
         //Test edge retrieval
-        assertNotNull(getE(graph,eid));
-        assertEquals(eid,getE(graph,eid).id());
+        assertNotNull(getE(graph, eid));
+        assertEquals(eid, getE(graph, eid).id());
         //Test adjacent constraint
         assertEquals(1, v.query().direction(BOTH).has("~adjacent", u.id()).edgeCount());
         assertCount(1, v.query().direction(BOTH).has("~adjacent", (int) getId(u)).edges());
@@ -1754,6 +1756,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         v3 = graph.addVertex();
         Edge e = v1.addEdge("knows",v3);
         assertFalse(e.property("age").isPresent());
+    }
+
+    @Test
+    public void testNestedTransactions() {
+        Vertex v1 = graph.addVertex();
+        newTx();
+        Vertex v2 = tx.addVertex();
+        v2.property("name", "foo");
+        tx.commit();
+        v1.addEdge("related", graph.traversal().V(v2).next());
+        graph.tx().commit();
+        assertCount(1,v1.edges(OUT));
     }
 
     @Test
@@ -3285,7 +3299,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         GraphTraversalSource gts = graph.traversal();
 
-        assertNumStep(numV/5, 1, gts.V(sv[0]).outE("knows").has("weight",1), TitanVertexStep.class);
+        assertNumStep(numV/5, 1, gts.V(sv[0]).outE("knows").has("weight", 1), TitanVertexStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).outE("knows"), TitanVertexStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).out("knows"), TitanVertexStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").limit(10)), TitanVertexStep.class);
@@ -3302,7 +3316,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(numV / 5, 1, gts.V().has("weight", 1), TitanGraphStep.class);
         assertNumStep(10, 1, gts.V().has("weight", 1).range(0, 10), TitanGraphStep.class);
 
-        assertNumStep(superV, 1, gts.V().has("id",sid), TitanGraphStep.class);
+        assertNumStep(superV, 1, gts.V().has("id", sid), TitanGraphStep.class);
+        //Ensure that as steps don't interfere
+        assertNumStep(1, 2, gts.V().has("id", numV / 5).as("x"), TitanGraphStep.class, IdentityStep.class);
+        assertNumStep(1, 2, gts.V().has("id", numV / 5).has("weight", (numV / 5) % 5).as("x"), TitanGraphStep.class, IdentityStep.class);
+
+
 
         assertNumStep(superV*(numV/5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", Compare.inside, ImmutableList.of(0, 3)), TitanGraphStep.class, TitanVertexStep.class);
@@ -3333,7 +3352,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int numSteps = 0;
         for (Step s : steps) {
 //            System.out.println(s.getClass());
-            if (s.getClass().equals(GraphStep.class) || s.getClass().equals(StartStep.class)) continue;
+            if (s.getClass().equals(GraphStep.class) || s.getClass().equals(StartStep.class) || s.getClass().equals(MarkerIdentityStep.class)) continue;
 
             assertTrue(s.getClass().getName(),expSteps.contains(s.getClass()));
             numSteps++;

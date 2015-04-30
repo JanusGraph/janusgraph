@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,13 +68,17 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        System.out.println(TEnum.class);
-        System.out.println(TEnum.ONE.getClass());
-        System.out.println(TEnum.THREE.getClass());
-        System.out.println(TEnum.THREE.getClass().isEnum());
-        System.out.println(TEnum.THREE.getClass().getSuperclass().isEnum());
-        System.out.println(TEnum.THREE instanceof TEnum);
-        System.out.println(Object.class.getSuperclass());
+
+        Comparator<Integer> lambda = Integer::compare;
+        System.out.println(lambda.getClass());
+
+//        System.out.println(TEnum.class);
+//        System.out.println(TEnum.ONE.getClass());
+//        System.out.println(TEnum.THREE.getClass());
+//        System.out.println(TEnum.THREE.getClass().isEnum());
+//        System.out.println(TEnum.THREE.getClass().getSuperclass().isEnum());
+//        System.out.println(TEnum.THREE instanceof TEnum);
+//        System.out.println(Object.class.getSuperclass());
 
 
         System.exit(0);
