@@ -50,8 +50,18 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDAuthority.class);
 
-    private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(16);
-    private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(16);
+    /*
+     * ID columns are 17 or more bytes long:
+     *
+     * -----------------------------------------------------------
+     * | 8 bytes counter | 8 bytes timestamp | var bytes rid/uid |
+     * -----------------------------------------------------------
+     *
+     * The argument for the following two slice bounds mirrors the
+     * argument for choosing bounds in ConsistentKeyLocker.
+     */
+    private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(1);
+    private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(17);
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;

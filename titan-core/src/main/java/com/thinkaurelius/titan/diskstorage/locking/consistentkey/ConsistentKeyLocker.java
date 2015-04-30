@@ -128,7 +128,34 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     private static final StaticBuffer zeroBuf = BufferUtil.getIntBuffer(0); // TODO this does not belong here
 
-    public static final StaticBuffer LOCK_COL_START = BufferUtil.zeroBuffer(9);
+    /*
+     * In the storage backends, columns composed of one or more occurrences
+     * of a single byte sort from shortest to longest.
+     *
+     * A lock column is 9 or more bytes long:
+     *
+     * -------------------------------------
+     * | 8 bytes timestamp | var bytes rid |
+     * -------------------------------------
+     *
+     * A start bound of a single zero byte will always sort before the
+     * smallest timestamp due to length.
+     *
+     * The end bound is not as obvious.  A timestamp with all-one-bits
+     * is eons away in the default configuration.  However, it's theoretically
+     * possible with the nanos provider, since it relies on System.nanoTime,
+     * and the contract for nanoTime explicitly says that it may go negative.
+     *
+     * Fortunately, we can rely on the rid for our end bound.  The rid is a
+     * user-customizable string that gets converted into a StaticBuffer via
+     * String.getBytes.  This should UTF-8 encode it.  Under UTF-8, a byte
+     * with all bits set is illegal.  So, the 9th byte of a lock column
+     * should never have all bits set.  This is why LOCK_END_COL is exactly
+     * 9 bytes long: it's just enough to extend past the timestamp and onto
+     * the first byte of a UTF-8 string, and that UTF-8 byte should have at
+     * least one zero bit that makes it sort before.
+     */
+    public static final StaticBuffer LOCK_COL_START = BufferUtil.zeroBuffer(1);
     public static final StaticBuffer LOCK_COL_END   = BufferUtil.oneBuffer(9);
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLocker.class);
