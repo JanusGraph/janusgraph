@@ -223,7 +223,7 @@
                         <excludes>
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
-                            <!-- <exclude>**/*Groovy*Test.java</exclude> -->
+                            <exclude>**/*Groovy*Test.java</exclude>
                         </excludes>
                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                         <skip>${test.skip.default}</skip>
