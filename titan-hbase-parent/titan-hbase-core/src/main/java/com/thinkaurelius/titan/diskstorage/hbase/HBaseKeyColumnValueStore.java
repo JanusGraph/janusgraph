@@ -218,7 +218,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         try {
             table = cnx.getTable(tableName);
-            return new RowIterator(table, table.getScanner(scan.setFilter(filters)));
+            return new RowIterator(table, table.getScanner(scan.setFilter(filters)), columnFamilyBytes);
         } catch (IOException e) {
             IOUtils.closeQuietly(table);
             throw new PermanentBackendException(e);
@@ -228,26 +228,18 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     private class RowIterator implements KeyIterator {
         private final HTableInterface table;
         private final Iterator<Result> rows;
+        private final byte[] columnFamilyBytes;
 
         private Result currentRow;
         private boolean isClosed;
 
-        public RowIterator(HTableInterface table, ResultScanner rows) {
+        public RowIterator(HTableInterface table, ResultScanner rows, byte[] columnFamilyBytes) {
             this.table = table;
+            this.columnFamilyBytes = Arrays.copyOf(columnFamilyBytes, columnFamilyBytes.length);
             this.rows = Iterators.filter(rows.iterator(), new Predicate<Result>() {
                 @Override
                 public boolean apply(@Nullable Result result) {
-                    if (result == null)
-                        return false;
-
-                    try {
-                        StaticBuffer id = StaticArrayBuffer.of(result.getRow());
-                        id.getLong(0);
-                    } catch (NumberFormatException e) {
-                        return false;
-                    }
-
-                    return true;
+                    return null != result && null != result.getRow();
                 }
             });
         }
