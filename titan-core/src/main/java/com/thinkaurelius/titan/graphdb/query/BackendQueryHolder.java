@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 
 /**
  * Holds a {@link BackendQuery} and captures additional information that pertains to its execution and to be used by a
@@ -16,15 +18,16 @@ import com.google.common.base.Preconditions;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BackendQueryHolder<E extends BackendQuery<E>> {
+public class BackendQueryHolder<E extends BackendQuery<E>> implements ProfileObservable {
 
     private final E backendQuery;
     private final boolean isFitted;
     private final boolean isSorted;
     private final Object executionInfo;
+    private QueryProfiler profiler = QueryProfiler.NO_OP;
 
     public BackendQueryHolder(E backendQuery, boolean fitted, boolean sorted, Object executionInfo) {
-        Preconditions.checkNotNull(backendQuery);
+        Preconditions.checkArgument(backendQuery!=null);
         this.backendQuery = backendQuery;
         isFitted = fitted;
         isSorted = sorted;
@@ -49,5 +52,19 @@ public class BackendQueryHolder<E extends BackendQuery<E>> {
 
     public E getBackendQuery() {
         return backendQuery;
+    }
+
+    public QueryProfiler getProfiler() {
+        return profiler;
+    }
+
+    @Override
+    public void observeWith(QueryProfiler parentProfiler) {
+        Preconditions.checkArgument(parentProfiler!=null);
+        this.profiler = parentProfiler.addNested();
+        profiler.setAnnotation(QueryProfiler.FITTED_ANNOTATION,isFitted);
+        profiler.setAnnotation(QueryProfiler.ORDERED_ANNOTATION,isSorted);
+        profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION,backendQuery);
+        if (backendQuery instanceof ProfileObservable) ((ProfileObservable)backendQuery).observeWith(profiler);
     }
 }

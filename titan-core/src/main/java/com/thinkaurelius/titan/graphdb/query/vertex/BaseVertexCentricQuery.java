@@ -9,6 +9,8 @@ import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.FixedCondition;
+import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.ArrayList;
@@ -24,7 +26,7 @@ import java.util.List;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BaseVertexCentricQuery extends BaseQuery {
+public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservable {
 
     /**
      * The condition of this query in QNF
@@ -119,4 +121,11 @@ public class BaseVertexCentricQuery extends BaseQuery {
         return s;
     }
 
+    @Override
+    public void observeWith(QueryProfiler profiler) {
+        profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,condition);
+        profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION,orders);
+        if (hasLimit()) profiler.setAnnotation(QueryProfiler.LIMIT_ANNOTATION,getLimit());
+        queries.forEach(bqh -> bqh.observeWith(profiler));
+    }
 }

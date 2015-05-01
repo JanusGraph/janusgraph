@@ -88,35 +88,5 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      */
     public Iterable<TitanVertexProperty> properties();
 
-    /**
-     * Returns a description of this query for vertices as a {@link QueryDescription} object.
-     *
-     * This can be used to inspect the query plan for this query. Note, that calling this method
-     * does not actually execute the query but only optimizes it and constructs a query plan.
-     *
-     * @return A description of this query for vertices
-     */
-    public QueryDescription describeForVertices();
-
-    /**
-     * Returns a description of this query for edges as a {@link QueryDescription} object.
-     *
-     * This can be used to inspect the query plan for this query. Note, that calling this method
-     * does not actually execute the query but only optimizes it and constructs a query plan.
-     *
-     * @return A description of this query for edges
-     */
-    public QueryDescription describeForEdges();
-
-    /**
-     * Returns a description of this query for properties as a {@link QueryDescription} object.
-     *
-     * This can be used to inspect the query plan for this query. Note, that calling this method
-     * does not actually execute the query but only optimizes it and constructs a query plan.
-     *
-     * @return A description of this query for properties
-     */
-    public QueryDescription describeForProperties();
-
 
 }

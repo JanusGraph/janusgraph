@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
@@ -1020,14 +1021,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return builder;
     }
 
-    public void executeMultiQuery(final Collection<InternalVertex> vertices, final SliceQuery sq) {
+    public void executeMultiQuery(final Collection<InternalVertex> vertices, final SliceQuery sq, final QueryProfiler profiler) {
         LongArrayList vids = new LongArrayList(vertices.size());
         for (InternalVertex v : vertices) {
             if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) vids.add(v.longId());
         }
 
         if (!vids.isEmpty()) {
-            List<EntryList> results = graph.edgeMultiQuery(vids, sq, txHandle);
+            List<EntryList> results = QueryProfiler.profile(profiler, sq, true, q -> graph.edgeMultiQuery(vids, q, txHandle));
             int pos = 0;
             for (TitanVertex v : vertices) {
                 if (pos<vids.size() && vids.get(pos) == v.longId()) {
@@ -1085,7 +1086,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
 
         @Override
-        public Iterator<TitanRelation> execute(final VertexCentricQuery query, final SliceQuery sq, final Object exeInfo) {
+        public Iterator<TitanRelation> execute(final VertexCentricQuery query, final SliceQuery sq, final Object exeInfo, final QueryProfiler profiler) {
             assert exeInfo==null;
             if (query.getVertex().isNew())
                 return Collections.emptyIterator();
@@ -1095,7 +1096,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             EntryList iter = v.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                 @Override
                 public EntryList get(SliceQuery query) {
-                    return graph.edgeQuery(v.longId(), query, txHandle);
+                    return QueryProfiler.profile(profiler,query, q -> graph.edgeQuery(v.longId(), q, txHandle));
                 }
             });
 
@@ -1212,7 +1213,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
 
         @Override
-        public Iterator<TitanElement> execute(final GraphCentricQuery query, final JointIndexQuery indexQuery, final Object exeInfo) {
+        public Iterator<TitanElement> execute(final GraphCentricQuery query, final JointIndexQuery indexQuery, final Object exeInfo, final QueryProfiler profiler) {
             Iterator<TitanElement> iter;
             if (!indexQuery.isEmpty()) {
                 List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<QueryUtil.IndexCall<Object>>();
@@ -1226,7 +1227,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                                 return indexCache.get(adjustedQuery, new Callable<List<Object>>() {
                                     @Override
                                     public List<Object> call() throws Exception {
-                                        return indexSerializer.query(adjustedQuery, txHandle);
+                                        return QueryProfiler.profile(subquery.getProfiler(),adjustedQuery, q -> indexSerializer.query(q, txHandle));
                                     }
                                 });
                             } catch (Exception e) {
@@ -1242,6 +1243,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             } else {
                 if (config.hasForceIndexUsage()) throw new TitanException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
+
+                QueryProfiler sub = profiler.addNested();
+                sub.setAnnotation(QueryProfiler.QUERY_ANNOTATION,indexQuery);
+                sub.setAnnotation(QueryProfiler.FULLSCAN_ANNOTATION,true);
+                sub.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,query.getResultType());
 
                 switch (query.getResultType()) {
                     case VERTEX:

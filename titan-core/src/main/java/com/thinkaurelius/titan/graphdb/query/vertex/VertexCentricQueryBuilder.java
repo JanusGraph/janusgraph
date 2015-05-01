@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.QueryProcessor;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,12 +60,14 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
         if (bq.isEmpty()) return resultConstructor.emptyResult();
         if (isPartitionedVertex(vertex) && !hasQueryOnlyGivenVertex()) { //If it's a preloaded vertex we shouldn't preload data explicitly
             List<InternalVertex> vertices = allRequiredRepresentatives(vertex);
+            profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
+            profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
             if (vertices.size()>1) {
                 for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
-                    tx.executeMultiQuery(vertices, sq.getBackendQuery());
+                    tx.executeMultiQuery(vertices, sq.getBackendQuery(),sq.getProfiler());
                 }
             }
-        }
+        } else profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,1);
         return resultConstructor.getResult(vertex,bq);
     }
 

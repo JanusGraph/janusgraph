@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
@@ -40,6 +41,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * Transaction in which this query is executed
      */
     protected final StandardTitanTx tx;
+
+    /**
+     * The query profiler used to observe this query
+     */
+    protected QueryProfiler profiler = QueryProfiler.NO_OP;
 
     /**
      * Whether to query for system relations only
@@ -87,6 +93,18 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      */
     public Q noPartitionRestriction() {
         this.restrict2Partitions = false;
+        return getThis();
+    }
+
+    /**
+     * Sets the query profiler to observe this query. Must be set before the query is executed to take effect.
+     *
+     * @param profiler
+     * @return
+     */
+    public Q profiler(QueryProfiler profiler) {
+        Preconditions.checkNotNull(profiler);
+        this.profiler=profiler;
         return getThis();
     }
 
@@ -331,25 +349,6 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     private static final int HARD_MAX_LIMIT   = 300000;
 
-
-    @Override
-    public QueryDescription describeForEdges() {
-        return describe(1, RelationCategory.EDGE);
-    }
-
-    @Override
-    public QueryDescription describeForProperties() {
-        return describe(1,RelationCategory.PROPERTY);
-    }
-
-    public QueryDescription describeForRelations() {
-        return describe(1,RelationCategory.RELATION);
-    }
-
-    protected QueryDescription describe(int numVertices, RelationCategory returnType) {
-        return new StandardQueryDescription(numVertices,constructQuery(returnType));
-    }
-
     /**
      * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
      * logic is taken from {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
@@ -378,8 +377,13 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return query;
     }
 
-
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
+        BaseVertexCentricQuery query = constructQueryWithoutProfile(returnType);
+        query.observeWith(profiler);
+        return query;
+    }
+
+    protected BaseVertexCentricQuery constructQueryWithoutProfile(RelationCategory returnType) {
         assert returnType != null;
         Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,"Vertex constraints only apply to edges");
         if (limit <= 0)
@@ -409,7 +413,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         if (!hasTypes()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType, querySystem),
                     ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
-                            && !conditions.hasChildren()), orders.isEmpty(), null);
+                            && !conditions.hasChildren()), orders.isEmpty());
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
                 //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
                 if (dir != Direction.BOTH && (returnType == RelationCategory.EDGE || returnType == RelationCategory.RELATION))
@@ -462,7 +466,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     // ARE intervalConstraints or orders but those cannot be covered by any sort-keys
                     SliceQuery q = serializer.getQuery(type, typeDir, null);
                     q.setLimit(sliceLimit);
-                    queries.add(new BackendQueryHolder<SliceQuery>(q, isIntervalFittedConditions, true, null));
+                    queries.add(new BackendQueryHolder<SliceQuery>(q, isIntervalFittedConditions, true));
                 } else {
                     //Optimize for each direction independently
                     Direction[] dirs = {typeDir};
@@ -530,7 +534,6 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
             conditions.add(getTypeCondition(ts));
         }
-
         return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, orders, limit);
     }
 
@@ -571,7 +574,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         EdgeSerializer serializer = tx.getEdgeSerializer();
         SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
         q.setLimit(computeLimit(intervalConstraints.size()-position, sliceLimit));
-        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder, null));
+        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder));
     }
 
 

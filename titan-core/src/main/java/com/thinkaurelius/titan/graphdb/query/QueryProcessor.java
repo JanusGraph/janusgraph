@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +147,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
         private PreSortingIterator(BackendQueryHolder<B> backendQueryHolder) {
             List<R> all = Lists.newArrayList(executor.execute(query,
                     backendQueryHolder.getBackendQuery().updateLimit(MAX_SORT_ITERATION),
-                    backendQueryHolder.getExecutionInfo()));
+                    backendQueryHolder.getExecutionInfo(),backendQueryHolder.getProfiler()));
             if (all.size() >= MAX_SORT_ITERATION)
                 throw new QueryException("Could not execute query since pre-sorting requires fetching more than " +
                         MAX_SORT_ITERATION + " elements. Consider rewriting the query to exploit sort orders");
@@ -180,19 +181,21 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
     private final class LimitAdjustingIterator extends com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator<R> {
 
         private B backendQuery;
+        private QueryProfiler profiler;
         private final Object executionInfo;
 
         private LimitAdjustingIterator(BackendQueryHolder<B> backendQueryHolder) {
             super(Integer.MAX_VALUE-1,backendQueryHolder.getBackendQuery().getLimit());
             this.backendQuery = backendQueryHolder.getBackendQuery();
             this.executionInfo = backendQueryHolder.getExecutionInfo();
+            this.profiler = backendQueryHolder.getProfiler();
         }
 
         @Override
         public Iterator<R> getNewIterator(int newLimit) {
             if (!backendQuery.hasLimit() || newLimit>backendQuery.getLimit())
                 backendQuery = backendQuery.updateLimit(newLimit);
-            return executor.execute(query, backendQuery, executionInfo);
+            return executor.execute(query, backendQuery, executionInfo, profiler);
         }
 
     }

@@ -39,7 +39,9 @@ import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
-import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
+import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import com.thinkaurelius.titan.graphdb.query.profile.SimpleQueryProfiler;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.schema.EdgeLabelDefinition;
@@ -1146,24 +1148,24 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         assertTrue(mgmt.containsRelationType("knows"));
         knows = mgmt.getEdgeLabel("knows");
-        mgmt.changeName(knows,"know");
-        assertEquals("know",knows.name());
+        mgmt.changeName(knows, "know");
+        assertEquals("know", knows.name());
 
         assertTrue(mgmt.containsRelationIndex(knows,"byTime"));
-        RelationTypeIndex rindex = mgmt.getRelationIndex(knows,"byTime");
+        RelationTypeIndex rindex = mgmt.getRelationIndex(knows, "byTime");
         assertEquals("byTime",rindex.name());
-        mgmt.changeName(rindex,"overTime");
-        assertEquals("overTime",rindex.name());
+        mgmt.changeName(rindex, "overTime");
+        assertEquals("overTime", rindex.name());
 
         assertTrue(mgmt.containsVertexLabel("people"));
         VertexLabel vl = mgmt.getVertexLabel("people");
-        mgmt.changeName(vl,"person");
-        assertEquals("person",vl.name());
+        mgmt.changeName(vl, "person");
+        assertEquals("person", vl.name());
 
         assertTrue(mgmt.containsGraphIndex("timeIndex"));
         TitanGraphIndex gindex = mgmt.getGraphIndex("timeIndex");
-        mgmt.changeName(gindex,"byTime");
-        assertEquals("byTime",gindex.name());
+        mgmt.changeName(gindex, "byTime");
+        assertEquals("byTime", gindex.name());
 
         finishSchema();
 
@@ -1173,8 +1175,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(mgmt.containsRelationType("knows"));
         knows = mgmt.getEdgeLabel("know");
 
-        assertTrue(mgmt.containsRelationIndex(knows,"overTime"));
-        assertFalse(mgmt.containsRelationIndex(knows,"byTime"));
+        assertTrue(mgmt.containsRelationIndex(knows, "overTime"));
+        assertFalse(mgmt.containsRelationIndex(knows, "byTime"));
 
         assertTrue(mgmt.containsVertexLabel("person"));
         assertFalse(mgmt.containsVertexLabel("people"));
@@ -1189,7 +1191,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals("person", v.label());
         assertEquals(5,v.<Integer>value("time").intValue());
         assertCount(1, v.query().direction(Direction.IN).labels("know").edges());
-        assertCount(0,v.query().direction(Direction.IN).labels("knows").edges());
+        assertCount(0, v.query().direction(Direction.IN).labels("knows").edges());
         assertCount(1,v.query().direction(Direction.OUT).labels("know").has("time",11).edges());
     }
 
@@ -1662,7 +1664,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(1, v.query().direction(Direction.IN).labels("self").edges());
         assertCount(2, v.query().direction(Direction.BOTH).labels("self").edges());
         clopen();
-        v = getV(tx,v);
+        v = getV(tx, v);
         assertNotNull(v);
         assertCount(1, v.query().direction(Direction.IN).labels("self").edges());
         assertCount(1, v.query().direction(Direction.OUT).labels("self").edges());
@@ -1767,7 +1769,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx.commit();
         v1.addEdge("related", graph.traversal().V(v2).next());
         graph.tx().commit();
-        assertCount(1,v1.edges(OUT));
+        assertCount(1, v1.edges(OUT));
     }
 
     @Test
@@ -1788,7 +1790,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         graph.tx().commit();
 
         TitanVertexProperty p = (TitanVertexProperty)cartman.properties().next();
-        assertTrue(((Long)p.longId())>0);
+        assertTrue(((Long) p.longId()) > 0);
         graph.tx().commit();
     }
 
@@ -3166,34 +3168,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public static void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
                                int expectedResults, int numSubQueries, boolean[] subQuerySpecs,
                                Map<PropertyKey,Order> orderMap) {
-        QueryDescription qd;
-        switch(resultType) {
-            case PROPERTY: qd = query.describeForProperties(); break;
-            case EDGE: qd = query.describeForEdges(); break;
-            case RELATION: qd = ((BasicVertexCentricQueryBuilder)query).describeForRelations(); break;
-            default: throw new AssertionError();
-        }
-        assertEquals(1,qd.getNoCombinedQueries());
-        assertEquals(numSubQueries,qd.getNoSubQueries());
-        List<? extends QueryDescription.SubQuery> subqs = qd.getSubQueries();
-        assertEquals(numSubQueries,subqs.size());
-        for (int i=0;i<numSubQueries;i++) {
-            QueryDescription.SubQuery sq = subqs.get(i);
-            assertNotNull(sq);
-            if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
-                assertEquals(subQuerySpecs[0],sq.isFitted());
-                assertEquals(subQuerySpecs[1],sq.isSorted());
-            }
-            assertEquals(1,((StandardQueryDescription.StandardSubQuery)sq).numIntersectingQueries());
-        }
-        //Check order
-        OrderList orders = ((StandardQueryDescription)qd).getQueryOrder();
-        assertNotNull(orders);
-        assertEquals(orderMap.size(),orders.size());
-        for (int i=0;i<orders.size();i++) {
-            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
-        }
-        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
+        SimpleQueryProfiler profiler = new SimpleQueryProfiler();
+        ((BasicVertexCentricQueryBuilder)query).profiler(profiler);
 
         Iterable<? extends TitanElement> result;
         switch(resultType) {
@@ -3202,6 +3178,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             case RELATION: result = query.relations(); break;
             default: throw new AssertionError();
         }
+        OrderList orders = profiler.getAnnotation(QueryProfiler.ORDERS_ANNOTATION);
+
+        //Check elements and that they are returned in the correct order
         int no = 0;
         TitanElement previous = null;
         for (TitanElement e : result) {
@@ -3212,7 +3191,29 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
             previous = e;
         }
-        assertEquals(expectedResults,no);
+        assertEquals(expectedResults, no);
+
+        //Check OrderList of query
+        assertNotNull(orders);
+        assertEquals(orderMap.size(),orders.size());
+        for (int i=0;i<orders.size();i++) {
+            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
+        }
+        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
+
+        //Check subqueries
+        assertEquals(1,(Number)profiler.getAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION));
+        int subQueryCounter = 0;
+        for (SimpleQueryProfiler subProfiler : profiler) {
+            assertNotNull(subProfiler);
+            if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
+                assertEquals(subQuerySpecs[0],(Boolean)subProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
+                assertEquals(subQuerySpecs[1],(Boolean)subProfiler.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
+            }
+            //assertEquals(1,Iterables.size(subProfiler)); This only applies if a disk call is necessary
+            subQueryCounter++;
+        }
+        assertEquals(numSubQueries, subQueryCounter);
     }
 
     @Test
@@ -4134,32 +4135,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                                int expectedResults, boolean[] subQuerySpecs,
                                Map<PropertyKey,Order> orderMap, String... intersectingIndexes) {
         if (intersectingIndexes==null) intersectingIndexes=new String[0];
-        QueryDescription qd;
-        switch(resultType) {
-            case PROPERTY: qd = query.describeForProperties(); break;
-            case EDGE: qd = query.describeForEdges(); break;
-            case VERTEX: qd = query.describeForVertices(); break;
-            default: throw new AssertionError();
-        }
-        assertEquals(1,qd.getNoCombinedQueries());
-        assertEquals(1,qd.getNoSubQueries());
-        QueryDescription.SubQuery sq = qd.getSubQueries().get(0);
-        assertNotNull(sq);
-        if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
-            assertEquals(subQuerySpecs[0],sq.isFitted());
-            assertEquals(subQuerySpecs[1],sq.isSorted());
-        }
-        StandardQueryDescription.StandardSubQuery ssq = (StandardQueryDescription.StandardSubQuery)sq;
-        assertEquals(intersectingIndexes.length,ssq.numIntersectingQueries());
-        assertEquals(Sets.newHashSet(intersectingIndexes),Sets.newHashSet(ssq.getIntersectingQueries()));
-        //Check order
-        OrderList orders = ((StandardQueryDescription)qd).getQueryOrder();
-        assertNotNull(orders);
-        assertEquals(orderMap.size(),orders.size());
-        for (int i=0;i<orders.size();i++) {
-            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
-        }
-        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
+
+        SimpleQueryProfiler profiler = new SimpleQueryProfiler();
+        ((GraphCentricQueryBuilder)query).profiler(profiler);
 
         Iterable<? extends TitanElement> result;
         switch(resultType) {
@@ -4168,6 +4146,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             case VERTEX: result = query.vertices(); break;
             default: throw new AssertionError();
         }
+        OrderList orders = profiler.getAnnotation(QueryProfiler.ORDERS_ANNOTATION);
+
+        //Check elements and that they are returned in the correct order
         int no = 0;
         TitanElement previous = null;
         for (TitanElement e : result) {
@@ -4178,7 +4159,37 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
             previous = e;
         }
-        assertEquals(expectedResults,no);
+        assertEquals(expectedResults, no);
+
+        //Check OrderList of query
+        assertNotNull(orders);
+        assertEquals(orderMap.size(),orders.size());
+        for (int i=0;i<orders.size();i++) {
+            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
+        }
+        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
+
+        //Check subqueries
+        SimpleQueryProfiler subp = Iterables.getOnlyElement(profiler);
+        if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
+            assertEquals(subQuerySpecs[0],(Boolean)subp.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
+            assertEquals(subQuerySpecs[1],(Boolean)subp.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
+        }
+        Set<String> indexNames = new HashSet<>();
+        int indexQueries = 0;
+        boolean fullscan = false;
+        for (SimpleQueryProfiler indexp : subp) {
+            if (indexp.getAnnotation(QueryProfiler.FULLSCAN_ANNOTATION)!=null) {
+                fullscan = true;
+            } else {
+                indexNames.add(indexp.getAnnotation(QueryProfiler.INDEX_ANNOTATION));
+                indexQueries++;
+            }
+        }
+        if (indexQueries>0) assertFalse(fullscan);
+        if (fullscan) assertTrue(intersectingIndexes.length==0);
+        assertEquals(intersectingIndexes.length,indexQueries);
+        assertEquals(Sets.newHashSet(intersectingIndexes),indexNames);
     }
 
     @Test
