@@ -7,6 +7,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -59,11 +60,11 @@ public class MetricsQueryExecutor<Q extends ElementQuery,R extends TitanElement,
     }
 
     @Override
-    public Iterator<R> execute(final Q query, final B subquery, final Object executionInfo) {
+    public Iterator<R> execute(final Q query, final B subquery, final Object executionInfo, final QueryProfiler profiler) {
         return runWithMetrics("execute", new Function<Void, Iterator<R>>() {
             @Override
             public Iterator<R> apply(Void v) {
-                return qe.execute(query, subquery, executionInfo);
+                return qe.execute(query, subquery, executionInfo, profiler);
             }
         });
     }

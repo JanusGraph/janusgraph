@@ -5,6 +5,8 @@ import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
@@ -25,7 +27,7 @@ import java.util.List;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery> {
+public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery>, ProfileObservable {
 
     private final List<Subquery> queries;
 
@@ -59,6 +61,11 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     }
 
     @Override
+    public void observeWith(QueryProfiler profiler) {
+        queries.forEach(q -> q.observeWith(profiler));
+    }
+
+    @Override
     public int hashCode() {
         return new HashCodeBuilder().append(queries).toHashCode();
     }
@@ -84,15 +91,27 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         return ji;
     }
 
-    public static class Subquery implements BackendQuery<Subquery> {
+    public static class Subquery implements BackendQuery<Subquery>, ProfileObservable {
 
         private final IndexType index;
         private final BackendQuery query;
+        private QueryProfiler profiler = QueryProfiler.NO_OP;
 
         private Subquery(IndexType index, BackendQuery query) {
             assert index!=null && query!=null && (query instanceof MultiKeySliceQuery || query instanceof IndexQuery);
             this.index = index;
             this.query = query;
+        }
+
+        public void observeWith(QueryProfiler prof) {
+            this.profiler = prof.addNested();
+            profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION,query);
+            profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION,index.getName());
+            if (index.isMixedIndex()) profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION+"_impl",index.getBackingIndexName());
+        }
+
+        public QueryProfiler getProfiler() {
+            return profiler;
         }
 
         public IndexType getIndex() {

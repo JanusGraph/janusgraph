@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -81,16 +82,21 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
         Map<TitanVertex, Q> result = new HashMap<TitanVertex, Q>(vertices.size());
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
+        profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION,true);
+        profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
         if (!bq.isEmpty()) {
             for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
                 Set<InternalVertex> adjVertices = Sets.newHashSet(vertices);
                 for (InternalVertex v : vertices) {
                     if (isPartitionedVertex(v)) {
+                        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
                         adjVertices.remove(v);
                         adjVertices.addAll(allRequiredRepresentatives(v));
                     }
                 }
-                tx.executeMultiQuery(adjVertices, sq.getBackendQuery());
+                //Overwrite with more accurate size accounting for partitioned vertices
+                profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,adjVertices.size());
+                tx.executeMultiQuery(adjVertices, sq.getBackendQuery(), sq.getProfiler());
             }
             for (InternalVertex v : vertices) {
                 result.put(v, resultConstructor.getResult(v, bq));
@@ -135,16 +141,6 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     @Override
     public Map<TitanVertex, VertexList> vertexIds() {
         return execute(RelationCategory.EDGE, new VertexIdConstructor());
-    }
-
-    @Override
-    public QueryDescription describeForEdges() {
-        return describe(vertices.size(),RelationCategory.EDGE);
-    }
-
-    @Override
-    public QueryDescription describeForProperties() {
-        return describe(vertices.size(),RelationCategory.PROPERTY);
     }
 
 }

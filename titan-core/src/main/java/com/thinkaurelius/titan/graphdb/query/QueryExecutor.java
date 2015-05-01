@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 
 import java.util.Iterator;
 
@@ -45,8 +46,9 @@ public interface QueryExecutor<Q extends ElementQuery,R extends TitanElement,B e
      * @param query
      * @param subquery
      * @param executionInfo
+     * @param profiler
      * @return
      */
-    public Iterator<R> execute(Q query, B subquery, Object executionInfo);
+    public Iterator<R> execute(Q query, B subquery, Object executionInfo, QueryProfiler profiler);
 
 }

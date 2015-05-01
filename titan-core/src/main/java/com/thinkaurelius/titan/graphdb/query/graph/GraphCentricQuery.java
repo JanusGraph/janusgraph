@@ -10,6 +10,8 @@ import com.thinkaurelius.titan.graphdb.query.ElementQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.FixedCondition;
+import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -23,7 +25,7 @@ import java.util.Comparator;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanElement, JointIndexQuery> {
+public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanElement, JointIndexQuery>, ProfileObservable {
 
     /**
      * The condition of this query, the result set is the set of all elements in the graph for which this
@@ -61,7 +63,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
         Condition<TitanElement> cond = new FixedCondition<TitanElement>(false);
         return new GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
                 new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(),
-                        true, false, null), 0);
+                        true, false), 0);
     }
 
     public Condition<TitanElement> getCondition() {
@@ -139,4 +141,11 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     }
 
 
+    @Override
+    public void observeWith(QueryProfiler profiler) {
+        profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,condition);
+        profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION,orders);
+        if (hasLimit()) profiler.setAnnotation(QueryProfiler.LIMIT_ANNOTATION,getLimit());
+        indexQuery.observeWith(profiler);
+    }
 }

@@ -10,6 +10,8 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
@@ -40,6 +42,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     private final StandardTitanTx tx;
     private final EdgeSerializer edgeSerializer;
     private final InternalVertex vertex;
+    private final QueryProfiler profiler;
 
     private SliceQuery sliceQuery;
 
@@ -47,7 +50,9 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         Preconditions.checkArgument(query.isSimple());
         this.query=query;
         this.tx=tx;
-        this.sliceQuery=query.getSubQuery(0).getBackendQuery();
+        BackendQueryHolder<SliceQuery> bqh = query.getSubQuery(0);
+        this.sliceQuery=bqh.getBackendQuery();
+        this.profiler=bqh.getProfiler();
         this.vertex=query.getVertex();
         this.edgeSerializer=tx.getEdgeSerializer();
     }
@@ -106,7 +111,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         EntryList result = vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, EntryList>() {
             @Override
             public EntryList get(SliceQuery query) {
-                return tx.getGraph().edgeQuery(vertex.longId(), query, tx.getTxHandle());
+                return QueryProfiler.profile(profiler,query, q -> tx.getGraph().edgeQuery(vertex.longId(), q, tx.getTxHandle()));
             }
         });
         return result.iterator();

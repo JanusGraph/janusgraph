@@ -2,10 +2,11 @@ package com.thinkaurelius.titan.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
@@ -15,11 +16,10 @@ import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.util.datastructures.Interval;
-import com.thinkaurelius.titan.util.datastructures.PointInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +56,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
      * The limit of this query. No limit by default.
      */
     private int limit = Query.NO_LIMIT;
+    /**
+     * The profiler observing this query
+     */
+    private QueryProfiler profiler = QueryProfiler.NO_OP;
 
     public GraphCentricQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
@@ -69,6 +73,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
      * Query Construction
 	 * ---------------------------------------------------------------
 	 */
+
+    public GraphCentricQueryBuilder profiler(QueryProfiler profiler) {
+        Preconditions.checkNotNull(profiler);
+        this.profiler=profiler;
+        return this;
+    }
 
     @Override
     public GraphCentricQueryBuilder has(String key, TitanPredicate predicate, Object condition) {
@@ -153,21 +163,6 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanVertexProperty.class);
     }
 
-    private QueryDescription describe(ElementCategory category) {
-        return new StandardQueryDescription(1,constructQuery(category));
-    }
-
-    public QueryDescription describeForVertices() {
-        return describe(ElementCategory.VERTEX);
-    }
-
-    public QueryDescription describeForEdges() {
-        return describe(ElementCategory.EDGE);
-    }
-
-    public QueryDescription describeForProperties() {
-        return describe(ElementCategory.PROPERTY);
-    }
 
     /* ---------------------------------------------------------------
      * Query Construction
@@ -185,7 +180,14 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     private static final double CARDINALITY_SINGE_SCORE = 1000;
     private static final double CARDINALITY_OTHER_SCORE = 1000;
 
+
     public GraphCentricQuery constructQuery(final ElementCategory resultType) {
+        GraphCentricQuery query = constructQueryWithoutProfile(resultType);
+        query.observeWith(profiler);
+        return query;
+    }
+
+    public GraphCentricQuery constructQueryWithoutProfile(final ElementCategory resultType) {
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
@@ -309,11 +311,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             }
             indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, coveredClauses.size(), indexLimit));
             jointQuery.setLimit(indexLimit);
-            query = new BackendQueryHolder<JointIndexQuery>(jointQuery, coveredClauses.size()==conditions.numChildren(), isSorted, null);
+            query = new BackendQueryHolder<JointIndexQuery>(jointQuery, coveredClauses.size()==conditions.numChildren(), isSorted);
         } else {
-            query = new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(), false, isSorted, null);
+            query = new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(), false, isSorted);
         }
-
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
