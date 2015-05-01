@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.diskstorage.util.Hex;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
@@ -179,7 +180,13 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, null);
+        int ihc = System.identityHashCode(this);
+        String ihcString = String.format("0x%s", Hex.bytesToHex(
+                (byte)(ihc >>> 24 & 0x000000FF),
+                (byte)(ihc >>> 16 & 0x000000FF),
+                (byte)(ihc >>> 8  & 0x000000FF),
+                (byte)(ihc        & 0x000000FF)));
+        return StringFactory.graphString(this, ihcString);
     }
 
     @Override
