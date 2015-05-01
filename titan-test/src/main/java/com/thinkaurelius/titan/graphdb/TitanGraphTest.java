@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
@@ -39,6 +40,7 @@ import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
+import com.thinkaurelius.titan.graphdb.olap.job.IndexRepairJob;
 import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.query.profile.SimpleQueryProfiler;
@@ -1235,7 +1237,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX);
         TitanManagement.IndexJobFuture gmetrics = mgmt.getIndexJobStatus(gindex);
         finishSchema();
-        waitForReindex(graph, mgmt -> mgmt.getGraphIndex(name));
 
         // Should have deleted at least one record
         assertNotEquals(0, gmetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
@@ -1321,12 +1322,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.commit();
 
 
-        ManagementUtil.awaitVertexIndexUpdate(graph,"byTime","sensor", 10, TimeUnit.SECONDS);
+        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, TimeUnit.SECONDS);
         ManagementUtil.awaitGraphIndexUpdate(graph,"bySensorReading", 5, TimeUnit.SECONDS);
 
         finishSchema();
         //Verify new status
-        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
         eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
         gindex = mgmt.getGraphIndex("bySensorReading");
         assertEquals(SchemaStatus.REGISTERED, pindex.getIndexStatus());
@@ -1341,14 +1342,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 .timeout(10L, TimeUnit.SECONDS).call().getSucceeded());
 
         //Reindex the other two
-        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
-        mgmt.updateIndex(pindex, SchemaAction.REINDEX);
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
+        ScanMetrics reindexSensorByTime = mgmt.updateIndex(pindex, SchemaAction.REINDEX).get();
         finishSchema();
         gindex = mgmt.getGraphIndex("bySensorReading");
-        mgmt.updateIndex(gindex, SchemaAction.REINDEX);
+        ScanMetrics reindexBySensorReading = mgmt.updateIndex(gindex, SchemaAction.REINDEX).get();
         finishSchema();
-        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"));
-        waitForReindex(graph, mgmt -> mgmt.getGraphIndex("bySensorReading"));
+
+        assertNotEquals(0, reindexSensorByTime.getCustom(IndexRepairJob.ADDED_RECORDS_COUNT));
+        assertNotEquals(0, reindexBySensorReading.getCustom(IndexRepairJob.ADDED_RECORDS_COUNT));
 
         //Every index should now be enabled
         pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
@@ -1385,16 +1387,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
         evaluateQuery(tx.query().has("name","v5"),
                 ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
-        evaluateQuery(tx.query().has("name","v105"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
-        evaluateQuery(tx.query().has("name","v205"),
-                ElementCategory.VERTEX,1,new boolean[]{true,true},"bySensorReading");
+        evaluateQuery(tx.query().has("name", "v105"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "bySensorReading");
+        evaluateQuery(tx.query().has("name", "v205"),
+                ElementCategory.VERTEX, 1, new boolean[]{true, true}, "bySensorReading");
 
         finishSchema();
         eindex = mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime");
-        mgmt.updateIndex(eindex, SchemaAction.REINDEX);
+        ScanMetrics reindexFriendByTime = mgmt.updateIndex(eindex, SchemaAction.REINDEX).get();
         finishSchema();
-        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("friend"),"byTime"));
+        assertNotEquals(0, reindexFriendByTime.getCustom(IndexRepairJob.ADDED_RECORDS_COUNT));
 
         finishSchema();
         newTx();
@@ -1407,19 +1409,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 201, 205).orderBy("time", decr),
                 EDGE,4,1,new boolean[]{true,true},tx.getPropertyKey("time"),Order.DESC);
 
-        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
         gindex = mgmt.getGraphIndex("bySensorReading");
         mgmt.updateIndex(pindex,SchemaAction.DISABLE_INDEX);
-        mgmt.updateIndex(gindex,SchemaAction.DISABLE_INDEX);
+        mgmt.updateIndex(gindex, SchemaAction.DISABLE_INDEX);
         mgmt.commit();
         tx.commit();
 
-        ManagementUtil.awaitVertexIndexUpdate(graph,"byTime","sensor", 10, TimeUnit.SECONDS);
-        ManagementUtil.awaitGraphIndexUpdate(graph,"bySensorReading", 5, TimeUnit.SECONDS);
+        ManagementUtil.awaitVertexIndexUpdate(graph, "byTime", "sensor", 10, TimeUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "bySensorReading", 5, TimeUnit.SECONDS);
 
         finishSchema();
 
-        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
         gindex = mgmt.getGraphIndex("bySensorReading");
         assertEquals(SchemaStatus.DISABLED, pindex.getIndexStatus());
         assertEquals(SchemaStatus.DISABLED, gindex.getIndexStatus(gindex.getFieldKeys()[0]));
@@ -1444,41 +1446,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
         evaluateQuery(tx.query().has("name","v105"),
                 ElementCategory.VERTEX,1,new boolean[]{false,true});
-        evaluateQuery(tx.query().has("name","v205"),
-                ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx.query().has("name", "v205"),
+                ElementCategory.VERTEX, 1, new boolean[]{false, true});
 
         tx.commit();
         finishSchema();
-        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"),"byTime");
+        pindex = mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime");
         gindex = mgmt.getGraphIndex("bySensorReading");
-        mgmt.updateIndex(pindex,SchemaAction.REMOVE_INDEX);
-        mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX);
-        TitanManagement.IndexJobFuture pmetrics = mgmt.getIndexJobStatus(pindex);
-        TitanManagement.IndexJobFuture gmetrics = mgmt.getIndexJobStatus(gindex);
+        ScanMetrics pmetrics = mgmt.updateIndex(pindex, SchemaAction.REMOVE_INDEX).get();
+        ScanMetrics gmetrics = mgmt.updateIndex(gindex, SchemaAction.REMOVE_INDEX).get();
         finishSchema();
-        waitForReindex(graph, mgmt -> mgmt.getRelationIndex(mgmt.getRelationType("sensor"), "byTime"));
-        waitForReindex(graph, mgmt -> mgmt.getGraphIndex("bySensorReading"));
-        assertEquals(30, pmetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
-        assertEquals(30, gmetrics.get().getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
-    }
-
-    public static void waitForReindex(TitanGraph graph, Function<TitanManagement,TitanIndex> indexRetriever) {
-        while (true) {
-            TitanManagement mgmt = graph.openManagement();
-            try {
-                TitanIndex index = indexRetriever.apply(mgmt);
-                TitanManagement.IndexJobFuture status = mgmt.getIndexJobStatus(index);
-                System.out.println("Index [" + index.name() + (index instanceof RelationTypeIndex ? "@" + ((RelationTypeIndex) index).getType().name() : "") + "] job status: " + status);
-                if (status.isDone()) break;
-            } finally {
-                mgmt.rollback();
-            }
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        assertEquals(30, pmetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
+        assertEquals(30, gmetrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
     }
 
     @Category({ BrittleTests.class })

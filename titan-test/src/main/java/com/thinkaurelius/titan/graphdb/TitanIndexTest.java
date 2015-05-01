@@ -1181,10 +1181,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         newTx();
         finishSchema();
 
-        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REINDEX);
+        mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REINDEX).get();
         mgmt.commit();
-
-        TitanGraphTest.waitForReindex(graph, mgmt -> mgmt.getGraphIndex("theIndex"));
 
         finishSchema();
 
