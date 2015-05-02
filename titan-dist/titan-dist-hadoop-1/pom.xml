@@ -44,8 +44,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase</artifactId>
-            <version>${hbase094.version}</version>
+            <artifactId>hbase-client</artifactId>
+            <version>${hbase098.core.version}-hadoop1</version>
             <exclusions>
                 <!-- This includes an unshaded copy of Snakeyaml
                      that's binary-incompatible with Cassandra 2.0.
