@@ -104,7 +104,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public Configuration configuration() {
         GraphDatabaseConfiguration config = ((StandardTitanGraph) this).getConfiguration();
-        return config.getLocalConfiguration();
+        return config.getConfigurationAtOpen();
     }
 
     @Override

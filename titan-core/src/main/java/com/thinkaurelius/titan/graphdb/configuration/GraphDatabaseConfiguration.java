@@ -1299,6 +1299,7 @@ public class GraphDatabaseConfiguration {
 
 
     private final Configuration configuration;
+    private final ReadConfiguration configurationAtOpen;
     private String uniqueGraphId;
     private ModifiableConfiguration localConfiguration;
 
@@ -1323,6 +1324,8 @@ public class GraphDatabaseConfiguration {
 
     public GraphDatabaseConfiguration(ReadConfiguration localConfig) {
         Preconditions.checkNotNull(localConfig);
+
+        configurationAtOpen = localConfig;
 
         BasicConfiguration localbc = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
@@ -1857,6 +1860,14 @@ public class GraphDatabaseConfiguration {
         org.apache.commons.configuration.Configuration config = ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
         config.setProperty(Graph.GRAPH, TitanFactory.class.getName());
         return config;
+    }
+
+    public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {
+        org.apache.commons.configuration.Configuration result = new BaseConfiguration();
+        for (String k : configurationAtOpen.getKeys("")) {
+            result.setProperty(k, configurationAtOpen.get(k, Object.class));
+        }
+        return result;
     }
 
 
