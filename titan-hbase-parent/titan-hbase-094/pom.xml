@@ -57,11 +57,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <optional>true</optional>
@@ -75,13 +70,16 @@
             <!--
               HBase 0.94 master can't start with Guava 15.0 or newer:
               https://issues.apache.org/jira/browse/HBASE-10174
-              This is marked "Won't Fix"
+              This is marked "Won't Fix".  However, it just seems to
+              need NullOutputStream, which is tiny and simple, and
+              which was removed in 15.0.  Copying the 11.0.2 version
+              of NullOutputStream into the titan-hbase-094 source tree,
+              as awful as that is, seems to placate HBase when running
+              with Guava 15.0.  So we no longer have a special version
+              of Guava for HBase 0.94 here.
+
+              We do still have to control protobuf though.
             -->
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>14.0.1</version>
-            </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
@@ -188,7 +186,6 @@
                             <shadedArtifactAttached>false</shadedArtifactAttached>
                             <artifactSet>
                                 <includes>
-                                    <include>com.google.guava:guava</include>
                                     <include>com.google.protobuf:protobuf-java</include>
                                 </includes>
                             </artifactSet>
@@ -200,10 +197,6 @@
                                     <shadedPattern>titan03.</shadedPattern>
                                 </relocation>
                                 -->
-                                <relocation>
-                                    <pattern>com.google.common</pattern>
-                                    <shadedPattern>com.google.common.guava14</shadedPattern>
-                                </relocation>
                                 <relocation>
                                     <pattern>com.google.protobuf</pattern>
                                     <shadedPattern>com.google.protobuf.protobuf240a</shadedPattern>
