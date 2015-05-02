@@ -57,8 +57,15 @@ public class BulkLoaderVertexProgram implements VertexProgram<long[]> {
 
     }
 
+    public BulkLoaderVertexProgram useGraphConfig(final Configuration c) {
+        this.configuration = c;
+        return this;
+    }
+
     public void storeState(final Configuration configuration) {
         VertexProgram.super.storeState(configuration);
+        if (this.configuration == null)
+            return;
         this.configuration.getKeys().forEachRemaining(key -> {
             configuration.setProperty(CFG_GRAPH_PREFIX + key, this.configuration.getProperty(key));
         });
