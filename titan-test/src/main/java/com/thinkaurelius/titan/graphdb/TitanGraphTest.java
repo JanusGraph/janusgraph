@@ -4740,6 +4740,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testUnsettingTTL() throws InterruptedException {
+        if (!features.hasCellTTL()) {
+            return;
+        }
 
         int initialTTLMillis = 2000;
 
@@ -4789,6 +4792,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testGettingUndefinedEdgeLabelTTL() {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
         // getTTL should return a null duration on an extant type without a TTL
         mgmt.makeEdgeLabel("likes").make();
         mgmt.commit();
@@ -4802,6 +4809,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testGettingUndefinedVertexLabelTTL() {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
         // getTTL should return a null duration on an extant type without a TTL
         mgmt.makeVertexLabel("foo").make();
         mgmt.commit();
