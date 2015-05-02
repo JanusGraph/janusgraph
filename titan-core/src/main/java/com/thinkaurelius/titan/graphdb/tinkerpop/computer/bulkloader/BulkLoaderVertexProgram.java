@@ -35,7 +35,7 @@ import java.util.*;
  */
 public class BulkLoaderVertexProgram implements VertexProgram<long[]> {
 
-    // TODO: Be sure to accont for hidden properties --- though we may be changing the TP3 API soon for this.
+    // TODO: Be sure to account for hidden properties --- though we may be changing the TP3 API soon for this.
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BulkLoaderVertexProgram.class);
 
