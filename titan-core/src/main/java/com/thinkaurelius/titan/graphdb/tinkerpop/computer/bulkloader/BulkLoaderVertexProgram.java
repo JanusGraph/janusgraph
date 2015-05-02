@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
+public class BulkLoaderVertexProgram implements VertexProgram<long[]> {
 
     // TODO: Be sure to accont for hidden properties --- though we may be changing the TP3 API soon for this.
 
@@ -113,7 +113,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     }
 
     @Override
-    public void execute(final Vertex vertex, final Messenger<Long[]> messenger, final Memory memory) {
+    public void execute(final Vertex vertex, final Messenger<long[]> messenger, final Memory memory) {
         if (memory.isInitialIteration()) {
             // create the vertex in titan
             final Vertex titanVertex = graph.addVertex(T.label, vertex.label());
@@ -134,7 +134,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
             // set a dummy property that is the titan id of this particular vertex
             vertex.property(TITAN_ID, titanVertex.id());
             // create an id/titan_id pair and send it to all the vertex's outgoing adjacent vertices
-            final Long[] idPair = {Long.valueOf(vertex.id().toString()), (Long) titanVertex.id()};
+            final long[] idPair = {Long.valueOf(vertex.id().toString()), (Long) titanVertex.id()};
             messenger.sendMessage(this.messageScope, idPair);
         } else {
             // create a id/titan_id map and populate it with all the incoming messages
@@ -326,7 +326,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<Long[]> {
     }
 
     @Override
-    public VertexProgram<Long[]> clone() {
+    public VertexProgram<long[]> clone() {
         return this;
     }
 
