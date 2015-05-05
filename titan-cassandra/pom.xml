@@ -239,7 +239,7 @@
                             <reuseForks>false</reuseForks>
                             <parallel>classes</parallel>
                             <perCoreThreadCount>true</perCoreThreadCount>
-                            <threadCount>1</threadCount>
+                            <threadCount>2</threadCount>
                             <runOrder>random</runOrder>
                             <skip>${test.skip.ordered}</skip>
                         </configuration>
@@ -258,7 +258,7 @@
                             <reuseForks>false</reuseForks>
                             <parallel>classes</parallel>
                             <perCoreThreadCount>true</perCoreThreadCount>
-                            <threadCount>1</threadCount>
+                            <threadCount>2</threadCount>
                             <runOrder>random</runOrder>
                             <skip>${test.skip.unordered}</skip>
                         </configuration>
