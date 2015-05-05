@@ -241,6 +241,7 @@
                             <perCoreThreadCount>true</perCoreThreadCount>
                             <threadCount>2</threadCount>
                             <runOrder>random</runOrder>
+                            <reportNameSuffix>bop</reportNameSuffix>
                             <skip>${test.skip.ordered}</skip>
                         </configuration>
                     </execution>
@@ -260,6 +261,7 @@
                             <perCoreThreadCount>true</perCoreThreadCount>
                             <threadCount>2</threadCount>
                             <runOrder>random</runOrder>
+                            <reportNameSuffix>rp</reportNameSuffix>
                             <skip>${test.skip.unordered}</skip>
                         </configuration>
                     </execution>
@@ -285,6 +287,7 @@
                             <perCoreThreadCount>true</perCoreThreadCount>
                             <threadCount>1</threadCount>
                             <runOrder>random</runOrder>
+                            <reportNameSuffix>ssl</reportNameSuffix>
                             <skip>${test.skip.ssl}</skip>
                         </configuration>
                     </execution>
@@ -304,6 +307,7 @@
                             <perCoreThreadCount>false</perCoreThreadCount>
                             <threadCount>1</threadCount>
                             <runOrder>alphabetical</runOrder>
+                            <reportNameSuffix>serial</reportNameSuffix>
                             <skip>${test.skip.serial}</skip>
                         </configuration>
                     </execution>
