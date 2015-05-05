@@ -3239,9 +3239,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         gts = graph.traversal();
         v = gts.V().has("id",1).next();
-        v.property(single,"name","t2");
+        v.property(single, "name", "t2");
         v = gts.V().has("id",1).next();
-        v.property(single,"name","t3");
+        v.property(single, "name", "t3");
         assertCount(1,gts.V(v).properties("name"));
         assertCount(2,gts.V().has("id",2).properties("names"));
         assertCount(2,gts.V().hasLabel("vertex"));
@@ -3342,6 +3342,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
 
+    @Test
+    public void testSimpleTinkerPopTraversal() {
+        Vertex v1 = graph.addVertex("name","josh");
+        Vertex v2 = graph.addVertex("name","lop");
+        v1.addEdge("created",v2);
+        //graph.tx().commit();
+
+        Object id = graph.traversal().V().has("name", "josh").outE("created").as("e").inV().has("name", "lop").<Edge>select("e").next().id();
+        assertNotNull(id);
+    }
 
 
    /* ==================================================================================
