@@ -20,7 +20,7 @@ public abstract class AbstractBinaryInputFormat extends InputFormat<StaticBuffer
 
         this.mrConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, config);
         this.hadoopConf = config;
-        this.titanConf = mrConf.getTitanInputConf();
+        this.titanConf = mrConf.getTitanGraphConf();
     }
 
     @Override

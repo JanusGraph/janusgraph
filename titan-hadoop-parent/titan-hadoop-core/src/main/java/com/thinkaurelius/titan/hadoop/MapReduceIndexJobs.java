@@ -147,7 +147,7 @@ public class MapReduceIndexJobs {
         for (Map.Entry<Object, Object> e : source.entrySet()) {
             String k;
             String v = e.getValue().toString();
-            k = ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + e.getKey().toString();
+            k = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + e.getKey().toString();
             sink.set(k, v);
             log.info("Set {}={}", k, v);
         }

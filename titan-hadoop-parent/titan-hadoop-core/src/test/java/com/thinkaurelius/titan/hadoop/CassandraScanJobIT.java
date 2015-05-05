@@ -85,8 +85,8 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         graph.tx().commit();
 
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + "storage.backend", "cassandrathrift");
+        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
+        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + "storage.backend", "cassandrathrift");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.ByteOrderedPartitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);
@@ -113,8 +113,8 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         graph.tx().commit();
 
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + "storage.backend", "cassandrathrift");
+        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
+        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + "storage.backend", "cassandrathrift");
         c.set(ConfigElement.getPath(TitanHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.ByteOrderedPartitioner");
 

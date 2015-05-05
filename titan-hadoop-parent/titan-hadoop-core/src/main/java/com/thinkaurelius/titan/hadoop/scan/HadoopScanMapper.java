@@ -219,7 +219,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
 
     static ModifiableConfiguration getTitanConfiguration(Context context) {
         org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        return ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf).getTitanInputConf();
+        return ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf).getTitanGraphConf();
     }
 
     static Configuration getJobConfiguration(ModifiableHadoopConfiguration scanConf) {

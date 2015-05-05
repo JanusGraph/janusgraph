@@ -45,8 +45,9 @@ public class CassandraHadoopScanRunner extends AbstractHadoopScanRunner<Cassandr
 
         if (null != titanConf) {
             for (String k : titanConf.getKeys("")) {
-                hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + k, titanConf.<Object>get(k, Object.class).toString());
-                log.error("Set: {}={}", ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + k, titanConf.<Object>get(k, Object.class).toString());
+                hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + k, titanConf.<Object>get(k, Object.class).toString());
+                log.debug("Set: {}={}", ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + k,
+                        titanConf.<Object>get(k, Object.class).toString());
             }
         }
 

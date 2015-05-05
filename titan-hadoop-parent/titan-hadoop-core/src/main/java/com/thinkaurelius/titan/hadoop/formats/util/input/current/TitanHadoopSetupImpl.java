@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -35,7 +34,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
     public TitanHadoopSetupImpl(final Configuration config) {
         scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, config);
-        BasicConfiguration bc = scanConf.getTitanInputConf();
+        BasicConfiguration bc = scanConf.getTitanGraphConf();
         graph = (StandardTitanGraph) TitanFactory.open(bc);
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().vertexCacheSize(200).start();
     }
