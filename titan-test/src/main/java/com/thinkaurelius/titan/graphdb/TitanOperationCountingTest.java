@@ -204,32 +204,9 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
     }
 
+
     public static final List<String> STORE_NAMES =
-            ImmutableList.of(Backend.EDGESTORE_NAME,Backend.INDEXSTORE_NAME,Backend.ID_STORE_NAME,Backend.METRICS_STOREMANAGER_NAME);
-
-    @Test
-    public void testSettingProperty() throws Exception {
-        metricsPrefix = "metrics1";
-
-        mgmt.makePropertyKey("foo").dataType(String.class).cardinality(Cardinality.SINGLE).make();
-        finishSchema();
-
-        TitanVertex v = tx.addVertex();
-        v.property("foo","bar");
-        tx.commit();
-
-
-        TitanTransaction tx = graph.buildTransaction().checkExternalVertexExistence(false).groupName(metricsPrefix).start();
-        v = tx.getVertex(v.longId());
-        v.property("foo","bus");
-        tx.commit();
-        printAllMetrics();
-        verifyStoreMetrics(STORE_NAMES.get(0));
-        verifyStoreMetrics(STORE_NAMES.get(1));
-        verifyStoreMetrics(STORE_NAMES.get(2));
-        verifyStoreMetrics(STORE_NAMES.get(3), ImmutableMap.of(M_MUTATE, 1l));
-    }
-
+            ImmutableList.of("edgeStore", "vertexIndexStore", "edgeIndexStore", "idStore");
 
     @Test
     @Ignore //TODO: Ignore for now until everything is stable - then do the counting

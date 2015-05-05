@@ -31,7 +31,6 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -79,7 +78,6 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     public static final String ID_STORE_NAME = "titan_ids";
 
-    public static final String METRICS_STOREMANAGER_NAME = "storeManager";
     public static final String METRICS_MERGED_STORE = "stores";
     public static final String METRICS_MERGED_CACHE = "caches";
     public static final String METRICS_CACHE_SUFFIX = ".cache";
@@ -137,12 +135,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public Backend(Configuration configuration) {
         this.configuration = configuration;
 
-        KeyColumnValueStoreManager manager = getStorageManager(configuration);
-        if (configuration.get(BASIC_METRICS)) {
-            storeManager = new MetricInstrumentedStoreManager(manager,METRICS_STOREMANAGER_NAME,configuration.get(METRICS_MERGE_STORES),METRICS_MERGED_STORE);
-        } else {
-            storeManager = manager;
-        }
+        storeManager = getStorageManager(configuration);
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
@@ -220,9 +213,13 @@ public class Backend implements LockerProvider, AutoCloseable {
      */
     public void initialize(Configuration config) {
         try {
+            boolean reportMetrics = configuration.get(BASIC_METRICS);
+
             //EdgeStore & VertexIndexStore
             KeyColumnValueStore idStore = storeManager.openDatabase(ID_STORE_NAME);
-
+            if (reportMetrics) {
+                idStore = new MetricInstrumentedStore(idStore, getMetricsStoreName(ID_STORE_NAME));
+            }
             idAuthority = null;
             if (storeFeatures.isKeyConsistent()) {
                 idAuthority = new ConsistentKeyIDAuthority(idStore, storeManager, config);
@@ -232,6 +229,11 @@ public class Backend implements LockerProvider, AutoCloseable {
 
             KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
             KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
+
+            if (reportMetrics) {
+                edgeStoreRaw = new MetricInstrumentedStore(edgeStoreRaw, getMetricsStoreName(EDGESTORE_NAME));
+                indexStoreRaw = new MetricInstrumentedStore(indexStoreRaw, getMetricsStoreName(INDEXSTORE_NAME));
+            }
 
             //Configure caches
             if (cacheEnabled) {
@@ -256,8 +258,8 @@ public class Backend implements LockerProvider, AutoCloseable {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName("edgeStore"),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName("indexStore"),expirationTime,cleanWaitTime,indexStoreCacheSize);
+                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName("indexStore",reportMetrics),expirationTime,cleanWaitTime,indexStoreCacheSize);
             } else {
                 edgeStore = new NoKCVSCache(edgeStoreRaw);
                 indexStore = new NoKCVSCache(indexStoreRaw);
@@ -374,8 +376,12 @@ public class Backend implements LockerProvider, AutoCloseable {
         return userConfig;
     }
 
-    private String getMetricsCacheName(String storeName) {
-        if (!configuration.get(BASIC_METRICS)) return null;
+    private String getMetricsStoreName(String storeName) {
+        return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_STORE : storeName;
+    }
+
+    private String getMetricsCacheName(String storeName, boolean reportMetrics) {
+        if (!reportMetrics) return null;
         return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
