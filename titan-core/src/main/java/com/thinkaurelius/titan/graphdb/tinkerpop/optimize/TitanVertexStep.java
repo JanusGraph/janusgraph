@@ -5,12 +5,18 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profileable;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.*;
 
@@ -19,7 +25,7 @@ import java.util.*;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex,E> {
+public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex,E>, Profileable {
 
     public TitanVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
@@ -31,6 +37,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     private boolean initialized = false;
     private boolean useMultiQuery = false;
     private Map<TitanVertex, Iterable<? extends TitanElement>> multiQueryResults = null;
+    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
     void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
@@ -49,6 +56,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         }
         for (OrderEntry order : orders) query.orderBy(order.key,order.order);
         if (limit !=BaseQuery.NO_LIMIT) query.limit(limit);
+        ((BasicVertexCentricQueryBuilder)query).profiler(queryProfiler);
         return query;
     }
 
@@ -133,4 +141,8 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         return this.hasContainers.isEmpty() ? super.toString() : TraversalHelper.makeStepString(this, this.hasContainers);
     }
 
+    @Override
+    public void setMetrics(MutableMetrics metrics) {
+        queryProfiler = new TP3ProfileWrapper(metrics);
+    }
 }

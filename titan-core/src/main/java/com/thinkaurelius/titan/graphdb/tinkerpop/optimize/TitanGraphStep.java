@@ -6,8 +6,13 @@ import com.thinkaurelius.titan.core.TitanGraphQuery;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import com.thinkaurelius.titan.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profileable;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Contains;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -20,11 +25,13 @@ import java.util.List;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStep<E extends Element> extends GraphStep<E> implements HasStepFolder<E,E> {
+public class TitanGraphStep<E extends Element> extends GraphStep<E> implements HasStepFolder<E,E>, Profileable {
 
     private final List<HasContainer> hasContainers = new ArrayList<>();
     private int limit = BaseQuery.NO_LIMIT;
     private List<OrderEntry> orders = new ArrayList<>();
+    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
+
 
     public TitanGraphStep(final GraphStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getIds());
@@ -42,6 +49,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
             }
             for (OrderEntry order : orders) query.orderBy(order.key,order.order);
             if (limit!=BaseQuery.NO_LIMIT) query.limit(limit);
+            ((GraphCentricQueryBuilder)query).profiler(queryProfiler);
             return Vertex.class.isAssignableFrom(this.returnClass) ? query.vertices().iterator() : query.edges().iterator();
         });
     }
@@ -69,6 +77,11 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     @Override
     public int getLimit() {
         return this.limit;
+    }
+
+    @Override
+    public void setMetrics(MutableMetrics metrics) {
+        queryProfiler = new TP3ProfileWrapper(metrics);
     }
 }
 
