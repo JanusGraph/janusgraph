@@ -23,8 +23,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     public TitanVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
-        if (originalStep.getLabel().isPresent())
-            this.setLabel(originalStep.getLabel().get());
+        originalStep.getLabels().forEach(this::addLabel);
         this.hasContainers = new ArrayList<>();
         this.limit = Query.NO_LIMIT;
     }

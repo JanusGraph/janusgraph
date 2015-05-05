@@ -8,9 +8,7 @@ import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
-import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
@@ -133,11 +131,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 * ---------------------------------------------------------------
 	 */
 
-    @Override
-    public<V> TitanVertexProperty<V> property(String key, V value) {
-        return property(key,value,new Object[0]);
-    }
-
     public<V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
         TitanVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
         ElementHelper.attachProperties(p,keyValues);
@@ -146,7 +139,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <V> TitanVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
-        TitanVertexProperty<V> p = tx().addPropertyInternal(cardinality,it(),tx().getOrCreatePropertyKey(key),value);
+        TitanVertexProperty<V> p = tx().addProperty(cardinality, it(), tx().getOrCreatePropertyKey(key), value);
         ElementHelper.attachProperties(p,keyValues);
         return p;
     }

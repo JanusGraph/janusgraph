@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -146,7 +146,7 @@ public class BulkLoaderVertexProgram implements VertexProgram<long[]> {
         } else {
             // create a id/titan_id map and populate it with all the incoming messages
             final Map<Long, Long> idPairs = new HashMap<>();
-            messenger.receiveMessages(this.messageScope).forEachRemaining(idPair -> idPairs.put(idPair[0], idPair[1]));
+            messenger.receiveMessages().forEachRemaining(idPair -> idPairs.put(idPair[0], idPair[1]));
             // get the titan vertex out of titan given the dummy id property
             Object vid = vertex.value(TITAN_ID);
             final Vertex titanVertex = graph.vertices(vid).next();

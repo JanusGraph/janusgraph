@@ -64,7 +64,7 @@ import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -3305,17 +3305,17 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
 
         assertNumStep(superV*(numV/5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", Compare.inside, ImmutableList.of(0, 3)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.gte, 1).has("weight", Compare.lt, 3).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.inside, ImmutableList.of(0, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", P.inside(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.inside(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
         clopen(option(USE_MULTIQUERY),true);
         gts = graph.traversal();
 
         assertNumStep(superV*(numV/5), 2, gts.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", Compare.inside, ImmutableList.of(0, 3)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.gte, 1).has("weight",Compare.lt,3).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", Compare.inside, ImmutableList.of(0, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", P.inside(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3))), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.inside(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
     }
 

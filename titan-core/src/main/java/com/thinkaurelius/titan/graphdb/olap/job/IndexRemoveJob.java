@@ -115,7 +115,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             final List<Entry> deletions;
             if (entries.size()==1) deletions = Iterables.getOnlyElement(entries.values());
             else {
-                int size = StreamFactory.stream(entries.values()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
+                int size = StreamFactory.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
                 deletions = new ArrayList<>(size);
                 entries.values().forEach(e -> deletions.addAll(e));
             }
