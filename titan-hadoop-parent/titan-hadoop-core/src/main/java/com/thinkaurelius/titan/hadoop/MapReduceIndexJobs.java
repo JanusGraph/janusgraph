@@ -144,10 +144,11 @@ public class MapReduceIndexJobs {
     }
 
     private static void copyPropertiesToInputAndOutputConf(org.apache.hadoop.conf.Configuration sink, Properties source) {
+        final String prefix = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
         for (Map.Entry<Object, Object> e : source.entrySet()) {
             String k;
             String v = e.getValue().toString();
-            k = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS) + "." + e.getKey().toString();
+            k = prefix + e.getKey().toString();
             sink.set(k, v);
             log.info("Set {}={}", k, v);
         }
