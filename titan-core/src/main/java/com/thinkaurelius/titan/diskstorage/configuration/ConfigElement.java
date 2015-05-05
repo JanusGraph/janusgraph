@@ -131,6 +131,10 @@ public abstract class ConfigElement {
 //    }
 
     public static String getPath(ConfigElement element, String... umbrellaElements) {
+        return getPath(element, false, umbrellaElements);
+    }
+
+    public static String getPath(ConfigElement element, boolean includeRoot, String... umbrellaElements) {
         Preconditions.checkNotNull(element);
         if (umbrellaElements==null) umbrellaElements = new String[0];
         String path = element.getName();
@@ -146,6 +150,13 @@ public abstract class ConfigElement {
             }
             path = parent.getName() + SEPARATOR + path;
             element = parent;
+        }
+        if (includeRoot) {
+            // Assumes that roots are not umbrellas
+            // If roots could be umbrellas, we might have to change the interpretation of umbrellaElements
+            path = (element.isNamespace() ?
+                    element.getName() :
+                    element.getNamespace().getName()) + SEPARATOR + path;
         }
         //Don't make this check so that we can still access more general config items
         Preconditions.checkArgument(umbrellaPos<0,"Found unused umbrella element: %s",umbrellaPos<0?null:umbrellaElements[umbrellaPos]);

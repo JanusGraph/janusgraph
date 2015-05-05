@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -51,7 +52,9 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     private void copyProperties(InternalRelation to) {
         for (LongObjectCursor<Object> entry : getPropertyMap()) {
-            to.setPropertyDirect(tx().getExistingPropertyKey(entry.key), entry.value);
+            PropertyKey type = tx().getExistingPropertyKey(entry.key);
+            if (!(type instanceof ImplicitKey))
+                to.setPropertyDirect(type, entry.value);
         }
     }
 

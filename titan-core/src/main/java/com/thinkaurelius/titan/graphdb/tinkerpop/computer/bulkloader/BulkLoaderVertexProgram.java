@@ -40,8 +40,8 @@ public class BulkLoaderVertexProgram implements VertexProgram<long[]> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BulkLoaderVertexProgram.class);
 
     // TODO this is a step backwards in config management
-    private static final String CFG_GRAPH_PREFIX = "titan.bulkload.graphconfig.";
-    private static final String CFG_SCHEMA_CHECK = "titan.bulkload.schemacheck";
+    private static final String CFG_GRAPH_PREFIX = "titanmr.bulkload.conf.";
+    private static final String CFG_SCHEMA_CHECK = "titanmr.bulkload.schema-check";
     private static final boolean CFG_SCHEMA_CHECK_DEFAULT = false;
 
     private static final String TITAN_ID = "titan.id";
@@ -337,11 +337,9 @@ public class BulkLoaderVertexProgram implements VertexProgram<long[]> {
         return this;
     }
 
-    // TODO verify ResultGraph.ORIGINAL & Persist.EDGES trigger intended behavior
-
     @Override
     public GraphComputer.ResultGraph getPreferredResultGraph() {
-        return GraphComputer.ResultGraph.ORIGINAL;
+        return GraphComputer.ResultGraph.NEW;
     }
 
     @Override

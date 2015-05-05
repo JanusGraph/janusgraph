@@ -345,7 +345,7 @@ place = mgmt.getPropertyKey('place')
 mgmt.changeName(place, 'location')
 mgmt.commit()
 
-Note, that schema name changes may not be immediately visible in currently running transactions and other Titan graph instances in the cluster. While schema name changes are announced to all Titan instances, it may take a while for them to take effect and it may require a instance restart in the event of certain failure conditions - like network partitions - if they coincide with the rename. Hence, the user must ensure that either of the following holds:
+Note, that schema name changes may not be immediately visible in currently running transactions and other Titan graph instances in the cluster. While schema name changes are announced to all Titan instances through the storage backend, it may take a while for the schema changes to take effect and it may require a instance restart in the event of certain failure conditions - like network partitions - if they coincide with the rename. Hence, the user must ensure that either of the following holds:
 
 * The renamed label or key is not currently in active use (i.e. written or read) and will not be in use until all Titan instances are aware of the name change.
 * Running transactions actively accomodate the brief intermediate period where either the old or new name is valid based on the specific Titan instance and status of the name-change announcement. For instance, that could mean transactions query for both names simultaneously.
@@ -686,8 +686,16 @@ mgmt = g.openManagement()
 mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
 mgmt.commit()
 
-The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that Titan knows which configured indexing backend it should use for this particular index.
-While this index definition looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
+The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that Titan knows which configured indexing backend it should use for this particular index.  The `search` parameter specified in the buildMixedIndex call must match the second clause in the Titan configuration definition like this: index.*search*.backend   If the index was named 'solrsearch' then the configuration definition would appear like this: index.*solrsearch*.backend.
+
+The mgmt.buildIndex example specified above uses text search as its default behavior. An index statement that explicity defines the index as a text index can be written as follows:
+
+[source,gremlin]
+mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.getParameter()).addKey(age,Mapping.TEXT.getParameter()).buildMixedIndex("search")
+
+See <<index-parameters>> for more information on text and string search options, and see the documentation section specific to the indexing backend in use for more details on how each backend handles text versus string searches.
+
+While the index definition example looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
 
 [source, gremlin]
 g.traversal().V().has('name', CONTAINS, 'hercules').has('age', inside, [20, 50])

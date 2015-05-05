@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Duration;
@@ -12,6 +14,7 @@ import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import static org.apache.tinkerpop.gremlin.structure.Direction.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -163,6 +166,41 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Verify that the property value is unchanged
         assertEquals("15", afterTx5.value(age));
+    }
+
+    /**
+     * Tests that timestamped edges can be updated
+     */
+    @Test
+    public void testTimestampedEdgeUpdates() {
+        clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS, "edgestore"), true,
+                option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
+        final TimeUnit unit = TimeUnit.SECONDS;
+
+        // Transaction 1: Init graph with two vertices and one edge
+        TitanTransaction tx = graph.buildTransaction().commitTime(100, unit).start();
+        TitanVertex v1 = tx.addVertex();
+        TitanVertex v2 = tx.addVertex();
+        Edge e = v1.addEdge("related",v2);
+        e.property("time", 25);
+        tx.commit();
+
+        tx = graph.buildTransaction().commitTime(200, unit).start();
+        v1 = tx.getVertex(v1.longId());
+        assertNotNull(v1);
+        e = Iterators.getOnlyElement(v1.edges(Direction.OUT, "related"));
+        assertNotNull(e);
+        assertEquals(Integer.valueOf(25), e.value("time"));
+        e.property("time", 125);
+        tx.commit();
+
+        tx = graph.buildTransaction().commitTime(300, unit).start();
+        v1 = tx.getVertex(v1.longId());
+        assertNotNull(v1);
+        e = Iterators.getOnlyElement(v1.edges(Direction.OUT, "related"));
+        assertEquals(Integer.valueOf(125), e.value("time"));
+        e.remove();
+        tx.commit();
     }
 
     /**

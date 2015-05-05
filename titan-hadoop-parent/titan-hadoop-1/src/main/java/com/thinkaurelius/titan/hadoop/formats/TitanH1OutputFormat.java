@@ -44,7 +44,7 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
                 Configuration hadoopConf = taskAttemptContext.getConfiguration();
                 ModifiableHadoopConfiguration mhc =
                         ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
-                graph = (StandardTitanGraph) TitanFactory.open(mhc.getTitanInputConf());
+                graph = (StandardTitanGraph) TitanFactory.open(mhc.getTitanGraphConf());
             }
         }
 

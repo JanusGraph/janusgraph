@@ -36,9 +36,10 @@ public class HBaseHadoopScanRunner extends AbstractHadoopScanRunner<HBaseHadoopS
                 baseHadoopConf : new org.apache.hadoop.conf.Configuration();
 
         if (null != titanConf) {
+            String prefix = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
             for (String k : titanConf.getKeys("")) {
-                hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + k, titanConf.<Object>get(k, Object.class).toString());
-                log.error("Set: {}={}", ConfigElement.getPath(TitanHadoopConfiguration.TITAN_INPUT_CONFIG_KEYS) + "." + k, titanConf.<Object>get(k, Object.class).toString());
+                hadoopConf.set(prefix + k, titanConf.get(k, Object.class).toString());
+                log.debug("Set: {}={}", prefix + k, titanConf.get(k, Object.class).toString());
             }
         }
         Preconditions.checkNotNull(hadoopConf);
