@@ -45,17 +45,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
     public static List<HasContainer> getHasContainers(HasContainerHolder holder) {
         List<HasContainer> original = holder.getHasContainers();
-        List<HasContainer> result = new ArrayList<>(original.size());
-        for (HasContainer hc : original) {
-            if (hc.predicate == Compare.inside) {
-                result.add(new HasContainer(hc.key,Compare.gt,((List)hc.value).get(0)));
-                result.add(new HasContainer(hc.key,Compare.lt,((List)hc.value).get(1)));
-            } else if (hc.predicate == Compare.outside) {
-                result.add(new HasContainer(hc.key,Compare.lt,((List)hc.value).get(0)));
-                result.add(new HasContainer(hc.key,Compare.gt,((List)hc.value).get(1)));
-            } else result.add(hc);
-        }
-        return result;
+        return original;
     }
 
     public static boolean validTitanHas(Iterable<HasContainer> has) {
@@ -83,20 +73,15 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
     public static void foldInHasContainer(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal) {
 
-        //boolean previouslyLabeled = titanStep.getLabel().isPresent();
-        Step currentStep = titanStep.getNextStep();
+        Step<?,?> currentStep = titanStep.getNextStep();
         while (true) {
-            //if (previouslyLabeled) break;
-
             if (currentStep instanceof HasContainerHolder) {
                 Iterable<HasContainer> containers = getHasContainers((HasContainerHolder) currentStep);
                 if (validTitanHas(containers)) {
                     titanStep.addAll(containers);
-                    addLabeledStepAsIdentity(currentStep, traversal);
+                    currentStep.getLabels().forEach(titanStep::addLabel);
                     traversal.removeStep(currentStep);
                 }
-            } else if (currentStep instanceof OrderLocalStep || currentStep instanceof OrderGlobalStep) {
-                //do nothing, we can pull filters over those
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing, has no impact
             } else if (currentStep instanceof HasStep) {
@@ -104,28 +89,27 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
             } else {
                 break;
             }
-//            previouslyLabeled = currentStep.getLabel().isPresent();
             currentStep = currentStep.getNextStep();
         }
     }
 
-    public static boolean addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal.Admin<?, ?> traversal) {
-        if (currentStep.getLabel().isPresent()) {
-            final IdentityStep identityStep = new IdentityStep<>(traversal);
-            identityStep.setLabel(currentStep.getLabel().get());
-            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-            return true;
-        } else return false;
-    }
+//    public static boolean addLabeledStepAsIdentity(Step<?,?> currentStep, final Traversal.Admin<?, ?> traversal) {
+//        if (currentStep.getLabel().isPresent()) {
+//            final IdentityStep identityStep = new IdentityStep<>(traversal);
+//            identityStep.setLabel(currentStep.getLabel().get());
+//            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+//            return true;
+//        } else return false;
+//    }
 
     public static void foldInOrder(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal,
                                                 final Traversal<?,?> rootTraversal, boolean isVertexOrder) {
-        Step currentStep = titanStep.getNextStep();
-        OrderGlobalStep lastOrder = null;
+        Step<?,?> currentStep = titanStep.getNextStep();
+        OrderGlobalStep<?> lastOrder = null;
         while (true) {
             if (currentStep instanceof OrderGlobalStep) {
                 if (lastOrder!=null) { //Previous orders are rendered irrelevant by next order (since re-ordered)
-                    addLabeledStepAsIdentity(lastOrder, traversal);
+                    lastOrder.getLabels().forEach(titanStep::addLabel);
                     traversal.removeStep(lastOrder);
                 }
                 lastOrder = (OrderGlobalStep)currentStep;
@@ -142,11 +126,11 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         if (lastOrder!=null && lastOrder instanceof OrderGlobalStep) {
             if (validTitanOrder(lastOrder,rootTraversal,isVertexOrder)) {
                 //Add orders to HasStepFolder
-                for (Comparator comp : (List<Comparator>)lastOrder.getComparators()) {
+                for (Comparator comp : (List<Comparator>)((OrderGlobalStep)lastOrder).getComparators()) {
                     ElementValueComparator evc = (ElementValueComparator)comp;
                     titanStep.orderBy(evc.getPropertyKey(),(Order)evc.getValueComparator());
                 }
-                addLabeledStepAsIdentity(lastOrder, traversal);
+                lastOrder.getLabels().forEach(titanStep::addLabel);
                 traversal.removeStep(lastOrder);
             }
         }
@@ -164,14 +148,14 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     }
 
     public static <E extends Ranging> void foldInRange(final HasStepFolder titanStep, final Traversal.Admin<?, ?> traversal) {
-        Step nextStep = TitanTraversalUtil.getNextNonIdentityStep(titanStep);
+        Step<?,?> nextStep = TitanTraversalUtil.getNextNonIdentityStep(titanStep);
 
         if (nextStep instanceof RangeGlobalStep) {
             RangeGlobalStep range = (RangeGlobalStep)nextStep;
             int limit = QueryUtil.convertLimit(range.getHighRange());
             titanStep.setLimit(QueryUtil.mergeLimits(limit, titanStep.getLimit()));
             if (range.getLowRange() == 0) { //Range can be removed since there is no offset
-                addLabeledStepAsIdentity(nextStep, traversal);
+                nextStep.getLabels().forEach(titanStep::addLabel);
                 traversal.removeStep(nextStep);
             }
         }

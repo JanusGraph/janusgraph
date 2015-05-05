@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
-import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIo;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
@@ -60,7 +60,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(CacheVertexProperty.class);
         add(SimpleTitanProperty.class);
 
-        add(TitanIo.class);
+        add(TitanIoRegistry.class);
         add(TitanGraphVariables.class);
     }};
 
@@ -81,16 +81,16 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         return builder.create(graph);
     }
 
-    @Override
-    public <ID> ID reconstituteGraphSONIdentifier(final Class<? extends Element> clazz, final Object id) {
-        if (Edge.class.isAssignableFrom(clazz)) {
-            // TitanGraphSONModule toStrings the edgeid - expect a String value for the id
-            if (!(id instanceof String)) throw new RuntimeException("Expected a String value for the RelationIdentifier");
-            return (ID) RelationIdentifier.parse((String) id);
-        } else {
-            return (ID) id;
-        }
-    }
+//    @Override
+//    public <ID> ID reconstituteGraphSONIdentifier(final Class<? extends Element> clazz, final Object id) {
+//        if (Edge.class.isAssignableFrom(clazz)) {
+//            // TitanGraphSONModule toStrings the edgeid - expect a String value for the id
+//            if (!(id instanceof String)) throw new RuntimeException("Expected a String value for the RelationIdentifier");
+//            return (ID) RelationIdentifier.parse((String) id);
+//        } else {
+//            return (ID) id;
+//        }
+//    }
 
     @Override
     public void clear(Graph g, final Configuration configuration) throws Exception {
@@ -111,11 +111,10 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     }
 
     @Override
-    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, final LoadGraphWith.GraphData loadGraphWith) {
         ModifiableConfiguration conf = getTitanConfiguration(graphName,test,testMethodName);
         conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE,"persist");
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
-        conf.set(GraphDatabaseConfiguration.VERTEXPROPERTY_SINGLE,true);
         Map<String,Object> result = new HashMap<>();
         conf.getAll().entrySet().stream().forEach( e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements),e.getValue()));
         result.put(Graph.GRAPH, TitanFactory.class.getName());

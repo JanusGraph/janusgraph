@@ -123,7 +123,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public <O> O value(String key) {
         verifyAccess();
         O val = valueInternal(tx().getPropertyKey(key));
-        if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
+        if (val==null) throw Property.Exceptions.propertyDoesNotExist(this,key);
         return val;
     }
 
@@ -141,7 +141,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         Stream<PropertyKey> keys;
 
         if (keyNames==null || keyNames.length==0) {
-            keys = StreamFactory.stream(it().getPropertyKeysDirect());
+            keys = StreamFactory.stream(it().getPropertyKeysDirect().iterator());
         } else {
             keys = Stream.of(keyNames)
                     .map(s -> tx().getPropertyKey(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);

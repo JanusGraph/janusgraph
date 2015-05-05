@@ -28,8 +28,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
 
     public TitanGraphStep(final GraphStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getIds());
-        if (originalStep.getLabel().isPresent())
-            this.setLabel(originalStep.getLabel().get());
+        originalStep.getLabels().forEach(this::addLabel);
         this.setIteratorSupplier(() -> {
             TitanTransaction tx = TitanTraversalUtil.getTx(traversal);
             TitanGraphQuery query = tx.query();

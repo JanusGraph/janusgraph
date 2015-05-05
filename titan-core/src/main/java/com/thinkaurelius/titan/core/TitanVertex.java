@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.core;
 
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * TitanVertex is the basic unit of a {@link TitanGraph}.
@@ -53,8 +54,16 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @throws IllegalArgumentException if the value does not match the data type of the property key.
      */
     @Override
-    public<V> TitanVertexProperty<V> property(String key, V value);
+    public default<V> TitanVertexProperty<V> property(String key, V value) {
+        return this.property(key, value, EMPTY_ARGS);
+    }
 
+    @Override
+    public <V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues);
+
+
+    @Override
+    public <V> TitanVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues);
 
      /* ---------------------------------------------------------------
       * Vertex Label

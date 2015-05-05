@@ -94,7 +94,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V> {
 
     @Override
     public <V> V value(String key) {
-        throw Property.Exceptions.propertyDoesNotExist(key);
+        throw Property.Exceptions.propertyDoesNotExist(this,key);
     }
 
     @Override

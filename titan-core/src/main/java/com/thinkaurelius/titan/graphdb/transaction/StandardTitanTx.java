@@ -505,7 +505,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         } else if (config.hasAssignIDsImmediately() || label.isPartitioned()) {
             graph.assignID(vertex,label);
         }
-        addPropertyInternal(vertex, BaseKey.VertexExists, Boolean.TRUE);
+        addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
             addEdge(vertex, (VertexLabelVertex) label, BaseLabel.VertexLabelEdge);
@@ -702,16 +702,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public TitanVertexProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
-        //See TINKERPOP3-627 for more detail on why this distinction is necessary
-        return addPropertyInternal(graph.getConfiguration().useVertexPropSingleCardinality()? VertexProperty.Cardinality.single: key.cardinality().convert(),
-                vertex, key, value);
+        return addProperty(key.cardinality().convert(), vertex, key, value);
     }
 
-    public TitanVertexProperty addPropertyInternal(TitanVertex vertex, PropertyKey key, Object value) {
-        return addPropertyInternal(key.cardinality().convert(), vertex, key, value);
-    }
-
-    public TitanVertexProperty addPropertyInternal(VertexProperty.Cardinality cardi, TitanVertex vertex, PropertyKey key, Object value) {
+    public TitanVertexProperty addProperty(VertexProperty.Cardinality cardi, TitanVertex vertex, PropertyKey key, Object value) {
         if (key.cardinality().convert()!=cardi && cardi!=VertexProperty.Cardinality.single)
                 throw new SchemaViolationException(String.format("Key is defined for %s cardinality which conflicts with specified: %s",key.cardinality(),cardi));
         verifyWriteAccess(vertex);
@@ -834,13 +828,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         graph.assignID(schemaVertex, BaseVertexLabel.DEFAULT_VERTEXLABEL);
         Preconditions.checkArgument(schemaVertex.longId() > 0);
-        if (schemaCategory.hasName()) addPropertyInternal(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
-        addPropertyInternal(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
-        addPropertyInternal(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
+        if (schemaCategory.hasName()) addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
+        addProperty(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
+        addProperty(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
         updateSchemaVertex(schemaVertex);
-        addPropertyInternal(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
+        addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
-            TitanVertexProperty p = addPropertyInternal(schemaVertex, BaseKey.SchemaDefinitionProperty,def.getValue());
+            TitanVertexProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty, def.getValue());
             p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(schemaVertex, schemaVertex.longId());
@@ -850,7 +844,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public void updateSchemaVertex(TitanSchemaVertex schemaVertex) {
-        addPropertyInternal(VertexProperty.Cardinality.single, schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
+        addProperty(VertexProperty.Cardinality.single, schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
     }
 
     public PropertyKey makePropertyKey(String name, TypeDefinitionMap definition) {
@@ -1227,7 +1221,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                                 return indexCache.get(adjustedQuery, new Callable<List<Object>>() {
                                     @Override
                                     public List<Object> call() throws Exception {
-                                        return QueryProfiler.profile(subquery.getProfiler(),adjustedQuery, q -> indexSerializer.query(q, txHandle));
+                                        return QueryProfiler.profile(subquery.getProfiler(), adjustedQuery, q -> indexSerializer.query(q, txHandle));
                                     }
                                 });
                             } catch (Exception e) {

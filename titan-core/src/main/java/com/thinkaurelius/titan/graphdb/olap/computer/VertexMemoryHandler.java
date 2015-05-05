@@ -17,6 +17,7 @@ import org.apache.tinkerpop.gremlin.util.StreamFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -74,25 +75,32 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
         return constructProperty(key,value);
     }
 
-    @Override
-    public Iterator<M> receiveMessages(MessageScope messageScope) {
+    public Stream<M> receiveMessages(MessageScope messageScope) {
         if (messageScope instanceof MessageScope.Global) {
             M message = vertexMemory.getMessage(vertexId,messageScope);
-            if (message == null) return Iterators.emptyIterator();
-            else return Iterators.singletonIterator(message);
+            if (message == null) return Stream.empty();
+            else return Stream.of(message);
         } else {
             final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
             final Traversal<Vertex, Edge> reverseIncident = FulgoraUtil.getReverseElementTraversal(localMessageScope,vertex,vertex.tx());
             final BiFunction<M,Edge,M> edgeFct = localMessageScope.getEdgeFunction();
 
-            return StreamFactory.iterable(StreamFactory.stream(reverseIncident)
+            return StreamFactory.stream(reverseIncident)
                     .map(e -> {
                         M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((TitanEdge) e).otherVertex(vertex).longId()), localMessageScope);
                         return msg == null ? null : edgeFct.apply(msg, e);
                     })
-                    .filter(m -> m != null)
-            ).iterator();
+                    .filter(m -> m != null);
         }
+    }
+
+    @Override
+    public Iterator<M> receiveMessages() {
+        Stream<M> combinedStream = Stream.empty();
+        for (MessageScope scope : vertexMemory.getPreviousScopes()) {
+            combinedStream = Stream.concat(receiveMessages(scope),combinedStream);
+        }
+        return combinedStream.iterator();
     }
 
     @Override
@@ -116,14 +124,14 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
         }
 
         @Override
-        public Iterator<M> receiveMessages(MessageScope messageScope) {
+        public Stream<M> receiveMessages(MessageScope messageScope) {
             if (messageScope instanceof MessageScope.Global) {
                 return super.receiveMessages(messageScope);
             } else {
                 final MessageScope.Local<M> localMessageScope = (MessageScope.Local) messageScope;
                 M aggregateMsg = vertexMemory.getAggregateMessage(vertexId,localMessageScope);
-                if (aggregateMsg==null) return Iterators.emptyIterator();
-                else return Iterators.singletonIterator(aggregateMsg);
+                if (aggregateMsg==null) return Stream.empty();
+                else return Stream.of(aggregateMsg);
             }
         }
 

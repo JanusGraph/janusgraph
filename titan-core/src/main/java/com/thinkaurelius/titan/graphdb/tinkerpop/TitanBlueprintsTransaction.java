@@ -13,10 +13,11 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +60,8 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     }
 
     @Override
-    public Io io() {
-        return getGraph().io();
+    public <I extends Io> I io(final Io.Builder<I> builder) {
+        return getGraph().io(builder);
     }
 
     @Override
@@ -104,12 +105,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         }
 
         final TitanVertex vertex = addVertex(null,label);
-        for (int i = 0; i < keyValues.length; i = i + 2) {
-            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
-                ((StandardTitanTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
-        }
-        //TODO: After TINKERPOP3-627 is fixed the above can be replaced by the following line:
-        // ElementHelper.attachProperties(vertex, keyValues);
+//        for (int i = 0; i < keyValues.length; i = i + 2) {
+//            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
+//                ((StandardTitanTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
+//        }
+        ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
     }
 

@@ -118,7 +118,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
                 messenger.sendMessage(incidentMessageScope, 0L);
             }
         } else {
-            Iterator<Long> distances = messenger.receiveMessages(incidentMessageScope);
+            Iterator<Long> distances = messenger.receiveMessages();
 
             // Find minimum distance among all incoming messages, or null if no messages came in
             Long shortestDistanceSeenOnThisIteration =

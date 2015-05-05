@@ -287,7 +287,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             if (memory.isInitialIteration()) {
                 messenger.sendMessage(DEG_MSG, 1);
             } else {
-                int degree = StreamFactory.stream(messenger.receiveMessages(DEG_MSG)).reduce(0, (a, b) -> a + b);
+                int degree = StreamFactory.stream(messenger.receiveMessages()).reduce(0, (a, b) -> a + b);
                 vertex.property(VertexProperty.Cardinality.single, DEGREE, degree);
                 if (memory.getIteration()<length) messenger.sendMessage(DEG_MSG, degree);
             }

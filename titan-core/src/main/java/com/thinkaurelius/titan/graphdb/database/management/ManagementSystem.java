@@ -40,7 +40,6 @@ import com.thinkaurelius.titan.graphdb.types.SchemaSource;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardRelationTypeMaker;
-import com.thinkaurelius.titan.graphdb.types.StandardVertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
@@ -848,7 +847,7 @@ public class ManagementSystem implements TitanManagement {
             }
         }
         //Add new status
-        TitanVertexProperty p = transaction.addPropertyInternal(vertex, BaseKey.SchemaDefinitionProperty, status);
+        TitanVertexProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
         p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
     }
 
@@ -996,7 +995,7 @@ public class ManagementSystem implements TitanManagement {
             checkIndexName(newName);
         }
 
-        transaction.addPropertyInternal(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
+        transaction.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
         updateSchemaVertex(schemaVertex);
         schemaVertex.resetCache();
         updatedTypes.add(schemaVertex);

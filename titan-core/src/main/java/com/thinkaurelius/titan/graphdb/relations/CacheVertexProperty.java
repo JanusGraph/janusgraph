@@ -5,7 +5,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -61,7 +60,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
         copyProperties(copy);
         copy.remove();
 
-        StandardVertexProperty u = (StandardVertexProperty) tx().addPropertyInternal(getVertex(0), propertyKey(), value());
+        StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), propertyKey(), value());
         if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(super.longId());
         u.setPreviousID(super.longId());
         copyProperties(u);

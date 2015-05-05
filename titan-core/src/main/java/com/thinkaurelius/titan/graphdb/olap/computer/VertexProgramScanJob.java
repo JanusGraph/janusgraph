@@ -93,7 +93,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             for (MessageScope scope : vertexMemory.getPreviousScopes()) {
                 if (scope instanceof MessageScope.Local) {
                     M combinedMsg = null;
-                    for (Iterator<M> msgIter = vh.receiveMessages(scope); msgIter.hasNext(); ) {
+                    for (Iterator<M> msgIter = vh.receiveMessages(scope).iterator(); msgIter.hasNext(); ) {
                         M msg = msgIter.next();
                         if (combinedMsg==null) combinedMsg=msg;
                         else combinedMsg = combiner.combine(combinedMsg,msg);

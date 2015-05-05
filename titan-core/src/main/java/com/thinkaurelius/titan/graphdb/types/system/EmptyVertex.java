@@ -73,9 +73,9 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public <O> O value(String key) {
-        if (!tx().containsPropertyKey(key)) throw Property.Exceptions.propertyDoesNotExist(key);
+        if (!tx().containsPropertyKey(key)) throw Property.Exceptions.propertyDoesNotExist(this,key);
         O val = valueOrNull(tx().getPropertyKey(key));
-        if (val==null) throw Property.Exceptions.propertyDoesNotExist(key);
+        if (val==null) throw Property.Exceptions.propertyDoesNotExist(this,key);
         return val;
     }
 
@@ -85,12 +85,13 @@ public class EmptyVertex implements InternalVertex {
 	 */
 
     @Override
-    public<V> TitanVertexProperty<V> property(String key, V value) {
+    public <V> TitanVertexProperty<V> property(String key, V value, Object...
+            keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
     @Override
-    public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object...
+    public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object...
             keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
