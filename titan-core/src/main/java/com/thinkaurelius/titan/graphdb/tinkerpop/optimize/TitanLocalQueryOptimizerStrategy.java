@@ -21,7 +21,7 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (http://matthiasb.com)
  */
-public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy {
+public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy> {
 
     private static final TitanLocalQueryOptimizerStrategy INSTANCE = new TitanLocalQueryOptimizerStrategy();
 
@@ -30,6 +30,9 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy 
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
+        if(!traversal.getGraph().isPresent())
+            return;
+
         Graph graph = traversal.getGraph().get();
 
         //If this is a compute graph then we can't apply local traversal optimisation at this stage.

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
+public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy> {
 
     private static final TitanGraphStepStrategy INSTANCE = new TitanGraphStepStrategy();
 
@@ -30,6 +30,9 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy {
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
+        if(!traversal.getGraph().isPresent())
+            return;
+
         if (traversal.getEngine().isComputer())
             return;
 

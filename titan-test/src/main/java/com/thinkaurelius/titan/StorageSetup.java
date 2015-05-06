@@ -54,8 +54,12 @@ public class StorageSetup {
         if (!success) throw new IllegalStateException("Could not remove " + homeDirFile);
     }
 
+    public static ModifiableConfiguration getInMemoryConfiguration() {
+        return buildGraphConfiguration().set(STORAGE_BACKEND, "inmemory");
+    }
+
     public static TitanGraph getInMemoryGraph() {
-        return TitanFactory.open(buildGraphConfiguration().set(STORAGE_BACKEND,"inmemory"));
+        return TitanFactory.open(getInMemoryConfiguration());
     }
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {
