@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.graphdb.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.TransactionId;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.time.Instant;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -12,9 +13,9 @@ public class StandardTransactionId implements TransactionId {
 
     private String instanceId;
     private long transactionId;
-    private Timestamp transactionTime;
+    private Instant transactionTime;
 
-    public StandardTransactionId(String instanceId, long transactionId, Timestamp transactionTime) {
+    public StandardTransactionId(String instanceId, long transactionId, Instant transactionTime) {
         Preconditions.checkArgument(instanceId!=null && transactionId>=0 && transactionTime!=null);
         this.instanceId = instanceId;
         this.transactionId = transactionId;
@@ -32,7 +33,7 @@ public class StandardTransactionId implements TransactionId {
     }
 
     @Override
-    public Timestamp getTransactionTime() {
+    public Instant getTransactionTime() {
         return transactionTime;
     }
 

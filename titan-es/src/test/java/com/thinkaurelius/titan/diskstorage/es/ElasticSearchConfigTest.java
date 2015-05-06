@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Joiner;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
@@ -11,17 +10,14 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequestBuilder;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequestBuilder;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -30,7 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
@@ -260,11 +256,11 @@ public class ElasticSearchConfigTest {
 
     private void simpleWriteAndQuery(IndexProvider idx) throws BackendException, InterruptedException {
 
-        final Duration maxWrite = new StandardDuration(2000L, TimeUnit.MILLISECONDS);
+        final Duration maxWrite = Duration.ofMillis(2000L);
         final String storeName = "jvmlocal_test_store";
         final KeyInformation.IndexRetriever indexRetriever = IndexProviderTest.getIndexRetriever(IndexProviderTest.getMapping(idx.getFeatures()));
 
-        BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        BaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         IndexTransaction itx = new IndexTransaction(idx, indexRetriever, txConfig, maxWrite);
         assertEquals(0, itx.query(new IndexQuery(storeName, PredicateCondition.of(IndexProviderTest.NAME, Text.PREFIX, "ali"))).size());
         itx.add(storeName, "doc", IndexProviderTest.NAME, "alice", false);

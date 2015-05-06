@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Order;
 
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -281,7 +283,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param ttl time-to-live
      * @param unit time unit of the specified ttl
      */
-    public void setTTL(TitanSchemaType type, int ttl, TimeUnit unit);
+    public void setTTL(TitanSchemaType type, Duration duration);
 
     /*
     ##################### SCHEMA UPDATE ##########################

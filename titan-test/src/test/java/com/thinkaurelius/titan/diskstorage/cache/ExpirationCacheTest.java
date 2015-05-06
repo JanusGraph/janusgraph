@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cache;
 
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -12,10 +11,12 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
+
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,26 +34,26 @@ public class ExpirationCacheTest extends KCVSCacheTest {
 
     @Override
     public KCVSCache getCache(KeyColumnValueStore store) {
-        return getCache(store,new StandardDuration(1,TimeUnit.DAYS),StandardDuration.ZERO);
+        return getCache(store,Duration.ofDays(1), Duration.ZERO);
     }
 
     private static KCVSCache getCache(KeyColumnValueStore store, Duration expirationTime, Duration graceWait) {
-        return new ExpirationKCVSCache(store,METRICS_STRING,expirationTime.getLength(TimeUnit.MILLISECONDS),graceWait.getLength(TimeUnit.MILLISECONDS),CACHE_SIZE);
+        return new ExpirationKCVSCache(store,METRICS_STRING,expirationTime.toMillis(),graceWait.toMillis(),CACHE_SIZE);
     }
 
 
     @Test
     public void testExpiration() throws Exception {
-        testExpiration(new StandardDuration(200,TimeUnit.MILLISECONDS));
-        testExpiration(new StandardDuration(4,TimeUnit.SECONDS));
-        testExpiration(new StandardDuration(1,TimeUnit.SECONDS));
+        testExpiration(Duration.ofMillis(200));
+        testExpiration(Duration.ofSeconds(4));
+        testExpiration(Duration.ofSeconds(1));
     }
 
     private void testExpiration(Duration expirationTime) throws Exception {
         final int numKeys = 100, numCols = 10;
         loadStore(numKeys,numCols);
         //Replace cache with proper times
-        cache = getCache(store,expirationTime,StandardDuration.ZERO);
+        cache = getCache(store,expirationTime, Duration.ZERO);
 
         StaticBuffer key = BufferUtil.getIntBuffer(81);
         List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
@@ -66,14 +67,14 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         StoreTransaction txs = getStoreTx();
         store.mutate(key,KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(BufferUtil.getIntBuffer(5)),txs);
         txs.commit();
-        Timepoint utime = times.getTime();
+        Instant utime = times.getTime();
 
         //Should still see cached results
         verifyResults(key,keys,query,6);
-        times.sleepPast(utime.add(expirationTime.multiply(0.5))); //Sleep half way through expiration time
+        times.sleepPast(utime.plus(expirationTime.dividedBy(2))); //Sleep half way through expiration time
         verifyResults(key, keys, query, 6);
-        times.sleepPast(utime.add(expirationTime)); //Sleep past expiration time...
-        times.sleepFor(new StandardDuration(5,TimeUnit.MILLISECONDS)); //...and just a little bit longer
+        times.sleepPast(utime.plus(expirationTime)); //Sleep past expiration time...
+        times.sleepFor(Duration.ofMillis(5)); //...and just a little bit longer
         //Now the results should be different
         verifyResults(key, keys, query, 5);
         //If we modify through cache store...
@@ -87,9 +88,9 @@ public class ExpirationCacheTest extends KCVSCacheTest {
 
     @Test
     public void testGracePeriod() throws Exception {
-        testGracePeriod(new StandardDuration(200,TimeUnit.MILLISECONDS));
-        testGracePeriod(StandardDuration.ZERO);
-        testGracePeriod(new StandardDuration(1,TimeUnit.SECONDS));
+        testGracePeriod(Duration.ofMillis(200));
+        testGracePeriod(Duration.ZERO);
+        testGracePeriod(Duration.ofSeconds(1));
     }
 
     private void testGracePeriod(Duration graceWait) throws Exception {
@@ -97,7 +98,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         final int numKeys = 100, numCols = 10;
         loadStore(numKeys,numCols);
         //Replace cache with proper times
-        cache = getCache(store,new StandardDuration(200,TimeUnit.DAYS),graceWait);
+        cache = getCache(store,Duration.ofDays(200),graceWait);
 
         StaticBuffer key = BufferUtil.getIntBuffer(81);
         List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
@@ -111,7 +112,7 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         CacheTransaction tx = getCacheTx();
         cache.mutateEntries(key,KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(getEntry(4,4)),tx);
         tx.commit();
-        Timepoint utime = times.getTime();
+        Instant utime = times.getTime();
         store.resetCounter();
         //...invalidation should happen and the result set is updated immediately
         verifyResults(key, keys, query, 5);
@@ -121,10 +122,10 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         assertEquals(4,store.getSliceCalls());
 
         //however, when we sleep past the grace wait time and trigger a cleanup...
-        times.sleepPast(utime.add(graceWait));
+        times.sleepPast(utime.plus(graceWait));
         for (int t=0; t<minCleanupTriggerCalls;t++) {
             assertEquals(5,cache.getSlice(new KeySliceQuery(key,query),tx).size());
-            times.sleepFor(new StandardDuration(5,TimeUnit.MILLISECONDS));
+            times.sleepFor(Duration.ofMillis(5));
         }
         //...the cache should cache results again
         store.resetCounter();

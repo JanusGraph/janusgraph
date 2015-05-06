@@ -4,6 +4,8 @@ import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
+import java.time.Instant;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Dan LaRocque <dalaro@hopcount.org>
@@ -16,7 +18,7 @@ public interface BaseTransactionConfig {
      *
      * @return commit timestamp for this transaction
      */
-    public Timepoint getCommitTime();
+    public Instant getCommitTime();
 
     /**
      * Sets the commit time of this transaction. If a commit time has already been set, this method throws
@@ -24,7 +26,7 @@ public interface BaseTransactionConfig {
      *
      * @param time
      */
-    public void setCommitTime(Timepoint time);
+    public void setCommitTime(Instant time);
 
     /**
      * Returns true if a commit time has been set on this transaction.

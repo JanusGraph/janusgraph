@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
@@ -233,7 +234,6 @@ public class BackendTransaction implements LoggableTransaction {
      *
      * @param key           Key on which to lock
      * @param column        Column the column on which to lock
-     * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
     public void acquireIndexLock(StaticBuffer key, StaticBuffer column) throws BackendException {
         acquiredLock = true;

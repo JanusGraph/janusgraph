@@ -1,7 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.util.time;
 
-import com.thinkaurelius.titan.core.attribute.Duration;
 
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -11,19 +15,18 @@ public interface TimestampProvider {
 
     /**
      * Returns the current time based on this timestamp provider
-     * as a {@link Timepoint}.
+     * as a {@link Instant}.
      *
      * @return
      */
-    public Timepoint getTime();
+    public Instant getTime();
 
     /**
-     * Returns the given time as a {@link Timepoint} based off of this timestamp provider
+     * Returns the given time as a {@link Instant} based off of this timestamp providers units
      * @param sinceEpoch
-     * @param unit
      * @return
      */
-    public Timepoint getTime(long sinceEpoch, TimeUnit unit);
+    public Instant getTime(long sinceEpoch);
 
     /**
      * Return the units of {@link #getTime()}. This method's return value must
@@ -32,7 +35,7 @@ public interface TimestampProvider {
      *
      * @return this instance's time unit
      */
-    public TimeUnit getUnit();
+    public ChronoUnit getUnit();
 
     /**
      * Block until the current time as returned by {@link #getTime()} is greater
@@ -44,7 +47,7 @@ public interface TimestampProvider {
      * @throws InterruptedException
      *             if externally interrupted
      */
-    public Timepoint sleepPast(Timepoint futureTime) throws InterruptedException;
+    public Instant sleepPast(Instant futureTime) throws InterruptedException;
 
     /**
      * Sleep for the given duration of time.
@@ -61,4 +64,11 @@ public interface TimestampProvider {
      */
     public Timer getTimer();
 
+
+    /**
+     * Returns the scalar value for this instant given the configured time unit
+     * @param timestamp
+     * @return
+     */
+    long getTime(Instant timestamp);
 }

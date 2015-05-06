@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -50,7 +50,7 @@ public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
         SliceQuery query = new SliceQuery(BufferUtil.zeroBuffer(8),BufferUtil.oneBuffer(8));
         query.setLimit(2);
         Stopwatch watch = Stopwatch.createStarted();
-        StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MILLI));
+        StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(TimestampProviders.MILLI));
         KeyIterator iter = store.getKeys(query,txh);
         int numV = 0;
         while(iter.hasNext()) {

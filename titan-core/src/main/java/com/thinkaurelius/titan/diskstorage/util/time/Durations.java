@@ -1,14 +1,18 @@
 package com.thinkaurelius.titan.diskstorage.util.time;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Duration;
 
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility methods for dealing with {@link com.thinkaurelius.titan.core.attribute.Duration}
+ * Utility methods for dealing with {@link Duration}
  */
 public class Durations {
 
@@ -20,41 +24,41 @@ public class Durations {
      * This method is based on the method of the same name in Stopwatch.java in
      * Google Guava 14.0.1, where it was defined with private visibility.
      */
-    public static String abbreviate(TimeUnit unit) {
+    public static String abbreviate(ChronoUnit unit) {
         switch (unit) {
-        case NANOSECONDS:
-            return "ns";
-        case MICROSECONDS:
-            return "\u03bcs"; // μs
-        case MILLISECONDS:
-            return "ms";
-        case SECONDS:
-            return "s";
-        case MINUTES:
-            return "m";
-        case HOURS:
-            return "h";
-        case DAYS:
-            return "d";
-        default:
-            throw new AssertionError("Unexpected time unit: " + unit);
+            case NANOS:
+                return "ns";
+            case MICROS:
+                return "\u03bcs"; // μs
+            case MILLIS:
+                return "ms";
+            case SECONDS:
+                return "s";
+            case MINUTES:
+                return "m";
+            case HOURS:
+                return "h";
+            case DAYS:
+                return "d";
+            default:
+                throw new AssertionError("Unexpected time unit: " + unit);
         }
 
     }
 
-    private static final Map<String,TimeUnit> unitNames = new HashMap<String,TimeUnit>() {{
-        for (TimeUnit unit : TimeUnit.values()) {
+    private static final Map<String,TemporalUnit> unitNames = new HashMap<String,TemporalUnit>() {{
+        for (ChronoUnit unit : Arrays.asList(ChronoUnit.NANOS, ChronoUnit.MICROS, ChronoUnit.MILLIS, ChronoUnit.SECONDS, ChronoUnit.MINUTES, ChronoUnit.HOURS, ChronoUnit.DAYS)) {
             put(abbreviate(unit),unit); //abbreviated name
             String name = unit.toString().toLowerCase();
             put(name,unit); //abbreviated name in singular
             assert name.endsWith("s");
             put(name.substring(0,name.length()-1),unit);
         }
-        put("us",TimeUnit.MICROSECONDS);
+        put("us",ChronoUnit.MICROS);
     }};
 
-    public static TimeUnit parse(String unitName) {
-        TimeUnit unit = unitNames.get(unitName.toLowerCase());
+    public static TemporalUnit parse(String unitName) {
+        TemporalUnit unit = unitNames.get(unitName.toLowerCase());
         Preconditions.checkArgument(unit!=null,"Unknown unit time: %s",unitName);
         return unit;
     }

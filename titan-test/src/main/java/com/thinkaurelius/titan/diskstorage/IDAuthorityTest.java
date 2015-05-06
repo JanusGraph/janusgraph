@@ -4,8 +4,7 @@ import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.attribute.Duration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -30,6 +29,7 @@ import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,7 +52,7 @@ public abstract class IDAuthorityTest {
     public static final int MAX_NUM_PARTITIONS = 4;
     public static final String DB_NAME = "test";
 
-    public static final Duration GET_ID_BLOCK_TIMEOUT = new StandardDuration(300000L, TimeUnit.MILLISECONDS);
+    public static final Duration GET_ID_BLOCK_TIMEOUT = Duration.ofMillis(300000L);
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
@@ -68,7 +68,7 @@ public abstract class IDAuthorityTest {
 
         c = getBasicConfig();
         c.set(IDAUTHORITY_CAV_RETRIES,10);
-        c.set(IDAUTHORITY_WAIT, new StandardDuration(10L, TimeUnit.MILLISECONDS));
+        c.set(IDAUTHORITY_WAIT, Duration.ofMillis(10L));
         c.set(IDAUTHORITY_CAV_BITS,7);
         //c.set(IDAUTHORITY_RANDOMIZE_UNIQUEID,true);
         c.set(IDAUTHORITY_CONFLICT_AVOIDANCE, ConflictAvoidanceMode.GLOBAL_AUTO);
@@ -79,7 +79,7 @@ public abstract class IDAuthorityTest {
 
     public static ModifiableConfiguration getBasicConfig() {
         ModifiableConfiguration c = GraphDatabaseConfiguration.buildGraphConfiguration();
-        c.set(IDAUTHORITY_WAIT, new StandardDuration(100L, TimeUnit.MILLISECONDS));
+        c.set(IDAUTHORITY_WAIT, Duration.ofMillis(100L));
         c.set(IDS_BLOCK_SIZE,400);
         return c;
     }

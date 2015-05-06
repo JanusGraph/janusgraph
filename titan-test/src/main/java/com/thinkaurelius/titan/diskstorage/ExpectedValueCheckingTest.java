@@ -5,9 +5,9 @@ import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.easymock.Capture;
 import org.easymock.CaptureType;
@@ -36,8 +36,8 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -93,7 +93,7 @@ public class ExpectedValueCheckingTest {
         globalConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "global");
         localConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "local");
         defaultConfig.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "default");
-        defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(Timestamps.MICRO).build();
+        defaultTxConfig = new StandardBaseTransactionConfig.Builder().customOptions(defaultConfig).timestampProvider(TimestampProviders.MICRO).build();
         backingFeatures = new StandardStoreFeatures.Builder().keyConsistent(globalConfig, localConfig).build();
 
 
@@ -123,7 +123,7 @@ public class ExpectedValueCheckingTest {
         // Carry out setup behavior against mocks
         ctrl.replay();
         // 1. Construct manager
-        expectManager = new ExpectedValueCheckingStoreManager(backingManager, LOCK_SUFFIX, lockerProvider, new StandardDuration(1L, TimeUnit.SECONDS));
+        expectManager = new ExpectedValueCheckingStoreManager(backingManager, LOCK_SUFFIX, lockerProvider, Duration.ofSeconds(1L));
         // 2. Begin transaction
         expectTx = expectManager.beginTransaction(defaultTxConfig);
         // 3. Open a database

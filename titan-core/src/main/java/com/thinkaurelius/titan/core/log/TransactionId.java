@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core.log;
 
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+
+import java.time.Instant;
 
 /**
  * Identifies a transaction. Used when processing user log entries to know which transaction caused a given change.
@@ -31,6 +32,6 @@ public interface TransactionId {
      *
      * @return
      */
-    public Timestamp getTransactionTime();
+    public Instant getTransactionTime();
 
 }

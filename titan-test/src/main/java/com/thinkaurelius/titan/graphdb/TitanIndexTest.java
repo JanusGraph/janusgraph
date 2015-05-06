@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
@@ -35,6 +35,10 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -395,30 +399,87 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         clopen();
 
         TitanVertex v1 = graph.addVertex();
-        v1.property("date", new Date(1000));
+        v1.property("date", new Date(1));
 
         TitanVertex v2 = graph.addVertex();
         v2.property("date", new Date(2000));
 
 
-        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.EQUAL, new Date(1000))));
-        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.GREATER_THAN, new Date(1000))));
-        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).vertices()));
+        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.EQUAL, new Date(1))));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.GREATER_THAN, new Date(1))));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1)).vertices()));
         assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.LESS_THAN, new Date(2000))));
         assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).vertices()));
-        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000))));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.NOT_EQUAL, new Date(1))));
 
         clopen();//Flush the index
-        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.EQUAL, new Date(1000))));
-        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.GREATER_THAN, new Date(1000))));
-        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1000)).vertices()));
+        assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.EQUAL, new Date(1))));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.GREATER_THAN, new Date(1))));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.GREATER_THAN_EQUAL, new Date(1)).vertices()));
         assertEquals(v1, getOnlyVertex(graph.query().has("date", Cmp.LESS_THAN, new Date(2000))));
         assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("date", Cmp.LESS_THAN_EQUAL, new Date(2000)).vertices()));
-        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.NOT_EQUAL, new Date(1000))));
+        assertEquals(v2, getOnlyVertex(graph.query().has("date", Cmp.NOT_EQUAL, new Date(1))));
 
 
     }
 
+
+    /**
+     * Tests indexing instants
+     */
+    @Test
+    public void testInstantIndexing() {
+        PropertyKey name = makeKey("instant", Instant.class);
+        mgmt.buildIndex("instantIndex",Vertex.class).
+                addKey(name).buildMixedIndex(INDEX);
+        finishSchema();
+        clopen();
+        Instant firstTimestamp = Instant.ofEpochMilli(1);
+        Instant secondTimestamp = Instant.ofEpochMilli(2000);
+
+        TitanVertex v1 = graph.addVertex();
+        v1.property("instant", firstTimestamp);
+
+        TitanVertex v2 = graph.addVertex();
+        v2.property("instant", secondTimestamp);
+
+        testInstant(firstTimestamp, secondTimestamp, v1, v2);
+
+        firstTimestamp = Instant.ofEpochSecond(0, 1);
+        v1 = (TitanVertex) graph.vertices(v1.id()).next();
+        v1.property("instant", firstTimestamp);
+        if(indexFeatures.supportsNanoseconds()) {
+            testInstant(firstTimestamp, secondTimestamp, v1, v2);
+        }
+        else {
+            clopen();//Flush the index
+            try {
+                assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
+                Assert.fail("Should have failed to update the index");
+            }catch(Exception e) {
+
+            }
+        }
+
+    }
+
+    private void testInstant(Instant firstTimestamp, Instant secondTimestamp, TitanVertex v1, TitanVertex v2) {
+        assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("instant", Cmp.GREATER_THAN, firstTimestamp)));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("instant", Cmp.GREATER_THAN_EQUAL, firstTimestamp).vertices()));
+        assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.LESS_THAN, secondTimestamp)));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("instant", Cmp.LESS_THAN_EQUAL, secondTimestamp).vertices()));
+        assertEquals(v2, getOnlyVertex(graph.query().has("instant", Cmp.NOT_EQUAL, firstTimestamp)));
+
+
+        clopen();//Flush the index
+        assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
+        assertEquals(v2, getOnlyVertex(graph.query().has("instant", Cmp.GREATER_THAN, firstTimestamp)));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("instant", Cmp.GREATER_THAN_EQUAL, firstTimestamp).vertices()));
+        assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.LESS_THAN, secondTimestamp)));
+        assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("instant", Cmp.LESS_THAN_EQUAL, secondTimestamp).vertices()));
+        assertEquals(v2, getOnlyVertex(graph.query().has("instant", Cmp.NOT_EQUAL, firstTimestamp)));
+    }
 
     /**
      * Tests indexing boolean
@@ -666,24 +727,24 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             v.property("flag", true);
         }
 
-        evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true});
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{true,true},mixed.name());
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[0]).has("flag"),ElementCategory.VERTEX,
-                numV/strs.length,new boolean[]{false,true},mixed.name());
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, strs[0]), ElementCategory.VERTEX,
+                numV / strs.length, new boolean[]{false, true});
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[0]), ElementCategory.VERTEX,
+                numV / strs.length, new boolean[]{true, true}, mixed.name());
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[0]).has("flag"), ElementCategory.VERTEX,
+                numV / strs.length, new boolean[]{false, true}, mixed.name());
         evaluateQuery(tx.query().has("name", Cmp.EQUAL, strs[0]).has("weight", Cmp.EQUAL, 1.5), ElementCategory.VERTEX,
                 numV / divisor, new boolean[]{true, true}, composite.name());
-        evaluateQuery(tx.query().has("name",Cmp.EQUAL,strs[0]).has("weight",Cmp.EQUAL,1.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},composite.name());
+        evaluateQuery(tx.query().has("name", Cmp.EQUAL, strs[0]).has("weight", Cmp.EQUAL, 1.5).has("flag"), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{false, true}, composite.name());
         evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[2]).has("weight", Cmp.EQUAL, 2.5), ElementCategory.VERTEX,
                 numV / divisor, new boolean[]{true, true}, mixed.name());
-        evaluateQuery(tx.query().has("text",Text.CONTAINS,strs[2]).has("weight",Cmp.EQUAL,2.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},mixed.name());
-        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name",Cmp.EQUAL,strs[3]).has("weight",Cmp.EQUAL,3.5),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},mixed.name(),composite.name());
-        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name",Cmp.EQUAL,strs[3]).has("weight",Cmp.EQUAL,3.5).has("flag"),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{false,true},mixed.name(),composite.name());
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[2]).has("weight", Cmp.EQUAL, 2.5).has("flag"), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{false, true}, mixed.name());
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name", Cmp.EQUAL, strs[3]).has("weight", Cmp.EQUAL, 3.5), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{true, true}, mixed.name(), composite.name());
+        evaluateQuery(tx.query().has("text", Text.CONTAINS, strs[3]).has("name", Cmp.EQUAL, strs[3]).has("weight", Cmp.EQUAL, 3.5).has("flag"), ElementCategory.VERTEX,
+                numV / divisor, new boolean[]{false, true}, mixed.name(), composite.name());
 
         clopen();
 
@@ -970,12 +1031,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testIndexReplay() throws Exception {
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
-        final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+        final Instant startTime = times.getTime();
         clopen( option(SYSTEM_LOG_TRANSACTIONS), true
-                ,option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS)
-                ,option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
-                ,option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
-                ,option(STORAGE_WRITE_WAITTIME), new StandardDuration(300, TimeUnit.MILLISECONDS)
+                ,option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),Duration.ofMillis(50)
+                ,option(LOG_READ_INTERVAL,TRANSACTION_LOG),Duration.ofMillis(250)
+                ,option(MAX_COMMIT_TIME),Duration.ofSeconds(1)
+                ,option(STORAGE_WRITE_WAITTIME), Duration.ofMillis(300)
                 ,option(TestMockIndexProvider.INDEX_BACKEND_PROXY,INDEX), readConfig.get(INDEX_BACKEND,INDEX)
                 ,option(INDEX_BACKEND,INDEX), TestMockIndexProvider.class.getName()
                 ,option(TestMockIndexProvider.INDEX_MOCK_FAILADD,INDEX), true
@@ -1010,7 +1071,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         /*
         Transaction Recovery
          */
-        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph,startTime,TimeUnit.MILLISECONDS);
+        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph, startTime);
         //wait
         Thread.sleep(12000L);
 
@@ -1041,9 +1102,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     @Test
     public void testIndexUpdatesWithoutReindex() throws InterruptedException, ExecutionException {
-        Object[] settings = new Object[]{option(LOG_SEND_DELAY,MANAGEMENT_LOG),new StandardDuration(0, TimeUnit.MILLISECONDS),
-                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
-                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS)
+        Object[] settings = new Object[]{option(LOG_SEND_DELAY,MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),Duration.ofMillis(250)
         };
 
         clopen(settings);
@@ -1102,7 +1163,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.REGISTER_INDEX).get();
         mgmt.commit();
 
-        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").timeout(10L, TimeUnit.SECONDS).call();
+        ManagementSystem.awaitGraphIndexStatus(graph, "theIndex").timeout(10L, ChronoUnit.SECONDS).call();
 
         finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX).get();
@@ -1146,7 +1207,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         tx.commit();
         mgmt.commit();
 
-        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, TimeUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, ChronoUnit.SECONDS);
 
         finishSchema();
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
@@ -1209,7 +1270,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         tx.commit();
         mgmt.commit();
 
-        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, TimeUnit.SECONDS);
+        ManagementUtil.awaitGraphIndexUpdate(graph, "theIndex", 10, ChronoUnit.SECONDS);
         finishSchema();
 
         index = mgmt.getGraphIndex("theIndex");
@@ -1252,16 +1313,16 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
         final int eventTTLSeconds = (int)TestGraphConfigs.getTTL(TimeUnit.SECONDS);
-        mgmt.setTTL(event, eventTTLSeconds, TimeUnit.SECONDS);
+        mgmt.setTTL(event, Duration.ofSeconds(eventTTLSeconds));
 
         mgmt.buildIndex("index1",Vertex.class).
                 addKey(name, getStringMapping()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Vertex.class).indexOnly(event).
                 addKey(text, getTextMapping()).buildMixedIndex(INDEX);
 
-        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
-        assertEquals(0, mgmt.getTTL(time).getLength(TimeUnit.SECONDS));
-        assertEquals(eventTTLSeconds, mgmt.getTTL(event).getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ZERO, mgmt.getTTL(name));
+        assertEquals(Duration.ZERO, mgmt.getTTL(time));
+        assertEquals(Duration.ofSeconds(eventTTLSeconds), mgmt.getTTL(event));
         finishSchema();
 
         TitanVertex v1 = tx.addVertex("event");
@@ -1325,15 +1386,15 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         final int likesTTLSeconds = (int)TestGraphConfigs.getTTL(TimeUnit.SECONDS);
-        mgmt.setTTL(label, likesTTLSeconds, TimeUnit.SECONDS);
+        mgmt.setTTL(label, Duration.ofSeconds(likesTTLSeconds));
 
         mgmt.buildIndex("index1",Edge.class).
                 addKey(name, getStringMapping()).addKey(time).buildMixedIndex(INDEX);
         mgmt.buildIndex("index2",Edge.class).indexOnly(label).
                 addKey(text, getTextMapping()).buildMixedIndex(INDEX);
 
-        assertEquals(0, mgmt.getTTL(name).getLength(TimeUnit.SECONDS));
-        assertEquals(likesTTLSeconds, mgmt.getTTL(label).getLength(TimeUnit.SECONDS));
+        assertEquals(Duration.ZERO, mgmt.getTTL(name));
+        assertEquals(Duration.ofSeconds(likesTTLSeconds), mgmt.getTTL(label));
         finishSchema();
 
         TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();

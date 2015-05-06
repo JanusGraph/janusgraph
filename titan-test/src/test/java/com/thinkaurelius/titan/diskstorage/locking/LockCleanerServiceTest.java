@@ -3,9 +3,11 @@ package com.thinkaurelius.titan.diskstorage.locking;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
@@ -51,11 +53,11 @@ public class LockCleanerServiceTest {
 
     @Test
     public void testCleanCooldownBlocksRapidRequests() {
-        final long cutoff = 1L;
+        final Instant cutoff = Instant.ofEpochMilli(1L);
 
-        svc = new StandardLockCleanerService(store, codec, exec, 60L, TimeUnit.SECONDS);
+        svc = new StandardLockCleanerService(store, codec, exec, Duration.ofSeconds(60L), TimestampProviders.MILLI);
 
-        expect(exec.submit(eq(new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff)))).andReturn(null);
+        expect(exec.submit(eq(new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff, TimestampProviders.MILLI)))).andReturn(null);
 
         ctrl.replay();
 
@@ -66,14 +68,14 @@ public class LockCleanerServiceTest {
 
     @Test
     public void testCleanCooldownElapses() throws InterruptedException {
-        final long cutoff = 1L;
-        final long wait = 500L;
+        final Instant cutoff = Instant.ofEpochMilli(1L);
 
-        svc = new StandardLockCleanerService(store, codec, exec, wait, TimeUnit.MILLISECONDS);
+        Duration wait = Duration.ofMillis(500L);
+        svc = new StandardLockCleanerService(store, codec, exec, wait, TimestampProviders.MILLI);
 
-        expect(exec.submit(eq(new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff)))).andReturn(null);
+        expect(exec.submit(eq(new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff, TimestampProviders.MILLI)))).andReturn(null);
 
-        expect(exec.submit(eq(new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff + 1)))).andReturn(null);
+        expect(exec.submit(eq(new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff.plusMillis(1), TimestampProviders.MILLI)))).andReturn(null);
 
         ctrl.replay();
 
@@ -81,10 +83,10 @@ public class LockCleanerServiceTest {
             svc.clean(kc, cutoff, tx);
         }
 
-        Thread.sleep(wait + 1); // TODO use TimestampProvider
+        TimestampProviders.MILLI.sleepFor(wait.plusMillis(1));
 
         for (int i = 0; i < 2; i++) {
-            svc.clean(kc, cutoff + 1, tx);
+            svc.clean(kc, cutoff.plusMillis(1), tx);
         }
     }
 }

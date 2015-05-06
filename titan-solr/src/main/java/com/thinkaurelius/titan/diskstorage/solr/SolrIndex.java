@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -283,7 +284,9 @@ public class SolrIndex implements IndexProvider {
                         for (IndexEntry e : mutation.getAdditions()) {
                             final Object fieldValue = convertValue(e.value);
                             doc.setField(e.field, isNewDoc
-                                    ? fieldValue : new HashMap<String, Object>(1) {{ put("set", fieldValue); }});
+                                    ? fieldValue : new HashMap<String, Object>(1) {{
+                                put("set", fieldValue);
+                            }});
                         }
                         if (ttl>0) {
                             Preconditions.checkArgument(isNewDoc,"Solr only supports TTL on new documents [%s]",docId);
@@ -296,17 +299,26 @@ public class SolrIndex implements IndexProvider {
                 commitDeletes(collectionName, deleteIds);
                 commitDocumentChanges(collectionName, changes);
             }
+        } catch (IllegalArgumentException e) {
+            throw new PermanentBackendException("Unable to complete query on Solr.", e);
         } catch (Exception e) {
             throw storageException(e);
         }
     }
 
     private Object convertValue(Object value) throws BackendException {
-        if (value instanceof Geoshape)
+        if (value instanceof Geoshape) {
             return GeoToWktConverter.convertToWktString((Geoshape) value);
-
-        if (value instanceof UUID)
+        }
+        if (value instanceof UUID) {
             return value.toString();
+        }
+        if(value instanceof Instant) {
+            if(Math.floorMod(((Instant) value).getNano(), 1000000) != 0) {
+                throw new IllegalArgumentException("Solr indexes do not support nanoseconds");
+            }
+            return new Date(((Instant) value).toEpochMilli());
+        }
         return value;
     }
 
@@ -572,8 +584,9 @@ public class SolrIndex implements IndexProvider {
                     poly.append(")))\" distErrPct=0");
                     return (poly.toString());
                 }
-            } else if (value instanceof Date) {
-                String queryValue = escapeValue(toIsoDate((Date)value));
+            } else if (value instanceof Date || value instanceof Instant) {
+                String s = value.toString();
+                String queryValue = escapeValue(value instanceof Date ? toIsoDate((Date) value) : value.toString());
                 Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
                 Cmp numRel = (Cmp) titanPredicate;
 
@@ -657,7 +670,7 @@ public class SolrIndex implements IndexProvider {
 
     private String toIsoDate(Date value) {
         TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         df.setTimeZone(tz);
         return df.format(value);
     }
@@ -755,7 +768,7 @@ public class SolrIndex implements IndexProvider {
 //                case TEXTSTRING:
 //                    return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
-        } else if (dataType == Date.class) {
+        } else if (dataType == Date.class || dataType == Instant.class) {
             if (titanPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
             return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
@@ -772,7 +785,7 @@ public class SolrIndex implements IndexProvider {
         }
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Instant.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.TEXT || mapping==Mapping.STRING) return true;
@@ -802,7 +815,7 @@ public class SolrIndex implements IndexProvider {
             else postfix = "_d";
         } else if (datatype.equals(Geoshape.class)) {
             postfix = "_g";
-        } else if (datatype.equals(Date.class)) {
+        } else if (datatype.equals(Date.class) || datatype.equals(Instant.class)) {
             postfix = "_dt";
         } else if (datatype.equals(Boolean.class)) {
             postfix = "_b";

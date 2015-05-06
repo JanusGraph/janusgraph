@@ -4,10 +4,11 @@ import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraSto
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -44,7 +45,7 @@ public class CassandraStorageSetup {
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
         log.debug("Set keyspace name: {}", config.get(CASSANDRA_KEYSPACE));
         config.set(PAGE_SIZE,500);
-        config.set(CONNECTION_TIMEOUT, new StandardDuration(60L, TimeUnit.SECONDS));
+        config.set(CONNECTION_TIMEOUT, Duration.ofSeconds(60L));
         config.set(STORAGE_BACKEND, backend);
         return config;
     }

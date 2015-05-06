@@ -8,7 +8,7 @@ import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
@@ -49,6 +49,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -345,7 +346,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     private StandardScanner.Builder buildStoreIndexScanJob(String storeName) {
         TimestampProvider provider = configuration.get(TIMESTAMP_PROVIDER);
         ModifiableConfiguration jobConfig = GraphDatabaseConfiguration.buildJobConfiguration();
-        jobConfig.set(JOB_START_TIME,provider.getTime().getTimestamp(TimeUnit.MILLISECONDS));
+        jobConfig.set(JOB_START_TIME,provider.getTime().toEpochMilli());
         return scanner.build()
                 .setStoreName(storeName)
                 .setTimestampProvider(provider)

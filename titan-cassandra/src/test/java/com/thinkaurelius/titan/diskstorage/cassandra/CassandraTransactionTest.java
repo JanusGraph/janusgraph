@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
@@ -32,7 +32,7 @@ public class CassandraTransactionTest {
             ModifiableConfiguration mc = GraphDatabaseConfiguration.buildGraphConfiguration();
             mc.set(CASSANDRA_WRITE_CONSISTENCY, writeLevel.name());
             b.customOptions(mc);
-            b.timestampProvider(Timestamps.MICRO);
+            b.timestampProvider(TimestampProviders.MICRO);
             CassandraTransaction ct = new CassandraTransaction(b.build());
             assertEquals(writeLevel, ct.getWriteConsistencyLevel());
             levelsChecked++;
@@ -51,7 +51,7 @@ public class CassandraTransactionTest {
             StandardBaseTransactionConfig.Builder b = new StandardBaseTransactionConfig.Builder();
             ModifiableConfiguration mc = GraphDatabaseConfiguration.buildGraphConfiguration();
             mc.set(CASSANDRA_READ_CONSISTENCY, writeLevel.name());
-            b.timestampProvider(Timestamps.MICRO);
+            b.timestampProvider(TimestampProviders.MICRO);
             b.customOptions(mc);
             CassandraTransaction ct = new CassandraTransaction(b.build());
             assertEquals(writeLevel, ct.getReadConsistencyLevel());
@@ -64,16 +64,16 @@ public class CassandraTransactionTest {
 
     @Test
     public void testTimestampProvider() {
-        BaseTransactionConfig txcfg = StandardBaseTransactionConfig.of(Timestamps.NANO);
+        BaseTransactionConfig txcfg = StandardBaseTransactionConfig.of(TimestampProviders.NANO);
         CassandraTransaction ct = new CassandraTransaction(txcfg);
-        assertEquals(Timestamps.NANO, ct.getConfiguration().getTimestampProvider());
+        assertEquals(TimestampProviders.NANO, ct.getConfiguration().getTimestampProvider());
 
-        txcfg = StandardBaseTransactionConfig.of(Timestamps.MICRO);
+        txcfg = StandardBaseTransactionConfig.of(TimestampProviders.MICRO);
         ct = new CassandraTransaction(txcfg);
-        assertEquals(Timestamps.MICRO, ct.getConfiguration().getTimestampProvider());
+        assertEquals(TimestampProviders.MICRO, ct.getConfiguration().getTimestampProvider());
 
-        txcfg = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        txcfg = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
         ct = new CassandraTransaction(txcfg);
-        assertEquals(Timestamps.MILLI, ct.getConfiguration().getTimestampProvider());
+        assertEquals(TimestampProviders.MILLI, ct.getConfiguration().getTimestampProvider());
     }
 }

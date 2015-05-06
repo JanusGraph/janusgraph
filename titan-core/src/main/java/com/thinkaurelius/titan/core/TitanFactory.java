@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.core;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+
 import com.thinkaurelius.titan.core.log.LogProcessorFramework;
 import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -153,12 +154,11 @@ public class TitanFactory {
      * will start processing the write-ahead transaction log at the specified transaction time.
      *
      * @param graph
-     * @param sinceEpoch
-     * @param unit
+     * @param start
      * @return
      */
-    public static TransactionRecovery startTransactionRecovery(TitanGraph graph, long sinceEpoch, TimeUnit unit) {
-        return new StandardTransactionLogProcessor((StandardTitanGraph)graph, new Timestamp(sinceEpoch,unit));
+    public static TransactionRecovery startTransactionRecovery(TitanGraph graph, Instant start) {
+        return new StandardTransactionLogProcessor((StandardTitanGraph)graph, start);
     }
 
     //###################################

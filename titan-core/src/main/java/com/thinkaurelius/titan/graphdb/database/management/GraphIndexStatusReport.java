@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.management;
 
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 
+import java.time.Duration;
 import java.util.Map;
 
 public class GraphIndexStatusReport {

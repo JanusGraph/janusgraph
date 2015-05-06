@@ -20,6 +20,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class GhostVertexRemover extends VertexJobConverter {
     public static final String SKIPPED_GHOST_LIMIT_COUNT = "skipped-ghosts";
 
     private final SliceQuery everythingQueryLimit = EVERYTHING_QUERY.updateLimit(RELATION_COUNT_LIMIT);
-    private long jobStartTimeMS;
+    private Instant jobStartTime;
 
     public GhostVertexRemover(TitanGraph graph) {
         super(graph, new NoOpJob());
@@ -59,12 +60,12 @@ public class GhostVertexRemover extends VertexJobConverter {
     public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
         super.workerIterationStart(jobConfig, graphConfig, metrics);
         Preconditions.checkArgument(jobConfig.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
-        this.jobStartTimeMS = jobConfig.get(GraphDatabaseConfiguration.JOB_START_TIME);
+        this.jobStartTime = Instant.ofEpochMilli(jobConfig.get(GraphDatabaseConfiguration.JOB_START_TIME));
 
         assert tx!=null && tx.isOpen();
         tx.rollback();
         StandardTransactionBuilder txb = graph.get().buildTransaction();
-        txb.commitTime(jobStartTimeMS, TimeUnit.MILLISECONDS);
+        txb.commitTime(jobStartTime);
         txb.checkExternalVertexExistence(false);
         txb.checkInternalVertexExistence(false);
         tx = (StandardTitanTx)txb.start();

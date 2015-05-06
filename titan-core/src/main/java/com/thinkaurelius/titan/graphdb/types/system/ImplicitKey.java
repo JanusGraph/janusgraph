@@ -3,19 +3,20 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.graphdb.internal.*;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.StringUtils;
-import static com.thinkaurelius.titan.graphdb.internal.Token.*;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.TemporalUnit;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -38,11 +39,11 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
 
     //######### IMPLICIT KEYS WITH ID ############
 
-    public static final ImplicitKey TIMESTAMP = new ImplicitKey(5,Token.makeSystemName("timestamp"),Timestamp.class);
+    public static final ImplicitKey TIMESTAMP = new ImplicitKey(5,Token.makeSystemName("timestamp"),Instant.class);
 
     public static final ImplicitKey VISIBILITY = new ImplicitKey(6,Token.makeSystemName("visibility"),String.class);
 
-    public static final ImplicitKey TTL = new ImplicitKey(7,Token.makeSystemName("ttl"),Duration.class);
+    public static final ImplicitKey TTL = new ImplicitKey(7,Token.makeSystemName("ttl"), Duration.class);
 
 
     public static final Map<EntryMetaData,ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
@@ -85,8 +86,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                     assert this == TIMESTAMP;
                     Long time = r.getValueDirect(this);
                     if (time==null) return null; //there is no timestamp
-                    TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
-                    return (O) new Timestamp(time, unit);
+                    return (O) r.tx().getConfiguration().getTimestampProvider().getTime(time);
                 }
             } else {
                 return null;
@@ -100,7 +100,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
             } else {
                 ttl = 0;
             }
-            return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
+            return (O) Duration.ofSeconds(ttl);
         } else throw new AssertionError("Implicit key property is undefined: " + this.name());
     }
 

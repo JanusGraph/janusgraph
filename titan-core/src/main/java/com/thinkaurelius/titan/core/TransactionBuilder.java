@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -96,14 +97,11 @@ public interface TransactionBuilder {
      * with this timestamp in those storage backends where the timestamp is
      * recorded.
      *
-     * @param timestampSinceEpoch
-     *            number of units elapsed since the UNIX Epoch, that is,
-     *            00:00:00 UTC, Thursday, 1 January 1970
-     * @param unit
-     *            units of the {@code timestampSinceEpoch argument}
+     * @param instant
+     *            The instant at which the commit took place
      * @return
      */
-    public TransactionBuilder commitTime(long timestampSinceEpoch, TimeUnit unit);
+    public TransactionBuilder commitTime(Instant instant);
 
 
     /**

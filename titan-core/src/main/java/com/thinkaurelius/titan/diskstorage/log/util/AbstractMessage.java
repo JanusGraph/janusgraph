@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,10 +22,10 @@ public abstract class AbstractMessage implements Message {
     private static final int MAX_PAYLOAD_STR_LENGTH = 400;
 
     private final StaticBuffer content;
-    private final Timepoint timestamp;
+    private final Instant timestamp;
     private final String senderId;
 
-    protected AbstractMessage(StaticBuffer content, Timepoint timestamp, String senderId) {
+    protected AbstractMessage(StaticBuffer content, Instant timestamp, String senderId) {
         Preconditions.checkArgument(content !=null && senderId!=null);
         this.content = content;
         this.timestamp = timestamp;
@@ -36,13 +37,8 @@ public abstract class AbstractMessage implements Message {
         return senderId;
     }
 
-    public Timepoint getTimestampMicro() {
+    public Instant getTimestamp() {
         return timestamp;
-    }
-
-    @Override
-    public long getTimestamp(TimeUnit unit) {
-        return timestamp.getTimestamp(unit);
     }
 
     @Override

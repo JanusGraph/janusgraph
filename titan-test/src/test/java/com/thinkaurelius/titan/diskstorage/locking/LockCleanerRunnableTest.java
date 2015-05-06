@@ -7,10 +7,12 @@ import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertTrue;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
@@ -65,14 +67,14 @@ public class LockCleanerRunnableTest {
      */
     @Test
     public void testDeleteSingleLock() throws BackendException {
-        long now = 1L;
+        Instant now = Instant.ofEpochMilli(1L);
 
         Entry expiredLockCol = StaticArrayEntry.of(codec.toLockCol(now,
-                defaultLockRid), BufferUtil.getIntBuffer(0));
+                defaultLockRid, TimestampProviders.MILLI), BufferUtil.getIntBuffer(0));
         EntryList expiredSingleton = StaticArrayEntryList.of(expiredLockCol);
 
-        now += 1;
-        del = new StandardLockCleanerRunnable(store, kc, tx, codec, now);
+        now = now.plusMillis(1);
+        del = new StandardLockCleanerRunnable(store, kc, tx, codec, now, TimestampProviders.MILLI);
 
         expect(store.getSlice(eq(ksq), eq(tx)))
                 .andReturn(expiredSingleton);
@@ -99,19 +101,19 @@ public class LockCleanerRunnableTest {
         final int expiredCount = 3;
         assertTrue(expiredCount + 2 <= lockCount);
         final long timeIncr = 1L;
-        final long timeStart = 0L;
-        final long timeCutoff = timeStart + (expiredCount * timeIncr);
+        final Instant timeStart = Instant.EPOCH;
+        final Instant timeCutoff = timeStart.plusMillis(expiredCount * timeIncr);
 
         ImmutableList.Builder<Entry> locksBuilder = ImmutableList.builder();
         ImmutableList.Builder<Entry> delsBuilder  = ImmutableList.builder();
 
         for (int i = 0; i < lockCount; i++) {
-            final long ts = timeStart + (timeIncr * i);
+            final Instant ts = timeStart.plusMillis(timeIncr * i);
             Entry lock = StaticArrayEntry.of(
-                    codec.toLockCol(ts, defaultLockRid),
+                    codec.toLockCol(ts, defaultLockRid, TimestampProviders.MILLI),
                     BufferUtil.getIntBuffer(0));
 
-            if (ts < timeCutoff) {
+            if (ts.isBefore(timeCutoff)) {
                 delsBuilder.add(lock);
             }
 
@@ -122,7 +124,7 @@ public class LockCleanerRunnableTest {
         EntryList dels  = StaticArrayEntryList.of(delsBuilder.build());
         assertTrue(expiredCount == dels.size());
 
-        del = new StandardLockCleanerRunnable(store, kc, tx, codec, timeCutoff);
+        del = new StandardLockCleanerRunnable(store, kc, tx, codec, timeCutoff, TimestampProviders.MILLI);
 
         expect(store.getSlice(eq(ksq), eq(tx))).andReturn(locks);
 
@@ -143,16 +145,16 @@ public class LockCleanerRunnableTest {
      */
     @Test
     public void testPreservesLocksAtOrAfterCutoff() throws BackendException {
-        final long cutoff = 10L;
+        final Instant cutoff = Instant.ofEpochMilli(10L);
 
         Entry currentLock = StaticArrayEntry.of(codec.toLockCol(cutoff,
-                defaultLockRid), BufferUtil.getIntBuffer(0));
-        Entry futureLock = StaticArrayEntry.of(codec.toLockCol(cutoff + 1,
-                defaultLockRid), BufferUtil.getIntBuffer(0));
+                defaultLockRid, TimestampProviders.MILLI), BufferUtil.getIntBuffer(0));
+        Entry futureLock = StaticArrayEntry.of(codec.toLockCol(cutoff.plusMillis(1),
+                defaultLockRid, TimestampProviders.MILLI), BufferUtil.getIntBuffer(0));
         EntryList locks = StaticArrayEntryList.of(currentLock, futureLock);
 
         // Don't increment cutoff: lockCol is exactly at the cutoff timestamp
-        del = new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff);
+        del = new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff, TimestampProviders.MILLI);
 
         expect(store.getSlice(eq(ksq), eq(tx))).andReturn(locks);
 

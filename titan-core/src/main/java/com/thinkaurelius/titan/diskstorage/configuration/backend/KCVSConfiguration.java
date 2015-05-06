@@ -6,10 +6,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -32,6 +31,7 @@ import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +51,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final StaticBuffer rowKey;
     private final StandardSerializer serializer;
 
-    private Duration maxOperationWaitTime = new StandardDuration(10000L, TimeUnit.MILLISECONDS);
+    private Duration maxOperationWaitTime = Duration.ofMillis(10000L);
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, Configuration config,
                              KeyColumnValueStore store, String identifier) throws BackendException {
@@ -67,7 +67,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
     public void setMaxOperationWaitTime(Duration waitTime) {
 
-        Preconditions.checkArgument(StandardDuration.ZERO.compareTo(waitTime) < 0,
+        Preconditions.checkArgument(Duration.ZERO.compareTo(waitTime) < 0,
                 "Wait time must be nonnegative: %s", waitTime);
         this.maxOperationWaitTime = waitTime;
     }

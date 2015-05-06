@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
-import com.thinkaurelius.titan.core.attribute.Duration;
+
+import java.time.Duration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

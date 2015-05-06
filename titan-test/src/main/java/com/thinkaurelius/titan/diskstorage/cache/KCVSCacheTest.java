@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cache;
 
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -13,17 +12,17 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -34,8 +33,8 @@ import static org.junit.Assert.*;
 public abstract class KCVSCacheTest {
 
     public static final String STORE_NAME = "store";
-    public static final TimestampProvider times = Timestamps.MICRO;
-    public static final Duration MAX_WRITE_TIME = new StandardDuration(100, TimeUnit.MILLISECONDS);
+    public static final TimestampProvider times = TimestampProviders.MICRO;
+    public static final Duration MAX_WRITE_TIME = Duration.ofMillis(100);
 
     public KeyColumnValueStoreManager storeManager;
     public CounterKCVS store;

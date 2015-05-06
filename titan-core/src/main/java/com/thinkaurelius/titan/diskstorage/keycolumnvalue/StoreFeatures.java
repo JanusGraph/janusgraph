@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 
 /**
  * Describes features supported by a storage backend.
@@ -105,7 +105,7 @@ public interface StoreFeatures {
      *
      * @return null or a Timestamps enum value
      */
-    public Timestamps getPreferredTimestamps();
+    public TimestampProviders getPreferredTimestamps();
 
     /**
      * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value

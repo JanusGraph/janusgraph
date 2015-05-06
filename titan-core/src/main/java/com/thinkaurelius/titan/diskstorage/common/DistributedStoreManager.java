@@ -1,18 +1,21 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +28,8 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  */
 
 public abstract class DistributedStoreManager extends AbstractStoreManager {
+
+    protected final TimestampProvider times;
 
     public enum Deployment {
 
@@ -57,7 +62,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     protected final String username;
     protected final String password;
 
-    protected final TimestampProvider times; // TODO remove
+
 
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
@@ -212,9 +217,9 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 //    }
 
     protected void sleepAfterWrite(StoreTransaction txh, MaskedTimestamp mustPass) throws BackendException {
-        assert mustPass.getDeletionTime(times.getUnit()) < mustPass.getAdditionTime(times.getUnit());
+        assert mustPass.getDeletionTime(times) < mustPass.getAdditionTime(times);
         try {
-            times.sleepPast(mustPass.getAdditionTime());
+            times.sleepPast(mustPass.getAdditionTimeInstant(times));
         } catch (InterruptedException e) {
             throw new PermanentBackendException("Unexpected interrupt", e);
         }
@@ -227,9 +232,9 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      */
     public class MaskedTimestamp {
 
-        private final Timepoint t;
+        private final Instant t;
 
-        public MaskedTimestamp(Timepoint commitTime) {
+        public MaskedTimestamp(Instant commitTime) {
             Preconditions.checkNotNull(commitTime);
             this.t=commitTime;
         }
@@ -238,30 +243,16 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
             this(txh.getConfiguration().getCommitTime());
         }
 
-        public long getDeletionTime(TimeUnit unit) {
-            return t.getTimestamp(unit)   & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+        public long getDeletionTime(TimestampProvider times) {
+            return times.getTime(t)   & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
         }
 
-        public long getNativeDeletionTime() {
-            assert t.getProvider().equals(times);
-            return t.getNativeTimestamp() & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+        public long getAdditionTime(TimestampProvider times) {
+            return (times.getTime(t)   & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
         }
 
-        public Timepoint getDeletionTime() {
-            return new StandardTimepoint(getDeletionTime(t.getNativeUnit()), t.getProvider());
-        }
-
-        public long getAdditionTime(TimeUnit unit) {
-            return (t.getTimestamp(unit)   & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
-        }
-
-        public long getNativeAdditionTime() {
-            assert t.getProvider().equals(times);
-            return (t.getNativeTimestamp() & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
-        }
-
-        public Timepoint getAdditionTime() {
-            return new StandardTimepoint(getAdditionTime(t.getNativeUnit()), t.getProvider());
+        public Instant getAdditionTimeInstant(TimestampProvider times) {
+            return times.getTime(getAdditionTime(times));
         }
     }
 }

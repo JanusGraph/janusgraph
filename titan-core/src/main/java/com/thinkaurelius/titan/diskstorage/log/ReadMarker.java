@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -13,15 +13,13 @@ import java.util.concurrent.TimeUnit;
 public class ReadMarker {
 
     private final String identifier;
-    private final long sinceEpoch;
-    private final TimeUnit unit;
+    private Instant startTime;
 
-    private Timepoint startTime;
 
-    private ReadMarker(String identifier, long sinceEpoch, TimeUnit unit) {
+
+    private ReadMarker(String identifier, Instant startTime) {
         this.identifier = identifier;
-        this.sinceEpoch = sinceEpoch;
-        this.unit = unit;
+        this.startTime = startTime;
     }
 
     /**
@@ -42,17 +40,16 @@ public class ReadMarker {
     }
 
     public boolean hasStartTime() {
-        return unit!=null;
+        return startTime!=null;
     }
 
     /**
      * Returns the start time of this marker if such has been defined or the current time if not
      * @return
      */
-    public synchronized Timepoint getStartTime(TimestampProvider times) {
+    public synchronized Instant getStartTime(TimestampProvider times) {
         if (startTime==null) {
-            if (unit==null) startTime = times.getTime();
-            else startTime = times.getTime(sinceEpoch,unit);
+            startTime = times.getTime();
         }
         return startTime;
     }
@@ -76,7 +73,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromNow() {
-        return new ReadMarker(null, 0, null);
+        return new ReadMarker(null, null);
     }
 
     /**
@@ -84,8 +81,8 @@ public class ReadMarker {
      * @param timestamp
      * @return
      */
-    public static ReadMarker fromTime(long timestamp, TimeUnit unit) {
-        return new ReadMarker(null, timestamp, unit);
+    public static ReadMarker fromTime(Instant timestamp) {
+        return new ReadMarker(null, timestamp);
     }
 
     /**
@@ -101,8 +98,8 @@ public class ReadMarker {
      * @param timestamp
      * @return
      */
-    public static ReadMarker fromIdentifierOrTime(String id, long timestamp, TimeUnit unit) {
-        return new ReadMarker(id, timestamp, unit);
+    public static ReadMarker fromIdentifierOrTime(String id, Instant timestamp) {
+        return new ReadMarker(id, timestamp);
     }
 
     /**
@@ -113,7 +110,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromIdentifierOrNow(String id) {
-        return new ReadMarker(id, 0, null);
+        return new ReadMarker(id, Instant.EPOCH);
     }
 
 }

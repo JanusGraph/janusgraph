@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 
 /**
@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
  */
 public class AbstractKCVSTest {
 
-    protected static final TimestampProvider times = Timestamps.MICRO;
+    protected static final TimestampProvider times = TimestampProviders.MICRO;
 
     protected StandardBaseTransactionConfig getTxConfig() {
         return StandardBaseTransactionConfig.of(times);

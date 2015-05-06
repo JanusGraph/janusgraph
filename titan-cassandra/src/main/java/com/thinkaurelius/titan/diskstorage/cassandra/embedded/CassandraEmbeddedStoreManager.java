@@ -177,16 +177,16 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
 
                         if (null != ttl && ttl > 0) {
-                            rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times.getUnit()), ttl);
+                            rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times), ttl);
                         } else {
-                            rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times.getUnit()));
+                            rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times));
                         }
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), commitTime.getDeletionTime(times.getUnit()));
+                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), commitTime.getDeletionTime(times));
                     }
                 }
 

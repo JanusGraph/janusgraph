@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -63,7 +64,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     public void open() throws BackendException {
         manager = openStorageManager();
-        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new StandardDuration(100, TimeUnit.MILLISECONDS), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, Duration.ofMillis(100), true);
         store1 = new NoKCVSCache(manager.openDatabase(storeName1));
         store2 = new NoKCVSCache(manager.openDatabase(storeName2));
 
@@ -83,7 +84,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     public void newTx() throws BackendException {
         if (tx!=null) tx.commit();
-        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new StandardDuration(100, TimeUnit.MILLISECONDS), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, Duration.ofMillis(100), true);
     }
 
     @Test

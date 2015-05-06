@@ -1,13 +1,15 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.core.attribute.Timestamp;
+
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInjected;
 import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
+
+import java.time.Instant;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -20,7 +22,7 @@ public class StandardTransactionIdSerializer implements AttributeSerializer<Stan
     public StandardTransactionId read(ScanBuffer buffer) {
         return new StandardTransactionId(serializer.readObjectNotNull(buffer,String.class),
                 serializer.readObjectNotNull(buffer,Long.class),
-                serializer.readObjectNotNull(buffer,Timestamp.class));
+                serializer.readObjectNotNull(buffer,Instant.class));
     }
 
     @Override

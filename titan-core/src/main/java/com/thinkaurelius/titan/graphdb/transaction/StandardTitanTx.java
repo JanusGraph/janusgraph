@@ -10,11 +10,10 @@ import com.google.common.cache.Weigher;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.core.schema.SchemaInspector;
 import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -70,6 +69,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -85,7 +85,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
-    private static final Duration LOCK_TIMEOUT = new StandardDuration(5000L, TimeUnit.MILLISECONDS);
+    private static final Duration LOCK_TIMEOUT = Duration.ofMillis(5000L);
 
     /**
      * This is a workaround for #893.  Cache sizes small relative to the level
@@ -521,7 +521,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public TitanVertex addVertex(VertexLabel vertexLabel) {
-        return addVertex(null,vertexLabel);
+        return addVertex(null, vertexLabel);
     }
 
     private Iterable<InternalVertex> getInternalVertices() {
@@ -538,10 +538,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             allVertices = new VertexIterable(graph, this);
         }
         //Filter out all but one PartitionVertex representative
-        return Iterables.filter(allVertices,new Predicate<InternalVertex>() {
+        return Iterables.filter(allVertices, new Predicate<InternalVertex>() {
             @Override
             public boolean apply(@Nullable InternalVertex internalVertex) {
-                return !isPartitionedVertex(internalVertex) || internalVertex.longId()==idInspector.getCanonicalVertexId(internalVertex.longId());
+                return !isPartitionedVertex(internalVertex) || internalVertex.longId() == idInspector.getCanonicalVertexId(internalVertex.longId());
             }
         });
     }
@@ -832,7 +832,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         addProperty(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
         addProperty(schemaVertex, BaseKey.SchemaCategory, schemaCategory);
         updateSchemaVertex(schemaVertex);
-        addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
+        addProperty(schemaVertex, BaseKey.SchemaUpdateTime, times.getTime(times.getTime()));
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
             TitanVertexProperty p = addProperty(schemaVertex, BaseKey.SchemaDefinitionProperty, def.getValue());
             p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(def.getKey()));
@@ -844,7 +844,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public void updateSchemaVertex(TitanSchemaVertex schemaVertex) {
-        addProperty(VertexProperty.Cardinality.single, schemaVertex, BaseKey.SchemaUpdateTime, times.getTime().getNativeTimestamp());
+        addProperty(VertexProperty.Cardinality.single, schemaVertex, BaseKey.SchemaUpdateTime, times.getTime(times.getTime()));
     }
 
     public PropertyKey makePropertyKey(String name, TypeDefinitionMap definition) {

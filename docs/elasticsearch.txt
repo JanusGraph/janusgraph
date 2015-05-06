@@ -16,6 +16,7 @@ Titan supports http://elasticsearch.org[Elasticsearch] as an index backend.  Her
 * *Flexible Configuration*: Supports embedded or remote operation, custom transport and discovery, and open-ended settings customization.
 * *TTL*: Supports automatically expiring indexed elements.
 * *Collections*: Supports indexing SET and LIST cardinality properties.
+* *Temporal*: Nanosecond granularity temporal indexing.
 
 Please see <<version-compat>> for details on what versions of ES will work with Titan.
 

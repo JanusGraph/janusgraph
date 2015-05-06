@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.util.system;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -96,7 +97,7 @@ public abstract class BackgroundThread extends Thread {
      * The action taken by this background thread when the wait condition is met.
      * This action should execute swiftly to ensure that this thread can be closed in a reasonable amount of time.
      *
-     * This action will not be interrupted by {@link #close(long, TimeUnit)}.
+     * This action will not be interrupted by {@link #close(Duration)}.
      */
     protected abstract void action();
 
@@ -107,14 +108,14 @@ public abstract class BackgroundThread extends Thread {
         //Do nothing by default
     }
 
-    public void close(long maxWait, TimeUnit unit) {
+    public void close(Duration duration) {
 
         if (!isAlive()) {
             log.warn("Already closed: {}", this);
             return;
         }
 
-        final long maxWaitMs = TimeUnit.MILLISECONDS.convert(maxWait, unit);
+        final long maxWaitMs = duration.toMillis();
 
         softInterrupted = true;
 

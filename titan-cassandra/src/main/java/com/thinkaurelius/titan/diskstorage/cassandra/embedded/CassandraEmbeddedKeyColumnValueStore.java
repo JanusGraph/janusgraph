@@ -154,7 +154,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
          * {@link ReadCommand#create(String, ByteBuffer, String, long, IDiskAtomFilter)}.
          * {@code create(...)} in turn passes that timestamp to the SliceFromReadCommand constructor.
          */
-        final long nowMillis = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+        final long nowMillis = times.getTime().toEpochMilli();
         SliceQueryFilter sqf = new SliceQueryFilter(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, query.getLimit() + (query.hasLimit()?1:0));
         ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamily, nowMillis, sqf);
 
@@ -340,7 +340,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             this.sliceQuery = sliceQuery;
             this.maximumToken = maximum;
             this.txh = txh;
-            this.nowMillis = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+            this.nowMillis = times.getTime().toEpochMilli();
             this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize, nowMillis));
         }
 

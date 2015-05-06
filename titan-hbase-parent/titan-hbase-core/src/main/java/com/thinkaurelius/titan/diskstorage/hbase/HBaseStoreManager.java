@@ -76,7 +76,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.IOUtils;
@@ -222,7 +222,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final int PORT_DEFAULT = 9160;
 
-    public static final Timestamps PREFERRED_TIMESTAMPS = Timestamps.MILLI;
+    public static final TimestampProviders PREFERRED_TIMESTAMPS = TimestampProviders.MILLI;
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
             new ConfigNamespace(HBASE_NS, "ext", "Overrides for hbase-{site,default}.xml options", true);
@@ -404,8 +404,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey =
                 convertToCommands(
                         mutations,
-                        commitTime.getAdditionTime(times.getUnit()),
-                        commitTime.getDeletionTime(times.getUnit()));
+                        commitTime.getAdditionTime(times),
+                        commitTime.getDeletionTime(times));
 
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
@@ -520,7 +520,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             ResultScanner scanner = null;
 
-            long timestamp = times.getTime().getNativeTimestamp();
+            long timestamp = times.getTime(times.getTime());
 
             try {
                 scanner = table.getScanner(scan);

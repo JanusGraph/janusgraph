@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.core.attribute.Duration;
+
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 

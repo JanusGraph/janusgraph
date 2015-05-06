@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
@@ -51,7 +51,7 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
 
         KeyColumnValueStoreManager mgr = new CassandraThriftStoreManager(GraphDatabaseConfiguration.buildGraphConfiguration());
         KeyColumnValueStore store = mgr.openDatabase("edgestore");
-        StoreTransaction tx = mgr.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MICRO));
+        StoreTransaction tx = mgr.beginTransaction(StandardBaseTransactionConfig.of(TimestampProviders.MICRO));
         KeyColumnValueStoreUtil.loadValues(store, tx, values);
         tx.commit(); // noop on Cassandra, but harmless
 

@@ -3,9 +3,8 @@ package com.thinkaurelius.titan.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.ResourceUnavailableException;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -22,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -35,8 +35,8 @@ public class ManagementLogger implements MessageReader {
     private static final Logger log =
             LoggerFactory.getLogger(ManagementLogger.class);
 
-    private static final Duration SLEEP_INTERVAL = new StandardDuration(100L, TimeUnit.MILLISECONDS);
-    private static final Duration MAX_WAIT_TIME = new StandardDuration(60L, TimeUnit.SECONDS);
+    private static final Duration SLEEP_INTERVAL = Duration.ofMillis(100L);
+    private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(60L);
 
     private final StandardTitanGraph graph;
     private final SchemaCache schemaCache;
@@ -190,7 +190,7 @@ public class ManagementLogger implements MessageReader {
                     break;
                 }
                 try {
-                    times.sleepPast(times.getTime().add(SLEEP_INTERVAL));
+                    times.sleepPast(times.getTime().plus(SLEEP_INTERVAL));
                 } catch (InterruptedException e) {
                     log.error("Interrupted eviction ack thread for "+getId(),e);
                     break;

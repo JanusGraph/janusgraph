@@ -355,7 +355,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasDeletions()) {
                     ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
-                    dels.setTimestamp(commitTime.getDeletionTime(times.getUnit()));
+                    dels.setTimestamp(commitTime.getDeletionTime(times));
 
                     for (StaticBuffer b : titanMutation.getDeletions())
                         dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
@@ -363,7 +363,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasAdditions()) {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
-                    upds.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
+                    upds.setTimestamp(commitTime.getAdditionTime(times));
 
                     for (Entry e : titanMutation.getAdditions()) {
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
@@ -465,7 +465,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         final int maxOperationsPerConnection = config.get(MAX_OPERATIONS_PER_CONNECTION);
 
-        final int connectionTimeout = (int) connectionTimeoutMS.getLength(TimeUnit.MILLISECONDS);
+        final int connectionTimeout = (int) connectionTimeoutMS.toMillis();
 
         ConnectionPoolConfigurationImpl cpool =
                 new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")

@@ -553,7 +553,10 @@
     <field name="location" type="geo" indexed="true" stored="true" multiValued="false" />
     <field name="name" type="string" indexed="true" stored="true"/>
     <field name="blah" type="string" indexed="true" stored="true"/>
+    <field name="date" type="date" indexed="true" stored="true" />
+    <field name="instant" type="date" indexed="true" stored="true" />
     <!-- TitanIndexTest -->
     <field name="xtext" type="text_general" indexed="true" stored="true" multiValued="false" />
     <field name="xstr" type="string" indexed="true" stored="true"/>
+
 </schema>

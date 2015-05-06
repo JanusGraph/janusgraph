@@ -6,11 +6,9 @@ import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
 
 public class RelationIndexStatusWatcher
         extends AbstractIndexStatusWatcher<RelationIndexStatusReport, RelationIndexStatusWatcher> {
@@ -45,7 +43,7 @@ public class RelationIndexStatusWatcher
 
         RelationTypeIndex idx;
 
-        Timer t = new Timer(Timestamps.MILLI).start();
+        Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
             SchemaStatus actualStatus = null;
@@ -71,7 +69,7 @@ public class RelationIndexStatusWatcher
                 return new RelationIndexStatusReport(false, relationIndexName, relationTypeName, actualStatus, status, t.elapsed());
             }
 
-            Thread.sleep(poll.getLength(TimeUnit.MILLISECONDS));
+            Thread.sleep(poll.toMillis());
         }
     }
 

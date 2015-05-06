@@ -2,17 +2,19 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
+import java.time.Instant;
+
 public class TimestampRid {
     
-    private final long timestamp;
+    private final Instant timestamp;
     private final StaticBuffer rid;
     
-    public TimestampRid(long timestamp, StaticBuffer rid) {
+    public TimestampRid(Instant timestamp, StaticBuffer rid) {
         this.timestamp = timestamp;
         this.rid = rid;
     }
 
-    public long getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 

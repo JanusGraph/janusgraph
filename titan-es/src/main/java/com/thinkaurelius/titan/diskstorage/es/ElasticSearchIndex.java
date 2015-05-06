@@ -68,6 +68,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -168,7 +169,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigNamespace(ES_CREATE_NS, "ext", "Overrides for arbitrary settings applied at index creation", true);
 
     private static final IndexFeatures ES_FEATURES = new IndexFeatures.Builder().supportsDocumentTTL()
-            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).build();
+            .setDefaultStringMapping(Mapping.TEXT).supportedStringMappings(Mapping.TEXT, Mapping.TEXTSTRING, Mapping.STRING).setWildcardField("_all").supportsCardinality(Cardinality.SINGLE).supportsCardinality(Cardinality.LIST).supportsCardinality(Cardinality.SET).supportsNanoseconds().build();
 
     public static final int HOST_PORT_DEFAULT = 9300;
 
@@ -431,7 +432,7 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (dataType == Geoshape.class) {
                 log.debug("Registering geo_point type for {}", key);
                 mapping.field("type", "geo_point");
-            } else if (dataType == Date.class) {
+            } else if (dataType == Date.class || dataType == Instant.class) {
                 log.debug("Registering date type for {}", key);
                 mapping.field("type", "date");
             } else if (dataType == Boolean.class) {
@@ -529,7 +530,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 return new double[]{p.getLongitude(), p.getLatitude()};
             } else throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
 
-        } else if (value instanceof Date) {
+        } else if (value instanceof Date || value instanceof Instant) {
             return value;
         } else if (value instanceof Boolean) {
             return value;
@@ -796,7 +797,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     return FilterBuilders.geoBoundingBoxFilter(key).bottomRight(southwest.getLatitude(), northeast.getLongitude()).topLeft(northeast.getLatitude(), southwest.getLongitude());
                 } else
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
-            } else if (value instanceof Date) {
+            } else if (value instanceof Date || value instanceof Instant) {
                 Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
                 Cmp numRel = (Cmp) titanPredicate;
 
@@ -909,6 +910,9 @@ public class ElasticSearchIndex implements IndexProvider {
         else if (Date.class.isAssignableFrom(datatype)) {
             return "date";
         }
+        else if (Instant.class.isAssignableFrom(datatype)) {
+            return "date";
+        }
         else if (Geoshape.class.isAssignableFrom(datatype)) {
             return "geo_point";
         }
@@ -960,7 +964,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 case TEXTSTRING:
                     return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
             }
-        } else if (dataType == Date.class) {
+        } else if (dataType == Date.class || dataType == Instant.class) {
             if (titanPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
             return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
@@ -975,7 +979,7 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType == Boolean.class || dataType == UUID.class) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == Date.class || dataType== Instant.class || dataType == Boolean.class || dataType == UUID.class) {
             if (mapping==Mapping.DEFAULT) return true;
         } else if (AttributeUtil.isString(dataType)) {
             if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING

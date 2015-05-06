@@ -11,8 +11,8 @@ import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -23,8 +23,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
@@ -47,7 +48,7 @@ public abstract class IndexProviderTest {
     protected Map<String,KeyInformation> allKeys;
     protected KeyInformation.IndexRetriever indexRetriever;
 
-    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set";
+    public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name", PHONE_LIST = "phone_list", PHONE_SET = "phone_set", DATE = "date";
 
     public static StandardKeyInformation of(Class<?> clazz, Cardinality cardinality,  Parameter... paras) {
         return new StandardKeyInformation(clazz, cardinality, paras);
@@ -94,6 +95,7 @@ public abstract class IndexProviderTest {
                 put(PHONE_SET, new StandardKeyInformation(String.class, Cardinality.SET, new Parameter("mapping",
                         indexFeatures.supportsStringMapping(Mapping.STRING) ? Mapping.STRING : Mapping.TEXTSTRING)));
             }
+            put(DATE,new StandardKeyInformation(Instant.class, Cardinality.SINGLE));
         }};
     }
 
@@ -124,8 +126,8 @@ public abstract class IndexProviderTest {
     }
 
     public IndexTransaction openTx() throws BackendException {
-        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
-        return new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(TimestampProviders.MILLI);
+        return new IndexTransaction(index, indexRetriever, config, Duration.ofMillis(2000L));
     }
 
     @After
@@ -161,9 +163,9 @@ public abstract class IndexProviderTest {
 
     private void storeTest(String... stores) throws Exception {
 
-        Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"));
-        Multimap<String, Object> doc2 = getDocument("Tomorrow is the world", 1010, 8.5, Geoshape.point(49.0, 1.0), Arrays.asList("4", "5", "6"), Sets.newHashSet("4", "5"));
-        Multimap<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0), Arrays.asList("7", "8", "9"), Sets.newHashSet("7", "8"));
+        Multimap<String, Object> doc1 = getDocument("Hello world", 1001, 5.2, Geoshape.point(48.0, 0.0), Arrays.asList("1", "2", "3"), Sets.newHashSet("1", "2"), Instant.ofEpochSecond(1));
+        Multimap<String, Object> doc2 = getDocument("Tomorrow is the world", 1010, 8.5, Geoshape.point(49.0, 1.0), Arrays.asList("4", "5", "6"), Sets.newHashSet("4", "5"), Instant.ofEpochSecond(2));
+        Multimap<String, Object> doc3 = getDocument("Hello Bob, are you there?", -500, 10.1, Geoshape.point(47.0, 10.0), Arrays.asList("7", "8", "9"), Sets.newHashSet("7", "8"), Instant.ofEpochSecond(3));
 
         for (String store : stores) {
             initialize(store);
@@ -340,8 +342,18 @@ public abstract class IndexProviderTest {
 
             }
 
+            assertEquals("doc1", tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(1)))).get(0));
+            assertEquals("doc2", tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(2)))).get(0));
+            assertEquals("doc3", tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(3)))).get(0));
+            assertEquals("doc3", tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.GREATER_THAN, Instant.ofEpochSecond(2)))).get(0));
+            assertEquals(ImmutableSet.of("doc2", "doc3"), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.GREATER_THAN_EQUAL, Instant.ofEpochSecond(2))))));
+            assertEquals(ImmutableSet.of("doc1"), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.LESS_THAN, Instant.ofEpochSecond(2))))));
+            assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.LESS_THAN_EQUAL, Instant.ofEpochSecond(2))))));
+            assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.NOT_EQUAL, Instant.ofEpochSecond(2))))));
+
+
             //Update some data
-            add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(48.0, 8.0), Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11")), true);
+            add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(48.0, 8.0), Arrays.asList("10", "11", "12"), Sets.newHashSet("10", "11"), Instant.ofEpochSecond(4)), true);
             remove(store, "doc2", doc2, true);
             remove(store, "doc3", ImmutableMultimap.of(WEIGHT, (Object) 10.1), false);
             add(store, "doc3", ImmutableMultimap.of(TIME, (Object) 2000, TEXT, "Bob owns the world"), false);
@@ -385,6 +397,10 @@ public abstract class IndexProviderTest {
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "4"))).size());
                 assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(PHONE_LIST, Cmp.EQUAL, "5"))).size());
             }
+
+            assertTrue(tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(2)))).isEmpty());
+            assertEquals("doc4", tx.query(new IndexQuery(store, PredicateCondition.of(DATE, Cmp.EQUAL, Instant.ofEpochSecond(4)))).get(0));
+
 
         }
 
@@ -832,13 +848,14 @@ public abstract class IndexProviderTest {
     }
 
 
-    public Multimap<String, Object> getDocument(final String txt, final long time, final double weight, final Geoshape geo, List<String> phoneList, Set<String> phoneSet) {
+    public Multimap<String, Object> getDocument(final String txt, final long time, final double weight, final Geoshape geo, List<String> phoneList, Set<String> phoneSet, Instant date) {
         HashMultimap<String, Object> values = HashMultimap.create();
         values.put(TEXT, txt);
         values.put(NAME, txt);
         values.put(TIME, time);
         values.put(WEIGHT, weight);
         values.put(LOCATION, geo);
+        values.put(DATE, date);
         if(indexFeatures.supportsCardinality(Cardinality.LIST)) {
             for (String phone : phoneList) {
                 values.put(PHONE_LIST, phone);
