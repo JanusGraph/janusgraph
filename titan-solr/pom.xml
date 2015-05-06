@@ -118,9 +118,9 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
                             <filters>
-                                <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-murmur.properties</filter>
                             </filters>
                             <resources>
                                 <resource>
@@ -139,7 +139,7 @@
                     <execution>
                         <id>default-test</id>
                         <configuration>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                         </configuration>
                     </execution>
                 </executions>

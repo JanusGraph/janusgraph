@@ -32,7 +32,7 @@ public class ThriftSolrTest extends SolrTitanIndexTest {
     public static void beforeClass() {
         String userDir = System.getProperty("user.dir");
         String cassandraDirFormat = Joiner.on(File.separator).join(userDir, userDir.contains("titan-solr")
-                                        ? "target" : "titan-solr/target", "cassandra", "%s", "localhost-rp");
+                                        ? "target" : "titan-solr/target", "cassandra", "%s", "localhost-murmur");
 
         System.setProperty("test.cassandra.confdir", String.format(cassandraDirFormat, "conf"));
         System.setProperty("test.cassandra.datadir", String.format(cassandraDirFormat, "data"));

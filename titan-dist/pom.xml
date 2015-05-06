@@ -722,9 +722,9 @@
                                         <goal>copy-resources</goal>
                                     </goals>
                                     <configuration>
-                                        <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                        <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
                                         <filters>
-                                            <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                            <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-murmur.properties</filter>
                                         </filters>
                                         <resources>
                                             <resource>
@@ -836,7 +836,7 @@
                                         <goal>integration-test</goal>
                                     </goals>
                                     <configuration>
-                                        <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                                        <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                                         <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests</excludedGroups>
                                         <reportNameSuffix>murmur</reportNameSuffix>
                                         <failIfNoTests>false</failIfNoTests>

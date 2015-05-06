@@ -133,15 +133,15 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>filter-cassandra-rp-config</id>
+                        <id>filter-cassandra-murmur-config</id>
                         <phase>process-test-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
                             <filters>
-                                <filter>${basedir}/config/cassandra-filters/localhost-rp.properties</filter>
+                                <filter>${basedir}/config/cassandra-filters/localhost-murmur.properties</filter>
                             </filters>
                             <resources>
                                 <resource>
@@ -246,13 +246,13 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>rp-test</id>
+                        <id>murmur-test</id>
                         <goals>
                             <goal>test</goal>
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             <excludedGroups>${test.excluded.groups},com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
@@ -261,7 +261,7 @@
                             <perCoreThreadCount>true</perCoreThreadCount>
                             <threadCount>2</threadCount>
                             <runOrder>random</runOrder>
-                            <reportNameSuffix>rp</reportNameSuffix>
+                            <reportNameSuffix>murmur</reportNameSuffix>
                             <skip>${test.skip.unordered}</skip>
                         </configuration>
                     </execution>
@@ -298,7 +298,7 @@
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             <excludedGroups />
                             <groups>com.thinkaurelius.titan.testcategory.SerialTests</groups>
                             <forkCount>1</forkCount>
