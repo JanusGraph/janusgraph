@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.internal.Order;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.tinkerpop.ElementUtils;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -85,7 +86,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
             Preconditions.checkArgument(value instanceof Number,"Expected valid vertex id: %s",value);
             return adjacent(getVertex(((Number)value).longValue()));
         } else if (type.equals(ImplicitKey.ID.name())) {
-            Preconditions.checkArgument(value instanceof RelationIdentifier,"Expected valid relation id: %s",value);
+            value = ElementUtils.getEdgeId(value);
             return addConstraint(ImplicitKey.TITANID.name(),rel,((RelationIdentifier)value).getRelationId());
         } else {
             Preconditions.checkArgument(rel.isValidCondition(value),"Invalid condition provided: " + value);
