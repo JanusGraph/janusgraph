@@ -33,9 +33,9 @@ import java.util.Set;
  */
 public class TitanTraversalUtil {
 
-    static final Set<Class<? extends TraversalStrategy>> POSTS = ImmutableSet.<Class<? extends TraversalStrategy>>of(
+    static final Set<Class<? extends TraversalStrategy.OptimizationStrategy>> POSTS = ImmutableSet.<Class<? extends TraversalStrategy.OptimizationStrategy>>of(
             );
-    static final Set<Class<? extends TraversalStrategy>> PRIORS = ImmutableSet.<Class<? extends TraversalStrategy>>of(
+    static final Set<Class<? extends TraversalStrategy.OptimizationStrategy>> PRIORS = ImmutableSet.<Class<? extends TraversalStrategy.OptimizationStrategy>>of(
             IdentityRemovalStrategy.class);
 
     public static TitanVertex getTitanVertex(Traverser<Vertex> traverser) {

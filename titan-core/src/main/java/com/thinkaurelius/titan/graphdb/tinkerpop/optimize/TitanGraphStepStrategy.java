@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy> {
+public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     private static final TitanGraphStepStrategy INSTANCE = new TitanGraphStepStrategy();
 
@@ -69,12 +69,12 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
     }
 
     @Override
-    public Set<Class<? extends TraversalStrategy>> applyPrior() {
+    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return TitanTraversalUtil.PRIORS;
     }
 
     @Override
-    public Set<Class<? extends TraversalStrategy>> applyPost() {
+    public Set<Class<? extends OptimizationStrategy>> applyPost() {
         return TitanTraversalUtil.POSTS;
     }
 

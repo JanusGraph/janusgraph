@@ -21,7 +21,7 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (http://matthiasb.com)
  */
-public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy> {
+public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy{
 
     private static final TitanLocalQueryOptimizerStrategy INSTANCE = new TitanLocalQueryOptimizerStrategy();
 
@@ -138,12 +138,12 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<
     }
 
     @Override
-    public Set<Class<? extends TraversalStrategy>> applyPrior() {
+    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return TitanTraversalUtil.PRIORS;
     }
 
     @Override
-    public Set<Class<? extends TraversalStrategy>> applyPost() {
+    public Set<Class<? extends OptimizationStrategy>> applyPost() {
         return TitanTraversalUtil.POSTS;
     }
 

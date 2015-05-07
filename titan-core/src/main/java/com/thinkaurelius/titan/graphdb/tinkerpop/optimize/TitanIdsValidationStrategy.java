@@ -16,52 +16,44 @@ import java.util.Set;
 /**
  * Created by bryn on 06/05/15.
  */
-public class TitanIdsValidationStrategy extends AbstractTraversalStrategy<TraversalStrategy> {
+public class TitanIdsValidationStrategy extends AbstractTraversalStrategy<TraversalStrategy.DecorationStrategy> implements TraversalStrategy.DecorationStrategy {
 
 
     private static final TitanIdsValidationStrategy INSTANCE = new TitanIdsValidationStrategy();
 
-    static final Set<Class<? extends TraversalStrategy>> POST = ImmutableSet.<Class<? extends TraversalStrategy>>of(
-            TitanGraphStepStrategy.class);
+
 
     @Override
     public void apply(Traversal.Admin traversal) {
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(step -> {
             boolean elementFound = false;
             boolean idFound = false;
-            if(step.returnsVertices()) {
+            if (step.returnsVertices()) {
                 for (Object id : step.getIds()) {
-                    if (id instanceof Long || id instanceof String) {
+                    if (id instanceof Long) {
                         idFound = true;
-                    } else if(id instanceof Vertex) {
+                    } else if (id instanceof Vertex) {
                         elementFound = true;
-                    }
-                    else {
-                        throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+                    } else {
+
                     }
                 }
             }
-            if(step.returnsEdges()) {
+            if (step.returnsEdges()) {
                 for (Object id : step.getIds()) {
-                    if (id instanceof RelationIdentifier || id instanceof String) {
+                    if (id instanceof RelationIdentifier) {
                         idFound = true;
-                    } else if(id instanceof Edge) {
+                    } else if (id instanceof Edge) {
                         elementFound = true;
-                    }
-                    else {
-                        throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+                    } else {
+
                     }
                 }
             }
-            if(elementFound && idFound) {
+            if (elementFound && idFound) {
                 throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
             }
         });
-    }
-
-    @Override
-    public Set<Class<? extends TraversalStrategy>> applyPost() {
-        return POST;
     }
 
     public static TitanIdsValidationStrategy instance() {
