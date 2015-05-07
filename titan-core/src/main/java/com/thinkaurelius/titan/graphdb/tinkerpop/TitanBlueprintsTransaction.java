@@ -1,15 +1,12 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.diskstorage.util.Hex;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -119,7 +116,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         long[] ids = new long[vids.length];
         int pos = 0;
         for (int i = 0; i < vids.length; i++) {
-            long id = getVertexId(vids[i]);
+            long id = ElementUtils.getVertexId(vids[i]);
             if (id>0) ids[pos++]=id;
         }
         if (pos==0) return Collections.emptyIterator();
@@ -127,30 +124,13 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return (Iterator)getVertices(ids).iterator();
     }
 
-    private long getVertexId(Object id) {
-        if (null == id) return 0;
-
-        if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
-            return ((TitanVertex) id).longId();
-        if (id instanceof Long)
-            return (Long) id;
-        if (id instanceof Number)
-            return ((Number) id).longValue();
-        try {
-            return Long.valueOf(id.toString()).longValue();
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-
     @Override
     public Iterator<Edge> edges(Object... eids) {
         if (eids==null || eids.length==0) return (Iterator)getEdges().iterator();
         RelationIdentifier[] ids = new RelationIdentifier[eids.length];
         int pos = 0;
         for (int i = 0; i < eids.length; i++) {
-            RelationIdentifier id = getEdgeId(eids[i]);
+            RelationIdentifier id = ElementUtils.getEdgeId(eids[i]);
             if (id!=null) ids[pos++]=id;
         }
         if (pos==0) return Collections.emptyIterator();
@@ -158,20 +138,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return (Iterator)getEdges(ids).iterator();
     }
 
-    private RelationIdentifier getEdgeId(Object id) {
-        if (null == id) return null;
 
-        try {
-            if (id instanceof TitanEdge) return (RelationIdentifier) ((TitanEdge) id).id();
-            else if (id instanceof RelationIdentifier) return (RelationIdentifier) id;
-            else if (id instanceof String) return RelationIdentifier.parse((String) id);
-            else if (id instanceof long[]) return RelationIdentifier.get((long[]) id);
-            else if (id instanceof int[]) return RelationIdentifier.get((int[]) id);
-        } catch (IllegalArgumentException e) {
-            //swallow since null will be returned below
-        }
-        return null;
-    }
 
 //    @Override
 //    public GraphComputer compute(final Class... graphComputerClass) {
