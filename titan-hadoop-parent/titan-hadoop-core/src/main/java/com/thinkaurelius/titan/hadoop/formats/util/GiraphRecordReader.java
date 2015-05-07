@@ -22,12 +22,15 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
             LoggerFactory.getLogger(GiraphRecordReader.class);
 
     private RecordReader<StaticBuffer, Iterable<Entry>> reader;
-    private TitanVertexDeserializer graph;
+    private GiraphInputFormat.RefCountedCloseable countedDeser;
+    private TitanVertexDeserializer deser;
     private VertexWritable vertex;
 
-    public GiraphRecordReader(final TitanVertexDeserializer graph, final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
-        this.graph = graph;
+    public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<TitanVertexDeserializer> countedDeser,
+                              final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
+        this.countedDeser = countedDeser;
         this.reader = reader;
+        this.deser = countedDeser.acquire();
     }
 
     @Override
@@ -40,7 +43,7 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
         while (reader.nextKeyValue()) {
             // TODO titan05 integration -- the duplicate() call may be unnecessary
             final TinkerVertex maybeNullTinkerVertex =
-                    graph.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
+                    deser.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
             if (null != maybeNullTinkerVertex) {
                 vertex = new VertexWritable(maybeNullTinkerVertex);
                 //vertexQuery.filterRelationsOf(vertex); // TODO reimplement vertexquery filtering
@@ -62,7 +65,12 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
 
     @Override
     public void close() throws IOException {
-        graph.close();
+        try {
+            deser = null;
+            countedDeser.release();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
         reader.close();
     }
 

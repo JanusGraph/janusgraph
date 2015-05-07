@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.hadoop.formats.util.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerEdge;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerVertex;
@@ -22,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.NoSuchElementException;
 
-public class TitanVertexDeserializer {
+public class TitanVertexDeserializer implements AutoCloseable {
 
     private final TitanHadoopSetup setup;
     private final TypeInspector typeManager;
@@ -103,7 +104,8 @@ public class TitanVertexDeserializer {
                     // Decode property
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    tv.property(type.name(), value, T.id, relation.relationId);
+                    VertexProperty.Cardinality card = getPropertyKeyCardinality(type.name());
+                    tv.property(card, type.name(), value, T.id, relation.relationId);
                 } else {
                     assert type.isEdgeLabel();
 
@@ -209,8 +211,20 @@ public class TitanVertexDeserializer {
         return v;
     }
 
+    private VertexProperty.Cardinality getPropertyKeyCardinality(String name) {
+        RelationType rt = typeManager.getRelationType(name);
+        if (null == rt || !rt.isPropertyKey())
+            return VertexProperty.Cardinality.single;
+        PropertyKey pk = typeManager.getExistingPropertyKey(rt.longId());
+        switch (pk.cardinality()) {
+            case SINGLE: return VertexProperty.Cardinality.single;
+            case LIST: return VertexProperty.Cardinality.list;
+            case SET: return VertexProperty.Cardinality.set;
+            default: throw new IllegalStateException("Unknown cardinality " + pk.cardinality());
+        }
+    }
+
     public void close() {
         setup.close();
     }
-
 }

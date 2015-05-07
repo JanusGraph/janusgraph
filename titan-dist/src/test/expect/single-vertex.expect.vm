@@ -13,16 +13,16 @@ expect gremlin>
 send "v = g.addVertex()\r"
 expect -re {v\[(\d+)\]} { set vertexid $expect_out(1,string) }
 expect gremlin>
-send "v\['test'\] = 42\r"
-expect "==>42"
+send "v.property('test', 42)\r"
+expect "==>vp\[test->42\]"
 expect gremlin>
-send "g.commit()\r"
+send "g.tx().commit()\r"
 expect ==>null
 expect gremlin>
-send "g.v($vertexid).test\r"
+send "g.traversal().V(v.longId()).values('test')\r"
 expect ==>42
 expect gremlin>
-send "g.shutdown()\r"
+send "g.close()\r"
 expect ==>null
 expect gremlin>
 exit 0

@@ -876,6 +876,7 @@
                                         </includes>
                                     </configuration>
                                 </execution>
+                                <!-- Commented until the first 0.9/1.0 release
                                 <execution>
                                     <id>version-compat-integration-test</id>
                                     <phase>integration-test</phase>
@@ -891,6 +892,7 @@
                                         </includes>
                                     </configuration>
                                 </execution>
+                                -->
                                 <execution>
                                     <id>verify</id>
                                     <phase>verify</phase>

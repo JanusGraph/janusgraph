@@ -44,6 +44,7 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStepStrategy;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanIdsValidationStrategy;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -80,19 +81,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             LoggerFactory.getLogger(StandardTitanGraph.class);
 
 
-    private static final StandardTitanGraph EMPTY;
-
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
-                .addStrategies(TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance()); //TitanElementStepStrategy.instance()
+                .addStrategies(TitanIdsValidationStrategy.instance(), TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance()); //TitanElementStepStrategy.instance()
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class,graphStrategies);
         TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, graphStrategies);
-
-        ModifiableConfiguration config = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
-        config.set(GraphDatabaseConfiguration.IS_COMPUTE, true);
-        EMPTY = new StandardTitanGraph(new GraphDatabaseConfiguration(config.getConfiguration()));
     }
 
     private GraphDatabaseConfiguration config;
@@ -125,41 +120,40 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
 
         this.config = configuration;
-        if(!configuration.isCompute()) {
-            this.backend = configuration.getBackend();
+        this.backend = configuration.getBackend();
 
-            this.idAssigner = config.getIDAssigner(backend);
-            this.idManager = idAssigner.getIDManager();
+        this.idAssigner = config.getIDAssigner(backend);
+        this.idManager = idAssigner.getIDManager();
 
-            this.serializer = config.getSerializer();
-            StoreFeatures storeFeatures = backend.getStoreFeatures();
-            this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer,
-                    this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
-            this.edgeSerializer = new EdgeSerializer(this.serializer);
-            this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
-            this.queryCache = new RelationQueryCache(this.edgeSerializer);
-            this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
-            this.times = configuration.getTimestampProvider();
+        this.serializer = config.getSerializer();
+        StoreFeatures storeFeatures = backend.getStoreFeatures();
+        this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer,
+                this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
+        this.edgeSerializer = new EdgeSerializer(this.serializer);
+        this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
+        this.queryCache = new RelationQueryCache(this.edgeSerializer);
+        this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
+        this.times = configuration.getTimestampProvider();
 
-            isOpen = true;
-            txCounter = new AtomicLong(0);
-            openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100, 0.75f, 1));
+        isOpen = true;
+        txCounter = new AtomicLong(0);
+        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100, 0.75f, 1));
 
-            //Register instance and ensure uniqueness
-            String uniqueInstanceId = configuration.getUniqueGraphId();
-            ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
-            if (globalConfig.has(REGISTRATION_TIME, uniqueInstanceId)) {
-                throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
-            }
-            globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
-
-            Log mgmtLog = backend.getSystemMgmtLog();
-            mgmtLogger = new ManagementLogger(this, mgmtLog, schemaCache, this.times);
-            mgmtLog.registerReader(ReadMarker.fromNow(), mgmtLogger);
-
-            shutdownHook = new ShutdownThread(this);
-            Runtime.getRuntime().addShutdownHook(shutdownHook);
+        //Register instance and ensure uniqueness
+        String uniqueInstanceId = configuration.getUniqueGraphId();
+        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+        if (globalConfig.has(REGISTRATION_TIME, uniqueInstanceId)) {
+            throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
         }
+        globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
+
+        Log mgmtLog = backend.getSystemMgmtLog();
+        mgmtLogger = new ManagementLogger(this, mgmtLog, schemaCache, this.times);
+        mgmtLog.registerReader(ReadMarker.fromNow(), mgmtLogger);
+
+        shutdownHook = new ShutdownThread(this);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        log.debug("Installed shutdown hook {}", shutdownHook, new Throwable("Hook creation trace"));
     }
 
 
@@ -245,6 +239,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         // Remove shutdown hook to avoid reference retention
         try {
             Runtime.getRuntime().removeShutdownHook(tmp);
+            log.debug("Removed shutdown hook {}", tmp);
         } catch (IllegalStateException e) {
             log.warn("Failed to remove shutdown hook", e);
         }
@@ -803,14 +798,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         @Override
         public void start() {
-            if (graph.isOpen && log.isDebugEnabled())
-                log.debug("Shutting down graph {} using built-in shutdown hook.", graph);
+            log.debug("Shutting down graph {} using shutdown hook {}", graph, this);
 
             graph.closeInternal();
         }
     }
 
-    public static Graph empty() {
-        return EMPTY;
-    }
+
 }

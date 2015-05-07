@@ -1,3 +1,4 @@
 org.apache.tinkerpop.gremlin.console.plugin.DriverGremlinPlugin
-com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanGremlinPlugin
+org.apache.tinkerpop.gremlin.tinkergraph.groovy.plugin.TinkerGraphGremlinPlugin
 org.apache.tinkerpop.gremlin.hadoop.groovy.plugin.HadoopGremlinPlugin
+com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanGremlinPlugin

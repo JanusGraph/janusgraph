@@ -154,7 +154,7 @@ public abstract class ConfigElement {
         if (includeRoot) {
             // Assumes that roots are not umbrellas
             // If roots could be umbrellas, we might have to change the interpretation of umbrellaElements
-            path = (element.isNamespace() ?
+            path = (element.isRoot() ?
                     element.getName() :
                     element.getNamespace().getName()) + SEPARATOR + path;
         }

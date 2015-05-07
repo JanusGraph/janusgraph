@@ -58,7 +58,7 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         SimpleScanJobRunner runner = (ScanJob job, Configuration jobConf, String rootNSName) -> {
             try {
                 return new CassandraHadoopScanRunner(job).scanJobConf(jobConf).scanJobConfRoot(rootNSName)
-                        .partitionerOverride("org.apache.cassandra.dht.ByteOrderedPartitioner").run();
+                        .partitionerOverride("org.apache.cassandra.dht.Murmur3Partitioner").run();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -87,7 +87,7 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
         c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
         c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
-        c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.ByteOrderedPartitioner");
+        c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);
 
@@ -116,7 +116,7 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
         c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
         c.set(ConfigElement.getPath(TitanHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
-        c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.ByteOrderedPartitioner");
+        c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);
 

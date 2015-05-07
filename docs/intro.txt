@@ -232,8 +232,7 @@ Given that there is a unique index on `name` property, the Saturn vertex can be 
 gremlin> saturn = g.traversal().V().has('name', 'saturn').next()
 ==>v[256]
 gremlin> g.traversal().V(saturn).valueMap()
-==>name=saturn
-==>age=10000
+==>[name:[saturn], age:[10000]]
 gremlin> g.traversal().V(saturn).in('father').in('father').values('name')
 ==>hercules
 
@@ -243,7 +242,7 @@ The property `place` is also in a graph index. The property `place` is an edge p
 gremlin> g.traversal().E().has('place', WITHIN, Geoshape.circle(37.97, 23.72, 50))
 ==>e[a9x-co8-9hx-39s][16424-battled->4240]
 ==>e[9vp-co8-9hx-9ns][16424-battled->12520]
-gremlin> g.traversal().E().has('place', WITHIN, Geoshape.circle(37.97, 23.72, 50)).as('source').inV().as('god2').back('source').outV().as('god1').select('outV', 'inV').by('name');
+gremlin> g.traversal().E().has('place', new P(WITHIN, Geoshape.circle(37.97, 23.72, 50))).as('source').inV().as('god2').select('source').outV().as('god1').select('god1', 'god2').by('name')
 ==>[god1:hercules, god2:hydra]
 ==>[god1:hercules, god2:nemean]
 
@@ -299,9 +298,9 @@ gremlin> g.traversal().V(hercules).out('battled')
 ==>v[2560]
 ==>v[2816]
 gremlin> g.traversal().V(hercules).out('battled').valueMap()
-==>{name=nemean}
-==>{name=hydra}
-==>{name=cerberus}
+==>[name:[nemean]]
+==>[name:[hydra]]
+==>[name:[cerberus]]
 gremlin> g.traversal().V(hercules).outE('battled').has('time', gt, 1).inV().values('name')
 ==>cerberus
 ==>hydra
@@ -364,7 +363,7 @@ gremlin> g.traversal().V(pluto).outE('lives').values('reason')
 gremlin> g.traversal().E().has('reason', CONTAINS, 'loves')
 ==>e[6xs-sg-m51-e8][1024-lives->512]
 ==>e[70g-zk-m51-lc][1280-lives->768]
-gremlin> g.traversal().E().has('reason', CONTAINS, 'loves').as('source').values('reason').as('reason').back('source').outV().values('name').as('god').back('source').inV().values('name').as('thing').select('god', 'reason', 'thing')
+gremlin> g.traversal().E().has('reason', new P(CONTAINS, 'loves')).as('source').values('reason').as('reason').select('source').outV().values('name').as('god').select('source').inV().values('name').as('thing').select('god', 'reason', 'thing')
 ==>[god:neptune, reason:loves waves, thing:sea]
 ==>[god:jupiter, reason:loves fresh breezes, thing:sky]
 
