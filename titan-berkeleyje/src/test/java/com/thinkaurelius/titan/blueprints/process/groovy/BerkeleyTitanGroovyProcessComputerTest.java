@@ -11,7 +11,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Bryn Cooke
  */
-@Ignore
 @RunWith(GroovyProcessComputerSuite.class)
 @ProcessStandardSuite.GraphProviderClass(provider = BerkeleyGraphComputerProvider.class, graph = TitanGraph.class)
 public class BerkeleyTitanGroovyProcessComputerTest {
