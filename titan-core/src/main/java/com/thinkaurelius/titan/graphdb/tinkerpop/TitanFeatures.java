@@ -148,6 +148,9 @@ public class TitanFeatures implements Graph.Features {
         public boolean supportsUserSuppliedIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsNumericIds() { return false; }
     }
 
 }
