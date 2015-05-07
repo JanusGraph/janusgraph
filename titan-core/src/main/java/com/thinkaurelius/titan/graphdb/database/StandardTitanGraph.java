@@ -159,6 +159,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
             shutdownHook = new ShutdownThread(this);
             Runtime.getRuntime().addShutdownHook(shutdownHook);
+            log.debug("Installed shutdown hook {}", shutdownHook, new Throwable("Hook creation trace"));
         }
     }
 
@@ -245,6 +246,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         // Remove shutdown hook to avoid reference retention
         try {
             Runtime.getRuntime().removeShutdownHook(tmp);
+            log.debug("Removed shutdown hook {}", tmp);
         } catch (IllegalStateException e) {
             log.warn("Failed to remove shutdown hook", e);
         }
@@ -803,8 +805,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         @Override
         public void start() {
-            if (graph.isOpen && log.isDebugEnabled())
-                log.debug("Shutting down graph {} using built-in shutdown hook.", graph);
+            log.debug("Shutting down graph {} using shutdown hook {}", graph, this);
 
             graph.closeInternal();
         }
