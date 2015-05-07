@@ -14,7 +14,7 @@ public class BerkeleyGraphProvider extends AbstractTitanGraphProvider {
 
     @Override
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
-        return BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName)).set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ZERO);
+        return BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName)).set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(20));
     }
 
 }

@@ -15,7 +15,7 @@ public class BerkeleyGraphComputerProvider extends AbstractTitanGraphComputerPro
     @Override
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
         ModifiableConfiguration config = BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName));
-        config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ZERO);
+        config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(20));
         config.set(GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL,false);
         return config;
     }
