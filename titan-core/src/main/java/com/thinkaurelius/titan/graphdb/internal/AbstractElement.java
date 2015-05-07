@@ -3,11 +3,7 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.util.ElementHelper;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 /**
  * AbstractElement is the base class for all elements in Titan.
@@ -34,35 +30,12 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
 
     @Override
     public int hashCode() {
-        return Longs.hashCode(getCompareId());
+        return ElementHelper.hashCode(this);
     }
 
     @Override
     public boolean equals(Object other) {
-        if (other == null)
-            return false;
-
-        if (this == other)
-            return true;
-
-        if (other instanceof AbstractElement) {
-            if (getCompareId()!=((AbstractElement)other).getCompareId()) return false;
-        } else if (other instanceof TitanElement) {
-            if (getCompareId()!=((TitanElement)other).longId()) return false;
-        } else if (other instanceof Element) {
-            if (getCompareId()!= ElementHelper.getCompareId((Element) other)) return false;
-        } else return false;
-
-        if (this instanceof Vertex && other instanceof Vertex)
-            return true;
-
-        if (this instanceof Edge && other instanceof Edge)
-            return true;
-
-        if (this instanceof VertexProperty && other instanceof VertexProperty)
-            return true;
-
-        return false;
+        return ElementHelper.areEqual(this, other);
     }
 
 
