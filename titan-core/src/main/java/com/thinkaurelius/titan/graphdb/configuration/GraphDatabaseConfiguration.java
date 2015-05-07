@@ -1271,13 +1271,6 @@ public class GraphDatabaseConfiguration {
 //    public static final String GRAPHITE_PREFIX_KEY = "prefix";
 //    public static final String GRAPHITE_PREFIX_DEFAULT = null;
 
-    /**
-     * A compute specific config option for internal use.
-     */
-    public static final ConfigOption<Boolean> IS_COMPUTE = new ConfigOption<Boolean>(ROOT_NS,"isCompute",
-            "A compute specific config option for internal use",
-            ConfigOption.Type.LOCAL, Boolean.class, false);
-
 
     public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS,"gremlin",
             "Gremlin configuration options");
@@ -1314,7 +1307,6 @@ public class GraphDatabaseConfiguration {
     private String unknownIndexKeyName;
 
     private StoreFeatures storeFeatures = null;
-    private boolean compute;
 
     public GraphDatabaseConfiguration(ReadConfiguration localConfig) {
         Preconditions.checkNotNull(localConfig);
@@ -1323,12 +1315,6 @@ public class GraphDatabaseConfiguration {
 
         BasicConfiguration localbc = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
-
-        if(Boolean.TRUE.equals(localbc.get(IS_COMPUTE))) {
-            configuration = localbc;
-            compute = true;
-            return;
-        }
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
@@ -1915,9 +1901,6 @@ public class GraphDatabaseConfiguration {
         return (new File(file)).isFile();
     }
 
-    public boolean isCompute() {
-        return compute;
-    }
 
 //    static PropertiesConfiguration getPropertiesConfig(String file) {
 //        PropertiesConfiguration config = new PropertiesConfiguration();
