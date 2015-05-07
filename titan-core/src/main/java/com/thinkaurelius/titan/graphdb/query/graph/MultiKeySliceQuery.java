@@ -44,7 +44,7 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiK
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(queries).appendSuper(super.hashCode()).toHashCode();
+        return new HashCodeBuilder().append(queries).append(getLimit()).toHashCode();
     }
 
     @Override

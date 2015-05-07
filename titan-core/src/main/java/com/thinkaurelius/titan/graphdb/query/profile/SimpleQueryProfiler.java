@@ -13,6 +13,7 @@ public class SimpleQueryProfiler implements QueryProfiler, Iterable<SimpleQueryP
     private final List<SimpleQueryProfiler> nestedProfilers = new ArrayList<>();
     private final Map<String,Object> annotations = new HashMap<>();
 
+    private final String groupName;
     private long resultSize = 0;
 
     private long startTimeNs = 0;
@@ -20,12 +21,17 @@ public class SimpleQueryProfiler implements QueryProfiler, Iterable<SimpleQueryP
     private long measuredTimeNs = 0;
 
     public SimpleQueryProfiler() {
+        this("__root");
+    }
 
+    public SimpleQueryProfiler(final String groupName) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(groupName));
+        this.groupName=groupName;
     }
 
     @Override
-    public QueryProfiler addNested() {
-        SimpleQueryProfiler nested = new SimpleQueryProfiler();
+    public QueryProfiler addNested(String groupName) {
+        SimpleQueryProfiler nested = new SimpleQueryProfiler(groupName);
         nestedProfilers.add(nested);
         return nested;
     }
