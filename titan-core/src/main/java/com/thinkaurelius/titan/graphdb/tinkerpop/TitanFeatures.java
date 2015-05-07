@@ -119,6 +119,19 @@ public class TitanFeatures implements Graph.Features {
         public boolean supportsUserSuppliedIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsNumericIds() { return false; }
+
+        @Override
+        public boolean supportsAnyIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsUuidIds() {
+            return false;
+        }
     }
 
     private static class TitanEdgePropertyFeatures extends TitanDataTypeFeatures implements EdgePropertyFeatures {
@@ -136,6 +149,16 @@ public class TitanFeatures implements Graph.Features {
         public boolean supportsUserSuppliedIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsAnyIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsUuidIds() {
+            return false;
+        }
     }
 
     private static class TitanEdgeFeatures implements EdgeFeatures {
@@ -151,6 +174,16 @@ public class TitanFeatures implements Graph.Features {
 
         @Override
         public boolean supportsNumericIds() { return false; }
+
+        @Override
+        public boolean supportsAnyIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsUuidIds() {
+            return false;
+        }
     }
 
 }

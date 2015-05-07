@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -59,16 +60,12 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(relation).append(key).append(value).toHashCode();
+        return ElementHelper.hashCode(this);
     }
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
-        SimpleTitanProperty other = (SimpleTitanProperty)oth;
-        return relation.equals(other.relation) && key.equals(other.key) &&
-                value.equals(other.value);
+        return ElementHelper.areEqual(this, oth);
     }
 
 }
