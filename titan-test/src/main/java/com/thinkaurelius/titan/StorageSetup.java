@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
+import java.time.Duration;
 
 public class StorageSetup {
 
@@ -55,7 +56,7 @@ public class StorageSetup {
     }
 
     public static ModifiableConfiguration getInMemoryConfiguration() {
-        return buildGraphConfiguration().set(STORAGE_BACKEND, "inmemory");
+        return buildGraphConfiguration().set(STORAGE_BACKEND, "inmemory").set(IDAUTHORITY_WAIT, Duration.ZERO);
     }
 
     public static TitanGraph getInMemoryGraph() {
