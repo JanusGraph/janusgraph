@@ -209,15 +209,15 @@
                             </configuration>
                         </execution>
                         <execution>
-                            <id>filter-cassandra-bop-config</id>
+                            <id>filter-cassandra-murmur-config</id>
                             <phase>process-test-resources</phase>
                             <goals>
                                 <goal>copy-resources</goal>
                             </goals>
                             <configuration>
-                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
+                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
                                 <filters>
-                                    <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-bop.properties</filter>
+                                    <filter>${top.level.basedir}/titan-cassandra/config/cassandra-filters/localhost-murmur.properties</filter>
                                 </filters>
                                 <resources>
                                     <resource>
@@ -278,13 +278,13 @@
                                 <goal>integration-test</goal>
                             </goals>
                             <configuration>
-                                <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
                                 <includes>
                                     <include>**/*Cassandra*IT.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
                                 <reuseForks>false</reuseForks>
                                 <summaryFile>target/failsafe-reports/failsafe-titan-cassandra.xml</summaryFile>
+                                <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             </configuration>
                         </execution>
                         <execution>
