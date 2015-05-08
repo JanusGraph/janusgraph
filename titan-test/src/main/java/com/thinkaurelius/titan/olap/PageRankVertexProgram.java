@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.util.StreamFactory;
@@ -47,7 +48,7 @@ public class PageRankVertexProgram extends StaticVertexProgram<Double> {
     private static final Set<String> COMPUTE_KEYS = ImmutableSet.of(PAGE_RANK, OUTGOING_EDGE_COUNT);
 
     @Override
-    public void loadState(final Configuration configuration) {
+    public void loadState(final Graph graph, final Configuration configuration) {
         dampingFactor = configuration.getDouble(DAMPING_FACTOR, 0.85D);
         maxIterations = configuration.getInt(MAX_ITERATIONS, 10);
         vertexCount = configuration.getLong(VERTEX_COUNT, 1L);

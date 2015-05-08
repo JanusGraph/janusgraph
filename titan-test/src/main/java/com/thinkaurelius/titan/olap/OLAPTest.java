@@ -456,7 +456,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         final TitanGraphComputer computer = graph.compute();
         computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(4);
-        computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create());
+        computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create(graph));
         computer.mapReduce(PageRankMapReduce.build().create());
         ComputerResult result = computer.submit().get();
 
@@ -513,7 +513,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         final TitanGraphComputer computer = graph.compute();
         computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(4);
-        computer.program(ShortestDistanceVertexProgram.build().seed((long)vertex.id()).maxDepth(maxDepth + 4).create());
+        computer.program(ShortestDistanceVertexProgram.build().seed((long)vertex.id()).maxDepth(maxDepth + 4).create(graph));
         computer.mapReduce(ShortestDistanceMapReduce.build().create());
         ComputerResult result = computer.submit().get();
 

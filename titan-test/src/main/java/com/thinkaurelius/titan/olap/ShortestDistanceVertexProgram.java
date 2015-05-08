@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.olap;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -9,12 +9,14 @@ import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
 import org.apache.tinkerpop.gremlin.process.computer.util.LambdaHolder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.StreamFactory;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +26,6 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
@@ -53,7 +53,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     }
 
     @Override
-    public void loadState(final Configuration configuration) {
+    public void loadState(final Graph graph, final Configuration configuration) {
 //        this.traversalSupplier = LambdaHolder.loadState(configuration, INCIDENT_TRAVERSAL_SUPPLIER);
 //        if (null != traversalSupplier) {
 //            //VertexProgramHelper.verifyReversibility(this.traversalSupplier.get().get().asAdmin());
@@ -114,7 +114,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
                 // The seed sends a single message to start the computation
                 log.debug("Sent initial message from {}", vertex.id());
                 // The seed's distance to itself is zero
-                vertex.property(VertexProperty.Cardinality.single, DISTANCE,  0L);
+                vertex.property(VertexProperty.Cardinality.single, DISTANCE, 0L);
                 messenger.sendMessage(incidentMessageScope, 0L);
             }
         } else {
@@ -122,7 +122,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
             // Find minimum distance among all incoming messages, or null if no messages came in
             Long shortestDistanceSeenOnThisIteration =
-                    StreamFactory.stream(distances).reduce((a,b) -> Math.min(a,b)).orElse(null);
+                    StreamFactory.stream(distances).reduce((a, b) -> Math.min(a, b)).orElse(null);
 
             if (null == shortestDistanceSeenOnThisIteration)
                 return; // no messages to process or forward on this superstep
@@ -132,7 +132,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
             if (!currentShortestVP.isPresent() ||
                     currentShortestVP.value() > shortestDistanceSeenOnThisIteration) {
                 // First/shortest distance seen by this vertex: store it and forward to neighbors
-                vertex.property(VertexProperty.Cardinality.single, DISTANCE,  shortestDistanceSeenOnThisIteration);
+                vertex.property(VertexProperty.Cardinality.single, DISTANCE, shortestDistanceSeenOnThisIteration);
                 messenger.sendMessage(incidentMessageScope, shortestDistanceSeenOnThisIteration);
             }
             // else: no new winner, ergo no reason to send message to neighbors

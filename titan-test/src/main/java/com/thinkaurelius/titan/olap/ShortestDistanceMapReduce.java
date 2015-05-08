@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.olap;
 
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -31,7 +32,7 @@ public class ShortestDistanceMapReduce extends StaticMapReduce<Object, Long, Obj
     }
 
     @Override
-    public void loadState(final Configuration configuration) {
+    public void loadState(final Graph graph, final Configuration configuration) {
         this.memoryKey = configuration.getString(SHORTEST_DISTANCE_MEMORY_KEY, DEFAULT_MEMORY_KEY);
     }
 
