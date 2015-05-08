@@ -7,11 +7,8 @@ import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.computer.util.AbstractVertexProgramBuilder;
-import org.apache.tinkerpop.gremlin.process.computer.util.LambdaHolder;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -25,7 +22,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
@@ -39,9 +35,6 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     public static final String WEIGHT_PROPERTY = "titan.shortestDistanceVertexProgram.weightProperty";
     public static final String SEED = "titan.shortestDistanceVertexProgram.seedID";
 
-    private static final String INCIDENT_TRAVERSAL_SUPPLIER = "titan.shortestDistanceVertexProgram.incidentTraversalSupplier";
-    private LambdaHolder<Supplier<Traversal<Vertex, Edge>>> traversalSupplier;
-
     private int maxDepth;
     private long seed;
     private String weightProperty;
@@ -54,11 +47,6 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
-//        this.traversalSupplier = LambdaHolder.loadState(configuration, INCIDENT_TRAVERSAL_SUPPLIER);
-//        if (null != traversalSupplier) {
-//            //VertexProgramHelper.verifyReversibility(this.traversalSupplier.get().get().asAdmin());
-//            incidentMessageScope = MessageScope.Local.of(traversalSupplier.get());
-//        }
         maxDepth = configuration.getInt(MAX_DEPTH);
         seed = configuration.getLong(SEED);
         weightProperty = configuration.getString(WEIGHT_PROPERTY, "distance");
@@ -70,9 +58,6 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
     public void storeState(final Configuration configuration) {
         configuration.setProperty(VERTEX_PROGRAM, ShortestDistanceVertexProgram.class.getName());
         configuration.setProperty(MAX_DEPTH, maxDepth);
-//        if (null != traversalSupplier) {
-//            traversalSupplier.storeState(configuration);
-//        }
     }
 
     @Override
