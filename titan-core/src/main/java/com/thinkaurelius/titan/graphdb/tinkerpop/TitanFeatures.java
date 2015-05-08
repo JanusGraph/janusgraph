@@ -149,7 +149,7 @@ public class TitanFeatures implements Graph.Features {
         public VertexProperty.Cardinality getCardinality(final String key) {
             TitanTransaction tx = TitanFeatures.this.graph.newTransaction();
             try {
-                if (!tx.containsPropertyKey(key)) return VertexProperty.Cardinality.single; //DEFAULT
+                if (!tx.containsPropertyKey(key)) return VertexProperty.Cardinality.list; //DEFAULT
                 return tx.getPropertyKey(key).cardinality().convert();
             } finally {
                 tx.rollback();
