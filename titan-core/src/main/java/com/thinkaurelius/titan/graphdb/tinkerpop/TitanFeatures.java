@@ -1,8 +1,11 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop;
 
+import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +26,13 @@ public class TitanFeatures implements Graph.Features {
     private final VertexFeatures vertexFeatures;
     private final EdgeFeatures edgeFeatures;
 
+    private final StandardTitanGraph graph;
 
-    private TitanFeatures(boolean persists) {
-        graphFeatures = new TitanGraphFeatures(persists);
+    private TitanFeatures(StandardTitanGraph graph, StoreFeatures storageFeatures) {
+        graphFeatures = new TitanGraphFeatures(storageFeatures.supportsPersistence());
         vertexFeatures = new TitanVertexFeatures();
         edgeFeatures = new TitanEdgeFeatures();
+        this.graph = graph;
     }
 
     @Override
@@ -50,14 +55,8 @@ public class TitanFeatures implements Graph.Features {
         return StringFactory.featureString(this);
     }
 
-
-    private static final TitanFeatures PERSISTS_INSTANCE = new TitanFeatures(true);
-    private static final TitanFeatures INMEMORY_INSTANCE = new TitanFeatures(false);
-
-
-    public static TitanFeatures getFeatures(GraphDatabaseConfiguration config, StoreFeatures storageFeatures) {
-        if (storageFeatures.supportsPersistence()) return PERSISTS_INSTANCE;
-        else return INMEMORY_INSTANCE;
+    public static TitanFeatures getFeatures(StandardTitanGraph graph, StoreFeatures storageFeatures) {
+        return new TitanFeatures(graph,storageFeatures);
     }
 
     private static class TitanDataTypeFeatures implements DataTypeFeatures {
@@ -144,7 +143,18 @@ public class TitanFeatures implements Graph.Features {
 
     }
 
-    private static class TitanVertexFeatures implements VertexFeatures {
+    private class TitanVertexFeatures implements VertexFeatures {
+
+        @Override
+        public VertexProperty.Cardinality getCardinality(final String key) {
+            TitanTransaction tx = TitanFeatures.this.graph.newTransaction();
+            try {
+                if (!tx.containsPropertyKey(key)) return VertexProperty.Cardinality.single; //DEFAULT
+                return tx.getPropertyKey(key).cardinality().convert();
+            } finally {
+                tx.rollback();
+            }
+        }
 
         @Override
         public VertexPropertyFeatures properties() {

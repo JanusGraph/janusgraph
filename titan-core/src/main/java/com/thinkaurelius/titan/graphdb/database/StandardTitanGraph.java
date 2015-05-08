@@ -250,7 +250,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public Features features() {
-        return TitanFeatures.getFeatures(getConfiguration(), backend.getStoreFeatures());
+        return TitanFeatures.getFeatures(this, backend.getStoreFeatures());
     }
 
 

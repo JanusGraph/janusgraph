@@ -76,7 +76,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.MarkerIdentityStep;
 import org.apache.tinkerpop.gremlin.structure.*;
 
 import static org.apache.tinkerpop.gremlin.structure.Direction.*;
@@ -3361,7 +3360,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int numSteps = 0;
         for (Step s : steps) {
 //            System.out.println(s.getClass());
-            if (s.getClass().equals(GraphStep.class) || s.getClass().equals(StartStep.class) || s.getClass().equals(MarkerIdentityStep.class)) continue;
+            if (s.getClass().equals(GraphStep.class) || s.getClass().equals(StartStep.class)) continue;
 
             assertTrue(s.getClass().getName(),expSteps.contains(s.getClass()));
             numSteps++;
