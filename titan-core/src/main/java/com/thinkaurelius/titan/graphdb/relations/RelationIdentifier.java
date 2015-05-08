@@ -90,7 +90,7 @@ public final class RelationIdentifier {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(outVertexId).append(typeId).append(relationId).append(inVertexId).toHashCode();
+        return Long.valueOf(relationId).hashCode();
     }
 
     @Override
@@ -98,7 +98,7 @@ public final class RelationIdentifier {
         if (this == other) return true;
         else if (!getClass().isInstance(other)) return false;
         RelationIdentifier oth = (RelationIdentifier) other;
-        return relationId == oth.relationId && outVertexId == oth.outVertexId && typeId == oth.typeId && inVertexId==oth.inVertexId;
+        return relationId == oth.relationId && typeId == oth.typeId;
     }
 
     @Override
