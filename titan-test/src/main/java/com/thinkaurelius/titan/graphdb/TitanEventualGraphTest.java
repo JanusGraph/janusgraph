@@ -67,8 +67,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx1.commit();
         tx2.commit();
 
-        assertEquals("v", getOnlyVertex(tx.query().has("value",11)).values("uid"));
-
+        assertEquals("v", Iterators.<String>getOnlyElement(Iterables.<TitanVertex>getOnlyElement(tx.query().has("value", 11).vertices()).values("uid")));
     }
 
     /**
@@ -102,18 +101,19 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         for (Iterator<VertexProperty<Object>> propiter = v1.properties(name); propiter.hasNext(); ) {
             VertexProperty prop = propiter.next();
             if (features.hasTimestamps()) {
-                Instant t = prop.value("^timestamp");
+                Instant t = prop.value("~timestamp");
                 assertEquals(100,t.getEpochSecond());
-                assertEquals(Instant.ofEpochSecond(0, 100),t.getNano());
+                assertEquals(Instant.ofEpochSecond(0, 1000).getNano(),t.getNano());
             }
             if (features.hasCellTTL()) {
-                Duration d = prop.value("^ttl");
+                Duration d = prop.value("~ttl");
                 assertEquals(0l, d.getSeconds());
                 assertTrue(d.isZero());
             }
         }
-        assertEquals(1, v1.query().has("$timestamp", Instant.ofEpochSecond(100)).propertyCount());
-        assertEquals(1, v1.query().has("$timestamp", Cmp.GREATER_THAN, Instant.ofEpochSecond(10)).propertyCount());
+        assertEquals(1, v1.query().propertyCount());
+        assertEquals(1, v1.query().has("~timestamp", Cmp.GREATER_THAN, Instant.ofEpochSecond(10)).propertyCount());
+        assertEquals(1, v1.query().has("~timestamp", Instant.ofEpochSecond(100, 1000)).propertyCount());
         v1.property(name).remove();
         v1.property(VertexProperty.Cardinality.single, address,  "xyz");
         Edge edge = v2.addEdge("parent",v1);
@@ -250,8 +250,9 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 //        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
         for (int i=0;i<Math.min(numV,300);i++) {
-            assertCount(1, graph.query().has("uid", i + 1).vertices());
-            assertCount(1, getOnlyVertex(graph.query().has("uid", i + 1)).query().direction(OUT).labels("knows").edges());
+            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
+            TitanVertex v = Iterables.<TitanVertex>getOnlyElement(graph.query().has("uid", i + 1).vertices());
+            assertEquals(1, Iterables.size(v.query().direction(OUT).labels("knows").edges()));
         }
     }
 
@@ -326,13 +327,13 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         e = getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
-        assertNotEquals(rs[7].longId(),getId(e));
+        assertEquals(rs[7].longId(), getId(e));
         e = getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
         assertNotEquals(rs[8].longId(),getId(e));
         e = getOnlyElement(v.query().direction(OUT).labels("em").edges());
         assertEquals(wintx,e.<Integer>value("sig").intValue());
-        assertNotEquals(rs[4].longId(),getId(e));
+        assertEquals(rs[4].longId(), getId(e));
         for (Edge ee : v.query().direction(OUT).labels("emf").edges()) {
             assertNotEquals(rs[5].longId(),getId(ee));
             assertEquals(uid,ee.inVertex().id());
