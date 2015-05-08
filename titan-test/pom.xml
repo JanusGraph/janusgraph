@@ -41,24 +41,6 @@
             <artifactId>gremlin-test</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-        <!-- Groovy & Gremlin -->
-        <dependency>
-            <groupId>org.codehaus.gmaven.runtime</groupId>
-            <artifactId>gmaven-runtime-1.5</artifactId>
-            <version>1.5</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.ant</groupId>
-                    <artifactId>ant</artifactId>
-                </exclusion>
-                <!-- This Slf4j log binding conflicts with Log4j -->
-                <exclusion>
-                    <groupId>org.sonatype.gossip</groupId>
-                    <artifactId>gossip</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-groovy</artifactId>
@@ -116,47 +98,26 @@
         <plugins>
             <!-- Groovy -->
             <plugin>
-                <groupId>org.codehaus.gmaven</groupId>
-                <artifactId>gmaven-plugin</artifactId>
-                <version>1.5</version>
-                <configuration>
-                    <providerSelection>1.5</providerSelection>
-                    <debug>true</debug>
-                    <verbose>true</verbose>
-                    <stacktrace>true</stacktrace>
-                    <sources>
-                        <fileset>
-                            <directory>${project.basedir}/src/main/groovy</directory>
-                            <includes>
-                                <include>**/*.groovy</include>
-                            </includes>
-                        </fileset>
-                    </sources>
-                    <testSources>
-                        <fileset>
-                            <directory>${project.basedir}/src/test/groovy</directory>
-                            <includes>
-                                <include>**/*.groovy</include>
-                            </includes>
-                        </fileset>
-                    </testSources>
-                </configuration>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>1.2</version>
                 <executions>
                     <execution>
-                        <id>groovy-compile</id>
-                        <phase>compile</phase>
                         <goals>
+                            <goal>addSources</goal>
+                            <goal>addTestSources</goal>
+                            <goal>generateStubs</goal>
                             <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>groovy-testCompile</id>
-                        <phase>test-compile</phase>
-                        <goals>
+                            <goal>testGenerateStubs</goal>
                             <goal>testCompile</goal>
+                            <goal>removeStubs</goal>
+                            <goal>removeTestStubs</goal>
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <invokeDynamic>true</invokeDynamic>
+                </configuration>
             </plugin>
         </plugins>
     </build>
