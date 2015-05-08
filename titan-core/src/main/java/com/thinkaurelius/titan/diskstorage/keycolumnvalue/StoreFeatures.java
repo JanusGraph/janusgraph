@@ -137,6 +137,12 @@ public interface StoreFeatures {
     public boolean hasVisibility();
 
     /**
+     * Whether the backend supports data persistence. Return false if the backend is in-memory only.
+     * @return
+     */
+    public boolean supportsPersistence();
+
+    /**
      * Get a transaction configuration that enforces key consistency. This
      * method has undefined behavior when {@link #isKeyConsistent()} is
      * false.

@@ -50,11 +50,10 @@ public class TitanGraphSONModule extends SimpleModule {
             //  0=relationId, 1=outVertexId, 2=typeId, 3=inVertexId (optional)
             jsonGenerator.writeNumberField("relationId",asLong[0]);
             jsonGenerator.writeNumberField("outVertexId", asLong[1]);
-            jsonGenerator.writeNumberField("typeId",asLong[2]);
+            jsonGenerator.writeNumberField("typeId", asLong[2]);
             if (asLong.length>3) jsonGenerator.writeNumberField("inVertexId",asLong[3]);
             jsonGenerator.writeEndObject();
         }
-
 
     }
 }

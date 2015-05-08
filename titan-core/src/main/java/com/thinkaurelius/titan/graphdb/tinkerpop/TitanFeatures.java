@@ -7,8 +7,6 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.InvocationTargetException;
-
 /**
  * Blueprint's features of a TitanGraph.
  *
@@ -26,8 +24,8 @@ public class TitanFeatures implements Graph.Features {
     private final EdgeFeatures edgeFeatures;
 
 
-    private TitanFeatures() {
-        graphFeatures = new TitanGraphFeatures();
+    private TitanFeatures(boolean persists) {
+        graphFeatures = new TitanGraphFeatures(persists);
         vertexFeatures = new TitanVertexFeatures();
         edgeFeatures = new TitanEdgeFeatures();
     }
@@ -53,11 +51,13 @@ public class TitanFeatures implements Graph.Features {
     }
 
 
-    private static final TitanFeatures INSTANCE = new TitanFeatures();
+    private static final TitanFeatures PERSISTS_INSTANCE = new TitanFeatures(true);
+    private static final TitanFeatures INMEMORY_INSTANCE = new TitanFeatures(false);
 
 
     public static TitanFeatures getFeatures(GraphDatabaseConfiguration config, StoreFeatures storageFeatures) {
-        return INSTANCE;
+        if (storageFeatures.supportsPersistence()) return PERSISTS_INSTANCE;
+        else return INMEMORY_INSTANCE;
     }
 
     private static class TitanDataTypeFeatures implements DataTypeFeatures {
@@ -87,6 +87,12 @@ public class TitanFeatures implements Graph.Features {
 
     private static class TitanGraphFeatures extends TitanDataTypeFeatures implements GraphFeatures {
 
+        private final boolean persists;
+
+        private TitanGraphFeatures(boolean persists) {
+            this.persists = persists;
+        }
+
         @Override
         public VariableFeatures variables() {
             return new TitanVariableFeatures();
@@ -99,7 +105,7 @@ public class TitanFeatures implements Graph.Features {
 
         @Override
         public boolean supportsPersistence() {
-            return true;
+            return persists;
         }
 
         @Override

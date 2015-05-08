@@ -20,7 +20,7 @@ public class TitanIoRegistry extends AbstractIoRegistry {
 
     public static TitanIoRegistry INSTANCE = new TitanIoRegistry();
 
-    public TitanIoRegistry() {
+    private TitanIoRegistry() {
         register(GraphSONIo.class, null, TitanGraphSONModule.getInstance());
         register(GryoIo.class, RelationIdentifier.class, null);
     }
