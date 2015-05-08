@@ -3,6 +3,11 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 /**
@@ -30,12 +35,30 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
 
     @Override
     public int hashCode() {
-        return ElementHelper.hashCode(this);
+        return Long.valueOf(getCompareId()).hashCode();
     }
 
     @Override
     public boolean equals(Object other) {
-        return ElementHelper.areEqual(this, other);
+        if (other==null)
+            return false;
+
+        if (this==other)
+            return true;
+        if (!((this instanceof Vertex && other instanceof Vertex) ||
+                (this instanceof Edge && other instanceof Edge) ||
+                (this instanceof VertexProperty && other instanceof VertexProperty)))
+            return false;
+        //Same type => they are the same if they have identical ids.
+        if (other instanceof AbstractElement) {
+            return getCompareId()==((AbstractElement)other).getCompareId();
+        } else if (other instanceof TitanElement) {
+            return ((TitanElement) other).hasId() && getCompareId()==((TitanElement)other).longId();
+        } else if (other instanceof Element) {
+            Object otherId = ((Element)other).id();
+            if (otherId instanceof RelationIdentifier) return ((RelationIdentifier) otherId).getRelationId()==getCompareId();
+            else return otherId.equals(getCompareId());
+        } else return false;
     }
 
 

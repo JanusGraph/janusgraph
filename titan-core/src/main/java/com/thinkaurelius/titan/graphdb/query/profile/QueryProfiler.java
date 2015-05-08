@@ -27,7 +27,7 @@ public interface QueryProfiler {
 
     public static final QueryProfiler NO_OP = new QueryProfiler() {
         @Override
-        public QueryProfiler addNested() {
+        public QueryProfiler addNested(String groupName) {
             return this;
         }
 
@@ -50,7 +50,7 @@ public interface QueryProfiler {
     };
 
 
-    public QueryProfiler addNested();
+    public QueryProfiler addNested(String groupName);
 
     public QueryProfiler setAnnotation(String key, Object value);
 
@@ -64,23 +64,32 @@ public interface QueryProfiler {
         return profile(profiler,query,false,queryExecutor);
     }
 
+    public static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, Function<Q,R> queryExecutor) {
+        return profile(groupName,profiler,query,false,queryExecutor);
+    }
+
     public static<Q extends Query,R extends Collection> R profile(QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {
-        QueryProfiler sub = profiler.addNested();
+        return profile("backend-query",profiler,query,multiQuery,queryExecutor);
+    }
+
+    public static<Q extends Query,R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, boolean multiQuery, Function<Q,R> queryExecutor) {
+        QueryProfiler sub = profiler.addNested(groupName);
         sub.setAnnotation(QUERY_ANNOTATION, query);
         if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION,query.getLimit());
         sub.startTimer();
         R result = queryExecutor.apply(query);
         sub.stopTimer();
+        long resultSize = 0;
         if (multiQuery && profiler!=QueryProfiler.NO_OP) {
             //The result set is a collection of collections, but don't do this computation if profiling is disabled
-            long resultSize = 0;
             for (Object r : result) {
                 if (r instanceof Collection) resultSize+=((Collection)r).size();
                 else resultSize++;
             }
         } else {
-            sub.setResultSize(result.size());
+            resultSize = result.size();
         }
+        sub.setResultSize(resultSize);
         return result;
     }
 

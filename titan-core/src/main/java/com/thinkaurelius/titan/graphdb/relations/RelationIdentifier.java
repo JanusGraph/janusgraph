@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
@@ -47,6 +48,19 @@ public final class RelationIdentifier {
 
     public long getRelationId() {
         return relationId;
+    }
+
+    public long getTypeId() {
+        return typeId;
+    }
+
+    public long getOutVertexId() {
+        return outVertexId;
+    }
+
+    public long getInVertexId() {
+        Preconditions.checkState(inVertexId!=0);
+        return inVertexId;
     }
 
     public static final RelationIdentifier get(long[] ids) {

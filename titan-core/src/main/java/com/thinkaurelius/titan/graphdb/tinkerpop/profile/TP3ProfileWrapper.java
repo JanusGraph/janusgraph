@@ -18,9 +18,9 @@ public class TP3ProfileWrapper implements QueryProfiler {
     }
 
     @Override
-    public QueryProfiler addNested() {
+    public QueryProfiler addNested(String groupName) {
         int nextId = (subMetricCounter++);
-        MutableMetrics nested = new MutableMetrics(metrics.getId()+"-"+nextId,String.valueOf(nextId));
+        MutableMetrics nested = new MutableMetrics(metrics.getId()+"."+groupName+"_"+nextId,groupName);
         metrics.addNested(nested);
         return new TP3ProfileWrapper(nested);
     }

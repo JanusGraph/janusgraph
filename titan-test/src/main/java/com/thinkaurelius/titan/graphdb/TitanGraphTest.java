@@ -64,6 +64,9 @@ import com.thinkaurelius.titan.testcategory.BrittleTests;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -1468,9 +1471,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Category({ BrittleTests.class })
     @Test
     public void testIndexUpdateSyncWithMultipleInstances() throws InterruptedException {
-        clopen( option(LOG_SEND_DELAY,MANAGEMENT_LOG),Duration.ofMillis(0),
-                option(KCVSLog.LOG_READ_LAG_TIME,MANAGEMENT_LOG),Duration.ofMillis(50),
-                option(LOG_READ_INTERVAL,MANAGEMENT_LOG),Duration.ofMillis(250)
+        clopen(option(LOG_SEND_DELAY, MANAGEMENT_LOG), Duration.ofMillis(0),
+                option(KCVSLog.LOG_READ_LAG_TIME, MANAGEMENT_LOG), Duration.ofMillis(50),
+                option(LOG_READ_INTERVAL, MANAGEMENT_LOG), Duration.ofMillis(250)
         );
 
         StandardTitanGraph graph2 = (StandardTitanGraph) TitanFactory.open(config);
@@ -1479,21 +1482,21 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         finishSchema();
 
-        tx.addVertex("name","v1");
+        tx.addVertex("name", "v1");
         newTx();
-        evaluateQuery(tx.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx.query().has("name", "v1"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
         tx2 = graph2.newTransaction();
-        evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,1,new boolean[]{false,true});
+        evaluateQuery(tx2.query().has("name", "v1"), ElementCategory.VERTEX, 1, new boolean[]{false, true});
         //Leave tx2 open to delay acknowledgement
 
         mgmt.buildIndex("theIndex",Vertex.class).addKey(mgmt.getPropertyKey("name")).buildCompositeIndex();
         mgmt.commit();
 
         TitanTransaction tx3 = graph2.newTransaction();
-        tx3.addVertex("name","v2");
+        tx3.addVertex("name", "v2");
         tx3.commit();
         newTx();
-        tx.addVertex("name","v3");
+        tx.addVertex("name", "v3");
         tx.commit();
 
         Thread.sleep(2000); //Wait for the index to register in graph2
@@ -1513,28 +1516,28 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
         tx2 = graph2.newTransaction();
-        tx2.addVertex("name","v4"); //Should be added to index but index not yet enabled
+        tx2.addVertex("name", "v4"); //Should be added to index but index not yet enabled
         tx2.commit();
 
         newTx();
-        evaluateQuery(tx.query().has("name","v1"),ElementCategory.VERTEX,0,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("name","v2"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name", "v1"), ElementCategory.VERTEX, 0, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx.query().has("name", "v2"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
         evaluateQuery(tx.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx.query().has("name", "v4"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
 
         Thread.sleep(2000);
         tx2 = graph2.newTransaction();
-        evaluateQuery(tx2.query().has("name","v1"),ElementCategory.VERTEX,0,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx2.query().has("name","v2"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx2.query().has("name","v3"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
-        evaluateQuery(tx2.query().has("name","v4"),ElementCategory.VERTEX,1,new boolean[]{true,true},"theIndex");
+        evaluateQuery(tx2.query().has("name", "v1"), ElementCategory.VERTEX, 0, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx2.query().has("name", "v2"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx2.query().has("name", "v3"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
+        evaluateQuery(tx2.query().has("name", "v4"), ElementCategory.VERTEX, 1, new boolean[]{true, true}, "theIndex");
         tx2.commit();
 
         //Finally test retrieving and closing open instances
 
         Set<String> openInstances = mgmt.getOpenInstances();
         assertEquals(2,openInstances.size());
-        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId()+"(current)"));
+        assertTrue(openInstances.contains(graph.getConfiguration().getUniqueGraphId() + "(current)"));
         assertTrue(openInstances.contains(graph2.getConfiguration().getUniqueGraphId()));
         try {
             mgmt.forceCloseInstance(graph.getConfiguration().getUniqueGraphId());
@@ -3309,18 +3312,38 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
 
         assertNumStep(superV*(numV/5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", P.gte(1)).has("weight",P.lt(3)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV*(numV/5*2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
-        clopen(option(USE_MULTIQUERY),true);
+        clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
 
-        assertNumStep(superV*(numV/5), 2, gts.V().has("id",sid).outE("knows").has("weight",1), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id",sid).outE("knows").has("weight", P.between(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
-        assertNumStep(superV*10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5), 2, gts.V().has("id", sid).outE("knows").has("weight", 1), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV*(numV/5*2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+
+        Traversal t; TraversalMetrics metrics;
+        //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
+        assertCount(superV * 10, t);
+        metrics = (TraversalMetrics)t.asAdmin().getSideEffects().get("~metrics").get();
+        verifyMetrics(metrics.getMetrics(0), 0, true);
+        verifyMetrics(metrics.getMetrics(1),0,true);
+//        System.out.println(metrics);
+
+        clopen(option(USE_MULTIQUERY), true);
+        gts = graph.traversal();
+
+        //Verify traversal metrics when having to read from backend
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
+        assertCount(superV * 10, t);
+        metrics = (TraversalMetrics)t.asAdmin().getSideEffects().get("~metrics").get();
+        verifyMetrics(metrics.getMetrics(0), 0,false);
+        verifyMetrics(metrics.getMetrics(1), 0, false);
+//        System.out.println(metrics);
 
     }
 
@@ -3330,7 +3353,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             traversal.next();
             num++;
         }
-        assertEquals(expectedResults,num);
+        assertEquals(expectedResults, num);
 
 //        traversal.getStrategies().apply(TraversalEngine.STANDARD);
         List<Step> steps = traversal.asAdmin().getSteps();
@@ -3343,7 +3366,30 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertTrue(s.getClass().getName(),expSteps.contains(s.getClass()));
             numSteps++;
         }
-        assertEquals(expectedSteps,numSteps);
+        assertEquals(expectedSteps, numSteps);
+    }
+
+    private static void verifyMetrics(Metrics metric, int depth, boolean fromCache) {
+        boolean nestedMetrics = false;
+        if (depth==0) {
+            assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
+            assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+            nestedMetrics = true;
+        } else if (depth==1) {
+            assertTrue(metric.getName().startsWith("OR"));
+            assertNull(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
+            nestedMetrics = !fromCache || !metric.getNested().isEmpty();
+        } else if (depth==2 && metric.getName().startsWith("AND")) {
+            assertNull(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
+            nestedMetrics = !fromCache;
+        } else {
+            assertTrue(metric.getName().startsWith("backend"));
+            assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
+            assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+        }
+        if (nestedMetrics) {
+            for (Metrics submetric : metric.getNested()) verifyMetrics(submetric, ++depth, fromCache);
+        } else assertTrue(metric.getNested().isEmpty());
     }
 
 

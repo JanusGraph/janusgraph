@@ -1238,7 +1238,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 if (config.hasForceIndexUsage()) throw new TitanException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
-                QueryProfiler sub = profiler.addNested();
+                QueryProfiler sub = profiler.addNested("scan");
                 sub.setAnnotation(QueryProfiler.QUERY_ANNOTATION,indexQuery);
                 sub.setAnnotation(QueryProfiler.FULLSCAN_ANNOTATION,true);
                 sub.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,query.getResultType());

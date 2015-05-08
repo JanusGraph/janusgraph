@@ -23,6 +23,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean cellLevelTTL;
     private final boolean storeLevelTTL;
     private final boolean visibility;
+    private final boolean supportsPersist;
     private final Configuration keyConsistentTxConfig;
     private final Configuration localKeyConsistentTxConfig;
     private final Configuration scanTxConfig;
@@ -103,6 +104,9 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
+    public boolean supportsPersistence() { return supportsPersist; }
+
+    @Override
     public Configuration getKeyConsistentTxConfig() {
         return keyConsistentTxConfig;
     }
@@ -141,6 +145,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean cellLevelTTL;
         private boolean storeLevelTTL;
         private boolean visibility;
+        private boolean supportsPersist = true;
         private boolean keyConsistent;
         private Configuration keyConsistentTxConfig;
         private Configuration localKeyConsistentTxConfig;
@@ -170,6 +175,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             cellTTL(template.hasCellTTL());
             storeTTL(template.hasStoreTTL());
             visibility(template.hasVisibility());
+            persists(template.supportsPersistence());
             if (template.isKeyConsistent()) {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());
             }
@@ -247,6 +253,11 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
+        public Builder persists(boolean b) {
+            supportsPersist = b;
+            return this;
+        }
+
         public Builder keyConsistent(Configuration c) {
             keyConsistent = true;
             keyConsistentTxConfig = c;
@@ -275,7 +286,8 @@ public class StandardStoreFeatures implements StoreFeatures {
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
                     timestamps, preferredTimestamps, cellLevelTTL,
-                    storeLevelTTL, visibility, keyConsistentTxConfig,
+                    storeLevelTTL, visibility, supportsPersist,
+                    keyConsistentTxConfig,
                     localKeyConsistentTxConfig, scanTxConfig);
         }
     }
@@ -286,7 +298,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             boolean transactional, boolean keyConsistent,
             boolean timestamps, TimestampProviders preferredTimestamps,
             boolean cellLevelTTL, boolean storeLevelTTL,
-            boolean visibility,
+            boolean visibility, boolean supportsPersist,
             Configuration keyConsistentTxConfig,
             Configuration localKeyConsistentTxConfig,
             Configuration scanTxConfig) {
@@ -305,6 +317,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.cellLevelTTL = cellLevelTTL;
         this.storeLevelTTL = storeLevelTTL;
         this.visibility = visibility;
+        this.supportsPersist = supportsPersist;
         this.keyConsistentTxConfig = keyConsistentTxConfig;
         this.localKeyConsistentTxConfig = localKeyConsistentTxConfig;
         this.scanTxConfig = scanTxConfig;

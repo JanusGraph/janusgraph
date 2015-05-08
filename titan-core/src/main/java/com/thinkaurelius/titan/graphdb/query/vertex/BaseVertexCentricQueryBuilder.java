@@ -83,11 +83,13 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         //Treat special cases
         if (type.equals(ImplicitKey.ADJACENT_ID.name())) {
             Preconditions.checkArgument(rel == Cmp.EQUAL,"Only equality constraints are supported for %s",type);
-            Preconditions.checkArgument(value instanceof Number,"Expected valid vertex id: %s",value);
-            return adjacent(getVertex(((Number)value).longValue()));
+            long vertexId = ElementUtils.getVertexId(value);
+            Preconditions.checkArgument(vertexId>0,"Expected valid vertex id: %s",value);
+            return adjacent(getVertex(vertexId));
         } else if (type.equals(ImplicitKey.ID.name())) {
-            value = ElementUtils.getEdgeId(value);
-            return addConstraint(ImplicitKey.TITANID.name(),rel,((RelationIdentifier)value).getRelationId());
+            RelationIdentifier rid = ElementUtils.getEdgeId(value);
+            Preconditions.checkArgument(rid!=null,"Expected valid relation id: %s",value);
+            return addConstraint(ImplicitKey.TITANID.name(),rel,rid.getRelationId());
         } else {
             Preconditions.checkArgument(rel.isValidCondition(value),"Invalid condition provided: " + value);
         }
