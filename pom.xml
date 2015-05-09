@@ -220,7 +220,7 @@
                         <failIfNoTests>false</failIfNoTests>
                         <!-- six hours -->
                         <forkedProcessTimeoutInSeconds>21600</forkedProcessTimeoutInSeconds>
-                        <reuseForks>true</reuseForks>
+                        <reuseForks>false</reuseForks>
                         <excludes>
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
