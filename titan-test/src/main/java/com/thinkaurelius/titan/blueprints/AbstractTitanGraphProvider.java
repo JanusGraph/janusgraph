@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.core.util.TitanId;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -9,11 +11,17 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraMapEmitter;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraMemory;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraReduceEmitter;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraVertexProperty;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.relations.*;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
@@ -24,6 +32,7 @@ import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanPropertiesStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.system.EmptyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
@@ -37,6 +46,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTrav
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyVertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
 import org.apache.commons.configuration.Configuration;
 
@@ -62,19 +72,28 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(PropertyKeyVertex.class);
         add(VertexLabelVertex.class);
         add(TitanSchemaVertex.class);
+        add(EmptyVertex.class);
 
         add(StandardEdge.class);
         add(CacheEdge.class);
+        add(EdgeLabel.class);
+        add(EdgeLabelVertex.class);
 
         add(StandardVertexProperty.class);
         add(CacheVertexProperty.class);
         add(SimpleTitanProperty.class);
+        add(CacheVertexProperty.class);
+        add(FulgoraVertexProperty.class);
 
         add(TitanIoRegistry.class);
         add(TitanGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
-        add(FulgoraVertexProperty.class);
+        add(FulgoraGraphComputer.class);
+        add(FulgoraMapEmitter.class);
+        add(FulgoraReduceEmitter.class);
+        add(FulgoraMemory.class);
+        add(FulgoraMemory.class);
         add(TitanVertexStep.class);
         add(TitanGraphStep.class);
         add(TitanPropertiesStep.class);
@@ -82,6 +101,9 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(TitanGraphStepStrategy.class);
         add(TitanIdsValidationStrategy.class);
         add(VertexCentricQuery.class);
+        add(Cmp.class);
+        add(TitanFeatures.class);
+
     }};
 
     @Override
