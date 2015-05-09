@@ -15,6 +15,8 @@ import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraVertexProperty;
 import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanPropertiesStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
@@ -70,6 +72,8 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(FulgoraElementTraversal.class);
         add(FulgoraVertexProperty.class);
         add(TitanVertexStep.class);
+        add(TitanGraphStep.class);
+        add(TitanPropertiesStep.class);
     }};
 
     @Override
