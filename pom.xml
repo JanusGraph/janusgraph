@@ -253,6 +253,7 @@
                                     <include>**/*ProcessPerformanceTest.java</include>
                                     <include>**/*StructureTest.java</include>
                                 </includes>
+                                <runOrder>alphabetical</runOrder>
                                 <!-- <excludes>
                                     <exclude>**/*</exclude>
                                 </excludes> -->
