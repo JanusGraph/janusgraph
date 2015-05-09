@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraVertexProperty;
+import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
@@ -80,6 +81,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(TitanLocalQueryOptimizerStrategy.class);
         add(TitanGraphStepStrategy.class);
         add(TitanIdsValidationStrategy.class);
+        add(VertexCentricQuery.class);
     }};
 
     @Override
