@@ -52,7 +52,7 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
         // returned by VertexProgram.getComputeKeys()
         if (null == persistableKeys) {
             try {
-                persistableKeys = VertexProgram.createVertexProgram(
+                persistableKeys = VertexProgram.createVertexProgram(graph,
                        ConfUtil.makeApacheConfiguration(taskAttemptContext.getConfiguration())).getElementComputeKeys();
                 log.debug("Set persistableKeys={}", Joiner.on(",").join(persistableKeys));
             } catch (Exception e) {
