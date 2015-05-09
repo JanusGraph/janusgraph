@@ -10,9 +10,12 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfigur
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraVertexProperty;
 import com.thinkaurelius.titan.graphdb.relations.*;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
@@ -24,6 +27,7 @@ import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -62,6 +66,10 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
         add(TitanIoRegistry.class);
         add(TitanGraphVariables.class);
+
+        add(FulgoraElementTraversal.class);
+        add(FulgoraVertexProperty.class);
+        add(TitanVertexStep.class);
     }};
 
     @Override
