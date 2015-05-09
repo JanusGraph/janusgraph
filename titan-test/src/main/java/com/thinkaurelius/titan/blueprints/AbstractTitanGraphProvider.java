@@ -26,7 +26,6 @@ import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStepStrategy;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanIdsValidationStrategy;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanPropertiesStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
@@ -99,7 +98,6 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(TitanPropertiesStep.class);
         add(TitanLocalQueryOptimizerStrategy.class);
         add(TitanGraphStepStrategy.class);
-        add(TitanIdsValidationStrategy.class);
         add(VertexCentricQuery.class);
         add(Cmp.class);
         add(TitanFeatures.class);

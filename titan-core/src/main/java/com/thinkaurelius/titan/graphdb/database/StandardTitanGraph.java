@@ -44,7 +44,6 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStepStrategy;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanIdsValidationStrategy;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -83,7 +82,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
-                .addStrategies(TitanIdsValidationStrategy.instance(), TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance()); //TitanElementStepStrategy.instance()
+                .addStrategies(TitanGraphStepStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance()); //TitanElementStepStrategy.instance()
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class,graphStrategies);
