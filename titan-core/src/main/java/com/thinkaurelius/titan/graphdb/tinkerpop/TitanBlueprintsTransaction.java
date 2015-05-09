@@ -113,7 +113,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Iterator<Vertex> vertices(Object... vids) {
         if (vids==null || vids.length==0) return (Iterator)getVertices().iterator();
-        verifyArgsMustBeEitherIdorElement(vids);
+        ElementUtils.verifyArgsMustBeEitherIdorElement(vids);
         long[] ids = new long[vids.length];
         int pos = 0;
         for (int i = 0; i < vids.length; i++) {
@@ -128,7 +128,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public Iterator<Edge> edges(Object... eids) {
         if (eids==null || eids.length==0) return (Iterator)getEdges().iterator();
-        verifyArgsMustBeEitherIdorElement(eids);
+        ElementUtils.verifyArgsMustBeEitherIdorElement(eids);
         RelationIdentifier[] ids = new RelationIdentifier[eids.length];
         int pos = 0;
         for (int i = 0; i < eids.length; i++) {
@@ -140,14 +140,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         return (Iterator)getEdges(ids).iterator();
     }
 
-    private static void verifyArgsMustBeEitherIdorElement(Object... ids) {
-        assert ids.length>0;
-        int numElements = 0;
-        for (int i = 0; i < ids.length; i++) {
-            if (ids[i] instanceof Element) numElements++;
-        }
-        if (numElements>0 && numElements<ids.length) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-    }
+
 
 
 //    @Override

@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.tinkerpop;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  * Created by bryn on 07/05/15.
@@ -38,5 +40,14 @@ public class ElementUtils {
             //swallow since null will be returned below
         }
         return null;
+    }
+
+    public static void verifyArgsMustBeEitherIdorElement(Object... ids) {
+        assert ids.length>0;
+        int numElements = 0;
+        for (int i = 0; i < ids.length; i++) {
+            if (ids[i] instanceof Element) numElements++;
+        }
+        if (numElements>0 && numElements<ids.length) throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
     }
 }

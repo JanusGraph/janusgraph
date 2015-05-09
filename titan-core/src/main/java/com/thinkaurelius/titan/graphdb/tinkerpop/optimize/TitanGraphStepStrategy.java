@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
+import com.thinkaurelius.titan.graphdb.tinkerpop.ElementUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
@@ -50,6 +51,7 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
                 Object[] ids = originalGraphStep.getIds();
+                ElementUtils.verifyArgsMustBeEitherIdorElement(ids);
                 if (ids[0] instanceof Element) {
                     //GraphStep constructor ensures that the entire array is elements
                     final Object[] elementIds = new Object[ids.length];
