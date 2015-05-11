@@ -22,11 +22,11 @@ public class BerkeleyGraphComputerProvider extends AbstractTitanGraphComputerPro
         return config;
     }
 
-    @Override
+    /*@Override
     public Set<Class> getImplementations() {
         final Set<Class> implementations = super.getImplementations();
         implementations.add(BerkeleyJETx.class);
         return implementations;
-    }
+    }*/
 
 }
