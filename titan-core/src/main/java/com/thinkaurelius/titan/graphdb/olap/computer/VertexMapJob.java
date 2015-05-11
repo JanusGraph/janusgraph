@@ -57,6 +57,7 @@ public class VertexMapJob implements VertexScanJob {
             v.setPropertyMixing(vh);
         }
         v.setExceptionOnRetrieve(true);
+        v.setMapReduceJob(true);
         if (idManager.isPartitionedVertex(v.longId()) && !idManager.isCanonicalVertexId(v.longId())) {
             return; //Only consider the canonical partition vertex representative
         } else {
