@@ -88,18 +88,18 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(TitanGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
-        add(FulgoraGraphComputer.class);
-        add(FulgoraMapEmitter.class);
-        add(FulgoraReduceEmitter.class);
-        add(FulgoraMemory.class);
-        add(FulgoraMemory.class);
+        //add(FulgoraGraphComputer.class);
+        //add(FulgoraMapEmitter.class);
+        //add(FulgoraReduceEmitter.class);
+        //add(FulgoraMemory.class);
+        //add(FulgoraMemory.class);
         add(TitanVertexStep.class);
         add(TitanGraphStep.class);
         add(TitanPropertiesStep.class);
-        add(TitanLocalQueryOptimizerStrategy.class);
-        add(TitanGraphStepStrategy.class);
-        add(VertexCentricQuery.class);
-        add(Cmp.class);
+        //add(TitanLocalQueryOptimizerStrategy.class);
+        //add(TitanGraphStepStrategy.class);
+        //add(VertexCentricQuery.class);
+        //add(Cmp.class);
         add(TitanFeatures.class);
 
     }};
