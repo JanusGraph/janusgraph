@@ -106,6 +106,8 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
+        if(this.mapReduceJob)
+            throw GraphComputer.Exceptions.vertexPropertiesCanNotBeUpdatedInMapReduce();
         TitanVertexProperty<V> p = mixin.property(cardinality, key, value);
         ElementHelper.attachProperties(p, keyValues);
         return p;
