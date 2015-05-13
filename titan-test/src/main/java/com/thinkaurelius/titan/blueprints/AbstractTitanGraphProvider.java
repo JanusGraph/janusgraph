@@ -85,7 +85,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(FulgoraVertexProperty.class);
 
         add(TitanIoRegistry.class);
-        add(TitanGraphVariables.class);
+        //add(TitanGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
         //add(FulgoraGraphComputer.class);
@@ -100,7 +100,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         //add(TitanGraphStepStrategy.class);
         //add(VertexCentricQuery.class);
         //add(Cmp.class);
-        add(TitanFeatures.class);
+        //add(TitanFeatures.class);
 
     }};
 
