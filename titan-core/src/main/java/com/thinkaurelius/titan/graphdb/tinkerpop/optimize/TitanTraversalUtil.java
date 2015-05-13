@@ -46,11 +46,11 @@ public class TitanTraversalUtil {
         return (TitanVertex)v;
     }
 
-    public static boolean isEdgeReturnStep(VertexStep vstep) {
+    public static boolean isEdgeReturnStep(TitanVertexStep vstep) {
         return Edge.class.isAssignableFrom(vstep.getReturnClass());
     }
 
-    public static boolean isVertexReturnStep(VertexStep vstep) {
+    public static boolean isVertexReturnStep(TitanVertexStep vstep) {
         return Vertex.class.isAssignableFrom(vstep.getReturnClass());
     }
 

@@ -19,11 +19,11 @@ public class BerkeleyGraphProvider extends AbstractTitanGraphProvider {
         return BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName)).set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(20));
     }
 
-    /*@Override
+    @Override
     public Set<Class> getImplementations() {
         final Set<Class> implementations = super.getImplementations();
         implementations.add(BerkeleyJETx.class);
         return implementations;
-    }*/
+    }
 
 }
