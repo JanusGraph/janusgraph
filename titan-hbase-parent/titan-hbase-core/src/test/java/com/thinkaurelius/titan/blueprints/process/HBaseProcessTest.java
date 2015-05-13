@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.blueprints.HBaseGraphProvider;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.AfterClass;
@@ -17,7 +18,7 @@ import java.io.IOException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(ProcessStandardSuite.class)
-@StructureStandardSuite.GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
+@GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
 public class HBaseProcessTest {
 
 

@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.blueprints.HBaseGraphProvider;
 import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
+import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -15,7 +16,7 @@ import java.io.IOException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(StructureStandardSuite.class)
-@StructureStandardSuite.GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
+@GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
 public class HBaseStructureTest {
 
     // TODO what is TP3's equivalent of @AfterClass?
