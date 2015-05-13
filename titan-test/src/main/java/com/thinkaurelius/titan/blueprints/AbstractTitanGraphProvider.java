@@ -22,6 +22,8 @@ import com.thinkaurelius.titan.graphdb.relations.CacheVertexProperty;
 import com.thinkaurelius.titan.graphdb.relations.SimpleTitanProperty;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
 import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanFeatures;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
@@ -79,23 +81,10 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(FulgoraVertexProperty.class);
 
         add(TitanIoRegistry.class);
-        //add(TitanGraphVariables.class);
+        add(TitanGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
-        //add(FulgoraGraphComputer.class);
-        //add(FulgoraMapEmitter.class);
-        //add(FulgoraReduceEmitter.class);
-        //add(FulgoraMemory.class);
-        //add(FulgoraMemory.class);
-        //add(TitanVertexStep.class);
-        //add(TitanGraphStep.class);
-        //add(TitanPropertiesStep.class);
-        //add(TitanLocalQueryOptimizerStrategy.class);
-        //add(TitanGraphStepStrategy.class);
-        //add(VertexCentricQuery.class);
-        //add(Cmp.class);
-        //add(TitanFeatures.class);
-
+        add(TitanFeatures.class);
     }};
 
     @Override
