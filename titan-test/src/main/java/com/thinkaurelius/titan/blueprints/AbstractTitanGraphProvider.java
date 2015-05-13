@@ -80,11 +80,9 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(CacheVertexProperty.class);
         add(FulgoraVertexProperty.class);
 
-        add(TitanIoRegistry.class);
         add(TitanGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
-        add(TitanFeatures.class);
     }};
 
     @Override
