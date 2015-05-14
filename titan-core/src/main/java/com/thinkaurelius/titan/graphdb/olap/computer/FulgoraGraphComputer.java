@@ -224,9 +224,11 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
                     final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
                     try (WorkerPool workers = new WorkerPool(numThreads)) {
+                        workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
                         for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
                             workers.submit(() -> mapReduce.reduce(queueEntry.getKey(),((Iterable)queueEntry.getValue()).iterator(), reduceEmitter));
                         }
+                        workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
                     } catch (Exception e) {
                         throw new TitanException("Exception while executing reduce phase",e);
                     }

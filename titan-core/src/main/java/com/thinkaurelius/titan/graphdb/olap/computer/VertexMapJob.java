@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -27,14 +28,14 @@ public class VertexMapJob implements VertexScanJob {
             LoggerFactory.getLogger(VertexMapJob.class);
 
     private final IDManager idManager;
-    private final Map<MapReduce,FulgoraMapEmitter> mapJobs;
+    private final Map<MapReduce, FulgoraMapEmitter> mapJobs;
     private final FulgoraVertexMemory vertexMemory;
 
     public static final String MAP_JOB_SUCCESS = "map-success";
     public static final String MAP_JOB_FAILURE = "map-fail";
 
     private VertexMapJob(IDManager idManager, FulgoraVertexMemory vertexMemory,
-                            Map<MapReduce, FulgoraMapEmitter> mapJobs) {
+                         Map<MapReduce, FulgoraMapEmitter> mapJobs) {
         this.mapJobs = mapJobs;
         this.vertexMemory = vertexMemory;
         this.idManager = idManager;
@@ -42,18 +43,32 @@ public class VertexMapJob implements VertexScanJob {
 
     @Override
     public VertexMapJob clone() {
-        ImmutableMap.Builder<MapReduce,FulgoraMapEmitter> cloneMap = ImmutableMap.builder();
-        for (Map.Entry<MapReduce,FulgoraMapEmitter> entry : mapJobs.entrySet()) {
-            cloneMap.put(entry.getKey().clone(),entry.getValue());
+        ImmutableMap.Builder<MapReduce, FulgoraMapEmitter> cloneMap = ImmutableMap.builder();
+        for (Map.Entry<MapReduce, FulgoraMapEmitter> entry : mapJobs.entrySet()) {
+            cloneMap.put(entry.getKey().clone(), entry.getValue());
         }
-        return new VertexMapJob(idManager,vertexMemory,cloneMap.build());
+        return new VertexMapJob(idManager, vertexMemory, cloneMap.build());
+    }
+
+    @Override
+    public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+        for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+            mapJob.getKey().workerStart(MapReduce.Stage.MAP);
+        }
+    }
+
+    @Override
+    public void workerIterationEnd(ScanMetrics metrics) {
+        for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+            mapJob.getKey().workerEnd(MapReduce.Stage.MAP);
+        }
     }
 
     @Override
     public void process(TitanVertex vertex, ScanMetrics metrics) {
-        PreloadedVertex v = (PreloadedVertex)vertex;
-        if (vertexMemory!=null) {
-            VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory,v);
+        PreloadedVertex v = (PreloadedVertex) vertex;
+        if (vertexMemory != null) {
+            VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory, v);
             v.setPropertyMixing(vh);
         }
         v.setExceptionOnRetrieve(true);
@@ -61,13 +76,13 @@ public class VertexMapJob implements VertexScanJob {
         if (idManager.isPartitionedVertex(v.longId()) && !idManager.isCanonicalVertexId(v.longId())) {
             return; //Only consider the canonical partition vertex representative
         } else {
-            for (Map.Entry<MapReduce,FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+            for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
                 MapReduce job = mapJob.getKey();
                 try {
-                    job.map(v,mapJob.getValue());
+                    job.map(v, mapJob.getValue());
                     metrics.incrementCustom(MAP_JOB_SUCCESS);
                 } catch (Throwable ex) {
-                    log.error("Encountered exception executing map job ["+job+"] on vertex ["+vertex+"]:",ex);
+                    log.error("Encountered exception executing map job [" + job + "] on vertex [" + vertex + "]:", ex);
                     metrics.incrementCustom(MAP_JOB_FAILURE);
                 }
             }
@@ -80,9 +95,12 @@ public class VertexMapJob implements VertexScanJob {
     }
 
     public static Executor getVertexMapJob(StandardTitanGraph graph, FulgoraVertexMemory vertexMemory,
-                                              Map<MapReduce,FulgoraMapEmitter> mapJobs) {
-        VertexMapJob job = new VertexMapJob(graph.getIDManager(),vertexMemory,mapJobs);
-        return new Executor(graph,job);
+                                           Map<MapReduce, FulgoraMapEmitter> mapJobs) {
+        VertexMapJob job = new VertexMapJob(graph.getIDManager(), vertexMemory, mapJobs);
+        for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+            mapJob.getKey().workerStart(MapReduce.Stage.MAP);
+        }
+        return new Executor(graph, job);
     }
 
     public static class Executor extends VertexJobConverter {
@@ -91,7 +109,9 @@ public class VertexMapJob implements VertexScanJob {
             super(graph, job);
         }
 
-        private Executor(final Executor copy) { super(copy); }
+        private Executor(final Executor copy) {
+            super(copy);
+        }
 
         @Override
         public List<SliceQuery> getQueries() {
@@ -101,7 +121,14 @@ public class VertexMapJob implements VertexScanJob {
         }
 
         @Override
-        public Executor clone() { return new Executor(this); }
+        public void workerIterationEnd(ScanMetrics metrics) {
+            super.workerIterationEnd(metrics);
+        }
+
+        @Override
+        public Executor clone() {
+            return new Executor(this);
+        }
 
     }
 
