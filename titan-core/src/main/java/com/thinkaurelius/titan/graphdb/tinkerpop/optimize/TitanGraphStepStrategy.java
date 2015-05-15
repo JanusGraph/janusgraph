@@ -35,7 +35,7 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 TraversalHelper.replaceStep(startStep, (Step) titanGraphStep, traversal);
 
                 HasStepFolder.foldInHasContainer(titanGraphStep, traversal);
-                HasStepFolder.foldInOrder(titanGraphStep, traversal, traversal, titanGraphStep.returnsVertices());
+                HasStepFolder.foldInOrder(titanGraphStep, traversal, traversal, titanGraphStep.returnsVertex());
                 HasStepFolder.foldInRange(titanGraphStep, traversal);
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
@@ -47,7 +47,7 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                     for (int i = 0; i < ids.length; i++) {
                         elementIds[i] = ((Element) ids[i]).id();
                     }
-                    originalGraphStep.setIteratorSupplier(() -> (Iterator) (originalGraphStep.returnsVertices() ?
+                    originalGraphStep.setIteratorSupplier(() -> (Iterator) (originalGraphStep.returnsVertex() ?
                             originalGraphStep.getTraversal().getGraph().get().vertices(elementIds) :
                             originalGraphStep.getTraversal().getGraph().get().edges(elementIds)));
                 }
