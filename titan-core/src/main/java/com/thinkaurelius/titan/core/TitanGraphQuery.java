@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import org.apache.tinkerpop.gremlin.structure.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 /**
  * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)

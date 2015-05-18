@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.RelationType;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Order;
 
 /**
  * A RelationTypeIndex is an index installed on a {@link RelationType} to speed up vertex-centric indexes for that type.
@@ -21,6 +21,7 @@ public interface RelationTypeIndex extends TitanIndex {
 
     /**
      * Returns the {@link RelationType} on which this index is installed.
+     *
      * @return
      */
     public RelationType getType();
@@ -42,12 +43,14 @@ public interface RelationTypeIndex extends TitanIndex {
 
     /**
      * Returns the direction on which this index is installed. An index may cover only one or both directions.
+     *
      * @return
      */
     public Direction getDirection();
 
     /**
      * Returns the status of this index
+     *
      * @return
      */
     public SchemaStatus getIndexStatus();

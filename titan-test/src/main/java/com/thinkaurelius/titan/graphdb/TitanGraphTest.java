@@ -100,7 +100,7 @@ import java.util.function.Function;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
 import static com.thinkaurelius.titan.testutil.TitanAssert.*;
-import static org.apache.tinkerpop.gremlin.structure.Order.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.Order.*;
 import static org.junit.Assert.*;
 
 /**

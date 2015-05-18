@@ -1,15 +1,19 @@
 package com.thinkaurelius.titan.example;
 
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Order;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.File;
@@ -29,10 +33,10 @@ public class GraphOfTheGodsFactory {
         TitanFactory.Builder config = TitanFactory.build();
         config.set("storage.backend", "berkeleyje");
         config.set("storage.directory", directory);
-        config.set("index."+INDEX_NAME+".backend","elasticsearch");
+        config.set("index." + INDEX_NAME + ".backend", "elasticsearch");
         config.set("index." + INDEX_NAME + ".directory", directory + File.separator + "es");
-        config.set("index."+INDEX_NAME+".elasticsearch.local-mode",true);
-        config.set("index."+INDEX_NAME+".elasticsearch.client-only",false);
+        config.set("index." + INDEX_NAME + ".elasticsearch.local-mode", true);
+        config.set("index." + INDEX_NAME + ".elasticsearch.client-only", false);
 
         TitanGraph graph = config.open();
         GraphOfTheGodsFactory.load(graph);
@@ -59,13 +63,13 @@ public class GraphOfTheGodsFactory {
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
         if (null != mixedIndexName)
-            mgmt.buildIndex("vertices",Vertex.class).addKey(age).buildMixedIndex(mixedIndexName);
+            mgmt.buildIndex("vertices", Vertex.class).addKey(age).buildMixedIndex(mixedIndexName);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
         final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
         if (null != mixedIndexName)
-            mgmt.buildIndex("edges",Edge.class).addKey(reason).addKey(place).buildMixedIndex(mixedIndexName);
+            mgmt.buildIndex("edges", Edge.class).addKey(reason).addKey(place).buildMixedIndex(mixedIndexName);
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
@@ -87,29 +91,29 @@ public class GraphOfTheGodsFactory {
         TitanTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertex(T.label,"titan","name", "saturn","age", 10000);
+        Vertex saturn = tx.addVertex(T.label, "titan", "name", "saturn", "age", 10000);
 
-        Vertex sky = tx.addVertex(T.label,"location","name", "sky");
+        Vertex sky = tx.addVertex(T.label, "location", "name", "sky");
 
-        Vertex sea = tx.addVertex(T.label,"location", "name", "sea");
+        Vertex sea = tx.addVertex(T.label, "location", "name", "sea");
 
-        Vertex jupiter = tx.addVertex(T.label,"god", "name", "jupiter", "age", 5000);
+        Vertex jupiter = tx.addVertex(T.label, "god", "name", "jupiter", "age", 5000);
 
-        Vertex neptune = tx.addVertex(T.label,"god", "name", "neptune", "age", 4500);
+        Vertex neptune = tx.addVertex(T.label, "god", "name", "neptune", "age", 4500);
 
-        Vertex hercules = tx.addVertex(T.label,"demigod", "name", "hercules", "age", 30);
+        Vertex hercules = tx.addVertex(T.label, "demigod", "name", "hercules", "age", 30);
 
-        Vertex alcmene = tx.addVertex(T.label,"human", "name", "alcmene", "age", 45);
+        Vertex alcmene = tx.addVertex(T.label, "human", "name", "alcmene", "age", 45);
 
-        Vertex pluto = tx.addVertex(T.label,"god", "name", "pluto", "age", 4000);
+        Vertex pluto = tx.addVertex(T.label, "god", "name", "pluto", "age", 4000);
 
-        Vertex nemean = tx.addVertex(T.label,"monster", "name", "nemean");
+        Vertex nemean = tx.addVertex(T.label, "monster", "name", "nemean");
 
-        Vertex hydra = tx.addVertex(T.label,"monster", "name", "hydra");
+        Vertex hydra = tx.addVertex(T.label, "monster", "name", "hydra");
 
-        Vertex cerberus = tx.addVertex(T.label,"monster", "name", "cerberus");
+        Vertex cerberus = tx.addVertex(T.label, "monster", "name", "cerberus");
 
-        Vertex tartarus = tx.addVertex(T.label,"location", "name", "tartarus");
+        Vertex tartarus = tx.addVertex(T.label, "location", "name", "tartarus");
 
         // edges
 
@@ -145,7 +149,7 @@ public class GraphOfTheGodsFactory {
      * {@link #load(com.thinkaurelius.titan.core.TitanGraph)} on the opened graph,
      * then calls {@link com.thinkaurelius.titan.core.TitanGraph#close()}
      * and returns.
-     * <p>
+     * <p/>
      * This method may call {@link System#exit(int)} if it encounters an error, such as
      * failure to parse its arguments.  Only use this method when executing main from
      * a command line.  Use one of the other methods on this class ({@link #create(String)}

@@ -1,18 +1,19 @@
 package com.thinkaurelius.titan.core.schema;
 
-import com.thinkaurelius.titan.core.*;
-
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Order;
 
 import java.time.Duration;
-import java.time.temporal.TemporalUnit;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The TitanManagement interface provides methods to define, update, and inspect the schema of a Titan graph.
@@ -25,10 +26,10 @@ import java.util.concurrent.TimeUnit;
  * <p/>
  * TitanManagement provides methods to:
  * <ul>
- *     <li>Schema Types: View, update, and create vertex labels, edge labels, and property keys</li>
- *     <li>Relation Type Index: View and create vertex-centric indexes on edge labels and property keys</li>
- *     <li>Graph Index: View and create graph-wide indexes for efficient element retrieval</li>
- *     <li>Consistency Management: Set the consistency level of individual schema elements</li>
+ * <li>Schema Types: View, update, and create vertex labels, edge labels, and property keys</li>
+ * <li>Relation Type Index: View and create vertex-centric indexes on edge labels and property keys</li>
+ * <li>Graph Index: View and create graph-wide indexes for efficient element retrieval</li>
+ * <li>Consistency Management: Set the consistency level of individual schema elements</li>
  * </ul>
  *
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -41,7 +42,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
-     * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
+     * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
      *
      * @param label
      * @param name
@@ -94,6 +95,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * Whether a {@link RelationTypeIndex} with the given name has been defined for the provided {@link RelationType}
+     *
      * @param type
      * @param name
      * @return
@@ -112,6 +114,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * Returns an {@link Iterable} over all {@link RelationTypeIndex}es defined for the provided {@link RelationType}
+     *
      * @param type
      * @return
      */
@@ -174,6 +177,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
         /**
          * Adds the given key and associated parameters to the composite key of this index
+         *
          * @param key
          * @param parameters
          * @return this IndexBuilder
@@ -226,11 +230,11 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
          * on the same values in the object returned by {@link #get()}, though
          * the implementation should attempt to provide both properties when
          * practical.
-         * <p>
+         * <p/>
          * The metrics visible through the object returned by this method may
          * also change their values between reads.  In other words, this is not
          * necessarily an immutable snapshot.
-         * <p>
+         * <p/>
          * If the index job has failed and the implementation is capable of
          * quickly detecting that, then the implementation should throw an
          * {@code ExecutionException}.  Returning metrics in case of failure is
@@ -280,7 +284,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * ("lives forever"). Positive {@code ttl} values are interpreted literally.
      *
      * @param type the affected type
-     * @param ttl time-to-live
+     * @param ttl  time-to-live
      * @param unit time unit of the specified ttl
      */
     public void setTTL(TitanSchemaType type, Duration duration);
@@ -336,7 +340,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * has been abnormally terminated (i.e. killed instead of properly shut-down). If this happens, the instance
      * will continue to be listed as an open instance which means that 1) a new instance with the same id cannot
      * be started and 2) schema updates will fail because the killed instance cannot acknowledge the schema update.
-     *
+     * <p/>
      * <p/>
      * Throws an exception if the instance is not part of this cluster or if the instance has
      * been started after the start of this management transaction which is indicative of the instance
@@ -365,18 +369,21 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * Whether this management transaction is open or has been closed (i.e. committed or rolled-back)
+     *
      * @return
      */
     public boolean isOpen();
 
     /**
      * Commits this management transaction and persists all schema changes. Closes this transaction.
+     *
      * @see com.thinkaurelius.titan.core.TitanTransaction#commit()
      */
     public void commit();
 
     /**
      * Closes this management transaction and discards all changes.
+     *
      * @see com.thinkaurelius.titan.core.TitanTransaction#rollback()
      */
     public void rollback();

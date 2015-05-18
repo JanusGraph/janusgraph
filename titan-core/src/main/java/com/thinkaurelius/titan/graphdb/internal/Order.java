@@ -40,15 +40,15 @@ public enum Order {
      */
     public static final Order DEFAULT = ASC;
 
-    public org.apache.tinkerpop.gremlin.structure.Order getTP() {
+    public org.apache.tinkerpop.gremlin.process.traversal.Order getTP() {
         switch (this) {
-            case ASC :return org.apache.tinkerpop.gremlin.structure.Order.incr;
-            case DESC: return org.apache.tinkerpop.gremlin.structure.Order.decr;
+            case ASC :return org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
+            case DESC: return org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
             default: throw new AssertionError();
         }
     }
 
-    public static Order convert(org.apache.tinkerpop.gremlin.structure.Order order) {
+    public static Order convert(org.apache.tinkerpop.gremlin.process.traversal.Order order) {
         switch(order) {
             case incr: return ASC;
             case decr: return DESC;
