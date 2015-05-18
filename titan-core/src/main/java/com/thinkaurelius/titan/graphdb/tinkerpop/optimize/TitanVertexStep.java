@@ -1,31 +1,38 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.BaseVertexQuery;
+import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.core.TitanMultiVertexQuery;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
 import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.tinkerpop.profile.TP3ProfileWrapper;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profileable;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Contains;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Order;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex,E>, Profileable {
+public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profileable {
 
     public TitanVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
@@ -43,20 +50,20 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         this.useMultiQuery = useMultiQuery;
     }
 
-    public<Q extends BaseVertexQuery> Q makeQuery(Q query) {
+    public <Q extends BaseVertexQuery> Q makeQuery(Q query) {
         query.labels(getEdgeLabels());
         query.direction(getDirection());
         for (HasContainer condition : hasContainers) {
-            if (condition.predicate instanceof Contains && condition.value==null) {
-                if (condition.predicate==Contains.within) query.has(condition.key);
+            if (condition.predicate instanceof Contains && condition.value == null) {
+                if (condition.predicate == Contains.within) query.has(condition.key);
                 else query.hasNot(condition.key);
             } else {
                 query.has(condition.key, TitanPredicate.Converter.convert(condition.predicate), condition.value);
             }
         }
-        for (OrderEntry order : orders) query.orderBy(order.key,order.order);
-        if (limit !=BaseQuery.NO_LIMIT) query.limit(limit);
-        ((BasicVertexCentricQueryBuilder)query).profiler(queryProfiler);
+        for (OrderEntry order : orders) query.orderBy(order.key, order.order);
+        if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
+        ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler);
         return query;
     }
 
@@ -68,9 +75,12 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
             TitanMultiVertexQuery mquery = TitanTraversalUtil.getTx(traversal).multiQuery();
             List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
-            starts.forEachRemaining(v -> { vertices.add(v); mquery.addVertex(v.get()); });
+            starts.forEachRemaining(v -> {
+                vertices.add(v);
+                mquery.addVertex(v.get());
+            });
             starts.add(vertices.iterator());
-            assert vertices.size()>0;
+            assert vertices.size() > 0;
             makeQuery(mquery);
 
             multiQueryResults = (Vertex.class.isAssignableFrom(getReturnClass())) ? mquery.vertices() : mquery.edges();
@@ -86,8 +96,8 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Vertex> traverser) {
         if (useMultiQuery) {
-            assert multiQueryResults!=null;
-            return (Iterator<E>)multiQueryResults.get(traverser.get()).iterator();
+            assert multiQueryResults != null;
+            return (Iterator<E>) multiQueryResults.get(traverser.get()).iterator();
         } else {
             TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(traverser)).query());
             return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
@@ -103,7 +113,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     @Override
     public TitanVertexStep<E> clone() {
         final TitanVertexStep<E> clone = (TitanVertexStep<E>) super.clone();
-        clone.initialized=false;
+        clone.initialized = false;
         return clone;
     }
 
@@ -123,7 +133,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     @Override
     public void orderBy(String key, Order order) {
-        orders.add(new OrderEntry(key,order));
+        orders.add(new OrderEntry(key, order));
     }
 
     @Override
@@ -138,7 +148,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     @Override
     public String toString() {
-        return this.hasContainers.isEmpty() ? super.toString() : TraversalHelper.makeStepString(this, this.hasContainers);
+        return this.hasContainers.isEmpty() ? super.toString() : StringFactory.stepString(this, this.hasContainers);
     }
 
     @Override

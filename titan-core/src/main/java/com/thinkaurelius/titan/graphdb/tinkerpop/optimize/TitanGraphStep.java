@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.Contains;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Order;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +57,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
 
     @Override
     public String toString() {
-        return this.hasContainers.isEmpty() ? super.toString() : TraversalHelper.makeStepString(this, this.hasContainers);
+        return this.hasContainers.isEmpty() ? super.toString() : StringFactory.stepString(this, this.hasContainers);
     }
 
     @Override
