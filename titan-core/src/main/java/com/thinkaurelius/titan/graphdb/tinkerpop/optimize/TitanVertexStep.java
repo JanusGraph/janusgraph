@@ -18,7 +18,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
-import org.apache.tinkerpop.gremlin.structure.Contains;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Order;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -54,12 +53,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         query.labels(getEdgeLabels());
         query.direction(getDirection());
         for (HasContainer condition : hasContainers) {
-            if (condition.predicate instanceof Contains && condition.value == null) {
-                if (condition.predicate == Contains.within) query.has(condition.key);
-                else query.hasNot(condition.key);
-            } else {
-                query.has(condition.key, TitanPredicate.Converter.convert(condition.predicate), condition.value);
-            }
+            query.has(condition.getKey(), TitanPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
         }
         for (OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);

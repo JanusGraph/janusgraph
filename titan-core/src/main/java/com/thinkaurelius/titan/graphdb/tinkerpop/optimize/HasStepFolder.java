@@ -35,7 +35,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     public int getLimit();
 
     public static boolean validTitanHas(HasContainer has) {
-        return TitanPredicate.Converter.supports(has.predicate);
+        return TitanPredicate.Converter.supports(has.getBiPredicate());
     }
 
     public static boolean validTitanHas(Iterable<HasContainer> has) {

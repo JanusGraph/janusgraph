@@ -39,12 +39,7 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
             TitanTransaction tx = TitanTraversalUtil.getTx(traversal);
             TitanGraphQuery query = tx.query();
             for (HasContainer condition : hasContainers) {
-                if (condition.predicate instanceof Contains && condition.value == null) {
-                    if (condition.predicate == Contains.within) query.has(condition.key);
-                    else query.hasNot(condition.key);
-                } else {
-                    query.has(condition.key, TitanPredicate.Converter.convert(condition.predicate), condition.value);
-                }
+                query.has(condition.getKey(), TitanPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
             }
             for (OrderEntry order : orders) query.orderBy(order.key, order.order);
             if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
