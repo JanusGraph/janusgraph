@@ -3420,19 +3420,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
         System.out.println(metrics);
-        verifyMetrics(metrics.getMetrics(0), 0, true);
-        verifyMetrics(metrics.getMetrics(1), 0, true);
+        verifyMetrics(metrics.getMetrics(0), true);
+        verifyMetrics(metrics.getMetrics(1), true);
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
 
         //Verify traversal metrics when having to read from backend
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight",P.lt(3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-//        System.out.println(metrics);
-        verifyMetrics(metrics.getMetrics(0), 0, false);
-        verifyMetrics(metrics.getMetrics(1), 0, false);
+        System.out.println(metrics);
+        verifyMetrics(metrics.getMetrics(0), false);
+        verifyMetrics(metrics.getMetrics(1), false);
 
     }
 
@@ -3459,27 +3459,24 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(expectedSteps, numSteps);
     }
 
-    private static void verifyMetrics(Metrics metric, int depth, boolean fromCache) {
-        boolean nestedMetrics = false;
-        if (depth == 0) {
-            assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
-            assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
-            nestedMetrics = true;
-        } else if (depth == 1) {
-            assertTrue(metric.getName().startsWith("OR"));
-            assertNull(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
-            nestedMetrics = !fromCache || !metric.getNested().isEmpty();
-        } else if (depth == 2 && metric.getName().startsWith("AND")) {
-            assertNull(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
-            nestedMetrics = !fromCache;
-        } else {
-            assertTrue(metric.getName().startsWith("backend"));
-            assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
-            assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+    private static void verifyMetrics(Metrics metric, boolean fromCache) {
+        assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+        for (Metrics submetric : metric.getNested()) {
+            assertTrue(submetric.getDuration(TimeUnit.MICROSECONDS) > 0);
+            switch (submetric.getName()) {
+                case "optimization":
+                    assertNull(submetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
+                    break;
+                case "backend-query":
+                    if (fromCache) assertFalse("Should not execute backend-queries when cached",true);
+                    assertTrue(submetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+                    break;
+                default: assertFalse("Unrecognized nested query: " + submetric.getName(),true);
+            }
+
         }
-        if (nestedMetrics) {
-            for (Metrics submetric : metric.getNested()) verifyMetrics(submetric, ++depth, fromCache);
-        } else assertTrue(metric.getNested().isEmpty());
+
     }
 
 
