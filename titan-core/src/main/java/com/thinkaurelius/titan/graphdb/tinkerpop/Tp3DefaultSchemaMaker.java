@@ -20,18 +20,8 @@ public class Tp3DefaultSchemaMaker implements DefaultSchemaMaker {
     }
 
     @Override
-    public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
-        return factory.directed().make();
-    }
-
-    @Override
-    public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
-        return factory.cardinality(Cardinality.LIST).dataType(Object.class).make();
-    }
-
-    @Override
-    public VertexLabel makeVertexLabel(VertexLabelMaker factory) {
-        return factory.make();
+    public Cardinality defaultPropertyCardinality(String key) {
+        return Cardinality.LIST;
     }
 
     @Override

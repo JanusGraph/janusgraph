@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.StandardIndexProvider;
 import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import com.thinkaurelius.titan.graphdb.tinkerpop.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
@@ -247,7 +247,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(SCHEMA_NS,"default",
             "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
                     "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
-            ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
+            ConfigOption.Type.MASKABLE, "default" , new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
             if (s==null) return false;
@@ -263,7 +263,7 @@ public class GraphDatabaseConfiguration {
 
     private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
         put("none", DisableDefaultSchemaMaker.INSTANCE);
-        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
+        put("default", TitanDefaultSchemaMaker.INSTANCE);
         put("tp3", Tp3DefaultSchemaMaker.INSTANCE);
     }};
 

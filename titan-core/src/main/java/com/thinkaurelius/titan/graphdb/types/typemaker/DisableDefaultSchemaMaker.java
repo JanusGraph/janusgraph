@@ -23,6 +23,11 @@ public class DisableDefaultSchemaMaker implements DefaultSchemaMaker {
     }
 
     @Override
+    public Cardinality defaultPropertyCardinality(String key) {
+        return Cardinality.SINGLE;
+    }
+
+    @Override
     public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
         throw new IllegalArgumentException("Property Key with given name does not exist: " + factory.getName());
     }

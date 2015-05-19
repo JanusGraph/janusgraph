@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core.schema;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.VertexLabel;
@@ -25,7 +26,15 @@ public interface DefaultSchemaMaker {
      * @return A new edge label
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory);
+    public default EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
+        return factory.directed().make();
+    }
+
+    /**
+     *
+     * @return the default cardinality of a property if created for the given key
+     */
+    public Cardinality defaultPropertyCardinality(String key);
 
     /**
      * Creates a new property key with default settings against the provided {@link PropertyKeyMaker}.
@@ -34,7 +43,9 @@ public interface DefaultSchemaMaker {
      * @return A new property key
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public PropertyKey makePropertyKey(PropertyKeyMaker factory);
+    public default PropertyKey makePropertyKey(PropertyKeyMaker factory) {
+        return factory.cardinality(defaultPropertyCardinality(factory.getName())).dataType(Object.class).make();
+    }
 
     /**
      * Creates a new vertex label with the default settings against the provided {@link VertexLabelMaker}.
@@ -43,7 +54,9 @@ public interface DefaultSchemaMaker {
      * @return A new vertex label
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public VertexLabel makeVertexLabel(VertexLabelMaker factory);
+    public default VertexLabel makeVertexLabel(VertexLabelMaker factory) {
+        return factory.make();
+    }
 
     /**
      * Whether to ignore undefined types occurring in a query.
@@ -53,5 +66,7 @@ public interface DefaultSchemaMaker {
      * in queries results in an {@link IllegalArgumentException}.
      */
     public boolean ignoreUndefinedQueryTypes();
+
+
 
 }

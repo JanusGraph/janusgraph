@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -147,9 +148,9 @@ public class TitanFeatures implements Graph.Features {
 
         @Override
         public VertexProperty.Cardinality getCardinality(final String key) {
-            TitanTransaction tx = TitanFeatures.this.graph.newTransaction();
+            StandardTitanTx tx = (StandardTitanTx)TitanFeatures.this.graph.newTransaction();
             try {
-                if (!tx.containsPropertyKey(key)) return VertexProperty.Cardinality.list; //DEFAULT
+                if (!tx.containsPropertyKey(key)) return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
                 return tx.getPropertyKey(key).cardinality().convert();
             } finally {
                 tx.rollback();
