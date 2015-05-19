@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -12,6 +13,8 @@ import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,29 @@ public class VertexMapJob implements VertexScanJob {
 
     private static final Logger log =
             LoggerFactory.getLogger(VertexMapJob.class);
+
+
+    public static final PreloadedVertex.AccessCheck MAPREDUCE_CHECK = new PreloadedVertex.AccessCheck() {
+        @Override
+        public final void accessEdges() {
+            throw GraphComputer.Exceptions.incidentAndAdjacentElementsCanNotBeAccessedInMapReduce();
+        }
+
+        @Override
+        public final void accessProperties() {
+            return; //Allowed
+        }
+
+        @Override
+        public void accessSetProperty() {
+            throw GraphComputer.Exceptions.vertexPropertiesCanNotBeUpdatedInMapReduce();
+        }
+
+        @Override
+        public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
+            return PreloadedVertex.EMPTY_RETRIEVER;
+        }
+    };
 
     private final IDManager idManager;
     private final Map<MapReduce, FulgoraMapEmitter> mapJobs;
@@ -71,8 +97,7 @@ public class VertexMapJob implements VertexScanJob {
             VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory, v);
             v.setPropertyMixing(vh);
         }
-        v.setExceptionOnRetrieve(true);
-        v.setMapReduceJob(true);
+        v.setAccessCheck(MAPREDUCE_CHECK);
         if (idManager.isPartitionedVertex(v.longId()) && !idManager.isCanonicalVertexId(v.longId())) {
             return; //Only consider the canonical partition vertex representative
         } else {
