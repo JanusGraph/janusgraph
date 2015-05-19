@@ -178,7 +178,7 @@ public class PreloadedVertex extends CacheVertex {
         }
     };
 
-    public static final AccessCheck STAR_CHECK = new AccessCheck() {
+    public static final AccessCheck CLOSEDSTAR_CHECK = new AccessCheck() {
         @Override
         public final void accessEdges() {
             return; //Allowed
@@ -205,7 +205,28 @@ public class PreloadedVertex extends CacheVertex {
                 throw new UnsupportedOperationException("Cannot access data that hasn't been preloaded.");
             }
         };
+    };
 
+    public static final AccessCheck OPENSTAR_CHECK = new AccessCheck() {
+        @Override
+        public final void accessEdges() {
+            return; //Allowed
+        }
+
+        @Override
+        public final void accessProperties() {
+            return; //Allowed
+        }
+
+        @Override
+        public void accessSetProperty() {
+            return; //Allowed
+        }
+
+        @Override
+        public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
+            return EMPTY_RETRIEVER;
+        }
     };
 
 

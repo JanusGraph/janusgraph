@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -16,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -91,7 +89,7 @@ public class PartitionedVertexProgramExecutor<M> {
                 Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                         "The bounding transaction is not configured correctly");
                 PreloadedVertex v = (PreloadedVertex)vertex;
-                v.setAccessCheck(PreloadedVertex.STAR_CHECK);
+                v.setAccessCheck(PreloadedVertex.CLOSEDSTAR_CHECK);
                 v.addToQueryCache(VertexProgramScanJob.SYSTEM_PROPS_QUERY,preloaded);
                 VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<M>(vertexMemory,v);
                 v.setPropertyMixing(vh);

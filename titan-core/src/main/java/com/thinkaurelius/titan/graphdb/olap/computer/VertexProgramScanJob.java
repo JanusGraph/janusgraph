@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -15,28 +14,18 @@ import com.thinkaurelius.titan.graphdb.olap.QueryContainer;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -83,7 +72,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         PreloadedVertex v = (PreloadedVertex)vertex;
         long vertexId = v.longId();
         VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
-        v.setAccessCheck(PreloadedVertex.STAR_CHECK);
+        v.setAccessCheck(PreloadedVertex.CLOSEDSTAR_CHECK);
         if (idManager.isPartitionedVertex(vertexId)) {
             if (idManager.isCanonicalVertexId(vertexId)) {
                 EntryList results = v.getFromCache(SYSTEM_PROPS_QUERY);

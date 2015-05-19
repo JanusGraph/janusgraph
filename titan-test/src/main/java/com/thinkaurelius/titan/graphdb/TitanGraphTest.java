@@ -3282,7 +3282,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int subQueryCounter = 0;
         for (SimpleQueryProfiler subProfiler : profiler) {
             assertNotNull(subProfiler);
-            if (subProfiler.)
+            if (subProfiler.getGroupName().equals(QueryProfiler.OPTIMIZATION)) continue;
             if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
                 assertEquals(subQuerySpecs[0], (Boolean) subProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
                 assertEquals(subQuerySpecs[1], (Boolean) subProfiler.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
@@ -4313,7 +4313,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
 
         //Check subqueries
-        SimpleQueryProfiler subp = Iterables.getOnlyElement(profiler);
+        SimpleQueryProfiler subp = Iterables.getOnlyElement(Iterables.filter(profiler, p -> !p.getGroupName().equals(QueryProfiler.OPTIMIZATION)));
         if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
             assertEquals(subQuerySpecs[0], (Boolean) subp.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
             assertEquals(subQuerySpecs[1], (Boolean) subp.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
