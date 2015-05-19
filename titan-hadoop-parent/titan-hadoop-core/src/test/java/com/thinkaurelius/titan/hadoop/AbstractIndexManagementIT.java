@@ -18,7 +18,7 @@ import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRepairJob;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
