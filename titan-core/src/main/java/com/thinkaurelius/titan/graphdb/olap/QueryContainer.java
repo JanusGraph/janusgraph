@@ -12,11 +12,13 @@ import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Order;
-import org.apache.commons.lang.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -31,10 +33,10 @@ public class QueryContainer {
     private final boolean requiresName;
 
     private Set<Query> queries;
-    private SetMultimap<SliceQuery,Query> inverseQueries;
+    private SetMultimap<SliceQuery, Query> inverseQueries;
 
     public QueryContainer(StandardTitanTx tx) {
-        Preconditions.checkArgument(tx!=null);
+        Preconditions.checkArgument(tx != null);
         this.tx = tx;
         queries = new HashSet<>(6);
         inverseQueries = HashMultimap.create();
@@ -63,7 +65,7 @@ public class QueryContainer {
     }
 
     public List<SliceQuery> getSliceQueries() {
-        List<SliceQuery> slices = new ArrayList<>(queries.size()*2);
+        List<SliceQuery> slices = new ArrayList<>(queries.size() * 2);
         for (QueryContainer.Query q : getQueries()) {
             for (SliceQuery slice : q.getSlices()) {
                 if (!slices.contains(slice)) slices.add(slice);
@@ -75,7 +77,7 @@ public class QueryContainer {
     static class Query {
 
         private final List<SliceQuery> slices;
-//        private final String name;
+        //        private final String name;
         private final RelationCategory returnType;
 
         public Query(List<SliceQuery> slices, RelationCategory returnType) {
@@ -119,12 +121,12 @@ public class QueryContainer {
                 SliceQuery sq = bq.getBackendQuery();
                 slices.add(sq.updateLimit(bq.isFitted() ? vq.getLimit() : hardQueryLimit));
             }
-            Query q = new Query(slices,returnType);
+            Query q = new Query(slices, returnType);
             synchronized (queries) {
-                Preconditions.checkArgument(!queries.contains(q),"Query has already been added: %s",q);
+                Preconditions.checkArgument(!queries.contains(q), "Query has already been added: %s", q);
                 queries.add(q);
                 for (SliceQuery sq : slices) {
-                    inverseQueries.put(sq,q);
+                    inverseQueries.put(sq, q);
                 }
             }
             return q;
@@ -189,7 +191,7 @@ public class QueryContainer {
 
         @Override
         public QueryBuilder has(String key, TitanPredicate predicate, Object value) {
-            super.has(key,predicate,value);
+            super.has(key, predicate, value);
             return this;
         }
 
@@ -236,7 +238,7 @@ public class QueryContainer {
 
         @Override
         public QueryBuilder orderBy(String key, Order order) {
-            super.orderBy(key,order);
+            super.orderBy(key, order);
             return this;
         }
 

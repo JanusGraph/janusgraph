@@ -16,6 +16,7 @@ public class HBaseGraphComputerProvider extends AbstractTitanGraphComputerProvid
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
         return HBaseStorageSetup.getHBaseConfiguration(graphName);
     }
+
     @Override
     public Graph openTestGraph(final Configuration config) {
         try {

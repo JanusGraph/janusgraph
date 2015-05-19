@@ -70,7 +70,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     @Override
     public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
-        vertexProgram.workerIterationStart(memory); //TODO: Should this also be immutable?
+        vertexProgram.workerIterationStart(memory.asImmutable());
     }
 
     @Override

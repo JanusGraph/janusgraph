@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -17,17 +17,17 @@ public class CacheVertex extends StandardVertex {
     // because that would waste more cycles on lookup than save actual memory
     // We use a normal map with synchronization since the likelihood of contention
     // is super low in a single transaction
-    protected final Map<SliceQuery,EntryList> queryCache;
+    protected final Map<SliceQuery, EntryList> queryCache;
 
     public CacheVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
-        queryCache = new HashMap<SliceQuery,EntryList>(4);
+        queryCache = new HashMap<SliceQuery, EntryList>(4);
     }
 
     protected void addToQueryCache(final SliceQuery query, final EntryList entries) {
         synchronized (queryCache) {
             //TODO: become smarter about what to cache and when (e.g. memory pressure)
-            queryCache.put(query,entries);
+            queryCache.put(query, entries);
         }
     }
 
@@ -46,15 +46,15 @@ public class CacheVertex extends StandardVertex {
         synchronized (queryCache) {
             result = queryCache.get(query);
         }
-        if (result==null) {
+        if (result == null) {
             //First check for super
             Map.Entry<SliceQuery, EntryList> superset = getSuperResultSet(query);
-            if (superset==null) {
+            if (superset == null) {
                 result = lookup.get(query);
             } else {
                 result = query.getSubset(superset.getKey(), superset.getValue());
             }
-            addToQueryCache(query,result);
+            addToQueryCache(query, result);
 
         }
         return result;

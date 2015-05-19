@@ -1,9 +1,12 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.core.util.TitanId;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
@@ -11,24 +14,17 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraMapEmitter;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraMemory;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraReduceEmitter;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraVertexProperty;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
-import com.thinkaurelius.titan.graphdb.relations.*;
+import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
+import com.thinkaurelius.titan.graphdb.relations.CacheVertexProperty;
+import com.thinkaurelius.titan.graphdb.relations.SimpleTitanProperty;
+import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
+import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanGraphVariables;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStepStrategy;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanPropertiesStep;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.EmptyVertex;
@@ -38,16 +34,16 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
-import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyVertexProperty;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.TransactionTest;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
-import org.apache.commons.configuration.Configuration;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,24 +80,9 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(CacheVertexProperty.class);
         add(FulgoraVertexProperty.class);
 
-        add(TitanIoRegistry.class);
         add(TitanGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
-        add(FulgoraGraphComputer.class);
-        add(FulgoraMapEmitter.class);
-        add(FulgoraReduceEmitter.class);
-        add(FulgoraMemory.class);
-        add(FulgoraMemory.class);
-        add(TitanVertexStep.class);
-        add(TitanGraphStep.class);
-        add(TitanPropertiesStep.class);
-        add(TitanLocalQueryOptimizerStrategy.class);
-        add(TitanGraphStepStrategy.class);
-        add(VertexCentricQuery.class);
-        add(Cmp.class);
-        add(TitanFeatures.class);
-
     }};
 
     @Override
@@ -135,8 +116,8 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     @Override
     public void clear(Graph g, final Configuration configuration) throws Exception {
         if (null != g) {
-            while (g instanceof WrappedGraph) g = ((WrappedGraph<? extends Graph>)g).getBaseGraph();
-            TitanGraph graph = (TitanGraph)g;
+            while (g instanceof WrappedGraph) g = ((WrappedGraph<? extends Graph>) g).getBaseGraph();
+            TitanGraph graph = (TitanGraph) g;
             if (graph.isOpen()) {
                 if (g.tx().isOpen()) g.tx().rollback();
                 g.close();
@@ -144,7 +125,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         }
 
         WriteConfiguration config = new CommonsConfiguration(configuration);
-        BasicConfiguration readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
+        BasicConfiguration readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
         if (readConfig.has(GraphDatabaseConfiguration.STORAGE_BACKEND)) {
             TitanGraphBaseTest.clearGraph(config);
         }
@@ -152,11 +133,11 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, final LoadGraphWith.GraphData loadGraphWith) {
-        ModifiableConfiguration conf = getTitanConfiguration(graphName,test,testMethodName);
-        conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE,"persist");
+        ModifiableConfiguration conf = getTitanConfiguration(graphName, test, testMethodName);
+        conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE, "persist");
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
-        Map<String,Object> result = new HashMap<>();
-        conf.getAll().entrySet().stream().forEach( e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements),e.getValue()));
+        Map<String, Object> result = new HashMap<>();
+        conf.getAll().entrySet().stream().forEach(e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements), e.getValue()));
         result.put(Graph.GRAPH, TitanFactory.class.getName());
         return result;
     }
@@ -165,11 +146,11 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
     @Override
     public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
-        if (loadGraphWith!=null) {
+        if (loadGraphWith != null) {
             this.createIndices((TitanGraph) g, loadGraphWith.value());
         } else {
             if (TransactionTest.class.equals(testClass) && testName.equalsIgnoreCase("shouldExecuteWithCompetingThreads")) {
-                TitanManagement mgmt = ((TitanGraph)g).openManagement();
+                TitanManagement mgmt = ((TitanGraph) g).openManagement();
                 mgmt.makePropertyKey("blah").dataType(Double.class).make();
                 mgmt.makePropertyKey("bloop").dataType(Integer.class).make();
                 mgmt.makePropertyKey("test").dataType(Object.class).make();
@@ -190,10 +171,10 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
             PropertyKey songType = mgmt.makePropertyKey("songType").cardinality(Cardinality.LIST).dataType(String.class).make();
             PropertyKey performances = mgmt.makePropertyKey("performances").cardinality(Cardinality.LIST).dataType(Integer.class).make();
 
-            mgmt.buildIndex("artistByName",Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex();
-            mgmt.buildIndex("songByName",Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex();
-            mgmt.buildIndex("songByType",Vertex.class).addKey(songType).indexOnly(song).buildCompositeIndex();
-            mgmt.buildIndex("songByPerformances",Vertex.class).addKey(performances).indexOnly(song).buildCompositeIndex();
+            mgmt.buildIndex("artistByName", Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex();
+            mgmt.buildIndex("songByName", Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex();
+            mgmt.buildIndex("songByType", Vertex.class).addKey(songType).indexOnly(song).buildCompositeIndex();
+            mgmt.buildIndex("songByPerformances", Vertex.class).addKey(performances).indexOnly(song).buildCompositeIndex();
 
         } else if (graphData.equals(LoadGraphWith.GraphData.MODERN)) {
             VertexLabel person = mgmt.makeVertexLabel("person").make();
@@ -203,19 +184,19 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
             PropertyKey lang = mgmt.makePropertyKey("lang").cardinality(Cardinality.LIST).dataType(String.class).make();
             PropertyKey age = mgmt.makePropertyKey("age").cardinality(Cardinality.LIST).dataType(Integer.class).make();
 
-            mgmt.buildIndex("personByName",Vertex.class).addKey(name).indexOnly(person).buildCompositeIndex();
-            mgmt.buildIndex("softwareByName",Vertex.class).addKey(name).indexOnly(software).buildCompositeIndex();
-            mgmt.buildIndex("personByAge",Vertex.class).addKey(age).indexOnly(person).buildCompositeIndex();
-            mgmt.buildIndex("softwareByLang",Vertex.class).addKey(lang).indexOnly(software).buildCompositeIndex();
+            mgmt.buildIndex("personByName", Vertex.class).addKey(name).indexOnly(person).buildCompositeIndex();
+            mgmt.buildIndex("softwareByName", Vertex.class).addKey(name).indexOnly(software).buildCompositeIndex();
+            mgmt.buildIndex("personByAge", Vertex.class).addKey(age).indexOnly(person).buildCompositeIndex();
+            mgmt.buildIndex("softwareByLang", Vertex.class).addKey(lang).indexOnly(software).buildCompositeIndex();
 
         } else if (graphData.equals(LoadGraphWith.GraphData.CLASSIC)) {
             PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
             PropertyKey lang = mgmt.makePropertyKey("lang").cardinality(Cardinality.LIST).dataType(String.class).make();
             PropertyKey age = mgmt.makePropertyKey("age").cardinality(Cardinality.LIST).dataType(Integer.class).make();
 
-            mgmt.buildIndex("byName",Vertex.class).addKey(name).buildCompositeIndex();
-            mgmt.buildIndex("byAge",Vertex.class).addKey(age).buildCompositeIndex();
-            mgmt.buildIndex("byLang",Vertex.class).addKey(lang).buildCompositeIndex();
+            mgmt.buildIndex("byName", Vertex.class).addKey(name).buildCompositeIndex();
+            mgmt.buildIndex("byAge", Vertex.class).addKey(age).buildCompositeIndex();
+            mgmt.buildIndex("byLang", Vertex.class).addKey(lang).buildCompositeIndex();
 
         } else {
             // TODO: add CREW work here.

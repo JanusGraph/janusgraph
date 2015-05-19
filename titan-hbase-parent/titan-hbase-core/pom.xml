@@ -98,6 +98,10 @@
                         <id>default-test</id>
                         <phase>none</phase>
                     </execution>
+                    <execution>
+                        <id>tinkerpop-test</id>
+                        <phase>none</phase>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

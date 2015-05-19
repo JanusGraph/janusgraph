@@ -6,8 +6,8 @@ import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Order;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -19,7 +19,7 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
     private final InternalRelationType type;
 
     public RelationTypeIndexWrapper(InternalRelationType type) {
-        Preconditions.checkArgument(type!=null && type.getBaseType()!=null);
+        Preconditions.checkArgument(type != null && type.getBaseType() != null);
         this.type = type;
     }
 
@@ -36,8 +36,8 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
     public String name() {
         String typeName = type.name();
         int index = typeName.lastIndexOf(RELATION_INDEX_SEPARATOR);
-        Preconditions.checkArgument(index>0 && index<typeName.length()-1,"Invalid name encountered: %s",typeName);
-        return typeName.substring(index+1,typeName.length());
+        Preconditions.checkArgument(index > 0 && index < typeName.length() - 1, "Invalid name encountered: %s", typeName);
+        return typeName.substring(index + 1, typeName.length());
     }
 
     @Override
@@ -52,7 +52,7 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
         long[] ids = type.getSortKey();
         RelationType[] keys = new RelationType[ids.length];
         for (int i = 0; i < keys.length; i++) {
-            keys[i]=tx.getExistingRelationType(ids[i]);
+            keys[i] = tx.getExistingRelationType(ids[i]);
         }
         return keys;
     }
@@ -72,10 +72,10 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public boolean equals(Object oth) {
-        if (oth==null) return false;
-        else if (oth==this) return true;
+        if (oth == null) return false;
+        else if (oth == this) return true;
         else if (!getClass().isInstance(oth)) return false;
-        return type.equals(((RelationTypeIndexWrapper)oth).type);
+        return type.equals(((RelationTypeIndexWrapper) oth).type);
     }
 
     @Override

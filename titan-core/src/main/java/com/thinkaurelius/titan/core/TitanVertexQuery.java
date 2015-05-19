@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.core;
 
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Order;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**

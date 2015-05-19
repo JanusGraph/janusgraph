@@ -65,6 +65,10 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 //        method = "shouldWrap",
 //        specific = "g.V(4).inE()",
 //        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
+        method = "shouldOnlyAllowReadingVertexPropertiesInMapReduce",
+        reason = "Titan simply throws the wrong exception -- should not be a ReadOnly transaction exception")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

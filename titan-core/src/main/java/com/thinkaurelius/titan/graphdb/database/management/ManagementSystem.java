@@ -6,8 +6,32 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.TitanVertexProperty;
+import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.JobStatus;
+import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
+import com.thinkaurelius.titan.core.schema.SchemaAction;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.TitanConfiguration;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.core.schema.TitanSchemaElement;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -18,12 +42,15 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfigurati
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
 import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.internal.*;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.Order;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
 import com.thinkaurelius.titan.graphdb.olap.job.IndexRepairJob;
@@ -51,20 +78,16 @@ import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.thinkaurelius.titan.util.encoding.ConversionHelper;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Element;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -111,7 +134,7 @@ public class ManagementSystem implements TitanManagement {
 
     public ManagementSystem(StandardTitanGraph graph, KCVSConfiguration config, Log sysLog,
                             ManagementLogger mgmtLogger, SchemaCache schemaCache) {
-        Preconditions.checkArgument(config!=null && graph!=null && sysLog!=null && mgmtLogger!=null);
+        Preconditions.checkArgument(config != null && graph != null && sysLog != null && mgmtLogger != null);
         this.graph = graph;
         this.baseConfig = config;
         this.sysLog = sysLog;
@@ -120,7 +143,7 @@ public class ManagementSystem implements TitanManagement {
         this.transactionalConfig = new TransactionalConfiguration(baseConfig);
         this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
-        this.userConfig = new UserModifiableConfiguration(modifyConfig,configVerifier);
+        this.userConfig = new UserModifiableConfiguration(modifyConfig, configVerifier);
 
         this.updatedTypes = new HashSet<TitanSchemaVertex>();
         this.updatedTypeTriggers = new HashSet<Callable<Boolean>>();
@@ -134,17 +157,17 @@ public class ManagementSystem implements TitanManagement {
     private final UserModifiableConfiguration.ConfigVerifier configVerifier = new UserModifiableConfiguration.ConfigVerifier() {
         @Override
         public void verifyModification(ConfigOption option) {
-            Preconditions.checkArgument(option.getType()!= ConfigOption.Type.FIXED,"Cannot change the fixed configuration option: %s",option);
-            Preconditions.checkArgument(option.getType()!= ConfigOption.Type.LOCAL,"Cannot change the local configuration option: %s",option);
+            Preconditions.checkArgument(option.getType() != ConfigOption.Type.FIXED, "Cannot change the fixed configuration option: %s", option);
+            Preconditions.checkArgument(option.getType() != ConfigOption.Type.LOCAL, "Cannot change the local configuration option: %s", option);
             if (option.getType() == ConfigOption.Type.GLOBAL_OFFLINE) {
                 //Verify that there no other open Titan graph instance and no open transactions
                 Set<String> openInstances = getOpenInstancesInternal();
-                assert openInstances.size()>0;
-                Preconditions.checkArgument(openInstances.size()<2,"Cannot change offline config option [%s] since multiple instances are currently open: %s",option,openInstances);
+                assert openInstances.size() > 0;
+                Preconditions.checkArgument(openInstances.size() < 2, "Cannot change offline config option [%s] since multiple instances are currently open: %s", option, openInstances);
                 Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
                         "Only one open instance ("
-                        + openInstances.iterator().next() + "), but it's not the current one ("
-                        + graph.getConfiguration().getUniqueGraphId() + ")");
+                                + openInstances.iterator().next() + "), but it's not the current one ("
+                                + graph.getConfiguration().getUniqueGraphId() + ")");
                 //Indicate that this graph must be closed
                 graphShutdownRequired = true;
             }
@@ -161,25 +184,25 @@ public class ManagementSystem implements TitanManagement {
     public Set<String> getOpenInstances() {
         Set<String> openInstances = getOpenInstancesInternal();
         String uid = graph.getConfiguration().getUniqueGraphId();
-        Preconditions.checkArgument(openInstances.contains(uid),"Current instance [%s] not listed as an open instance: %s",uid,openInstances);
+        Preconditions.checkArgument(openInstances.contains(uid), "Current instance [%s] not listed as an open instance: %s", uid, openInstances);
         openInstances.remove(uid);
-        openInstances.add(uid+CURRENT_INSTANCE_SUFFIX);
+        openInstances.add(uid + CURRENT_INSTANCE_SUFFIX);
         return openInstances;
     }
 
     @Override
     public void forceCloseInstance(String instanceId) {
         Preconditions.checkArgument(!graph.getConfiguration().getUniqueGraphId().equals(instanceId),
-                "Cannot force close this current instance [%s]. Properly shut down the graph instead.",instanceId);
-        Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME,instanceId),"Instance [%s] is not currently open",instanceId);
-        Instant registrationTime = modifyConfig.get(REGISTRATION_TIME,instanceId);
-        Preconditions.checkArgument(registrationTime.compareTo(txStartTime)<0,"The to-be-closed instance [%s] was started after this transaction" +
-                "which indicates a successful restart and can hence not be closed: %s vs %s",instanceId,registrationTime,txStartTime);
-        modifyConfig.remove(REGISTRATION_TIME,instanceId);
+                "Cannot force close this current instance [%s]. Properly shut down the graph instead.", instanceId);
+        Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME, instanceId), "Instance [%s] is not currently open", instanceId);
+        Instant registrationTime = modifyConfig.get(REGISTRATION_TIME, instanceId);
+        Preconditions.checkArgument(registrationTime.compareTo(txStartTime) < 0, "The to-be-closed instance [%s] was started after this transaction" +
+                "which indicates a successful restart and can hence not be closed: %s vs %s", instanceId, registrationTime, txStartTime);
+        modifyConfig.remove(REGISTRATION_TIME, instanceId);
     }
 
     private void ensureOpen() {
-        Preconditions.checkState(isOpen,"This management system instance has been closed");
+        Preconditions.checkState(isOpen, "This management system instance has been closed");
     }
 
     @Override
@@ -199,7 +222,7 @@ public class ManagementSystem implements TitanManagement {
 
         //Communicate schema changes
         if (!updatedTypes.isEmpty()) {
-            mgmtLogger.sendCacheEviction(updatedTypes,updatedTypeTriggers,getOpenInstancesInternal());
+            mgmtLogger.sendCacheEviction(updatedTypes, updatedTypeTriggers, getOpenInstancesInternal());
             for (TitanSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
             }
@@ -232,8 +255,8 @@ public class ManagementSystem implements TitanManagement {
 
     private TitanEdge addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
-        TitanEdge edge = transaction.addEdge(out,in, BaseLabel.SchemaDefinitionEdge);
-        TypeDefinitionDescription desc = new TypeDefinitionDescription(def,modifier);
+        TitanEdge edge = transaction.addEdge(out, in, BaseLabel.SchemaDefinitionEdge);
+        TypeDefinitionDescription desc = new TypeDefinitionDescription(def, modifier);
         edge.property(BaseKey.SchemaDefinitionDesc.name(), desc);
         return edge;
     }
@@ -246,18 +269,18 @@ public class ManagementSystem implements TitanManagement {
 
     public TitanSchemaElement getSchemaElement(long id) {
         TitanVertex v = transaction.getVertex(id);
-        if (v==null) return null;
+        if (v == null) return null;
         if (v instanceof RelationType) {
-            if (((InternalRelationType)v).getBaseType()==null) return (RelationType)v;
-            return new RelationTypeIndexWrapper((InternalRelationType)v);
+            if (((InternalRelationType) v).getBaseType() == null) return (RelationType) v;
+            return new RelationTypeIndexWrapper((InternalRelationType) v);
         }
         if (v instanceof TitanSchemaVertex) {
-            TitanSchemaVertex sv = (TitanSchemaVertex)v;
+            TitanSchemaVertex sv = (TitanSchemaVertex) v;
             if (sv.getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX)) {
                 return new TitanGraphIndexWrapper(sv.asIndexType());
             }
         }
-        throw new IllegalArgumentException("Not a valid schema element vertex: "+id);
+        throw new IllegalArgumentException("Not a valid schema element vertex: " + id);
     }
 
     @Override
@@ -266,7 +289,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, org.apache.tinkerpop.gremlin.structure.Order sortOrder, PropertyKey... sortKeys) {
+    public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, org.apache.tinkerpop.gremlin.process.traversal.Order sortOrder, PropertyKey... sortKeys) {
         return buildRelationTypeIndex(label, name, direction, Order.convert(sortOrder), sortKeys);
     }
 
@@ -276,42 +299,42 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, org.apache.tinkerpop.gremlin.structure.Order sortOrder, PropertyKey... sortKeys) {
+    public RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, org.apache.tinkerpop.gremlin.process.traversal.Order sortOrder, PropertyKey... sortKeys) {
         return buildRelationTypeIndex(key, name, Direction.OUT, Order.convert(sortOrder), sortKeys);
     }
 
     private RelationTypeIndex buildRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys) {
-        Preconditions.checkArgument(type!=null && direction!=null && sortOrder!=null && sortKeys!=null);
-        Preconditions.checkArgument(StringUtils.isNotBlank(name),"Name cannot be blank: %s",name);
+        Preconditions.checkArgument(type != null && direction != null && sortOrder != null && sortKeys != null);
+        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be blank: %s", name);
         Token.verifyName(name);
-        Preconditions.checkArgument(sortKeys.length>0,"Need to specify sort keys");
-        for (RelationType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
-        Preconditions.checkArgument(!(type instanceof EdgeLabel) || !((EdgeLabel)type).isUnidirected() || direction==Direction.OUT,
-                "Can only index uni-directed labels in the out-direction: %s",type);
-        Preconditions.checkArgument(!((InternalRelationType)type).multiplicity().isConstrained(direction),
-                "The relation type [%s] has a multiplicity or cardinality constraint in direction [%s] and can therefore not be indexed",type,direction);
+        Preconditions.checkArgument(sortKeys.length > 0, "Need to specify sort keys");
+        for (RelationType key : sortKeys) Preconditions.checkArgument(key != null, "Keys cannot be null");
+        Preconditions.checkArgument(!(type instanceof EdgeLabel) || !((EdgeLabel) type).isUnidirected() || direction == Direction.OUT,
+                "Can only index uni-directed labels in the out-direction: %s", type);
+        Preconditions.checkArgument(!((InternalRelationType) type).multiplicity().isConstrained(direction),
+                "The relation type [%s] has a multiplicity or cardinality constraint in direction [%s] and can therefore not be indexed", type, direction);
 
-        String composedName = composeRelationTypeIndexName(type,name);
+        String composedName = composeRelationTypeIndexName(type, name);
         StandardRelationTypeMaker maker;
         if (type.isEdgeLabel()) {
-            StandardEdgeLabelMaker lm = (StandardEdgeLabelMaker)transaction.makeEdgeLabel(composedName);
+            StandardEdgeLabelMaker lm = (StandardEdgeLabelMaker) transaction.makeEdgeLabel(composedName);
             lm.unidirected(direction);
             maker = lm;
         } else {
             assert type.isPropertyKey();
-            assert direction==Direction.OUT;
-            StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker)transaction.makePropertyKey(composedName);
-            lm.dataType(((PropertyKey)type).dataType());
+            assert direction == Direction.OUT;
+            StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker) transaction.makePropertyKey(composedName);
+            lm.dataType(((PropertyKey) type).dataType());
             maker = lm;
         }
-        maker.status(type.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
+        maker.status(type.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
         maker.invisible();
         maker.multiplicity(Multiplicity.MULTI);
         maker.sortKey(sortKeys);
         maker.sortOrder(sortOrder);
 
         //Compose signature
-        long[] typeSig = ((InternalRelationType)type).getSignature();
+        long[] typeSig = ((InternalRelationType) type).getSignature();
         Set<PropertyKey> signature = Sets.newHashSet();
         for (long typeId : typeSig) signature.add(transaction.getExistingPropertyKey(typeId));
         for (RelationType sortType : sortKeys) signature.remove(sortType);
@@ -321,42 +344,42 @@ public class ManagementSystem implements TitanManagement {
         }
         RelationType typeIndex = maker.make();
         addSchemaEdge(type, typeIndex, TypeDefinitionCategory.RELATIONTYPE_INDEX, null);
-        RelationTypeIndexWrapper index = new RelationTypeIndexWrapper((InternalRelationType)typeIndex);
-        if (!type.isNew()) updateIndex(index,SchemaAction.REGISTER_INDEX);
+        RelationTypeIndexWrapper index = new RelationTypeIndexWrapper((InternalRelationType) typeIndex);
+        if (!type.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
         return index;
     }
 
     private static String composeRelationTypeIndexName(RelationType type, String name) {
-        return String.valueOf(type.longId())+RELATION_INDEX_SEPARATOR+name;
+        return String.valueOf(type.longId()) + RELATION_INDEX_SEPARATOR + name;
     }
 
     @Override
     public boolean containsRelationIndex(RelationType type, String name) {
-        return getRelationIndex(type, name)!=null;
+        return getRelationIndex(type, name) != null;
     }
 
     @Override
     public RelationTypeIndex getRelationIndex(RelationType type, String name) {
-        Preconditions.checkArgument(type!=null);
+        Preconditions.checkArgument(type != null);
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         String composedName = composeRelationTypeIndexName(type, name);
 
         //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
-        TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(transaction,BaseKey.SchemaName,TitanSchemaCategory.getRelationTypeName(composedName)),null);
-        if (v==null) return null;
+        TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(transaction, BaseKey.SchemaName, TitanSchemaCategory.getRelationTypeName(composedName)), null);
+        if (v == null) return null;
         assert v instanceof InternalRelationType;
-        return new RelationTypeIndexWrapper((InternalRelationType)v);
+        return new RelationTypeIndexWrapper((InternalRelationType) v);
     }
 
     @Override
     public Iterable<RelationTypeIndex> getRelationIndexes(final RelationType type) {
-        Preconditions.checkArgument(type!=null && type instanceof InternalRelationType,"Invalid relation type provided: %s",type);
+        Preconditions.checkArgument(type != null && type instanceof InternalRelationType, "Invalid relation type provided: %s", type);
         return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), new Predicate<InternalRelationType>() {
             @Override
             public boolean apply(@Nullable InternalRelationType internalRelationType) {
                 return !type.equals(internalRelationType);
             }
-        }),new Function<InternalRelationType, RelationTypeIndex>() {
+        }), new Function<InternalRelationType, RelationTypeIndex>() {
             @Nullable
             @Override
             public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
@@ -371,25 +394,25 @@ public class ManagementSystem implements TitanManagement {
 
     public static IndexType getGraphIndexDirect(String name, StandardTitanTx transaction) {
         TitanSchemaVertex v = transaction.getSchemaVertex(TitanSchemaCategory.GRAPHINDEX.getSchemaName(name));
-        if (v==null) return null;
+        if (v == null) return null;
         return v.asIndexType();
     }
 
     @Override
     public boolean containsGraphIndex(String name) {
-        return getGraphIndex(name)!=null;
+        return getGraphIndex(name) != null;
     }
 
     @Override
     public TitanGraphIndex getGraphIndex(String name) {
         IndexType index = getGraphIndexDirect(name, transaction);
-        return index==null?null:new TitanGraphIndexWrapper(index);
+        return index == null ? null : new TitanGraphIndexWrapper(index);
     }
 
     @Override
     public Iterable<TitanGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
         return Iterables.transform(Iterables.filter(Iterables.transform(
-                QueryUtil.getVertices(transaction,BaseKey.SchemaCategory, TitanSchemaCategory.GRAPHINDEX),
+                QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, TitanSchemaCategory.GRAPHINDEX),
                 new Function<TitanVertex, IndexType>() {
                     @Nullable
                     @Override
@@ -414,11 +437,11 @@ public class ManagementSystem implements TitanManagement {
     /**
      * Returns a {@link GraphIndexStatusWatcher} configured to watch
      * {@code graphIndexName} through graph {@code g}.
-     * <p>
+     * <p/>
      * This method just instantiates an object.
      * Invoke {@link GraphIndexStatusWatcher#call()} to wait.
      *
-     * @param g the graph through which to read index information
+     * @param g              the graph through which to read index information
      * @param graphIndexName the name of a graph index to watch
      * @return
      */
@@ -430,13 +453,13 @@ public class ManagementSystem implements TitanManagement {
     /**
      * Returns a {@link RelationIndexStatusWatcher} configured to watch the index specified by
      * {@code relationIndexName} and {@code relationIndexType} through graph {@code g}.
-     * <p>
+     * <p/>
      * This method just instantiates an object.
      * Invoke {@link RelationIndexStatusWatcher#call()} to wait.
      *
-     * @param g the graph through which to read index information
+     * @param g                 the graph through which to read index information
      * @param relationIndexName the name of the relation index to watch
-     * @param relationTypeName the type on the relation index to watch
+     * @param relationTypeName  the type on the relation index to watch
      * @return
      */
     public static RelationIndexStatusWatcher awaitRelationIndexStatus(TitanGraph g,
@@ -452,21 +475,21 @@ public class ManagementSystem implements TitanManagement {
 
     private TitanGraphIndex createMixedIndex(String indexName, ElementCategory elementCategory,
                                              TitanSchemaType constraint, String backingIndex) {
-        Preconditions.checkArgument(graph.getIndexSerializer().containsIndex(backingIndex),"Unknown external index backend: %s",backingIndex);
+        Preconditions.checkArgument(graph.getIndexSerializer().containsIndex(backingIndex), "Unknown external index backend: %s", backingIndex);
         checkIndexName(indexName);
 
         TypeDefinitionMap def = new TypeDefinitionMap();
-        def.setValue(TypeDefinitionCategory.INTERNAL_INDEX,false);
-        def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY,elementCategory);
-        def.setValue(TypeDefinitionCategory.BACKING_INDEX,backingIndex);
-        def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
+        def.setValue(TypeDefinitionCategory.INTERNAL_INDEX, false);
+        def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY, elementCategory);
+        def.setValue(TypeDefinitionCategory.BACKING_INDEX, backingIndex);
+        def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME, indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, Cardinality.LIST);
-        def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
-        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
+        def.setValue(TypeDefinitionCategory.STATUS, SchemaStatus.ENABLED);
+        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX, indexName, def);
 
-        Preconditions.checkArgument(constraint==null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
-        if (constraint!=null) {
-            addSchemaEdge(indexVertex,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
+        Preconditions.checkArgument(constraint == null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
+        if (constraint != null) {
+            addSchemaEdge(indexVertex, (TitanSchemaVertex) constraint, TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, null);
         }
         updateSchemaVertex(indexVertex);
         return new TitanGraphIndexWrapper(indexVertex.asIndexType());
@@ -474,40 +497,40 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public void addIndexKey(final TitanGraphIndex index, final PropertyKey key, Parameter... parameters) {
-        Preconditions.checkArgument(index!=null && key!=null && index instanceof TitanGraphIndexWrapper
-                && !(key instanceof BaseKey),"Need to provide valid index and key");
-        if (parameters==null) parameters=new Parameter[0];
-        IndexType indexType = ((TitanGraphIndexWrapper)index).getBaseIndex();
-        Preconditions.checkArgument(indexType instanceof MixedIndexType,"Can only add keys to an external index, not %s",index.name());
+        Preconditions.checkArgument(index != null && key != null && index instanceof TitanGraphIndexWrapper
+                && !(key instanceof BaseKey), "Need to provide valid index and key");
+        if (parameters == null) parameters = new Parameter[0];
+        IndexType indexType = ((TitanGraphIndexWrapper) index).getBaseIndex();
+        Preconditions.checkArgument(indexType instanceof MixedIndexType, "Can only add keys to an external index, not %s", index.name());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
-            && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
+                && ((IndexTypeWrapper) indexType).getSchemaBase() instanceof TitanSchemaVertex);
 
-        TitanSchemaVertex indexVertex = (TitanSchemaVertex)((IndexTypeWrapper)indexType).getSchemaBase();
+        TitanSchemaVertex indexVertex = (TitanSchemaVertex) ((IndexTypeWrapper) indexType).getSchemaBase();
 
         for (IndexField field : indexType.getFieldKeys())
-            Preconditions.checkArgument(!field.getFieldKey().equals(key),"Key [%s] has already been added to index %s",key.name(),index.name());
+            Preconditions.checkArgument(!field.getFieldKey().equals(key), "Key [%s] has already been added to index %s", key.name(), index.name());
 
         //Assemble parameters
         boolean addMappingParameter = !ParameterType.MAPPED_NAME.hasParameter(parameters);
-        Parameter[] extendedParas = new Parameter[parameters.length+1+(addMappingParameter?1:0)];
-        System.arraycopy(parameters,0,extendedParas,0,parameters.length);
+        Parameter[] extendedParas = new Parameter[parameters.length + 1 + (addMappingParameter ? 1 : 0)];
+        System.arraycopy(parameters, 0, extendedParas, 0, parameters.length);
         int arrPosition = parameters.length;
         if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(
-                graph.getIndexSerializer().getDefaultFieldName(key,parameters,indexType.getBackingIndexName()));
-        extendedParas[arrPosition++] = ParameterType.STATUS.getParameter(key.isNew()?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
+                graph.getIndexSerializer().getDefaultFieldName(key, parameters, indexType.getBackingIndexName()));
+        extendedParas[arrPosition++] = ParameterType.STATUS.getParameter(key.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
 
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         updateSchemaVertex(indexVertex);
         indexType.resetCache();
         //Check to see if the index supports this
-        if(!graph.getIndexSerializer().supports((MixedIndexType)indexType, ParameterIndexField.of(key, parameters))) {
+        if (!graph.getIndexSerializer().supports((MixedIndexType) indexType, ParameterIndexField.of(key, parameters))) {
             throw new TitanException("Could not register new index field '" + key.name() + "' with index backend as the data type, cardinality or parameter combination is not supported.");
         }
 
         try {
-            IndexSerializer.register((MixedIndexType) indexType,key,transaction.getTxHandle());
+            IndexSerializer.register((MixedIndexType) indexType, key, transaction.getTxHandle());
         } catch (BackendException e) {
-            throw new TitanException("Could not register new index field with index backend",e);
+            throw new TitanException("Could not register new index field with index backend", e);
         }
         if (!indexVertex.isNew()) updatedTypes.add(indexVertex);
         if (!key.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
@@ -515,47 +538,47 @@ public class ManagementSystem implements TitanManagement {
 
     private TitanGraphIndex createCompositeIndex(String indexName, ElementCategory elementCategory, boolean unique, TitanSchemaType constraint, PropertyKey... keys) {
         checkIndexName(indexName);
-        Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index [%s]",indexName);
-        Preconditions.checkArgument(!unique || elementCategory==ElementCategory.VERTEX,"Unique indexes can only be created on vertices [%s]",indexName);
+        Preconditions.checkArgument(keys != null && keys.length > 0, "Need to provide keys to index [%s]", indexName);
+        Preconditions.checkArgument(!unique || elementCategory == ElementCategory.VERTEX, "Unique indexes can only be created on vertices [%s]", indexName);
         boolean allSingleKeys = true;
         boolean oneNewKey = false;
         for (PropertyKey key : keys) {
-            Preconditions.checkArgument(key!=null && key instanceof PropertyKeyVertex,"Need to provide valid keys: %s",key);
-            if (key.cardinality()!=Cardinality.SINGLE) allSingleKeys=false;
+            Preconditions.checkArgument(key != null && key instanceof PropertyKeyVertex, "Need to provide valid keys: %s", key);
+            if (key.cardinality() != Cardinality.SINGLE) allSingleKeys = false;
             if (key.isNew()) oneNewKey = true;
-            else updatedTypes.add((PropertyKeyVertex)key);
+            else updatedTypes.add((PropertyKeyVertex) key);
         }
 
         Cardinality indexCardinality;
-        if (unique) indexCardinality=Cardinality.SINGLE;
-        else indexCardinality=(allSingleKeys?Cardinality.SET:Cardinality.LIST);
+        if (unique) indexCardinality = Cardinality.SINGLE;
+        else indexCardinality = (allSingleKeys ? Cardinality.SET : Cardinality.LIST);
 
         TypeDefinitionMap def = new TypeDefinitionMap();
-        def.setValue(TypeDefinitionCategory.INTERNAL_INDEX,true);
-        def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY,elementCategory);
-        def.setValue(TypeDefinitionCategory.BACKING_INDEX,Token.INTERNAL_INDEX_NAME);
-        def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
-        def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY,indexCardinality);
-        def.setValue(TypeDefinitionCategory.STATUS,oneNewKey?SchemaStatus.ENABLED:SchemaStatus.INSTALLED);
-        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
-        for (int i = 0; i <keys.length; i++) {
+        def.setValue(TypeDefinitionCategory.INTERNAL_INDEX, true);
+        def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY, elementCategory);
+        def.setValue(TypeDefinitionCategory.BACKING_INDEX, Token.INTERNAL_INDEX_NAME);
+        def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME, indexName);
+        def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, indexCardinality);
+        def.setValue(TypeDefinitionCategory.STATUS, oneNewKey ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
+        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX, indexName, def);
+        for (int i = 0; i < keys.length; i++) {
             Parameter[] paras = {ParameterType.INDEX_POSITION.getParameter(i)};
-            addSchemaEdge(indexVertex,keys[i],TypeDefinitionCategory.INDEX_FIELD,paras);
+            addSchemaEdge(indexVertex, keys[i], TypeDefinitionCategory.INDEX_FIELD, paras);
         }
 
-        Preconditions.checkArgument(constraint==null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
-        if (constraint!=null) {
-            addSchemaEdge(indexVertex,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
+        Preconditions.checkArgument(constraint == null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
+        if (constraint != null) {
+            addSchemaEdge(indexVertex, (TitanSchemaVertex) constraint, TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, null);
         }
         updateSchemaVertex(indexVertex);
         TitanGraphIndexWrapper index = new TitanGraphIndexWrapper(indexVertex.asIndexType());
-        if (!oneNewKey) updateIndex(index,SchemaAction.REGISTER_INDEX);
+        if (!oneNewKey) updateIndex(index, SchemaAction.REGISTER_INDEX);
         return index;
     }
 
     @Override
     public TitanManagement.IndexBuilder buildIndex(String indexName, Class<? extends Element> elementType) {
-        return new IndexBuilder(indexName,ElementCategory.getByClazz(elementType));
+        return new IndexBuilder(indexName, ElementCategory.getByClazz(elementType));
     }
 
     private class IndexBuilder implements TitanManagement.IndexBuilder {
@@ -564,7 +587,7 @@ public class ManagementSystem implements TitanManagement {
         private final ElementCategory elementCategory;
         private boolean unique = false;
         private TitanSchemaType constraint = null;
-        private Map<PropertyKey,Parameter[]> keys = new HashMap<PropertyKey, Parameter[]>();
+        private Map<PropertyKey, Parameter[]> keys = new HashMap<PropertyKey, Parameter[]>();
 
         private IndexBuilder(String indexName, ElementCategory elementCategory) {
             this.indexName = indexName;
@@ -573,22 +596,22 @@ public class ManagementSystem implements TitanManagement {
 
         @Override
         public TitanManagement.IndexBuilder addKey(PropertyKey key) {
-            Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
-            keys.put(key,null);
+            Preconditions.checkArgument(key != null && (key instanceof PropertyKeyVertex), "Key must be a user defined key: %s", key);
+            keys.put(key, null);
             return this;
         }
 
         @Override
         public TitanManagement.IndexBuilder addKey(PropertyKey key, Parameter... parameters) {
-            Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
-            keys.put(key,parameters);
+            Preconditions.checkArgument(key != null && (key instanceof PropertyKeyVertex), "Key must be a user defined key: %s", key);
+            keys.put(key, parameters);
             return this;
         }
 
         @Override
         public TitanManagement.IndexBuilder indexOnly(TitanSchemaType schemaType) {
             Preconditions.checkNotNull(schemaType);
-            Preconditions.checkArgument(elementCategory.isValidConstraint(schemaType),"Need to specify a valid schema type for this index definition: %s",schemaType);
+            Preconditions.checkArgument(elementCategory.isValidConstraint(schemaType), "Need to specify a valid schema type for this index definition: %s", schemaType);
             constraint = schemaType;
             return this;
         }
@@ -601,24 +624,24 @@ public class ManagementSystem implements TitanManagement {
 
         @Override
         public TitanGraphIndex buildCompositeIndex() {
-            Preconditions.checkArgument(!keys.isEmpty(),"Need to specify at least one key for the composite index");
+            Preconditions.checkArgument(!keys.isEmpty(), "Need to specify at least one key for the composite index");
             PropertyKey[] keyArr = new PropertyKey[keys.size()];
             int pos = 0;
-            for (Map.Entry<PropertyKey,Parameter[]> entry : keys.entrySet()) {
-                Preconditions.checkArgument(entry.getValue()==null,"Cannot specify parameters for composite index: %s",entry.getKey());
-                keyArr[pos++]=entry.getKey();
+            for (Map.Entry<PropertyKey, Parameter[]> entry : keys.entrySet()) {
+                Preconditions.checkArgument(entry.getValue() == null, "Cannot specify parameters for composite index: %s", entry.getKey());
+                keyArr[pos++] = entry.getKey();
             }
             return createCompositeIndex(indexName, elementCategory, unique, constraint, keyArr);
         }
 
         @Override
         public TitanGraphIndex buildMixedIndex(String backingIndex) {
-            Preconditions.checkArgument(StringUtils.isNotBlank(backingIndex),"Need to specify backing index name");
-            Preconditions.checkArgument(!unique,"An external index cannot be unique");
+            Preconditions.checkArgument(StringUtils.isNotBlank(backingIndex), "Need to specify backing index name");
+            Preconditions.checkArgument(!unique, "An external index cannot be unique");
 
             TitanGraphIndex index = createMixedIndex(indexName, elementCategory, constraint, backingIndex);
-            for (Map.Entry<PropertyKey,Parameter[]> entry : keys.entrySet()) {
-                addIndexKey(index,entry.getKey(),entry.getValue());
+            for (Map.Entry<PropertyKey, Parameter[]> entry : keys.entrySet()) {
+                addIndexKey(index, entry.getKey(), entry.getValue());
             }
             return index;
         }
@@ -630,14 +653,14 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction) {
-        Preconditions.checkArgument(index!=null,"Need to provide an index");
-        Preconditions.checkArgument(updateAction!=null,"Need to provide update action");
+        Preconditions.checkArgument(index != null, "Need to provide an index");
+        Preconditions.checkArgument(updateAction != null, "Need to provide update action");
 
         TitanSchemaVertex schemaVertex = getSchemaVertex(index);
         Set<TitanSchemaVertex> dependentTypes;
         Set<PropertyKeyVertex> keySubset = ImmutableSet.of();
         if (index instanceof RelationTypeIndex) {
-            dependentTypes = ImmutableSet.of((TitanSchemaVertex)((InternalRelationType)schemaVertex).getBaseType());
+            dependentTypes = ImmutableSet.of((TitanSchemaVertex) ((InternalRelationType) schemaVertex).getBaseType());
             if (!updateAction.isApplicableStatus(schemaVertex.getStatus()))
                 return null;
         } else if (index instanceof TitanGraphIndex) {
@@ -646,15 +669,16 @@ public class ManagementSystem implements TitanManagement {
             if (indexType.isCompositeIndex()) {
                 if (!updateAction.isApplicableStatus(schemaVertex.getStatus()))
                     return null;
-                for (PropertyKey key : ((TitanGraphIndex)index).getFieldKeys()) {
-                    dependentTypes.add((PropertyKeyVertex)key);
+                for (PropertyKey key : ((TitanGraphIndex) index).getFieldKeys()) {
+                    dependentTypes.add((PropertyKeyVertex) key);
                 }
             } else {
                 keySubset = Sets.newHashSet();
-                MixedIndexType cindexType = (MixedIndexType)indexType;
+                MixedIndexType cindexType = (MixedIndexType) indexType;
                 Set<SchemaStatus> applicableStatus = updateAction.getApplicableStatus();
                 for (ParameterIndexField field : cindexType.getFieldKeys()) {
-                    if (applicableStatus.contains(field.getStatus())) keySubset.add((PropertyKeyVertex)field.getFieldKey());
+                    if (applicableStatus.contains(field.getStatus()))
+                        keySubset.add((PropertyKeyVertex) field.getFieldKey());
                 }
                 if (keySubset.isEmpty())
                     return null;
@@ -666,9 +690,9 @@ public class ManagementSystem implements TitanManagement {
         IndexIdentifier indexId = new IndexIdentifier(index);
         StandardScanner.Builder builder;
         IndexJobFuture future;
-        switch(updateAction) {
+        switch (updateAction) {
             case REGISTER_INDEX:
-                setStatus(schemaVertex,SchemaStatus.INSTALLED,keySubset);
+                setStatus(schemaVertex, SchemaStatus.INSTALLED, keySubset);
                 updatedTypes.add(schemaVertex);
                 updatedTypes.addAll(dependentTypes);
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
@@ -678,10 +702,12 @@ public class ManagementSystem implements TitanManagement {
                 builder = graph.getBackend().buildEdgeScanJob();
                 builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
                 builder.setJobId(indexId);
-                builder.setJob(VertexJobConverter.convert(graph,new IndexRepairJob(indexId.indexName,indexId.relationTypeName)));
+                builder.setJob(VertexJobConverter.convert(graph, new IndexRepairJob(indexId.indexName, indexId.relationTypeName)));
                 try {
                     future = builder.execute();
-                } catch (BackendException e) { throw new TitanException(e); }
+                } catch (BackendException e) {
+                    throw new TitanException(e);
+                }
                 break;
             case ENABLE_INDEX:
                 setStatus(schemaVertex, SchemaStatus.ENABLED, keySubset);
@@ -690,7 +716,7 @@ public class ManagementSystem implements TitanManagement {
                 future = new EmptyIndexJobFuture();
                 break;
             case DISABLE_INDEX:
-                setStatus(schemaVertex,SchemaStatus.INSTALLED,keySubset);
+                setStatus(schemaVertex, SchemaStatus.INSTALLED, keySubset);
                 updatedTypes.add(schemaVertex);
                 if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.DISABLED, keySubset));
@@ -700,18 +726,22 @@ public class ManagementSystem implements TitanManagement {
                 if (index instanceof RelationTypeIndex) {
                     builder = graph.getBackend().buildEdgeScanJob();
                 } else {
-                    TitanGraphIndex gindex = (TitanGraphIndex)index;
-                    if (gindex.isMixedIndex()) throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
+                    TitanGraphIndex gindex = (TitanGraphIndex) index;
+                    if (gindex.isMixedIndex())
+                        throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
                     builder = graph.getBackend().buildGraphIndexScanJob();
                 }
                 builder.setFinishJob(indexId.getIndexJobFinisher());
                 builder.setJobId(indexId);
-                builder.setJob(new IndexRemoveJob(graph,indexId.indexName,indexId.relationTypeName));
+                builder.setJob(new IndexRemoveJob(graph, indexId.indexName, indexId.relationTypeName));
                 try {
                     future = builder.execute();
-                } catch (BackendException e) { throw new TitanException(e); }
+                } catch (BackendException e) {
+                    throw new TitanException(e);
+                }
                 break;
-            default: throw new UnsupportedOperationException("Update action not supported: " + updateAction);
+            default:
+                throw new UnsupportedOperationException("Update action not supported: " + updateAction);
         }
         return future;
     }
@@ -763,7 +793,7 @@ public class ManagementSystem implements TitanManagement {
             this.graph = graph;
             this.schemaVertexId = vertex.longId();
             this.newStatus = newStatus;
-            this.propertyKeys = Sets.newHashSet(Iterables.transform(keys,new Function<PropertyKey, Long>() {
+            this.propertyKeys = Sets.newHashSet(Iterables.transform(keys, new Function<PropertyKey, Long>() {
                 @Nullable
                 @Override
                 public Long apply(@Nullable PropertyKey propertyKey) {
@@ -774,15 +804,15 @@ public class ManagementSystem implements TitanManagement {
 
         @Override
         public Boolean call() throws Exception {
-            ManagementSystem mgmt = (ManagementSystem)graph.openManagement();
+            ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
             try {
                 TitanVertex vertex = mgmt.transaction.getVertex(schemaVertexId);
-                Preconditions.checkArgument(vertex!=null && vertex instanceof TitanSchemaVertex);
-                TitanSchemaVertex schemaVertex = (TitanSchemaVertex)vertex;
+                Preconditions.checkArgument(vertex != null && vertex instanceof TitanSchemaVertex);
+                TitanSchemaVertex schemaVertex = (TitanSchemaVertex) vertex;
 
                 Set<PropertyKeyVertex> keys = Sets.newHashSet();
-                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex)mgmt.transaction.getVertex(keyId));
-                mgmt.setStatus(schemaVertex,newStatus,keys);
+                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex) mgmt.transaction.getVertex(keyId));
+                mgmt.setStatus(schemaVertex, newStatus, keys);
                 mgmt.updatedTypes.addAll(keys);
                 mgmt.updatedTypes.add(schemaVertex);
                 if (log.isInfoEnabled()) {
@@ -818,9 +848,9 @@ public class ManagementSystem implements TitanManagement {
 
         @Override
         public boolean equals(Object oth) {
-            if (this==oth) return true;
-            else if (oth==null || !getClass().isInstance(oth)) return false;
-            return schemaVertexId ==((UpdateStatusTrigger)oth).schemaVertexId;
+            if (this == oth) return true;
+            else if (oth == null || !getClass().isInstance(oth)) return false;
+            return schemaVertexId == ((UpdateStatusTrigger) oth).schemaVertexId;
         }
 
     }
@@ -832,8 +862,8 @@ public class ManagementSystem implements TitanManagement {
     }
 
     private void setStatus(TitanSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
-        if (keys.isEmpty()) setStatusVertex(vertex,status);
-        else setStatusEdges(vertex,status,keys);
+        if (keys.isEmpty()) setStatusVertex(vertex, status);
+        else setStatusEdges(vertex, status, keys);
         vertex.resetCache();
         updateSchemaVertex(vertex);
     }
@@ -843,7 +873,7 @@ public class ManagementSystem implements TitanManagement {
 
         //Delete current status
         for (TitanVertexProperty p : vertex.query().types(BaseKey.SchemaDefinitionProperty).properties()) {
-            if (p.<TypeDefinitionDescription>valueOrNull(BaseKey.SchemaDefinitionDesc).getCategory()==TypeDefinitionCategory.STATUS) {
+            if (p.<TypeDefinitionDescription>valueOrNull(BaseKey.SchemaDefinitionDesc).getCategory() == TypeDefinitionCategory.STATUS) {
                 if (p.value().equals(status)) return;
                 else p.remove();
             }
@@ -856,18 +886,18 @@ public class ManagementSystem implements TitanManagement {
     private void setStatusEdges(TitanSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
         Preconditions.checkArgument(vertex.asIndexType().isMixedIndex());
 
-        for (TitanEdge edge : vertex.getEdges(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT)) {
+        for (TitanEdge edge : vertex.getEdges(TypeDefinitionCategory.INDEX_FIELD, Direction.OUT)) {
             if (!keys.contains(edge.vertex(Direction.IN))) continue; //Only address edges with matching keys
             TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
-            assert desc.getCategory()==TypeDefinitionCategory.INDEX_FIELD;
-            Parameter[] parameters = (Parameter[])desc.getModifier();
-            assert parameters[parameters.length-1].key().equals(ParameterType.STATUS.getName());
-            if (parameters[parameters.length-1].value().equals(status)) continue;
+            assert desc.getCategory() == TypeDefinitionCategory.INDEX_FIELD;
+            Parameter[] parameters = (Parameter[]) desc.getModifier();
+            assert parameters[parameters.length - 1].key().equals(ParameterType.STATUS.getName());
+            if (parameters[parameters.length - 1].value().equals(status)) continue;
 
-            Parameter[] paraCopy = Arrays.copyOf(parameters,parameters.length);
-            paraCopy[parameters.length-1]=ParameterType.STATUS.getParameter(status);
+            Parameter[] paraCopy = Arrays.copyOf(parameters, parameters.length);
+            paraCopy[parameters.length - 1] = ParameterType.STATUS.getParameter(status);
             edge.remove();
-            addSchemaEdge(vertex,edge.vertex(Direction.IN),TypeDefinitionCategory.INDEX_FIELD,paraCopy);
+            addSchemaEdge(vertex, edge.vertex(Direction.IN), TypeDefinitionCategory.INDEX_FIELD, paraCopy);
         }
 
         for (PropertyKeyVertex prop : keys) prop.resetCache();
@@ -884,7 +914,7 @@ public class ManagementSystem implements TitanManagement {
         private final ScanMetrics metrics;
 
         public IndexJobStatus(State state, ScanMetrics metrics) {
-            super(state, metrics==null?0:metrics.get(ScanMetrics.Metric.SUCCESS));
+            super(state, metrics == null ? 0 : metrics.get(ScanMetrics.Metric.SUCCESS));
             this.metrics = metrics;
         }
 
@@ -895,8 +925,8 @@ public class ManagementSystem implements TitanManagement {
         @Override
         public String toString() {
             String msg = "Job status: " + getState().toString() + ". ";
-            if (metrics!=null) msg += String.format("Processed %s records successfully and failed on %s records.",
-                    metrics.get(ScanMetrics.Metric.SUCCESS),metrics.get(ScanMetrics.Metric.FAILURE));
+            if (metrics != null) msg += String.format("Processed %s records successfully and failed on %s records.",
+                    metrics.get(ScanMetrics.Metric.SUCCESS), metrics.get(ScanMetrics.Metric.FAILURE));
             return msg;
         }
 
@@ -909,23 +939,23 @@ public class ManagementSystem implements TitanManagement {
         private final int hashcode;
 
         private IndexIdentifier(TitanIndex index) {
-            Preconditions.checkArgument(index!=null);
+            Preconditions.checkArgument(index != null);
             indexName = index.name();
-            if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex)index).getType().name();
+            if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex) index).getType().name();
             else relationTypeName = null;
             Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
             hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).hashCode();
         }
 
         private TitanIndex retrieve(ManagementSystem mgmt) {
-            if (relationTypeName==null) return mgmt.getGraphIndex(indexName);
-            else return mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName),indexName);
+            if (relationTypeName == null) return mgmt.getGraphIndex(indexName);
+            else return mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), indexName);
         }
 
         @Override
         public String toString() {
-            String s =  indexName;
-            if (relationTypeName!=null) s+= "[" + relationTypeName + "]";
+            String s = indexName;
+            if (relationTypeName != null) s += "[" + relationTypeName + "]";
             return s;
         }
 
@@ -936,23 +966,23 @@ public class ManagementSystem implements TitanManagement {
 
         @Override
         public boolean equals(Object other) {
-            if (this==other) return true;
-            else if (other==null || !getClass().isInstance(other)) return false;
-            IndexIdentifier oth = (IndexIdentifier)other;
+            if (this == other) return true;
+            else if (other == null || !getClass().isInstance(other)) return false;
+            IndexIdentifier oth = (IndexIdentifier) other;
             return indexName.equals(oth.indexName) &&
-                    (relationTypeName==oth.relationTypeName || (relationTypeName!=null && relationTypeName.equals(oth.relationTypeName)));
+                    (relationTypeName == oth.relationTypeName || (relationTypeName != null && relationTypeName.equals(oth.relationTypeName)));
         }
 
         public Consumer<ScanMetrics> getIndexJobFinisher() {
-            return getIndexJobFinisher(null,null);
+            return getIndexJobFinisher(null, null);
         }
 
         public Consumer<ScanMetrics> getIndexJobFinisher(final TitanGraph graph, final SchemaAction action) {
-            Preconditions.checkArgument((graph!=null && action!=null) || (graph==null && action==null));
+            Preconditions.checkArgument((graph != null && action != null) || (graph == null && action == null));
             return metrics -> {
                 try {
                     if (metrics.get(ScanMetrics.Metric.FAILURE) == 0) {
-                        if (action!=null) {
+                        if (action != null) {
                             ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
                             try {
                                 TitanIndex index = retrieve(mgmt);
@@ -961,12 +991,12 @@ public class ManagementSystem implements TitanManagement {
                                 mgmt.commit();
                             }
                         }
-                        LOGGER.info("Index update job successful for [{}]",IndexIdentifier.this.toString());
+                        LOGGER.info("Index update job successful for [{}]", IndexIdentifier.this.toString());
                     } else {
-                        LOGGER.error("Index update job unsuccessful for [{}]. Check logs",IndexIdentifier.this.toString());
+                        LOGGER.error("Index update job unsuccessful for [{}]. Check logs", IndexIdentifier.this.toString());
                     }
                 } catch (Throwable e) {
-                    LOGGER.error("Error encountered when updating index after job finished ["+ IndexIdentifier.this.toString() + "]: ",e);
+                    LOGGER.error("Error encountered when updating index after job finished [" + IndexIdentifier.this.toString() + "]: ", e);
                 }
             };
         }
@@ -975,17 +1005,17 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public void changeName(TitanSchemaElement element, String newName) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(newName),"Invalid name: %s",newName);
+        Preconditions.checkArgument(StringUtils.isNotBlank(newName), "Invalid name: %s", newName);
         TitanSchemaVertex schemaVertex = getSchemaVertex(element);
         if (schemaVertex.name().equals(newName)) return;
 
         TitanSchemaCategory schemaCategory = schemaVertex.valueOrNull(BaseKey.SchemaCategory);
-        Preconditions.checkArgument(schemaCategory.hasName(),"Invalid schema element: %s",element);
+        Preconditions.checkArgument(schemaCategory.hasName(), "Invalid schema element: %s", element);
 
         if (schemaVertex instanceof RelationType) {
-            InternalRelationType relType = (InternalRelationType)schemaVertex;
-            if (relType.getBaseType()!=null) {
-                newName = composeRelationTypeIndexName(relType.getBaseType(),newName);
+            InternalRelationType relType = (InternalRelationType) schemaVertex;
+            if (relType.getBaseType() != null) {
+                newName = composeRelationTypeIndexName(relType.getBaseType(), newName);
             } else assert !(element instanceof RelationTypeIndex);
 
             TitanSchemaCategory cat = relType.isEdgeLabel() ?
@@ -1005,22 +1035,22 @@ public class ManagementSystem implements TitanManagement {
 
     public TitanSchemaVertex getSchemaVertex(TitanSchemaElement element) {
         if (element instanceof RelationType) {
-            Preconditions.checkArgument(element instanceof RelationTypeVertex,"Invalid schema element provided: %s",element);
-            return (RelationTypeVertex)element;
+            Preconditions.checkArgument(element instanceof RelationTypeVertex, "Invalid schema element provided: %s", element);
+            return (RelationTypeVertex) element;
         } else if (element instanceof RelationTypeIndex) {
-            return (RelationTypeVertex)((RelationTypeIndexWrapper)element).getWrappedType();
+            return (RelationTypeVertex) ((RelationTypeIndexWrapper) element).getWrappedType();
         } else if (element instanceof VertexLabel) {
-            Preconditions.checkArgument(element instanceof VertexLabelVertex,"Invalid schema element provided: %s",element);
-            return (VertexLabelVertex)element;
+            Preconditions.checkArgument(element instanceof VertexLabelVertex, "Invalid schema element provided: %s", element);
+            return (VertexLabelVertex) element;
         } else if (element instanceof TitanGraphIndex) {
-            Preconditions.checkArgument(element instanceof TitanGraphIndexWrapper,"Invalid schema element provided: %s",element);
-            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
+            Preconditions.checkArgument(element instanceof TitanGraphIndexWrapper, "Invalid schema element provided: %s", element);
+            IndexType index = ((TitanGraphIndexWrapper) element).getBaseIndex();
             assert index instanceof IndexTypeWrapper;
-            SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
+            SchemaSource base = ((IndexTypeWrapper) index).getSchemaBase();
             assert base instanceof TitanSchemaVertex;
-            return (TitanSchemaVertex)base;
+            return (TitanSchemaVertex) base;
         }
-        throw new IllegalArgumentException("Invalid schema element provided: "+element);
+        throw new IllegalArgumentException("Invalid schema element provided: " + element);
     }
 
     private void updateSchemaVertex(TitanSchemaVertex schemaVertex) {
@@ -1039,12 +1069,12 @@ public class ManagementSystem implements TitanManagement {
      */
     @Override
     public ConsistencyModifier getConsistency(TitanSchemaElement element) {
-        Preconditions.checkArgument(element!=null);
-        if (element instanceof RelationType) return ((InternalRelationType)element).getConsistencyModifier();
+        Preconditions.checkArgument(element != null);
+        if (element instanceof RelationType) return ((InternalRelationType) element).getConsistencyModifier();
         else if (element instanceof TitanGraphIndex) {
-            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
+            IndexType index = ((TitanGraphIndexWrapper) element).getBaseIndex();
             if (index.isMixedIndex()) return ConsistencyModifier.DEFAULT;
-            return ((CompositeIndexType)index).getConsistencyModifier();
+            return ((CompositeIndexType) index).getConsistencyModifier();
         } else return ConsistencyModifier.DEFAULT;
     }
 
@@ -1063,10 +1093,11 @@ public class ManagementSystem implements TitanManagement {
         if (element instanceof RelationType) {
             RelationTypeVertex rv = (RelationTypeVertex) element;
             Preconditions.checkArgument(consistency != ConsistencyModifier.FORK || !rv.multiplicity().isConstrained(),
-                    "Cannot apply FORK consistency mode to constraint relation type: %s",rv.name());
+                    "Cannot apply FORK consistency mode to constraint relation type: %s", rv.name());
         } else if (element instanceof TitanGraphIndex) {
-            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
-            if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on mixed index: " + element);
+            IndexType index = ((TitanGraphIndexWrapper) element).getBaseIndex();
+            if (index.isMixedIndex())
+                throw new IllegalArgumentException("Cannot change consistency on mixed index: " + element);
         } else throw new IllegalArgumentException("Cannot change consistency of schema element: " + element);
         setTypeModifier(element, ModifierType.CONSISTENCY, consistency);
     }
@@ -1087,13 +1118,15 @@ public class ManagementSystem implements TitanManagement {
 
     /**
      * Sets time-to-live for those schema types that support it
+     *
      * @param type
      * @param duration Note that only 'seconds' granularity is supported
      */
     @Override
     public void setTTL(final TitanSchemaType type,
                        final Duration duration) {
-        if (!graph.getBackend().getStoreFeatures().hasCellTTL()) throw new UnsupportedOperationException("The storage engine does not support TTL");
+        if (!graph.getBackend().getStoreFeatures().hasCellTTL())
+            throw new UnsupportedOperationException("The storage engine does not support TTL");
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static to allow setting TTL");
         } else {
@@ -1102,7 +1135,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(type instanceof TitanSchemaVertex);
 
         Integer ttlSeconds = (duration.isZero()) ?
-                              null :
+                null :
                 (int) duration.getSeconds();
 
         setTypeModifier(type, ModifierType.TTL, ttlSeconds);
@@ -1122,12 +1155,12 @@ public class ManagementSystem implements TitanManagement {
         TitanSchemaVertex typeVertex;
 
         if (element instanceof TitanSchemaVertex) {
-            typeVertex = (TitanSchemaVertex)element;
+            typeVertex = (TitanSchemaVertex) element;
         } else if (element instanceof TitanGraphIndex) {
-            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
+            IndexType index = ((TitanGraphIndexWrapper) element).getBaseIndex();
             assert index instanceof IndexTypeWrapper;
-            SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
-            typeVertex = (TitanSchemaVertex)base;
+            SchemaSource base = ((IndexTypeWrapper) index).getSchemaBase();
+            typeVertex = (TitanSchemaVertex) base;
         } else throw new IllegalArgumentException("Invalid schema element: " + element);
 
         // remove any pre-existing value for the modifier, or return if an identical value has already been set
@@ -1214,9 +1247,9 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkNotNull(clazz);
         Iterable<? extends TitanVertex> types = null;
         if (PropertyKey.class.equals(clazz)) {
-            types = QueryUtil.getVertices(transaction,BaseKey.SchemaCategory, TitanSchemaCategory.PROPERTYKEY);
+            types = QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, TitanSchemaCategory.PROPERTYKEY);
         } else if (EdgeLabel.class.equals(clazz)) {
-            types = QueryUtil.getVertices(transaction,BaseKey.SchemaCategory, TitanSchemaCategory.EDGELABEL);
+            types = QueryUtil.getVertices(transaction, BaseKey.SchemaCategory, TitanSchemaCategory.EDGELABEL);
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
@@ -1251,8 +1284,8 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public Iterable<VertexLabel> getVertexLabels() {
-        return Iterables.filter(QueryUtil.getVertices(transaction,BaseKey.SchemaCategory,
-                TitanSchemaCategory.VERTEXLABEL),VertexLabel.class);
+        return Iterables.filter(QueryUtil.getVertices(transaction, BaseKey.SchemaCategory,
+                TitanSchemaCategory.VERTEXLABEL), VertexLabel.class);
     }
 
     // ###### USERMODIFIABLECONFIGURATION PROXY #########
@@ -1266,6 +1299,6 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public synchronized TitanConfiguration set(String path, Object value) {
         ensureOpen();
-        return userConfig.set(path,value);
+        return userConfig.set(path, value);
     }
 }

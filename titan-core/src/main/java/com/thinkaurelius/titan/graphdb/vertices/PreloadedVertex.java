@@ -12,6 +12,9 @@ import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -34,12 +37,13 @@ public class PreloadedVertex extends CacheVertex {
     private static final Retriever<SliceQuery, EntryList> EXCEPTION_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
         @Override
         public EntryList get(SliceQuery input) {
-            throw new UnsupportedOperationException("Cannot retrieve edges or properties on this vertex");
+            return EntryList.EMPTY_LIST;
         }
     };
 
     private PropertyMixing mixin = NO_MIXIN;
     private boolean swallowRetrievals = true;
+    private boolean mapReduceJob = false;
 
     public PreloadedVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -48,17 +52,21 @@ public class PreloadedVertex extends CacheVertex {
 
     public void setPropertyMixing(PropertyMixing mixin) {
         Preconditions.checkNotNull(mixin);
-        Preconditions.checkArgument(this.mixin==NO_MIXIN,"A property mixing has already been set");
-        this.mixin=mixin;
+        Preconditions.checkArgument(this.mixin == NO_MIXIN, "A property mixing has already been set");
+        this.mixin = mixin;
     }
 
     public void setExceptionOnRetrieve(boolean exceptionOnRetrieve) {
         swallowRetrievals = !exceptionOnRetrieve;
     }
 
+    public void setMapReduceJob(final boolean mapReduceJob) {
+        this.mapReduceJob = mapReduceJob;
+    }
+
     @Override
     public void addToQueryCache(final SliceQuery query, final EntryList entries) {
-        super.addToQueryCache(query,entries);
+        super.addToQueryCache(query, entries);
     }
 
     public EntryList getFromCache(final SliceQuery query) {
@@ -72,8 +80,8 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public VertexCentricQueryBuilder query() {
-        if (super.getQueryCacheSize()>0) return super.query().queryOnlyGivenVertex();
-        else throw stubVertexException();
+        if (super.getQueryCacheSize() > 0) return super.query().queryOnlyGivenVertex();
+        else throw GraphComputer.Exceptions.adjacentVertexEdgesAndVerticesCanNotBeReadOrUpdated();
     }
 
     @Override
@@ -93,56 +101,61 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
-        return super.loadRelations(query,swallowRetrievals?EMPTY_RETRIEVER:EXCEPTION_RETRIEVER);
+        return super.loadRelations(query, swallowRetrievals ? EMPTY_RETRIEVER : EXCEPTION_RETRIEVER);
     }
 
     @Override
     public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
-        TitanVertexProperty<V> p = mixin.property(cardinality,key,value);
-        ElementHelper.attachProperties(p,keyValues);
+        if(this.mapReduceJob)
+            throw GraphComputer.Exceptions.vertexPropertiesCanNotBeUpdatedInMapReduce();
+        TitanVertexProperty<V> p = mixin.property(cardinality, key, value);
+        ElementHelper.attachProperties(p, keyValues);
         return p;
     }
 
-    public<V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
-        return property(VertexProperty.Cardinality.single,key,value,keyValues);
+    public <V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+        return property(VertexProperty.Cardinality.single, key, value, keyValues);
     }
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(String... keys) {
-        if (mixin==NO_MIXIN) return super.properties(keys);
-        if (keys!=null && keys.length>0) {
-            int count=0;
+        if (mixin == NO_MIXIN) return super.properties(keys);
+        if (keys != null && keys.length > 0) {
+            int count = 0;
             for (int i = 0; i < keys.length; i++) if (mixin.supports(keys[i])) count++;
-            if (count==0) return super.properties(keys);
-            else if (count==keys.length) return mixin.properties(keys);
+            if (count == 0) return super.properties(keys);
+            else if (count == keys.length) return mixin.properties(keys);
         }
-        return (Iterator)com.google.common.collect.Iterators.concat(super.properties(keys),mixin.properties(keys));
+        return (Iterator) com.google.common.collect.Iterators.concat(super.properties(keys), mixin.properties(keys));
     }
 
     @Override
     public TitanEdge addEdge(String s, Vertex vertex, Object... keyValues) {
-        throw stubVertexException();
+        throw GraphComputer.Exceptions.adjacentVertexEdgesAndVerticesCanNotBeReadOrUpdated();
+    }
+
+    @Override
+    public Iterator<Edge> edges(final Direction direction, final String... edgeLabels) {
+        if (this.mapReduceJob)
+            throw GraphComputer.Exceptions.incidentAndAdjacentElementsCanNotBeAccessedInMapReduce();
+        else
+            return super.edges(direction,edgeLabels);
     }
 
     @Override
     public void remove() {
-        throw stubVertexException();
+
     }
 
     @Override
     public void removeRelation(InternalRelation e) {
-        throw stubVertexException();
+        throw GraphComputer.Exceptions.adjacentVertexPropertiesCanNotBeReadOrUpdated();
     }
 
     @Override
     public boolean addRelation(InternalRelation e) {
-        throw stubVertexException();
+        throw GraphComputer.Exceptions.adjacentVertexPropertiesCanNotBeReadOrUpdated();
     }
-
-    private static UnsupportedOperationException stubVertexException() {
-        return new UnsupportedOperationException("Operation not supported on a stub vertex");
-    }
-
 
     public interface PropertyMixing {
 
@@ -150,7 +163,7 @@ public class PreloadedVertex extends CacheVertex {
 
         public boolean supports(String key);
 
-        public <V>  TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
+        public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
 
     }
 
