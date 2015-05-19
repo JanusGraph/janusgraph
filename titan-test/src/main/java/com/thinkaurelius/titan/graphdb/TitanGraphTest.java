@@ -3282,6 +3282,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int subQueryCounter = 0;
         for (SimpleQueryProfiler subProfiler : profiler) {
             assertNotNull(subProfiler);
+            if (subProfiler.)
             if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
                 assertEquals(subQuerySpecs[0], (Boolean) subProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
                 assertEquals(subQuerySpecs[1], (Boolean) subProfiler.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));

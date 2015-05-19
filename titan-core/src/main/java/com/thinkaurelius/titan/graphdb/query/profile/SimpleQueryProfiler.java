@@ -36,6 +36,10 @@ public class SimpleQueryProfiler implements QueryProfiler, Iterable<SimpleQueryP
         return nested;
     }
 
+    public String getGroupName() {
+        return groupName;
+    }
+
     @Override
     public QueryProfiler setAnnotation(String key, Object value) {
         Preconditions.checkArgument(StringUtils.isNotBlank(key), "Must provide a key");
