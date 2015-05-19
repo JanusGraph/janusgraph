@@ -22,13 +22,20 @@ import java.io.IOException;
 @GraphProviderClass(provider = HBaseGraphComputerProvider.class, graph = TitanGraph.class)
 public class HBaseComputerTest {
 
+    @BeforeClass
+    public static void startHBase() {
+        try {
+            HBaseStorageSetup.startHBase();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-    // TODO what is TP3's equivalent of @AfterClass?
-//    @AfterClass
-//    public static void stopHBase() {
-//        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-//        if (VersionInfo.getVersion().startsWith("0.96"))
-//            HBaseStorageSetup.killIfRunning();
-//    }
+    @AfterClass
+    public static void stopHBase() {
+        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
+        if (VersionInfo.getVersion().startsWith("0.96"))
+            HBaseStorageSetup.killIfRunning();
+    }
 
 }

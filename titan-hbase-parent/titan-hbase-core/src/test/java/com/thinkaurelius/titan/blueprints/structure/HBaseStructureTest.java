@@ -19,12 +19,19 @@ import java.io.IOException;
 @GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
 public class HBaseStructureTest {
 
-    // TODO what is TP3's equivalent of @AfterClass?
-//    @AfterClass
-//    public static void stopHBase() {
-//        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
-//        if (VersionInfo.getVersion().startsWith("0.96"))
-//            HBaseStorageSetup.killIfRunning();
-//    }
+    @BeforeClass
+    public static void startHBase() {
+        try {
+            HBaseStorageSetup.startHBase();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    @AfterClass
+    public static void stopHBase() {
+        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
+        if (VersionInfo.getVersion().startsWith("0.96"))
+            HBaseStorageSetup.killIfRunning();
+    }
 }
