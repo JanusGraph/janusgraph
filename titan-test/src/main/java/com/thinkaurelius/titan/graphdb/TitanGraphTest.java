@@ -3383,9 +3383,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").range(10, 20)), LocalStep.class);
         assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderGlobalStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
-        assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
-        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
-        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight").has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
+        assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
+        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
 
         //Global graph queries
         assertNumStep(1, 1, gts.V().has("id", numV / 5), TitanGraphStep.class);
