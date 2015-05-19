@@ -3374,6 +3374,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
         }
 
+        Traversal t;
+        TraversalMetrics metrics;
         GraphTraversalSource gts = graph.traversal();
 
         assertNumStep(numV / 5, 1, gts.V(sv[0]).outE("knows").has("weight", 1), TitanVertexStep.class);
@@ -3383,9 +3385,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").range(10, 20)), LocalStep.class);
         assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").order().by("weight", decr), TitanVertexStep.class, OrderGlobalStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
-        assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
-        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
-        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight").has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
+        assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
+        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
 
         //Global graph queries
         assertNumStep(1, 1, gts.V().has("id", numV / 5), TitanGraphStep.class);
@@ -3413,15 +3415,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
-        Traversal t;
-        TraversalMetrics metrics;
         //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
+        System.out.println(metrics);
         verifyMetrics(metrics.getMetrics(0), 0, true);
         verifyMetrics(metrics.getMetrics(1), 0, true);
-//        System.out.println(metrics);
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
@@ -3430,9 +3430,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
+//        System.out.println(metrics);
         verifyMetrics(metrics.getMetrics(0), 0, false);
         verifyMetrics(metrics.getMetrics(1), 0, false);
-//        System.out.println(metrics);
 
     }
 
@@ -3442,9 +3442,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             traversal.next();
             num++;
         }
+//        System.out.println(traversal);
         assertEquals(expectedResults, num);
 
-//        traversal.getStrategies().apply(TraversalEngine.STANDARD);
+        //Verify that steps line up with what is expected after Titan's optimizations are applied
         List<Step> steps = traversal.asAdmin().getSteps();
         Set<Class<? extends Step>> expSteps = Sets.newHashSet(expectedStepTypes);
         int numSteps = 0;

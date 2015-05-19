@@ -25,6 +25,9 @@ public interface QueryProfiler {
     public static final String FULLSCAN_ANNOTATION = "fullscan";
     public static final String INDEX_ANNOTATION = "index";
 
+    public static final String OR_QUERY = "OR-query";
+    public static final String AND_QUERY = "AND-query";
+
     public static final QueryProfiler NO_OP = new QueryProfiler() {
         @Override
         public QueryProfiler addNested(String groupName) {
