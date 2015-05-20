@@ -2,8 +2,12 @@ package com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -18,9 +22,13 @@ import java.io.IOException;
  */
 public class TitanGraphSONModule extends SimpleModule {
 
+    private static final String FIELD_RELATION_ID = "relationId";
+
     private TitanGraphSONModule() {
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
         addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer());
+
+        addDeserializer(RelationIdentifier.class, new RelationIdentifierDeserializer());
     }
 
     private static final TitanGraphSONModule INSTANCE = new TitanGraphSONModule();
@@ -46,14 +54,22 @@ public class TitanGraphSONModule extends SimpleModule {
                                       final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField(GraphSONTokens.CLASS, RelationIdentifier.class.getName());
-            long[] asLong = relationIdentifier.getLongRepresentation();
-            //  0=relationId, 1=outVertexId, 2=typeId, 3=inVertexId (optional)
-            jsonGenerator.writeNumberField("relationId",asLong[0]);
-            jsonGenerator.writeNumberField("outVertexId", asLong[1]);
-            jsonGenerator.writeNumberField("typeId", asLong[2]);
-            if (asLong.length>3) jsonGenerator.writeNumberField("inVertexId",asLong[3]);
+            jsonGenerator.writeStringField(FIELD_RELATION_ID, relationIdentifier.toString());
             jsonGenerator.writeEndObject();
         }
+    }
 
+    public static class RelationIdentifierDeserializer extends StdDeserializer<RelationIdentifier> {
+        public RelationIdentifierDeserializer() {
+            super(RelationIdentifier.class);
+        }
+
+        @Override
+        public RelationIdentifier deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            if (!jsonParser.getText().equals(FIELD_RELATION_ID)) throw new IOException(String.format("Invalid serialization format for %s", RelationIdentifier.class));
+            final RelationIdentifier ri = RelationIdentifier.parse(jsonParser.nextTextValue());
+            jsonParser.nextToken();
+            return ri;
+        }
     }
 }
