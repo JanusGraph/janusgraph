@@ -8,6 +8,10 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
 import org.apache.commons.lang3.StringUtils;
+
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.HConnection;
+import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -18,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -116,6 +121,8 @@ public class HBaseStorageSetup {
 
         registerKillerHook(HBASE);
 
+        waitForConnection(60L, TimeUnit.SECONDS);
+
         return HBASE;
     }
 
@@ -132,6 +139,26 @@ public class HBaseStorageSetup {
         }
 
         shutdownHBase(stat);
+    }
+
+    public synchronized static void waitForConnection(long timeout, TimeUnit timeoutUnit) {
+        long before = System.currentTimeMillis();
+        long after;
+        long timeoutMS = TimeUnit.MILLISECONDS.convert(timeout, timeoutUnit);
+        do {
+            try {
+                HConnection hc = HConnectionManager.createConnection(HBaseConfiguration.create());
+                hc.close();
+                after = System.currentTimeMillis();
+                log.info("HBase server to started after about {} ms", after - before);
+                return;
+            } catch (IOException e) {
+                log.info("Exception caught while waiting for the HBase server to start", e);
+            }
+            after = System.currentTimeMillis();
+        } while (timeoutMS > after - before);
+        after = System.currentTimeMillis();
+        log.warn("HBase server did not start in {} ms", after - before);
     }
 
     /**
