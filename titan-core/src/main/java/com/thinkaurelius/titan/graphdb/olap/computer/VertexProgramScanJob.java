@@ -72,7 +72,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         PreloadedVertex v = (PreloadedVertex)vertex;
         long vertexId = v.longId();
         VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
-        v.setAccessCheck(PreloadedVertex.CLOSEDSTAR_CHECK);
+        v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
         if (idManager.isPartitionedVertex(vertexId)) {
             if (idManager.isCanonicalVertexId(vertexId)) {
                 EntryList results = v.getFromCache(SYSTEM_PROPS_QUERY);

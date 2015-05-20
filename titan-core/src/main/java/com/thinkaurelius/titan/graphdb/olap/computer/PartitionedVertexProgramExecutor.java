@@ -89,7 +89,7 @@ public class PartitionedVertexProgramExecutor<M> {
                 Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                         "The bounding transaction is not configured correctly");
                 PreloadedVertex v = (PreloadedVertex)vertex;
-                v.setAccessCheck(PreloadedVertex.CLOSEDSTAR_CHECK);
+                v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
                 v.addToQueryCache(VertexProgramScanJob.SYSTEM_PROPS_QUERY,preloaded);
                 VertexMemoryHandler.Partition<M> vh = new VertexMemoryHandler.Partition<M>(vertexMemory,v);
                 v.setPropertyMixing(vh);
