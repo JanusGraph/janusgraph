@@ -27,14 +27,7 @@ import java.util.List;
  */
 public class PreloadedVertex extends CacheVertex {
 
-    private static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
-        @Override
-        public EntryList get(SliceQuery input) {
-            return EntryList.EMPTY_LIST;
-        }
-    };
-
-    private static final Retriever<SliceQuery, EntryList> EXCEPTION_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
+    public static final Retriever<SliceQuery, EntryList> EMPTY_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
         @Override
         public EntryList get(SliceQuery input) {
             return EntryList.EMPTY_LIST;
@@ -42,8 +35,7 @@ public class PreloadedVertex extends CacheVertex {
     };
 
     private PropertyMixing mixin = NO_MIXIN;
-    private boolean swallowRetrievals = true;
-    private boolean mapReduceJob = false;
+    private AccessCheck accessCheck = DEFAULT_CHECK;
 
     public PreloadedVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -56,12 +48,9 @@ public class PreloadedVertex extends CacheVertex {
         this.mixin = mixin;
     }
 
-    public void setExceptionOnRetrieve(boolean exceptionOnRetrieve) {
-        swallowRetrievals = !exceptionOnRetrieve;
-    }
-
-    public void setMapReduceJob(final boolean mapReduceJob) {
-        this.mapReduceJob = mapReduceJob;
+    public void setAccessCheck(final AccessCheck accessCheck) {
+        Preconditions.checkArgument(accessCheck!=null);
+        this.accessCheck=accessCheck;
     }
 
     @Override
@@ -101,13 +90,12 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
-        return super.loadRelations(query, swallowRetrievals ? EMPTY_RETRIEVER : EXCEPTION_RETRIEVER);
+        return super.loadRelations(query, accessCheck.retrieveSliceQuery());
     }
 
     @Override
     public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
-        if(this.mapReduceJob)
-            throw GraphComputer.Exceptions.vertexPropertiesCanNotBeUpdatedInMapReduce();
+        accessCheck.accessSetProperty();
         TitanVertexProperty<V> p = mixin.property(cardinality, key, value);
         ElementHelper.attachProperties(p, keyValues);
         return p;
@@ -119,6 +107,7 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public <V> Iterator<VertexProperty<V>> properties(String... keys) {
+        accessCheck.accessProperties();
         if (mixin == NO_MIXIN) return super.properties(keys);
         if (keys != null && keys.length > 0) {
             int count = 0;
@@ -136,10 +125,8 @@ public class PreloadedVertex extends CacheVertex {
 
     @Override
     public Iterator<Edge> edges(final Direction direction, final String... edgeLabels) {
-        if (this.mapReduceJob)
-            throw GraphComputer.Exceptions.incidentAndAdjacentElementsCanNotBeAccessedInMapReduce();
-        else
-            return super.edges(direction,edgeLabels);
+        accessCheck.accessEdges();
+        return super.edges(direction,edgeLabels);
     }
 
     @Override
@@ -156,6 +143,92 @@ public class PreloadedVertex extends CacheVertex {
     public boolean addRelation(InternalRelation e) {
         throw GraphComputer.Exceptions.adjacentVertexPropertiesCanNotBeReadOrUpdated();
     }
+
+    public interface AccessCheck {
+
+        public void accessEdges();
+
+        public void accessProperties();
+
+        public void accessSetProperty();
+
+        public Retriever<SliceQuery, EntryList> retrieveSliceQuery();
+
+    }
+
+    public static final AccessCheck DEFAULT_CHECK = new AccessCheck() {
+        @Override
+        public final void accessEdges() {
+            throw GraphComputer.Exceptions.adjacentVertexPropertiesCanNotBeReadOrUpdated();
+        }
+
+        @Override
+        public final void accessProperties() {
+            throw GraphComputer.Exceptions.adjacentVertexPropertiesCanNotBeReadOrUpdated();
+        }
+
+        @Override
+        public void accessSetProperty() {
+            throw GraphComputer.Exceptions.adjacentVertexPropertiesCanNotBeReadOrUpdated();
+        }
+
+        @Override
+        public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
+            return EMPTY_RETRIEVER;
+        }
+    };
+
+    public static final AccessCheck CLOSEDSTAR_CHECK = new AccessCheck() {
+        @Override
+        public final void accessEdges() {
+            return; //Allowed
+        }
+
+        @Override
+        public final void accessProperties() {
+            return; //Allowed
+        }
+
+        @Override
+        public void accessSetProperty() {
+            return; //Allowed
+        }
+
+        @Override
+        public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
+            return EXCEPTION_RETRIEVER;
+        }
+
+        private final Retriever<SliceQuery,EntryList> EXCEPTION_RETRIEVER = new Retriever<SliceQuery, EntryList>() {
+            @Override
+            public EntryList get(SliceQuery input) {
+                throw new UnsupportedOperationException("Cannot access data that hasn't been preloaded.");
+            }
+        };
+    };
+
+    public static final AccessCheck OPENSTAR_CHECK = new AccessCheck() {
+        @Override
+        public final void accessEdges() {
+            return; //Allowed
+        }
+
+        @Override
+        public final void accessProperties() {
+            return; //Allowed
+        }
+
+        @Override
+        public void accessSetProperty() {
+            return; //Allowed
+        }
+
+        @Override
+        public Retriever<SliceQuery, EntryList> retrieveSliceQuery() {
+            return EMPTY_RETRIEVER;
+        }
+    };
+
 
     public interface PropertyMixing {
 

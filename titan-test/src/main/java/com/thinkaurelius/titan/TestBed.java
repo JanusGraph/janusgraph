@@ -63,14 +63,21 @@ public class TestBed {
         add(2);
     }};
 
+    private static void throwOuter() throws Exception {
+        throw throwInner(new IllegalArgumentException("Test"));
+    }
+
+    private static Exception throwInner(Exception e) throws Exception {
+        return e;
+    }
+
     /**
      * @param args
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
 
-        Comparator<Integer> lambda = Integer::compare;
-        System.out.println(lambda.getClass());
+        throwOuter();
 
 //        System.out.println(TEnum.class);
 //        System.out.println(TEnum.ONE.getClass());

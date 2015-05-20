@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
@@ -182,7 +183,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
 
     public GraphCentricQuery constructQuery(final ElementCategory resultType) {
+        QueryProfiler optProfiler = profiler.addNested(QueryProfiler.OPTIMIZATION);
+        optProfiler.startTimer();
         GraphCentricQuery query = constructQueryWithoutProfile(resultType);
+        optProfiler.stopTimer();
         query.observeWith(profiler);
         return query;
     }

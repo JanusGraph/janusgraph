@@ -117,6 +117,7 @@ public class VertexJobConverter implements ScanJob {
         Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                 "The bounding transaction is not configured correctly");
         PreloadedVertex v = (PreloadedVertex)vertex;
+        v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
         for (Map.Entry<SliceQuery,EntryList> entry : entries.entrySet()) {
             SliceQuery sq = entry.getKey();
             if (sq.equals(VERTEX_EXISTS_QUERY)) continue;

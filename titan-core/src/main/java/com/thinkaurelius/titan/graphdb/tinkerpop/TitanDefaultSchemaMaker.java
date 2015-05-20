@@ -11,27 +11,18 @@ import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BlueprintsDefaultSchemaMaker implements DefaultSchemaMaker {
+public class TitanDefaultSchemaMaker implements DefaultSchemaMaker {
 
-    public static final DefaultSchemaMaker INSTANCE = new BlueprintsDefaultSchemaMaker();
+    public static final DefaultSchemaMaker INSTANCE = new TitanDefaultSchemaMaker();
 
-    private BlueprintsDefaultSchemaMaker() {
+    private TitanDefaultSchemaMaker() {
     }
 
     @Override
-    public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory) {
-        return factory.directed().make();
+    public Cardinality defaultPropertyCardinality(String key) {
+        return Cardinality.SINGLE;
     }
 
-    @Override
-    public PropertyKey makePropertyKey(PropertyKeyMaker factory) {
-        return factory.dataType(Object.class).make();
-    }
-
-    @Override
-    public VertexLabel makeVertexLabel(VertexLabelMaker factory) {
-        return factory.make();
-    }
 
     @Override
     public boolean ignoreUndefinedQueryTypes() {

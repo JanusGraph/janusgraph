@@ -104,7 +104,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         }
 
         public void observeWith(QueryProfiler prof) {
-            this.profiler = prof.addNested("AND-query");
+            this.profiler = prof.addNested(QueryProfiler.AND_QUERY);
             profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION,query);
             profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION,index.getName());
             if (index.isMixedIndex()) profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION+"_impl",index.getBackingIndexName());

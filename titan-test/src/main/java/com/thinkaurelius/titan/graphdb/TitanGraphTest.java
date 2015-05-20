@@ -3282,6 +3282,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int subQueryCounter = 0;
         for (SimpleQueryProfiler subProfiler : profiler) {
             assertNotNull(subProfiler);
+            if (subProfiler.getGroupName().equals(QueryProfiler.OPTIMIZATION)) continue;
             if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
                 assertEquals(subQuerySpecs[0], (Boolean) subProfiler.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
                 assertEquals(subQuerySpecs[1], (Boolean) subProfiler.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
@@ -3374,6 +3375,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
         }
 
+        Traversal t;
+        TraversalMetrics metrics;
         GraphTraversalSource gts = graph.traversal();
 
         assertNumStep(numV / 5, 1, gts.V(sv[0]).outE("knows").has("weight", 1), TitanVertexStep.class);
@@ -3385,7 +3388,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").order().by("weight", decr).limit(10)), TitanVertexStep.class);
         assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
-        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
+        assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
 
         //Global graph queries
         assertNumStep(1, 1, gts.V().has("id", numV / 5), TitanGraphStep.class);
@@ -3413,26 +3416,24 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
 
-        Traversal t;
-        TraversalMetrics metrics;
         //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-        verifyMetrics(metrics.getMetrics(0), 0, true);
-        verifyMetrics(metrics.getMetrics(1), 0, true);
-//        System.out.println(metrics);
+        System.out.println(metrics);
+        verifyMetrics(metrics.getMetrics(0), true);
+        verifyMetrics(metrics.getMetrics(1), true);
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
 
         //Verify traversal metrics when having to read from backend
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight",P.lt(3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-        verifyMetrics(metrics.getMetrics(0), 0, false);
-        verifyMetrics(metrics.getMetrics(1), 0, false);
-//        System.out.println(metrics);
+        System.out.println(metrics);
+        verifyMetrics(metrics.getMetrics(0), false);
+        verifyMetrics(metrics.getMetrics(1), false);
 
     }
 
@@ -3442,9 +3443,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             traversal.next();
             num++;
         }
+//        System.out.println(traversal);
         assertEquals(expectedResults, num);
 
-//        traversal.getStrategies().apply(TraversalEngine.STANDARD);
+        //Verify that steps line up with what is expected after Titan's optimizations are applied
         List<Step> steps = traversal.asAdmin().getSteps();
         Set<Class<? extends Step>> expSteps = Sets.newHashSet(expectedStepTypes);
         int numSteps = 0;
@@ -3458,27 +3460,24 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(expectedSteps, numSteps);
     }
 
-    private static void verifyMetrics(Metrics metric, int depth, boolean fromCache) {
-        boolean nestedMetrics = false;
-        if (depth == 0) {
-            assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
-            assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
-            nestedMetrics = true;
-        } else if (depth == 1) {
-            assertTrue(metric.getName().startsWith("OR"));
-            assertNull(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
-            nestedMetrics = !fromCache || !metric.getNested().isEmpty();
-        } else if (depth == 2 && metric.getName().startsWith("AND")) {
-            assertNull(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
-            nestedMetrics = !fromCache;
-        } else {
-            assertTrue(metric.getName().startsWith("backend"));
-            assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
-            assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+    private static void verifyMetrics(Metrics metric, boolean fromCache) {
+        assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
+        assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+        for (Metrics submetric : metric.getNested()) {
+            assertTrue(submetric.getDuration(TimeUnit.MICROSECONDS) > 0);
+            switch (submetric.getName()) {
+                case "optimization":
+                    assertNull(submetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
+                    break;
+                case "backend-query":
+                    if (fromCache) assertFalse("Should not execute backend-queries when cached",true);
+                    assertTrue(submetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+                    break;
+                default: assertFalse("Unrecognized nested query: " + submetric.getName(),true);
+            }
+
         }
-        if (nestedMetrics) {
-            for (Metrics submetric : metric.getNested()) verifyMetrics(submetric, ++depth, fromCache);
-        } else assertTrue(metric.getNested().isEmpty());
+
     }
 
 
@@ -4314,7 +4313,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key));
 
         //Check subqueries
-        SimpleQueryProfiler subp = Iterables.getOnlyElement(profiler);
+        SimpleQueryProfiler subp = Iterables.getOnlyElement(Iterables.filter(profiler, p -> !p.getGroupName().equals(QueryProfiler.OPTIMIZATION)));
         if (subQuerySpecs.length == 2) { //0=>fitted, 1=>ordered
             assertEquals(subQuerySpecs[0], (Boolean) subp.getAnnotation(QueryProfiler.FITTED_ANNOTATION));
             assertEquals(subQuerySpecs[1], (Boolean) subp.getAnnotation(QueryProfiler.ORDERED_ANNOTATION));
