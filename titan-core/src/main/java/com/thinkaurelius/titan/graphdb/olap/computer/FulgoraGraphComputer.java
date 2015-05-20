@@ -236,7 +236,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
 
 
                     reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
-                    mapReduce.addResultToMemory(this.memory, reduceEmitter.getQueue().iterator());
+                    mapReduce.addResultToMemory(this.memory, reduceEmitter.reduceQueue.iterator());
                 } else {
                     mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
                 }
