@@ -47,28 +47,10 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
         test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
         method = "shouldHandleSetVertexProperties",
         reason = "Titan can only handle SET cardinality for properties when defined in the schema")
-//--------------TODO: Need to be fixed! ----------
-//@Graph.OptOut(
-//        test="org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
-//        method="shouldFilterVertexCriterion",
-//        reason="Access to adjacent vertex properties which isn't allowed under GraphComputer StarGraph semantics")
-//@Graph.OptOut(
-//        test="org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.SubgraphStrategyProcessTest",
-//        method="shouldFilterMixedCriteria",
-//        reason="Access to adjacent vertex properties which isn't allowed under GraphComputer StarGraph semantics")
-//@Graph.OptOut(
-//        test="com.tinkerpop.gremlin.process.graph.step.branch.UnionTest$ComputerTest",
-//        method="g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX",
-//        reason="TP3 unexpectedly retrieves labels for neighboring vertices when detaching elements")
-//@Graph.OptOut(
-//        test = "com.tinkerpop.gremlin.structure.strategy.StrategyGraphTest$EdgeShouldBeWrappedTest",
-//        method = "shouldWrap",
-//        specific = "g.V(4).inE()",
-//        reason = "Issue with wrapping/unwrapping vertices and using optimization strategies")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldOnlyAllowReadingVertexPropertiesInMapReduce",
-        reason = "Titan simply throws the wrong exception -- should not be a ReadOnly transaction exception")
+        reason = "Titan simply throws the wrong exception -- should not be a ReadOnly transaction exception but a specific one for MapReduce. This is too cumbersome to refactor in Titan.")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------
