@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 /**
  * Comparison relations for geographic shapes.
@@ -111,4 +112,15 @@ public enum Geo implements TitanPredicate {
         return true;
     }
 
+    //////////////// statics
+
+    public static <V> P<V> geoIntersect(final V value) {
+        return new P(Geo.INTERSECT, value);
+    }
+    public static <V> P<V> geoDisjoint(final V value) {
+        return new P(Geo.DISJOINT, value);
+    }
+    public static <V> P<V> geoWithin(final V value) {
+        return new P(Geo.WITHIN, value);
+    }
 }

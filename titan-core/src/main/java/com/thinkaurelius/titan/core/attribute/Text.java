@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,5 +196,21 @@ public enum Text implements TitanPredicate {
         return true;
     }
 
+    //////////////// statics
 
+    public static <V> P<V> textContains(final V value) {
+        return new P(Text.CONTAINS, value);
+    }
+    public static <V> P<V> textContainsPrefix(final V value) {
+        return new P(Text.CONTAINS_PREFIX, value);
+    }
+    public static <V> P<V> textContainsRegex(final V value) {
+        return new P(Text.CONTAINS_REGEX, value);
+    }
+    public static <V> P<V> textPrefix(final V value) {
+        return new P(Text.PREFIX, value);
+    }
+    public static <V> P<V> textRegex(final V value) {
+        return new P(Text.REGEX, value);
+    }
 }
