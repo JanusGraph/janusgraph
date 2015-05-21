@@ -126,7 +126,7 @@ g = TitanFactory.open('berkeleyje:/tmp/graph')
 Titan Server
 ^^^^^^^^^^^^
 
-To interact with Titan remotely or in another process through a client, a Titan "server" needs to be configured and started. Internally, Titan uses Gremlin Server of the http://tinkerpop.incubator.apache.org/[TinkerPop] stack to service client requests, therefore, configuring Titan Server is accomplished through a Gremlin Server configuration file.
+To interact with Titan remotely or in another process through a client, a Titan "server" needs to be configured and started. Internally, Titan uses http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#gremlin-server[Gremlin Server] of the http://tinkerpop.incubator.apache.org/[TinkerPop] stack to service client requests, therefore, configuring Titan Server is accomplished through a Gremlin Server configuration file.
 
 To configure Gremlin Server with a `TitanGraph` instance the Gremlin Server configuration file requires the following settings:
 
@@ -488,7 +488,7 @@ Gremlin Server with Titan
 
 There are two ways to download and install Gremlin Server with Titan.
 
-. Titan's zip downloads come with Gremlin Server, Titan, and BerkeleyDB preconfigured to work together.
+. Titan's zip downloads come with Gremlin Server, Titan, and BerkeleyDB pre-configured to work together.
 . Download Gremlin Server separately and then manually install Titan.
 
 Each of these approaches is described below.
@@ -513,13 +513,13 @@ Edit the `GREMLIN_SERVER_HOME/conf/gremlin-server.yaml` and include the followin
 ----
 ...
 graphs: {
-  g: conf/titan-berkeleyje.properties}
+  graph: conf/titan-berkeleyje.properties}
 plugins:
   - aurelius.titan
 ...
 ----
 
-The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `g` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
+The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `graph` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
 
 Next add a `conf/titan-berkeleyje.properties` file which should contain something like:
 
@@ -544,7 +544,7 @@ Connecting to Gremlin Server
 
 Regardless of the download and installation method chosen above, Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
 
-Start Gremlin Console with `bin/gremlin.sh` and use the Remote and Submit commands to issue Gremlin to Gremlin Server:
+Start http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
 
 [source, text]
 ----
@@ -558,9 +558,9 @@ plugin activated: aurelius.titan
 plugin activated: tinkerpop.tinkergraph
 gremlin> :remote connect tinkerpop.server conf/remote.yaml
 ==>Connected - localhost/127.0.0.1:8182
-gremlin> :> g.addVertex("name", "stephen")
+gremlin> :> graph.addVertex("name", "stephen")
 ==>v[256]
-gremlin> :> g.traversal().V().values('name')
+gremlin> :> graph.traversal().V().values('name')
 ==>stephen
 ----
 
