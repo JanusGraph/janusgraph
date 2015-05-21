@@ -134,14 +134,14 @@ To configure Gremlin Server with a `TitanGraph` instance the Gremlin Server conf
 ----
 ...
 graphs: {
-  g: conf/titan-berkeleyje.properties
+  graph: conf/titan-berkeleyje.properties
 }
 plugins:
   - aurelius.titan
 ...
 ----
 
-The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `g` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
+The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
 
 Learn more about using and connecting to Titan server in <<server>>.
 
@@ -513,20 +513,31 @@ Edit the `GREMLIN_SERVER_HOME/conf/gremlin-server.yaml` and include the followin
 ----
 ...
 graphs: {
-  graph: conf/titan-berkeleyje.properties}
+  graph: conf/gremlin-server/titan-berkeleyje-server.properties}
 plugins:
   - aurelius.titan
+scriptEngines: {
+  gremlin-groovy: {
+    imports: [java.lang.Math],
+    staticImports: [java.lang.Math.PI],
+    scripts: [scripts/empty-sample.groovy]},
 ...
 ----
 
-The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `graph` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
+The entry for `graphs` defines the bindings to specific `TitanGraph` configuration. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `graph` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts. Finally, note the `scripts` entry, which specifies a list of groovy scripts to execute in the engine.  In this case, it points to `scripts/empty-sample.groovy`.  Its contents look like this:
+
+[source, groovy]
+g = graph.traversal()
+
+This scripts creates the `GraphTraversalSource` from which traversals can be spawned.  The variable `g` becomes bound to the script engine so that on future requests it can be referenced directly.
 
 Next add a `conf/titan-berkeleyje.properties` file which should contain something like:
 
 [source, text]
 ----
+gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
 storage.backend=berkeleyje
-storage.directory=../db/berkeley
+storage.directory=db/berkeley
 ----
 
 Gremlin Server needs to have Titan and its related library dependencies made available to it.  It has an `ext` directory where these libraries can be placed on Gremlin Server's path.  To get Titan on the path, issue the following command (it may take a few minutes to complete this step depending on network speed):
@@ -553,6 +564,7 @@ $  bin/gremlin.sh
          (o o)
 -----oOOo-(3)-oOOo-----
 plugin activated: tinkerpop.server
+plugin activated: tinkerpop.hadoop
 plugin activated: tinkerpop.utilities
 plugin activated: aurelius.titan
 plugin activated: tinkerpop.tinkergraph
@@ -560,11 +572,11 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
 ==>Connected - localhost/127.0.0.1:8182
 gremlin> :> graph.addVertex("name", "stephen")
 ==>v[256]
-gremlin> :> graph.traversal().V().values('name')
+gremlin> :> g.V().values('name')
 ==>stephen
 ----
 
-The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which submits the Gremlin on that line to the currently active remote - in this case, the remote is Gremlin Server.
+The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
 
 [[indexes]]
 Indexing for better Performance
