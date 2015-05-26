@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexProperty;
@@ -13,7 +12,7 @@ import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.apache.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -85,7 +84,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
             final Traversal<Vertex, Edge> reverseIncident = FulgoraUtil.getReverseElementTraversal(localMessageScope,vertex,vertex.tx());
             final BiFunction<M,Edge,M> edgeFct = localMessageScope.getEdgeFunction();
 
-            return StreamFactory.stream(reverseIncident)
+            return IteratorUtils.stream(reverseIncident)
                     .map(e -> {
                         M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((TitanEdge) e).otherVertex(vertex).longId()), localMessageScope);
                         return msg == null ? null : edgeFct.apply(msg, e);
