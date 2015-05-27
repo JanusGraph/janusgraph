@@ -53,7 +53,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
         reason = "Titan simply throws the wrong exception -- should not be a ReadOnly transaction exception but a specific one for MapReduce. This is too cumbersome to refactor in Titan.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
-        method = "shouldWriteNewGraphResultWithVertexProperties",
+        method = "shouldProcessGraphResultNewPersistVertexProperties",
         reason = "The result graph should return an empty iterator when vertex.edges() or vertex.vertices() is called.")
 public interface TitanGraph extends TitanGraphTransaction {
 
