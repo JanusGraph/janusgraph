@@ -353,8 +353,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
         return new Features() {
             @Override
             public boolean supportsResultGraphPersistCombination(final ResultGraph resultGraph, final Persist persist) {
-                return (persist == Persist.NOTHING || persist == Persist.VERTEX_PROPERTIES) &&
-                        (resultGraph == ResultGraph.NEW || resultGraph == ResultGraph.ORIGINAL);
+                return persist == Persist.NOTHING || persist == Persist.VERTEX_PROPERTIES;
             }
 
             @Override
