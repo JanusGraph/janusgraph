@@ -26,6 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -64,8 +66,8 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private int readBatchSize = 10000;
     private int writeBatchSize;
 
-    private ResultGraph resultGraphMode;
-    private Persist persistMode;
+    private ResultGraph resultGraphMode = null;
+    private Persist persistMode = null;
 
     private static final AtomicInteger computerCounter = new AtomicInteger(0);
     private String name;
@@ -75,9 +77,6 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
         this.graph = graph;
         this.writeBatchSize = configuration.get(GraphDatabaseConfiguration.BUFFER_SIZE);
         this.readBatchSize = this.writeBatchSize * 10;
-        ResultMode resultMode = ResultMode.valueOf(configuration.get(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE).toUpperCase());
-        this.resultGraphMode = resultMode.toResultGraph();
-        this.persistMode = resultMode.toPersist();
         this.name = "compute" + computerCounter.incrementAndGet();
     }
 
@@ -130,6 +129,13 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             GraphComputerHelper.validateProgramOnComputer(this, vertexProgram);
             this.mapReduces.addAll(this.vertexProgram.getMapReducers());
         }
+
+        // if the user didn't set desired persistence/resultgraph, then get from vertex program or else, no persistence
+        this.persistMode = GraphComputerHelper.getPersistState(Optional.ofNullable(this.vertexProgram), Optional.ofNullable(this.persistMode));
+        this.resultGraphMode = GraphComputerHelper.getResultGraphState(Optional.ofNullable(this.vertexProgram), Optional.ofNullable(this.resultGraphMode));
+        // determine the legality persistence and result graph options
+        if (!this.features().supportsResultGraphPersistCombination(this.resultGraphMode, this.persistMode))
+            throw GraphComputer.Exceptions.resultGraphPersistCombinationNotSupported(this.resultGraphMode, this.persistMode);
 
         memory = new FulgoraMemory(vertexProgram, mapReduces);
 
@@ -241,7 +247,9 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
 
             // #### Write mutated properties back into graph
             Graph resultgraph = graph;
-            if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getElementComputeKeys().isEmpty()) {
+            if (persistMode == Persist.NOTHING && resultGraphMode == ResultGraph.NEW) {
+                resultgraph = EmptyGraph.instance();
+            } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getElementComputeKeys().isEmpty()) {
                 //First, create property keys in graph if they don't already exist
                 TitanManagement mgmt = graph.openManagement();
                 try {
@@ -295,7 +303,6 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                     }
                 }
             }
-
             // update runtime and return the newly computed graph
             this.memory.setRuntime(System.currentTimeMillis() - time);
             this.memory.complete();
