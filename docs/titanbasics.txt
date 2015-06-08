@@ -455,7 +455,7 @@ gremlin> battle.values('time')
 When adding a vertex, an optional vertex label can be provided. An edge label must be specified when adding edges. Properties as key-value pairs can be set on both vertices and edges. When a property key is defined with SET or LIST cardinality, `addProperty` must be used when adding a respective property to a vertex.
 
 [source, gremlin]
-gremlin> g.traversal().V(hercules).out('battled').in('battled').except([hercules]).values('name')
+gremlin> g.traversal().V(hercules).out('battled').in('battled').where(not(is(hercules))).values('name')
 ==>theseus
 
 The example above has 4 chained functions: `out`, `in`, `except`, and `values` (i.e. `name` is shorthand for `values('name')`). The function signatures of each are itemized below, where `V` is vertex and `U` is any object, where `V` is a subset of `U`.
@@ -592,7 +592,7 @@ Graph indexes are global index structures over the entire graph which allow effi
 
 [source, gremlin]
 g.traversal().V().has('name', 'hercules')
-g.traversal().E().has('reason', CONTAINS, 'loves')
+g.traversal().E().has('reason', new P(CONTAINS, 'loves'))
 
 The first query asks for all vertices with the name `hercules`. The second asks for all edges where the property reason contains the word `loves`. Without a graph index answering those queries would require a full scan over all vertices or edges in the graph to find those that match the given condition which is very inefficient and infeasible for huge graphs.
 
@@ -645,7 +645,7 @@ g.traversal().V().has('age', 30)
 Also note, that composite graph indexes can only be used for equality constraints like those in the queries above. The following query would be answered with just the simple composite index defined on the `name` key because the age constraint is not an equality constraint.
 
 [source, gremlin]
-g.traversal().V().has('name', 'hercules').has('age', inside, [20, 50])
+g.traversal().V().has('name', 'hercules').has('age', inside(20, 50))
 
 Composite indexes do not require configuration of an external indexing backend and are supported through the primary storage backend. Hence, composite index modifications are persisted through the same transaction as graph modifications which means that those changes are atomic and/or consistent if the underlying storage backend supports atomicity and/or consistency.
 
@@ -710,9 +710,9 @@ See <<index-parameters>> for more information on text and string search options,
 While the index definition example looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
 
 [source, gremlin]
-g.traversal().V().has('name', CONTAINS, 'hercules').has('age', inside, [20, 50])
-g.traversal().V().has('name', CONTAINS, 'hercules')
-g.traversal().V().has('age', lt, 50)
+g.traversal().V().has('name', new P(CONTAINS, 'hercules')).has('age', inside(20, 50))
+g.traversal().V().has('name', new P(CONTAINS, 'hercules'))
+g.traversal().V().has('age', lt(50))
 
 Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
 
@@ -756,7 +756,7 @@ The order in which the results of a graph query are returned can be defined usin
 * The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
 * The sort order: either increasing `incr` or decreasing `decr`
 
-For example, the query `g.traversal().V().has('name', CONTAINS, 'hercules').order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
+For example, the query `g.traversal().V().has('name', new P(CONTAINS, 'hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
 
 When using `order().by()` it is important to note that:
 
@@ -804,7 +804,7 @@ Suppose that Hercules battled hundreds of monsters in addition to the three capt
 
 [source, gremlin]
 h = g.traversal().V().has('name', 'hercules').next()
-g.traversal().V(h).outE('battled').has('time', inside, [10, 20]).inV()
+g.traversal().V(h).outE('battled').has('time', inside(10, 20)).inV()
 
 Building a vertex-centric index by time speeds up such traversal queries.
 
@@ -847,9 +847,9 @@ This example extends the schema by a `rating` property on `battled` edges and bu
 //Add some rating data
 h = g.traversal().V().has('name', 'hercules').next()
 g.traversal().V(h).outE('battled').property('rating', 5.0) //Add some rating properties
-g.traversal().V(h).outE('battled').has('rating', gt, 3.0).inV()
-g.traversal().V(h).outE('battled').has('rating', 5.0).has('time', inside, [10, 50]).inV()
-g.traversal().V(h).outE('battled').has('time', inside, [10, 50]).inV()
+g.traversal().V(h).outE('battled').has('rating', gt(3.0)).inV()
+g.traversal().V(h).outE('battled').has('rating', 5.0).has('time', inside(10, 50)).inV()
+g.traversal().V(h).outE('battled').has('time', inside(10, 50)).inV()
 
 Hence, the `battlesByLocationAndTime` index can speed up the first two but not the third query.
 
@@ -900,10 +900,10 @@ Every graph operation in Titan occurs within the context of a transaction. Accor
 
 [source, gremlin]
 ----
-g = TitanFactory.open("berkeleyje:/tmp/titan");
-juno = g.addVertex(); //Automatically opens a new transaction
-juno.property("name", "juno");
-g.tx().commit(); //Commits transaction
+g = TitanFactory.open("berkeleyje:/tmp/titan")
+juno = g.addVertex() //Automatically opens a new transaction
+juno.property("name", "juno")
+g.tx().commit() //Commits transaction
 ----
 
 In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
@@ -914,18 +914,18 @@ Transactional Scope
 All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under Blueprint's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, Titan will automatically transition vertices and types into the new transactional scope as shown in this example::
 
 [source, gremlin]
-g = TitanFactory.open("berkeleyje:/tmp/titan");
-juno = g.addVertex(); //Automatically opens a new transaction
-g.tx().commit(); //Ends transaction
-juno.property("name", "juno"); //Vertex is automatically transitioned
+g = TitanFactory.open("berkeleyje:/tmp/titan")
+juno = g.addVertex() //Automatically opens a new transaction
+g.tx().commit() //Ends transaction
+juno.property("name", "juno") //Vertex is automatically transitioned
 
 Edges, on the other hand, are not automatically transitioned and cannot be accessed outside their original transaction. They must be explicitly transitioned.
 
 [source, gremlin]
-e = juno.addEdge("knows", g.addVertex());
-g.tx().commit(); //Ends transaction
-e = g.traversal().E(e).next(); //Need to refresh edge
-e.property("time", 99);
+e = juno.addEdge("knows", g.addVertex())
+g.tx().commit() //Ends transaction
+e = g.traversal().E(e).next() //Need to refresh edge
+e.property("time", 99)
 
 Transaction Failures
 ~~~~~~~~~~~~~~~~~~~~

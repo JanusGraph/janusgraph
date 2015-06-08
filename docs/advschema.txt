@@ -104,9 +104,9 @@ Unidirected edges can be added on edges and properties, thereby giving Titan lim
 mgmt = g.openManagement()
 mgmt.makeEdgeLabel('author').unidirected().make()
 mgmt.commit()
-user = g.v(4)
-u = g.v(8)
-v = g.v(16)
+user = g.traversal().V(4).next()
+u = g.traversal().V(8).next()
+v = g.traversal().V(16).next()
 v.addEdge('knows', u).property('author', user)
 
 
