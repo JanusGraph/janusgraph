@@ -19,12 +19,12 @@ These methods return an `Iterable` over `Result` objects. A result object contai
 Consider the following example:
 
 [source, java]
-ManagementSystem mgmt = g.openManagement();
+ManagementSystem mgmt = graph.openManagement();
 PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
 mgmt.buildIndex("vertexByText", Vertex.class).addKey(text).buildMixedIndex("search");
 mgmt.commit();
 // ... Load vertices ...
-for (Result<Vertex> result : g.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertices()) {
+for (Result<Vertex> result : graph.indexQuery("vertexByText", "v.text:(farm uncle berry)").vertices()) {
    System.out.println(result.getElement() + ": " + result.getScore());
 }
 

@@ -15,16 +15,15 @@ The target property key must be created and covered by a unique index in Titan p
 To prepare Titan for ElementIdStrategy, first create the property key. Set the `dataType` of the property key to match the custom IDs that you intend to use. Second, build a unique composite index on the property key. The following example shows how to define and index the property key to support IdGraph with string vertex IDs.
 
 [source, gremlin]
-g = TitanFactory.open("berkeleyje:/tmp/test")
+graph = TitanFactory.open("berkeleyje:/tmp/test")
 // Define a property key and index for managed vertex IDs
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 idKey = mgmt.makePropertyKey("name").dataType(String.class).make()
 mgmt.buildIndex("byName", Vertex.class).addKey(idKey).unique().buildCompositeIndex()
 mgmt.commit()
 // Create an that manages vertex IDs but not edge IDs
 strategy = ElementIdStrategy.build().idPropertyKey("name").create()
-ig = GraphTraversalSource.build().with(strategy).create(g)
-
+g = GraphTraversalSource.build().with(strategy).create(graph)
 // Insert example vertex with custom identifier
-hercules = ig.addV(T.id, "hercules")
-ig.V("hercules")
+hercules = g.addV(T.id, "hercules")
+g.V("hercules")

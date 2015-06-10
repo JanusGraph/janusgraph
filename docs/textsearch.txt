@@ -20,7 +20,7 @@ Full-Text Search
 By default, strings are indexed as text. To make this indexing option explicit, one can define a mapping when indexing a property key as text.
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 summary = mgmt.makePropertyKey('booksummary').dataType(String.class).make()
 mgmt.buildIndex('booksBySummary', Vertex.class).addKey(summary, Mapping.TEXT.asParameter()).buildMixedIndex("search")
 mgmt.commit()
@@ -43,7 +43,7 @@ String Search
 To index string properties as character sequences without any analysis or tokenization, specify the mapping as `Mapping.STRING`:
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
 mgmt.buildIndex('booksBySummary', Vertex.class).addKey(name, Mapping.STRING.asParameter()).buildMixedIndex("search")
 mgmt.commit()
@@ -65,7 +65,7 @@ Full text and string search
 If you are using ElasticSearch it is possible to index properties as both text and string allowing you to use all of the predicates for exact and fuzzy matching.
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 summary = mgmt.makePropertyKey('booksummary').dataType(String.class).make()
 mgmt.buildIndex('booksBySummary', Vertex.class).addKey(summary, Mapping.TEXTSTRING.asParameter()).buildMixedIndex("search")
 mgmt.commit()
@@ -82,7 +82,7 @@ Individual Field Mapping
 By default, Titan will encode property keys to generate a unique field name for the property key in the mixed index. If one wants to query the mixed index directly in the external index backend can be difficult to deal with and are illegible. For this use case, the field name can be explicitly specified through a parameter.
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 name = mgmt.makePropertyKey('bookname').dataType(String.class).make()
 mgmt.buildIndex('booksBySummary', Vertex.class).addKey(name, Parameter.of('mapped-name', 'bookname')).buildMixedIndex("search")
 mgmt.commit()

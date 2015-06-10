@@ -42,27 +42,27 @@ Query Examples
 
 The following query examples demonstrate some of the predicates on the tutorial graph.
 
-[source, java]
- // 1) Find vertices with the name "hercules"
-g.traversal().V().has("name", "hercules")
+[source, gremlin]
+// 1) Find vertices with the name "hercules"
+g.V().has("name", "hercules")
 // 2) Find all vertices with an age greater than 50
-g.traversal().V().has("age", gt(50))
+g.V().has("age", gt(50))
 // or find all vertices between 1000 (inclusive) and 5000 (exclusive) years of age and order by increasing age
-g.traversal().V().has("age", inside(1000, 5000)).order().by("age", incr)
+g.V().has("age", inside(1000, 5000)).order().by("age", incr)
 // which returns the same result set as the following query but in reverse order
-g.traversal().V().has("age", inside(1000, 5000)).order().by("age", decr)
+g.V().has("age", inside(1000, 5000)).order().by("age", decr)
 // 3) Find all edges where the place is at most 50 kilometers from the given latitude-longitude pair
-g.traversal().E().has("place", new P(WITHIN, Geoshape.circle(37.97, 23.72, 50)))
+g.E().has("place", new P(WITHIN, Geoshape.circle(37.97, 23.72, 50)))
 // 4) Find all edges where reason contains the word "loves"
-g.traversal().E().has("reason", new P(CONTAINS, "loves"))
+g.E().has("reason", new P(CONTAINS, "loves"))
 // or all edges which contain two words (need to chunk into individual words)
-g.traversal().E().has("reason", new P(CONTAINS, "loves")).has("reason", new P(CONTAINS, "breezes"))
+g.E().has("reason", new P(CONTAINS, "loves")).has("reason", new P(CONTAINS, "breezes"))
 // or all edges which contain words that start with "lov"
-g.traversal().E().has("reason", new P(CONTAINS_PREFIX, "lov"))
+g.E().has("reason", new P(CONTAINS_PREFIX, "lov"))
 // or all edges which contain words that match the regular expression "br[ez]*s" in their entirety
-g.traversal().E().has("reason", new P(CONTAINS_REGEX, "br[ez]*s"))
+g.E().has("reason", new P(CONTAINS_REGEX, "br[ez]*s"))
 // 5) Find all vertices older than a thousand years and named "saturn"
-g.traversal().V().has("age", gt(1000)).has("name", "saturn")
+g.V().has("age", gt(1000)).has("name", "saturn")
 
 
 [[mixeddatatypes]]
@@ -133,17 +133,17 @@ If you are using <<elasticsearch, Elasticsearch>> then you can index properties 
 For instance:
 
 [source, gremlin]
-mgmt = g.openManagement();
-nameProperty = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.SET).make();
-mgmt.buildIndex("search", Vertex.class).addKey(nameProperty, Mapping.STRING.asParameter()).buildMixedIndex("search");
-mgmt.commit();
+mgmt = graph.openManagement()
+nameProperty = mgmt.makePropertyKey("names").dataType(String.class).cardinality(Cardinality.SET).make()
+mgmt.buildIndex("search", Vertex.class).addKey(nameProperty, Mapping.STRING.asParameter()).buildMixedIndex("search")
+mgmt.commit()
 //Insert a vertex
-person = g.addVertex();
-person.property("names", "Robert");
-person.property("names", "Bob");
-g.tx().commit();
+person = graph.addVertex()
+person.property("names", "Robert")
+person.property("names", "Bob")
+graph.tx().commit()
 //Now query it
-g.traversal().V().has("names", "Bob").count().next(); //1
-g.traversal().V().has("names", "Robert").count().next(); //1
+g.V().has("names", "Bob").count().next() //1
+g.V().has("names", "Robert").count().next() //1
 
 

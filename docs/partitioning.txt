@@ -41,7 +41,7 @@ Cutting a vertex means storing a subset of that vertex's adjacency list on each 
 Titan cuts vertices by label. A vertex label can be defined as _partitioned_ which means that all vertices of that label will be partitiond across the cluster in the manner described above.
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 mgmt.makeVertexLabel('user').make()
 mgmt.makeVertexLabel('product').partition().make()
 mgmt.commit()
