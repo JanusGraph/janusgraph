@@ -305,7 +305,7 @@ dataset.  Picking up the gremlin.sh session started above:
 [source, gremlin]
 ----
 // Assuming graph = TitanFactory.open('conf/titan-cassandra-solr.properties')...
-gremlin> GraphOfTheGodsFactory.load(g)
+gremlin> GraphOfTheGodsFactory.load(graph)
 ==>null
 ----
 
