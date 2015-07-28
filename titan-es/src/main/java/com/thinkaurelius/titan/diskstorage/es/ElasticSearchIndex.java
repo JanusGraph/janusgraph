@@ -681,6 +681,7 @@ public class ElasticSearchIndex implements IndexProvider {
             int prefixLength = "{\"value\":".length();
             int suffixLength = "}".length();
             String result = s.substring(prefixLength, s.length() - suffixLength);
+            result = result.replace("$", "\\$");
             return result;
         } catch (IOException e) {
             throw new PermanentBackendException("Could not write json");

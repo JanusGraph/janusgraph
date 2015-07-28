@@ -15,7 +15,9 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
 import com.thinkaurelius.titan.core.schema.Mapping;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import org.junit.Test;
 
 import java.io.File;
@@ -163,5 +165,28 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         } finally {
             tx = null;
         }
+    }
+
+    @Test
+    public void testUnescapedDollarInSet() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(PHONE_SET, "12345");
+
+        add("vertex", "unescaped", initialDoc, true);
+
+        clopen();
+
+        Multimap<String, Object> updateDoc = HashMultimap.create();
+        updateDoc.put(PHONE_SET, "$123");
+        add("vertex", "unescaped", updateDoc, false);
+
+        add("vertex", "other", getRandomDocument(), true);
+
+        clopen();
+
+        assertEquals("unescaped", tx.query(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "$123"))).get(0));
+        assertEquals("unescaped", tx.query(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "12345"))).get(0));
     }
 }
