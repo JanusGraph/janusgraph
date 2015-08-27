@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.util.stats;
 
 import com.carrotsearch.hppc.IntCollection;
 import com.carrotsearch.hppc.IntDoubleMap;
-import com.carrotsearch.hppc.IntDoubleOpenHashMap;
+import com.carrotsearch.hppc.IntDoubleHashMap;
 
 /**
  * Count relative integer frequencies
@@ -16,7 +16,7 @@ public class IntegerDoubleFrequency {
     private double total;
 
     public IntegerDoubleFrequency() {
-        counts = new IntDoubleOpenHashMap();
+        counts = new IntDoubleHashMap();
         total = 0;
     }
 

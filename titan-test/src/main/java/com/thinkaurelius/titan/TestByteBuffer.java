@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan;
 
 import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.LongObjectHashMap;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -66,7 +66,7 @@ public class TestByteBuffer {
     }
 
     private static long testByte() {
-        LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx = new LongObjectOpenHashMap<ConcurrentSkipListSet<ByteEntry>>(NUM);
+        LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx = new LongObjectHashMap<ConcurrentSkipListSet<ByteEntry>>(NUM);
         for (int i = 0; i < NUM; i++) {
             tx.put(i, new ConcurrentSkipListSet<ByteEntry>());
         }

@@ -1,16 +1,16 @@
 package com.thinkaurelius.titan.util.datastructures;
 
-import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntCursor;
 
 import java.util.Iterator;
 
 /**
- * Implementation of {@link IntSet} against {@link IntIntOpenHashMap}.
+ * Implementation of {@link IntSet} against {@link IntIntHashMap}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class IntHashSet extends IntIntOpenHashMap implements IntSet {
+public class IntHashSet extends IntIntHashMap implements IntSet {
 
     private static final long serialVersionUID = -7297353805905443841L;
     private static final int defaultValue = 1;

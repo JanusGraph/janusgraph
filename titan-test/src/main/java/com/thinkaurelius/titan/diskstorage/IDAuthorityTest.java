@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.StorageSetup;
@@ -172,7 +172,7 @@ public abstract class IDAuthorityTest {
 
     private void checkBlock(IDBlock block) {
         assertTrue(blockSize<10000);
-        LongSet ids = new LongOpenHashSet((int)blockSize);
+        LongSet ids = new LongHashSet((int)blockSize);
         checkBlock(block,ids);
     }
 
@@ -235,7 +235,7 @@ public abstract class IDAuthorityTest {
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         idAuthorities[0].setIDBlockSizer(blockSizer);
         int numTrials = 100;
-        LongSet ids = new LongOpenHashSet((int)blockSize*numTrials);
+        LongSet ids = new LongHashSet((int)blockSize*numTrials);
         long previous = 0;
         for (int i=0;i<numTrials;i++) {
             IDBlock block = idAuthorities[0].getIDBlock(0, 0, GET_ID_BLOCK_TIMEOUT);
@@ -353,7 +353,7 @@ public abstract class IDAuthorityTest {
         es.shutdownNow();
 
         assertEquals(blocksPerThread * CONCURRENCY, blocks.size());
-        LongSet ids = new LongOpenHashSet((int)blockSize*blocksPerThread*CONCURRENCY);
+        LongSet ids = new LongHashSet((int)blockSize*blocksPerThread*CONCURRENCY);
         for (IDBlock block : blocks) checkBlock(block,ids);
     }
 
@@ -397,7 +397,7 @@ public abstract class IDAuthorityTest {
         for (int i = 0; i < numPartitions; i++) {
             ConcurrentLinkedQueue<IDBlock> list = ids.get(i);
             assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
-            LongSet idset = new LongOpenHashSet((int)blockSize*list.size());
+            LongSet idset = new LongHashSet((int)blockSize*list.size());
             for (IDBlock block : list) checkBlock(block,idset);
         }
 

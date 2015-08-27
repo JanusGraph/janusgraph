@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
-import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -14,16 +14,16 @@ import java.util.*;
  */
 public class RelationCache implements Iterable<LongObjectCursor<Object>> {
 
-    private static final LongObjectOpenHashMap<Object> EMPTY = new LongObjectOpenHashMap<Object>(0);
+    private static final LongObjectHashMap<Object> EMPTY = new LongObjectHashMap<>(0);
 
     public final Direction direction;
     public final long typeId;
     public final long relationId;
     private final Object other;
-    private final LongObjectOpenHashMap<Object> properties;
+    private final LongObjectHashMap<Object> properties;
 
     public RelationCache(final Direction direction, final long typeId, final long relationId,
-                         final Object other, final LongObjectOpenHashMap<Object> properties) {
+                         final Object other, final LongObjectHashMap<Object> properties) {
         this.direction = direction;
         this.typeId = typeId;
         this.relationId = relationId;
