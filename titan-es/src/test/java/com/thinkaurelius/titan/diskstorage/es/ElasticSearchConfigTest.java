@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Joiner;
+
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
@@ -55,6 +58,24 @@ public class ElasticSearchConfigTest {
     }
 
     @Test
+    public void testTitanFactoryBuilder()
+    {
+        String baseDir = Joiner.on(File.separator).join("target", "es", "titanfactory_jvmlocal_ext");
+        TitanFactory.Builder builder = TitanFactory.build();
+        builder.set("storage.backend", "inmemory");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.interface", "NODE");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "true");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.client", "false");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.local", "true");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.data", baseDir + File.separator + "data");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.work", baseDir + File.separator + "work");
+        builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.logs", baseDir + File.separator + "logs");
+        TitanGraph graph = builder.open(); // Must not throw an exception
+        assertTrue(graph.isOpen());
+        graph.close();
+    }
+
+    @Test
     public void testTransportClient() throws BackendException, InterruptedException {
         ElasticsearchRunner esr = new ElasticsearchRunner(".", "transportClient.yml");
         esr.start();
@@ -85,7 +106,7 @@ public class ElasticSearchConfigTest {
     @Test
     public void testLocalNodeUsingExt() throws BackendException, InterruptedException {
 
-        String baseDir = Joiner.on("/").join("target", "es", "jvmlocal_ext");
+        String baseDir = Joiner.on(File.separator).join("target", "es", "jvmlocal_ext");
 
         assertFalse(new File(baseDir + File.separator + "data").exists());
 
@@ -111,7 +132,7 @@ public class ElasticSearchConfigTest {
     @Test
     public void testLocalNodeUsingExtAndIndexDirectory() throws BackendException, InterruptedException {
 
-        String baseDir = Joiner.on("/").join("target", "es", "jvmlocal_ext2");
+        String baseDir = Joiner.on(File.separator).join("target", "es", "jvmlocal_ext2");
 
         assertFalse(new File(baseDir + File.separator + "data").exists());
 
@@ -135,7 +156,7 @@ public class ElasticSearchConfigTest {
     @Test
     public void testLocalNodeUsingYaml() throws BackendException, InterruptedException {
 
-        String baseDir = Joiner.on("/").join("target", "es", "jvmlocal_yml");
+        String baseDir = Joiner.on(File.separator).join("target", "es", "jvmlocal_yml");
 
         assertFalse(new File(baseDir + File.separator + "data").exists());
 

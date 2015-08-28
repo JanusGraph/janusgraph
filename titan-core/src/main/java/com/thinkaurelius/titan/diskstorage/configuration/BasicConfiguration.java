@@ -81,7 +81,7 @@ public class BasicConfiguration extends AbstractConfiguration {
                 Preconditions.checkArgument(pid.element.isOption() && !pid.lastIsUmbrella);
                 result.put(pid,get((ConfigOption)pid.element,pid.umbrellaElements));
             } catch (IllegalArgumentException e) {
-                log.info("Ignored configuration entry for {} since it does not map to an option",key,e);
+                log.debug("Ignored configuration entry for {} since it does not map to an option",key,e);
                 continue;
             }
         }
