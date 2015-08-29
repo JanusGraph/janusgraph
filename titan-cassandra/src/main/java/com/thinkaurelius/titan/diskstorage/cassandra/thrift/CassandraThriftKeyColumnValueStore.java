@@ -200,13 +200,13 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws BackendException {
-        final IPartitioner<? extends Token<?>> partitioner = storeManager.getCassandraPartitioner();
+        final IPartitioner partitioner = storeManager.getCassandraPartitioner();
 
         if (!(partitioner instanceof RandomPartitioner) && !(partitioner instanceof Murmur3Partitioner))
             throw new PermanentBackendException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
 
         try {
-            return new AllTokensIterator<Token<?>>(partitioner, sliceQuery, storeManager.getPageSize());
+            return new AllTokensIterator(partitioner, sliceQuery, storeManager.getPageSize());
         } catch (Exception e) {
             throw convertException(e);
         }
@@ -214,14 +214,14 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(KeyRangeQuery keyRangeQuery, StoreTransaction txh) throws BackendException {
-        final IPartitioner<? extends Token<?>> partitioner = storeManager.getCassandraPartitioner();
+        final IPartitioner partitioner = storeManager.getCassandraPartitioner();
 
         // see rant about the reason of this limitation in Astyanax implementation of this method.
         if (!(partitioner instanceof AbstractByteOrderedPartitioner))
             throw new PermanentBackendException("This operation is only allowed when byte-ordered partitioner is used.");
 
         try {
-            return new KeyRangeIterator<Token<?>>(partitioner, keyRangeQuery, storeManager.getPageSize(),
+            return new KeyRangeIterator(partitioner, keyRangeQuery, storeManager.getPageSize(),
                     keyRangeQuery.getKeyStart().asByteBuffer(),
                     keyRangeQuery.getKeyEnd().asByteBuffer());
         } catch (Exception e) {
@@ -272,7 +272,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         return getRangeSlices(new org.apache.cassandra.thrift.KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(count), columnSlice);
     }
 
-    private <T extends Token<?>> List<KeySlice> getTokenSlice(T startToken, T endToken,
+    private <T extends Token> List<KeySlice> getTokenSlice(T startToken, T endToken,
             SliceQuery sliceQuery, int count) throws BackendException {
 
         String st = sanitizeBrokenByteToken(startToken);
@@ -283,7 +283,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         return getRangeSlices(kr, sliceQuery);
     }
 
-    private String sanitizeBrokenByteToken(Token<?> tok) {
+    private String sanitizeBrokenByteToken(Token tok) {
         /*
          * Background: https://issues.apache.org/jira/browse/CASSANDRA-5566
          *
@@ -338,7 +338,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             }
 
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
-            List<KeySlice> result = new ArrayList<KeySlice>(slices.size());
+            List<KeySlice> result = new ArrayList<>(slices.size());
             KeyIterationPredicate pred = new KeyIterationPredicate();
             for (KeySlice ks : slices)
                 if (pred.apply(ks))
@@ -365,7 +365,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
      * keys into tokens. For instance, under RandomPartitioner, tokens are the
      * MD5 hashes of keys.
      */
-    public class AbstractBufferedRowIter<T extends Token<?>> implements KeyIterator {
+    public class AbstractBufferedRowIter implements KeyIterator {
 
         private final int pageSize;
         private final SliceQuery columnSlice;
@@ -375,15 +375,15 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         protected Iterator<KeySlice> ksIter;
         private KeySlice mostRecentRow;
 
-        private final IPartitioner<? extends T> partitioner;
-        private T nextStartToken;
-        private final T endToken;
+        private final IPartitioner partitioner;
+        private Token nextStartToken;
+        private final Token endToken;
         private ByteBuffer nextStartKey;
 
         private boolean omitEndToken;
 
-        public AbstractBufferedRowIter(IPartitioner<? extends T> partitioner,
-                SliceQuery columnSlice, int pageSize, T startToken, T endToken, boolean omitEndToken) {
+        public AbstractBufferedRowIter(IPartitioner partitioner,
+                SliceQuery columnSlice, int pageSize, Token startToken, Token endToken, boolean omitEndToken) {
             this.pageSize = pageSize;
             this.partitioner = partitioner;
             this.nextStartToken = startToken;
@@ -511,14 +511,14 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private final class AllTokensIterator<T extends Token<?>> extends AbstractBufferedRowIter<T> {
-        public AllTokensIterator(IPartitioner<? extends T> partitioner, SliceQuery columnSlice, int pageSize) {
+    private final class AllTokensIterator extends AbstractBufferedRowIter {
+        public AllTokensIterator(IPartitioner partitioner, SliceQuery columnSlice, int pageSize) {
             super(partitioner, columnSlice, pageSize, partitioner.getMinimumToken(), partitioner.getMinimumToken(), false);
         }
     }
 
-    private final class KeyRangeIterator<T extends Token<?>> extends AbstractBufferedRowIter<T> {
-        public KeyRangeIterator(IPartitioner<? extends T> partitioner, SliceQuery columnSlice,
+    private final class KeyRangeIterator extends AbstractBufferedRowIter {
+        public KeyRangeIterator(IPartitioner partitioner, SliceQuery columnSlice,
                 int pageSize, ByteBuffer startKey, ByteBuffer endKey) throws BackendException {
             super(partitioner, columnSlice, pageSize, partitioner.getToken(startKey), partitioner.getToken(endKey), true);
 

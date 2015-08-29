@@ -14,16 +14,17 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
+import org.apache.cassandra.cache.CachingOptions;
 import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.config.CFMetaData.Caching;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.ReadCommand;
-import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.db.SliceByNamesReadCommand;
+import org.apache.cassandra.db.composites.CellName;
+import org.apache.cassandra.db.composites.CellNames;
 import org.apache.cassandra.db.filter.NamesQueryFilter;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
@@ -90,7 +91,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     @Override
     @SuppressWarnings("unchecked")
-    public IPartitioner<? extends Token<?>> getCassandraPartitioner()
+    public IPartitioner getCassandraPartitioner()
             throws BackendException {
         try {
             return StorageService.getPartitioner();
@@ -134,7 +135,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureKeyspaceExists(keySpaceName);
 
         @SuppressWarnings("rawtypes")
-        Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
+        Collection<Range<Token>> ranges = StorageService.instance.getPrimaryRanges(keySpaceName);
+
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
         for (@SuppressWarnings("rawtypes") Range<Token> range : ranges) {
@@ -158,7 +160,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         int size = 0;
         for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
-        Map<StaticBuffer, RowMutation> rowMutations = new HashMap<StaticBuffer, RowMutation>(size);
+        Map<StaticBuffer, org.apache.cassandra.db.Mutation> rowMutations = new HashMap<>(size);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
             String columnFamily = mutEntry.getKey();
@@ -166,9 +168,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 StaticBuffer key = titanMutation.getKey();
                 KCVMutation mut = titanMutation.getValue();
 
-                RowMutation rm = rowMutations.get(key);
+                org.apache.cassandra.db.Mutation rm = rowMutations.get(key);
                 if (rm == null) {
-                    rm = new RowMutation(keySpaceName, key.asByteBuffer());
+                    rm = new org.apache.cassandra.db.Mutation(keySpaceName, key.asByteBuffer());
                     rowMutations.put(key, rm);
                 }
 
@@ -177,28 +179,31 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
 
                         if (null != ttl && ttl > 0) {
-                            rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times), ttl);
+                            rm.add(columnFamily, CellNames.simpleDense(e.getColumnAs(StaticBuffer.BB_FACTORY)),
+                                    e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times), ttl);
                         } else {
-                            rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times));
+                            rm.add(columnFamily, CellNames.simpleDense(e.getColumnAs(StaticBuffer.BB_FACTORY)),
+                                    e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times));
                         }
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), commitTime.getDeletionTime(times));
+                        rm.delete(columnFamily, CellNames.simpleDense(col.as(StaticBuffer.BB_FACTORY)),
+                                commitTime.getDeletionTime(times));
                     }
                 }
 
             }
         }
 
-        mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
+        mutate(new ArrayList<org.apache.cassandra.db.Mutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
 
         sleepAfterWrite(txh, commitTime);
     }
 
-    private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
+    private void mutate(List<org.apache.cassandra.db.Mutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
@@ -279,13 +284,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             return;
 
         // Column Family not found; create it
-        CFMetaData cfm = new CFMetaData(keyspaceName, columnfamilyName, ColumnFamilyType.Standard, comparator, null);
+        CFMetaData cfm = new CFMetaData(keyspaceName, columnfamilyName, ColumnFamilyType.Standard, CellNames.fromAbstractType(comparator, true));
 
         // Hard-coded caching settings
         if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {
-            cfm.caching(Caching.KEYS_ONLY);
+            cfm.caching(CachingOptions.KEYS_ONLY);
         } else if (columnfamilyName.startsWith(Backend.INDEXSTORE_NAME)) {
-            cfm.caching(Caching.ROWS_ONLY);
+            cfm.caching(CachingOptions.ROWS_ONLY);
         }
 
         // Configure sstable compression
@@ -363,9 +368,17 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         while (System.currentTimeMillis() < limit) {
             try {
-                SortedSet<ByteBuffer> ss = new TreeSet<ByteBuffer>();
-                ss.add(ByteBufferUtil.zeroByteBuffer(1));
-                NamesQueryFilter nqf = new NamesQueryFilter(ss);
+                SortedSet<CellName> names = new TreeSet<>(new Comparator<CellName>() {
+                    // This is a singleton set.  We need to define a comparator because SimpleDenseCellName is not
+                    // comparable, but it doesn't have to be a useful comparator
+                    @Override
+                    public int compare(CellName o1, CellName o2)
+                    {
+                        return 0;
+                    }
+                });
+                names.add(CellNames.simpleDense(ByteBufferUtil.zeroByteBuffer(1)));
+                NamesQueryFilter nqf = new NamesQueryFilter(names);
                 SliceByNamesReadCommand cmd = new SliceByNamesReadCommand(ks, ByteBufferUtil.zeroByteBuffer(1), cf, 1L, nqf);
                 StorageProxy.read(ImmutableList.<ReadCommand> of(cmd), ConsistencyLevel.QUORUM);
                 log.info("Read on CF {} in KS {} succeeded", cf, ks);

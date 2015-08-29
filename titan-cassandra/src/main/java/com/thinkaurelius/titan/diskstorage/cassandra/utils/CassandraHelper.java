@@ -96,7 +96,7 @@ public class CassandraHelper {
         return transformRange(range.left, range.right);
     }
 
-    public static KeyRange transformRange(Token<?> leftKeyExclusive, Token<?> rightKeyInclusive) {
+    public static KeyRange transformRange(Token leftKeyExclusive, Token rightKeyInclusive) {
         if (!(leftKeyExclusive instanceof BytesToken))
             throw new UnsupportedOperationException();
 
@@ -107,10 +107,13 @@ public class CassandraHelper {
         BytesToken l = (BytesToken) leftKeyExclusive;
         BytesToken r = (BytesToken) rightKeyInclusive;
 
-        Preconditions.checkArgument(l.token.length == r.token.length, "Tokens have unequal length");
-        int tokenLength = l.token.length;
+        byte[] leftTokenValue = l.getTokenValue();
+        byte[] rightTokenValue = r.getTokenValue();
 
-        byte[][] tokens = new byte[][]{l.token, r.token};
+        Preconditions.checkArgument(leftTokenValue.length == rightTokenValue.length, "Tokens have unequal length");
+        int tokenLength = leftTokenValue.length;
+
+        byte[][] tokens = new byte[][]{leftTokenValue, rightTokenValue};
         byte[][] plusOne = new byte[2][tokenLength];
 
         for (int j = 0; j < 2; j++) {

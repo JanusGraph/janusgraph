@@ -16,6 +16,8 @@ import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.composites.CellNames;
+import org.apache.cassandra.db.composites.Composite;
 import org.apache.cassandra.db.filter.IDiskAtomFilter;
 import org.apache.cassandra.db.filter.SliceQueryFilter;
 import org.apache.cassandra.dht.*;
@@ -104,7 +106,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                                   @Nullable SliceQuery sliceQuery,
                                   int pageSize,
                                   long nowMillis) throws BackendException {
-        IPartitioner<?> partitioner = StorageService.getPartitioner();
+        IPartitioner partitioner = StorageService.getPartitioner();
 
         SliceRange columnSlice = new SliceRange();
         if (sliceQuery == null) {
@@ -155,7 +157,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
          * {@code create(...)} in turn passes that timestamp to the SliceFromReadCommand constructor.
          */
         final long nowMillis = times.getTime().toEpochMilli();
-        SliceQueryFilter sqf = new SliceQueryFilter(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, query.getLimit() + (query.hasLimit()?1:0));
+        Composite startComposite = CellNames.simpleDense(query.getSliceStart().asByteBuffer());
+        Composite endComposite = CellNames.simpleDense(query.getSliceEnd().asByteBuffer());
+        SliceQueryFilter sqf = new SliceQueryFilter(startComposite, endComposite,
+                false, query.getLimit() + (query.hasLimit()?1:0));
         ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamily, nowMillis, sqf);
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
@@ -192,17 +197,28 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     }
 
-    private class FilterDeletedColumns implements Predicate<Column> {
+    private class FilterDeletedColumns implements Predicate<Cell> {
 
-        private final long ts;
+        private final long tsMillis;
+        private final int tsSeconds;
 
-        private FilterDeletedColumns(long ts) {
-            this.ts = ts;
+        private FilterDeletedColumns(long tsMillis) {
+            this.tsMillis = tsMillis;
+            this.tsSeconds = (int)(this.tsMillis / 1000L);
         }
 
         @Override
-        public boolean apply(Column input) {
-            return !input.isMarkedForDelete(ts);
+        public boolean apply(Cell input) {
+            if (!input.isLive(tsMillis))
+                return false;
+
+            // Don't do this.  getTimeToLive() is a duration divorced from any particular clock.
+            // For instance, if TTL=10 seconds, getTimeToLive() will have value 10 (not 10 + epoch seconds), and
+            // this will always return false.
+            //if (input instanceof ExpiringCell)
+            //    return tsSeconds < ((ExpiringCell)input).getTimeToLive();
+
+            return true;
         }
     }
 
@@ -245,7 +261,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
     }
 
-    private static class CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<Column,ByteBuffer> {
+    private static class CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<Cell,ByteBuffer> {
 
         private final EntryMetaData[] schema;
         private final TimestampProvider times;
@@ -256,28 +272,28 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
 
         @Override
-        public ByteBuffer getColumn(Column element) {
-            return org.apache.cassandra.utils.ByteBufferUtil.clone(element.name());
+        public ByteBuffer getColumn(Cell element) {
+            return org.apache.cassandra.utils.ByteBufferUtil.clone(element.name().toByteBuffer());
         }
 
         @Override
-        public ByteBuffer getValue(Column element) {
+        public ByteBuffer getValue(Cell element) {
             return org.apache.cassandra.utils.ByteBufferUtil.clone(element.value());
         }
 
         @Override
-        public EntryMetaData[] getMetaSchema(Column element) {
+        public EntryMetaData[] getMetaSchema(Cell element) {
             return schema;
         }
 
         @Override
-        public Object getMetaData(Column element, EntryMetaData meta) {
+        public Object getMetaData(Cell element, EntryMetaData meta) {
             switch (meta) {
                 case TIMESTAMP:
                     return element.timestamp();
                 case TTL:
-                    return ((element instanceof ExpiringColumn)
-                                    ? ((ExpiringColumn) element).getTimeToLive()
+                    return ((element instanceof ExpiringCell)
+                                    ? ((ExpiringCell) element).getTimeToLive()
                                     : 0);
                 default:
                     throw new UnsupportedOperationException("Unsupported meta data: " + meta);
@@ -361,7 +377,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 throw new NoSuchElementException();
 
             currentRow = keys.next();
-            ByteBuffer currentKey = currentRow.key.key.duplicate();
+            ByteBuffer currentKey = currentRow.key.getKey().duplicate();
 
             try {
                 return StaticArrayBuffer.of(currentKey);
@@ -473,7 +489,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return Iterators.filter(rowIterator, new Predicate<Row>() {
                 @Override
                 public boolean apply(@Nullable Row row) {
-                    return row != null && !row.key.key.equals(exceptKey);
+                    return row != null && !row.key.getKey().equals(exceptKey);
                 }
             });
         }

@@ -296,7 +296,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     @SuppressWarnings("unchecked")
-    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws BackendException {
+    public IPartitioner getCassandraPartitioner() throws BackendException {
         Cluster cl = clusterContext.getClient();
         try {
             return FBUtilities.newPartitioner(cl.describePartitioner());

@@ -41,6 +41,35 @@
             <groupId>com.carrotsearch</groupId>
             <artifactId>junit-benchmarks</artifactId>
         </dependency>
+        <!-- Logging backends.
+             Cassandra 2.1+ moved to Logback.  Titan is logging-backend-agnostic,
+             but still uses Log4j in testing.  The slf4j binding for logback is,
+             inconveniently, packed into the logback-classic artifact.  This means
+             the binding can't easily be removed from the classpath without losing
+             logback-classic or inserting some hack to mess with the jar contents.
+             We can't lose logback-classic because StorageProxy contains hardcoded
+             references to some of its classes (it contains some methods to change
+             logback loglevels at runtime).  Hence, to stick with Log4j, the
+             least-worst approach is to enforce a classpath ordering constraint: as
+             long as the slf4j-log4j12 binding appears on the classpath before
+             logback-classic, log4j will be used instead of logback.  I don't have
+             any special love for log4j, but Titan should use a single logging
+             backend throughout all its tests.   I don't want to maintain a mixture
+             of logback.xml and log4j.properties files scattered randomly through
+             the titan-* submodules.  Maven populates the classpath elements for
+             tests in pom appearance order.  That's why these dependencies are 
+             explicitly declared below: to make slf4j-log4j12 preced logback-classic
+             on the test classpath. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+        <!-- End logging backends. -->
         <dependency>
             <groupId>com.carrotsearch.randomizedtesting</groupId>
             <artifactId>randomizedtesting-runner</artifactId>

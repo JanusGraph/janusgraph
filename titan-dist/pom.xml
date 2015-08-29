@@ -57,6 +57,13 @@
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
         </dependency>
+        <!-- C*2.1 uses airline for command line parsing (incl. nodetool).
+             This dep is not provided through cassandra-all/titan-cassandra. -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>airline</artifactId>
+            <version>0.6</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-console</artifactId>

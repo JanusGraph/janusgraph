@@ -62,7 +62,7 @@
         <tinkerpop.version>3.0.0-incubating</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
-        <cassandra.version>2.0.8</cassandra.version>
+        <cassandra.version>2.1.8</cassandra.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
         <sesame.version>2.7.10</sesame.version>
@@ -93,7 +93,7 @@
         <asm4.version>4.0</asm4.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <jersey.version>1.18.2</jersey.version>
-        <jna.version>3.2.7</jna.version>
+        <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -529,6 +529,11 @@
                 <version>2.2</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>3.2</version>
+            </dependency>
+            <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>1.11</version>
@@ -755,7 +760,7 @@
                 -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>15.0</version>
+                <version>16.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-lang</groupId>
@@ -874,6 +879,16 @@
                 <groupId>com.github.stephenc.high-scale-lib</groupId>
                 <artifactId>high-scale-lib</artifactId>
                 <version>1.1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.clearspring.analytics</groupId>
+                <artifactId>stream</artifactId>
+                <version>2.7.0</version>
+            </dependency>
+            <dependency>
+                <groupId>it.unimi.dsi</groupId>
+                <artifactId>fastutil</artifactId>
+                <version>6.5.7</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.thrift</groupId>
