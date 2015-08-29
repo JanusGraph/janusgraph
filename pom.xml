@@ -62,7 +62,7 @@
         <tinkerpop.version>3.0.0-incubating</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
-        <cassandra.version>2.1.8</cassandra.version>
+        <cassandra.version>2.1.9</cassandra.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
         <sesame.version>2.7.10</sesame.version>
