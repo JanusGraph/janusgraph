@@ -69,12 +69,14 @@
         <slf4j.version>1.7.5</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
         <hadoop1.version>1.2.1</hadoop1.version>
-        <hadoop2.version>2.2.0</hadoop2.version>
+        <hadoop2.version>2.7.1</hadoop2.version>
         <hbase094.version>0.94.25</hbase094.version>
         <hbase096.core.version>0.96.2</hbase096.core.version>
         <hbase096.version>${hbase096.core.version}-hadoop2</hbase096.version>
         <hbase098.core.version>0.98.2</hbase098.core.version>
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
+        <hbase100.core.version>1.0.2</hbase100.core.version>
+        <hbase100.version>${hbase100.core.version}</hbase100.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.3.0</jackson2.version>
         <!-- ES depends on Lucene.  This ES dependency can affect the
@@ -117,7 +119,6 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <!-- TODO titan-hadoop reintegration -->
         <module>titan-hadoop-parent</module>
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
@@ -467,6 +468,12 @@
                 <artifactId>antlr</artifactId>
                 <version>${antlr2.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>3.0.0</version>
+            </dependency>
+
             <!-- Jackson 1.x -->
             <dependency>
                 <groupId>org.codehaus.jackson</groupId>
@@ -958,6 +965,12 @@
                 <artifactId>servlet-api</artifactId>
                 <version>2.5</version>
             </dependency>
+
+            <dependency>
+                <groupId>jdk.tools</groupId>
+                <artifactId>jdk.tools</artifactId>
+                <version>1.8</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -1087,9 +1100,6 @@
 
         <profile>
             <id>sonar-upload</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
                 <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
                 <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
@@ -1097,11 +1107,127 @@
         </profile>
 
         <profile>
-            <id>coverage</id>
+            <id>hadoop1</id>
+
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>hadoop.profile</name>
+                    <value>1.0</value>
+                </property>
             </activation>
 
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-core</artifactId>
+                        <version>${hadoop1.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-client</artifactId>
+                        <version>${hadoop1.version}</version>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+
+        <profile>
+            <id>hadoop2</id>
+
+            <activation>
+                <property>
+                    <name>!hadoop.profile</name>
+                </property>
+            </activation>
+
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.curator</groupId>
+                        <artifactId>curator-recipes</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-annotations</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-auth</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-client</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-common</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-hdfs</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-hdfs</artifactId>
+                        <version>${hadoop2.version}</version>
+                        <classifier>tests</classifier>
+                        <type>test-jar</type>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-mapreduce-client-common</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-mapreduce-client-core</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+                        <version>${hadoop2.version}</version>
+                        <classifier>tests</classifier>
+                        <type>test-jar</type>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-mapreduce-client-shuffle</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-yarn-api</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-yarn-common</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-yarn-server-common</artifactId>
+                        <version>${hadoop2.version}</version>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+	
+        <profile>
+            <id>coverage</id>
             <build>
                 <plugins>
                     <plugin>

@@ -1,7 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.client.Delete;
 
 public interface HBaseCompat {
 
@@ -33,4 +38,10 @@ public interface HBaseCompat {
      * @return a new table descriptor instance
      */
     public HTableDescriptor newTableDescriptor(String tableName);
+
+    ConnectionMask createConnection(Configuration conf) throws IOException;
+
+    void addColumnFamilyToTableDescriptor(HTableDescriptor tdesc, HColumnDescriptor cdesc);
+
+    void setTimestamp(Delete d, long timestamp);
 }

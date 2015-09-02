@@ -39,6 +39,12 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-hbase-10</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
 
@@ -78,6 +84,13 @@
                 <dependency>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>titan-hbase-098</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-hbase-10</artifactId>
                     <version>${project.version}</version>
                     <classifier>sources</classifier>
                     <optional>true</optional>

@@ -34,7 +34,7 @@ public class HBaseStorageSetup {
 
     public static final String HBASE_PARENT_DIR_PROP = "test.hbase.parentdir";
 
-    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^0\\.(9[468])\\..*");
+    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^((0\\.9[468])|(1\\.[01]))\\..*");
 
     private static final String HBASE_PARENT_DIR;
 
@@ -64,8 +64,8 @@ public class HBaseStorageSetup {
     public static String getDirForHBaseVersion(String hv, String lastSubdir) {
         Matcher m = HBASE_SUPPORTED_VERSION_PATTERN.matcher(hv);
         if (m.matches()) {
-            String minor = m.group(1);
-            String result = String.format("%s%stitan-hbase-0%s/%s/", HBASE_PARENT_DIR, File.separator, minor, lastSubdir);
+            String majorDotMinor = m.group(1);
+            String result = String.format("%s%stitan-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdir);
             log.debug("Built {} path for HBase version {}: {}", lastSubdir, hv, result);
             return result;
         } else {
