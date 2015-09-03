@@ -767,7 +767,7 @@
                 -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>16.0</version>
+                <version>18.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-lang</groupId>
