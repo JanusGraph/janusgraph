@@ -1,8 +1,3 @@
-/**
- * Copyright DataStax, Inc.
- * <p>
- * Please see the included license file for details.
- */
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import org.junit.After;
