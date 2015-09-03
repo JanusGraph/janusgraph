@@ -49,10 +49,12 @@ cassandra_storagedir="$CASSANDRA_HOME/data"
 # The java classpath (required)
 CLASSPATH="$CASSANDRA_CONF:$cassandra_bin"
 
-CLASSPATH="$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
+CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
 
 for jar in "$CASSANDRA_HOME"/lib/*.jar; do
-    CLASSPATH="$CLASSPATH:$jar"
+    if [ $jar != slf4j-log4j12* ] ; then
+        CLASSPATH="$CLASSPATH:$jar"
+    fi
 done
 
 # This system property is referenced in log4j-server.properties
