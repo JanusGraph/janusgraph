@@ -220,6 +220,25 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     }
 
     @Test
+    public void vertexProgramExceptionPropagatesToCaller() throws InterruptedException
+    {
+        int numV = 100;
+        int numE = generateRandomGraph(numV);
+        clopen();
+
+        final TitanGraphComputer computer = graph.compute();
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        computer.workers(1);
+        computer.program(new ExceptionProgram());
+
+        try {
+            computer.submit().get();
+            fail();
+        } catch (ExecutionException ee) {
+        }
+    }
+
+    @Test
     public void degreeCountingDistance() throws Exception {
         int numV = 100;
         int numE = generateRandomGraph(numV);
@@ -256,6 +275,59 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 assertTrue(gview instanceof TitanTransaction);
                 ((TitanTransaction)gview).rollback();
             }
+        }
+    }
+
+    public static class ExceptionProgram extends StaticVertexProgram<Integer>
+    {
+
+        @Override
+        public void setup(Memory memory)
+        {
+
+        }
+
+        @Override
+        public void execute(Vertex vertex, Messenger<Integer> messenger, Memory memory)
+        {
+            throw new NullPointerException();
+        }
+
+        @Override
+        public boolean terminate(Memory memory)
+        {
+            return memory.getIteration() > 1;
+        }
+
+        @Override
+        public Set<MessageScope> getMessageScopes(Memory memory)
+        {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public GraphComputer.ResultGraph getPreferredResultGraph() {
+            return GraphComputer.ResultGraph.NEW;
+        }
+
+        @Override
+        public GraphComputer.Persist getPreferredPersist() {
+            return GraphComputer.Persist.VERTEX_PROPERTIES;
+        }
+
+        @Override
+        public Features getFeatures() {
+            return new Features() {
+                @Override
+                public boolean requiresLocalMessageScopes() {
+                    return true;
+                }
+
+                @Override
+                public boolean requiresVertexPropertyAddition() {
+                    return true;
+                }
+            };
         }
     }
 
