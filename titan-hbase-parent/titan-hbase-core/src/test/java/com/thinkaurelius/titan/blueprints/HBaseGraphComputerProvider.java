@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.GraphProvider;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.IOException;
@@ -10,6 +12,7 @@ import java.io.IOException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
+@GraphProvider.Descriptor(computer = FulgoraGraphComputer.class)
 public class HBaseGraphComputerProvider extends AbstractTitanGraphComputerProvider {
 
     @Override
