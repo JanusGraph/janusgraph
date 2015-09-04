@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * Created by bryn on 07/05/15.
@@ -20,8 +21,13 @@ public class ElementUtils {
             return (Long) id;
         if (id instanceof Number)
             return ((Number) id).longValue();
+
         try {
-            return Long.valueOf(id.toString()).longValue();
+            // handles the case of a user passing a "detached" Vertex (DetachedVertex, StarVertex, etc).
+            if (id instanceof Vertex)
+                return Long.parseLong(((Vertex) id).id().toString());
+            else
+                return Long.valueOf(id.toString()).longValue();
         } catch (NumberFormatException e) {
             return 0;
         }
