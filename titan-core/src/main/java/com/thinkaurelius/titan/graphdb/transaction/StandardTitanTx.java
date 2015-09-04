@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import com.thinkaurelius.titan.graphdb.relations.RelationComparator;
 import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
@@ -1071,12 +1072,30 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         @Override
         public boolean hasDeletions(VertexCentricQuery query) {
-            return !deletedRelations.isEmpty() && !query.getVertex().isNew() && query.getVertex().hasRemovedRelations();
+            InternalVertex vertex = query.getVertex();
+            if (vertex.isNew()) return false;
+            //In addition to deleted, we need to also check for added relations since those can potentially
+            //replace existing ones due to a multiplicity constraint
+            if (vertex.hasRemovedRelations() || vertex.hasAddedRelations()) return true;
+            return false;
         }
 
         @Override
         public boolean isDeleted(VertexCentricQuery query, TitanRelation result) {
-            return deletedRelations.containsKey(result.longId()) || result != ((InternalRelation) result).it();
+            if (deletedRelations.containsKey(result.longId()) || result != ((InternalRelation) result).it()) return true;
+            //Check if this relation is replaced by an added one due to a multiplicity constraint
+            InternalRelationType type = (InternalRelationType)result.getType();
+            InternalVertex vertex = query.getVertex();
+            if (type.multiplicity().isConstrained() && vertex.hasAddedRelations()) {
+                final RelationComparator comparator = new RelationComparator(vertex);
+                if (!Iterables.isEmpty(vertex.getAddedRelations(new Predicate<InternalRelation>() {
+                    @Override
+                    public boolean apply(@Nullable InternalRelation internalRelation) {
+                        return comparator.compare((InternalRelation)result,internalRelation)==0;
+                    }
+                }))) return true;
+            }
+            return false;
         }
 
         @Override
