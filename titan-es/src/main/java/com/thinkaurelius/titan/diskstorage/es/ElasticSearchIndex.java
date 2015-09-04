@@ -399,6 +399,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         break;
                     case TEXT:
                         //default, do nothing
+                    	break;
                     case TEXTSTRING:
                         mapping.endObject();
                         //add string mapping
