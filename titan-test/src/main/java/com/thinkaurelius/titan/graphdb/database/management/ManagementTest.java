@@ -19,7 +19,7 @@ public abstract class ManagementTest extends TitanGraphBaseTest {
     private static final Set<String> ILLEGAL_USER_DEFINED_NAMES = ImmutableSet.of(
             "~key", "~value", "~id", "~nid", "~label", "~adjacent",
             "~timestamp", "~ttl", "~visibility",
-            "key", "vertex", "edge", "element", "property", /* TODO #730 "label", */
+            "key", "vertex", "edge", "element", "property", "label",
             "~T$VertexExists",
             "~T$SchemaName",
             "~T$SchemaDefinitionProperty",
