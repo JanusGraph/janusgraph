@@ -18,6 +18,10 @@ over 300 TB of data in over 400 machines.
 
 The following sections outline the various ways in which Titan can be used in concert with Cassandra.
 
+[NOTE]
+If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that Titan can connect to the cluster.
+Do so by running `./bin/nodetool enablethrfit`.
+
 [[cassandra-local-server-mode]]
 Local Server Mode
 ~~~~~~~~~~~~~~~~~

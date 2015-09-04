@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
@@ -7,10 +8,17 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
+import javax.annotation.Nonnull;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,6 +59,12 @@ public class TestBed {
 
     }
 
+    public static class B {
+
+        public B(int a) {}
+
+    }
+
     private static final void doSomethingExpensive(int milliseconds) {
         double d=0.0;
         Random r = new Random();
@@ -71,22 +85,138 @@ public class TestBed {
         return e;
     }
 
+    private static int plusFive(int num) {
+        return num+5;
+    }
+
+    public static class TestA {
+
+        final Number a;
+        final String b;
+
+        public TestA(Number a, String b) {
+            this.a = a;
+            this.b = b;
+        }
+    }
+
+    interface Observer {
+
+        boolean observes();
+
+        void observe(Object o);
+
+        static Observer NO_OP = new Observer() {
+
+            @Override
+            public boolean observes() {
+                return false;
+            }
+
+            @Override
+            public void observe(Object o) {
+                System.out.println(o);
+            }
+        };
+
+    }
+
+    static class ObserverManager implements Observer {
+
+        private boolean observed = false;
+
+        public void observe(Object o, Observer other) {
+            if (!observed && !other.observes()) return;
+            observe(o);
+            other.observe(o);
+        }
+
+        public void observe(Object o1, Object o2, Observer other) {
+            if (!observed && !other.observes()) return;
+            List combined = new ArrayList<>();
+            combined.add(o1);
+            combined.add(o2);
+            observe(combined);
+            other.observe(combined);
+        }
+
+        public boolean observes() {
+            return observed;
+        }
+
+        @Override
+        public void observe(Object o) {
+            System.out.println(o);
+        }
+
+    }
+
+    static class Context {
+
+        private final ObserverManager om;
+        private final Observer os;
+
+        Context(ObserverManager om, Observer os) {
+            this.om = om;
+            this.os = os;
+        }
+
+        public void observe(Object o) {
+            om.observe(o,os);
+        }
+
+        public void observe(Object o1, Object o2) {
+            om.observe(o1,o2,os);
+        }
+
+
+    }
+
+    static class Container {
+        private final String s1;
+        private final String s2;
+
+        Container(String s1, String s2) {
+            this.s1 = s1;
+            this.s2 = s2;
+        }
+    }
+
+    public static @Nonnull String getInt(@Nonnull int a, int b) {
+        return String.valueOf(a+b);
+    }
+
+
     /**
      * @param args
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        Method method = TestBed.class.getMethod("getInt",int.class,int.class);
+        AnnotatedType rt = method.getAnnotatedReturnType();
+        System.out.println(rt.getType());
+        System.out.println(rt.getAnnotations().length);
+        System.out.println(method.getAnnotations().length);
+        for (int i = 0; i < method.getAnnotations().length; i++) {
+            System.out.println(method.getAnnotations()[i]);
+        }
 
-        throwOuter();
 
-//        System.out.println(TEnum.class);
-//        System.out.println(TEnum.ONE.getClass());
-//        System.out.println(TEnum.THREE.getClass());
-//        System.out.println(TEnum.THREE.getClass().isEnum());
-//        System.out.println(TEnum.THREE.getClass().getSuperclass().isEnum());
-//        System.out.println(TEnum.THREE instanceof TEnum);
-//        System.out.println(Object.class.getSuperclass());
-
+//        String[] s = {"a","b","c","d","e","f","g","h","i","x","u"};
+//        int len = s.length;
+//        Random random = new Random();
+//
+//        Context c = new Context(new ObserverManager(),Observer.NO_OP);
+//        //Warmup
+//        for (int i = 0; i < 1000000000; i++) {
+//            c.observe(s[1],s[2]);
+//        }
+//        long before = System.nanoTime();
+//        for (int i = 0; i < 1000000000; i++) {
+//            c.observe(s[1],s[2]);
+//        }
+//        long total = System.nanoTime()-before;
+//        System.out.println("Total time: " + total/1000000);
 
         System.exit(0);
 
