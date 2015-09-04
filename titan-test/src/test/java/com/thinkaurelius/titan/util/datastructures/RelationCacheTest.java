@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.util.datastructures;
 
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
@@ -24,7 +24,7 @@ public class RelationCacheTest {
     @Test
     public void testMap() {
         int len = 100;
-        LongObjectOpenHashMap<Object> map = new LongObjectOpenHashMap<Object>();
+        LongObjectHashMap<Object> map = new LongObjectHashMap<Object>();
         for (int i = 1; i <= len; i++) {
             map.put(i * 1000, "TestValue " + i);
         }
@@ -50,7 +50,7 @@ public class RelationCacheTest {
 
     @Test
     public void testEmpty() {
-        LongObjectOpenHashMap<Object> map = new LongObjectOpenHashMap<Object>();
+        LongObjectHashMap<Object> map = new LongObjectHashMap<Object>();
         assertEquals(0, map.size());
         assertEquals(0, Iterables.size(map));
     }
@@ -61,7 +61,7 @@ public class RelationCacheTest {
         int iterations = 100000;
         for (int k = 0; k < iterations; k++) {
             int len = random.nextInt(10);
-            LongObjectOpenHashMap<Object> map = new LongObjectOpenHashMap<Object>();
+            LongObjectHashMap<Object> map = new LongObjectHashMap<Object>();
             for (int i = 1; i <= len; i++) {
                 map.put(i * 1000, "TestValue " + i);
             }

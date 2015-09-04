@@ -1,22 +1,13 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.StreamFactory;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

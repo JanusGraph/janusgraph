@@ -12,7 +12,7 @@ storage.backend=inmemory
 Alternatively, an in-memory Titan graph can be opened directly in the Gremlin shell:
 
 [source, gremlin]
-g = TitanFactory.build().set('storage.backend', 'inmemory').open()
+graph = TitanFactory.build().set('storage.backend', 'inmemory').open()
 
 There are no additional configuration options for the in-memory storage backend. As the name suggests, this backend holds all data in memory. Shutting down the graph or terminating the process that hosts the Titan graph will irrevocably delete all data from the graph. This backend is local to a particular Titan graph instance and cannot be shared across multiple Titan graphs.
 

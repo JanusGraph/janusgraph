@@ -35,7 +35,7 @@ import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,7 +115,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             final List<Entry> deletions;
             if (entries.size()==1) deletions = Iterables.getOnlyElement(entries.values());
             else {
-                int size = StreamFactory.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
+                int size = IteratorUtils.stream(entries.values().iterator()).map( e -> e.size()).reduce(0, (x,y) -> x+y);
                 deletions = new ArrayList<>(size);
                 entries.values().forEach(e -> deletions.addAll(e));
             }

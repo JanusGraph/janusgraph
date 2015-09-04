@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
             // Find minimum distance among all incoming messages, or null if no messages came in
             Long shortestDistanceSeenOnThisIteration =
-                    StreamFactory.stream(distances).reduce((a, b) -> Math.min(a, b)).orElse(null);
+                    IteratorUtils.stream(distances).reduce((a, b) -> Math.min(a, b)).orElse(null);
 
             if (null == shortestDistanceSeenOnThisIteration)
                 return; // no messages to process or forward on this superstep

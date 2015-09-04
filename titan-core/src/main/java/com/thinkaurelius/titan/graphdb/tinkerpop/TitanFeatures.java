@@ -163,8 +163,14 @@ public class TitanFeatures implements Graph.Features {
         }
 
         @Override
+        public boolean supportsNumericIds()
+        {
+            return true;
+        }
+
+        @Override
         public boolean supportsUserSuppliedIds() {
-            return false;
+            return TitanFeatures.this.graph.getConfiguration().allowVertexIdSetting();
         }
 
         @Override
@@ -176,12 +182,30 @@ public class TitanFeatures implements Graph.Features {
         public boolean supportsUuidIds() {
             return false;
         }
+
+        @Override
+        public boolean supportsStringIds()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean supportsCustomIds()
+        {
+            return false;
+        }
     }
 
     private static class TitanEdgeFeatures implements EdgeFeatures {
         @Override
         public EdgePropertyFeatures properties() {
             return new TitanEdgePropertyFeatures();
+        }
+
+        @Override
+        public boolean supportsCustomIds()
+        {
+            return true;
         }
 
         @Override
@@ -199,6 +223,12 @@ public class TitanFeatures implements Graph.Features {
 
         @Override
         public boolean supportsUuidIds() {
+            return false;
+        }
+
+        @Override
+        public boolean supportsStringIds()
+        {
             return false;
         }
     }

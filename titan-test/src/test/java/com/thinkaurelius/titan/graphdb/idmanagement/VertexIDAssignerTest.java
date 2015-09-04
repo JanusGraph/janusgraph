@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
-import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -96,8 +96,8 @@ public class VertexIDAssignerTest {
 
     @Test
     public void testIDAssignment() {
-        LongSet vertexIds = new LongOpenHashSet();
-        LongSet relationIds = new LongOpenHashSet();
+        LongSet vertexIds = new LongHashSet();
+        LongSet relationIds = new LongHashSet();
         int totalRelations = 0;
         int totalVertices = 0;
         for (int trial = 0; trial < 10; trial++) {

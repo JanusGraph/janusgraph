@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database;
 
 import com.carrotsearch.hppc.LongArrayList;
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
-import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
@@ -73,7 +73,7 @@ public class EdgeSerializer implements RelationReader {
     public RelationCache parseRelation(Entry data, boolean excludeProperties, TypeInspector tx) {
         ReadBuffer in = data.asReadBuffer();
 
-        LongObjectOpenHashMap properties = excludeProperties ? null : new LongObjectOpenHashMap(4);
+        LongObjectHashMap properties = excludeProperties ? null : new LongObjectHashMap(4);
         RelationTypeParse typeAndDir = IDHandler.readRelationType(in);
 
         long typeId = typeAndDir.typeId;
@@ -165,7 +165,7 @@ public class EdgeSerializer implements RelationReader {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] keyIds, LongObjectOpenHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
+    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey keyType = tx.getExistingPropertyKey(keyId);
             Object value = readInline(in, keyType, inlineType);
@@ -288,7 +288,7 @@ public class EdgeSerializer implements RelationReader {
         writeInlineTypes(signature, relation, out, tx, InlineType.SIGNATURE);
 
         //Write remaining properties
-        LongSet writtenTypes = new LongOpenHashSet(sortKey.length + signature.length);
+        LongSet writtenTypes = new LongHashSet(sortKey.length + signature.length);
         if (sortKey.length > 0 || signature.length > 0) {
             for (long id : sortKey) writtenTypes.add(id);
             for (long id : signature) writtenTypes.add(id);

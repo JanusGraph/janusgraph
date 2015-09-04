@@ -184,7 +184,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
             }
 
             @Override
-            public <G extends Graph> G create() {
+            public <G extends Graph> G createThreadedTx() {
                 throw new UnsupportedOperationException("Titan does not support nested transactions.");
             }
 

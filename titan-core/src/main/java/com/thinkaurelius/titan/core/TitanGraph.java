@@ -46,11 +46,15 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
         method = "shouldHandleSetVertexProperties",
-        reason = "Titan can only handle SET cardinality for properties when defined in the schema")
+        reason = "Titan can only handle SET cardinality for properties when defined in the schema.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldOnlyAllowReadingVertexPropertiesInMapReduce",
         reason = "Titan simply throws the wrong exception -- should not be a ReadOnly transaction exception but a specific one for MapReduce. This is too cumbersome to refactor in Titan.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
+        method = "shouldProcessResultGraphNewWithPersistVertexProperties",
+        reason = "The result graph should return an empty iterator when vertex.edges() or vertex.vertices() is called.")
 public interface TitanGraph extends TitanGraphTransaction {
 
    /* ---------------------------------------------------------------

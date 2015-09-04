@@ -536,7 +536,7 @@ public class ElasticSearchIndex implements IndexProvider {
             return value;
         } else if (value instanceof UUID) {
             return value.toString();
-        } else throw new IllegalArgumentException("Unsupported type: " + value);
+        } else throw new IllegalArgumentException("Unsupported type: " + value.getClass() + " (value: " + value + ")");
     }
 
     @Override

@@ -215,7 +215,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     @SuppressWarnings("unchecked")
-    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws BackendException {
+    public IPartitioner getCassandraPartitioner() throws BackendException {
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(SYSTEM_KS);
@@ -340,7 +340,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     @Override
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
         CTConnection conn = null;
-        IPartitioner<?> partitioner = getCassandraPartitioner();
+        IPartitioner partitioner = getCassandraPartitioner();
 
         if (!(partitioner instanceof AbstractByteOrderedPartitioner))
             throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");

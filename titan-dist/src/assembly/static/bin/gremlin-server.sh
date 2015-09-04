@@ -1,31 +1,45 @@
 #!/bin/bash
 
-case `uname` in
-  CYGWIN*)
-    CP="`dirname $0`"/../config/
-    CP="$CP":$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
-    CP="$CP":$( echo `dirname $0`/../ext/*.jar . | sed 's/ /;/g')
-    ;;
-  *)
-    CP="`dirname $0`"/../config/
-    CP="$CP":$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
-    CP="$CP":$( echo `dirname $0`/../ext/*.jar . | sed 's/ /;/g')
-esac
-#echo $CP
-
+# ${BASH_SOURCE[0]} is the path to this file
 SOURCE="${BASH_SOURCE[0]}"
+# Set $BIN to the absolute, symlinkless path to $SOURCE's parent
 while [ -h "$SOURCE" ]; do
-  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-  SOURCE="$(readlink "$SOURCE")"
-  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$BIN/$SOURCE"
 done
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-CP=$CP:"$DIR/../conf/gremlin-server"
-CP=$CP:$(find -L $DIR/../ext/ -name "*.jar" | tr '\n' ':')
+BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+# Set $CFG to $BIN/../conf/gremlin-server
+cd -P $BIN/../conf/gremlin-server
+CFG=$(pwd)
+# Set $LIB to $BIN/../lib
+cd -P $BIN/../lib
+LIB=$(pwd)
+# Set $LIB to $BIN/../ext
+cd -P $BIN/../ext
+EXT=$(pwd)
+# Initialize classpath to $CFG
+CP="$CFG"
+# Add the slf4j-log4j12 binding
+CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../lib that start with "titan"
+CP="$CP":$(find -L $LIB -name 'titan*.jar' | sort | tr '\n' ':')
+# Add the remaining jars in $BIN/../lib.
+CP="$CP":$(find -L $LIB -name '*.jar' \
+                \! -name 'titan*' \
+                \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../ext (at any subdirectory depth)
+CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
+
+# (Cygwin only) Use ; classpath separator and reformat paths for Windows ("C:\foo")
+[[ $(uname) = CYGWIN* ]] && CP="$(cygpath -p -w "$CP")"
 
 export CLASSPATH="${CLASSPATH:-}:$CP"
 
-export TITAN_LOGDIR="$DIR/../log"
+# Change to $BIN's parent
+cd $BIN/..
+
+export TITAN_LOGDIR="$BIN/../log"
 
 # Find Java
 if [ "$JAVA_HOME" = "" ] ; then
@@ -36,7 +50,7 @@ fi
 
 # Set Java options
 if [ "$JAVA_OPTIONS" = "" ] ; then
-    JAVA_OPTIONS="-Xms32m -Xmx512m -javaagent:$DIR/../lib/jamm-0.2.5.jar"
+    JAVA_OPTIONS="-Xms32m -Xmx512m -javaagent:$LIB/jamm-0.3.0.jar"
 fi
 
 # Execute the application and return its exit code

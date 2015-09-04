@@ -5,6 +5,13 @@ Upgrade Instructions
 
 Please follow these instructions when upgrading from an older Titan release.
 
+Version 0.9.0-M2 (June 8, 2015)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan 0.9.0-M2 uses the same storage format as 0.5.x, but since it's a milestone release with a lower standard of testing and stability than general availabi
+
+The query language and API have changed considerably. The Titan manual for 0.9.0 is still a work in progress. The http://tinkerpop.incubator.apache.org/docs/
+
 Version 0.9.0-M1 (December 4, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

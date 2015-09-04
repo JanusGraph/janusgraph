@@ -3,26 +3,47 @@
 set -e
 set -u
 
-case `uname` in
-  CYGWIN*)
-    CP="`dirname $0`"/../config
-    CP="$CP":$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
-    ;;
-  *)
-    CP="`dirname $0`"/../config
-    CP="$CP":$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
-esac
+# Store working directory
+ORIGWD=$(pwd)
 
+# ${BASH_SOURCE[0]} is the path to this file
 SOURCE="${BASH_SOURCE[0]}"
+# Set $BIN to the absolute, symlinkless path to $SOURCE's parent
 while [ -h "$SOURCE" ]; do
-  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-  SOURCE="$(readlink "$SOURCE")"
-  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$BIN/$SOURCE"
 done
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-CP=$CP:$(find -L $DIR/../ext/ -name "*.jar" | sort | tr '\n' ':')
+BIN="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+# Set $CFG to $BIN/../conf
+cd -P $BIN/../conf
+CFG=$(pwd)
+# Set $LIB to $BIN/../lib
+cd -P $BIN/../lib
+LIB=$(pwd)
+# Set $LIB to $BIN/../ext
+cd -P $BIN/../ext
+EXT=$(pwd)
+# Initialize classpath to $CFG
+CP="$CFG"
+# Add the slf4j-log4j12 binding
+CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../lib that start with "titan"
+CP="$CP":$(find -L $LIB -name 'titan*.jar' | sort | tr '\n' ':')
+# Add the remaining jars in $BIN/../lib.
+CP="$CP":$(find -L $LIB -name '*.jar' \
+                \! -name 'titan*' \
+                \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../ext (at any subdirectory depth)
+CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
+
+# (Cygwin only) Use ; classpath separator and reformat paths for Windows ("C:\foo")
+[[ $(uname) = CYGWIN* ]] && CP="$(cygpath -p -w "$CP")"
 
 export CLASSPATH="${CLASSPATH:-}:$CP"
+
+# Restore initial working directory of this script
+cd "$ORIGWD"
 
 # Find Java
 if [ -z "${JAVA_HOME:-}" ]; then
@@ -73,11 +94,11 @@ done
 shift $(( $OPTIND - 1 ))
 
 if [ -z "${HADOOP_GREMLIN_LIBS:-}" ]; then
-    export HADOOP_GREMLIN_LIBS="$DIR"/../lib
+    export HADOOP_GREMLIN_LIBS="$LIB"
 fi
 
 if [ -z "${JAVA_OPTIONS:-}" ]; then
-    JAVA_OPTIONS="-Dtinkerpop.ext=$DIR/../ext -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:$DIR/../lib/jamm-0.2.5.jar"
+    JAVA_OPTIONS="-Dtinkerpop.ext=$EXT -Dlog4j.configuration=conf/log4j-console.properties -Dgremlin.log4j.level=$GREMLIN_LOG_LEVEL -javaagent:$LIB/jamm-0.3.0.jar"
 fi
 
 if [ "$PROFILING_ENABLED" = true ]; then

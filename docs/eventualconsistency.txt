@@ -12,7 +12,7 @@ Data Consistency
 On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency because the underlying storage backend does not provide transactional isolation. In the interest of efficiency, Titan does not use locking by default. Hence, the user has to decide for each schema element that defines a consistency constraint whether or not to use locking. Use `TitanManagement.setConsistency(element, ConsistencyModifier.LOCK)` to explicitly enable locking on a schema element as shown in the following examples.
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 name = mgmt.makePropertyKey('consistentName').dataType(String.class).make()
 index = mgmt.buildIndex('byConsistentName', Vertex.class).addKey(name).unique().buildCompositeIndex()
 mgmt.setConsistency(name, ConsistencyModifier.LOCK) //Ensures only one name per vertex
@@ -57,7 +57,7 @@ Forking Edges
 Because edge are stored as single records in the underlying storage backend, concurrently modifying a single edge would lead to conflict. Instead of locking, an edge label can be configured to use `ConsistencyModifier.FORK`. The following example creates a new edge label `related` and defines its consistency to FORK.
 
 [source, gremlin]
-mgmt = g.openManagement()
+mgmt = graph.openManagement()
 related = mgmt.makeEdgeLabel('related').make()
 mgmt.setConsistency(related, ConsistencyModifier.FORK)
 mgmt.commit()

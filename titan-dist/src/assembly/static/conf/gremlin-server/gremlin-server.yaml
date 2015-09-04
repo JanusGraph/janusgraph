@@ -6,21 +6,22 @@ scriptEvaluationTimeout: 30000
 serializedResponseTimeout: 30000
 channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
 graphs: {
-  g: conf/gremlin-server/titan-berkeleyje-server.properties}
+  graph: conf/gremlin-server/titan-berkeleyje-server.properties}
 plugins:
   - aurelius.titan
 scriptEngines: {
   gremlin-groovy: {
     imports: [java.lang.Math],
-    staticImports: [java.lang.Math.PI]},
+    staticImports: [java.lang.Math.PI],
+    scripts: [scripts/empty-sample.groovy]},
   nashorn: {
       imports: [java.lang.Math],
       staticImports: [java.lang.Math.PI]}}
 serializers:
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0 }
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { useMapperFromGraph: graph }}
   - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.JsonMessageSerializerGremlinV1d0 }
-  - { className: org.apache.tinkerpop.gremlin.driver.ser.JsonMessageSerializerV1d0 }
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerGremlinV1d0, config: { useMapperFromGraph: graph }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GraphSONMessageSerializerV1d0, config: { useMapperFromGraph: graph }}
 processors:
   - { className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: { sessionTimeout: 28800000 }}
 metrics: {

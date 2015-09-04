@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 
@@ -54,9 +55,9 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     private final byte[] columnFamilyBytes;
     private final HBaseGetter entryGetter;
 
-    private final HConnection cnx;
+    private final ConnectionMask cnx;
 
-    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, HConnection cnx, String tableName, String columnFamily, String storeName) {
+    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, ConnectionMask cnx, String tableName, String columnFamily, String storeName) {
         this.storeManager = storeManager;
         this.cnx = cnx;
         this.tableName = tableName;
@@ -147,7 +148,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         Map<StaticBuffer,EntryList> resultMap = new HashMap<StaticBuffer,EntryList>(keys.size());
 
         try {
-            HTableInterface table = null;
+            TableMask table = null;
             Result[] results = null;
 
             try {
@@ -214,7 +215,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             filters.addFilter(getFilter(columnSlice));
         }
 
-        HTableInterface table = null;
+        TableMask table = null;
 
         try {
             table = cnx.getTable(tableName);
@@ -226,22 +227,17 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private class RowIterator implements KeyIterator {
-        private final HTableInterface table;
+        private final Closeable table;
         private final Iterator<Result> rows;
         private final byte[] columnFamilyBytes;
 
         private Result currentRow;
         private boolean isClosed;
 
-        public RowIterator(HTableInterface table, ResultScanner rows, byte[] columnFamilyBytes) {
+        public RowIterator(Closeable table, ResultScanner rows, byte[] columnFamilyBytes) {
             this.table = table;
             this.columnFamilyBytes = Arrays.copyOf(columnFamilyBytes, columnFamilyBytes.length);
-            this.rows = Iterators.filter(rows.iterator(), new Predicate<Result>() {
-                @Override
-                public boolean apply(@Nullable Result result) {
-                    return null != result && null != result.getRow();
-                }
-            });
+            this.rows = Iterators.filter(rows.iterator(), result -> null != result && null != result.getRow());
         }
 
         @Override

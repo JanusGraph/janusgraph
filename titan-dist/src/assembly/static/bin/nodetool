@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 # Returns the absolute path of this script regardless of symlinks
 abs_path() {
     # From: http://stackoverflow.com/a/246128
@@ -57,6 +58,8 @@ fi
 # JMX Port passed via cmd line args (-p 9999 / --port 9999 / --port=9999)
 # should override the value from cassandra-env.sh
 ARGS=""
+JVM_ARGS=""
+SSL_FILE=$HOME/.cassandra/nodetool-ssl.properties
 while true
 do
   if [ ! $1 ]; then break; fi
@@ -71,6 +74,16 @@ do
     --port)
       JMX_PORT=$2
       shift
+      ;;
+    --ssl)
+      if [ -f $SSL_FILE ]
+      then 
+          SSL_ARGS=$(cat $SSL_FILE | tr '\n' ' ')
+      fi
+      JVM_ARGS="$JVM_ARGS -Dssl.enable=true $SSL_ARGS"
+      ;;
+    -D*)
+      JVM_ARGS="$JVM_ARGS $1"
       ;;
     *)
       ARGS="$ARGS $1"
@@ -88,9 +101,11 @@ case "`uname`" in
 esac
 
 "$JAVA" $JAVA_AGENT -cp "$CLASSPATH" \
-      -Xmx32m \
-      -Dlog4j.configuration=log4j-tools.properties \
+      -Xmx128m \
+      -Dcassandra.storagedir="$cassandra_storagedir" \
+      -Dlogback.configurationFile=logback-tools.xml \
       -Dstorage-config="$CASSANDRA_CONF" \
-      org.apache.cassandra.tools.NodeCmd -p $JMX_PORT $ARGS
+      $JVM_ARGS \
+      org.apache.cassandra.tools.NodeTool -p $JMX_PORT $ARGS
 
 # vi:ai sw=4 ts=4 tw=0 et

@@ -8,26 +8,11 @@ import org.slf4j.LoggerFactory;
 
 public class HBaseCompatLoader {
 
-    private static final Logger log = LoggerFactory
-            .getLogger(HBaseCompatLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(HBaseCompatLoader.class);
 
-//    public static final String TITAN_HBASE_COMPAT_CLASS_KEY = "TITAN_HBASE_COMPAT_CLASS";
-//    private static final String TITAN_HBASE_COMPAT_CLASS;
-//
-//    static {
-//
-//        String s;
-//
-//        if (null != (s = System.getProperty(TITAN_HBASE_COMPAT_CLASS_KEY))) {
-//            log.info("Read {} from system properties: {}", TITAN_HBASE_COMPAT_CLASS_KEY, s);
-//        } else if (null != (s = System.getenv(TITAN_HBASE_COMPAT_CLASS_KEY))) {
-//            log.info("Read {} from process environment: {}", TITAN_HBASE_COMPAT_CLASS_KEY, s);
-//        } else {
-//            log.debug("Could not read {} from system properties or process environment; using HBase VersionInfo to resolve compat layer", TITAN_HBASE_COMPAT_CLASS_KEY);
-//        }
-//
-//        TITAN_HBASE_COMPAT_CLASS = s;
-//    }
+    private static final String DEFAULT_HBASE_COMPAT_VERSION = "1.0";
+
+    private static final String DEFAULT_HBASE_CLASS_NAME = "com.thinkaurelius.titan.diskstorage.hbase.HBaseCompat1_00";
 
     private static HBaseCompat cachedCompat;
 
@@ -38,7 +23,7 @@ public class HBaseCompatLoader {
             return cachedCompat;
         }
 
-        HBaseCompat compat = null;
+        HBaseCompat compat;
         String className = null;
         String classNameSource = null;
 
@@ -47,7 +32,7 @@ public class HBaseCompatLoader {
             classNameSource = "from explicit configuration";
         } else {
             String hbaseVersion = VersionInfo.getVersion();
-            for (String supportedVersion : Arrays.asList("0.94", "0.96", "0.98")) {
+            for (String supportedVersion : Arrays.asList("0.94", "0.96", "0.98", "1.0")) {
                 if (hbaseVersion.startsWith(supportedVersion + ".")) {
                     className = "com.thinkaurelius.titan.diskstorage.hbase.HBaseCompat" + supportedVersion.replaceAll("\\.", "_");
                     classNameSource = "supporting runtime HBase version " + hbaseVersion;
@@ -55,7 +40,11 @@ public class HBaseCompatLoader {
                 }
             }
             if (null == className) {
-                throw new RuntimeException("Unrecognized or unsupported HBase version " + hbaseVersion);
+                log.info("The HBase version {} is not explicitly supported by Titan.  " +
+                         "Loading Titan's compatibility layer for its most recent supported HBase version ({})",
+                        hbaseVersion, DEFAULT_HBASE_COMPAT_VERSION);
+                className = DEFAULT_HBASE_CLASS_NAME;
+                classNameSource = " by default";
             }
         }
 

@@ -240,8 +240,10 @@ bin/gremlin.sh
          \,,,/
          (o o)
 -----oOOo-(3)-oOOo-----
-gremlin> g = TitanFactory.open('conf/titan-cassandra-solr.properties')
+gremlin> graph = TitanFactory.open('conf/titan-cassandra-solr.properties')
 ==>titangraph[cassandrathrift:[127.0.0.1]]
+gremlin> g = graph.traversal()
+==>graphtraversalsource[titangraph[cassandrathrift:[127.0.0.1]], standard]
 gremlin>
 ----
 
@@ -302,8 +304,8 @@ dataset.  Picking up the gremlin.sh session started above:
 
 [source, gremlin]
 ----
-// Assuming g = TitanFactory.open('conf/titan-cassandra-solr.properties')...
-gremlin> GraphOfTheGodsFactory.load(g)
+// Assuming graph = TitanFactory.open('conf/titan-cassandra-solr.properties')...
+gremlin> GraphOfTheGodsFactory.load(graph)
 ==>null
 ----
 

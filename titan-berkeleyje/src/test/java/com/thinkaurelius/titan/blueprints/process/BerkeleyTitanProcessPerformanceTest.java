@@ -11,7 +11,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-@Ignore
 @RunWith(ProcessPerformanceSuite.class)
 @GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = TitanGraph.class)
 public class BerkeleyTitanProcessPerformanceTest {

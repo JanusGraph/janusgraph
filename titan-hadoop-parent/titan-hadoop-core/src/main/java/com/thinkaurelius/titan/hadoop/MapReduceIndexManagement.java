@@ -138,7 +138,7 @@ public class MapReduceIndexManagement {
         if (CASSANDRA_STORE_MANAGER_CLASSES.contains(storeManagerClass)) {
             inputFormat = CassandraBinaryInputFormat.class;
             // Set the partitioner
-            IPartitioner<?> part =
+            IPartitioner part =
                     ((AbstractCassandraStoreManager)graph.getBackend().getStoreManager()).getCassandraPartitioner();
             hadoopConf.set("cassandra.input.partitioner.class", part.getClass().getName());
         } else if (HBASE_STORE_MANAGER_CLASSES.contains(storeManagerClass)) {

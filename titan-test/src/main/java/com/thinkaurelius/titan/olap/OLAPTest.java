@@ -17,7 +17,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.apache.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutionException;
 
 import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.*;
-
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -221,6 +220,25 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     }
 
     @Test
+    public void vertexProgramExceptionPropagatesToCaller() throws InterruptedException
+    {
+        int numV = 100;
+        int numE = generateRandomGraph(numV);
+        clopen();
+
+        final TitanGraphComputer computer = graph.compute();
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        computer.workers(1);
+        computer.program(new ExceptionProgram());
+
+        try {
+            computer.submit().get();
+            fail();
+        } catch (ExecutionException ee) {
+        }
+    }
+
+    @Test
     public void degreeCountingDistance() throws Exception {
         int numV = 100;
         int numE = generateRandomGraph(numV);
@@ -260,6 +278,59 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
     }
 
+    public static class ExceptionProgram extends StaticVertexProgram<Integer>
+    {
+
+        @Override
+        public void setup(Memory memory)
+        {
+
+        }
+
+        @Override
+        public void execute(Vertex vertex, Messenger<Integer> messenger, Memory memory)
+        {
+            throw new NullPointerException();
+        }
+
+        @Override
+        public boolean terminate(Memory memory)
+        {
+            return memory.getIteration() > 1;
+        }
+
+        @Override
+        public Set<MessageScope> getMessageScopes(Memory memory)
+        {
+            return ImmutableSet.of();
+        }
+
+        @Override
+        public GraphComputer.ResultGraph getPreferredResultGraph() {
+            return GraphComputer.ResultGraph.NEW;
+        }
+
+        @Override
+        public GraphComputer.Persist getPreferredPersist() {
+            return GraphComputer.Persist.VERTEX_PROPERTIES;
+        }
+
+        @Override
+        public Features getFeatures() {
+            return new Features() {
+                @Override
+                public boolean requiresLocalMessageScopes() {
+                    return true;
+                }
+
+                @Override
+                public boolean requiresVertexPropertyAddition() {
+                    return true;
+                }
+            };
+        }
+    }
+
     public static class DegreeCounter extends StaticVertexProgram<Integer> {
 
         public static final String DEGREE = "degree";
@@ -287,7 +358,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             if (memory.isInitialIteration()) {
                 messenger.sendMessage(DEG_MSG, 1);
             } else {
-                int degree = StreamFactory.stream(messenger.receiveMessages()).reduce(0, (a, b) -> a + b);
+                int degree = IteratorUtils.stream(messenger.receiveMessages()).reduce(0, (a, b) -> a + b);
                 vertex.property(VertexProperty.Cardinality.single, DEGREE, degree);
                 if (memory.getIteration()<length) messenger.sendMessage(DEG_MSG, degree);
             }

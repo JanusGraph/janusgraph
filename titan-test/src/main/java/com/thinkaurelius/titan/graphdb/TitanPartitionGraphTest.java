@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb;
 
 
-import com.carrotsearch.hppc.IntOpenHashSet;
+import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.collect.*;
@@ -352,7 +352,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         int[] groupDegrees = {10,15,10,17,10,4,7,20,11};
         int numVertices = setupGroupClusters(groupDegrees,batchCommit?CommitMode.BATCH:CommitMode.PER_VERTEX);
 
-        IntSet partitionIds = new IntOpenHashSet(numVertices); //to track the "spread" of partition ids
+        IntSet partitionIds = new IntHashSet(numVertices); //to track the "spread" of partition ids
         for (int i=0;i<groupDegrees.length;i++) {
             TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             assertCount(groupDegrees[i],g.edges(Direction.OUT,"contain"));
@@ -458,7 +458,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         int[] groupDegrees = {5,5,5,5,5,5,5,5};
         int numVertices = setupGroupClusters(groupDegrees,CommitMode.PER_VERTEX);
 
-        IntSet partitionIds = new IntOpenHashSet(numVertices); //to track the "spread" of partition ids
+        IntSet partitionIds = new IntHashSet(numVertices); //to track the "spread" of partition ids
         for (int i=0;i<groupDegrees.length;i++) {
             TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             int partitionId = -1;

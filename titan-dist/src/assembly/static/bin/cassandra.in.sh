@@ -35,18 +35,26 @@ CASSANDRA_CONF=$CASSANDRA_HOME/conf/cassandra
 # This can be the path to a jar file, or a directory containing the 
 # compiled classes. NOTE: This isn't needed by the startup script,
 # it's just used here in constructing the classpath.
-cassandra_bin=$CASSANDRA_HOME/build/classes/main
-cassandra_bin=$cassandra_bin:$CASSANDRA_HOME/build/classes/thrift
-#cassandra_bin=$cassandra_home/build/cassandra.jar
+cassandra_bin="$CASSANDRA_HOME/build/classes/main"
+cassandra_bin="$cassandra_bin:$CASSANDRA_HOME/build/classes/thrift"
+#cassandra_bin="$cassandra_home/build/cassandra.jar"
+
+# the default location for commitlogs, sstables, and saved caches
+# if not set in cassandra.yaml
+cassandra_storagedir="$CASSANDRA_HOME/data"
 
 # JAVA_HOME can optionally be set here
 #JAVA_HOME=/usr/local/jdk6
 
 # The java classpath (required)
-CLASSPATH=$CASSANDRA_CONF:$cassandra_bin
+CLASSPATH="$CASSANDRA_CONF:$cassandra_bin"
 
-for jar in $CASSANDRA_HOME/lib/*.jar; do
-    CLASSPATH=$CLASSPATH:$jar
+CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
+
+for jar in "$CASSANDRA_HOME"/lib/*.jar; do
+    if [ $jar != slf4j-log4j12* ] ; then
+        CLASSPATH="$CLASSPATH:$jar"
+    fi
 done
 
 # This system property is referenced in log4j-server.properties

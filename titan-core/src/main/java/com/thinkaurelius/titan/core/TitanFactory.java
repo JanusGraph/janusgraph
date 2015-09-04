@@ -108,10 +108,12 @@ public class TitanFactory {
 
     //--------------------- BUILDER -------------------------------------------
 
-    public static class Builder extends UserModifiableConfiguration {
+    public static class Builder {
+
+        private final WriteConfiguration writeConfiguration;
 
         private Builder() {
-            super(GraphDatabaseConfiguration.buildGraphConfiguration());
+            writeConfiguration = new CommonsConfiguration();
         }
 
         /**
@@ -122,7 +124,7 @@ public class TitanFactory {
          * @return
          */
         public Builder set(String path, Object value) {
-            super.set(path, value);
+            writeConfiguration.set(path, value);
             return this;
         }
 
@@ -132,7 +134,9 @@ public class TitanFactory {
          * @return
          */
         public TitanGraph open() {
-            return TitanFactory.open(super.getConfiguration());
+            ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
+                    writeConfiguration.copy(), BasicConfiguration.Restriction.NONE);
+            return TitanFactory.open(mc);
         }
 
 

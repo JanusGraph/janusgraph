@@ -269,7 +269,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         }
 
         @Override
-        public TitanTransaction create() {
+        public TitanTransaction createThreadedTx() {
             return newTransaction();
         }
 

@@ -43,8 +43,8 @@ Each Titan transaction may optionally specify its own Metrics name prefix, overr
 To do this, call `TransactionBuilder.setMetricsPrefix(String)`:
 
 [source, java]
-TitanGraph g = ...;
-TransactionBuilder tbuilder = g.buildTransaction();
+TitanGraph graph = ...;
+TransactionBuilder tbuilder = graph.buildTransaction();
 TitanTransaction tx = tbuilder.groupName("foobar").start();
 
 Separating Metrics by Backend Store

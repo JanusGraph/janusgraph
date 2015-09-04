@@ -35,7 +35,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
         RANDOM, BYTEORDER;
 
-        public static Partitioner getPartitioner(IPartitioner<?> partitioner) {
+        public static Partitioner getPartitioner(IPartitioner partitioner) {
             return getPartitioner(partitioner.getClass().getSimpleName());
         }
 
@@ -195,7 +195,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         return partitioner;
     }
 
-    public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws BackendException;
+    public abstract IPartitioner getCassandraPartitioner() throws BackendException;
 
     @Override
     public StoreTransaction beginTransaction(final BaseTransactionConfig config) {

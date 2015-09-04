@@ -255,7 +255,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final String compression;
     private final int regionCount;
     private final int regionsPerServer;
-    private final HConnection cnx;
+    private final ConnectionMask cnx;
     private final org.apache.hadoop.conf.Configuration hconf;
     private final boolean shortCfNames;
     private final boolean skipSchemaCheck;
@@ -320,10 +320,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.shortCfNames = config.get(SHORT_CF_NAMES);
 
         try {
-            this.cnx = HConnectionManager.createConnection(hconf);
-        } catch (ZooKeeperConnectionException e) {
-            throw new PermanentBackendException(e);
-        } catch (@SuppressWarnings("hiding") IOException e) { // not thrown in 0.94, but thrown in 0.96+
+            //this.cnx = HConnectionManager.createConnection(hconf);
+            this.cnx = compat.createConnection(hconf);
+        } catch (IOException e) {
             throw new PermanentBackendException(e);
         }
 
@@ -419,12 +418,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         try {
-            HTableInterface table = null;
+            TableMask table = null;
 
             try {
                 table = cnx.getTable(tableName);
-                table.batch(batch);
-                table.flushCommits();
+                table.batch(batch, new Object[batch.size()]);
             } finally {
                 IOUtils.closeQuietly(table);
             }
@@ -481,64 +479,71 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     @Override
     public void clearStorage() throws BackendException {
-        HBaseAdmin adm = null;
-
-        try { // first of all, check if table exists, if not - we are done
-            adm = getAdminInterface();
-            if (!adm.tableExists(tableName)) {
-                logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
-                return;
-            }
-        } catch (IOException e) {
+        try (AdminMask adm = getAdminInterface()) {
+            adm.clearTable(tableName, times.getTime(times.getTime()));
+        } catch (IOException e)
+        {
             throw new TemporaryBackendException(e);
-        } finally {
-            IOUtils.closeQuietly(adm);
         }
-
-//        long before = System.currentTimeMillis();
-//        try {
-//            adm.disableTable(tableName);
-//            adm.deleteTable(tableName);
+//
+//
+//
+//        try { // first of all, check if table exists, if not - we are done
+//            adm = getAdminInterface();
+//            if (!adm.tableExists(tableName)) {
+//                logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
+//                return;
+//            }
 //        } catch (IOException e) {
-//            throw new PermanentBackendException(e);
+//            throw new TemporaryBackendException(e);
+//        } finally {
+//            IOUtils.closeQuietly(adm);
 //        }
-//        ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
-//        long after = System.currentTimeMillis();
-//        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
-
-        HTable table = null;
-
-        try {
-            table = new HTable(hconf, tableName);
-
-            Scan scan = new Scan();
-            scan.setBatch(100);
-            scan.setCacheBlocks(false);
-            scan.setCaching(2000);
-            scan.setTimeRange(0, Long.MAX_VALUE);
-            scan.setMaxVersions(1);
-
-            ResultScanner scanner = null;
-
-            long timestamp = times.getTime(times.getTime());
-
-            try {
-                scanner = table.getScanner(scan);
-
-                for (Result res : scanner) {
-                    Delete d = new Delete(res.getRow());
-
-                    d.setTimestamp(timestamp);
-                    table.delete(d);
-                }
-            } finally {
-                IOUtils.closeQuietly(scanner);
-            }
-        } catch (IOException e) {
-            throw new TemporaryBackendException(e);
-        } finally {
-            IOUtils.closeQuietly(table);
-        }
+//
+////        long before = System.currentTimeMillis();
+////        try {
+////            adm.disableTable(tableName);
+////            adm.deleteTable(tableName);
+////        } catch (IOException e) {
+////            throw new PermanentBackendException(e);
+////        }
+////        ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME), 0);
+////        long after = System.currentTimeMillis();
+////        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
+//
+//        HTable table = null;
+//
+//        try {
+//            table = new HTable(hconf, tableName);
+//
+//            Scan scan = new Scan();
+//            scan.setBatch(100);
+//            scan.setCacheBlocks(false);
+//            scan.setCaching(2000);
+//            scan.setTimeRange(0, Long.MAX_VALUE);
+//            scan.setMaxVersions(1);
+//
+//            ResultScanner scanner = null;
+//
+//            long timestamp = times.getTime(times.getTime());
+//
+//            try {
+//                scanner = table.getScanner(scan);
+//
+//                for (Result res : scanner) {
+//                    Delete d = new Delete(res.getRow());
+//
+//                    d.setTimestamp(timestamp);
+//                    table.delete(d);
+//                }
+//            } finally {
+//                IOUtils.closeQuietly(scanner);
+//            }
+//        } catch (IOException e) {
+//            throw new TemporaryBackendException(e);
+//        } finally {
+//            IOUtils.closeQuietly(table);
+//        }
     }
 
     @Override
@@ -734,7 +739,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private HTableDescriptor ensureTableExists(String tableName, String initialCFName, int ttlInSeconds) throws BackendException {
-        HBaseAdmin adm = null;
+        AdminMask adm = null;
 
         HTableDescriptor desc;
 
@@ -746,7 +751,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
              * the table avoids HBase carping.
              */
             if (adm.tableExists(tableName)) {
-                desc = adm.getTableDescriptor(tableName.getBytes());
+                desc = adm.getTableDescriptor(tableName);
             } else {
                 desc = createTable(tableName, initialCFName, ttlInSeconds, adm);
             }
@@ -759,19 +764,21 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return desc;
     }
 
-    private HTableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, HBaseAdmin adm) throws IOException {
+    private HTableDescriptor createTable(String tableName, String cfName, int ttlInSeconds, AdminMask adm) throws IOException {
         HTableDescriptor desc = compat.newTableDescriptor(tableName);
 
         HColumnDescriptor cdesc = new HColumnDescriptor(cfName);
         setCFOptions(cdesc, ttlInSeconds);
-        desc.addFamily(cdesc);
+
+        compat.addColumnFamilyToTableDescriptor(desc, cdesc);
 
         int count; // total regions to create
         String src;
 
         if (MIN_REGION_COUNT <= (count = regionCount)) {
             src = "region count configuration";
-        } else if (0 < regionsPerServer && MIN_REGION_COUNT <= (count = regionsPerServer * getServerCount(adm))) {
+        } else if (0 < regionsPerServer &&
+                   MIN_REGION_COUNT <= (count = regionsPerServer * adm.getEstimatedRegionServerCount())) {
             src = "ClusterStatus server count";
         } else {
             count = -1;
@@ -818,7 +825,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void ensureColumnFamilyExists(String tableName, String columnFamily, int ttlInSeconds) throws BackendException {
-        HBaseAdmin adm = null;
+        AdminMask adm = null;
         try {
             adm = getAdminInterface();
             HTableDescriptor desc = ensureTableExists(tableName, columnFamily, ttlInSeconds);
@@ -909,7 +916,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 if (mutation.hasDeletions()) {
                     if (commands.getSecond() == null) {
                         Delete d = new Delete(key);
-                        d.setTimestamp(delTimestamp);
+                        compat.setTimestamp(d, delTimestamp);
                         commands.setSecond(d);
                     }
 
@@ -941,27 +948,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return shortCfNames ? shortenCfName(storeName) : storeName;
     }
 
-    /**
-     * Estimate the number of regionservers in the HBase cluster by calling
-     * {@link HBaseAdmin#getClusterStatus()} and then
-     * {@link ClusterStatus#getServers()} and finally {@code size()} on the
-     * returned server list.
-     *
-     * @param adm
-     *            HBase admin interface
-     * @return the number of servers in the cluster or -1 if an error occurred
-     */
-    private int getServerCount(HBaseAdmin adm) {
-        int serverCount = -1;
-        try {
-            serverCount = adm.getClusterStatus().getServers().size();
-            logger.debug("Read {} servers from HBase ClusterStatus", serverCount);
-        } catch (IOException e) {
-            logger.debug("Unable to retrieve HBase cluster status", e);
-        }
-        return serverCount;
-    }
-
     private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
         if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
@@ -969,21 +955,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    private <T> T runWithAdmin(BackendFunction<HBaseAdmin, T> closure) throws BackendException {
-        HBaseAdmin adm = null;
+    private AdminMask getAdminInterface() {
         try {
-            adm = new HBaseAdmin(cnx);
-            return closure.apply(adm);
-        } catch (IOException e) {
-            throw new TitanException(e);
-        } finally {
-            IOUtils.closeQuietly(adm);
-        }
-    }
-
-    private HBaseAdmin getAdminInterface() {
-        try {
-            return new HBaseAdmin(cnx);
+            return cnx.getAdmin();
         } catch (IOException e) {
             throw new TitanException(e);
         }
