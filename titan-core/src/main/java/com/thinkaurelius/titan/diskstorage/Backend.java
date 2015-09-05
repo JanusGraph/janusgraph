@@ -257,8 +257,8 @@ public class Backend implements LockerProvider, AutoCloseable {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName("edgeStore"),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName("indexStore"),expirationTime,cleanWaitTime,indexStoreCacheSize);
+                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName(EDGESTORE_NAME),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName(INDEXSTORE_NAME),expirationTime,cleanWaitTime,indexStoreCacheSize);
             } else {
                 edgeStore = new NoKCVSCache(edgeStoreRaw);
                 indexStore = new NoKCVSCache(indexStoreRaw);

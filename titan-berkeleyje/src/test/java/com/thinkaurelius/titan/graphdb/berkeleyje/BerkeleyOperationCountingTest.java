@@ -12,4 +12,9 @@ public class BerkeleyOperationCountingTest extends TitanOperationCountingTest {
         return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
     }
 
+    @Override
+    public boolean storeUsesConsistentKeyLocker() {
+        return false;
+    }
+
 }

@@ -106,7 +106,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 //            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
 //                ((StandardTitanTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
 //        }
-        ElementHelper.attachProperties(vertex, keyValues);
+        com.thinkaurelius.titan.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
     }
 

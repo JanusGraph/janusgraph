@@ -17,4 +17,9 @@ public class ThriftOperationCountingTest extends TitanOperationCountingTest {
         return CassandraStorageSetup.getCassandraThriftGraphConfiguration(getClass().getSimpleName());
     }
 
+    @Override
+    public boolean storeUsesConsistentKeyLocker() {
+        return true;F
+    }
+
 }

@@ -759,6 +759,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                    2) there are no indexes for this property key
                    3) the cardinalities match (if we overwrite a set with single, we need to read all other values to delete)
                 */
+                ConsistencyModifier mod = ((InternalRelationType)key).getConsistencyModifier();
+                boolean hasIndex = TypeUtil.hasAnyIndex(key);
+                boolean cardiEqual = cardi==cardinality.convert();
+
                 if ( (!config.hasVerifyUniqueness() || ((InternalRelationType)key).getConsistencyModifier()!=ConsistencyModifier.LOCK) &&
                         !TypeUtil.hasAnyIndex(key) && cardi==cardinality.convert()) {
                     //Only delete in-memory so as to not trigger a read from the database which isn't necessary because we will overwrite blindly
