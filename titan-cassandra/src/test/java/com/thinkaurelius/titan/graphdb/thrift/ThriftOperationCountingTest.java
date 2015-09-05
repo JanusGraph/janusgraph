@@ -19,7 +19,7 @@ public class ThriftOperationCountingTest extends TitanOperationCountingTest {
 
     @Override
     public boolean storeUsesConsistentKeyLocker() {
-        return true;F
+        return true;
     }
 
 }
