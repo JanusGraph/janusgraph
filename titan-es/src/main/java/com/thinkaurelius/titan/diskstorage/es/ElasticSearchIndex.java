@@ -602,7 +602,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     boolean actualFailure = false;
                     for(BulkItemResponse response : bulkItemResponses.getItems()) {
                         //The document may have been deleted, which is OK
-                        if(response.getFailure().getStatus() != RestStatus.NOT_FOUND) {
+                        if(response.isFailed() && response.getFailure().getStatus() != RestStatus.NOT_FOUND) {
                             log.error("Failed to execute ES query {}", response.getFailureMessage());
                             actualFailure = true;
                         }
@@ -681,6 +681,7 @@ public class ElasticSearchIndex implements IndexProvider {
             int prefixLength = "{\"value\":".length();
             int suffixLength = "}".length();
             String result = s.substring(prefixLength, s.length() - suffixLength);
+            result = result.replace("$", "\\$");
             return result;
         } catch (IOException e) {
             throw new PermanentBackendException("Could not write json");
