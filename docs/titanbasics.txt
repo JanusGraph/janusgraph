@@ -483,77 +483,29 @@ Gremlin Server provides a way to remotely execute Gremlin scripts against one or
 
 The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Gremlin Server without any additional configuration.  Alternatively, one can http://tinkerpop.incubator.apache.org/[Download Gremlin Server] separately and then install Titan manually.
 
-Gremlin Server with Titan
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are two ways to download and install Gremlin Server with Titan.
-
-. Titan's zip downloads come with Gremlin Server, Titan, and BerkeleyDB pre-configured to work together.
-. Download Gremlin Server separately and then manually install Titan.
-
-Each of these approaches is described below.
-
-Getting Started Quickly
-^^^^^^^^^^^^^^^^^^^^^^^
+Getting Started
+~~~~~~~~~~~~~~~
 
 * Download a copy of the current `titan-$VERSION.zip` file from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads page]
 * Unzip it and enter the `titan-$VERSION` directory
-* Run `bin/gremlin-server.sh`.  This step will start Gremlin Server with a BerkeleyDB instance.
+* Run `bin/titan.sh start`.  This step will start Gremlin Server with Cassandra/ES forked into a separate process.
 
-Manual Installation
-^^^^^^^^^^^^^^^^^^^
-
-This section describes the process of downloading a stock Gremlin Server distribution and then installing Titan.
-
-Gremlin Server can be downloaded at http://tinkerpop.incubator.apache.org/[here].
-
-Edit the `GREMLIN_SERVER_HOME/conf/gremlin-server.yaml` and include the following settings to the defaults:
-
-[source, yaml]
+[source,bourne]
 ----
-...
-graphs: {
-  graph: conf/gremlin-server/titan-berkeleyje-server.properties}
-plugins:
-  - aurelius.titan
-scriptEngines: {
-  gremlin-groovy: {
-    imports: [java.lang.Math],
-    staticImports: [java.lang.Math.PI],
-    scripts: [scripts/empty-sample.groovy]},
-...
+$ bin/titan.sh start
+Forking Cassandra...
+Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
+Forking Elasticsearch...
+Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
+Forking Gremlin-Server...
+Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
+Run gremlin.sh to connect.
 ----
-
-The entry for `graphs` defines the bindings to specific `TitanGraph` configuration. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `graph` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts. Finally, note the `scripts` entry, which specifies a list of groovy scripts to execute in the engine.  In this case, it points to `scripts/empty-sample.groovy`.  Its contents look like this:
-
-[source, groovy]
-g = graph.traversal()
-
-This scripts creates the `GraphTraversalSource` from which traversals can be spawned.  The variable `g` becomes bound to the script engine so that on future requests it can be referenced directly.
-
-Next add a `conf/titan-berkeleyje.properties` file which should contain something like:
-
-[source, text]
-----
-gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
-storage.backend=berkeleyje
-storage.directory=db/berkeley
-----
-
-Gremlin Server needs to have Titan and its related library dependencies made available to it.  It has an `ext` directory where these libraries can be placed on Gremlin Server's path.  To get Titan on the path, issue the following command (it may take a few minutes to complete this step depending on network speed):
-
-[source, text]
-$ bin/gremlin-server.sh -i com.thinkaurelius.titan titan-all $VERSION
-
-Start Gremlin Server with:
-
-[source, text]
-$ bin/gremlin-server.sh
 
 Connecting to Gremlin Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Regardless of the download and installation method chosen above, Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
+Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
 
 Start http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
 
@@ -577,6 +529,9 @@ gremlin> :> g.V().values('name')
 ----
 
 The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
+
+[TIP]
+To start Titan Server with the REST API, find the `conf/gremlin-server/gremlin-server.yaml` file in the distribution and edit it.  Modify the `channelizer` setting to be `org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer` then start Titan Server.
 
 [[indexes]]
 Indexing for better Performance
