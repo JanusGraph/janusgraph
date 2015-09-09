@@ -30,7 +30,7 @@ starting master, logging to ../logs/hbase-master-machine-name.local.out
 Now, you can create an HBase TitanGraph as follows:
 
 [source, java]
-TitanGraph g = TitanFactory.build()
+TitanGraph graph = TitanFactory.build()
 	.set("storage.backend", "hbase")
 	.open();
 

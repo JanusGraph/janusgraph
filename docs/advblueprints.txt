@@ -25,5 +25,5 @@ mgmt.commit()
 strategy = ElementIdStrategy.build().idPropertyKey("name").create()
 g = GraphTraversalSource.build().with(strategy).create(graph)
 // Insert example vertex with custom identifier
-hercules = g.addV(T.id, "hercules")
+hercules = g.addV(id, "hercules")
 g.V("hercules")

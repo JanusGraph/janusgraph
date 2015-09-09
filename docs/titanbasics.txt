@@ -168,13 +168,13 @@ When the first Titan instance in a cluster is started, the global configuration 
 ----
 mgmt = graph.openManagement()
 mgmt.get('cache.db-cache')
-//Prints the current config setting
+// Prints the current config setting
 mgmt.set('cache.db-cache', true)
-//Changes option
+// Changes option
 mgmt.get('cache.db-cache')
-//Prints 'true'
+// Prints 'true'
 mgmt.commit()
-//Changes take effect
+// Changes take effect
 ----
 
 Changing Offline Options
@@ -592,7 +592,7 @@ Graph indexes are global index structures over the entire graph which allow effi
 
 [source, gremlin]
 g.V().has('name', 'hercules')
-g.E().has('reason', new P(CONTAINS, 'loves'))
+g.E().has('reason', textContains('loves'))
 
 The first query asks for all vertices with the name `hercules`. The second asks for all edges where the property reason contains the word `loves`. Without a graph index answering those queries would require a full scan over all vertices or edges in the graph to find those that match the given condition which is very inefficient and infeasible for huge graphs.
 
@@ -710,8 +710,8 @@ See <<index-parameters>> for more information on text and string search options,
 While the index definition example looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
 
 [source, gremlin]
-g.V().has('name', new P(CONTAINS, 'hercules')).has('age', inside(20, 50))
-g.V().has('name', new P(CONTAINS, 'hercules'))
+g.V().has('name', textContains('hercules')).has('age', inside(20, 50))
+g.V().has('name', textContains('hercules'))
 g.V().has('age', lt(50))
 
 Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
@@ -756,7 +756,7 @@ The order in which the results of a graph query are returned can be defined usin
 * The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
 * The sort order: either increasing `incr` or decreasing `decr`
 
-For example, the query `g.V().has('name', new P(CONTAINS, 'hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
+For example, the query `g.V().has('name', textContains('hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
 
 When using `order().by()` it is important to note that:
 
@@ -1217,9 +1217,9 @@ logProcessor.addLogProcessor("battle").
         addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
-                h = tx.V.has("name", "hercules").toList().iterator().next();
+                h = tx.V().has("name", "hercules").toList().iterator().next();
                 for (edge in changeState.getEdges(h, Change.ADDED, Direction.OUT, "battled")) {
-                    if (edge.<Integer>getProperty("time")>1000)
+                    if (edge.<Integer>value("time")>1000)
                         h.property("oldFighter", true);
                 }
             }
