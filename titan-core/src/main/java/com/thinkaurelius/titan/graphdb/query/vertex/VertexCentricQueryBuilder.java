@@ -58,7 +58,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     protected<Q> Q execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         if (bq.isEmpty()) return resultConstructor.emptyResult();
-        if (returnType==RelationCategory.PROPERTY && hasTypes()
+        if (returnType==RelationCategory.PROPERTY && hasSingleType() && !hasQueryOnlyLoaded()
                 && tx.getConfiguration().hasPropertyPrefetching()) {
             //Preload properties
             vertex.query().properties().iterator().hasNext();

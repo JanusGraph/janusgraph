@@ -151,6 +151,8 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return queryOnlyGivenVertex;
     }
 
+    public boolean hasQueryOnlyLoaded() { return queryOnlyLoaded; }
+
     /* ---------------------------------------------------------------
      * Utility Methods
 	 * ---------------------------------------------------------------

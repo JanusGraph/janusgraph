@@ -1,8 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.BackendException;
@@ -11,7 +15,9 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
 import com.thinkaurelius.titan.core.schema.Mapping;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 import org.junit.Test;
 
 import java.io.File;
@@ -24,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 /**
@@ -136,5 +143,50 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         idx.close();
 
         assertEquals("bar", idx.getNode().settings().get("node.name"));
+    }
+
+    @Test
+    public void testErrorInBatch() throws Exception {
+        initialize("vertex");
+        Multimap<String, Object> doc1 = HashMultimap.create();
+        doc1.put(TIME, "not a time");
+
+        add("vertex", "failing-doc", doc1, true);
+        add("vertex", "non-failing-doc", getRandomDocument(), true);
+
+        try {
+            tx.commit();
+            fail("Commit should not have succeeded.");
+        } catch (TitanException e) {
+            // Looking for a NumberFormatException since we tried to stick a string of text into a time field.
+            if (!Throwables.getRootCause(e).getMessage().contains("NumberFormatException")) {
+                throw e;
+            }
+        } finally {
+            tx = null;
+        }
+    }
+
+    @Test
+    public void testUnescapedDollarInSet() throws Exception {
+        initialize("vertex");
+
+        Multimap<String, Object> initialDoc = HashMultimap.create();
+        initialDoc.put(PHONE_SET, "12345");
+
+        add("vertex", "unescaped", initialDoc, true);
+
+        clopen();
+
+        Multimap<String, Object> updateDoc = HashMultimap.create();
+        updateDoc.put(PHONE_SET, "$123");
+        add("vertex", "unescaped", updateDoc, false);
+
+        add("vertex", "other", getRandomDocument(), true);
+
+        clopen();
+
+        assertEquals("unescaped", tx.query(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "$123"))).get(0));
+        assertEquals("unescaped", tx.query(new IndexQuery("vertex", PredicateCondition.of(PHONE_SET, Cmp.EQUAL, "12345"))).get(0));
     }
 }
