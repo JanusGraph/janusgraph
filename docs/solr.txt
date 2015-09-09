@@ -22,7 +22,8 @@ Solr Configuration Overview
 Connecting to Solr
 ^^^^^^^^^^^^^^^^^^
 
-Titan supports two different modes of connecting to a running Solr instance or cluster of instances: SolrCloud and HTTP. The desired connection mode is configured via the parameter `mode` which must be set to either `http` or `cloud`, the latter being the default value.
+Titan supports Solr running in either a SolrCloud or HTTP configuration. The desired connection mode is configured via the parameter `mode` which must be set to either `http` or `cloud`, the latter being the default value.  For example, to explicitly specify that Solr is running in a SolrCloud configuration the following property is specified as a Titan configuration property: index.search.solr.mode=cloud where 'search' is the name of the Solr index.
+
 
 Connecting to SolrCloud
 +++++++++++++++++++++++
@@ -56,25 +57,86 @@ Additional configuration options for controlling the maximum number of connectio
 Solr Collections
 ^^^^^^^^^^^^^^^^
 
+.Note:
+[NOTE]
+Solr documentation makes a distinction between the terms *core* and *configuration set*.  For the purposes of configuring Titan to work with Solr, the terms are used interchangeably.  
+
 Collection Initialization
 +++++++++++++++++++++++++
 
-It is required that a collection is initialized in Solr before it can be used by Titan. Initialization refers to definition of a schema (e.g. provided as a `schema.xml` file), and other configurations for a particular collection. When a <<index-mixed>> is defined, a unique name is assigned to that index. For each such index backed by a Solr indexing backend, a collection with that same name must be initialized in Solr before the index can be used in Titan.
-An example config is included in config/solr that is based on the example schema that ships with Solr 5. It contains additional configuration that is required by Titan.
+SolrCloud leverages Zookeeper to coordinate Solr *configuration sets* and *collection* information between instances of Solr.  Solr HTTP, because it is a single instance, keeps *configuration set* information exclusively on the file system. The use of Zookeeper with SolrCloud provides the opportunity to significantly reduce the amount of manual configuration required to use Solr as a back end index for Titan.
+
+
+
+Using Solr in SolrCloud Configuration
++++++++++++++++++++++++++++++++++++++
+
+When a <<index-mixed>> is defined for a graph, Titan creates a new *collection* in Solr that matches the index name. In order to create a new collection, Solr requires that a *configuration set* be defined that specifies the schema (schema.xml and other files) to be used for the collection. The Titan distribution contains a default configuration set.  The Titan provided configuration set must be manually copied from where Titan is installed to one of the Solr nodes in the SolrCloud.
+
+To copy the default configuration set (core) provided by Titan to a Solr node:
+
+* Identify the target Solr machine where the configuration files will be copied.
+* Create a new *configuration set* directory under the "solr" directory.  If using the default Solr installation:
++
+$SOLR_HOME/server/solr/configsets/{config_set}
+* Copy the contents, including the subdirectories, of titan/conf/solr under $SOLR_HOME/server/solr/configsets/{config_set}/
+
+Next, the default configuration set must be loaded into Zookeeper.  There are two recommended ways to accomplish this:
+
+
+Option 1:
+
+. After performing the manual copy of the configuration set:
++
+open the Solr web interface and select Core Admin->Add Core (remember *core* is the same as *configuration set* for our purposes)
+. Change the name and instance dir to match your {config_set} name
+. Finish by clicking 'Add Core'
+
+Option 2:
+
+. After performing the manual copy of the configuration set:
+. Use the Solr command line to load a configuration set and the first collection (index) that your application will define:
++
+$JAVA_HOME/bin/java -Dsolr.install.dir=$SOLR_HOME -Dlog4j.configuration=file:$SOLR_HOME/server/scripts/cloud-scripts/log4j.properties
+-classpath $SOLR_HOME/server/solr-webapp/webapp/WEB-INF/lib/\*:$SOLR_HOME/server/lib/ext/\* org.apache.solr.util.SolrCLI create_collection -name {index name} -shards 2
+-replicationFactor 1 -confname {config_set} -confdir {config_set} -configsetsDir $SOLR_HOME/server/solr/configsets -solrUrl http://<solrhostname>:8983/solr
+
+
+Titan provides an index.[X].solr.configset configuration property that, if specified, allows Titan to re-use a single configuration set for all the collections (index) it creates. To use this property, specify it in the Titan configuration parameters, and set the value to the name of the {config_set} manually copied per the above steps.
+
+
+[source, properties]
+----
+index.search.solr.configset=titanconfigset
+----
+
+In the above example, the default Titan configuration set files would be copied to one solr node under: $SOLR_HOME/server/solr/configsets/titanconfigset
+
+Use of the configset property provides two significant benefits:
+
+. After performing the manual steps above to configure the first configuration set in Zookeeper, no more manual steps are required for additional mixed index definitions.  New mixed indexes may be defined using mgmt commands, using any index name desired.
+. Only a single configuration set is loaded into Zookeeper, significantly decreasing the amount of data potentially stored in Zookeeper for SolrCloud.
+
+If the property is not specified, then the manual configuration process must be followed for each new mixed index that is defined in Solr.
+
+
+Using Solr in HTTP Configuration
+++++++++++++++++++++++++++++++++
 
 To create a new core that is compatible with Titan:
 
-. Create a new core conf directory in your solr directory. For example if using the default installation server/solr/{core_name}/conf
-. Copy the contents of titan/conf/solr to server/solr/{core_name}/conf
-. Open the Solr web interface and select Core Admin->Add Core
-. Change the name and instance dir to match your {core_name}
-. Finish by clicking 'Add Core'
+* Identify the target Solr machine where the configuration files will be copied.
+* Create a new *configuration set* directory under the "solr" directory.  If
+* using the default Solr installation:
++
+$SOLR_HOME/server/solr/configsets/{config_set}
+* Copy the contents, including the subdirectories, of titan/conf/solr under $SOLR_HOME/server/solr/configsets/{config_set}/
 
-The core_name must match the index name used to build the index:
+The core_name must match the index name used to build the index and you will need to create a new core, following the steps above, for each unique index.
 
 [source, gremlin]
 ----
-mgmt.buildIndex('{core_name}', Vertex.class).addKey(name).buildMixedIndex("search")
+mgmt.buildIndex('{core_name}', Vertex.class).addKey(name).buildMixedIndex('search')
 ----
 
 Dynamic Field Definition
@@ -126,6 +188,9 @@ Collection Does Not Exist
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The collection (and all of the required configuration files) must be initialized before a defined index can use the collection.
+
+When using SolrCloud, the Zookeeper zkCli.sh command line tool can be used to inspect the configurations loaded into Zookeeper.  Also verify that
+the default Titan configuration files are copied to the correct location under solr and that the directory where the files are copied is correct.
 
 Connection Problems
 ^^^^^^^^^^^^^^^^^^^
