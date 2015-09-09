@@ -1,6 +1,8 @@
 Titan Documentation
 ===================
 
+include::adoc_attributes.txt[]
+
 include::intro.txt[]
 
 include::titanbasics.txt[]
