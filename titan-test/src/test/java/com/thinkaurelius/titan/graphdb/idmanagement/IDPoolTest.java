@@ -186,6 +186,7 @@ public class IDPoolTest {
                 return 200;
             }
         });
+        expect(mockAuthority.supportsInterruption()).andStubReturn(true);
 
         ctrl.replay();
         StandardIDPool pool = new StandardIDPool(mockAuthority, partition, idNamespace, Integer.MAX_VALUE, timeout, 0.1);
