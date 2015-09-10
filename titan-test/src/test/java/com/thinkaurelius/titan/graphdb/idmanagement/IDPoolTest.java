@@ -168,6 +168,12 @@ public class IDPoolTest {
             public String getUniqueID() {
                 throw new IllegalArgumentException();
             }
+
+            @Override
+            public boolean supportsInterruption()
+            {
+                return true;
+            }
         });
         expect(mockAuthority.getIDBlock(partition, idNamespace, timeout)).andReturn(new IDBlock() {
             @Override

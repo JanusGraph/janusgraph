@@ -1,6 +1,11 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -76,9 +81,12 @@ public class StandardIDPool implements IDPool {
 
     private volatile IDBlock nextBlock;
     private Future<IDBlock> idBlockFuture;
+    private IDBlockGetter idBlockGetter;
     private final ThreadPoolExecutor exec;
 
     private volatile boolean closed;
+
+    private final Queue<Future<?>> closeBlockers;
 
     public StandardIDPool(IDAuthority idAuthority, int partition, int idNamespace, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
         Preconditions.checkArgument(idUpperBound > 0);
@@ -109,6 +117,8 @@ public class StandardIDPool implements IDPool {
         //exec.prestartCoreThread();
         idBlockFuture = null;
 
+        closeBlockers = new ArrayDeque<>(4);
+
         closed = false;
     }
 
@@ -122,10 +132,21 @@ public class StandardIDPool implements IDPool {
                         partition, idNamespace, sw.stop());
                 throw new TitanException(msg, e);
             } catch (TimeoutException e) {
-                // Attempt to cancel the renewer
-                idBlockFuture.cancel(true);
                 String msg = String.format("ID block allocation on partition(%d)-namespace(%d) timed out in %s",
                         partition, idNamespace, sw.stop());
+                // Attempt to cancel the renewer
+                idBlockGetter.stopRequested();
+                if (idAuthority.supportsInterruption()) {
+                    idBlockFuture.cancel(true);
+                } else {
+                    // Attempt to clean one dead element out of closeBlockers every time we append to it
+                    if (!closeBlockers.isEmpty()) {
+                        Future<?> f = closeBlockers.peek();
+                        if (null != f && f.isDone())
+                            closeBlockers.remove();
+                    }
+                    closeBlockers.add(idBlockFuture);
+                }
                 throw new TitanException(msg, e);
             } catch (CancellationException e) {
                 String msg = String.format("ID block allocation on partition(%d)-namespace(%d) was cancelled after %s",
@@ -199,6 +220,16 @@ public class StandardIDPool implements IDPool {
         } catch (InterruptedException e) {
             throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
         }
+
+        for (Future<?> closeBlocker : closeBlockers) {
+            try {
+                closeBlocker.get();
+            } catch (InterruptedException e) {
+                throw new TitanException("Interrupted while waiting for runaway ID renewer task " + closeBlocker, e);
+            } catch (ExecutionException e) {
+                log.debug("Runaway ID renewer task completed with exception", e);
+            }
+        }
         exec.shutdownNow();
     }
 
@@ -207,7 +238,8 @@ public class StandardIDPool implements IDPool {
         if (closed) return; //Don't renew anymore if closed
         //Renew buffer
         log.debug("Starting id block renewal thread upon {}", currentIndex);
-        idBlockFuture = exec.submit(new IDBlockGetter(idAuthority, partition, idNamespace, renewTimeout));
+        idBlockGetter = new IDBlockGetter(idAuthority, partition, idNamespace, renewTimeout);
+        idBlockFuture = exec.submit(idBlockGetter);
     }
 
     private static class IDBlockGetter implements Callable<IDBlock> {
@@ -217,6 +249,7 @@ public class StandardIDPool implements IDPool {
         private final int partition;
         private final int idNamespace;
         private final Duration renewTimeout;
+        private volatile boolean stopRequested;
 
         public IDBlockGetter(IDAuthority idAuthority, int partition, int idNamespace, Duration renewTimeout) {
             this.idAuthority = idAuthority;
@@ -226,11 +259,22 @@ public class StandardIDPool implements IDPool {
             this.alive = Stopwatch.createStarted();
         }
 
+        private void stopRequested()
+        {
+            this.stopRequested = true;
+        }
+
         @Override
         public IDBlock call() {
             Stopwatch running = Stopwatch.createStarted();
 
             try {
+                if (stopRequested) {
+                    log.debug("Aborting ID block retrieval on partition({})-namespace({}) after " +
+                            "graceful shutdown was requested, exec time {}, exec+q time {}",
+                            partition, idNamespace, running.stop(), alive.stop());
+                    throw new TitanException("ID block retrieval aborted by caller");
+                }
                 IDBlock idBlock = idAuthority.getIDBlock(partition, idNamespace, renewTimeout);
                 log.debug("Retrieved ID block from authority on partition({})-namespace({}), " +
                           "exec time {}, exec+q time {}",

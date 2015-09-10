@@ -1,7 +1,10 @@
 package com.thinkaurelius.titan.graphdb.berkeleyje;
 
 import com.google.common.base.Joiner;
+
+import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
@@ -21,6 +24,13 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 
 import java.io.File;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.FileUtils;
+
+import static org.junit.Assert.*;
 
 public class BerkeleyGraphTest extends TitanGraphTest {
 
@@ -67,5 +77,30 @@ public class BerkeleyGraphTest extends TitanGraphTest {
     @Override
     public void testConcurrentConsistencyEnforcement() {
         //Do nothing TODO: Figure out why this is failing in BerkeleyDB!!
+    }
+
+    @Test
+    public void testIDBlockAllocationTimeout()
+    {
+        config.set("ids.authority.wait-time", Duration.of(0L, ChronoUnit.NANOS));
+        config.set("ids.renew-timeout", Duration.of(1L, ChronoUnit.MILLIS));
+        close();
+        TitanCleanup.clear(graph);
+        open(config);
+        try {
+            graph.addVertex();
+            fail();
+        } catch (TitanException e) {
+
+        }
+
+        assertTrue(graph.isOpen());
+
+        close(); // must be able to close cleanly
+
+        // Must be able to reopen
+        open(config);
+
+        assertEquals(0L, (long)graph.traversal().V().count().next());
     }
 }
