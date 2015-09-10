@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.graphdb.attribute;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
+import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
+import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.junit.Test;
 
 import java.util.Arrays;
