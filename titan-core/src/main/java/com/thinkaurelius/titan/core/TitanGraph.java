@@ -24,26 +24,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 //------------------------
 @Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
-        method = "shouldThrowExceptionIfEdgeWasRemoved",
-        specific = "e.remove()",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
-        method = "shouldThrowExceptionIfEdgeWasRemoved",
-        specific = "property(k)",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.EdgeTest$ExceptionConsistencyWhenEdgeRemovedTest",
-        method = "shouldThrowExceptionIfEdgeWasRemoved",
-        specific = "remove()",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$ExceptionConsistencyWhenVertexPropertyRemovedTest",
-        method = "shouldThrowExceptionIfVertexPropertyWasRemoved",
-        specific = "property(k)",
-        reason = "Titan cannot currently throw an exception on access to removed relations due to internal use.")
-@Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
         method = "shouldHandleSetVertexProperties",
         reason = "Titan can only handle SET cardinality for properties when defined in the schema.")
