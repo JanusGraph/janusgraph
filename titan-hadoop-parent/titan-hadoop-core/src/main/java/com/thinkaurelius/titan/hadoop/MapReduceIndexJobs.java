@@ -13,7 +13,7 @@ import com.thinkaurelius.titan.hadoop.scan.CassandraHadoopScanRunner;
 import com.thinkaurelius.titan.hadoop.scan.HBaseHadoopScanRunner;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
-import org.elasticsearch.hadoop.util.IOUtils;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return cassandraRepair(p, indexName, relationType, partitionerName);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
@@ -70,7 +70,7 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return cassandraRemove(p, indexName, relationType, partitionerName);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
@@ -103,7 +103,7 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return hbaseRepair(p, indexName, relationType);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
@@ -134,7 +134,7 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return hbaseRemove(p, indexName, relationType);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
