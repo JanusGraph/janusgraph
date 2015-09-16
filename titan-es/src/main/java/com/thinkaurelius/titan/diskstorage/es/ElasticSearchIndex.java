@@ -27,9 +27,6 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
-import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
@@ -46,7 +43,6 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -70,11 +66,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -152,6 +145,13 @@ public class ElasticSearchIndex implements IndexProvider {
             "from system properties/process environment variables.  Only meaningful when using the Node " +
             "client (has no effect with TransportClient).", ConfigOption.Type.MASKABLE, true);
 
+    public static final ConfigOption<Boolean> USE_EDEPRECATED_IGNORE_UNMAPPED_OPTION =
+            new ConfigOption<>(ELASTICSEARCH_NS, "use-deprecated-ignore-unmapped-option",
+            "Elasticsearch versions before 1.4.0 supported the \"ignore_unmapped\" sort option. " +
+            "In 1.4.0, it was deprecated by the new \"unmapped_type\" sort option.  This configuration" +
+            "setting controls which ES option Titan uses: false for the newer \"unmapped_type\"," +
+            "true for the older \"ignore_unmapped\".", ConfigOption.Type.MASKABLE, false);
+
     public static final ConfigNamespace ES_EXTRAS_NS =
             new ConfigNamespace(ELASTICSEARCH_NS, "ext", "Overrides for arbitrary elasticsearch.yaml settings", true);
 
@@ -177,9 +177,11 @@ public class ElasticSearchIndex implements IndexProvider {
     private final Client client;
     private final String indexName;
     private final int maxResultsSize;
+    private final boolean useDeprecatedIgnoreUnmapped;
 
     public ElasticSearchIndex(Configuration config) {
         indexName = config.get(INDEX_NAME);
+        useDeprecatedIgnoreUnmapped = config.get(USE_EDEPRECATED_IGNORE_UNMAPPED_OPTION);
 
         checkExpectedClientVersion();
 
@@ -866,10 +868,15 @@ public class ElasticSearchIndex implements IndexProvider {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
                 IndexQuery.OrderEntry orderEntry = orders.get(i);
-                Class<?> datatype = orderEntry.getDatatype();
-                srb.addSort(new FieldSortBuilder(orders.get(i).getKey())
-                        .order(orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC)
-                        .unmappedType(convertToEsDataType(datatype)));
+                FieldSortBuilder fsb = new FieldSortBuilder(orders.get(i).getKey())
+                        .order(orderEntry.getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC);
+                if (useDeprecatedIgnoreUnmapped) {
+                    fsb.ignoreUnmapped(true);
+                } else {
+                    Class<?> datatype = orderEntry.getDatatype();
+                    fsb.unmappedType(convertToEsDataType(datatype));
+                }
+                srb.addSort(fsb);
             }
         }
         srb.setFrom(0);

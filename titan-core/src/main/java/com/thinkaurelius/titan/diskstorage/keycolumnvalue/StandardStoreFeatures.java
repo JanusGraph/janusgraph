@@ -27,6 +27,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final Configuration keyConsistentTxConfig;
     private final Configuration localKeyConsistentTxConfig;
     private final Configuration scanTxConfig;
+    private final boolean supportsInterruption;
 
     @Override
     public boolean hasScan() {
@@ -126,6 +127,12 @@ public class StandardStoreFeatures implements StoreFeatures {
         return localKeyPartition;
     }
 
+    @Override
+    public boolean supportsInterruption()
+    {
+        return supportsInterruption;
+    }
+
     /**
      * The only way to instantiate {@link StandardStoreFeatures}.
      */
@@ -150,6 +157,7 @@ public class StandardStoreFeatures implements StoreFeatures {
         private Configuration keyConsistentTxConfig;
         private Configuration localKeyConsistentTxConfig;
         private Configuration scanTxConfig;
+        private boolean supportsInterruption = true;
 
         /**
          * Construct a Builder with everything disabled/unsupported/false/null.
@@ -180,6 +188,7 @@ public class StandardStoreFeatures implements StoreFeatures {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());
             }
             scanTxConfig(template.getScanTxConfig());
+            supportsInterruption(template.supportsInterruption());
         }
 
         public Builder unorderedScan(boolean b) {
@@ -281,6 +290,12 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
+        public Builder supportsInterruption(boolean i)
+        {
+            supportsInterruption = i;
+            return this;
+        }
+
         public StandardStoreFeatures build() {
             return new StandardStoreFeatures(unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
@@ -288,7 +303,7 @@ public class StandardStoreFeatures implements StoreFeatures {
                     timestamps, preferredTimestamps, cellLevelTTL,
                     storeLevelTTL, visibility, supportsPersist,
                     keyConsistentTxConfig,
-                    localKeyConsistentTxConfig, scanTxConfig);
+                    localKeyConsistentTxConfig, scanTxConfig, supportsInterruption);
         }
     }
 
@@ -301,7 +316,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             boolean visibility, boolean supportsPersist,
             Configuration keyConsistentTxConfig,
             Configuration localKeyConsistentTxConfig,
-            Configuration scanTxConfig) {
+            Configuration scanTxConfig, boolean supportsInterruption) {
         this.unorderedScan = unorderedScan;
         this.orderedScan = orderedScan;
         this.multiQuery = multiQuery;
@@ -321,5 +336,6 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.keyConsistentTxConfig = keyConsistentTxConfig;
         this.localKeyConsistentTxConfig = localKeyConsistentTxConfig;
         this.scanTxConfig = scanTxConfig;
+        this.supportsInterruption = supportsInterruption;
     }
 }

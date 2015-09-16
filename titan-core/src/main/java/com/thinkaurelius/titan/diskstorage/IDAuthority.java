@@ -81,5 +81,11 @@ public interface IDAuthority {
      */
     public String getUniqueID();
 
+    /**
+     * Whether {@link #getIDBlock(int, int, Duration)} may be safely interrupted.
+     *
+     * @return true if interruption is allowed, false if it is not
+     */
+    public boolean supportsInterruption();
 
 }

@@ -15,8 +15,8 @@ On eventually consistent storage backends, Titan must obtain locks in order to e
 mgmt = graph.openManagement()
 name = mgmt.makePropertyKey('consistentName').dataType(String.class).make()
 index = mgmt.buildIndex('byConsistentName', Vertex.class).addKey(name).unique().buildCompositeIndex()
-mgmt.setConsistency(name, ConsistencyModifier.LOCK) //Ensures only one name per vertex
-mgmt.setConsistency(index, ConsistencyModifier.LOCK) //Ensures name uniqueness in the graph
+mgmt.setConsistency(name, ConsistencyModifier.LOCK) // Ensures only one name per vertex
+mgmt.setConsistency(index, ConsistencyModifier.LOCK) // Ensures name uniqueness in the graph
 mgmt.commit()
 
 When updating an element that is guarded by a uniqueness constraint, Titan uses the following protocol at the end of a transaction when calling `tx.commit()`:

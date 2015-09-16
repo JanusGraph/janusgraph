@@ -1,0 +1,6 @@
+1:person:marko:29 knows:2:0.5,knows:4:1.0,created:3:0.4
+2:person:vadas:27
+3:project:lop:java
+4:person:josh:32 created:3:0.4,created:5:1.0
+5:project:ripple:java
+6:person:peter:35 created:3:0.2

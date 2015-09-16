@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.tinkerpop.computer.bulkloader.BulkLoaderVertexProgram;
 import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
@@ -27,7 +26,6 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         add(IMPORT + "com.thinkaurelius.titan.core.attribute" + DOT_STAR);
         add(IMPORT + "com.thinkaurelius.titan.core.schema" + DOT_STAR);
         add(IMPORT + GraphOfTheGodsFactory.class.getName());
-        add(IMPORT + BulkLoaderVertexProgram.class.getPackage().getName() + DOT_STAR);
         add(IMPORT + "com.thinkaurelius.titan.hadoop.MapReduceIndexManagement");
         add(IMPORT + "java.time" + DOT_STAR);
 

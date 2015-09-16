@@ -126,7 +126,7 @@ graph = TitanFactory.open('berkeleyje:/tmp/graph')
 Titan Server
 ^^^^^^^^^^^^
 
-To interact with Titan remotely or in another process through a client, a Titan "server" needs to be configured and started. Internally, Titan uses http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#gremlin-server[Gremlin Server] of the http://tinkerpop.incubator.apache.org/[TinkerPop] stack to service client requests, therefore, configuring Titan Server is accomplished through a Gremlin Server configuration file.
+To interact with Titan remotely or in another process through a client, a Titan "server" needs to be configured and started. Internally, Titan uses http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] of the http://tinkerpop.incubator.apache.org/[TinkerPop] stack to service client requests, therefore, configuring Titan Server is accomplished through a Gremlin Server configuration file.
 
 To configure Gremlin Server with a `TitanGraph` instance the Gremlin Server configuration file requires the following settings:
 
@@ -168,13 +168,13 @@ When the first Titan instance in a cluster is started, the global configuration 
 ----
 mgmt = graph.openManagement()
 mgmt.get('cache.db-cache')
-//Prints the current config setting
+// Prints the current config setting
 mgmt.set('cache.db-cache', true)
-//Changes option
+// Changes option
 mgmt.get('cache.db-cache')
-//Prints 'true'
+// Prints 'true'
 mgmt.commit()
-//Changes take effect
+// Changes take effect
 ----
 
 Changing Offline Options
@@ -358,7 +358,7 @@ However, note that this would not affect vertices, edges, or properties previous
 Gremlin Query Language
 ----------------------
 
-image:http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/images/gremlin-logo.png[link="http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/"]
+image:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[link="http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/"]
 
 http://tinkerpop.incubator.apache.org/[Gremlin] is Titan's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
 
@@ -366,7 +366,7 @@ Gremlin is developed independently from Titan and supported by most graph databa
 
 This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
 
-* http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/[Complete Gremlin Manual]
+* http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/[Complete Gremlin Manual]
 * http://sql2gremlin.com[Gremlin for SQL developers *Gremlin2 Syntax*]
 
 
@@ -436,7 +436,7 @@ gremlin> g.V(hercules).out('battled').valueMap()
 ==>{name=hydra}
 ==>{name=cerberus}
 
-Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
 
 Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
 
@@ -475,87 +475,39 @@ The Gremlin overview presented in this section focused on the Gremlin-Groovy lan
 Titan Server
 ------------
 
-image:http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/images/gremlin-server.png[link="http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#gremlin-server"]
+image:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/images/gremlin-server.png[link="http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server"]
 
-Titan uses the http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.
+Titan uses the http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.
 
 Gremlin Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it.  By default, client applications can connect to it via WebSockets with a custom subprotocol (there are a number of clients developed in different languages to help support the subprotocol).  Gremlin Server can also be configured to serve a simple REST-style endpoint for processing Gremlin as well.  These configurations just represent the out-of-the-box options for Gremlin Server.  It is certainly possible to also extend it with other means of communication by implementing the interfaces that it provides.
 
 The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Gremlin Server without any additional configuration.  Alternatively, one can http://tinkerpop.incubator.apache.org/[Download Gremlin Server] separately and then install Titan manually.
 
-Gremlin Server with Titan
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are two ways to download and install Gremlin Server with Titan.
-
-. Titan's zip downloads come with Gremlin Server, Titan, and BerkeleyDB pre-configured to work together.
-. Download Gremlin Server separately and then manually install Titan.
-
-Each of these approaches is described below.
-
-Getting Started Quickly
-^^^^^^^^^^^^^^^^^^^^^^^
+Getting Started
+~~~~~~~~~~~~~~~
 
 * Download a copy of the current `titan-$VERSION.zip` file from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads page]
 * Unzip it and enter the `titan-$VERSION` directory
-* Run `bin/gremlin-server.sh`.  This step will start Gremlin Server with a BerkeleyDB instance.
+* Run `bin/titan.sh start`.  This step will start Gremlin Server with Cassandra/ES forked into a separate process.
 
-Manual Installation
-^^^^^^^^^^^^^^^^^^^
-
-This section describes the process of downloading a stock Gremlin Server distribution and then installing Titan.
-
-Gremlin Server can be downloaded at http://tinkerpop.incubator.apache.org/[here].
-
-Edit the `GREMLIN_SERVER_HOME/conf/gremlin-server.yaml` and include the following settings to the defaults:
-
-[source, yaml]
+[source,bourne]
 ----
-...
-graphs: {
-  graph: conf/gremlin-server/titan-berkeleyje-server.properties}
-plugins:
-  - aurelius.titan
-scriptEngines: {
-  gremlin-groovy: {
-    imports: [java.lang.Math],
-    staticImports: [java.lang.Math.PI],
-    scripts: [scripts/empty-sample.groovy]},
-...
+$ bin/titan.sh start
+Forking Cassandra...
+Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
+Forking Elasticsearch...
+Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
+Forking Gremlin-Server...
+Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
+Run gremlin.sh to connect.
 ----
-
-The entry for `graphs` defines the bindings to specific `TitanGraph` configuration. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `graph` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts. Finally, note the `scripts` entry, which specifies a list of groovy scripts to execute in the engine.  In this case, it points to `scripts/empty-sample.groovy`.  Its contents look like this:
-
-[source, groovy]
-g = graph.traversal()
-
-This scripts creates the `GraphTraversalSource` from which traversals can be spawned.  The variable `g` becomes bound to the script engine so that on future requests it can be referenced directly.
-
-Next add a `conf/titan-berkeleyje.properties` file which should contain something like:
-
-[source, text]
-----
-gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
-storage.backend=berkeleyje
-storage.directory=db/berkeley
-----
-
-Gremlin Server needs to have Titan and its related library dependencies made available to it.  It has an `ext` directory where these libraries can be placed on Gremlin Server's path.  To get Titan on the path, issue the following command (it may take a few minutes to complete this step depending on network speed):
-
-[source, text]
-$ bin/gremlin-server.sh -i com.thinkaurelius.titan titan-all $VERSION
-
-Start Gremlin Server with:
-
-[source, text]
-$ bin/gremlin-server.sh
 
 Connecting to Gremlin Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Regardless of the download and installation method chosen above, Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
+Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
 
-Start http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
+Start http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
 
 [source, text]
 ----
@@ -578,6 +530,9 @@ gremlin> :> g.V().values('name')
 
 The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
 
+[TIP]
+To start Titan Server with the REST API, find the `conf/gremlin-server/gremlin-server.yaml` file in the distribution and edit it.  Modify the `channelizer` setting to be `org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer` then start Titan Server.
+
 [[indexes]]
 Indexing for better Performance
 -------------------------------
@@ -592,7 +547,7 @@ Graph indexes are global index structures over the entire graph which allow effi
 
 [source, gremlin]
 g.V().has('name', 'hercules')
-g.E().has('reason', new P(CONTAINS, 'loves'))
+g.E().has('reason', textContains('loves'))
 
 The first query asks for all vertices with the name `hercules`. The second asks for all edges where the property reason contains the word `loves`. Without a graph index answering those queries would require a full scan over all vertices or edges in the graph to find those that match the given condition which is very inefficient and infeasible for huge graphs.
 
@@ -710,8 +665,8 @@ See <<index-parameters>> for more information on text and string search options,
 While the index definition example looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
 
 [source, gremlin]
-g.V().has('name', new P(CONTAINS, 'hercules')).has('age', inside(20, 50))
-g.V().has('name', new P(CONTAINS, 'hercules'))
+g.V().has('name', textContains('hercules')).has('age', inside(20, 50))
+g.V().has('name', textContains('hercules'))
 g.V().has('age', lt(50))
 
 Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
@@ -756,7 +711,7 @@ The order in which the results of a graph query are returned can be defined usin
 * The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
 * The sort order: either increasing `incr` or decreasing `decr`
 
-For example, the query `g.V().has('name', new P(CONTAINS, 'hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
+For example, the query `g.V().has('name', textContains('hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
 
 When using `order().by()` it is important to note that:
 
@@ -961,7 +916,7 @@ Permanent exceptions that can fail a transaction include:
 Multi-Threaded Transactions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan supports multi-threaded transactions through Blueprint's http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#transactions[ThreadedTransactionalGraph] interface. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
+Titan supports multi-threaded transactions through Blueprint's http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#transactions[ThreadedTransactionalGraph] interface. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
 With Blueprints' default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `newTransaction()` method.
 
@@ -1217,9 +1172,9 @@ logProcessor.addLogProcessor("battle").
         addProcessor(new ChangeProcessor() {
             @Override
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState) {
-                h = tx.V.has("name", "hercules").toList().iterator().next();
+                h = tx.V().has("name", "hercules").toList().iterator().next();
                 for (edge in changeState.getEdges(h, Change.ADDED, Direction.OUT, "battled")) {
-                    if (edge.<Integer>getProperty("time")>1000)
+                    if (edge.<Integer>value("time")>1000)
                         h.property("oldFighter", true);
                 }
             }
