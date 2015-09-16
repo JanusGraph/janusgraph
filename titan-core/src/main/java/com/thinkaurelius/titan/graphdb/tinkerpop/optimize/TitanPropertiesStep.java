@@ -2,31 +2,31 @@ package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.BaseVertexQuery;
-import com.thinkaurelius.titan.core.TitanMultiVertexQuery;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PropertiesStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element, E> {
+public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element, E>, Profiling, MultiQueriable<Element,E> {
 
     public TitanPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
@@ -35,12 +35,14 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         this.limit = Query.NO_LIMIT;
     }
 
-    private boolean useMultiQuery = false;
     private boolean initialized = false;
-    private boolean isVertexProperties = false;
+    private boolean useMultiQuery = false;
     private Map<TitanVertex, Iterable<? extends TitanProperty>> multiQueryResults = null;
+    private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
-    void setUseMultiQuery(boolean useMultiQuery) {
+
+    @Override
+    public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
     }
 
@@ -52,6 +54,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         }
         for (OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
+        ((BasicVertexCentricQueryBuilder) query).profiler(queryProfiler);
         return query;
     }
 
@@ -61,29 +64,22 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> ((TitanProperty) p).value());
     }
 
-    void makeVertrexProperties() {
-        this.isVertexProperties = true;
-    }
-
     @SuppressWarnings("deprecation")
     private void initialize() {
         assert !initialized;
         initialized = true;
-        if (!isVertexProperties) { //For edges, we leave the pipeline as is and execute the behavior of parent PropertiesStep
-            assert hasContainers.isEmpty() && limit == Query.NO_LIMIT && orders.isEmpty();
-            return;
-        }
+        assert getReturnType().forProperties() || (orders.isEmpty() && hasContainers.isEmpty());
+
+        if (!starts.hasNext()) throw FastNoSuchElementException.instance();
+        List<Traverser.Admin<Element>> elements = new ArrayList<>();
+        starts.forEachRemaining(v -> elements.add(v));
+        starts.add(elements.iterator());
+        assert elements.size() > 0;
+
+        useMultiQuery = useMultiQuery && elements.stream().noneMatch(e -> !(e.get() instanceof Vertex));
 
         if (useMultiQuery) {
-            if (!starts.hasNext()) throw FastNoSuchElementException.instance();
-            List<Traverser.Admin<Element>> elements = new ArrayList<>();
-            starts.forEachRemaining(v -> elements.add(v));
-            starts.add(elements.iterator());
-            assert elements.size() > 0;
-
             TitanMultiVertexQuery mquery = TitanTraversalUtil.getTx(traversal).multiQuery();
-            if (elements.stream().anyMatch(e -> !(e instanceof Vertex)))
-                throw new IllegalStateException("Step should only be used against vertices");
             elements.forEach(e -> mquery.addVertex((Vertex) e.get()));
             makeQuery(mquery);
 
@@ -93,18 +89,34 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     @Override
     protected Traverser<E> processNextStart() {
-        //if (!initialized) initialize();
+        if (!initialized) initialize();
         return super.processNextStart();
     }
 
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin<Element> traverser) {
-//        if (useMultiQuery) {
-//            assert multiQueryResults!=null;
-//            return (Iterator<E>)multiQueryResults.get(traverser.get()).iterator();
-//        } else {
-        return super.flatMap(traverser);
-//        }
+        if (useMultiQuery) { //it is guaranteed that all elements are vertices
+            assert multiQueryResults != null;
+            return convertIterator(multiQueryResults.get(traverser.get()));
+        } else if (traverser.get() instanceof Vertex) {
+            TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(traverser)).query());
+            return convertIterator(query.properties());
+        } else {
+            //It is some other element (edge or vertex property)
+            Iterator<E> iter;
+            if (getReturnType().forValues()) {
+                assert orders.isEmpty() && hasContainers.isEmpty();
+                iter = traverser.get().values(getPropertyKeys());
+            } else {
+                //this asks for properties
+                assert orders.isEmpty();
+                //HasContainers don't apply => empty result set
+                if (!hasContainers.isEmpty()) return Collections.emptyIterator();
+                iter = (Iterator<E>) traverser.get().properties(getPropertyKeys());
+            }
+            if (limit!=Query.NO_LIMIT) iter = Iterators.limit(iter,limit);
+            return iter;
+        }
     }
 
     @Override
@@ -154,4 +166,8 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         return this.hasContainers.isEmpty() ? super.toString() : StringFactory.stepString(this, this.hasContainers);
     }
 
+    @Override
+    public void setMetrics(MutableMetrics metrics) {
+        queryProfiler = new TP3ProfileWrapper(metrics);
+    }
 }
