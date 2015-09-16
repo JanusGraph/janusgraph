@@ -10,7 +10,7 @@
     <name>Titan-Cassandra: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
-        <astyanax.version>1.56.48</astyanax.version>
+        <astyanax.version>3.8.0</astyanax.version>
         <jamm.version>0.2.5</jamm.version>
         <jamm.group>com.github.stephenc</jamm.group>
         <dependency.plugin.version>2.8</dependency.plugin.version>
