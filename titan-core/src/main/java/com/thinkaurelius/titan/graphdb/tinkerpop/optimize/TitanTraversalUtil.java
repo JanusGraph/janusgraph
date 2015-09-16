@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
@@ -22,12 +23,15 @@ import java.util.Optional;
  */
 public class TitanTraversalUtil {
 
-    public static TitanVertex getTitanVertex(Traverser<Vertex> traverser) {
-        Vertex v = traverser.get();
+
+    public static TitanVertex getTitanVertex(Traverser<? extends Element> traverser) {
+        Element v = traverser.get();
         while (v instanceof WrappedVertex) {
             v = ((WrappedVertex<Vertex>) v).getBaseVertex();
         }
-        return (TitanVertex) v;
+        if (v instanceof TitanVertex) {
+            return (TitanVertex) v;
+        } else throw new IllegalArgumentException("Expected traverser of Titan vertex but found: " + v);
     }
 
     public static boolean isEdgeReturnStep(TitanVertexStep vstep) {

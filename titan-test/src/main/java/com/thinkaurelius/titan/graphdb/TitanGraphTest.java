@@ -87,6 +87,7 @@ import com.thinkaurelius.titan.graphdb.schema.VertexLabelDefinition;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
+import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanPropertiesStep;
 import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
@@ -3357,6 +3358,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.buildEdgeIndex(knows, "byWeightDecr", Direction.OUT, decr, weight);
         mgmt.buildEdgeIndex(knows, "byWeightIncr", Direction.OUT, incr, weight);
 
+        PropertyKey names = mgmt.makePropertyKey("names").cardinality(Cardinality.LIST).dataType(String.class).make();
+        mgmt.buildPropertyIndex(names, "namesByWeight", decr, weight);
+
         finishSchema();
 
 
@@ -3372,6 +3376,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             sv[i] = graph.addVertex("id", sid);
             for (int j = 0; j < numV; j++) {
                 sv[i].addEdge("knows", vs[j], "weight", j % 5);
+                sv[i].property(VertexProperty.Cardinality.list, "names", "n"+j, "weight", j % 5);
             }
         }
 
@@ -3379,6 +3384,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TraversalMetrics metrics;
         GraphTraversalSource gts = graph.traversal();
 
+        //Edge
         assertNumStep(numV / 5, 1, gts.V(sv[0]).outE("knows").has("weight", 1), TitanVertexStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).outE("knows"), TitanVertexStep.class);
         assertNumStep(numV, 1, gts.V(sv[0]).out("knows"), TitanVertexStep.class);
@@ -3389,6 +3395,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
         assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
+
+        //Property
+        assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), TitanPropertiesStep.class);
+        assertNumStep(numV, 1, gts.V(sv[0]).properties("names"), TitanPropertiesStep.class);
+        assertNumStep(10, 1, gts.V(sv[0]).local(__.properties("names").order().by("weight", decr).limit(10)), TitanPropertiesStep.class);
+        assertNumStep(numV, 2, gts.V(sv[0]).outE("knows").values("weight"), TitanVertexStep.class, TitanPropertiesStep.class);
+
 
         //Global graph queries
         assertNumStep(1, 1, gts.V().has("id", numV / 5), TitanGraphStep.class);
@@ -3415,25 +3428,40 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(superV * (numV / 5 * 2), 2, gts.V().has("id", sid).outE("knows").has("weight", P.between(1, 3)), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
         assertNumStep(superV * 10, 2, gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)), TitanGraphStep.class, TitanVertexStep.class);
+        assertNumStep(superV * numV, 2, gts.V().has("id", sid).values("names"), TitanGraphStep.class, TitanPropertiesStep.class);
 
         //Verify traversal metrics when all reads are from cache (i.e. no backend queries)
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-        System.out.println(metrics);
-        verifyMetrics(metrics.getMetrics(0), true);
-        verifyMetrics(metrics.getMetrics(1), true);
+        verifyMetrics(metrics.getMetrics(0), true, false);
+        verifyMetrics(metrics.getMetrics(1), true, true);
+
+        //Verify that properties also use multi query
+        t = gts.V().has("id", sid).values("names").profile();
+        assertCount(superV * numV, t);
+        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
+        verifyMetrics(metrics.getMetrics(0), true, false);
+        verifyMetrics(metrics.getMetrics(1), true, true);
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
 
-        //Verify traversal metrics when having to read from backend
+        //Verify traversal metrics when having to read from backend [same query as above]
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight",P.lt(3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
-        System.out.println(metrics);
-        verifyMetrics(metrics.getMetrics(0), false);
-        verifyMetrics(metrics.getMetrics(1), false);
+//        System.out.println(metrics);
+        verifyMetrics(metrics.getMetrics(0), false, false);
+        verifyMetrics(metrics.getMetrics(1), false, true);
+
+        //Verify that properties also use multi query [same query as above]
+        t = gts.V().has("id", sid).values("names").profile();
+        assertCount(superV * numV, t);
+        metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
+//        System.out.println(metrics);
+        verifyMetrics(metrics.getMetrics(0), false, false);
+        verifyMetrics(metrics.getMetrics(1), false, true);
 
     }
 
@@ -3460,9 +3488,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(expectedSteps, numSteps);
     }
 
-    private static void verifyMetrics(Metrics metric, boolean fromCache) {
+    private static void verifyMetrics(Metrics metric, boolean fromCache, boolean multiQuery) {
         assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
         assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
+        String hasMultiQuery = (String) metric.getAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION);
+        assertTrue(multiQuery?hasMultiQuery.equalsIgnoreCase("true"):hasMultiQuery==null);
         for (Metrics submetric : metric.getNested()) {
             assertTrue(submetric.getDuration(TimeUnit.MICROSECONDS) > 0);
             switch (submetric.getName()) {
