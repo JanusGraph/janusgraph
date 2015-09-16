@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-hadoop-parent</artifactId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-2</artifactId>
@@ -53,6 +53,12 @@
             <version>${hbase098.version}</version>
             <optional>true</optional>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api-2.5</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>

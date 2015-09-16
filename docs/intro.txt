@@ -172,7 +172,7 @@ $ bin/gremlin.sh
          \,,,/
          (o o)
 -----oOOo-(3)-oOOo-----
-09:12:24 INFO  org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /home/bryn/git/titan/bin/../lib
+09:12:24 INFO  org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /usr/local/titan/lib
 plugin activated: tinkerpop.hadoop
 plugin activated: aurelius.titan
 gremlin>
@@ -192,7 +192,7 @@ gremlin> [name:'aurelius', vocation:['philosopher', 'emperor']]
 ==>vocation=[philosopher, emperor]
 
 [TIP]
-Refer to http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
+Refer to http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
 
 Loading the Graph of the Gods Into Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -243,10 +243,10 @@ gremlin> g.V(saturn).in('father').in('father').values('name')
 The property `place` is also in a graph index. The property `place` is an edge property. Therefore, Titan can index edges in a graph index. It is possible to query _The Graph of the Gods_ for all events that have happened within 50 kilometers of http://en.wikipedia.org/wiki/Athens[Athens] (latitude:37.97 and long:23.72). Then, given that information, which vertices were involved in those events.
 
 [source, gremlin]
-gremlin> g.E().has('place', new P(WITHIN, Geoshape.circle(37.97, 23.72, 50)))
+gremlin> g.E().has('place', geoWithin(Geoshape.circle(37.97, 23.72, 50)))
 ==>e[a9x-co8-9hx-39s][16424-battled->4240]
 ==>e[9vp-co8-9hx-9ns][16424-battled->12520]
-gremlin> g.E().has('place', new P(WITHIN, Geoshape.circle(37.97, 23.72, 50))).as('source').inV().as('god2').select('source').outV().as('god1').select('god1', 'god2').by('name')
+gremlin> g.E().has('place', geoWithin(Geoshape.circle(37.97, 23.72, 50))).as('source').inV().as('god2').select('source').outV().as('god1').select('god1', 'god2').by('name')
 ==>[god1:hercules, god2:hydra]
 ==>[god1:hercules, god2:nemean]
 
@@ -364,10 +364,10 @@ Finally, Pluto lives in Tartarus because he shows no concern for death. His brot
 [source, gremlin]
 gremlin> g.V(pluto).outE('lives').values('reason')
 ==>no fear of death
-gremlin> g.E().has('reason', new P(CONTAINS, 'loves'))
+gremlin> g.E().has('reason', textContains('loves'))
 ==>e[6xs-sg-m51-e8][1024-lives->512]
 ==>e[70g-zk-m51-lc][1280-lives->768]
-gremlin> g.E().has('reason', new P(CONTAINS, 'loves')).as('source').values('reason').as('reason').select('source').outV().values('name').as('god').select('source').inV().values('name').as('thing').select('god', 'reason', 'thing')
+gremlin> g.E().has('reason', textContains('loves')).as('source').values('reason').as('reason').select('source').outV().values('name').as('god').select('source').inV().values('name').as('thing').select('god', 'reason', 'thing')
 ==>[god:neptune, reason:loves waves, thing:sea]
 ==>[god:jupiter, reason:loves fresh breezes, thing:sky]
 

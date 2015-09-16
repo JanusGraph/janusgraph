@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-parent</artifactId>
@@ -104,13 +104,6 @@
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
-        </dependency>
-
-        <!-- Elasticsearch MR -->
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch-hadoop-mr</artifactId>
-            <version>${elasticsearch.mr.version}</version>
         </dependency>
 
         <!-- RDF PARSING -->

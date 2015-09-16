@@ -136,8 +136,8 @@ public final class RelationIdentifier implements Serializable {
     }
 
     TitanRelation findRelation(TitanTransaction tx) {
-        TitanVertex v = tx.getVertex(outVertexId);
-        if (v == null) return null;
+        TitanVertex v = ((StandardTitanTx)tx).getInternalVertex(outVertexId);
+        if (v == null || v.isRemoved()) return null;
         TitanVertex typeVertex = tx.getVertex(typeId);
         if (typeVertex == null) return null;
         if (!(typeVertex instanceof RelationType))
@@ -147,8 +147,8 @@ public final class RelationIdentifier implements Serializable {
         Iterable<? extends TitanRelation> rels;
         if (((RelationType) typeVertex).isEdgeLabel()) {
             Direction dir = Direction.OUT;
-            TitanVertex other = tx.getVertex(inVertexId);
-            if (other == null) return null;
+            TitanVertex other = ((StandardTitanTx)tx).getInternalVertex(inVertexId);
+            if (other==null || other.isRemoved()) return null;
             if (((StandardTitanTx) tx).isPartitionedVertex(v) && !((StandardTitanTx) tx).isPartitionedVertex(other)) { //Swap for likely better performance
                 TitanVertex tmp = other;
                 other = v;

@@ -113,6 +113,10 @@ public class SolrIndex implements IndexProvider {
             "Replication factor for a collection. This applies when creating a new collection which is only supported under the SolrCloud operation mode.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
+    public static final ConfigOption<String> SOLR_DEFAULT_CONFIG = new ConfigOption<String>(SOLR_NS,"configset",
+            "If specified, the same solr configSet can be resued for each new Collection that is created in SolrCloud.",
+            ConfigOption.Type.MASKABLE, String.class);
+
 
     /** HTTP Configuration */
 
@@ -860,9 +864,16 @@ public class SolrIndex implements IndexProvider {
             Integer maxShardsPerNode = config.get(MAX_SHARDS_PER_NODE);
             Integer replicationFactor = config.get(REPLICATION_FACTOR);
 
+
+            // Ideally this property used so a new configset is not uploaded for every single
+            // index (collection) created in solr.
+            // if a generic configSet is not set, make the configset name the same as the collection.
+            // This was the default behavior before a default configSet could be specified 
+            String  genericConfigSet = config.has(SOLR_DEFAULT_CONFIG) ? config.get(SOLR_DEFAULT_CONFIG):collection;
+
             CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create();
 
-            createRequest.setConfigName(collection);
+            createRequest.setConfigName(genericConfigSet);
             createRequest.setCollectionName(collection);
             createRequest.setNumShards(numShards);
             createRequest.setMaxShardsPerNode(maxShardsPerNode);
@@ -904,19 +915,21 @@ public class SolrIndex implements IndexProvider {
                 Map<String, Slice> slices = clusterState.getSlicesMap(collection);
                 Preconditions.checkNotNull("Could not find collection:" + collection, slices);
 
-                for (Map.Entry<String, Slice> entry : slices.entrySet()) {
+               // change paths for Replica.State per Solr refactoring
+               // remove SYNC state per: http://tinyurl.com/pag6rwt
+               for (Map.Entry<String, Slice> entry : slices.entrySet()) {
                     Map<String, Replica> shards = entry.getValue().getReplicasMap();
                     for (Map.Entry<String, Replica> shard : shards.entrySet()) {
                         String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
-                        if ((state.equals(ZkStateReader.RECOVERING)
-                                || state.equals(ZkStateReader.SYNC) || state
-                                .equals(ZkStateReader.DOWN))
+                        if ((state.equals(Replica.State.RECOVERING) || state.equals(Replica.State.DOWN))
                                 && clusterState.liveNodesContain(shard.getValue().getStr(
                                 ZkStateReader.NODE_NAME_PROP))) {
                             sawLiveRecovering = true;
                         }
                     }
                 }
+
+
                 if (!sawLiveRecovering) {
                     cont = false;
                 } else {

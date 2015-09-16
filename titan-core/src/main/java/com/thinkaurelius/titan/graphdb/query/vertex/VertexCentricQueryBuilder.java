@@ -58,6 +58,12 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     protected<Q> Q execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         if (bq.isEmpty()) return resultConstructor.emptyResult();
+        if (returnType==RelationCategory.PROPERTY && hasSingleType() && !hasQueryOnlyLoaded()
+                && tx.getConfiguration().hasPropertyPrefetching()) {
+            //Preload properties
+            vertex.query().properties().iterator().hasNext();
+        }
+
         if (isPartitionedVertex(vertex) && !hasQueryOnlyGivenVertex()) { //If it's a preloaded vertex we shouldn't preload data explicitly
             List<InternalVertex> vertices = allRequiredRepresentatives(vertex);
             profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);

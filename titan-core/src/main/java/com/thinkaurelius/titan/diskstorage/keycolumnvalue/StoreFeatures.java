@@ -70,7 +70,13 @@ public interface StoreFeatures {
     public boolean hasTxIsolation();
 
     /**
+     * Whether this storage backend has a (possibly improper) subset of the
+     * its accessible data stored locally, that is, partially available for
+     * I/O operations without necessarily going over the network.
      *
+     * If this is true, then {@link StoreManager#getLocalKeyPartition()} must
+     * return a valid list as described in that method.  If this is false, that
+     * method will not be invoked.
      */
     public boolean hasLocalKeyPartition();
 
@@ -179,4 +185,10 @@ public interface StoreFeatures {
      */
     public Configuration getScanTxConfig();
 
+
+    /**
+     * Whether calls to this manager and its stores may be safely interrupted
+     * without leaving the underlying system in an inconsistent state.
+     */
+    public boolean supportsInterruption();
 }

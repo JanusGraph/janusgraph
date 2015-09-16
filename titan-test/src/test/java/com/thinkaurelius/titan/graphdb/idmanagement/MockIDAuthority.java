@@ -123,4 +123,10 @@ public class MockIDAuthority implements IDAuthority {
     public String getUniqueID() {
         return "";
     }
+
+    @Override
+    public boolean supportsInterruption()
+    {
+        return true;
+    }
 }

@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-solr</artifactId>
@@ -11,7 +11,7 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <solr.version>5.1.0</solr.version>
+        <solr.version>5.2.1</solr.version>
         <zookeeper.version>3.4.6</zookeeper.version>
     </properties>
     <dependencies>

@@ -85,6 +85,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     private final boolean randomizeUniqueId;
     protected final int randomUniqueIDLimit;
     private final Duration waitGracePeriod;
+    private final boolean supportsInterruption;
 
     private final Random random = new Random();
 
@@ -96,6 +97,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         this.times = config.get(TIMESTAMP_PROVIDER);
         this.waitGracePeriod = idApplicationWaitMS.dividedBy(10);
         Preconditions.checkNotNull(times);
+
+        supportsInterruption = manager.getFeatures().supportsInterruption();
 
         partitionBitWdith = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
         Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=16);
@@ -141,6 +144,11 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     @Override
     public void close() throws BackendException {
         idStore.close();
+    }
+
+    @Override
+    public boolean supportsInterruption() {
+        return supportsInterruption;
     }
 
     @Override

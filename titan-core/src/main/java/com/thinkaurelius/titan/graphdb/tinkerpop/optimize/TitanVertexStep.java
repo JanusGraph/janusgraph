@@ -31,7 +31,7 @@ import java.util.Map;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profiling {
+public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profiling, MultiQueriable<Vertex,E> {
 
     public TitanVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
@@ -45,7 +45,8 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     private Map<TitanVertex, Iterable<? extends TitanElement>> multiQueryResults = null;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
-    void setUseMultiQuery(boolean useMultiQuery) {
+    @Override
+    public void setUseMultiQuery(boolean useMultiQuery) {
         this.useMultiQuery = useMultiQuery;
     }
 

@@ -99,7 +99,7 @@ public class TypeUtil {
     public static boolean hasAnyIndex(PropertyKey key) {
         InternalRelationType type = (InternalRelationType) key;
         return !Iterables.isEmpty(type.getKeyIndexes()) ||
-                !Iterables.isEmpty(type.getRelationIndexes());
+                Iterables.size(type.getRelationIndexes())>1; //The type itself is also returned as an index
     }
 
     private static <T> T getTypeModifier(final SchemaSource schema,

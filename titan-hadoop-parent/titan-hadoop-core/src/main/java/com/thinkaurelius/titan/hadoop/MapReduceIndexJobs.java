@@ -13,7 +13,7 @@ import com.thinkaurelius.titan.hadoop.scan.CassandraHadoopScanRunner;
 import com.thinkaurelius.titan.hadoop.scan.HBaseHadoopScanRunner;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
-import org.elasticsearch.hadoop.util.IOUtils;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,21 +36,27 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return cassandraRepair(p, indexName, relationType, partitionerName);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
-    public static ScanMetrics cassandraRepair(Properties titanProperties, String indexName, String relationType, String partitionerName)
+    public static ScanMetrics cassandraRepair(Properties titanProperties, String indexName, String relationType,
+                                              String partitionerName)
+            throws InterruptedException, IOException, ClassNotFoundException {
+        return cassandraRepair(titanProperties, indexName, relationType, partitionerName, new Configuration());
+    }
+
+    public static ScanMetrics cassandraRepair(Properties titanProperties, String indexName, String relationType,
+                                              String partitionerName, Configuration hadoopBaseConf)
             throws InterruptedException, IOException, ClassNotFoundException {
         IndexRepairJob job = new IndexRepairJob();
         CassandraHadoopScanRunner cr = new CassandraHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        org.apache.hadoop.conf.Configuration hadoopConf = new Configuration();
-        copyPropertiesToInputAndOutputConf(hadoopConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
         cr.partitionerOverride(partitionerName);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
-        cr.baseHadoopConf(hadoopConf);
+        cr.baseHadoopConf(hadoopBaseConf);
         return cr.run();
     }
 
@@ -64,21 +70,27 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return cassandraRemove(p, indexName, relationType, partitionerName);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
-    public static ScanMetrics cassandraRemove(Properties titanProperties, String indexName, String relationType, String partitionerName)
+    public static ScanMetrics cassandraRemove(Properties titanProperties, String indexName, String relationType,
+                                              String partitionerName)
+            throws InterruptedException, IOException, ClassNotFoundException {
+        return cassandraRemove(titanProperties, indexName, relationType, partitionerName, new Configuration());
+    }
+
+    public static ScanMetrics cassandraRemove(Properties titanProperties, String indexName, String relationType,
+                                              String partitionerName, Configuration hadoopBaseConf)
             throws InterruptedException, IOException, ClassNotFoundException {
         IndexRemoveJob job = new IndexRemoveJob();
         CassandraHadoopScanRunner cr = new CassandraHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        org.apache.hadoop.conf.Configuration hadoopConf = new Configuration();
-        copyPropertiesToInputAndOutputConf(hadoopConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
         cr.partitionerOverride(partitionerName);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
-        cr.baseHadoopConf(hadoopConf);
+        cr.baseHadoopConf(hadoopBaseConf);
         return cr.run();
     }
 
@@ -91,20 +103,25 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return hbaseRepair(p, indexName, relationType);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
     public static ScanMetrics hbaseRepair(Properties titanProperties, String indexName, String relationType)
             throws InterruptedException, IOException, ClassNotFoundException {
+        return hbaseRepair(titanProperties, indexName, relationType, new Configuration());
+    }
+
+    public static ScanMetrics hbaseRepair(Properties titanProperties, String indexName, String relationType,
+                                          Configuration hadoopBaseConf)
+            throws InterruptedException, IOException, ClassNotFoundException {
         IndexRepairJob job = new IndexRepairJob();
         HBaseHadoopScanRunner cr = new HBaseHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        org.apache.hadoop.conf.Configuration hadoopConf = new Configuration();
-        copyPropertiesToInputAndOutputConf(hadoopConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
-        cr.baseHadoopConf(hadoopConf);
+        cr.baseHadoopConf(hadoopBaseConf);
         return cr.run();
     }
 
@@ -117,20 +134,25 @@ public class MapReduceIndexJobs {
             p.load(fis);
             return hbaseRemove(p, indexName, relationType);
         } finally {
-            IOUtils.close(fis);
+            IOUtils.closeQuietly(fis);
         }
     }
 
     public static ScanMetrics hbaseRemove(Properties titanProperties, String indexName, String relationType)
             throws InterruptedException, IOException, ClassNotFoundException {
+        return hbaseRemove(titanProperties, indexName, relationType, new Configuration());
+    }
+
+    public static ScanMetrics hbaseRemove(Properties titanProperties, String indexName, String relationType,
+                                          Configuration hadoopBaseConf)
+            throws InterruptedException, IOException, ClassNotFoundException {
         IndexRemoveJob job = new IndexRemoveJob();
         HBaseHadoopScanRunner cr = new HBaseHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        org.apache.hadoop.conf.Configuration hadoopConf = new Configuration();
-        copyPropertiesToInputAndOutputConf(hadoopConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
-        cr.baseHadoopConf(hadoopConf);
+        cr.baseHadoopConf(hadoopBaseConf);
         return cr.run();
     }
 
@@ -143,7 +165,7 @@ public class MapReduceIndexJobs {
         return mc;
     }
 
-    private static void copyPropertiesToInputAndOutputConf(org.apache.hadoop.conf.Configuration sink, Properties source) {
+    private static void copyPropertiesToInputAndOutputConf(Configuration sink, Properties source) {
         final String prefix = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
         for (Map.Entry<Object, Object> e : source.entrySet()) {
             String k;

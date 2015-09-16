@@ -18,6 +18,10 @@ over 300 TB of data in over 400 machines.
 
 The following sections outline the various ways in which Titan can be used in concert with Cassandra.
 
+[NOTE]
+If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that Titan can connect to the cluster.
+Do so by running `./bin/nodetool enablethrfit`.
+
 [[cassandra-local-server-mode]]
 Local Server Mode
 ~~~~~~~~~~~~~~~~~
@@ -49,7 +53,7 @@ When the graph needs to scale beyond the confines of a single machine, then Cass
 For example, suppose we have a running Cassandra cluster where one of the machines has the IP address 77.77.77.77, then connecting Titan with the cluster is accomplished as follows (comma separate IP addresses to reference more than one machine):
 
 [source, java]
-TitanGraph g = TitanFactory.build().
+TitanGraph graph = TitanFactory.build().
 set("storage.backend", "cassandra").
 set("storage.hostname", "77.77.77.77").
 open();
@@ -68,7 +72,7 @@ Start gremlin server using bin/gremlin-server.sh and then in an external gremlin
 ----
 :plugin use tinkerpop.server
 :remote connect tinkerpop.server conf/remote.yaml
-:> v = g.addVertex()
+:> g.addV()
 ----
 
 In this case, each Gremlin server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
@@ -202,7 +206,7 @@ You may add additional configuration options found on this page or in <<titan-co
 
 * Start the gremlin shell again and type the following::
 
-      gremlin> g = TitanFactory.open('titan.properties')              
+      gremlin> graph = TitanFactory.open('titan.properties')              
       ==>titangraph[cassandra:[IP-address-of-one-Cassandra-EC2-instance]]
 
 You have successfully connected this Titan instance to the Cassandra cluster and can start to operate on the graph.

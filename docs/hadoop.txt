@@ -28,13 +28,7 @@ bin/gremlin.sh
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-SLF4J: Class path contains multiple SLF4J bindings.
-SLF4J: Found binding in [jar:file:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/lib/slf4j-log4j12-1.7.7.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-SLF4J: Found binding in [jar:file:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/ext/hadoop-gremlin/slf4j-log4j12-1.7.7.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-SLF4J: Found binding in [jar:file:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/ext/titan-all/slf4j-log4j12-1.7.7.jar!/org/slf4j/impl/StaticLoggerBinder.class]
-SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
-SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
-INFO  com.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/bin/../ext/hadoop-gremlin:/home/dalaro/tinkerelius/tp3m6/titan-console-0.9.0-M1.works/bin/../ext/titan-all
+INFO  com.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /usr/local/titan/lib
 plugin activated: tinkerpop.hadoop
 plugin activated: aurelius.titan
 gremlin> :load data/grateful-dead-titan-schema.groovy
@@ -61,7 +55,7 @@ gremlin> :load data/grateful-dead-titan-schema.groovy
 ==>null
 gremlin> graph = GraphFactory.open('conf/hadoop-load.properties')
 ==>hadoopgraph[kryoinputformat->kryooutputformat]
-gremlin> r = graph.compute().program(BulkLoaderVertexProgram.build().titan('conf/titan-cassandra.properties').create()).submit().get()
+gremlin> r = graph.compute().program(BulkLoaderVertexProgram.build().writeGraph('conf/titan-cassandra.properties').create(graph)).submit().get()
 ...
 ==>result[hadoopgraph[kryoinputformat->kryooutputformat], memory[size:0]]
 gremlin>

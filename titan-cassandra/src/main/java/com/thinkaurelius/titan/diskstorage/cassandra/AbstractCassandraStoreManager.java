@@ -21,7 +21,7 @@ import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.Token;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +127,11 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             new ConfigOption<String>(SSL_TRUSTSTORE_NS, "password",
             "The password to access SSL Truststore.", ConfigOption.Type.LOCAL, "");
 
+    // Thrift transport
+    public static final ConfigOption<Integer> THRIFT_FRAME_SIZE_MB =
+            new ConfigOption<>(CASSANDRA_NS, "frame-size-mb",
+            "The thrift frame size in megabytes", ConfigOption.Type.MASKABLE, 15);
+
     /**
      * The default Thrift port used by Cassandra. Set
      * {@link GraphDatabaseConfiguration#STORAGE_PORT} to override.
@@ -146,6 +151,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     protected final boolean atomicBatch;
 
+    protected final int thriftFrameSizeBytes;
+
     private volatile StoreFeatures features = null;
     private Partitioner partitioner = null;
 
@@ -160,6 +167,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         this.compressionChunkSizeKB = config.get(CF_COMPRESSION_BLOCK_SIZE);
         this.compressionClass = config.get(CF_COMPRESSION_TYPE);
         this.atomicBatch = config.get(ATOMIC_BATCH_MUTATE);
+        this.thriftFrameSizeBytes = config.get(THRIFT_FRAME_SIZE_MB) * 1024 * 1024;
 
         // SSL truststore location sanity check
         if (config.get(SSL_ENABLED) && config.get(SSL_TRUSTSTORE_LOCATION).isEmpty())
