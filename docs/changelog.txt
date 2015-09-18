@@ -27,11 +27,18 @@ Version 1.0.0 (September ?, 2015)
 *Features added since version 0.5:*
 
 * TinkerPop 3 compatibility
+** Includes support for Spark and Giraph GraphComputers
+** Titan test suite includes TP3 compliance tests
 * Query execution engine optimizations
 * Compatibility with newer versions of backend and index stores
 ** Cassandra 2.1
 ** HBase 1.0
 ** Elasticsearch 1.5
+
+For more information on features and bugfixes in 1.0.0, see these Github milestones (Titan's 1.0.0 release includes both Github's 1.0 and 0.9 milestones):
+
+* https://github.com/thinkaurelius/titan/issues?q=milestone%3ATitan0.9
+* https://github.com/thinkaurelius/titan/issues?q=milestone%3ATitan1.0
 
 Version 0.9.0-M2 (June 9, 2015)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
