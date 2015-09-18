@@ -158,15 +158,13 @@ _______
 Titan can be downloaded from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads] section of the project repository.  Once retrieved and unpacked, a Gremlin console can be opened. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and only differs from the standard Gremlin console insofar that Titan is a pre-installed and pre-loaded package. Alternatively, a user may choose to install and activate Titan in an existing Gremlin console by downloading the Titan package from the central repository. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
 
 
-// The default shell highlighting is so awful that I'd rather
-// have nothing unless/until it can be improved
-// [source, bourne]
+[source, gremlin]
 ----
-$ unzip titan.zip
-Archive:  titan.zip
-  creating: titan/
+$ unzip titan-$MAVEN{project.version}-hadoop1.zip
+Archive:  titan-$MAVEN{project.version}-hadoop1.zip
+  creating: titan-$MAVEN{project.version}-hadoop1/
 ...
-$ cd titan
+$ cd titan-$MAVEN{project.version}-hadoop1
 $ bin/gremlin.sh
 
          \,,,/
