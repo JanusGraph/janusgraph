@@ -236,6 +236,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             "Astyanax's connection pool \"retryMaxDelaySlice\" parameter",
             ConfigOption.Type.MASKABLE, ConnectionPoolConfigurationImpl.DEFAULT_RETRY_SUSPEND_WINDOW);
 
+    /**
+     * Controls the frame size of thrift sockets created by Astyanax.
+     */
+    public static final ConfigOption<Integer> THRIFT_FRAME_SIZE =
+            new ConfigOption<Integer>(ASTYANAX_NS, "frame-size",
+            "The thrift frame size in mega bytes", ConfigOption.Type.MASKABLE, 15);
+
     public static final ConfigOption<String> LOCAL_DATACENTER =
             new ConfigOption<String>(ASTYANAX_NS, "local-datacenter",
             "The name of the local or closest Cassandra datacenter.  When set and not whitespace, " +
@@ -495,7 +502,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 new AstyanaxConfigurationImpl()
                         .setConnectionPoolType(poolType)
                         .setDiscoveryType(discType)
-                        .setTargetCassandraVersion("1.2");
+                        .setTargetCassandraVersion("1.2")
+                        .setMaxThriftSize(thriftFrameSizeBytes);
 
         if (0 < maxConnections) {
             cpool.setMaxConns(maxConnections);
