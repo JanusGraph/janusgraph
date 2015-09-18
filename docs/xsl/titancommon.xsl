@@ -109,9 +109,9 @@
             </div>
             <nav id="nav" class="nav-holder">
               <ul class="navigation menu fusion-navbar-nav">
-                <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">TOC ($MAVEN{project.version})</a></li>
-                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Documentation">Versions</a></li>
-                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
+                <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">Documentation ($MAVEN{project.version})</a></li>
+                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Other Versions</a></li>
+                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download Titan</a></li>
               </ul>
             </nav>
             <div class="mobile-nav-holder main-menu"></div>
@@ -130,9 +130,9 @@
           </div>
           <nav id="sticky-nav" class="nav-holder">
             <ul class="navigation menu fusion-navbar-nav">
-              <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">TOC ($MAVEN{project.version})</a></li>
-              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Documentation">Versions</a></li>
-              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
+              <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">Documentation ($MAVEN{project.version})</a></li>
+              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Other Versions</a></li>
+              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download Titan</a></li>
             </ul>
           </nav>
           <div class="mobile-nav-holder"></div>
