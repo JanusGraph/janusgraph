@@ -165,8 +165,7 @@
 	  <div class="avada-row">
 	    <ul class="copyright">
 	      <li>
-                Copyright 2014 All Rights Reserved - Titan is a trademark of <a href="http://thinkaurelius.com/">Aurelius LLC</a>.<br />
-                Titan support provided by <a href="http://thinkaurelius.com/services/">Aurelius</a>.<br />
+                Copyright 2015 All Rights Reserved - Titan is a trademark of <a href="http://datastax.com/">DataStax</a>.<br />
 	        Cassandra, HBase, and Hadoop are trademarks of the Apache Software Foundation.<br />
                 Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.<br />
                 Documentation generated with <a href="http://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="http://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.
