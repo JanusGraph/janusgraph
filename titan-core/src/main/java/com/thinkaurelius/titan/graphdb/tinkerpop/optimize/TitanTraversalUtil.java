@@ -23,15 +23,17 @@ import java.util.Optional;
  */
 public class TitanTraversalUtil {
 
-
-    public static TitanVertex getTitanVertex(Traverser<? extends Element> traverser) {
-        Element v = traverser.get();
+    public static TitanVertex getTitanVertex(Element v) {
         while (v instanceof WrappedVertex) {
             v = ((WrappedVertex<Vertex>) v).getBaseVertex();
         }
         if (v instanceof TitanVertex) {
             return (TitanVertex) v;
         } else throw new IllegalArgumentException("Expected traverser of Titan vertex but found: " + v);
+    }
+
+    public static TitanVertex getTitanVertex(Traverser<? extends Element> traverser) {
+        return getTitanVertex(traverser.get());
     }
 
     public static boolean isEdgeReturnStep(TitanVertexStep vstep) {

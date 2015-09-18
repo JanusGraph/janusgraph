@@ -14,6 +14,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (http://matthiasb.com)
@@ -136,6 +139,14 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<
                 vstep.setUseMultiQuery(true);
             }
         }
+    }
+
+    private static final Set<Class<? extends VendorOptimizationStrategy>> PRIORS = Collections.singleton(AdjacentVertexFilterOptimizerStrategy.class);
+
+
+    @Override
+    public Set<Class<? extends VendorOptimizationStrategy>> applyPrior() {
+        return PRIORS;
     }
 
     public static TitanLocalQueryOptimizerStrategy instance() {
