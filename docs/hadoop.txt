@@ -8,7 +8,7 @@ general-purpose OLAP.
 Here's a three step example showing some basic integrated Titan-TinkerPop functionality.
 
 1. Manually define schema and then load the Grateful Dead graph from a TP3 Kryo-serialized binary file 
-2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/^g`
+2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/~g`
 3. Read the derived graph vertices and their computed rank values
 
 
@@ -121,75 +121,4 @@ def defineGratefulDeadSchema(titanGraph) {
 Running PageRank
 ~~~~~~~~~~~~~~~~
 
-[source, gremlin]
-----
-gremlin> graph = GraphFactory.open('conf/run-pagerank.properties')
-==>hadoopgraph[cassandrainputformat->kryooutputformat]
-gremlin> r = graph.compute().program(PageRankVertexProgram.build().create()).submit().get()
-INFO  com.tinkerpop.gremlin.hadoop.process.computer.giraph.GiraphGraphComputer  - HadoopGremlin(Giraph): PageRankVertexProgram[alpha=0.85, iterations=30]
-...
-==>result[hadoopgraph[cassandrainputformat->kryooutputformat], memory[size:0]]
-gremlin>
-----
-
-[source, properties]
-----
-# run-pagerank.properties
-
-# Hadoop-Gremlin settings
-gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=com.thinkaurelius.titan.hadoop.formats.cassandra.CassandraInputFormat
-gremlin.hadoop.graphOutputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoOutputFormat
-gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
-gremlin.hadoop.inputLocation=.
-gremlin.hadoop.outputLocation=output
-gremlin.hadoop.deriveMemory=true
-gremlin.hadoop.jarsInDistributedCache=true
-
-input.conf.storage.backend=cassandra
-cassandra.input.partitioner.class=org.apache.cassandra.dht.Murmur3Partitioner
-
-# Giraph settings
-giraph.SplitMasterWorker=false
-giraph.minWorkers=1
-giraph.maxWorkers=1
-----
-
-Reading vertices and printing ranks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-[source, gremlin]
-----
-gremlin> graph = GraphFactory.open('conf/read-pagerank-results.properties')
-==>hadoopgraph[kryoinputformat->nulloutputformat]
-gremlin> g = graph.traversal()
-==>graphtraversalsource[hadoopgraph[kryoinputformat->nulloutputformat], standard]
-gremlin> g.V().map{[it.get().value('name'), it.get().value(PageRankVertexProgram.PAGE_RANK)]}
-==>[BIG BOSS MAN, 0.612518225466592]
-==>[WEATHER REPORT SUITE, 0.7317693791428082]
-==>[HELL IN A BUCKET, 1.6428823764685747]
-...
-==>[Medley_Russell, 0.21375000000000002]
-==>[F_&_B_Bryant, 0.21375000000000002]
-==>[Johnny_Otis, 0.1786280514597559]
-gremlin>
-----
-
-[source, properties]
-----
-# read-pagerank-results.properties
-# Hadoop-Gremlin settings
-gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoInputFormat
-gremlin.hadoop.graphOutputFormat=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
-gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
-gremlin.hadoop.inputLocation=output/^g
-gremlin.hadoop.outputLocation=output
-gremlin.hadoop.deriveMemory=false
-gremlin.hadoop.jarsInDistributedCache=true
-
-# Giraph settings
-giraph.SplitMasterWorker=false
-giraph.minWorkers=1
-giraph.maxWorkers=1
-----
+A fully functional example of the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#vertexprogram[VertexProgram] section of the TinkerPop3 docs.
