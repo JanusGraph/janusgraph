@@ -1282,11 +1282,6 @@ ElasticSearch OutOfMemoryException
 
 When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
 
-Blueprints Index Creation
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Indexes in Titan must be created through Titan's management system as documented in <<indexes>> and cannot be created through the Blueprints API.
-
 [[limitations]]
 Technical Limitations
 ---------------------
