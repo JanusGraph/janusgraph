@@ -30,10 +30,10 @@ attributes.custom.attribute10.serializer-class = com.example.SpecialIntSerialize
 Custom Object Serialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan supports arbitrary objects as property attributes an can serialize such objects to disk. For this default serializer to work for a custom class, the following conditions must be fulfilled:
+Titan supports arbitrary objects as property attributes and can serialize such objects to disk. For this default serializer to work for a custom class, the following conditions must be fulfilled:
 
 * The class must implement AttributeSerializer
 * The class must have a no-argument constructor
 * The class must implement the `equals(Object)` method
 
-The last requirement is Titan specific because Titan will test both serialization and deserialization of a custom class before persisting data to disk.
+The last requirement is needed because Titan will test both serialization and deserialization of a custom class before persisting data to disk.
