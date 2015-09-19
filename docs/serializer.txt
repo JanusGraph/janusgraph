@@ -5,7 +5,7 @@ Datatype and Attribute Serializer Configuration
 Titan supports a number of classes for attribute values on properties. Titan efficiently serializes primitives, primitive arrays, `Date`, `ArrayList` and `HashMap`. By default, Titan allows arbitrary objects as attribute values on properties, but those use default serializer which have significant overhead and may not be as efficient.  
 
 .Serialization Configuration Options
-[cols="4, 7, 2, 2, 1", options="header"]
+[cols="4,7,2,2,1", options="header"]
 |==========================
 |Option |Description |Value |Default |Modifiable
 |attributes.allow-all |
