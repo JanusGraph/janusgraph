@@ -87,7 +87,7 @@ During bulk loading, the load on the cluster typically increases making it more 
 //BatchGraph
 //^^^^^^^^^^
 
-//For medium size graph datasets (up to 100s million edges), Tinkerpop ' http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] is a useful tool for bulk loading data into Titan from a single machine through Titan's native Blueprints interface. BatchGraph effectively caches externally provided vertex ids to eliminate reads against Titan. This allows bulk loading with minimal read load.
+//For medium size graph datasets (up to 100s million edges), Tinkerpop ' http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#_batchgraph[BatchGraph] is a useful tool for bulk loading data into Titan from a single machine through Titan's native Blueprints interface. BatchGraph effectively caches externally provided vertex ids to eliminate reads against Titan. This allows bulk loading with minimal read load.
 
 //BatchGraph is limited to single machine bulk loading use cases and requires enough local RAM to hold the entire vertex id cache in memory. BatchGraph supports id compression to reduce the memory requirements. Please refer to the https://github.com/tinkerpop/blueprints/wiki/Batch-Implementation[BatchGraph documentation] for more information on how to use BatchGraph most effectively.
 
@@ -109,10 +109,11 @@ If Hadoop cannot be used for parallelizing the bulk loading process, here are so
 .. Add all the edges using the map to look-up Titan's vertex id and retrieving the vertices using that id.
 
 
-Data Sorting
-^^^^^^^^^^^^
-
-Presorting the data to be bulk loaded can significantly increase the loading performance through BatchGraph.  The http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] documentation describes this strategy in more detail. It has been reported that loading times were decreased by a factor of 2 or more when presorting the bulk loaded data.
+// TODO: BatchGraph no longer exists, what should we point users to instead (and does sorting matter there)?
+//Data Sorting
+//^^^^^^^^^^^^
+//
+//Presorting the data to be bulk loaded can significantly increase the loading performance through BatchGraph.  The http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] documentation describes this strategy in more detail. It has been reported that loading times were decreased by a factor of 2 or more when presorting the bulk loaded data.
 
 Q&A
 ~~~
