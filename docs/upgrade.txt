@@ -5,10 +5,11 @@ Upgrade Instructions
 
 Please follow these instructions when upgrading from an older Titan release.
 
-Version 1.0.0 (September ?, 2015)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Version 1.0.0 (September 24, 2015)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This is the first non-milestone release that uses TinkerPop 3.  Titan 0.5.x and earlier used TinkerPop 2.  Compared with TinkerPop 2, TinkerPop 3 brings substantial changes to Gremlin and to public TP interfaces that Titan implements.  Applications written for Titan 0.5.x or TinkerPop 2 will generally require source-level changes to compile or run against Titan 1.0.0 or TinkerPop 3.
+Since TinkerPop 3 includes GraphComputer for global graph analytics, analytic query processing is now handled by Tinkerpop and Titan only provides the needed input and output formats for the supported big data platforms.
 
 Property pre-fetching is disabled by default in Titan 1.0.0 and future releases. That is, the `fast-property` configuration settings defaults to true. If you are relying on this setting to speed up multi-property access you need to enable `fast-property` explicitly.
 
@@ -17,14 +18,14 @@ Version 0.9.0-M2 (June 8, 2015)
 
 Titan 0.9.0-M2 uses the same storage format as 0.5.x, but since it's a milestone release with a lower standard of testing and stability than general availabi
 
-The query language and API have changed considerably. The Titan manual for 0.9.0 is still a work in progress. The http://tinkerpop.incubator.apache.org/docs/
+The query language and API have changed considerably. The Titan manual for 0.9.0 is still a work in progress. The http://tinkerpop.incubator.apache.org/docs/[TinkerPop 3 documentation] is a useful resource for understanding the new API.
 
 Version 0.9.0-M1 (December 4, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Titan 0.9.0-M1 uses the same storage format as 0.5.x, but since it's a milestone release with a lower standard of testing and stability than general availability releases, it is artificially marked incompatible with all previous versions. 
 
-The query language and API have changed considerably. The Titan manual for 0.9.0 is still a work in progress. The http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}[TinkerPop 3 documentation] is a useful resource for understanding the new API.
+The query language and API have changed considerably. The Titan manual for 0.9.0 is still a work in progress. The http://www.tinkerpop.com/docs/3.0.0.M6/[TinkerPop 3 documentation] is a useful resource for understanding the new API.
 
 Version 0.5.3 (January 12, 2015)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -248,7 +249,7 @@ Version 0.2.1 (March 22, 2013)
 From Version 0.2.0
 ^^^^^^^^^^^^^^^^^^
 
-No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, `Graph.startTransaction()` has been renamed to `Graph.newTransaction()`. Please refer to the http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#transactions[Blueprints documentation] for more information.
+No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, `Graph.startTransaction()` has been renamed to `Graph.newTransaction()`. Please refer to the http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#transactions[Blueprints documentation] for more information.
 
 From prior versions
 ^^^^^^^^^^^^^^^^^^^
