@@ -63,7 +63,7 @@ In the Gremlin shell, you can not define the type of the variables `conf` and `g
 Remote Server Mode with Gremlin Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-image:http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/images/gremlin-server.png[]
+image:http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/images/gremlin-server.png[]
 
 Gremlin Server can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin Server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
@@ -86,7 +86,7 @@ plugins:
   - aurelius.titan
 ...
 ----
-For more information about gremlin server see the latest http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/#gremlin-server[Tinkerpop documentation]
+For more information about gremlin server see the latest http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#gremlin-server[Tinkerpop documentation]
 
 Titan Embedded Mode
 ~~~~~~~~~~~~~~~~~~~

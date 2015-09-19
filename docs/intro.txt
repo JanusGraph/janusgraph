@@ -104,7 +104,7 @@ Titan's modular architecture supports third-party adapters.
 
 Broadly speaking, applications can interact with Titan in two ways:
 
-* Embed Titan inside the application executing http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#graph-traversal-steps[Gremlin] queries directly against the graph within the same JVM. Query execution, Titan's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
+* Embed Titan inside the application executing http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#graph-traversal-steps[Gremlin] queries directly against the graph within the same JVM. Query execution, Titan's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
 * Interact with a local or remote Titan instance by submitting Gremlin queries to the server. Titan natively supports the Gremlin Server component of the http://tinkerpop.incubator.apache.org/[Tinkerpop] stack.
 
 .High-level Titan Architecture and Context
@@ -131,7 +131,7 @@ Gods. Ultimately, the Gods won and Jupiter took the throne as leader
 of the Gods.
 _______
 
-The examples in this section make extensive use of a toy graph distributed with Titan called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#intro[Property Graph Model] and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
+The examples in this section make extensive use of a toy graph distributed with Titan called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#intro[Property Graph Model] and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
 
 
 .Graph of the Gods
@@ -176,7 +176,7 @@ plugin activated: aurelius.titan
 gremlin>
 ----
 
-Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/[Tinkerpop documentation] for more information on package handling.
+Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/[Tinkerpop documentation] for more information on package handling.
 
 The Gremlin terminal is a http://groovy.codehaus.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
 
@@ -190,7 +190,7 @@ gremlin> [name:'aurelius', vocation:['philosopher', 'emperor']]
 ==>vocation=[philosopher, emperor]
 
 [TIP]
-Refer to http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
+Refer to http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
 
 Loading the Graph of the Gods Into Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -292,7 +292,7 @@ gremlin> g.V(hercules).out('father', 'mother').label()
 gremlin> hercules.label()
 ==>demigod
 
-The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#intro[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.
+The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#intro[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.
 
 [source, gremlin]
 gremlin> g.V(hercules).out('battled')
