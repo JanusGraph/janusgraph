@@ -157,6 +157,8 @@ _______
 
 Titan can be downloaded from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads] section of the project repository.  Once retrieved and unpacked, a Gremlin console can be opened. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and only differs from the standard Gremlin console insofar that Titan is a pre-installed and pre-loaded package. Alternatively, a user may choose to install and activate Titan in an existing Gremlin console by downloading the Titan package from the central repository. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
 
+[IMPORTANT]
+Titan requires Java 8 (Standard Edition).  Oracle Java 8 is recommended.  Titan's shell scripts expect that the `$JAVA_HOME` environment variable points to the directory where JRE or JDK is installed.
 
 [source, gremlin]
 ----
