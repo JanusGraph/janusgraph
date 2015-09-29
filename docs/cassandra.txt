@@ -20,7 +20,7 @@ The following sections outline the various ways in which Titan can be used in co
 
 [NOTE]
 If you are using Cassandra 2.2 or higher you need to explicitly enable thrift so that Titan can connect to the cluster.
-Do so by running `./bin/nodetool enablethrfit`.
+Do so by running `./bin/nodetool enablethrift`.
 
 [[cassandra-local-server-mode]]
 Local Server Mode
