@@ -24,7 +24,7 @@
   <xsl:param name="titan.top.nav.links" select="1" />
 
   <xsl:param name="generate.toc">
-  book         toc,title,table,figure
+  book         toc,title
   book/part    toc,title
   book/part/chapter toc,title
   </xsl:param>

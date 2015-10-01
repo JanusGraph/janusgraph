@@ -103,6 +103,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
@@ -3395,6 +3396,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNumStep(numV / 5, 2, gts.V(sv[0]).outE("knows").has("weight", 1).order().by("weight", incr), TitanVertexStep.class, OrderGlobalStep.class);
         assertNumStep(10, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).order().by("weight", incr).limit(10)), TitanVertexStep.class);
         assertNumStep(5, 1, gts.V(sv[0]).local(__.outE("knows").has("weight", 1).has("weight", 1).order().by("weight", incr).range(10, 15)), LocalStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.inV().is(vs[50])), TitanVertexStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).outE("knows").filter(__.otherV().is(vs[50])), TitanVertexStep.class);
+        assertNumStep(1, 1, gts.V(sv[0]).bothE("knows").filter(__.otherV().is(vs[50])), TitanVertexStep.class);
+        assertNumStep(1, 2, gts.V(sv[0]).bothE("knows").filter(__.inV().is(vs[50])), TitanVertexStep.class, TraversalFilterStep.class);
 
         //Property
         assertNumStep(numV / 5, 1, gts.V(sv[0]).properties("names").has("weight", 1), TitanPropertiesStep.class);

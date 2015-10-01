@@ -4,11 +4,15 @@ target/
 *.iml
 *.DS_Store
 /bin/
+/_bsp/
 /conf/
+/data/
 /db/
 /ext/
 /lib/
 /log/
+/output/
+/scripts/
 # When executing tests in alphabetical order, Maven generates temporary
 # files with names like this:
 #
@@ -44,3 +48,5 @@ titan-*/pom.xml.versionsBackup
 /pkgcommon/
 # Emacs file backups
 *~
+# Nano file backups
+*.save

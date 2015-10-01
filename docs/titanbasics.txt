@@ -1270,7 +1270,7 @@ When launching Titan with embedded Cassandra, the following warnings may be disp
 Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Rexster:
 
 [source, bash]
-export TITAN_JAVA_OPTS=-javaagent:$TITAN_HOME/lib/jamm-0.2.5.jar
+export TITAN_JAVA_OPTS=-javaagent:$TITAN_HOME/lib/jamm-$MAVEN{jamm.version}.jar
 
 Cassandra Connection Problem
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1281,11 +1281,6 @@ ElasticSearch OutOfMemoryException
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
-
-Blueprints Index Creation
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Indexes in Titan must be created through Titan's management system as documented in <<indexes>> and cannot be created through the Blueprints API.
 
 [[limitations]]
 Technical Limitations

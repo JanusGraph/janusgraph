@@ -1,25 +1,7 @@
 !http://thinkaurelius.github.io/titan/images/titan-logo.png!
 
-Titan is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. Titan is a transactional database that can support "thousands of concurrent users":http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/.
+Titan is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. Titan is a transactional database that can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
-h2. Features
+h2. Learn More
 
-* Elastic and linear scalability for a growing data and user base.
-* Data distribution and replication for performance and fault tolerance.
-* Multi-datacenter high availability and hot backups.
-* Support for "ACID":http://en.wikipedia.org/wiki/ACID and "eventual consistency":http://en.wikipedia.org/wiki/Eventual_consistency.
-* Support for various "storage backends":https://github.com/thinkaurelius/titan/wiki/Storage-Backend-Overview:
-** "Apache Cassandra":http://cassandra.apache.org/ (distributed)
-** "Apache HBase":http://hbase.apache.org/ (distributed)
-** "MapR Tables":http://www.mapr.com/products/mapr-editions/m7-edition (distributed)
-** "Oracle BerkeleyDB Java Edition":http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html (local)
-* Support for various "indexing backends":https://github.com/thinkaurelius/titan/wiki/Indexing-Backend-Overview:
-** "ElasticSearch":http://www.elasticsearch.org/
-** "Solr":http://lucene.apache.org/solr/
-** "Apache Lucene":http://lucene.apache.org/
-* Native integration with the "TinkerPop":http://tinkerpop.incubator.apache.org/ graph stack
-* Open source with the liberal "Apache 2 license":http://www.apache.org/licenses/LICENSE-2.0.html.
-
-h2. Getting Started
-
-Read the comprehensive "Titan documentation":https://github.com/thinkaurelius/titan/wiki and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.
+The "project homepage":http://titandb.io contains more information on Titan and provides links to documentation, getting-started guides and release downloads.

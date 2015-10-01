@@ -103,16 +103,15 @@
         <header id="header">
           <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
             <div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
-              <a href="index.html">
-                <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" class="normal_logo" />
+              <a href="http://titandb.io">
+                <img src="avada-stub/images/titandb-logo.png" alt="Titan" class="normal_logo" />
               </a>
             </div>
             <nav id="nav" class="nav-holder">
               <ul class="navigation menu fusion-navbar-nav">
-                <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
-                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
-                <li id="menu-item-4711" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-3610 current_page_item menu-item-4711"><a    href="index.html">Documentation</a></li>
-                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="http://thinkaurelius.com/blog/">Blog &#038; Events</a></li>
+                <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">Documentation ($MAVEN{project.version})</a></li>
+                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Other Versions</a></li>
+                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download Titan</a></li>
               </ul>
             </nav>
             <div class="mobile-nav-holder main-menu"></div>
@@ -125,16 +124,15 @@
       <div class="sticky-shadow">
         <div class="avada-row">
           <div class="logo">
-            <a href="index.html">
-              <img src="avada-stub/images/aurelius-titandb-logo.png" alt="Titan" data-max-width="" class="normal_logo" />
+            <a href="http://titandb.io">
+              <img src="avada-stub/images/titandb-logo.png" alt="Titan" data-max-width="" class="normal_logo" />
             </a>
           </div>
           <nav id="sticky-nav" class="nav-holder">
             <ul class="navigation menu fusion-navbar-nav">
-              <li id="menu-item-4709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4709"><a    href="http://thinkaurelius.com/services/">Support</a></li>
-              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download</a></li>
-              <li id="menu-item-4711" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-3610 current_page_item menu-item-4711"><a    href="index.html">Documentation</a></li>
-              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="http://thinkaurelius.com/blog/">Blog &#038; Events</a></li>
+              <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">Documentation ($MAVEN{project.version})</a></li>
+              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Other Versions</a></li>
+              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download Titan</a></li>
             </ul>
           </nav>
           <div class="mobile-nav-holder"></div>
@@ -167,8 +165,7 @@
 	  <div class="avada-row">
 	    <ul class="copyright">
 	      <li>
-                Copyright 2014 All Rights Reserved - Titan is a trademark of <a href="http://thinkaurelius.com/">Aurelius LLC</a>.<br />
-                Titan support provided by <a href="http://thinkaurelius.com/services/">Aurelius</a>.<br />
+                Copyright 2015 All Rights Reserved - Titan is a trademark of <a href="http://datastax.com/">DataStax</a>.<br />
 	        Cassandra, HBase, and Hadoop are trademarks of the Apache Software Foundation.<br />
                 Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.<br />
                 Documentation generated with <a href="http://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="http://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.

@@ -28,14 +28,16 @@ def defineGratefulDeadSchema(titanGraph) {
     writtenBy  = m.makeEdgeLabel("writtenBy").make()
     followedBy = m.makeEdgeLabel("followedBy").make()
     // vertex and edge properties
+    blid         = m.makePropertyKey("bulkLoader.vertex.id").dataType(Long.class).make()
     name         = m.makePropertyKey("name").dataType(String.class).make()
     songType     = m.makePropertyKey("songType").dataType(String.class).make()
     performances = m.makePropertyKey("performances").dataType(Integer.class).make()
     weight       = m.makePropertyKey("weight").dataType(Integer.class).make()
     // global indices
+    m.buildIndex("byBulkLoaderVertexId", Vertex.class).addKey(blid).buildCompositeIndex()
     m.buildIndex("artistsByName", Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex()
     m.buildIndex("songsByName", Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex()
     // vertex centric indices
-    m.buildEdgeIndex(followedBy, "followedByTime", Direction.BOTH, Order.decr, weight)
+    m.buildEdgeIndex(followedBy, "followedByWeight", Direction.BOTH, Order.decr, weight)
     m.commit()
 }

@@ -109,10 +109,11 @@ If Hadoop cannot be used for parallelizing the bulk loading process, here are so
 .. Add all the edges using the map to look-up Titan's vertex id and retrieving the vertices using that id.
 
 
-Data Sorting
-^^^^^^^^^^^^
-
-Presorting the data to be bulk loaded can significantly increase the loading performance through BatchGraph.  The http://tinkerpop.incubator.apache.org/docs/3.0.0-SNAPSHOT/#_batchgraph[BatchGraph] documentation describes this strategy in more detail. It has been reported that loading times were decreased by a factor of 2 or more when presorting the bulk loaded data.
+// TODO: BatchGraph no longer exists, what should we point users to instead (and does sorting matter there)?
+//Data Sorting
+//^^^^^^^^^^^^
+//
+//Presorting the data to be bulk loaded can significantly increase the loading performance through BatchGraph.  The http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_batchgraph[BatchGraph] documentation describes this strategy in more detail. It has been reported that loading times were decreased by a factor of 2 or more when presorting the bulk loaded data.
 
 Q&A
 ~~~

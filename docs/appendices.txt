@@ -8,6 +8,7 @@ API Documentation (JavaDoc)
 ---------------------------
 
 Refer to the Titan http://thinkaurelius.github.io/titan/javadoc/current/[API documentation] for a complete documentation of all core APIs exposed by Titan.
+We *strongly* encourage all users of Titan to use the Gremlin query language for any queries executed on Titan and to not use Titan's APIs outside of the management system.
 
 
 //---------------------------

@@ -14,7 +14,7 @@ Articles & Posters
 * http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/[Educating the Planet with Pearson Education]: Presents a large-scale benchmark of Titan with a 121 billion edge graph. _(May 2013, in collaboration with Pearson Education)_
 * http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf[Titan: A Highly Scalable, Distributed Graph Database] (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at http://graphlab.org/workshop2012/agenda/[GraphLab 2012 conference])_
 * http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/[Brief Primer on Graph Databases]
-* http://tinkerpop.incubator.apache.org/docs/3.0.0.M8-incubating/#intro[Property Graph Model]
+* http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#intro[Property Graph Model]
 
 Slide Presentations
 ~~~~~~~~~~~~~~~~~~~

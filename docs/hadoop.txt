@@ -8,7 +8,7 @@ general-purpose OLAP.
 Here's a three step example showing some basic integrated Titan-TinkerPop functionality.
 
 1. Manually define schema and then load the Grateful Dead graph from a TP3 Kryo-serialized binary file 
-2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/^g`
+2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/~g`
 3. Read the derived graph vertices and their computed rank values
 
 
@@ -33,31 +33,22 @@ plugin activated: tinkerpop.hadoop
 plugin activated: aurelius.titan
 gremlin> :load data/grateful-dead-titan-schema.groovy
 ==>true
+==>true
+gremlin> graph = TitanFactory.open('conf/titan-cassandra.properties')
 ==>standardtitangraph[cassandrathrift:[127.0.0.1]]
-==>com.thinkaurelius.titan.graphdb.database.management.ManagementSystem@6088451e
-==>true
-==>song
-==>artist
-==>true
-==>songType
-==>performances
-==>name
-==>weight
-==>true
-==>sungBy
-==>writtenBy
-==>followedBy
-==>true
-==>verticesByName
-==>followsByWeight
-==>true
+gremlin> defineGratefulDeadSchema(graph)
 ==>null
+gremlin> graph.close()
 ==>null
-gremlin> graph = GraphFactory.open('conf/hadoop-load.properties')
-==>hadoopgraph[kryoinputformat->kryooutputformat]
-gremlin> r = graph.compute().program(BulkLoaderVertexProgram.build().writeGraph('conf/titan-cassandra.properties').create(graph)).submit().get()
+gremlin> hdfs.copyFromLocal('data/grateful-dead.kryo','data/grateful-dead.kryo')
+==>null
+gremlin> graph = GraphFactory.open('conf/hadoop-graph/hadoop-load.properties')
+==>hadoopgraph[gryoinputformat->nulloutputformat]
+gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/titan-cassandra.properties').create(graph)
+==>BulkLoaderVertexProgram[bulkLoader=IncrementalBulkLoader,vertexIdProperty=bulkLoader.vertex.id,userSuppliedIds=false,keepOriginalIds=true,batchSize=0]
+gremlin> graph.compute(SparkGraphComputer).program(blvp).submit().get()
 ...
-==>result[hadoopgraph[kryoinputformat->kryooutputformat], memory[size:0]]
+==>result[hadoopgraph[gryoinputformat->nulloutputformat],memory[size:0]]
 gremlin>
 ----
 
@@ -65,121 +56,69 @@ gremlin>
 ----
 # hadoop-load.properties
 
-# Hadoop-Gremlin settings
-gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoInputFormat
-gremlin.hadoop.graphOutputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoOutputFormat
+#
+# Hadoop Graph Configuration
+#
+gremlin.graph=org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph
+gremlin.hadoop.graphInputFormat=org.apache.tinkerpop.gremlin.hadoop.structure.io.gryo.GryoInputFormat
+gremlin.hadoop.graphOutputFormat=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
 gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
-gremlin.hadoop.inputLocation=data/grateful-dead-vertices.gio
+gremlin.hadoop.inputLocation=./data/grateful-dead.kryo
 gremlin.hadoop.outputLocation=output
 gremlin.hadoop.deriveMemory=false
 gremlin.hadoop.jarsInDistributedCache=true
 
-# Giraph settings
-giraph.SplitMasterWorker=false
-giraph.minWorkers=1
-giraph.maxWorkers=1
+#
+# GiraphGraphComputer Configuration
+#
+giraph.minWorkers=2
+giraph.maxWorkers=2
+giraph.useOutOfCoreGraph=true
+giraph.useOutOfCoreMessages=true
+mapred.map.child.java.opts=-Xmx1024m
+mapred.reduce.child.java.opts=-Xmx1024m
+giraph.numInputThreads=4
+giraph.numComputeThreads=4
+giraph.maxMessagesInMemory=100000
+
+#
+# SparkGraphComputer Configuration
+#
+spark.master=local[*]
+spark.executor.memory=1g
+spark.serializer=org.apache.spark.serializer.KryoSerializer
 ----
 
 [source, gremlin]
 ----
-// grateful-dead-titan-schema.groovy
+// titan-schema-grateful-dead.groovy
 
-// Open Titan and its ManagementSystem
-titanGraph = TitanFactory.open('conf/titan-cassandra.properties')
-schema = titanGraph.openManagement()
-// Vertex Labels
-schema.makeVertexLabel("song").make()
-schema.makeVertexLabel("artist").make()
-// Property Keys
-schema.makePropertyKey("songType").dataType(String.class).make()
-schema.makePropertyKey("performances").dataType(Integer.class).make()
-nameKey = schema.makePropertyKey("name").dataType(String.class).make()
-weightKey = schema.makePropertyKey("weight").dataType(Integer.class).make()
-// Edge Labels
-schema.makeEdgeLabel("sungBy").make()
-schema.makeEdgeLabel("writtenBy").make()
-followedLabel = schema.makeEdgeLabel("followedBy").make()
-// Indices
-schema.buildIndex("verticesByName", Vertex.class).addKey(nameKey).unique().buildCompositeIndex()
-schema.buildEdgeIndex(followedLabel, "followsByWeight", Direction.BOTH, Order.decr, weightKey)
-// Commit schemata and release resources
-schema.commit()
-titanGraph.close()
+def defineGratefulDeadSchema(titanGraph) {
+    m = titanGraph.openManagement()
+    // vertex labels
+    artist = m.makeVertexLabel("artist").make()
+    song   = m.makeVertexLabel("song").make()
+    // edge labels
+    sungBy     = m.makeEdgeLabel("sungBy").make()
+    writtenBy  = m.makeEdgeLabel("writtenBy").make()
+    followedBy = m.makeEdgeLabel("followedBy").make()
+    // vertex and edge properties
+    blid         = m.makePropertyKey("bulkLoader.vertex.id").dataType(Long.class).make()
+    name         = m.makePropertyKey("name").dataType(String.class).make()
+    songType     = m.makePropertyKey("songType").dataType(String.class).make()
+    performances = m.makePropertyKey("performances").dataType(Integer.class).make()
+    weight       = m.makePropertyKey("weight").dataType(Integer.class).make()
+    // global indices
+    m.buildIndex("byBulkLoaderVertexId", Vertex.class).addKey(blid).buildCompositeIndex()
+    m.buildIndex("artistsByName", Vertex.class).addKey(name).indexOnly(artist).buildCompositeIndex()
+    m.buildIndex("songsByName", Vertex.class).addKey(name).indexOnly(song).buildCompositeIndex()
+    // vertex centric indices
+    m.buildEdgeIndex(followedBy, "followedByWeight", Direction.BOTH, Order.decr, weight)
+    m.commit()
+}
 ----
 
 Running PageRank
 ~~~~~~~~~~~~~~~~
 
-[source, gremlin]
-----
-gremlin> graph = GraphFactory.open('conf/run-pagerank.properties')
-==>hadoopgraph[cassandrainputformat->kryooutputformat]
-gremlin> r = graph.compute().program(PageRankVertexProgram.build().create()).submit().get()
-INFO  com.tinkerpop.gremlin.hadoop.process.computer.giraph.GiraphGraphComputer  - HadoopGremlin(Giraph): PageRankVertexProgram[alpha=0.85, iterations=30]
-...
-==>result[hadoopgraph[cassandrainputformat->kryooutputformat], memory[size:0]]
-gremlin>
-----
-
-[source, properties]
-----
-# run-pagerank.properties
-
-# Hadoop-Gremlin settings
-gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=com.thinkaurelius.titan.hadoop.formats.cassandra.CassandraInputFormat
-gremlin.hadoop.graphOutputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoOutputFormat
-gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
-gremlin.hadoop.inputLocation=.
-gremlin.hadoop.outputLocation=output
-gremlin.hadoop.deriveMemory=true
-gremlin.hadoop.jarsInDistributedCache=true
-
-input.conf.storage.backend=cassandra
-cassandra.input.partitioner.class=org.apache.cassandra.dht.Murmur3Partitioner
-
-# Giraph settings
-giraph.SplitMasterWorker=false
-giraph.minWorkers=1
-giraph.maxWorkers=1
-----
-
-Reading vertices and printing ranks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-[source, gremlin]
-----
-gremlin> graph = GraphFactory.open('conf/read-pagerank-results.properties')
-==>hadoopgraph[kryoinputformat->nulloutputformat]
-gremlin> g = graph.traversal()
-==>graphtraversalsource[hadoopgraph[kryoinputformat->nulloutputformat], standard]
-gremlin> g.V().map{[it.get().value('name'), it.get().value(PageRankVertexProgram.PAGE_RANK)]}
-==>[BIG BOSS MAN, 0.612518225466592]
-==>[WEATHER REPORT SUITE, 0.7317693791428082]
-==>[HELL IN A BUCKET, 1.6428823764685747]
-...
-==>[Medley_Russell, 0.21375000000000002]
-==>[F_&_B_Bryant, 0.21375000000000002]
-==>[Johnny_Otis, 0.1786280514597559]
-gremlin>
-----
-
-[source, properties]
-----
-# read-pagerank-results.properties
-# Hadoop-Gremlin settings
-gremlin.graph=com.tinkerpop.gremlin.hadoop.structure.HadoopGraph
-gremlin.hadoop.graphInputFormat=com.tinkerpop.gremlin.hadoop.structure.io.kryo.KryoInputFormat
-gremlin.hadoop.graphOutputFormat=org.apache.hadoop.mapreduce.lib.output.NullOutputFormat
-gremlin.hadoop.memoryOutputFormat=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
-gremlin.hadoop.inputLocation=output/^g
-gremlin.hadoop.outputLocation=output
-gremlin.hadoop.deriveMemory=false
-gremlin.hadoop.jarsInDistributedCache=true
-
-# Giraph settings
-giraph.SplitMasterWorker=false
-giraph.minWorkers=1
-giraph.maxWorkers=1
-----
+A fully functional example of the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#vertexprogram[VertexProgram] section of the TinkerPop3 docs.
