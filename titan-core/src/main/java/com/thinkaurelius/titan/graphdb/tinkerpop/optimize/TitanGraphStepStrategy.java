@@ -14,7 +14,7 @@ import java.util.Iterator;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
     private static final TitanGraphStepStrategy INSTANCE = new TitanGraphStepStrategy();
 

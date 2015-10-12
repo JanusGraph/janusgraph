@@ -21,7 +21,7 @@ import java.util.Set;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (http://matthiasb.com)
  */
-public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.VendorOptimizationStrategy> implements TraversalStrategy.VendorOptimizationStrategy {
+public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
     private static final TitanLocalQueryOptimizerStrategy INSTANCE = new TitanLocalQueryOptimizerStrategy();
 
@@ -141,11 +141,11 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<
         }
     }
 
-    private static final Set<Class<? extends VendorOptimizationStrategy>> PRIORS = Collections.singleton(AdjacentVertexFilterOptimizerStrategy.class);
+    private static final Set<Class<? extends ProviderOptimizationStrategy>> PRIORS = Collections.singleton(AdjacentVertexFilterOptimizerStrategy.class);
 
 
     @Override
-    public Set<Class<? extends VendorOptimizationStrategy>> applyPrior() {
+    public Set<Class<? extends ProviderOptimizationStrategy>> applyPrior() {
         return PRIORS;
     }
 
