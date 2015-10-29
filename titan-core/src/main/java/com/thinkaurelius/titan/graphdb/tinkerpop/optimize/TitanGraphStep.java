@@ -9,8 +9,9 @@ import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
 import com.thinkaurelius.titan.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -18,12 +19,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStep<E extends Element> extends GraphStep<E> implements HasStepFolder<E, E>, Profiling {
+public class TitanGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder {
 
     private final List<HasContainer> hasContainers = new ArrayList<>();
     private int limit = BaseQuery.NO_LIMIT;
@@ -31,8 +33,8 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
 
-    public TitanGraphStep(final GraphStep<E> originalStep) {
-        super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getIds());
+    public TitanGraphStep(final GraphStep<S, E> originalStep) {
+        super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
         originalStep.getLabels().forEach(this::addLabel);
         this.setIteratorSupplier(() -> {
             TitanTransaction tx = TitanTraversalUtil.getTx(traversal);
@@ -75,6 +77,16 @@ public class TitanGraphStep<E extends Element> extends GraphStep<E> implements H
     @Override
     public void setMetrics(MutableMetrics metrics) {
         queryProfiler = new TP3ProfileWrapper(metrics);
+    }
+
+    @Override
+    public List<HasContainer> getHasContainers() {
+        return this.hasContainers;
+    }
+
+    @Override
+    public void addHasContainer(final HasContainer hasContainer) {
+        this.addAll(Collections.singleton(hasContainer));
     }
 }
 

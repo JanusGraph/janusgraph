@@ -4,10 +4,11 @@ import com.thinkaurelius.titan.graphdb.tinkerpop.ElementUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Iterator;
 
@@ -26,13 +27,11 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
         if (traversal.getEngine().isComputer())
             return;
 
-        final Step<?, ?> startStep = traversal.getStartStep();
-        if (startStep instanceof GraphStep) {
-            final GraphStep<?> originalGraphStep = (GraphStep) startStep;
+        TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
             if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {
                 //Try to optimize for index calls
-                final TitanGraphStep<?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
-                TraversalHelper.replaceStep(startStep, (Step) titanGraphStep, traversal);
+                final TitanGraphStep<?, ?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
+                TraversalHelper.replaceStep(originalGraphStep, (Step) titanGraphStep, traversal);
 
                 HasStepFolder.foldInHasContainer(titanGraphStep, traversal);
                 HasStepFolder.foldInOrder(titanGraphStep, traversal, traversal, titanGraphStep.returnsVertex());
@@ -48,11 +47,11 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                         elementIds[i] = ((Element) ids[i]).id();
                     }
                     originalGraphStep.setIteratorSupplier(() -> (Iterator) (originalGraphStep.returnsVertex() ?
-                            originalGraphStep.getTraversal().getGraph().get().vertices(elementIds) :
-                            originalGraphStep.getTraversal().getGraph().get().edges(elementIds)));
+                            ((Graph) originalGraphStep.getTraversal().getGraph().get()).vertices(elementIds) :
+                            ((Graph) originalGraphStep.getTraversal().getGraph().get()).edges(elementIds)));
                 }
             }
-        }
+        });
     }
 
     public static TitanGraphStepStrategy instance() {

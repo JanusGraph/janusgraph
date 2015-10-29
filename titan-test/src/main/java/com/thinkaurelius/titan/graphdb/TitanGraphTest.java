@@ -104,8 +104,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.TraversalFilterStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
@@ -3377,7 +3377,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             sv[i] = graph.addVertex("id", sid);
             for (int j = 0; j < numV; j++) {
                 sv[i].addEdge("knows", vs[j], "weight", j % 5);
-                sv[i].property(VertexProperty.Cardinality.list, "names", "n"+j, "weight", j % 5);
+                sv[i].property(VertexProperty.Cardinality.list, "names", "n" + j, "weight", j % 5);
             }
         }
 
@@ -3453,7 +3453,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         gts = graph.traversal();
 
         //Verify traversal metrics when having to read from backend [same query as above]
-        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight",P.lt(3)).order().by("weight", decr).limit(10)).profile();
+        t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile();
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics").get();
 //        System.out.println(metrics);
@@ -3497,7 +3497,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(metric.getDuration(TimeUnit.MICROSECONDS) > 0);
         assertTrue(metric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
         String hasMultiQuery = (String) metric.getAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION);
-        assertTrue(multiQuery?hasMultiQuery.equalsIgnoreCase("true"):hasMultiQuery==null);
+        assertTrue(multiQuery ? hasMultiQuery.equalsIgnoreCase("true") : hasMultiQuery == null);
         for (Metrics submetric : metric.getNested()) {
             assertTrue(submetric.getDuration(TimeUnit.MICROSECONDS) > 0);
             switch (submetric.getName()) {
@@ -3505,10 +3505,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                     assertNull(submetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID));
                     break;
                 case "backend-query":
-                    if (fromCache) assertFalse("Should not execute backend-queries when cached",true);
+                    if (fromCache) assertFalse("Should not execute backend-queries when cached", true);
                     assertTrue(submetric.getCount(TraversalMetrics.ELEMENT_COUNT_ID) > 0);
                     break;
-                default: assertFalse("Unrecognized nested query: " + submetric.getName(),true);
+                default:
+                    assertFalse("Unrecognized nested query: " + submetric.getName(), true);
             }
 
         }

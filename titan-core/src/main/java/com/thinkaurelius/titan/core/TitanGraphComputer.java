@@ -38,6 +38,7 @@ public interface TitanGraphComputer extends GraphComputer {
         return this;
     }
 
-
-
+    public default TitanGraphComputer config(final String key, final Object value) {
+        return this;
+    }
 }
