@@ -30,15 +30,12 @@ public interface TitanGraphComputer extends GraphComputer {
 
     }
 
+    @Override
     public TitanGraphComputer workers(int threads);
 
     public default TitanGraphComputer resultMode(ResultMode mode) {
         result(mode.toResultGraph());
         persist(mode.toPersist());
-        return this;
-    }
-
-    public default TitanGraphComputer config(final String key, final Object value) {
         return this;
     }
 }
