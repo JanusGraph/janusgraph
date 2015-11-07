@@ -285,8 +285,8 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         }
 
         void close(Transaction tx) {
-            closeConsumer.accept(tx);
-            Preconditions.checkState(!tx.isOpen(),"Invalid close behavior configured: Should close transaction. [%s]",closeConsumer);
+            closeConsumerInternal.get().accept(tx);
+            Preconditions.checkState(!tx.isOpen(),"Invalid close behavior configured: Should close transaction. [%s]", closeConsumerInternal);
         }
 
         @Override
