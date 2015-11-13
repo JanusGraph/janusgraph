@@ -1276,7 +1276,7 @@ public class GraphDatabaseConfiguration {
             "Gremlin configuration options");
 
     public static final ConfigOption<String> GREMLIN_GRAPH = new ConfigOption<String>(GREMLIN_NS, "graph",
-            "The implementation of graph factory that will be sued by gremlin server", ConfigOption.Type.LOCAL, "com.thinkaurelius.titan.core.TitanFactory");
+            "The implementation of graph factory that will be used by gremlin server", ConfigOption.Type.LOCAL, "com.thinkaurelius.titan.core.TitanFactory");
 
     // ################ Begin Class Definition #######################
     // ###############################################################
