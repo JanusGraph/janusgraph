@@ -1,8 +1,13 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
@@ -13,7 +18,15 @@ import com.spatial4j.core.shape.SpatialRelation;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONUtil;
+import org.apache.tinkerpop.shaded.kryo.Kryo;
+import org.apache.tinkerpop.shaded.kryo.Serializer;
+import org.apache.tinkerpop.shaded.kryo.io.Input;
+import org.apache.tinkerpop.shaded.kryo.io.Output;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -32,13 +45,39 @@ import java.util.stream.Collectors;
 
 public class Geoshape {
 
+    private static String FIELD_TYPE = "type";
+    private static String FIELD_COORDINATES = "coordinates";
+    private static String FIELD_RADIUS = "radius";
+
     private static final SpatialContext CTX = SpatialContext.GEO;
 
     /**
-     * The Type of a shape: a point, box, circle, or polygon
+     * The Type of a shape: a point, box, circle, or polygon.
      */
     public enum Type {
-        POINT, BOX, CIRCLE, POLYGON;
+        POINT("Point"),
+        BOX("Box"),
+        CIRCLE("Circle"),
+        POLYGON("Polygon");
+
+        private final String gsonName;
+
+        Type(String gsonName) {
+            this.gsonName = gsonName;
+        }
+
+        public boolean gsonEquals(String otherGson) {
+            return otherGson != null && gsonName.equals(otherGson);
+        }
+
+        public static Type fromGson(String gsonShape) {
+            return Type.valueOf(gsonShape.toUpperCase());
+        }
+
+        @Override
+        public String toString() {
+            return gsonName;
+        }
     }
 
     //coordinates[0] = latitudes, coordinates[1] = longitudes
@@ -507,6 +546,39 @@ public class Geoshape {
     }
 
     /**
+     * Serializer for TinkerPop's Gryo.
+     */
+    public static class GeoShapeGryoSerializer extends Serializer<Geoshape> {
+        @Override
+        public void write(Kryo kryo, Output output, Geoshape geoshape) {
+            float[][] coordinates = geoshape.coordinates;
+            assert (coordinates.length==2);
+            assert (coordinates[0].length==coordinates[1].length && coordinates[0].length>0);
+            int length = coordinates[0].length;
+            output.writeLong(length);
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < length; j++) {
+                    output.writeFloat(coordinates[i][j]);
+                }
+            }
+        }
+
+        @Override
+        public Geoshape read(Kryo kryo, Input input, Class<Geoshape> aClass) {
+            long l = input.readLong();
+            assert l>0 && l<Integer.MAX_VALUE;
+            int length = (int)l;
+            float[][] coordinates = new float[2][];
+            for (int i = 0; i < 2; i++) {
+                coordinates[i] = input.readFloats(length);
+            }
+            return new Geoshape(coordinates);
+        }
+    }
+
+    /**
+     * Serialization of Geoshape for JSON purposes uses the standard GeoJSON(http://geojson.org/) format.
+     *
      * @author Bryn Cooke
      */
     public static class GeoshapeGsonSerializer extends StdSerializer<Geoshape> {
@@ -518,15 +590,14 @@ public class Geoshape {
         @Override
         public void serialize(Geoshape value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
             jgen.writeStartObject();
-            jgen.writeFieldName("type");
-
+            jgen.writeFieldName(FIELD_TYPE);
 
             switch(value.getType()) {
                 case POLYGON:
-                    throw new UnsupportedOperationException("Ploygons are not supported");
+                    throw new UnsupportedOperationException("Polygons are not supported");
                 case BOX:
-                    jgen.writeString("Polygon");
-                    jgen.writeFieldName("coordinates");
+                    jgen.writeString(Type.BOX.toString());
+                    jgen.writeFieldName(FIELD_COORDINATES);
                     jgen.writeStartArray();
 
                     jgen.writeStartArray();
@@ -552,18 +623,18 @@ public class Geoshape {
                     jgen.writeEndArray();
                     break;
                 case CIRCLE:
-                    jgen.writeString("Circle");
-                    jgen.writeFieldName("radius");
+                    jgen.writeString(Type.CIRCLE.toString());
+                    jgen.writeFieldName(FIELD_RADIUS);
                     jgen.writeNumber(value.getRadius());
-                    jgen.writeFieldName("coordinates");
+                    jgen.writeFieldName(FIELD_COORDINATES);
                     jgen.writeStartArray();
                     jgen.writeNumber(value.coordinates[1][0]);
                     jgen.writeNumber(value.coordinates[0][0]);
                     jgen.writeEndArray();
                     break;
                 case POINT:
-                    jgen.writeString("Point");
-                    jgen.writeFieldName("coordinates");
+                    jgen.writeString(Type.POINT.toString());
+                    jgen.writeFieldName(FIELD_COORDINATES);
                     jgen.writeStartArray();
                     jgen.writeNumber(value.coordinates[1][0]);
                     jgen.writeNumber(value.coordinates[0][0]);
@@ -571,7 +642,31 @@ public class Geoshape {
                     break;
             }
             jgen.writeEndObject();
+        }
 
+        @Override
+        public void serializeWithType(Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider,
+                                      TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+            jgen.writeStartObject();
+            if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.CLASS, Geoshape.class.getName());
+            GraphSONUtil.writeWithType(FIELD_COORDINATES, geoshape.coordinates, jgen, serializerProvider, typeSerializer);
+            jgen.writeEndObject();
+        }
+    }
+
+    public static class GeoshapeGsonDeserializer extends StdDeserializer<Geoshape> {
+        public GeoshapeGsonDeserializer() {
+            super(Geoshape.class);
+        }
+
+        @Override
+        public Geoshape deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            // move the parser forward
+            jsonParser.nextToken();
+
+            float[][] f = jsonParser.readValueAs(float[][].class);
+            jsonParser.nextToken();
+            return new Geoshape(f);
         }
     }
 }
