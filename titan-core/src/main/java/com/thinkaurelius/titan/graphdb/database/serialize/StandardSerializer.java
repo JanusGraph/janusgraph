@@ -45,20 +45,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
     private static final Logger log = LoggerFactory.getLogger(StandardSerializer.class);
 
-    private static final List<Class> DEFAULT_REGISTRATIONS =
-            ImmutableList.of(
-                    //General
-                    (Class)ArrayList.class, HashMap.class, Object.class, Class.class,
-                    //Titan specific
-                    TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanSchemaCategory.class,
-                    Parameter.class, Parameter[].class, ParameterType.class, RelationCategory.class,
-                    Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
-                    ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
-                    Duration.class, StandardTransactionId.class, Instant.class,
-                    TimestampProviders.class
-            );
-
-
     /**
      * This offset is used by user registration to make sure they don't collide with internal class
      * registrations. It must be ensured that this number is LARGER than any internally used
@@ -79,8 +65,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         //Setup
         registerClassInternal(1, Object.class, new ObjectSerializer());
 
-
-
         //Primitive data types
         registerClassInternal(10, Byte.class, new ByteSerializer());
         registerClassInternal(11,Short.class, new ShortSerializer());
@@ -96,7 +80,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(19,Float.class, new FloatSerializer());
         registerClassInternal(20,Double.class, new DoubleSerializer());
         registerClassInternal(21,UUID.class, new UUIDSerializer());
-
 
         //Arrays (support null serialization)
         registerClassInternal(22,byte[].class, new ByteArraySerializer());
