@@ -1415,6 +1415,20 @@ Type Definitions cannot be changed
 
 The definition of an edge label, property key, or vertex label cannot be changed once it has been committed to the graph. However, a type can be renamed and new types can be created at runtime to accommodate an evolving schema.
 
+Reserved Keywords
+^^^^^^^^^^^^^^^^^
+
+There are certain keywords that Titan uses internally for types that cannot be used otherwise.  These types include vertex labels, edge labels, and property keys. The following are keywords that cannot be used:
+
+* vertex
+* element
+* edge
+* property
+* label
+* key
+
+For example, if you attempt to create a vertex with the label of `property`, you will receive an exception regarding protected system types.
+
 Temporary Limitations
 ~~~~~~~~~~~~~~~~~~~~~
 
