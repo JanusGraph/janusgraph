@@ -15,9 +15,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import java.io.File;
-
 
 /**
  * Example Graph factory that creates a {@link TitanGraph} based on roman mythology.
@@ -92,27 +90,16 @@ public class GraphOfTheGodsFactory {
         // vertices
 
         Vertex saturn = tx.addVertex(T.label, "titan", "name", "saturn", "age", 10000);
-
         Vertex sky = tx.addVertex(T.label, "location", "name", "sky");
-
         Vertex sea = tx.addVertex(T.label, "location", "name", "sea");
-
         Vertex jupiter = tx.addVertex(T.label, "god", "name", "jupiter", "age", 5000);
-
         Vertex neptune = tx.addVertex(T.label, "god", "name", "neptune", "age", 4500);
-
         Vertex hercules = tx.addVertex(T.label, "demigod", "name", "hercules", "age", 30);
-
         Vertex alcmene = tx.addVertex(T.label, "human", "name", "alcmene", "age", 45);
-
         Vertex pluto = tx.addVertex(T.label, "god", "name", "pluto", "age", 4000);
-
         Vertex nemean = tx.addVertex(T.label, "monster", "name", "nemean");
-
         Vertex hydra = tx.addVertex(T.label, "monster", "name", "hydra");
-
         Vertex cerberus = tx.addVertex(T.label, "monster", "name", "cerberus");
-
         Vertex tartarus = tx.addVertex(T.label, "location", "name", "tartarus");
 
         // edges
