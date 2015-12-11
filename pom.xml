@@ -123,8 +123,6 @@
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
-        <!-- TODO gremlin-server integration -->
-        <!-- <module>titan-rexster</module> -->
         <module>titan-all</module>
         <module>titan-dist</module>
         <module>titan-doc</module>
