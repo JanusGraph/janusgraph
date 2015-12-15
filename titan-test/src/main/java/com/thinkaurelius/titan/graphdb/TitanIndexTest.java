@@ -125,6 +125,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         indexFeatures = graph.getBackend().getIndexFeatures().get(INDEX);
     }
 
+    @Override
+    public void clopen(Object... settings) {
+        graph.tx().commit();
+        super.clopen(settings);
+    }
+
     @Rule
     public TestName methodName = new TestName();
 

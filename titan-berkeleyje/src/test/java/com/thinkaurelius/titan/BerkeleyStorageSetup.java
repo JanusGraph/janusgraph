@@ -14,7 +14,7 @@ public class BerkeleyStorageSetup extends StorageSetup {
     }
 
     public static ModifiableConfiguration getBerkeleyJEConfiguration() {
-        return getBerkeleyJEConfiguration(getHomeDir());
+        return getBerkeleyJEConfiguration(getHomeDir("berkeleyje"));
     }
 
     public static WriteConfiguration getBerkeleyJEGraphConfiguration() {

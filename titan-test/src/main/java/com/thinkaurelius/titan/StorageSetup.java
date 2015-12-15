@@ -30,10 +30,6 @@ public class StorageSetup {
         return homedir;
     }
 
-    public static final String getHomeDir() {
-        return getHomeDir(null);
-    }
-
     public static final File getHomeDirFile() {
         return getHomeDirFile(null);
     }
