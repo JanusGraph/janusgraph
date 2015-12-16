@@ -22,7 +22,6 @@
 TITAN_HOME="/usr/share/titan"
 TITAN_CONF="/etc/titan"
 TITAN_CFG="$TITAN_CONF/config.properties"
-REXSTER_CFG="$TITAN_CONF/rexster.xml"
 
 # JAVA_HOME can optionally be set here
 #JAVA_HOME=/usr/local/jdk6

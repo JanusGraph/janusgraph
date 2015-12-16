@@ -1077,7 +1077,7 @@ The configuration option `cache.db-cache-size` controls how much heap space Tita
 
 The cache size can be configured as a percentage (expressed as a decimal between 0 and 1) of the total heap space available to the JVM running Titan or as an absolute number of bytes.
 
-Note, that the cache size refers to the amount of heap space that is exclusively occupied by the cache. Titan's other data structures and each open transaction will occupy additional heap space. If additional software layers are running in the same JVM, those may occupy a significant amount of heap space as well (e.g. Rexster, embedded Cassandra, etc). Be conservative in your heap memory estimation. Configuring a cache that is too large can lead to out-of-memory exceptions and excessive GC.
+Note, that the cache size refers to the amount of heap space that is exclusively occupied by the cache. Titan's other data structures and each open transaction will occupy additional heap space. If additional software layers are running in the same JVM, those may occupy a significant amount of heap space as well (e.g. Gremlin Server, embedded Cassandra, etc). Be conservative in your heap memory estimation. Configuring a cache that is too large can lead to out-of-memory exceptions and excessive GC.
 
 Clean Up Wait Time
 ^^^^^^^^^^^^^^^^^^
@@ -1262,7 +1262,7 @@ When launching Titan with embedded Cassandra, the following warnings may be disp
 
 `958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
 
-Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Rexster:
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Gremlin Server:
 
 [source, bash]
 export TITAN_JAVA_OPTS=-javaagent:$TITAN_HOME/lib/jamm-$MAVEN{jamm.version}.jar

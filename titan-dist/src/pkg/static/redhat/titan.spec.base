@@ -114,8 +114,6 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %config /etc/titan/cassandra.yaml
 %attr(0644, root, root) %config /etc/titan/config.properties
 %attr(0644, root, root) %config /etc/titan/log4j.properties
-%attr(0644, root, root) %config /etc/titan/rexster.xml
-%attr(0644, root, root) %config /etc/titan/rexster-init.groovy
 %attr(0644, root, root) %config /etc/titan/titan-env.sh
 %attr(0644, root, root) %config /etc/sysconfig/titan
 %attr(0755, root, root) %config /etc/rc.d/init.d/titan
@@ -123,7 +121,6 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0755, titan, titan) %dir /var/lib/titan/
 %attr(0755, titan, titan) %dir /var/run/titan/
 %attr(0755, root, root) /usr/bin/gremlin.sh
-%attr(0755, root, root) /usr/bin/rexster-console.sh
 %attr(0755, root, root) /usr/sbin/titan
 %attr(0444, root, root) /usr/share/titan/lib/*.jar
 %attr(0644, root, root) /usr/share/titan/titan.in.sh
