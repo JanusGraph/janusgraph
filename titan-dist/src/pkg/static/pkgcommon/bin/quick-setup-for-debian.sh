@@ -23,7 +23,7 @@ echo "Installing Cassandra, ES, and Titan with apt-get"
 apt-get update
 apt-get install cassandra=2.0.7 elasticsearch=1.0.3 titan
 
-# Reduce Cassandra and Rexster/Titan heapsizes
+# Reduce Cassandra and Gremlin Server/Titan heapsizes
 echo 'export MAX_HEAP_SIZE=512M
 export HEAP_NEWSIZE=128M' > /etc/default/cassandra
 

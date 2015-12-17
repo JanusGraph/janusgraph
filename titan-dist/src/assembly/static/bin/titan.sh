@@ -227,15 +227,6 @@ usage() {
     echo " clean:  permanently delete all graph data (run when stopped)" >&2
     echo "Options:" >&2
     echo " -v      enable logging to console in addition to logfiles" >&2
-#    echo " -c str  configure gremlin-server with conf/rexster-<str>.xml" >&3
-#    echo "         recognized arguments to -c:" >&2
-#    shopt -s nullglob
-#    for f in "$BIN"/../conf/rexster-*.xml; do
-#        f="`basename $f`"
-#        f="${f#rexster-}"
-#        f="${f%.xml}"
-#        echo "           $f" >&2
-#    done
 }
 
 find_verb() {

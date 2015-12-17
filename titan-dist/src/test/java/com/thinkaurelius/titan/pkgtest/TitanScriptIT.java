@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.pkgtest;
 import org.junit.Test;
 
 /**
- * Test the titan.sh script that starts and stops Cassandra, ES, and Rexster.
+ * Test the titan.sh script that starts and stops Cassandra, ES, and Gremlin Server.
  */
 public class TitanScriptIT extends AbstractTitanAssemblyIT {
 

@@ -8,7 +8,6 @@ h2. Features
   ** "Titan":http://thinkaurelius.github.com/titan/ distributed graph database
   *** "Apache Cassandra":http://cassandra.apache.org/
   *** "Apache HBase":http://hbase.apache.org/
-  ** "Rexster":http://rexster.tinkerpop.com fronted graph databases
   ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS
   **  EdgeList multi-relational text format stored in HDFS
   *** "RDF":http://www.w3.org/RDF/ text formats stored in HDFS

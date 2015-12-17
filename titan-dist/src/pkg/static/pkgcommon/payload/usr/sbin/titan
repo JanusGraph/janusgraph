@@ -109,7 +109,7 @@ launch_service()
     #parms="-Dlog4j.configuration=file://"$TITAN_CONF"/log4j.properties -Dlog4j.defaultInitOverride=true"
     parms=''
 
-    # Rexster is  hardcoded to use either log4j.properties in the current
+    # Gremlin Server is  hardcoded to use either log4j.properties in the current
     # working directory or to use the one shipped in its own jar.
     # It always overrides the default log4j configuration mechanism (!) 
     # Switch to the directory containing our log4j.properties as a workaround
@@ -117,10 +117,10 @@ launch_service()
 
     if [ "x$foreground" != "x" ]; then
         export CLASSPATH
-        exec "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG"
+        exec "$JAVA" $JVM_OPTS $parms $props "$class"
     else
         export CLASSPATH
-        exec "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG" <&- &
+        exec "$JAVA" $JVM_OPTS $parms $props "$class" <&- &
         [ ! -z "$pidpath" ] && printf "%d" $! > "$pidpath"
         true
     fi
@@ -132,7 +132,7 @@ launch_service()
 args=`getopt fhp:bD: "$@"`
 eval set -- "$args"
 
-classname="org.apache.tinkerpop.rexster.Application"
+classname="org.apache.tinkerpop.gremlin.server.GremlinServer"
 while true; do
     case "$1" in
         -p)

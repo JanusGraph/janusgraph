@@ -61,8 +61,8 @@ image:titan-modes-rexster.png[]
 Finally, Gremlin server can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
 ----
-http://rexster.titan.machine1/mygraph/vertices/1
-http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
+http://gremlin-server.titan.machine1/mygraph/vertices/1
+http://gremlin-server.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
 In this case, each Gremlin server server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.

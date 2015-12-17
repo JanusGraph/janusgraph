@@ -306,11 +306,6 @@ Defining Vertex Labels
 
 Like edges, vertices have labels. Unlike edge labels, vertex labels are optional.  Vertex labels are useful to distinguish different types of vertices, e.g. _user_ vertices and _product_ vertices.
 
-For compatibility with Blueprints, Titan provides differently-named methods for adding labeled and unlabeled vertices:
-
-* `addVertexWithLabel`
-* `addVertex`
-
 Although labels are optional at the conceptual and data model level, Titan assigns all vertices a label as an internal implementation detail.  Vertices created by the `addVertex` methods use Titan's default label.
 
 To create a label, call `makeVertexLabel(String).make()` on an open graph or management transaction and provide the name of the vertex label as the argument.  Vertex label names must be unique in the graph.
@@ -851,7 +846,7 @@ This section describes Titan's transactional semantics and API.
 Transaction Handling
 ~~~~~~~~~~~~~~~~~~~~
 
-Every graph operation in Titan occurs within the context of a transaction. According to the Blueprints' specification, each thread opens its own transaction against the graph database with the first operation (i.e. retrieval or mutation) on the graph::
+Every graph operation in Titan occurs within the context of a transaction. According to the TinkerPop's transactional specification, each thread opens its own transaction against the graph database with the first operation (i.e. retrieval or mutation) on the graph:
 
 [source, gremlin]
 ----
@@ -866,7 +861,7 @@ In this example, a local Titan graph database is opened. Adding the vertex "juno
 Transactional Scope
 ~~~~~~~~~~~~~~~~~~~
 
-All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under Blueprint's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, Titan will automatically transition vertices and types into the new transactional scope as shown in this example::
+All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under TinkerPop's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, Titan will automatically transition vertices and types into the new transactional scope as shown in this example:
 
 [source, gremlin]
 graph = TitanFactory.open("berkeleyje:/tmp/titan")
@@ -874,7 +869,7 @@ juno = graph.addVertex() //Automatically opens a new transaction
 graph.tx().commit() //Ends transaction
 juno.property("name", "juno") //Vertex is automatically transitioned
 
-Edges, on the other hand, are not automatically transitioned and cannot be accessed outside their original transaction. They must be explicitly transitioned.
+Edges, on the other hand, are not automatically transitioned and cannot be accessed outside their original transaction. They must be explicitly transitioned:
 
 [source, gremlin]
 e = juno.addEdge("knows", graph.addVertex())
@@ -885,7 +880,7 @@ e.property("time", 99)
 Transaction Failures
 ~~~~~~~~~~~~~~~~~~~~
 
-When committing a transaction, Titan will attempt to persist all changes to the storage backend. This might not always be successful due to IO exceptions, network errors, machine crashes or resource unavailability. Hence, transactions can fail. In fact, transactions *will eventually fail* in sufficiently large systems. Therefore, we highly recommend that your code expects and accommodates such failures.
+When committing a transaction, Titan will attempt to persist all changes to the storage backend. This might not always be successful due to IO exceptions, network errors, machine crashes or resource unavailability. Hence, transactions can fail. In fact, transactions *will eventually fail* in sufficiently large systems. Therefore, we highly recommend that your code expects and accommodates such failures:
 
 [source, gremlin]
 try {
@@ -903,7 +898,7 @@ The example above demonstrates a simplified user signup implementation where `na
 
 If the transaction fails, a `TitanException` is thrown. There are a variety of reasons why a transaction may fail. Titan differentiates between _potentially temporary_ and _permanent_ failures.
 
-Potentially temporary failures are those related to resource unavailability and IO hickups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<titan-config-ref>>).
+Potentially temporary failures are those related to resource unavailability and IO hiccups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<titan-config-ref>>).
 
 Permanent failures can be caused by complete connection loss, hardware failure or lock contention. To understand the cause of lock contention, consider the signup example above and suppose a user tries to signup with username "juno". That username may still be available at the beginning of the transaction but by the time the transaction is committed, another user might have concurrently registered with "juno" as well and that transaction holds the lock on the username therefore causing the other transaction to fail. Depending on the transaction semantics one can recover from a lock contention failure by re-running the entire transaction.
 
@@ -916,30 +911,30 @@ Permanent exceptions that can fail a transaction include:
 Multi-Threaded Transactions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan supports multi-threaded transactions through Blueprint's http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#transactions[ThreadedTransactionalGraph] interface. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
+Titan supports multi-threaded transactions through TinkerPop's http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
-With Blueprints' default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `newTransaction()` method.
+With TinkerPop's default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `newThreadedTx()` method.
 
 [source, gremlin]
-tx = graph.newTransaction();
+threadedGraph = graph.tx().newThreadedTx();
 threads = new Thread[10];
 for (int i=0; i<threads.length; i++) {
     threads[i]=new Thread({
-        println("Do something");
+        println("Do something with 'threadedGraph''");
     });
     threads[i].start();
 }
 for (int i=0; i<threads.length; i++) threads[i].join();
-tx.commit();
+threadedGraph.tx().commit();
 
-The `newTransaction()` method returns a new `TransactionalGraph` object that represents this newly opened transaction. The graph object `tx` supports all of the methods that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all work concurrently in the same transaction and one of which finally commits the transaction when all threads have completed their work.
+The `newThreadedTx()` method returns a new `Graph` object that represents this newly opened transaction. The graph object `tx` supports all of the methods that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all work concurrently in the same transaction and one of which finally commits the transaction when all threads have completed their work.
 
 Titan relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
 
 Concurrent Algorithms
 ~~~~~~~~~~~~~~~~~~~~~
 
-Thread independent transactions started through `newTransaction()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `TransactionalGraph` object returned by `newTransaction` without blocking each other.
+Thread independent transactions started through `newThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `newThreadedTx()` without blocking each other.
 
 Nested Transactions
 ~~~~~~~~~~~~~~~~~~~
@@ -962,7 +957,7 @@ One way around this is to create the vertex in a short, nested thread-independen
 [source, gremlin]
 v1 = graph.addVertex()
 //Do many other things
-tx = graph.newTransaction()
+tx = graph.tx().newThreadedTx()
 v2 = tx.addVertex()
 v2.property("uniqueName", "foo")
 tx.commit() // Any lock contention will be detected here
@@ -976,7 +971,7 @@ Common Transaction Handling Problems
 
 Transactions are started automatically with the first operation executed against the graph. One does NOT have to start a transaction manually. The method `newTransaction` is used to start <<multi-thread-tx, multi-threaded transactions>> only.
 
-Transactions are automatically started under the Blueprints semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary.
+Transactions are automatically started under the TinkerPop semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary.
 A transaction will attempt to maintain its state from the beginning of the transaction. This might lead to unexpected behavior in multi-threaded applications as illustrated in the following artificial example::
 
 [source, gremlin]
@@ -1082,7 +1077,7 @@ The configuration option `cache.db-cache-size` controls how much heap space Tita
 
 The cache size can be configured as a percentage (expressed as a decimal between 0 and 1) of the total heap space available to the JVM running Titan or as an absolute number of bytes.
 
-Note, that the cache size refers to the amount of heap space that is exclusively occupied by the cache. Titan's other data structures and each open transaction will occupy additional heap space. If additional software layers are running in the same JVM, those may occupy a significant amount of heap space as well (e.g. Rexster, embedded Cassandra, etc). Be conservative in your heap memory estimation. Configuring a cache that is too large can lead to out-of-memory exceptions and excessive GC.
+Note, that the cache size refers to the amount of heap space that is exclusively occupied by the cache. Titan's other data structures and each open transaction will occupy additional heap space. If additional software layers are running in the same JVM, those may occupy a significant amount of heap space as well (e.g. Gremlin Server, embedded Cassandra, etc). Be conservative in your heap memory estimation. Configuring a cache that is too large can lead to out-of-memory exceptions and excessive GC.
 
 Clean Up Wait Time
 ^^^^^^^^^^^^^^^^^^
@@ -1267,7 +1262,7 @@ When launching Titan with embedded Cassandra, the following warnings may be disp
 
 `958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
 
-Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Rexster:
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either titan.sh, gremlin.sh, or Gremlin Server:
 
 [source, bash]
 export TITAN_JAVA_OPTS=-javaagent:$TITAN_HOME/lib/jamm-$MAVEN{jamm.version}.jar

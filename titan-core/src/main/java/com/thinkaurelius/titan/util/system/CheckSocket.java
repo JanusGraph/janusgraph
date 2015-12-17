@@ -5,9 +5,9 @@ import java.net.Socket;
 
 /*
  *  This doesn't really belong here.  It's only used in the zipfile
- *  distribution to check whether Rexster or ES are listening on
+ *  distribution to check whether Gremlin Server or ES are listening on
  *  their respective TCP ports.    But it's so tiny that I don't want
- *  to reorganize the repo to accomodate it (yet).
+ *  to reorganize the repo to accommodate it (yet).
  *
  *  Many widely available *NIX programs do this task better (e.g.
  *  netcat, telnet, nmap, socat, ... we could even use netstat since
