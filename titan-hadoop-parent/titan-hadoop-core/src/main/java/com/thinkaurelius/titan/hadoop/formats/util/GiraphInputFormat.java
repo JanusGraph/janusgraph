@@ -38,10 +38,12 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
         return new GiraphRecordReader(refCounter, inputFormat.createRecordReader(split, context));
     }
 
-    public void setConf(Configuration conf, Boolean reset) {
+    public void setConf(Configuration conf, boolean reset) {
         ((Configurable)inputFormat).setConf(conf);
 
-        if(refCounter != null && !reset) return;
+        if (refCounter != null && !reset) {
+            return;
+        }
 
         refCounter = new RefCountedCloseable<>(() -> {
             final String titanVersion = "current";
