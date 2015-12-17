@@ -79,7 +79,7 @@
         <hbase100.core.version>1.0.2</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
         <jackson1.version>1.9.2</jackson1.version>
-        <jackson2.version>2.3.0</jackson2.version>
+        <jackson2.version>2.4.4</jackson2.version>
         <!-- ES depends on Lucene.  This ES dependency can affect the
              version used by the titan-lucene module.  When updating
              the ES version, also consider the version of Lucene, and
@@ -94,7 +94,7 @@
         <asm3.version>3.1</asm3.version>
         <asm4.version>4.0</asm4.version>
         <zookeeper.version>3.4.6</zookeeper.version>
-        <jersey.version>1.18.2</jersey.version>
+        <jersey.version>1.9</jersey.version>
         <jna.version>4.0.0</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <jasper.version>5.5.23</jasper.version>
@@ -845,7 +845,17 @@
             </dependency>
             <dependency>
                 <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-server</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-guice</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
