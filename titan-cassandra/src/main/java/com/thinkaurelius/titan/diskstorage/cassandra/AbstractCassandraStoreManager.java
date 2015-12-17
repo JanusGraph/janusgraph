@@ -95,7 +95,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public static final ConfigOption<String> COMPACTION_STRATEGY =
             new ConfigOption<String>(CASSANDRA_NS, "compaction-strategy-class",
             "The compaction strategy to use for Titan tables",
-            ConfigOption.Type.FIXED, "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy");
+            ConfigOption.Type.FIXED, String.class);
 
     public static final ConfigOption<String[]> COMPACTION_OPTIONS =
             new ConfigOption<String[]>(CASSANDRA_NS, "compaction-strategy-options",
