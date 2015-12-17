@@ -540,6 +540,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         createColumnFamily.setName(cfName);
         createColumnFamily.setKeyspace(ksName);
         createColumnFamily.setComparator_type(comparator);
+        createColumnFamily.setCompaction_strategy(storageConfig.get(COMPACTION_STRATEGY));
+        createColumnFamily.setCompaction_strategy_options(this.compactionOptions);
 
         ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
 

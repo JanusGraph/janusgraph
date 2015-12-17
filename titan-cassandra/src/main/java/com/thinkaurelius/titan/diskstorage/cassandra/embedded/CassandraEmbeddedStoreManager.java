@@ -285,6 +285,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         // Column Family not found; create it
         CFMetaData cfm = new CFMetaData(keyspaceName, columnfamilyName, ColumnFamilyType.Standard, CellNames.fromAbstractType(comparator, true));
+        try {
+            cfm.compactionStrategyClass(CFMetaData.createCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY)));
+            cfm.compactionStrategyOptions(compactionOptions);
+        } catch (ConfigurationException e) {
+            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnfamilyName, e);
+        }
 
         // Hard-coded caching settings
         if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {

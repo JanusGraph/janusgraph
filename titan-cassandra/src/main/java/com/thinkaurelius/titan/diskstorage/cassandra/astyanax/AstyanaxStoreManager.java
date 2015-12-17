@@ -439,6 +439,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
+                                .setCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY))
+                                .setCompactionStrategyOptions(compactionOptions)
                                 .setComparatorType(comparator);
 
                 ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
