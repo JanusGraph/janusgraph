@@ -92,6 +92,17 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             "here takes precedence over one set with " + ConfigElement.getPath(REPLICATION_FACTOR),
             ConfigOption.Type.FIXED, String[].class);
 
+    public static final ConfigOption<String> COMPACTION_STRATEGY =
+            new ConfigOption<String>(CASSANDRA_NS, "compaction-strategy-class",
+            "The compaction strategy to use for Titan tables",
+            ConfigOption.Type.FIXED, "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy");
+
+    public static final ConfigOption<String[]> COMPACTION_OPTIONS =
+            new ConfigOption<String[]>(CASSANDRA_NS, "compaction-strategy-options",
+            "Compaction strategy options.  This list is interpreted as a " +
+            "map.  It must have an even number of elements in [key,val,key,val,...] form.",
+            ConfigOption.Type.FIXED, String[].class);
+
     // Compression
     public static final ConfigOption<Boolean> CF_COMPRESSION =
             new ConfigOption<Boolean>(CASSANDRA_NS, "compression",
@@ -144,6 +155,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     protected final String keySpaceName;
     protected final Map<String, String> strategyOptions;
+    protected final Map<String, String> compactionOptions;
 
     protected final boolean compressionEnabled;
     protected final int compressionChunkSizeKB;
@@ -188,6 +200,23 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             this.strategyOptions = ImmutableMap.copyOf(converted);
         } else {
             this.strategyOptions = ImmutableMap.of("replication_factor", String.valueOf(config.get(REPLICATION_FACTOR)));
+        }
+
+        if (config.has(COMPACTION_OPTIONS)) {
+            String[] options = config.get(COMPACTION_OPTIONS);
+
+            if (options.length % 2 != 0)
+                throw new IllegalArgumentException(COMPACTION_OPTIONS.getName() + " should have even number of elements.");
+
+            Map<String, String> converted = new HashMap<String, String>(options.length / 2);
+
+            for (int i = 0; i < options.length; i += 2) {
+                converted.put(options[i], options[i + 1]);
+            }
+
+            this.compactionOptions = ImmutableMap.copyOf(converted);
+        } else {
+            this.compactionOptions = ImmutableMap.of();
         }
     }
 
