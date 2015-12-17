@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.util;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -13,7 +14,6 @@ import org.apache.hadoop.mapreduce.*;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_CLASS_NAME;
 import static com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
@@ -21,7 +21,22 @@ import static com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup
 public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
-    private RefCountedCloseable<TitanVertexDeserializer> refCounter;
+    private static final RefCountedCloseable<TitanVertexDeserializer> refCounter;
+
+    static {
+        refCounter = new RefCountedCloseable<>((conf) -> {
+            final String titanVersion = "current";
+
+            String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
+
+            TitanHadoopSetup ts = ConfigurationUtil.instantiate(
+                    className, new Object[]{ conf }, new Class[]{ Configuration.class });
+
+            return new TitanVertexDeserializer(ts);
+        });
+    }
+
+
 
     public GiraphInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
         this.inputFormat = inputFormat;
@@ -39,14 +54,10 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
     }
 
     @Override
-    public void setConf(Configuration conf) {
+    public void setConf(final Configuration conf) {
         ((Configurable)inputFormat).setConf(conf);
-        refCounter = new RefCountedCloseable<>(() -> {
-            final String titanVersion = "current";
-            String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
-            TitanHadoopSetup ts = ConfigurationUtil.instantiate(className, new Object[]{conf}, new Class[]{Configuration.class});
-            return new TitanVertexDeserializer(ts);
-        });
+
+        refCounter.setBuilderConfiguration(conf);
     }
 
     @Override
@@ -58,16 +69,21 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
 
         private T current;
         private long refCount;
-        private final Supplier<T> builder;
+        private final Function<Configuration, T> builder;
+        private Configuration configuration;
 
-        public RefCountedCloseable(Supplier<T> builder) {
+        public RefCountedCloseable(Function<Configuration, T> builder) {
             this.builder = builder;
+        }
+
+        public synchronized void setBuilderConfiguration(Configuration configuration) {
+            this.configuration = configuration;
         }
 
         public synchronized T acquire() {
             if (null == current) {
                 Preconditions.checkState(0 == refCount);
-                current = builder.get();
+                current = builder.apply(configuration);
             }
 
             refCount++;
