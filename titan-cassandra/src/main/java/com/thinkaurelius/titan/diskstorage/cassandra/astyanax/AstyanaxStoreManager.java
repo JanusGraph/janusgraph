@@ -444,7 +444,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
 
                 if (storageConfig.has(COMPACTION_STRATEGY)) {
-                    cfDef.setCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY))
+                    cfDef.setCompactionStrategy(storageConfig.get(COMPACTION_STRATEGY));
                 }
 
                 if (!compactionOptions.isEmpty()) {
