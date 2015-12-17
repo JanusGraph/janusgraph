@@ -21,7 +21,7 @@ import static com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup
 public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
-    private RefCountedCloseable<TitanVertexDeserializer> refCounter;
+    private static RefCountedCloseable<TitanVertexDeserializer> refCounter;
 
     public GiraphInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
         this.inputFormat = inputFormat;
@@ -38,15 +38,25 @@ public abstract class GiraphInputFormat extends InputFormat<NullWritable, Vertex
         return new GiraphRecordReader(refCounter, inputFormat.createRecordReader(split, context));
     }
 
-    @Override
-    public void setConf(Configuration conf) {
+    public void setConf(Configuration conf, Boolean reset) {
         ((Configurable)inputFormat).setConf(conf);
+
+        if(refCounter != null && !reset) return;
+
         refCounter = new RefCountedCloseable<>(() -> {
             final String titanVersion = "current";
+
             String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
+
             TitanHadoopSetup ts = ConfigurationUtil.instantiate(className, new Object[]{conf}, new Class[]{Configuration.class});
+
             return new TitanVertexDeserializer(ts);
         });
+    }
+
+    @Override
+    public void setConf(Configuration conf) {
+        setConf(conf, false);
     }
 
     @Override
