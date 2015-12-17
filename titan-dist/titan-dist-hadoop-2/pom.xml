@@ -151,7 +151,7 @@
                                         <argument>-classpath</argument>
                                         <classpath />
                                         <argument>com.thinkaurelius.titan.example.GraphOfTheGodsFactory</argument>
-                                        <argument>${project.build.directory}/conf/titan-berkeleydb-es.properties</argument>
+                                        <argument>${project.build.directory}/conf/titan-berkeleyje-es.properties</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
