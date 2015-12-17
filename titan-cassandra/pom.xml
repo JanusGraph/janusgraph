@@ -39,6 +39,7 @@
         <dependency>
             <groupId>com.carrotsearch</groupId>
             <artifactId>junit-benchmarks</artifactId>
+            <scope>test</scope>
         </dependency>
         <!-- Logging backends.
              Cassandra 2.1+ moved to Logback.  Titan is logging-backend-agnostic,
@@ -72,6 +73,7 @@
         <dependency>
             <groupId>com.carrotsearch.randomizedtesting</groupId>
             <artifactId>randomizedtesting-runner</artifactId>
+            <scope>test</scope>
         </dependency>
         <!--
             JNA is not required to run Cassandra, but it improves

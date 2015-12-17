@@ -148,7 +148,7 @@ Learn more about using and connecting to Titan server in <<server>>.
 Server Distribution
 +++++++++++++++++++
 
-The Titan zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and Titan. Invoke `bin/gremlin-server.sh` with an optional follow on argument containing the path to the configuration file to use.  By default, without this argument, the packaged Gremlin Server will point to `conf/gremlin-server.yaml` which is pre-configured with a Titan Berkeley instance as shown in the sample config above.
+The Titan zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and Titan. Invoke `bin/titan.sh start` to start Gremlin Server with Cassandra and ElasticSearch.  
 
 [[configuration-global]]
 Global Configuration
@@ -470,16 +470,21 @@ The Gremlin overview presented in this section focused on the Gremlin-Groovy lan
 Titan Server
 ------------
 
-image:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/images/gremlin-server.png[link="http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server"]
+image:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/images/gremlin-server.png[width=400]
 
 Titan uses the http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.
 
-Gremlin Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it.  By default, client applications can connect to it via WebSockets with a custom subprotocol (there are a number of clients developed in different languages to help support the subprotocol).  Gremlin Server can also be configured to serve a simple REST-style endpoint for processing Gremlin as well.  These configurations just represent the out-of-the-box options for Gremlin Server.  It is certainly possible to also extend it with other means of communication by implementing the interfaces that it provides.
-
-The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Gremlin Server without any additional configuration.  Alternatively, one can http://tinkerpop.incubator.apache.org/[Download Gremlin Server] separately and then install Titan manually.
+Gremlin Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it.  By default, client applications can connect to it via link:https://en.wikipedia.org/wiki/WebSocket[WebSockets] using a custom subprotocol (there are a link:http://tinkerpop.incubator.apache.org/#libraries[number of clients] developed in different languages to help support the subprotocol).  Gremlin Server can also be configured to serve a simple REST-style endpoint for processing Gremlin as well.  These configurations just represent the out-of-the-box options for Gremlin Server.  It is certainly possible to also extend it with other means of communication by implementing the interfaces that it provides.
 
 Getting Started
 ~~~~~~~~~~~~~~~
+
+The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Gremlin Server without any additional configuration.  Alternatively, one can http://tinkerpop.incubator.apache.org/[Download Gremlin Server] separately and then install Titan manually.
+
+Using the Pre-Packaged Distribution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The pre-packaged version of Titan with Gremlin Server is designed to get users started quickly with Gremlin Server, Cassandra and ElasticSearch.  It starts each of these components in their own process through a single shell script called `bin/titan.sh`.  This quick-start bundle is not meant to be representative of what a production installation architecture should look like, but it does provide a good way to do some development with Titan, run some tests and see how all the components are wired up together.  
 
 * Download a copy of the current `titan-$VERSION.zip` file from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads page]
 * Unzip it and enter the `titan-$VERSION` directory
@@ -496,6 +501,93 @@ Forking Gremlin-Server...
 Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
 Run gremlin.sh to connect.
 ----
+
+Manual Setup
+^^^^^^^^^^^^
+
+Manual setup of Titan in Gremlin Server is straightforward as long as the individual doing the setup has some basic understanding of Titan configuration and how Gremlin Server handles any link:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#_configuring_2[graph configuration].  In short, Gremlin Server configuration files point to graph-specific configuration files and use those to instantiate `Graph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `Graph` be available on its classpath.
+
+Get started by link:http://tinkerpop.incubator.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the Titan version in use.  For purposes of demonstration, these instructions will outline how to configure the BerkeleyDB backend for Titan in Gremlin Server. As stated earlier, Gremlin Server needs Titan dependencies on its classpath.  Invoke the following command replacing `$VERSION` with the version of Titan to use:
+
+[source,bourne]
+----
+bin/gremlin-server.sh -i com.thinkaurelius.titan titan-all $VERSION
+----
+
+When this process completes, Gremlin Server should now have all the Titan dependencies available to it and will thus be able to instantiate `TitanGraph` objects.
+
+IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
+
+Create a file called `GREMLIN_SERVER_HOME/conf/titan.properties` with the following contents:  
+
+[source,text]
+----
+gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
+storage.backend=berkeleyje
+storage.directory=db/berkeley
+----
+
+Configuration of other backends would not be so different. If using Cassandra, then use Cassandra configuration options in the `titan.properties` file.  The only important piece to leave unchanged is the `gremlin.graph` setting which should always use `TitanFactory`.  This setting tells Gremlin Server how to instantiate a `TitanGraph` instance.
+
+Next create a file called `GREMLIN_SERVER_HOME/conf/gremlin-server-titan.yaml` that has the following contents:
+
+[source,yaml]
+----
+host: localhost
+port: 8182
+graphs: {
+  graph: conf/titan.properties}
+plugins:
+  - aurelius.titan
+scriptEngines: {
+  gremlin-groovy: {
+    scripts: [scripts/titan.groovy]}}
+serializers:
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { useMapperFromGraph: graph }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
+metrics: {
+  slf4jReporter: {enabled: true, interval: 180000}}
+----
+
+There are several important parts to this configuration file as they relate to Titan.  First, in the `graphs` map, there is a key called `graph` and its value is `conf/titan.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/titan.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it. Second, in the `plugins` list, there is a reference to `aurelius.titan`, which tells Gremlin Server to initialize the "Titan Plugin".  The "Titan Plugin" will auto-import Titan specific classes for usage in scripts.  Finally, note the `scripts` key and the reference to `scripts/titan.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/titan.groovy` with the following contents:
+
+[source,groovy]
+----
+def globals = [:]
+globals << [g : graph.traversal()]
+----
+
+The above script creates a `Map` called `globals` and assigns to it a key/value pair.  The key is `g` and its value is a `TraversalSource` generated from `graph`, which was configured for Gremlin Server in its configuration file. At this point, there are now two global variables available to scripts provided to Gremlin Server - `graph` and `g`.
+
+At this point, Gremlin Server is setup and configuration of Titan in Gremlin Server is complete.   To start the server:
+
+[source,bourne]
+----
+$ bin/gremlin-server.sh conf/gremlin-server-titan.yaml
+[INFO] GremlinServer - 
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+
+[INFO] GremlinServer - Configuring Gremlin Server from conf/gremlin-server-titan.yaml
+[INFO] MetricManager - Configured Metrics Slf4jReporter configured with interval=180000ms and loggerName=org.apache.tinkerpop.gremlin.server.Settings$Slf4jReporterMetrics
+[INFO] GraphDatabaseConfiguration - Set default timestamp provider MICRO
+[INFO] GraphDatabaseConfiguration - Generated unique-instance-id=7f0000016240-ubuntu1
+[INFO] Backend - Initiated backend operations thread pool of size 8
+[INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
+[INFO] GraphManager - Graph [graph] was successfully configured via [conf/titan.properties].
+[INFO] ServerGremlinExecutor - Initialized Gremlin thread pool.  Threads in pool named with pattern gremlin-*
+[INFO] ScriptEngines - Loaded gremlin-groovy ScriptEngine
+[INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/titan.groovy
+[INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
+[INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardtitangraph[berkeleyje:db/berkeley], standard]
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
+[INFO] GremlinServer$1 - Channel started at port 8182.
+----
+
+The following section explains how to connect to the running server.
 
 Connecting to Gremlin Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1317,6 +1409,20 @@ Type Definitions cannot be changed
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The definition of an edge label, property key, or vertex label cannot be changed once it has been committed to the graph. However, a type can be renamed and new types can be created at runtime to accommodate an evolving schema.
+
+Reserved Keywords
+^^^^^^^^^^^^^^^^^
+
+There are certain keywords that Titan uses internally for types that cannot be used otherwise.  These types include vertex labels, edge labels, and property keys. The following are keywords that cannot be used:
+
+* vertex
+* element
+* edge
+* property
+* label
+* key
+
+For example, if you attempt to create a vertex with the label of `property`, you will receive an exception regarding protected system types.
 
 Temporary Limitations
 ~~~~~~~~~~~~~~~~~~~~~

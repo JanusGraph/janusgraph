@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.tinkerpop;
 
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
@@ -8,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 public class TitanIoRegistry extends AbstractIoRegistry {
 
@@ -18,5 +20,6 @@ public class TitanIoRegistry extends AbstractIoRegistry {
     public TitanIoRegistry() {
         register(GraphSONIo.class, null, TitanGraphSONModule.getInstance());
         register(GryoIo.class, RelationIdentifier.class, null);
+        register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
     }
 }
