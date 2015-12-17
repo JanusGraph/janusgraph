@@ -177,12 +177,13 @@
         </profile>
 
         <profile>
-            <id>dev-install-hadoop1-by-default</id>
+            <id>dev-install-hadoop1</id>
 
-            <!-- Enable by default -->
+            <!-- Disable by default -->
             <activation>
                 <property>
-                    <name>!dev.hadoop</name>
+                    <name>dev.hadoop</name>
+                    <value>2</value>
                 </property>
             </activation>
 

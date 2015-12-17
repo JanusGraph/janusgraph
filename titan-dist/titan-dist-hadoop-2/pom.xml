@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-dist</artifactId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -180,11 +180,10 @@
         <profile>
             <id>dev-install-hadoop2</id>
 
-            <!-- Enable when given the -Ddev.hadoop=2 system property -->
+            <!-- Enable Hadoop 2 by default -->
             <activation>
                 <property>
-                    <name>dev.hadoop</name>
-                    <value>2</value>
+                    <name>!dev.hadoop</name>
                 </property>
             </activation>
 

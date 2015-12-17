@@ -41,9 +41,9 @@
     </properties>
 
     <modules>
-        <module>titan-dist-hadoop-1</module>
-        <!-- Hadoop 2 is blocked on TP3 support -->
-        <!-- <module>titan-dist-hadoop-2</module> -->
+        <!-- The Hadoop 1 distribution is of limited use now that TP 3.1+ is Hadoop-2-only -->
+        <!-- <module>titan-dist-hadoop-1</module> -->
+        <module>titan-dist-hadoop-2</module>
     </modules>
 
     <dependencies>
