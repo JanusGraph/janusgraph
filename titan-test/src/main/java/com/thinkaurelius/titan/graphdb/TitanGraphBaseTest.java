@@ -154,6 +154,8 @@ public abstract class TitanGraphBaseTest {
             if (gconf!=null) gconf.commit();
             lconf.close();
         }
+        if (null != graph && null != graph.tx() && graph.tx().isOpen())
+            graph.tx().commit();
         if (null != graph && graph.isOpen())
             graph.close();
         Preconditions.checkNotNull(config);

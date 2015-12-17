@@ -275,6 +275,10 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
         @Override
         public boolean isOpen() {
+            if (null == txs) {
+                // Graph has been closed
+                return false;
+            }
             TitanBlueprintsTransaction tx = txs.get();
             return tx!=null && tx.isOpen();
         }
