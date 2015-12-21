@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
+import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
 import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
@@ -28,6 +29,7 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         add(IMPORT + GraphOfTheGodsFactory.class.getName());
         add(IMPORT + "com.thinkaurelius.titan.hadoop.MapReduceIndexManagement");
         add(IMPORT + "java.time" + DOT_STAR);
+        add(IMPORT + TitanIoRegistry.class.getName());
 
         // Static imports on enum values used in query constraint expressions
         add(IMPORT_STATIC + Geo.class.getName() + DOT_STAR);
