@@ -620,6 +620,18 @@ The `:remote` command tells the console to configure a remote connection to Grem
 [TIP]
 To start Titan Server with the REST API, find the `conf/gremlin-server/gremlin-server.yaml` file in the distribution and edit it.  Modify the `channelizer` setting to be `org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer` then start Titan Server.
 
+One might also connect to Gremlin Server with any of the supported available drivers.  TinkerPop ships with a link:http://tinkerpop.apache.org/docs/3.1.0-incubating/#_connecting_via_java[Java-based driver] that can be used for this purpose.  When using the Java driver with Titan, it is important to consider the serialization settings that the driver requires.  By default, the driver uses TinkerPop's Gryo format and therefore needs some important classes registered with the driver to deserialize results from the server.  Usage looks like this:
+
+[source,java]
+----
+GryoMapper mapper = GryoMapper.build().addRegistry(TitanIoRegistry.INSTANCE).create();
+Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV1d0(mapper)).create();
+Client client = cluster.connect();
+client.submit("g.V()").all().get();
+----
+
+By adding the `TitanIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by Titan.
+
 [[indexes]]
 Indexing for better Performance
 -------------------------------
