@@ -2,5 +2,7 @@ org.apache.tinkerpop.gremlin.console.plugin.DriverGremlinPlugin
 org.apache.tinkerpop.gremlin.console.groovy.plugin.DriverGremlinPlugin
 org.apache.tinkerpop.gremlin.tinkergraph.groovy.plugin.TinkerGraphGremlinPlugin
 org.apache.tinkerpop.gremlin.hadoop.groovy.plugin.HadoopGremlinPlugin
+org.apache.tinkerpop.gremlin.giraph.groovy.plugin.GiraphGremlinPlugin
+org.apache.tinkerpop.gremlin.spark.groovy.plugin.SparkGremlinPlugin
 org.apache.tinkerpop.gremlin.console.groovy.plugin.UtilitiesGremlinPlugin
 com.thinkaurelius.titan.graphdb.tinkerpop.plugin.TitanGremlinPlugin
