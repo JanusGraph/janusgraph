@@ -126,9 +126,15 @@ graph = TitanFactory.open('berkeleyje:/tmp/graph')
 Titan Server
 ^^^^^^^^^^^^
 
-To interact with Titan remotely or in another process through a client, a Titan "server" needs to be configured and started. Internally, Titan uses http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] of the http://tinkerpop.incubator.apache.org/[TinkerPop] stack to service client requests, therefore, configuring Titan Server is accomplished through a Gremlin Server configuration file.
+Titan, by itself, is simply a set of jar files with no thread of execution.  There are two basic patterns for connecting to, and using a Titan database:
 
-To configure Gremlin Server with a `TitanGraph` instance the Gremlin Server configuration file requires the following settings:
+.Patterns
+. Titan can be used by embedding Titan calls in a client program where the program provides the thread of execution.  
+. Titan packages a long running server process that, when started, allows a remote client or logic running in a separate program to make Titan calls.  This long running server process is called *Titan Server*.  
+
+For the Titan Server, Titan uses http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] of the http://tinkerpop.incubator.apache.org/[TinkerPop] stack to service client requests.  Titan provides an out-of-the-box configuration for a quick start with Titan Server, but the configuration can be changed to provide a wide range of server capabilities.
+
+Configuring Titan Server is accomplished through a Titan Server yaml configuration file located in the ./conf/gremlin-server directory in the Titan distribution. To configure Titan Server with a titan graph instance (`TitanGraph`), the Titan Server configuration file requires the following settings:
 
 [source, yaml]
 ----
@@ -141,9 +147,9 @@ plugins:
 ...
 ----
 
-The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  This means that when referencing the `TitanGraph` in remote contexts, this graph can simply be referred to as `g` in scripts sent to the server.  The `plugins` entry simply enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
+The entry for `graphs` defines the bindings to specific `TitanGraph` configurations. In the above case it binds `graph` to a Titan configuration at `conf/titan-berkeleyje.properties`.  The `plugins` entry enables the Titan Gremlin Plugin, which enables auto-imports of Titan classes so that they can be referenced in remotely submitted scripts.
 
-Learn more about using and connecting to Titan server in <<server>>.
+Learn more about configuring and using Titan Server in <<server>>.
 
 Server Distribution
 +++++++++++++++++++
@@ -472,19 +478,18 @@ Titan Server
 
 image:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/images/gremlin-server.png[width=400]
 
-Titan uses the http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.
+Titan uses the http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in Titan, Gremlin Server is called Titan Server.
 
-Gremlin Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it.  By default, client applications can connect to it via link:https://en.wikipedia.org/wiki/WebSocket[WebSockets] using a custom subprotocol (there are a link:http://tinkerpop.incubator.apache.org/#libraries[number of clients] developed in different languages to help support the subprotocol).  Gremlin Server can also be configured to serve a simple REST-style endpoint for processing Gremlin as well.  These configurations just represent the out-of-the-box options for Gremlin Server.  It is certainly possible to also extend it with other means of communication by implementing the interfaces that it provides.
+Titan Server must be started manually in order to use it.  Titan Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it. This section will describe how to use the WebSockets configuration, as well as describe how to configure Titan Server to handle REST-style interactions.
 
+[[titan-server-getting-started]]
 Getting Started
 ~~~~~~~~~~~~~~~
-
-The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Gremlin Server without any additional configuration.  Alternatively, one can http://tinkerpop.incubator.apache.org/[Download Gremlin Server] separately and then install Titan manually.
 
 Using the Pre-Packaged Distribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The pre-packaged version of Titan with Gremlin Server is designed to get users started quickly with Gremlin Server, Cassandra and ElasticSearch.  It starts each of these components in their own process through a single shell script called `bin/titan.sh`.  This quick-start bundle is not meant to be representative of what a production installation architecture should look like, but it does provide a good way to do some development with Titan, run some tests and see how all the components are wired up together.  
+The Titan https://github.com/thinkaurelius/titan/wiki/Downloads[Download] comes pre-configured to run Titan Server out of the box leveraging a sample Cassandra and ElasticSearch configuration to allow users to get started quickly with Titan Server.  This configuration defaults to client applications that can connect to Titan Server via WebSockets with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the gremlin.sh shell. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with Titan Server, run tests and see how the components are wired together. To use this default configuration:
 
 * Download a copy of the current `titan-$VERSION.zip` file from the https://github.com/thinkaurelius/titan/wiki/Downloads[Downloads page]
 * Unzip it and enter the `titan-$VERSION` directory
@@ -502,12 +507,154 @@ Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182
 Run gremlin.sh to connect.
 ----
 
-Manual Setup
-^^^^^^^^^^^^
+[[first-example-connecting-gremlin-server]]
+Connecting to Gremlin Server
+++++++++++++++++++++++++++++
 
-Manual setup of Titan in Gremlin Server is straightforward as long as the individual doing the setup has some basic understanding of Titan configuration and how Gremlin Server handles any link:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#_configuring_2[graph configuration].  In short, Gremlin Server configuration files point to graph-specific configuration files and use those to instantiate `Graph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `Graph` be available on its classpath.
+After running titan.sh, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
 
-Get started by link:http://tinkerpop.incubator.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the Titan version in use.  For purposes of demonstration, these instructions will outline how to configure the BerkeleyDB backend for Titan in Gremlin Server. As stated earlier, Gremlin Server needs Titan dependencies on its classpath.  Invoke the following command replacing `$VERSION` with the version of Titan to use:
+Start http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
+
+[source, text]
+----
+$  bin/gremlin.sh
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.hadoop
+plugin activated: tinkerpop.utilities
+plugin activated: aurelius.titan
+plugin activated: tinkerpop.tinkergraph
+gremlin> :remote connect tinkerpop.server conf/remote.yaml
+==>Connected - localhost/127.0.0.1:8182
+gremlin> :> graph.addVertex("name", "stephen")
+==>v[256]
+gremlin> :> g.V().values('name')
+==>stephen
+----
+
+The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
+
+Titan Server as a WebSocket Endpoint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default configuration described in <<titan-server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
+
+.To Configure Titan Server For WebSockets
+. Test a local connection to a Titan database first.  This step applies whether using the Gremlin console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.tablename parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
++
+```
+cp conf/titan-hbase.properties conf/gremlin-server/rest-titan-hbase-server.properties
+```
++
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called rest-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
++
+```
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-server.yaml
+```
++
+. Edit the rest-gremlin-server.yaml file and make the following updates:
+.. If you are planning to connect to Titan Server from something other than localhost, update the ip address for host: 
++
+```
+host: 9.28.42.255
+```
++
+.. Update the graphs section to point to your new properties file so the Titan Server can find and connect to your Titan instance:
++
+```
+graphs: {
+  graph: conf/gremlin-server/rest-titan-hbase-server.properties}
+```
++
+. Start the Titan Server, specifying the yaml file you just configured:
++
+```
+bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
+```
+IMPORTANT: Do not use bin/titan.sh.  That starts the default configuration, which starts a separate Cassandra/ElasticSearch environment.
++
+. The Titan Server should now be running in WebSocket mode and can be tested by following the instructions in <<first-example-connecting-gremlin-server>>
+
+
+
+Titan Server as a REST-style Endpoint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default configuration described in <<titan-server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use Titan Server as a REST endpoint for your Titan database, follow these steps:
+
+.To Configure Titan Server For Rest
+. Test a local connection to a Titan database first.  This step applies whether using the Gremlin console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.tablename parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
++
+```
+cp conf/titan-hbase.properties conf/gremlin-server/rest-titan-hbase-server.properties
+```
++
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called rest-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
++
+```
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-server.yaml
+```
++
+. Edit the rest-gremlin-server.yaml file and make the following updates:
+.. If you are planning to connect to Titan Server from something other than localhost, update the ip address for host: 
++
+```
+host: 9.28.42.255
+```
++
+.. Update the channelizer setting to specify the HttpChannelizer:
++
+```
+channelizer: org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer
+```
++
+.. Update the graphs section to point to your new properties file so the Titan Server can find and connect to your Titan instance:
++
+```
+graphs: {
+  graph: conf/gremlin-server/rest-titan-hbase-server.properties}
+```
++
+. Start the Titan Server, specifying the yaml file you just configured:
++
+```
+bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
+```
++
+. The Titan Server should now be running in REST mode and available for testing.  *curl* can be used to verify the server is working:
++
+```
+curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' http://[ip for titan server host]:8182
+```
+
+Advanced Titan Server Configurations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WebSocket versus REST
+^^^^^^^^^^^^^^^^^^^^^
+
+Titan Server must be configured to work with either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
+
+There is, currently, no way to configure a single running instance of Titan Server to communicate simultaneously with clients talking WebSockets and REST.  To configure an environment where both a WebSocket and a REST interface are available for the same Titan instance, two separate Titan Servers must be configured.  If you need this sort of configuration, it is recommended that you follow the steps to separately download Gremlin Server (twice) and configure each instance separately, rather than using the packaged Titan Server. See <<gremlin-server-with-titan>>.
+
+In the future, the option to have one running instance of Titan Server supporting multiple protocols may be possible.
+
+[[gremlin-server-with-titan]]
+Using TinkerPop Gremlin Server with Titan
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since Titan Server is, essentially, TinkerPop Gremlin Server packaged with configuration files for Titan, a version compatible 
+TinkerPop Gremlin Server can be downloaded separately and used with Titan.  Get started by link:http://tinkerpop.incubator.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the Titan version in use.  
+
+IMPORTANT: Any references to file paths in this section refer to paths under a TinkerPop distribution for Gremlin Server and not a Titan distribution with the Titan Server, unless specifically noted.
+
+Configuring a standalone Gremlin Server to work with Titan is similar to configuring the packaged Titan Server. You should be familiar with link:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#_configuring_2[graph configuration].  Basically, the Gremlin Server yaml file points to graph-specific configuration files that are used to instantiate `TitanGraph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `TitanGraph` be available on its classpath.
+
+For purposes of demonstration, these instructions will outline how to configure the BerkeleyDB backend for Titan in Gremlin Server. As stated earlier, Gremlin Server needs Titan dependencies on its classpath.  Invoke the following command replacing `$VERSION` with the version of Titan to use:
 
 [source,bourne]
 ----
@@ -527,7 +674,7 @@ storage.backend=berkeleyje
 storage.directory=db/berkeley
 ----
 
-Configuration of other backends would not be so different. If using Cassandra, then use Cassandra configuration options in the `titan.properties` file.  The only important piece to leave unchanged is the `gremlin.graph` setting which should always use `TitanFactory`.  This setting tells Gremlin Server how to instantiate a `TitanGraph` instance.
+Configuration of other backends is similar.  See <<storage-backends>>. If using Cassandra, then use Cassandra configuration options in the `titan.properties` file.  The only important piece to leave unchanged is the `gremlin.graph` setting which should always use `TitanFactory`.  This setting tells Gremlin Server how to instantiate a `TitanGraph` instance.
 
 Next create a file called `GREMLIN_SERVER_HOME/conf/gremlin-server-titan.yaml` that has the following contents:
 
@@ -549,7 +696,11 @@ metrics: {
   slf4jReporter: {enabled: true, interval: 180000}}
 ----
 
-There are several important parts to this configuration file as they relate to Titan.  First, in the `graphs` map, there is a key called `graph` and its value is `conf/titan.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/titan.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it. Second, in the `plugins` list, there is a reference to `aurelius.titan`, which tells Gremlin Server to initialize the "Titan Plugin".  The "Titan Plugin" will auto-import Titan specific classes for usage in scripts.  Finally, note the `scripts` key and the reference to `scripts/titan.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/titan.groovy` with the following contents:
+.There are several important parts to this configuration file as they relate to Titan.  
+. In the `graphs` map, there is a key called `graph` and its value is `conf/titan.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/titan.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it. 
+. In the `plugins` list, there is a reference to `aurelius.titan`, which tells Gremlin Server to initialize the "Titan Plugin".  The "Titan Plugin" will auto-import Titan specific classes for usage in scripts.  
+. Note the `scripts` key and the reference to `scripts/titan.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/titan.groovy` with the following contents:
+
 
 [source,groovy]
 ----
@@ -559,7 +710,7 @@ globals << [g : graph.traversal()]
 
 The above script creates a `Map` called `globals` and assigns to it a key/value pair.  The key is `g` and its value is a `TraversalSource` generated from `graph`, which was configured for Gremlin Server in its configuration file. At this point, there are now two global variables available to scripts provided to Gremlin Server - `graph` and `g`.
 
-At this point, Gremlin Server is setup and configuration of Titan in Gremlin Server is complete.   To start the server:
+At this point, Gremlin Server is configured and can be used to connect to a new or existing Titan database.  To start the server:
 
 [source,bourne]
 ----
@@ -589,38 +740,15 @@ $ bin/gremlin-server.sh conf/gremlin-server-titan.yaml
 
 The following section explains how to connect to the running server.
 
-Connecting to Gremlin Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Connecting to Titan via Gremlin Server
+++++++++++++++++++++++++++++++++++++++
 
 Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
 
-Start http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
+Follow the instructions here  <<first-example-connecting-gremlin-server>> to verify the Gremlin Server is working.
 
-[source, text]
-----
-$  bin/gremlin.sh
-         \,,,/
-         (o o)
------oOOo-(3)-oOOo-----
-plugin activated: tinkerpop.server
-plugin activated: tinkerpop.hadoop
-plugin activated: tinkerpop.utilities
-plugin activated: aurelius.titan
-plugin activated: tinkerpop.tinkergraph
-gremlin> :remote connect tinkerpop.server conf/remote.yaml
-==>Connected - localhost/127.0.0.1:8182
-gremlin> :> graph.addVertex("name", "stephen")
-==>v[256]
-gremlin> :> g.V().values('name')
-==>stephen
-----
+IMPORTANT: A difference you should understand is that when working with Titan Server, the Gremlin Console is started from underneath the Titan distribution and when following the test instructions here for a standalone Gremlin Server, the Gremlin Console is started from under the TinkerPop distribution.
 
-The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
-
-[TIP]
-To start Titan Server with the REST API, find the `conf/gremlin-server/gremlin-server.yaml` file in the distribution and edit it.  Modify the `channelizer` setting to be `org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer` then start Titan Server.
-
-One might also connect to Gremlin Server with any of the supported available drivers.  TinkerPop ships with a link:http://tinkerpop.apache.org/docs/3.1.0-incubating/#_connecting_via_java[Java-based driver] that can be used for this purpose.  When using the Java driver with Titan, it is important to consider the serialization settings that the driver requires.  By default, the driver uses TinkerPop's Gryo format and therefore needs some important classes registered with the driver to deserialize results from the server.  Usage looks like this:
 
 [source,java]
 ----
@@ -637,6 +765,13 @@ Indexing for better Performance
 -------------------------------
 
 Titan supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
+
+Extending Titan Server
+^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with Titan.  See more details in the appropriate TinkerPop documentation.
+
+
 
 [[graph-indexes]]
 Graph Index
