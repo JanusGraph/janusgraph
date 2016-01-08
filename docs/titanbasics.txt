@@ -591,7 +591,7 @@ Titan Server as a REST-style Endpoint
 The default configuration described in <<titan-server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use Titan Server as a REST endpoint for your Titan database, follow these steps:
 
 .To Configure Titan Server For Rest
-. Test a local connection to a Titan database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.
+. Test a local connection to a Titan database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
 +
 ```
 gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
