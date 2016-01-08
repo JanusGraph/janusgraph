@@ -542,37 +542,42 @@ Titan Server as a WebSocket Endpoint
 The default configuration described in <<titan-server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
 .To Configure Titan Server For WebSockets
-. Test a local connection to a Titan database first.  This step applies whether using the Gremlin console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.tablename parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.
+. Test a local connection to a Titan database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
++
+```
+gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
+```
+
 . Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
 +
 ```
-cp conf/titan-hbase.properties conf/gremlin-server/rest-titan-hbase-server.properties
+cp conf/titan-hbase.properties conf/gremlin-server/socket-titan-hbase-server.properties
 ```
 +
-. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called rest-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called socket-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
 +
 ```
-cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-server.yaml
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/socket-gremlin-server.yaml
 ```
 +
-. Edit the rest-gremlin-server.yaml file and make the following updates:
+. Edit the socket-gremlin-server.yaml file and make the following updates:
 .. If you are planning to connect to Titan Server from something other than localhost, update the ip address for host: 
 +
 ```
-host: 9.28.42.255
+host: 10.10.10.100
 ```
 +
 .. Update the graphs section to point to your new properties file so the Titan Server can find and connect to your Titan instance:
 +
 ```
 graphs: {
-  graph: conf/gremlin-server/rest-titan-hbase-server.properties}
+  graph: conf/gremlin-server/socket-titan-hbase-server.properties}
 ```
 +
 . Start the Titan Server, specifying the yaml file you just configured:
 +
 ```
-bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
+bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
 ```
 IMPORTANT: Do not use bin/titan.sh.  That starts the default configuration, which starts a separate Cassandra/ElasticSearch environment.
 +
@@ -586,7 +591,12 @@ Titan Server as a REST-style Endpoint
 The default configuration described in <<titan-server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use Titan Server as a REST endpoint for your Titan database, follow these steps:
 
 .To Configure Titan Server For Rest
-. Test a local connection to a Titan database first.  This step applies whether using the Gremlin console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.tablename parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.
+. Test a local connection to a Titan database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.
++
+```
+gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
+```
+
 . Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
 +
 ```
@@ -603,7 +613,7 @@ cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-serv
 .. If you are planning to connect to Titan Server from something other than localhost, update the ip address for host: 
 +
 ```
-host: 9.28.42.255
+host: 10.10.10.100
 ```
 +
 .. Update the channelizer setting to specify the HttpChannelizer:
@@ -637,10 +647,10 @@ Advanced Titan Server Configurations
 WebSocket versus REST
 ^^^^^^^^^^^^^^^^^^^^^
 
-Titan Server must be configured to work with either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
+Titan Server must be run with a configuration for either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
 
-There is, currently, no way to configure a single running instance of Titan Server to communicate simultaneously with clients talking WebSockets and REST.  To configure an environment where both a WebSocket and a REST interface are available for the same Titan instance, two separate Titan Servers must be configured.  If you need this sort of configuration, it is recommended that you follow the steps to separately download Gremlin Server (twice) and configure each instance separately, rather than using the packaged Titan Server. See <<gremlin-server-with-titan>>.
-
+There is, currently, no way to configure a single running instance of Titan Server to communicate simultaneously with clients talking WebSockets and REST.  However, it is possible to create configuration files (following the steps in this chapter) for both WebSockets and REST and start two instances of the Titan server by pointing it to the various configurations.  In this way, the same Titan database instance can service both WebSocket and REST calls.
+ 
 In the future, the option to have one running instance of Titan Server supporting multiple protocols may be possible.
 
 [[gremlin-server-with-titan]]
