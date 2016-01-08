@@ -649,7 +649,11 @@ WebSocket versus REST
 
 Titan Server must be run with a configuration for either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
 
-There is, currently, no way to configure a single running instance of Titan Server to communicate simultaneously with clients talking WebSockets and REST.  However, it is possible to create configuration files (following the steps in this chapter) for both WebSockets and REST and start two instances of the Titan Server by pointing it to the various configurations.  In this way, the same Titan database instance can be reached through different Titan Servers through both WebSocket and REST calls.
+There is, currently, no way to configure a single running instance of Titan Server to communicate simultaneously with clients talking WebSockets and REST.  However, it is possible to create configuration files (following the steps in this chapter) for both WebSockets and REST and start two instances of the Titan Server by pointing it to the various configurations when it is started.  In this way, the same Titan database instance can be reached through different Titan Servers through both WebSocket and REST calls. Make sure the port parameter in each yaml configuration is different if starting more than one Titan Server on the same machine:
+
+```
+port: 8182
+```
  
 In the future, the option to have one running instance of Titan Server supporting multiple protocols may be possible.
 
