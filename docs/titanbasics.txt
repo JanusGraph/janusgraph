@@ -1166,10 +1166,10 @@ Multi-Threaded Transactions
 
 Titan supports multi-threaded transactions through TinkerPop's http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
-With TinkerPop's default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `newThreadedTx()` method.
+With TinkerPop's default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `createThreadedTx()` method.
 
 [source, gremlin]
-threadedGraph = graph.tx().newThreadedTx();
+threadedGraph = graph.tx().createThreadedTx();
 threads = new Thread[10];
 for (int i=0; i<threads.length; i++) {
     threads[i]=new Thread({
@@ -1180,14 +1180,14 @@ for (int i=0; i<threads.length; i++) {
 for (int i=0; i<threads.length; i++) threads[i].join();
 threadedGraph.tx().commit();
 
-The `newThreadedTx()` method returns a new `Graph` object that represents this newly opened transaction. The graph object `tx` supports all of the methods that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all work concurrently in the same transaction and one of which finally commits the transaction when all threads have completed their work.
+The `createThreadedTx()` method returns a new `Graph` object that represents this newly opened transaction. The graph object `tx` supports all of the methods that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all work concurrently in the same transaction and one of which finally commits the transaction when all threads have completed their work.
 
 Titan relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
 
 Concurrent Algorithms
 ~~~~~~~~~~~~~~~~~~~~~
 
-Thread independent transactions started through `newThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `newThreadedTx()` without blocking each other.
+Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
 
 Nested Transactions
 ~~~~~~~~~~~~~~~~~~~
@@ -1210,7 +1210,7 @@ One way around this is to create the vertex in a short, nested thread-independen
 [source, gremlin]
 v1 = graph.addVertex()
 //Do many other things
-tx = graph.tx().newThreadedTx()
+tx = graph.tx().createThreadedTx()
 v2 = tx.addVertex()
 v2.property("uniqueName", "foo")
 tx.commit() // Any lock contention will be detected here
