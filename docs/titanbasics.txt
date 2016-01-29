@@ -1284,7 +1284,10 @@ Within an open transaction, Titan maintains two caches:
 * Vertex Cache: Caches accessed vertices and their adjacency list (or subsets thereof) so that subsequent access is significantly faster within the same transaction. Hence, this cache speeds up iterative traversals.
 * Index Cache: Caches the results for index queries so that subsequent index calls can be served from memory instead of calling the index backend and (usually) waiting for one or more network round trips.
 
-The size of both of those is determined by the _transaction cache size_. The transaction cache size can be configured via `cache.tx-cache-size` or on a per transaction basis by opening a transaction via the transaction builder `graph.buildTransction()` and using the `setVertexCacheSize(int)` method.
+The size of both of those is determined by the _transaction cache size_. The
+transaction cache size can be configured via `cache.tx-cache-size` or on a
+per transaction basis by opening a transaction via the transaction builder
+`graph.buildTransaction()` and using the `setVertexCacheSize(int)` method.
 
 Vertex Cache
 ^^^^^^^^^^^^
