@@ -14,6 +14,7 @@ public enum CLevel implements CLevelInterface { // One ring to rule them all
     THREE,
     QUORUM,
     ALL,
+    LOCAL_ONE,
     LOCAL_QUORUM,
     EACH_QUORUM;
 
