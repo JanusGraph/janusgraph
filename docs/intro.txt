@@ -351,11 +351,11 @@ gremlin> g.V(pluto).out('brother').out('lives').values('name')
 ==>sky
 ==>sea
 gremlin> // which brother lives in which place?
-gremlin> g.V(pluto).out('brother').as('god').out('lives').as('place').select()
+gremlin> g.V(pluto).out('brother').as('god').out('lives').as('place').select('god', 'place')
 ==>[god:v[1024], place:v[512]]
 ==>[god:v[1280], place:v[768]]
 gremlin> // what is the name of the brother and the name of the place?
-gremlin> g.V(pluto).out('brother').as('god').out('lives').as('place').select().by('name')
+gremlin> g.V(pluto).out('brother').as('god').out('lives').as('place').select('god', 'place').by('name')
 ==>[god:jupiter, place:sky]
 ==>[god:neptune, place:sea]
 
