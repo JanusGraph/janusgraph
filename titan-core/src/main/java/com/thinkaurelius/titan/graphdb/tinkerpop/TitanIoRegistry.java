@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
  */
 public class TitanIoRegistry extends AbstractIoRegistry {
 
-    public static TitanIoRegistry INSTANCE = new TitanIoRegistry();
+    private static TitanIoRegistry INSTANCE = new TitanIoRegistry();
 
     // todo: made the constructor temporarily public to workaround an interoperability issue with hadoop in tp3 GA https://issues.apache.org/jira/browse/TINKERPOP3-771
 
@@ -21,5 +21,9 @@ public class TitanIoRegistry extends AbstractIoRegistry {
         register(GraphSONIo.class, null, TitanGraphSONModule.getInstance());
         register(GryoIo.class, RelationIdentifier.class, null);
         register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
+    }
+
+    public static TitanIoRegistry getInstance() {
+        return INSTANCE;
     }
 }
