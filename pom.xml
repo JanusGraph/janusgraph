@@ -43,6 +43,11 @@
             <email>marko@markorodriguez.com</email>
             <url>http://markorodriguez.com</url>
         </contributor>
+        <contributor>
+            <name>Stephen Mallette</name>
+            <email>spmva@genoprime.com</email>
+            <url>http://stephen.genoprime.com</url>
+        </contributor>
     </contributors>
     <inceptionYear>2012</inceptionYear>
     <licenses>
@@ -59,7 +64,7 @@
     </scm>
     <properties>
         <titan.compatible.versions />
-        <tinkerpop.version>3.1.0-incubating</tinkerpop.version>
+        <tinkerpop.version>3.1.1-incubating</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <cassandra.version>2.1.9</cassandra.version>
