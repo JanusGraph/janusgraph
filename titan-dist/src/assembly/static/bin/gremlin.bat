@@ -123,7 +123,7 @@ GOTO finally
 
 :version
 
-java %JAVA_OPTIONS% %JAVA_ARGS% -cp %CP% org.apache.tinkerpop.gremlin.util.Gremlin
+java %JAVA_OPTIONS% %JAVA_ARGS% -cp %CP% com.thinkaurelius.titan.core.Titan
 
 GOTO finally
 
