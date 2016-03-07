@@ -86,7 +86,7 @@ while getopts "elpv" opt; do
        ;;
     p) PROFILING_ENABLED=true
        ;;
-    v) MAIN_CLASS=org.apache.tinkerpop.gremlin.util.Gremlin
+    v) MAIN_CLASS=com.thinkaurelius.titan.core.Titan
     esac
 done
 
