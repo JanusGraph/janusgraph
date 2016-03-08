@@ -576,7 +576,9 @@ public class GraphDatabaseConfiguration {
      * This value should be a small multiple of the average consistent write time.
      */
     public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<>(LOCK_NS, "wait-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
+            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend. " +
+            "Also, the time waited at the end of all lock applications before verifying that the applications were successful. " +
+            "This value should be a small multiple of the average consistent write time.",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(100L));
 //    public static final String LOCK_WAIT_MS = "lock-wait-time";
 //    public static final long LOCK_WAIT_MS_DEFAULT = 100;
@@ -588,7 +590,10 @@ public class GraphDatabaseConfiguration {
      * held applications are expired pre-maturely and as small as possible to avoid dead lock.
      */
     public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<>(LOCK_NS, "expiry-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
+            "Number of milliseconds after which a lock is considered to have expired. " +
+            "Lock applications that were not released are considered expired after this time and released. " +
+            "This value should be larger than the maximum time a transaction can take in order to guarantee " +
+            "that no correctly held applications are expired pre-maturely and as small as possible to avoid dead lock.",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(300 * 1000L));
 //    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
 //    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
