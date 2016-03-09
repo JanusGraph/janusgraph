@@ -31,9 +31,15 @@ When a string property is indexed as text, the string value is tokenized into a 
 
 When a string property is indexed as text, only full-text search predicates are supported in graph queries by the indexing backend. Full-text search is case-insensitive.
 
-* textContains: is true if (at least) one word inside the text string matches the query string
-* textContainsPrefix: is true if (at least) one word inside the text string begins with the query string
-* textContainsRegex: is true if (at least) one word inside the text string matches the given regular expression
+* `textContains`: is true if (at least) one word inside the text string matches the query string
+* `textContainsPrefix`: is true if (at least) one word inside the text string begins with the query string
+* `textContainsRegex`: is true if (at least) one word inside the text string matches the given regular expression
+
+[source, gremlin]
+import static com.thinkaurelius.titan.core.attribute.Text.*
+g.V().has('booksummary', textContains('unicorns'))
+g.V().has('booksummary', textContainsPrefix('uni'))
+g.V().has('booksummary', textContainsRegex('.*corn.*'))
 
 String search predicates (see below) may be used in queries, but those require filtering in memory which can be very costly.
 
@@ -52,10 +58,18 @@ When a string mapping is configured, the string value is indexed and can be quer
 
 When a string property is indexed as string, only the following predicates are supported in graph queries by the indexing backend. String search is case-sensitive.
 
-* eq: if the string is identical to the query string
-* neq: if the string is different than the query string
-* textPrefix: if the string value starts with the given query string
-* textRegex: if the string value matches the given regular expression in its entirety
+* `eq`: if the string is identical to the query string
+* `neq`: if the string is different than the query string
+* `textPrefix`: if the string value starts with the given query string
+* `textRegex`: if the string value matches the given regular expression in its entirety
+
+[source, gremlin]
+import static org.apache.tinkerpop.gremlin.process.traversal.P.*
+import static com.thinkaurelius.titan.core.attribute.Text.*
+g.V().has('bookname', eq('unicorns'))
+g.V().has('bookname', neq('unicorns'))
+g.V().has('bookname', textPrefix('uni'))
+g.V().has('bookname', textRegex('.*corn.*'))
 
 Full-text search predicates may be used in queries, but those require filtering in memory which can be very costly.
 
