@@ -2519,7 +2519,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testVertexCentricQuery() {
-        int noVertices = 10000;
+        testVertexCentricQuery(10000 /*noVertices*/);
     }
 
     @SuppressWarnings("deprecation")
