@@ -2518,8 +2518,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      ==================================================================================*/
 
     @Test
-    @SuppressWarnings("deprecation")
     public void testVertexCentricQuery() {
+        testVertexCentricQuery(10000 /*noVertices*/);
+    }
+
+    @SuppressWarnings("deprecation")
+    public void testVertexCentricQuery(int noVertices) {
         makeVertexIndexedUniqueKey("name", String.class);
         PropertyKey time = makeKey("time", Integer.class);
         PropertyKey weight = makeKey("weight", Double.class);
@@ -2535,7 +2539,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         TitanVertex v = tx.addVertex("name", "v");
         TitanVertex u = tx.addVertex("name", "u");
-        int noVertices = 10000;
         assertEquals(0, (noVertices - 1) % 3);
         TitanVertex[] vs = new TitanVertex[noVertices];
         for (int i = 1; i < noVertices; i++) {
