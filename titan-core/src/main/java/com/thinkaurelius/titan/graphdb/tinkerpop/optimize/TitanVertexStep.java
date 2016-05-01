@@ -83,7 +83,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     }
 
     @Override
-    protected Traverser<E> processNextStart() {
+    protected Traverser.Admin<E> processNextStart() {
         if (!initialized) initialize();
         return super.processNextStart();
     }

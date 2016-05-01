@@ -24,7 +24,7 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
-        if (traversal.getEngine().isComputer())
+        if (TraversalHelper.onGraphComputer(traversal))
             return;
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
@@ -32,7 +32,6 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 //Try to optimize for index calls
                 final TitanGraphStep<?, ?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(originalGraphStep, (Step) titanGraphStep, traversal);
-
                 HasStepFolder.foldInHasContainer(titanGraphStep, traversal);
                 HasStepFolder.foldInOrder(titanGraphStep, traversal, traversal, titanGraphStep.returnsVertex());
                 HasStepFolder.foldInRange(titanGraphStep, traversal);

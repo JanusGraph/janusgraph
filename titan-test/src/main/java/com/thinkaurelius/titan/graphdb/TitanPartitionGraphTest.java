@@ -409,8 +409,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         clopen(options);
 
         //Test OLAP works with partitioned vertices
-        TitanGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        FulgoraGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
+        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
         computer.workers(1);
         computer.program(new OLAPTest.DegreeCounter());
         computer.mapReduce(new OLAPTest.DegreeMapper());

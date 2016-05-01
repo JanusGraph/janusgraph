@@ -8,11 +8,13 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.olap.*;
+import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -186,7 +188,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     @Test
     public void testBasicComputeJob() throws Exception {
-        GraphTraversalSource g = graph.traversal(GraphTraversalSource.computer());
+        GraphTraversalSource g = graph.traversal().withComputer(FulgoraGraphComputer.class);
         System.out.println(g.V().count().next());
     }
 
@@ -196,8 +198,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final FulgoraGraphComputer computer = graph.compute();
+        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(new DegreeCounter());
         computer.mapReduce(new DegreeMapper());
@@ -226,8 +228,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final FulgoraGraphComputer computer = graph.compute();
+        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
         computer.workers(1);
         computer.program(new ExceptionProgram());
 
@@ -244,9 +246,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        // TODO does this iteration over TitanGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
-        for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
-            final TitanGraphComputer computer = graph.compute();
+        // TODO does this iteration over FulgoraGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
+        for (FulgoraGraphComputer.ResultMode mode : FulgoraGraphComputer.ResultMode.values()) {
+            final FulgoraGraphComputer computer = graph.compute();
             computer.resultMode(mode);
             computer.workers(1);
             computer.program(new DegreeCounter(2));
@@ -271,7 +273,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 }
                 assertEquals(actualDegree2,degree2);
             }
-            if (mode== TitanGraphComputer.ResultMode.LOCALTX) {
+            if (mode== FulgoraGraphComputer.ResultMode.LOCALTX) {
                 assertTrue(gview instanceof TitanTransaction);
                 ((TitanTransaction)gview).rollback();
             }
@@ -370,9 +372,14 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         @Override
-        public Set<String> getElementComputeKeys() {
-            return ImmutableSet.of(DEGREE);
+        public Set<VertexComputeKey> getVertexComputeKeys() {
+            return new HashSet<>(Arrays.asList(VertexComputeKey.of(DEGREE, false)));
         }
+
+	@Override
+	public Set<MemoryComputeKey> getMemoryComputeKeys() {
+	    return new HashSet<>(Arrays.asList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
+	}
 
         @Override
         public Optional<MessageCombiner<Integer>> getMessageCombiner() {
@@ -524,8 +531,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             correctPRSum += correctPR[iv.next().<Integer>value("distance")];
         }
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final FulgoraGraphComputer computer = graph.compute();
+        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create(graph));
         computer.mapReduce(PageRankMapReduce.build().create());
@@ -581,8 +588,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final FulgoraGraphComputer computer = graph.compute();
+        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(ShortestDistanceVertexProgram.build().seed((long)vertex.id()).maxDepth(maxDepth + 4).create(graph));
         computer.mapReduce(ShortestDistanceMapReduce.build().create());

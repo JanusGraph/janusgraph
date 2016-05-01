@@ -17,6 +17,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -42,7 +43,8 @@ public class FulgoraVertexMemory<M> {
         partitionVertices = new NonBlockingHashMapLong<>(64);
         this.idManager = idManager;
         this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
-        this.elementKeyMap = getIdMap(vertexProgram.getElementComputeKeys());
+        this.elementKeyMap = getIdMap(vertexProgram.getVertexComputeKeys().stream().map( k ->
+											 k.getKey() ).collect(Collectors.toCollection(HashSet::new)));
         this.previousScopes = ImmutableMap.of();
     }
 

@@ -19,7 +19,7 @@ public interface ScanJob extends Cloneable {
     /**
      * Invoked before a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
      * Can be used to initialize the iteration. This method is called exactly once for each before a block of computation.
-     * This method is semantically aligned with {@link com.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationStart()}
+     * This method is semantically aligned with {@link org.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationStart()}
      *
      * This method may not be called if there is no data to be processed. Correspondingly, the end method won't be called either.
      *
@@ -35,7 +35,7 @@ public interface ScanJob extends Cloneable {
     /**
      * Invoked after a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
      * Can be used to close any resources held by this job. This method is called exactly once for each after a block of computation.
-     * This method is semantically aligned with {@link com.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationEnd()}
+     * This method is semantically aligned with {@link org.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationEnd()}
      *
      * This method may not be called if there is no data to be processed. Correspondingly, the start method won't be called either.
      *

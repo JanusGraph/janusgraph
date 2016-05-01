@@ -50,7 +50,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
-            <version>${hbase098.version}</version>
+            <version>${hbase098.version}</version>	    	    
             <optional>true</optional>
             <scope>test</scope>
             <exclusions>
