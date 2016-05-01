@@ -18,13 +18,17 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.hadoop.structure.util.ConfUtil;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritable> {
 
@@ -52,8 +56,8 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
         // returned by VertexProgram.getComputeKeys()
         if (null == persistableKeys) {
             try {
-                persistableKeys = VertexProgram.createVertexProgram(graph,
-                       ConfUtil.makeApacheConfiguration(taskAttemptContext.getConfiguration())).getElementComputeKeys();
+		Stream<VertexComputeKey> persistableKeysStream = VertexProgram.createVertexProgram(graph, ConfUtil.makeApacheConfiguration(taskAttemptContext.getConfiguration())).getVertexComputeKeys().stream();
+                persistableKeys = persistableKeysStream.map( k -> k.getKey()).collect(Collectors.toCollection(HashSet::new));
                 log.debug("Set persistableKeys={}", Joiner.on(",").join(persistableKeys));
             } catch (Exception e) {
                 log.debug("Unable to detect or instantiate vertex program", e);

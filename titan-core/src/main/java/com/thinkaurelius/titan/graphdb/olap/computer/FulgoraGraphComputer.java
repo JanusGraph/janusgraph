@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanGraphComputer;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -16,14 +15,18 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.WorkerPool;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
@@ -45,13 +48,41 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraGraphComputer implements TitanGraphComputer {
+public class FulgoraGraphComputer implements GraphComputer {
+
+    public enum ResultMode {
+        NONE, PERSIST, LOCALTX;
+	
+        public ResultGraph toResultGraph() {
+            switch(this) {
+	    case NONE: return ResultGraph.ORIGINAL;
+	    case PERSIST: return ResultGraph.ORIGINAL;
+	    case LOCALTX: return ResultGraph.NEW;
+	    default: throw new AssertionError("Unrecognized option: " + this);
+            }
+        }
+	
+        public Persist toPersist() {
+            switch(this) {
+	    case NONE: return Persist.NOTHING;
+	    case PERSIST: return Persist.VERTEX_PROPERTIES;
+	    case LOCALTX: return Persist.VERTEX_PROPERTIES;
+	    default: throw new AssertionError("Unrecognized option: " + this);
+            }
+        }
+	
+    }
+
+    public GraphComputer resultMode(ResultMode mode) {
+        result(mode.toResultGraph());
+        persist(mode.toPersist());
+        return this;
+    }
 
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraGraphComputer.class);
 
-    public static final Set<String> NON_PERSISTING_KEYS = ImmutableSet.of(TraversalSideEffects.SIDE_EFFECTS,
-            TraversalVertexProgram.HALTED_TRAVERSERS);
+    public static final Set<VertexComputeKey> NON_PERSISTING_KEYS = ImmutableSet.of(VertexComputeKey.of(TraversalVertexProgram.HALTED_TRAVERSERS, false));
 
     private VertexProgram<?> vertexProgram;
     private final Set<MapReduce> mapReduces = new HashSet<>();
@@ -73,11 +104,25 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private String name;
     private String jobId;
 
+    private final GraphFilter graphFilter = new GraphFilter();
+
     public FulgoraGraphComputer(final StandardTitanGraph graph, final Configuration configuration) {
         this.graph = graph;
         this.writeBatchSize = configuration.get(GraphDatabaseConfiguration.BUFFER_SIZE);
         this.readBatchSize = this.writeBatchSize * 10;
         this.name = "compute" + computerCounter.incrementAndGet();
+    }
+
+    @Override
+    public GraphComputer vertices(final Traversal<Vertex, Vertex> vertexFilter) {
+	this.graphFilter.setVertexFilter(vertexFilter);
+	return this;
+    }
+
+    @Override
+    public GraphComputer edges(final Traversal<Vertex, Edge> edgeFilter) {
+	this.graphFilter.setEdgeFilter(edgeFilter);
+	return this;
     }
 
     @Override
@@ -95,37 +140,37 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     }
 
     @Override
-    public TitanGraphComputer workers(int threads) {
+    public GraphComputer workers(int threads) {
         Preconditions.checkArgument(threads > 0, "Invalid number of threads: %s", threads);
         numThreads = threads;
         return this;
     }
 
     @Override
-    public TitanGraphComputer program(final VertexProgram vertexProgram) {
+    public GraphComputer program(final VertexProgram vertexProgram) {
         Preconditions.checkState(this.vertexProgram == null, "A vertex program has already been set");
         this.vertexProgram = vertexProgram;
         return this;
     }
 
     @Override
-    public TitanGraphComputer mapReduce(final MapReduce mapReduce) {
+    public GraphComputer mapReduce(final MapReduce mapReduce) {
         this.mapReduces.add(mapReduce);
         return this;
     }
 
     @Override
     public Future<ComputerResult> submit() {
-        if (executed)
+        if (this.executed)
             throw Exceptions.computerHasAlreadyBeenSubmittedAVertexProgram();
         else
-            executed = true;
+            this.executed = true;
 
         // it is not possible execute a computer if it has no vertex program nor mapreducers
-        if (null == vertexProgram && mapReduces.isEmpty())
+        if (null == vertexProgram && this.mapReduces.isEmpty())
             throw GraphComputer.Exceptions.computerHasNoVertexProgramNorMapReducers();
         // it is possible to run mapreducers without a vertex program
-        if (null != vertexProgram) {
+        if (null != this.vertexProgram) {
             GraphComputerHelper.validateProgramOnComputer(this, vertexProgram);
             this.mapReduces.addAll(this.vertexProgram.getMapReducers());
         }
@@ -136,19 +181,26 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
         // determine the legality persistence and result graph options
         if (!this.features().supportsResultGraphPersistCombination(this.resultGraphMode, this.persistMode))
             throw GraphComputer.Exceptions.resultGraphPersistCombinationNotSupported(this.resultGraphMode, this.persistMode);
-
-        memory = new FulgoraMemory(vertexProgram, mapReduces);
+	// ensure requested workers are not larger than supported workers
+	if (this.numThreads > this.features().getMaxWorkers())
+	    throw GraphComputer.Exceptions.computerRequiresMoreWorkersThanSupported(this.numThreads, this.features().getMaxWorkers());
+	
+        this.memory = new FulgoraMemory(this.vertexProgram, this.mapReduces);
 
         return CompletableFuture.<ComputerResult>supplyAsync(() -> {
             final long time = System.currentTimeMillis();
+	    // DIVERGES: TinkerGraphComputerView and try (final TinkerWorkerPool workers = new TinkerWorkerPool(this.workers)) {
             if (null != vertexProgram) {
-                // ##### Execute vertex program
+                // ##### Execute vertex program - DIVERGES: no FulgoraVertexMemory in TinkerGraphComputer, and no view in Fulgora
                 vertexMemory = new FulgoraVertexMemory(expectedNumVertices, graph.getIDManager(), vertexProgram);
                 // execute the vertex program
-                vertexProgram.setup(memory);
-                memory.completeSubRound();
+                this.vertexProgram.setup(this.memory);
+		// DIVERGES: This is inside the while (true) { loop in TinkerGraphComputer... will put inExecute... hmmm...
+                // memory.completeSubRound();
 
                 for (int iteration = 1; ; iteration++) {
+		    // Added here instead?
+		    memory.completeSubRound();
                     vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
 
                     jobId = name + "#" + iteration;
@@ -176,18 +228,18 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         throw new TitanException(e);
                     }
 
-                    vertexMemory.completeIteration();
-                    memory.completeSubRound();
+                    this.vertexMemory.completeIteration();
+                    this.memory.completeSubRound();
                     try {
                         if (this.vertexProgram.terminate(this.memory)) {
                             break;
                         }
                     } finally {
-                        memory.incrIteration();
-                        memory.completeSubRound();
+                        this.memory.incrIteration();
                     }
                 }
             }
+	    // DIVERGE: Missing the MapReduce only stuff here... still need to figure out the difference between the view and Titan's setup
 
             // ##### Execute mapreduce jobs
             // Collect map jobs
@@ -229,6 +281,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                     try (WorkerPool workers = new WorkerPool(numThreads)) {
                         workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
                         for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
+			    if (null == queueEntry) break;
                             workers.submit(() -> mapReduce.reduce(queueEntry.getKey(), ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
                         }
                         workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
@@ -249,14 +302,14 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
             Graph resultgraph = graph;
             if (persistMode == Persist.NOTHING && resultGraphMode == ResultGraph.NEW) {
                 resultgraph = EmptyGraph.instance();
-            } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getElementComputeKeys().isEmpty()) {
+            } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getVertexComputeKeys().isEmpty()) {
                 //First, create property keys in graph if they don't already exist
                 TitanManagement mgmt = graph.openManagement();
                 try {
-                    for (String key : vertexProgram.getElementComputeKeys()) {
-                        if (!mgmt.containsPropertyKey(key))
-                            log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key);
-                        mgmt.getOrCreatePropertyKey(key);
+                    for (VertexComputeKey key : vertexProgram.getVertexComputeKeys()) {
+                        if (!mgmt.containsPropertyKey(key.getKey()))
+                            log.warn("Property key [{}] is not part of the schema and will be created. It is advised to initialize all keys.", key.getKey());
+                        mgmt.getOrCreatePropertyKey(key.getKey());
                     }
                     mgmt.commit();
                 } finally {
@@ -276,7 +329,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 if (resultGraphMode == ResultGraph.ORIGINAL) {
                     AtomicInteger failures = new AtomicInteger(0);
                     try (WorkerPool workers = new WorkerPool(numThreads)) {
-                        List<Map.Entry<Long, Map<String, Object>>> subset = new ArrayList<>(writeBatchSize / vertexProgram.getElementComputeKeys().size());
+                        List<Map.Entry<Long, Map<String, Object>>> subset = new ArrayList<>(writeBatchSize / vertexProgram.getVertexComputeKeys().size());
                         int currentSize = 0;
                         for (Map.Entry<Long, Map<String, Object>> entry : mutatedProperties.entrySet()) {
                             subset.add(entry);

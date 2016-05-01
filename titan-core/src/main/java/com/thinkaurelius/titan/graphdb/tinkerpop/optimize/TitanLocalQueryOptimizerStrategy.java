@@ -37,7 +37,7 @@ public class TitanLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<
 
         //If this is a compute graph then we can't apply local traversal optimisation at this stage.
         StandardTitanGraph titanGraph = graph instanceof StandardTitanTx ? ((StandardTitanTx) graph).getGraph() : (StandardTitanGraph) graph;
-        final boolean useMultiQuery = traversal.getEngine().isStandard() && titanGraph.getConfiguration().useMultiQuery();
+        final boolean useMultiQuery = !TraversalHelper.onGraphComputer(traversal) && titanGraph.getConfiguration().useMultiQuery();
 
         /*
                 ====== VERTEX STEP ======
