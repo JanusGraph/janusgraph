@@ -230,7 +230,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * It needs to be ensured that the deletion time is prior to the addition time since
      * some storage backends use the time to resolve conflicts.
      */
-    public class MaskedTimestamp {
+    public static class MaskedTimestamp {
 
         private final Instant t;
 

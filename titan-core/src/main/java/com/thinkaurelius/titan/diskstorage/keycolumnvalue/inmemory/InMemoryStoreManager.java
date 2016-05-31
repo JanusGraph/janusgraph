@@ -111,7 +111,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         return toString();
     }
 
-    private class InMemoryTransaction extends AbstractStoreTransaction {
+    private static class InMemoryTransaction extends AbstractStoreTransaction {
 
         public InMemoryTransaction(final BaseTransactionConfig config) {
             super(config);
