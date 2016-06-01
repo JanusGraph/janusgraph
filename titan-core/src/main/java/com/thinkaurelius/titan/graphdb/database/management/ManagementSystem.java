@@ -944,7 +944,7 @@ public class ManagementSystem implements TitanManagement {
             if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex) index).getType().name();
             else relationTypeName = null;
             Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
-            hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).hashCode();
+            hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).toHashCode();
         }
 
         private TitanIndex retrieve(ManagementSystem mgmt) {
