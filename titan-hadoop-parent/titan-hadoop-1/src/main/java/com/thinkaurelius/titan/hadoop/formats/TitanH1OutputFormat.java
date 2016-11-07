@@ -56,7 +56,7 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
         // returned by VertexProgram.getComputeKeys()
         if (null == persistableKeys) {
             try {
-		Stream<VertexComputeKey> persistableKeysStream = VertexProgram.createVertexProgram(graph, ConfUtil.makeApacheConfiguration(taskAttemptContext.getConfiguration())).getVertexComputeKeys().stream();
+                Stream<VertexComputeKey> persistableKeysStream = VertexProgram.createVertexProgram(graph, ConfUtil.makeApacheConfiguration(taskAttemptContext.getConfiguration())).getVertexComputeKeys().stream();
                 persistableKeys = persistableKeysStream.map( k -> k.getKey()).collect(Collectors.toCollection(HashSet::new));
                 log.debug("Set persistableKeys={}", Joiner.on(",").join(persistableKeys));
             } catch (Exception e) {

@@ -88,6 +88,5 @@ public class TitanGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     public void addHasContainer(final HasContainer hasContainer) {
 	this.addAll(Collections.singleton(hasContainer));
     }
-
 }
 

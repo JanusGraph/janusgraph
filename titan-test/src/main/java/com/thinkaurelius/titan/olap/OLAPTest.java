@@ -198,8 +198,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final FulgoraGraphComputer computer = graph.compute();
-        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
+        final TitanGraphComputer computer = graph.compute();
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(new DegreeCounter());
         computer.mapReduce(new DegreeMapper());
@@ -228,8 +228,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final FulgoraGraphComputer computer = graph.compute();
-        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
+        final TitanGraphComputer computer = graph.compute();
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(1);
         computer.program(new ExceptionProgram());
 
@@ -246,9 +246,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        // TODO does this iteration over FulgoraGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
-        for (FulgoraGraphComputer.ResultMode mode : FulgoraGraphComputer.ResultMode.values()) {
-            final FulgoraGraphComputer computer = graph.compute();
+        // TODO does this iteration over TitanGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
+        for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
+            final TitanGraphComputer computer = graph.compute();
             computer.resultMode(mode);
             computer.workers(1);
             computer.program(new DegreeCounter(2));
@@ -273,9 +273,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 }
                 assertEquals(actualDegree2,degree2);
             }
-            if (mode== FulgoraGraphComputer.ResultMode.LOCALTX) {
+            if (mode== TitanGraphComputer.ResultMode.LOCALTX) {
                 assertTrue(gview instanceof TitanTransaction);
-                ((TitanTransaction)gview).rollback();
+                ((TitanTransaction) gview).rollback();
             }
         }
     }
@@ -376,10 +376,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             return new HashSet<>(Arrays.asList(VertexComputeKey.of(DEGREE, false)));
         }
 
-	@Override
-	public Set<MemoryComputeKey> getMemoryComputeKeys() {
-	    return new HashSet<>(Arrays.asList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
-	}
+        @Override
+        public Set<MemoryComputeKey> getMemoryComputeKeys() {
+            return new HashSet<>(Arrays.asList(MemoryComputeKey.of(DEGREE, Operator.assign, true, false)));
+        }
 
         @Override
         public Optional<MessageCombiner<Integer>> getMessageCombiner() {
@@ -531,8 +531,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             correctPRSum += correctPR[iv.next().<Integer>value("distance")];
         }
 
-        final FulgoraGraphComputer computer = graph.compute();
-        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
+        final TitanGraphComputer computer = graph.compute();
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create(graph));
         computer.mapReduce(PageRankMapReduce.build().create());
@@ -588,8 +588,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         clopen();
 
-        final FulgoraGraphComputer computer = graph.compute();
-        computer.resultMode(FulgoraGraphComputer.ResultMode.NONE);
+        final TitanGraphComputer computer = graph.compute();
+        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(ShortestDistanceVertexProgram.build().seed((long)vertex.id()).maxDepth(maxDepth + 4).create(graph));
         computer.mapReduce(ShortestDistanceMapReduce.build().create());

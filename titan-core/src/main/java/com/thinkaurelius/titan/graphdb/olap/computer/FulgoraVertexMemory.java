@@ -9,7 +9,11 @@ import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.computer.*;
+import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
@@ -44,7 +48,7 @@ public class FulgoraVertexMemory<M> {
         this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
         this.computeKeys = vertexProgram.getVertexComputeKeys();
         this.elementKeyMap = getIdMap(vertexProgram.getVertexComputeKeys().stream().map( k ->
-											 k.getKey() ).collect(Collectors.toCollection(HashSet::new)));
+                k.getKey() ).collect(Collectors.toCollection(HashSet::new)));
         this.previousScopes = ImmutableMap.of();
     }
 

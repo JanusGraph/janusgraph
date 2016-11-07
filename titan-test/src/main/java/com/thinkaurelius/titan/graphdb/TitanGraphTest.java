@@ -3442,7 +3442,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
-	// System.out.println(metrics);
         //verifyMetrics(metrics.getMetrics(0), true, false);
         //verifyMetrics(metrics.getMetrics(1), true, true);
 
