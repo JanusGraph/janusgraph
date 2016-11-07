@@ -54,7 +54,7 @@ public class FulgoraMemory implements Memory.Admin {
 
     @Override
     public Set<String> keys() {
-	return this.previousMap.keySet().stream().filter(key -> !this.inExecute || this.memoryKeys.get(key).isBroadcast()).collect(Collectors.toSet());
+        return this.previousMap.keySet().stream().filter(key -> !this.inExecute || this.memoryKeys.get(key).isBroadcast()).collect(Collectors.toSet());
     }
 
     @Override
@@ -85,12 +85,12 @@ public class FulgoraMemory implements Memory.Admin {
     protected void complete() {
         this.iteration.decrementAndGet();
         this.previousMap = this.currentMap;
-	this.memoryKeys.values().stream().filter(MemoryComputeKey::isTransient).forEach(computeKey -> this.previousMap.remove(computeKey.getKey()));
+        this.memoryKeys.values().stream().filter(MemoryComputeKey::isTransient).forEach(computeKey -> this.previousMap.remove(computeKey.getKey()));
     }
 
     protected void completeSubRound() {
         this.previousMap = new ConcurrentHashMap<>(this.currentMap);
-	this.inExecute = !this.inExecute;
+        this.inExecute = !this.inExecute;
     }
 
     @Override
@@ -103,27 +103,27 @@ public class FulgoraMemory implements Memory.Admin {
         final R r = (R) this.previousMap.get(key);
         if (null == r)
             throw Memory.Exceptions.memoryDoesNotExist(key);
-	else if (this.inExecute && !this.memoryKeys.get(key).isBroadcast())
-	    throw Memory.Exceptions.memoryDoesNotExist(key);
+        else if (this.inExecute && !this.memoryKeys.get(key).isBroadcast())
+            throw Memory.Exceptions.memoryDoesNotExist(key);
         else
             return r;
     }
-    
+
     @Override
     public void add(final String key, final Object value) {
-	checkKeyValue(key, value);
+        checkKeyValue(key, value);
         if (!this.inExecute && ("incr".equals(key) || "and".equals(key) || "or".equals(key)))
             throw Memory.Exceptions.memoryIsCurrentlyImmutable();
-	else if (!this.inExecute)
-	    throw Memory.Exceptions.memoryAddOnlyDuringVertexProgramExecute(key);
-	this.currentMap.compute(key, (k, v) -> null == v ? value : this.memoryKeys.get(key).getReducer().apply(v, value));
+        else if (!this.inExecute)
+            throw Memory.Exceptions.memoryAddOnlyDuringVertexProgramExecute(key);
+        this.currentMap.compute(key, (k, v) -> null == v ? value : this.memoryKeys.get(key).getReducer().apply(v, value));
     }
 
     @Override
     public void set(final String key, final Object value) {
         checkKeyValue(key, value);
-	if (this.inExecute)
-	    throw Memory.Exceptions.memorySetOnlyDuringVertexProgramSetUpAndTerminate(key);
+        if (this.inExecute)
+            throw Memory.Exceptions.memorySetOnlyDuringVertexProgramSetUpAndTerminate(key);
         this.currentMap.put(key, value);
     }
 
