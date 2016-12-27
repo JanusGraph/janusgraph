@@ -1,0 +1,10 @@
+/janusgraph-hbase-*/.settings/
+/janusgraph-hbase-*/.project
+/janusgraph-hbase-*/.classpath
+/janusgraph-hbase-*/bin/
+/janusgraph-hbase-*/conf/
+/janusgraph-hbase-*/logs/
+*~
+.classpath
+.project
+.settings/
