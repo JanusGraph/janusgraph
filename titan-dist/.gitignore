@@ -1,6 +1,0 @@
-# Eclipse junk; leading slash makes patterns non-recursive
-# Note that * also can't match slashes
-/titan-*/.classpath
-/titan-*/.project
-/titan-*/.settings/
-# End of Eclipse junk

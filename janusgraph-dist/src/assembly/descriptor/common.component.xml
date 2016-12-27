@@ -1,0 +1,50 @@
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+
+    <fileSets>
+        <fileSet>
+            <directory>${assembly.static.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <filtered>false</filtered>
+            <excludes>
+                <exclude>README.txt</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.resources.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <filtered>true</filtered>
+        </fileSet>
+        <fileSet>
+            <directory>${assembly.cfilter.out.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <filtered>false</filtered>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <!-- Code jars -->
+        <dependencySet>
+            <outputDirectory>/lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
+            <excludes>
+                <exclude>${project.groupId}:janusgraph-core:jar:javadoc:${project.version}</exclude>
+            </excludes>
+        </dependencySet>
+
+        <!-- Example data (from janusgraph-hadoop/faunus) -->
+        <dependencySet>
+            <unpack>true</unpack>
+            <outputDirectory>/examples</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>${project.groupId}:janusgraph-hadoop-core:zip:example-data:${project.version}</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+</component>
