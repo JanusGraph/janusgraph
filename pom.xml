@@ -12,13 +12,13 @@
     <prerequisites>
         <maven>2.2.1</maven>
     </prerequisites>
-    <name>Titan: Distributed Graph Database</name>
+    <name>JanusGraph: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <description>
-        Titan is a distributed graph database optimized for processing massive-scale graphs represented over a machine
+        JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine
         cluster.
-        Titan separates the concerns of graph processing and manipulation from storing the graph on disk,
+        JanusGraph separates the concerns of graph processing and manipulation from storing the graph on disk,
         delegating that concern to an extensible set of persistence solutions.
     </description>
     <developers>
@@ -86,7 +86,7 @@
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.4.4</jackson2.version>
         <!-- ES depends on Lucene.  This ES dependency can affect the
-             version used by the titan-lucene module.  When updating
+             version used by the janusgraph-lucene module.  When updating
              the ES version, also consider the version of Lucene, and
              vice-versa. -->
         <lucene.version>4.10.4</lucene.version>
@@ -105,7 +105,7 @@
         <jasper.version>5.5.23</jasper.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
+        <titan.testdir>${project.build.directory}/janusgraph-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
@@ -120,18 +120,18 @@
         <test.excluded.groups>com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.BrittleTests</test.excluded.groups>
     </properties>
     <modules>
-        <module>titan-core</module>
-        <module>titan-test</module>
-        <module>titan-berkeleyje</module>
-        <module>titan-cassandra</module>
-        <module>titan-hadoop-parent</module>
-        <module>titan-hbase-parent</module>
-        <module>titan-es</module>
-        <module>titan-lucene</module>
-        <module>titan-all</module>
-        <module>titan-dist</module>
-        <module>titan-doc</module>
-        <module>titan-solr</module>
+        <module>janusgraph-core</module>
+        <module>janusgraph-test</module>
+        <module>janusgraph-berkeleyje</module>
+        <module>janusgraph-cassandra</module>
+        <module>janusgraph-hadoop-parent</module>
+        <module>janusgraph-hbase-parent</module>
+        <module>janusgraph-es</module>
+        <module>janusgraph-lucene</module>
+        <module>janusgraph-all</module>
+        <module>janusgraph-dist</module>
+        <module>janusgraph-doc</module>
+        <module>janusgraph-solr</module>
     </modules>
     <repositories>
         <repository>
@@ -775,7 +775,7 @@
             <dependency>
                 <!-- Run the full test suite when changing the Guava version.
                      The Guava team is deadly serious about their 18 month period from deprecation
-                     to feature deletion, and as a result, at least one of Titan's dependencies is
+                     to feature deletion, and as a result, at least one of JanusGraph's dependencies is
                      likely to break whenever the Guava version changes.
 
                      Example where blithely upgrading Guava introduced a linkage error in the past:
@@ -1324,7 +1324,7 @@
                                     <classifier>sources</classifier>
                                     <outputDirectory>${project.build.directory}/jacoco-sources</outputDirectory>
                                     <includeGroupIds>${project.groupId}</includeGroupIds>
-                                    <excludeArtifactIds>titan-test</excludeArtifactIds>
+                                    <excludeArtifactIds>janusgraph-test</excludeArtifactIds>
                                 </configuration>
                             </execution>
                             <execution>
@@ -1338,7 +1338,7 @@
                                     <!-- empty classifier requests the artifact containing classes -->
                                     <outputDirectory>${project.build.directory}/jacoco-classes</outputDirectory>
                                     <includeGroupIds>${project.groupId}</includeGroupIds>
-                                    <excludeArtifactIds>titan-test</excludeArtifactIds>
+                                    <excludeArtifactIds>janusgraph-test</excludeArtifactIds>
                                 </configuration>
                             </execution>
                         </executions>
