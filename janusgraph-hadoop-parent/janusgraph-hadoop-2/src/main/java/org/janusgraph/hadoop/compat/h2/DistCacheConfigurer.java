@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.compat.h2;
+package org.janusgraph.hadoop.compat.h2;
 
 import java.io.IOException;
 
@@ -7,8 +7,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.Job;
 
-import com.thinkaurelius.titan.hadoop.config.job.AbstractDistCacheConfigurer;
-import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import org.janusgraph.hadoop.config.job.AbstractDistCacheConfigurer;
+import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 
 public class DistCacheConfigurer extends AbstractDistCacheConfigurer implements JobClasspathConfigurer {
 

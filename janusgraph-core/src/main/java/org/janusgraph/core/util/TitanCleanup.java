@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.core.util;
+package org.janusgraph.core.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.core.TitanGraph;
 
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import org.janusgraph.diskstorage.util.BackendOperation;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
@@ -24,7 +24,7 @@ public class TitanCleanup {
      *
      * @param graph
      * @throws IllegalArgumentException if the graph has not been shut down
-     * @throws com.thinkaurelius.titan.core.TitanException if clearing the storage is unsuccessful
+     * @throws org.janusgraph.core.TitanException if clearing the storage is unsuccessful
      */
     public static final void clear(TitanGraph graph) {
         Preconditions.checkNotNull(graph);

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.util;
+package org.janusgraph.graphdb.util;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;

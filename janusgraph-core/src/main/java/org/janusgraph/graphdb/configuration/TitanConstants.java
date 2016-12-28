@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.configuration;
+package org.janusgraph.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanFactory;
+import org.janusgraph.core.TitanFactory;
 
 import java.io.IOException;
 import java.io.InputStream;

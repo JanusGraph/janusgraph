@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.solr;
+package org.janusgraph.diskstorage.solr;
 
-import com.thinkaurelius.titan.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.TitanIndexTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

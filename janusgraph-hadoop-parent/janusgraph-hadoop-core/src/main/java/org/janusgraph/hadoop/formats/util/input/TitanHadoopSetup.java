@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.hadoop.formats.util.input;
+package org.janusgraph.hadoop.formats.util.input;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.database.RelationReader;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.types.TypeInspector;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.database.RelationReader;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.types.TypeInspector;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

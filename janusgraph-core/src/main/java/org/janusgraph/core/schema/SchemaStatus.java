@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
 /**
  * Designates the status of a {@link TitanIndex} in a graph.

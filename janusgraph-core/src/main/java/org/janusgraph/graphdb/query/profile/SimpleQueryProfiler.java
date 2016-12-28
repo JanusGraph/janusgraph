@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query.profile;
+package org.janusgraph.graphdb.query.profile;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;

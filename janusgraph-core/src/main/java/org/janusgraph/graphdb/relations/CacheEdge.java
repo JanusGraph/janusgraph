@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.graphdb.internal.ElementLifeCycle;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.transaction.RelationConstructor;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

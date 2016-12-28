@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.stats;
+package org.janusgraph.util.stats;
 
 import java.util.HashMap;
 import java.util.Map;

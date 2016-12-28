@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.berkeleyje;
+package org.janusgraph.graphdb.berkeleyje;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphPerformanceMemoryTest;
 
 public class BerkeleyGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
 

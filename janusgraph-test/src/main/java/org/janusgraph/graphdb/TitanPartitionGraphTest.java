@@ -1,28 +1,28 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 
 import com.carrotsearch.hppc.IntHashSet;
 import com.carrotsearch.hppc.IntSet;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PropertyPlacementStrategy;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.olap.OLAPTest;
-import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
-import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
-import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
+import org.janusgraph.core.*;
+import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
+import org.janusgraph.graphdb.database.idassigner.placement.PropertyPlacementStrategy;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.olap.OLAPTest;
+import org.janusgraph.testcategory.OrderedKeyStoreTests;
+import org.janusgraph.testcategory.UnorderedKeyStoreTests;
+import org.janusgraph.util.datastructures.AbstractLongListUtil;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static com.thinkaurelius.titan.testutil.TitanAssert.*;
+import static org.janusgraph.testutil.TitanAssert.*;
 import static org.junit.Assert.*;
 
 /**

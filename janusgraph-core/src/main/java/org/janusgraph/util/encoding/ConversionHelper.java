@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.encoding;
+package org.janusgraph.util.encoding;
 
 import com.google.common.base.Preconditions;
 

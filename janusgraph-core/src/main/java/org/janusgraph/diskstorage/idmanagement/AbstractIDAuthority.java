@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.diskstorage.idmanagement;
+package org.janusgraph.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
 
-import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+import org.janusgraph.diskstorage.IDAuthority;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 
 import java.time.Duration;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 
 /**

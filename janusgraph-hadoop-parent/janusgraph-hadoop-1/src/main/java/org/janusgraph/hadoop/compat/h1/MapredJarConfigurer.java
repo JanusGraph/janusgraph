@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.hadoop.compat.h1;
+package org.janusgraph.hadoop.compat.h1;
 
-import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 import org.apache.hadoop.mapreduce.Job;
 
 import java.io.IOException;

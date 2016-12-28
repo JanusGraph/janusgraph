@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.config.job;
+package org.janusgraph.hadoop.config.job;
 
 import java.io.IOException;
 

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.PermanentBackendException;
 
 /**
  * This exception signifies a failure to lock based on durable state. For

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 /**
  * Represents a block of ids. {@link #numIds()} return how many ids are in this block and {@link #getId(long)} retrieves

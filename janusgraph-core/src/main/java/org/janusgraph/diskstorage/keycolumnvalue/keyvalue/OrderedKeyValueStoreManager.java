@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.Map;
 
@@ -19,7 +19,7 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *
      */
     @Override
@@ -34,7 +34,7 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
      *
      * @param mutations
      * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException;
 

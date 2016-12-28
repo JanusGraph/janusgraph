@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.pkgtest;
+package org.janusgraph.pkgtest;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.slf4j.Logger;

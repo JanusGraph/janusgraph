@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testcategory;
+package org.janusgraph.testcategory;
 
 /**
  * This is a JUnit category for tests that don't need a Cassandra server.

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.idmanagement;
+package org.janusgraph.graphdb.idmanagement;
 
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.InvalidIDException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.core.InvalidIDException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
 /**
  * Handles the allocation of ids based on the type of element

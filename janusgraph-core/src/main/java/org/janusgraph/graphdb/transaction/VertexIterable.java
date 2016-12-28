@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.transaction;
+package org.janusgraph.graphdb.transaction;
 
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import org.janusgraph.diskstorage.util.RecordIterator;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.internal.InternalVertex;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

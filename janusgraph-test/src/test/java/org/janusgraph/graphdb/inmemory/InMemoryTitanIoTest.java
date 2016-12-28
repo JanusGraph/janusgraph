@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.inmemory;
+package org.janusgraph.graphdb.inmemory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
-import com.thinkaurelius.titan.graphdb.TitanIoTest;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.TitanIoTest;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.util.Map;
 

@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.query.Query;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
-import com.thinkaurelius.titan.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import com.thinkaurelius.titan.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import org.janusgraph.core.*;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.Query;
+import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;

@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
+package org.janusgraph.diskstorage.cassandra.thrift;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendException;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.log.KCVSLogTest;
-import com.thinkaurelius.titan.testcategory.SerialTests;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.log.KCVSLogTest;
+import org.janusgraph.testcategory.SerialTests;
 
 @Category(SerialTests.class)
 public class ThriftLogTest extends KCVSLogTest {

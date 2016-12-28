@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.log;
+package org.janusgraph.graphdb.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.log.TransactionId;
+import org.janusgraph.core.log.TransactionId;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.time.Instant;

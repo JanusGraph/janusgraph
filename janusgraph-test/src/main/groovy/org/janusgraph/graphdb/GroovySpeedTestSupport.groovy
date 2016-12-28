@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb
+package org.janusgraph.graphdb
 
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
-import com.thinkaurelius.titan.graphdb.query.QueryUtil
+import org.janusgraph.diskstorage.configuration.WriteConfiguration
+import org.janusgraph.graphdb.query.QueryUtil
 import org.apache.tinkerpop.gremlin.util.Gremlin
 
 import static org.junit.Assert.*
@@ -14,10 +14,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import com.google.common.base.Preconditions
-import com.thinkaurelius.titan.core.TitanVertex
-import com.thinkaurelius.titan.core.TitanGraph
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
-import com.thinkaurelius.titan.diskstorage.BackendException
+import org.janusgraph.core.TitanVertex
+import org.janusgraph.core.TitanGraph
+import org.janusgraph.graphdb.database.StandardTitanGraph
+import org.janusgraph.diskstorage.BackendException
 
 import com.google.common.collect.Iterables
 

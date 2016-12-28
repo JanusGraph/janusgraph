@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.configuration;
+package org.janusgraph.graphdb.configuration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

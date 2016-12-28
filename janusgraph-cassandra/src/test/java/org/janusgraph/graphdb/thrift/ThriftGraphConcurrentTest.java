@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.thrift;
+package org.janusgraph.graphdb.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
-import com.thinkaurelius.titan.testcategory.PerformanceTests;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphConcurrentTest;
+import org.janusgraph.testcategory.PerformanceTests;
 
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;

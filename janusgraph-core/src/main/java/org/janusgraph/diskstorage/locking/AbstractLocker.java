@@ -1,27 +1,27 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
+import org.janusgraph.diskstorage.util.KeyColumn;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.util.stats.MetricManager;
 
 /**
  * Abstract base class for building lockers. Implements locking between threads

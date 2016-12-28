@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
 
 /**
  * {@link StoreManager} for {@link KeyValueStore}.
@@ -17,7 +17,7 @@ public interface KeyValueStoreManager extends StoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *
      */
     public KeyValueStore openDatabase(String name) throws BackendException;

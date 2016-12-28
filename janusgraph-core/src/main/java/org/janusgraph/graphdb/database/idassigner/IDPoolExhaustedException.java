@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner;
+package org.janusgraph.graphdb.database.idassigner;
 
-import com.thinkaurelius.titan.core.TitanException;
+import org.janusgraph.core.TitanException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

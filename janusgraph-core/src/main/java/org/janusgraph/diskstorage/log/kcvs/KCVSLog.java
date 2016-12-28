@@ -1,24 +1,24 @@
-package com.thinkaurelius.titan.diskstorage.log.kcvs;
+package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.util.time.*;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.util.time.*;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.log.*;
-import com.thinkaurelius.titan.diskstorage.log.util.FutureMessage;
-import com.thinkaurelius.titan.diskstorage.log.util.ProcessMessageJob;
-import com.thinkaurelius.titan.diskstorage.util.*;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.log.*;
+import org.janusgraph.diskstorage.log.util.FutureMessage;
+import org.janusgraph.diskstorage.log.util.ProcessMessageJob;
+import org.janusgraph.diskstorage.util.*;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.util.system.BackgroundThread;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.util.system.BackgroundThread;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *     <li>The partition id: On storage backends that are key-ordered, a partition bit width can be configured which configures the number of
  *     first bits that comprise the partition id. On unordered storage backends, this is always 0</li>
  *     <li>A bucket id: The number of parallel buckets that should be maintained is configured by
- *     {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#LOG_NUM_BUCKETS}. Messages are written to the buckets
+ *     {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#LOG_NUM_BUCKETS}. Messages are written to the buckets
  *     in round-robin fashion and each bucket is identified by a bucket id.
  *     Having multiple buckets per timeslice allows for load balancing across multiple keys in the storage backend.</li>
  *     <li>The start time of the timeslice: Each time slice is {@link #TIMESLICE_INTERVAL} microseconds long. And all messages that are added between
@@ -267,7 +267,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     /**
      * Closes the log by terminating all threads and waiting for their termination.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public synchronized void close() throws BackendException {

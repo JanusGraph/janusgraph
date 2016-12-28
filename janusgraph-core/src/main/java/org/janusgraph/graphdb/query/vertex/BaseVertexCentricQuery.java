@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.query.condition.FixedCondition;
-import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.condition.FixedCondition;
+import org.janusgraph.graphdb.query.profile.ProfileObservable;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.ArrayList;
@@ -18,10 +18,10 @@ import java.util.List;
 
 /**
  * The base implementation for {@link VertexCentricQuery} which does not yet contain a reference to the
- * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+ * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}
  * and then later extended by single or multi-vertex query which add the vertex to the query.
  * </p>
- * This class override many methods in {@link com.thinkaurelius.titan.graphdb.query.ElementQuery} - check there
+ * This class override many methods in {@link org.janusgraph.graphdb.query.ElementQuery} - check there
  * for a description.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

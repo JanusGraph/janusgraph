@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.system;
+package org.janusgraph.util.system;
 
 /**
  * Utility class for dealing with {@link Thread}

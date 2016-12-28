@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra;
+package org.janusgraph.diskstorage.cassandra;
 
 public interface CLevelInterface {
 

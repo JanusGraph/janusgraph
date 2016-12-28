@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -22,7 +22,7 @@ import java.util.concurrent.Future;
  * <p/>
  * TitanManagement behaves like a transaction in that it opens a transactional scope for reading the schema and making
  * changes to it. As such, it needs to be explicitly closed via its {@link #commit()} or {@link #rollback()} methods.
- * A TitanManagement transaction is opened on a graph via {@link com.thinkaurelius.titan.core.TitanGraph#openManagement()}.
+ * A TitanManagement transaction is opened on a graph via {@link org.janusgraph.core.TitanGraph#openManagement()}.
  * <p/>
  * TitanManagement provides methods to:
  * <ul>
@@ -41,7 +41,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
+     * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
      * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
      *
      * @param label
@@ -69,7 +69,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys);
 
     /**
-     * Identical to {@link #buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
+     * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
      * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
      *
      * @param key
@@ -313,7 +313,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * If an index update job was triggered through {@link #updateIndex(TitanIndex, SchemaAction)} with schema actions
-     * {@link com.thinkaurelius.titan.core.schema.SchemaAction#REINDEX} or {@link com.thinkaurelius.titan.core.schema.SchemaAction#REMOVE_INDEX}
+     * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link com.thinkaurelius.titan.core.schema.SchemaAction#REMOVE_INDEX}
      * then this method can be used to track the status of this asynchronous process.
      *
      * @param index
@@ -377,14 +377,14 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     /**
      * Commits this management transaction and persists all schema changes. Closes this transaction.
      *
-     * @see com.thinkaurelius.titan.core.TitanTransaction#commit()
+     * @see org.janusgraph.core.TitanTransaction#commit()
      */
     public void commit();
 
     /**
      * Closes this management transaction and discards all changes.
      *
-     * @see com.thinkaurelius.titan.core.TitanTransaction#rollback()
+     * @see org.janusgraph.core.TitanTransaction#rollback()
      */
     public void rollback();
 

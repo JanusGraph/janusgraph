@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
@@ -6,9 +6,9 @@ import java.util.concurrent.Callable;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.util.stats.MetricManager;
 
 /**
  * Wraps a {@link QueryExecutor} to gather metrics on the query execution and forward them to METRICS.

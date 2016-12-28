@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.attribute;
+package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
@@ -6,10 +6,10 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;

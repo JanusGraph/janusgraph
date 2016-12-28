@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.IntegerSerializer;
-import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.util.encoding.StringEncoding;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.graphdb.database.serialize.attribute.IntegerSerializer;
+import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
 import java.util.*;

@@ -15,36 +15,36 @@
     <files>
         <!--
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/graph-of-the-gods-2.seq</source>
+            <source>src/test/resources/org/janusgraph/hadoop/graph-of-the-gods-2.seq</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/graphson-noop.properties</source>
+            <source>src/test/resources/org/janusgraph/hadoop/graphson-noop.properties</source>
             <outputDirectory>/</outputDirectory>
         </file>
         -->
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/formats/edgelist/rdf/graph-example-1.ntriple</source>
+            <source>src/test/resources/org/janusgraph/hadoop/formats/edgelist/rdf/graph-example-1.ntriple</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/formats/graphson/graph-example-1.json</source>
+            <source>src/test/resources/org/janusgraph/hadoop/formats/graphson/graph-example-1.json</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/formats/graphson/graph-of-the-gods.json</source>
+            <source>src/test/resources/org/janusgraph/hadoop/formats/graphson/graph-of-the-gods.json</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/formats/script/graph-of-the-gods.id</source>
+            <source>src/test/resources/org/janusgraph/hadoop/formats/script/graph-of-the-gods.id</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/formats/script/ScriptInput.groovy</source>
+            <source>src/test/resources/org/janusgraph/hadoop/formats/script/ScriptInput.groovy</source>
             <outputDirectory>/</outputDirectory>
         </file>
         <file>
-            <source>src/test/resources/com/thinkaurelius/titan/hadoop/formats/script/ScriptOutput.groovy</source>
+            <source>src/test/resources/org/janusgraph/hadoop/formats/script/ScriptOutput.groovy</source>
             <outputDirectory>/</outputDirectory>
         </file>
     </files>

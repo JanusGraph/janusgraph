@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop;
+package org.janusgraph.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Edge;

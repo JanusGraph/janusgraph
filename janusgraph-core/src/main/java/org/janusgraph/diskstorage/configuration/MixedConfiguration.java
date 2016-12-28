@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;

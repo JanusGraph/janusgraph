@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 
-import com.thinkaurelius.titan.util.datastructures.ExceptionUtil;
+import org.janusgraph.util.datastructures.ExceptionUtil;
 
 /**
  * Most general type of exception thrown by the Titan graph database.

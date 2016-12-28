@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
+import org.janusgraph.core.*;
+import org.janusgraph.core.attribute.Cmp;
 
 
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.testcategory.SerialTests;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.diskstorage.util.TestLockerManager;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.testcategory.SerialTests;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -29,7 +29,7 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 

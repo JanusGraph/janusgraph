@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
-import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
-import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
+import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
@@ -19,12 +19,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.*;
+import org.janusgraph.diskstorage.locking.consistentkey.*;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.util.time.Timer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.*;
+import org.janusgraph.diskstorage.util.KeyColumn;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
@@ -35,13 +35,13 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.BufferUtil;
 
 import org.easymock.LogicalOperator;
 
@@ -170,7 +170,7 @@ public class ConsistentKeyLockerTest {
      * Test a single lock using stub objects. Doesn't test unlock ("leaks" the
      * lock, but since it's backed by stubs, it doesn't matter).
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockInSimplestCase() throws BackendException {
@@ -197,7 +197,7 @@ public class ConsistentKeyLockerTest {
      * column with a new timestamp and deleting the column with the old
      * (too-slow-to-write) timestamp.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockRetriesAfterOneStoreTimeout() throws BackendException {
@@ -218,7 +218,7 @@ public class ConsistentKeyLockerTest {
      * columns that it wrote and locally unlock the KeyColumn, then emit an
      * exception.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockThrowsExceptionAfterMaxStoreTimeouts() throws BackendException {
@@ -241,11 +241,11 @@ public class ConsistentKeyLockerTest {
     }
 
     /**
-     * Test that the first {@link com.thinkaurelius.titan.diskstorage.PermanentBackendException} thrown by the
+     * Test that the first {@link org.janusgraph.diskstorage.PermanentBackendException} thrown by the
      * locker's store causes it to attempt to delete outstanding lock writes and
      * then emit the exception without retrying.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockDiesOnPermanentStorageException() throws BackendException {
@@ -270,10 +270,10 @@ public class ConsistentKeyLockerTest {
 
     /**
      * Test the locker retries a lock write after the initial store mutation
-     * fails with a {@link com.thinkaurelius.titan.diskstorage.TemporaryBackendException}. The retry should both
+     * fails with a {@link org.janusgraph.diskstorage.TemporaryBackendException}. The retry should both
      * attempt to write the and delete the failed mutation column.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockRetriesOnTemporaryStorageException() throws BackendException {
@@ -293,7 +293,7 @@ public class ConsistentKeyLockerTest {
     /**
      * Test that a failure to lock locally results in a {@link TemporaryLockingException}
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockFailsOnLocalContention() throws BackendException {
@@ -316,7 +316,7 @@ public class ConsistentKeyLockerTest {
      * {@code otherTx} can't claim it, instead throwing a
      * TemporaryLockingException
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockDetectsMultiTxContention() throws BackendException {
@@ -357,7 +357,7 @@ public class ConsistentKeyLockerTest {
      * the same arguments have no effect after the first call (until
      * {@link ConsistentKeyLocker#deleteLocks(StoreTransaction)} is called).
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testWriteLockIdempotence() throws BackendException {
@@ -382,7 +382,7 @@ public class ConsistentKeyLockerTest {
      * Test a single checking a single lock under optimal conditions (no
      * timeouts, no errors)
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException shouldn't happen
      */
     @Test
@@ -412,7 +412,7 @@ public class ConsistentKeyLockerTest {
      * to check locks should receive an {@code ExpiredLockException} during
      * the check stage.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException
      */
     @Test
@@ -447,7 +447,7 @@ public class ConsistentKeyLockerTest {
      * stored in memory by the transaction (presumably from an earlier attempt),
      * should be ignored.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException
      */
     @Test
@@ -491,7 +491,7 @@ public class ConsistentKeyLockerTest {
      * checkLocks() twice. The second call should have no effect.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      */
     @Test
     public void testCheckLocksIdempotence() throws InterruptedException, BackendException {
@@ -525,7 +525,7 @@ public class ConsistentKeyLockerTest {
      * are unexpired, then the checker must throw a TemporaryLockingException.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen (we expect a TemporaryLockingException but
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen (we expect a TemporaryLockingException but
      *                              we catch and swallow it)
      */
     @Test
@@ -566,7 +566,7 @@ public class ConsistentKeyLockerTest {
      * consider the lock successfully checked.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      */
     @Test
     public void testCheckLocksSucceedsWithJuniorClaimsByOthers() throws InterruptedException, BackendException {
@@ -605,7 +605,7 @@ public class ConsistentKeyLockerTest {
      * which actually succeeded (e.g. hinted handoff or timeout)
      *
      * @throws InterruptedException shouldn't happen
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      */
     @Test
     public void testCheckLocksSucceedsWithSeniorAndJuniorClaimsBySelf() throws InterruptedException, BackendException {
@@ -642,7 +642,7 @@ public class ConsistentKeyLockerTest {
      * getSlice()s is fewer than the lock retry count. The retry count applies
      * on a per-lock basis.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException shouldn't happen
      */
     @Test
@@ -676,7 +676,7 @@ public class ConsistentKeyLockerTest {
      * configured lock retries.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      */
     @Test
     public void testCheckLocksThrowsExceptionAfterMaxTemporaryStorageExceptions() throws InterruptedException, BackendException {
@@ -710,7 +710,7 @@ public class ConsistentKeyLockerTest {
      * other locks are waiting to be checked).
      *
      * @throws InterruptedException shouldn't happen
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException     shouldn't happen
      */
     @Test
     public void testCheckLocksDiesOnPermanentStorageException() throws InterruptedException, BackendException {
@@ -740,7 +740,7 @@ public class ConsistentKeyLockerTest {
      * The lock checker should do nothing when passed a transaction for which it
      * holds no locks.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testCheckLocksDoesNothingForUnrecognizedTransaction() throws BackendException {
@@ -752,7 +752,7 @@ public class ConsistentKeyLockerTest {
     /**
      * Delete a single lock without any timeouts, errors, etc.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksInSimplestCase() throws BackendException {
@@ -779,7 +779,7 @@ public class ConsistentKeyLockerTest {
     /**
      * Delete two locks without any timeouts, errors, etc.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksOnTwoLocks() throws BackendException {
@@ -830,7 +830,7 @@ public class ConsistentKeyLockerTest {
      * Lock deletion should retry if the first store mutation throws a temporary
      * exception.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksRetriesOnTemporaryStorageException() throws BackendException {
@@ -848,7 +848,7 @@ public class ConsistentKeyLockerTest {
      * to delete a lock, it should move onto the next lock rather than returning
      * and potentially leaving the remaining locks undeleted.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksSkipsToNextLockAfterMaxTemporaryStorageExceptions() throws BackendException {
@@ -872,7 +872,7 @@ public class ConsistentKeyLockerTest {
      * , except instead of exceeding the temporary exception retry count on a
      * lock, that lock throws a single permanent exception.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shoudn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shoudn't happen
      */
     @Test
     public void testDeleteLocksSkipsToNextLockOnPermanentStorageException() throws BackendException {
@@ -892,7 +892,7 @@ public class ConsistentKeyLockerTest {
      * they were ever checked; this method fakes and verifies deletion on a
      * single unchecked lock
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksDeletesUncheckedLocks() throws BackendException {
@@ -914,7 +914,7 @@ public class ConsistentKeyLockerTest {
      * When delete is called multiple times with no intervening write or check
      * calls, all calls after the first should have no effect.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksIdempotence() throws BackendException {
@@ -941,7 +941,7 @@ public class ConsistentKeyLockerTest {
      * Delete should do nothing when passed a transaction for which it holds no
      * locks.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testDeleteLocksDoesNothingForUnrecognizedTransaction() throws BackendException {
@@ -954,7 +954,7 @@ public class ConsistentKeyLockerTest {
      * Checking locks when the expired lock cleaner is enabled should trigger
      * one call to the LockCleanerService.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
+     * @throws org.janusgraph.diskstorage.BackendException shouldn't happen
      */
     @Test
     public void testCleanExpiredLock() throws BackendException, InterruptedException {

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.encoding;
+package org.janusgraph.util.encoding;
 
 /**
  * This file is copied verbatim from Apache Lucene NumericUtils.java

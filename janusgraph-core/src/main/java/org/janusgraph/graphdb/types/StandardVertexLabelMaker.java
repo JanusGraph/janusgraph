@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.Token;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

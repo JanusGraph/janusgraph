@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.system;
+package org.janusgraph.util.system;
 
 import java.net.InetAddress;
 import java.net.Socket;

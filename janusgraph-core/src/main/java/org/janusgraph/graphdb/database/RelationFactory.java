@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.database;
+package org.janusgraph.graphdb.database;
 
-import com.thinkaurelius.titan.core.RelationType;
+import org.janusgraph.core.RelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

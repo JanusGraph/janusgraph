@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
-import com.thinkaurelius.titan.core.schema.*;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.janusgraph.core.schema.*;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -39,9 +39,9 @@ public interface TitanTransaction extends TitanGraphTransaction {
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
      * id already exists.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
+     * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
-     * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
+     * Use {@link org.janusgraph.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
      * @param id vertex id of the vertex to be created
      * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
@@ -78,7 +78,7 @@ public interface TitanTransaction extends TitanGraphTransaction {
      * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
      * through this transaction are stale after the transaction closes and should no longer be used.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *          if an error arises during persistence
      */
     public void commit();
@@ -89,7 +89,7 @@ public interface TitanTransaction extends TitanGraphTransaction {
      * The call releases data structures if possible. All element references (e.g. vertex objects) retrieved
      * through this transaction are stale after the transaction closes and should no longer be used.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *          if an error arises when releasing the transaction handle
      */
     public void rollback();

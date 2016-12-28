@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
+package org.janusgraph.diskstorage.cassandra.thrift;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -10,16 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.util.system.NetworkUtil;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
@@ -34,16 +34,16 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnection;
+import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
+import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
-import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
+import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
 
 /**
  * This class creates {@see CassandraThriftKeyColumnValueStore}s and
@@ -367,7 +367,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
      * leaves nodes in the inconsistent state and could result in read/write failures.
      * Any schema modifications are discouraged until there is no traffic to Keyspace or ColumnFamilies.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException if any checked Thrift or UnknownHostException is thrown in the body of this method
+     * @throws org.janusgraph.diskstorage.BackendException if any checked Thrift or UnknownHostException is thrown in the body of this method
      */
     public void clearStorage() throws BackendException {
         openStores.clear();

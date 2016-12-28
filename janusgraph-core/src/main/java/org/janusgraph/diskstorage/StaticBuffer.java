@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

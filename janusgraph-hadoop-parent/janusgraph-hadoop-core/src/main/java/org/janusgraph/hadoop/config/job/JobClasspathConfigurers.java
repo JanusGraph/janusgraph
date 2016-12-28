@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.config.job;
+package org.janusgraph.hadoop.config.job;
 
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Arrays;
 
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+import static org.janusgraph.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
  * Static companion class for {@link JobClasspathConfigurer} implementations.

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.util.datastructures.Removable;
+import org.janusgraph.graphdb.internal.InternalElement;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.util.datastructures.Removable;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 
@@ -41,7 +41,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * <p/>
      * Titan allocates blocks of identifiers and automatically assigns identifiers to elements
      * automatically be default.  This behavior can be partially overridden by setting
-     * {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
+     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
      *
      * @return The unique identifier for this entity
      * @throws IllegalStateException if the entity does not (yet) have a unique identifier

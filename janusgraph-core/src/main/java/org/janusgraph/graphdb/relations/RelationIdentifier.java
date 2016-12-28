@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.encoding.LongEncoding;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.io.Serializable;

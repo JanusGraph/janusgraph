@@ -1,5 +1,5 @@
 
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 /**
  * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in Titan has a label.

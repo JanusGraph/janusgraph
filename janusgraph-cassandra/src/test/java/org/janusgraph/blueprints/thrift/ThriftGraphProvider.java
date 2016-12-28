@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.blueprints.thrift;
+package org.janusgraph.blueprints.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.blueprints.AbstractTitanGraphProvider;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.blueprints.AbstractTitanGraphProvider;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

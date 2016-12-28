@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.transaction.lock;
+package org.janusgraph.graphdb.transaction.lock;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.builder.HashCodeBuilder;

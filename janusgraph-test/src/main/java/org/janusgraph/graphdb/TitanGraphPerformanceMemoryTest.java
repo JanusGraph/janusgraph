@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
-import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -18,13 +18,13 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.testcategory.MemoryTests;
-import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
-import com.thinkaurelius.titan.testutil.MemoryAssess;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.testcategory.MemoryTests;
+import org.janusgraph.testutil.JUnitBenchmarkProvider;
+import org.janusgraph.testutil.MemoryAssess;
 
 /**
  * These tests focus on the in-memory data structures of individual transactions and how they hold up to high memory pressure

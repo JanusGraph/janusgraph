@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.schema.Parameter;
+import org.janusgraph.core.schema.Parameter;
 import org.apache.commons.lang.StringUtils;
 
 /**

@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson;
+package org.janusgraph.graphdb.tinkerpop.io.graphson;
 
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.common;
+package org.janusgraph.diskstorage.common;
 
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
 
 /**
  * Dummy transaction object that does nothing

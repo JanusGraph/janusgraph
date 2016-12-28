@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.PropertyKey;
+import org.janusgraph.core.PropertyKey;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**

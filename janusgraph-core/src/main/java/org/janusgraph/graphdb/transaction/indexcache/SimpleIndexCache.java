@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.transaction.indexcache;
+package org.janusgraph.graphdb.transaction.indexcache;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanVertexProperty;
 
 import javax.annotation.Nullable;
 

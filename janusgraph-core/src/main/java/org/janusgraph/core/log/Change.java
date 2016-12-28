@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.log;
+package org.janusgraph.core.log;
 
 /**
  * Identifies the type of change has undergone. Used in {@link ChangeState} to retrieve those elements

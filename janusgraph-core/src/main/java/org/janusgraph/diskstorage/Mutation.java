@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;

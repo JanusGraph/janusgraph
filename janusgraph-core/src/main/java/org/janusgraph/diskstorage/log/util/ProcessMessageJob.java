@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.log.util;
+package org.janusgraph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.log.Message;
-import com.thinkaurelius.titan.diskstorage.log.MessageReader;
+import org.janusgraph.diskstorage.log.Message;
+import org.janusgraph.diskstorage.log.MessageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

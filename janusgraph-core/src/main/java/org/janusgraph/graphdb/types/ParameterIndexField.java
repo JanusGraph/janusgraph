@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.SchemaStatus;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

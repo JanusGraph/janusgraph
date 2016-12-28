@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
+package org.janusgraph.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
@@ -11,19 +11,19 @@ import com.netflix.astyanax.query.AllRowsQuery;
 import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
+import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
 

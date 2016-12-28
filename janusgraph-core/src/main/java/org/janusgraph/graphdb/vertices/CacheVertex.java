@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.vertices;
+package org.janusgraph.graphdb.vertices;
 
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.HashMap;
 import java.util.Map;

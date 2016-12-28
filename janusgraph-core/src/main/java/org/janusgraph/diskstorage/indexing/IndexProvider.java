@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.BaseTransaction;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfigurable;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransaction;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.BaseTransactionConfigurable;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,7 @@ public interface IndexProvider extends IndexInformation {
      * @param key New key to register
      * @param information Information on the key to register
      * @param tx enclosing transaction
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException;
 
@@ -39,7 +39,7 @@ public interface IndexProvider extends IndexInformation {
      *                  all changes for each document in an {@link IndexMutation}.
      * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexMutation
      */
     public void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
@@ -66,7 +66,7 @@ public interface IndexProvider extends IndexInformation {
      * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @return The ids of all matching documents
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      * @see IndexQuery
      */
     public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
@@ -79,7 +79,7 @@ public interface IndexProvider extends IndexInformation {
      * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @return Results objects for all matching documents (i.e. document id and score)
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      * @see RawQuery
      */
     public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
@@ -93,13 +93,13 @@ public interface IndexProvider extends IndexInformation {
 
     /**
      * Closes the index
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void close() throws BackendException;
 
     /**
      * Clears the index and removes all entries in all stores.
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void clearStorage() throws BackendException;
 

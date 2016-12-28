@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.carrotsearch.hppc.LongArrayList;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.AbstractLongListUtil;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.VertexList;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.util.datastructures.AbstractLongListUtil;
 
 import java.util.Arrays;
 import java.util.Iterator;

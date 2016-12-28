@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.hadoop.scan;
+package org.janusgraph.hadoop.scan;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

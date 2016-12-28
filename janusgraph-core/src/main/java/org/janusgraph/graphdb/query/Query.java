@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
 /**
  * Standard Query interface specifying that a query may have a limit.

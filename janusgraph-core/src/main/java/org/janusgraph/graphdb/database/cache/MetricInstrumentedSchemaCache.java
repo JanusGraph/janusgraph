@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.database.cache;
+package org.janusgraph.graphdb.database.cache;
 
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.util.CacheMetricsAction;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.system.BaseRelationType;
+import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

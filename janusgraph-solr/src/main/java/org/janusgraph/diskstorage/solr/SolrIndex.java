@@ -1,27 +1,27 @@
-package com.thinkaurelius.titan.diskstorage.solr;
+package org.janusgraph.diskstorage.solr;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.diskstorage.solr.transform.GeoToWktConverter;
-import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.condition.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.attribute.*;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.indexing.*;
+import org.janusgraph.diskstorage.solr.transform.GeoToWktConverter;
+import org.janusgraph.diskstorage.util.DefaultTransaction;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.condition.*;
 
-import com.thinkaurelius.titan.graphdb.types.ParameterType;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.*;
@@ -50,7 +50,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * @author Jared Holmberg (jholmberg@bericotechnoLogies.com), Pavel Yaskevich (pavel@thinkaurelius.com)
@@ -219,7 +219,7 @@ public class SolrIndex implements IndexProvider {
      * @param key New key to register
      * @param information Datatype to register for the key
      * @param tx enclosing transaction
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
@@ -704,7 +704,7 @@ public class SolrIndex implements IndexProvider {
      * race conditions.
      *
      * @return New Transaction Handle
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -10,12 +10,12 @@ import java.util.*;
  * It is subject to backwards-incompatible change.
  */
 public enum StandardStoreManager {
-    BDB_JE("com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager", "berkeleyje"),
-    CASSANDRA_THRIFT("com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager", "cassandrathrift"),
-    CASSANDRA_ASTYANAX("com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager", ImmutableList.of("cassandra", "astyanax")),
-    CASSANDRA_EMBEDDED("com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager", "embeddedcassandra"),
-    HBASE("com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager", "hbase"),
-    IN_MEMORY("com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager", "inmemory");
+    BDB_JE("org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager", "berkeleyje"),
+    CASSANDRA_THRIFT("org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager", "cassandrathrift"),
+    CASSANDRA_ASTYANAX("org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager", ImmutableList.of("cassandra", "astyanax")),
+    CASSANDRA_EMBEDDED("org.janusgraph.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager", "embeddedcassandra"),
+    HBASE("org.janusgraph.diskstorage.hbase.HBaseStoreManager", "hbase"),
+    IN_MEMORY("org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager", "inmemory");
 
     private final String managerClass;
     private final ImmutableList<String> shorthands;

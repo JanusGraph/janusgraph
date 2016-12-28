@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.hadoop;
+package org.janusgraph.hadoop;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

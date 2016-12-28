@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.Token;
 import org.apache.commons.lang.StringUtils;
 
 public abstract class BaseRelationType extends EmptyRelationType implements SystemRelationType {

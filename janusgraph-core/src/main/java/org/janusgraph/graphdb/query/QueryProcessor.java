@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -6,9 +6,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.QueryException;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.core.QueryException;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import java.util.*;
  * the iterator which effectively iterates the result set out, sorts it and then returns an iterator (i.e. much more expensive than exploiting existing sort orders).</br>
  * In this way, the individual sub-result sets are prepared and then merged together the MergeSortIterator (which conserves sort order if present).
  * The semantics of the queries is OR, meaning the result sets are combined.
- * However, when {@link com.thinkaurelius.titan.graphdb.query.ElementQuery#hasDuplicateResults()} is true (which assumes that the result set is sorted) then the merge sort iterator
+ * However, when {@link org.janusgraph.graphdb.query.ElementQuery#hasDuplicateResults()} is true (which assumes that the result set is sorted) then the merge sort iterator
  * filters out immediate duplicates.
  *
  *
@@ -178,7 +178,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
      */
 
 
-    private final class LimitAdjustingIterator extends com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator<R> {
+    private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<R> {
 
         private B backendQuery;
         private QueryProfiler profiler;

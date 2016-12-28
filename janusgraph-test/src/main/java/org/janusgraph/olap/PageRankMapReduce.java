@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.olap;
+package org.janusgraph.olap;
 
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;

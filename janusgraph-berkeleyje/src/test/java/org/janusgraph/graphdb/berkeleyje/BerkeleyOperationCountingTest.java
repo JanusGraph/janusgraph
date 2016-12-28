@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.berkeleyje;
+package org.janusgraph.graphdb.berkeleyje;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
-import com.thinkaurelius.titan.graphdb.TitanOperationCountingTest;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphTest;
+import org.janusgraph.graphdb.TitanOperationCountingTest;
 
 public class BerkeleyOperationCountingTest extends TitanOperationCountingTest {
 

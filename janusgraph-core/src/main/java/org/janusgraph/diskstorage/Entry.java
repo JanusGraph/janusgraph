@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
-import com.thinkaurelius.titan.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.relations.RelationCache;
 
 /**
  * An entry is the primitive persistence unit used in the graph database storage backend.

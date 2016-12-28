@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
-import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
-import com.thinkaurelius.titan.graphdb.types.IndexField;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.IndexField;
+import org.janusgraph.graphdb.types.IndexType;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**

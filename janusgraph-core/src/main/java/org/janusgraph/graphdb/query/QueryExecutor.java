@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
 import java.util.Iterator;
 
@@ -22,7 +22,7 @@ public interface QueryExecutor<Q extends ElementQuery,R extends TitanElement,B e
 
     /**
      * Whether the transactional context contains any deletions that could potentially affect the result set of the given query.
-     * This is used to determine whether results need to be checked for deletion with {@link #isDeleted(ElementQuery, com.thinkaurelius.titan.core.TitanElement)}.
+     * This is used to determine whether results need to be checked for deletion with {@link #isDeleted(ElementQuery, org.janusgraph.core.TitanElement)}.
      *
      * @param query
      * @return

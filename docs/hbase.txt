@@ -144,7 +144,7 @@ git clone 'git://github.com/thinkaurelius/titan.git' && cd titan
 # -------------------------------------------------------
 #  T E S T S
 # -------------------------------------------------------
-# Running com.thinkaurelius.titan.graphdb.hbase.ExternalHBaseGraphPerformanceTest
+# Running org.janusgraph.graphdb.hbase.ExternalHBaseGraphPerformanceTest
 # Starting trial 1/1
 # 10000
 # 20000

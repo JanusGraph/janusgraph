@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.serializer;
+package org.janusgraph.graphdb.serializer;
 
-import com.thinkaurelius.titan.graphdb.serializer.attributes.*;
+import org.janusgraph.graphdb.serializer.attributes.*;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 
-import com.thinkaurelius.titan.testcategory.PerformanceTests;
-import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
+import org.janusgraph.testcategory.PerformanceTests;
+import org.janusgraph.testutil.JUnitBenchmarkProvider;
 
 @Category({ PerformanceTests.class })
 public class SerializerSpeedTest extends SerializerTestCommon {

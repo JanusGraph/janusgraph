@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.datastructures;
+package org.janusgraph.util.datastructures;
 
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntCursor;

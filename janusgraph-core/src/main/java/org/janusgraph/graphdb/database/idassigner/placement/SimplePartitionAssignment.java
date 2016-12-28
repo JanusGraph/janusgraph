@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
+package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 

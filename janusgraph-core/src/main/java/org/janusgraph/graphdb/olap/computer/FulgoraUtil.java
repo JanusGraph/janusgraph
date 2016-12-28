@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.olap.computer;
+package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanTraversalUtil;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanVertexStep;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.TitanTraversalUtil;
+import org.janusgraph.graphdb.tinkerpop.optimize.TitanVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;

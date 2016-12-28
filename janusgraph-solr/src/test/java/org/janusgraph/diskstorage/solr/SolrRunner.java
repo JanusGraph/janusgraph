@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.solr;
+package org.janusgraph.diskstorage.solr;
 
 import com.google.common.base.Joiner;
 import org.apache.commons.io.FileUtils;

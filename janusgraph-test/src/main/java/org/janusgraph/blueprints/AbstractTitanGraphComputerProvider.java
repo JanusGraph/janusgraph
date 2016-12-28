@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.blueprints;
+package org.janusgraph.blueprints;
 
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.engine.ComputerTraversalEngine;

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
+package org.janusgraph.diskstorage.cassandra.astyanax;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendException;
 import org.junit.BeforeClass;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.LockKeyColumnValueStoreTest;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 public class AstyanaxLockStoreTest extends LockKeyColumnValueStoreTest {
 

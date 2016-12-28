@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.berkeleyje;
+package org.janusgraph.graphdb.berkeleyje;
 
 import com.google.common.base.Joiner;
 
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.TitanIndexTest;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.util.TitanCleanup;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.TitanIndexTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -15,13 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
-import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager.IsolationLevel;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager;
+import org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager.IsolationLevel;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphTest;
 
 import java.io.File;
 import java.time.Duration;

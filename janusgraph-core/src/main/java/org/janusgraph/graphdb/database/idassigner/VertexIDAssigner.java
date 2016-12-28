@@ -1,28 +1,28 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner;
+package org.janusgraph.graphdb.database.idassigner;
 
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.relations.ReassignableRelation;
-import com.thinkaurelius.titan.util.stats.NumberUtil;
+import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.relations.EdgeDirection;
+import org.janusgraph.graphdb.relations.ReassignableRelation;
+import org.janusgraph.util.stats.NumberUtil;
 
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.*;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.IDAuthority;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.graphdb.database.idassigner.placement.*;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.internal.InternalElement;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 @PreInitializeConfigOptions
 public class VertexIDAssigner implements AutoCloseable {

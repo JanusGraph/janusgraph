@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.hadoop.compat.h1;
+package org.janusgraph.hadoop.compat.h1;
 
-import com.thinkaurelius.titan.hadoop.config.job.AbstractDistCacheConfigurer;
-import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import org.janusgraph.hadoop.config.job.AbstractDistCacheConfigurer;
+import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FileSystem;

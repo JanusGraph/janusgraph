@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanException;
+import org.janusgraph.core.TitanException;
 import org.apache.commons.lang.StringUtils;
 
 /**

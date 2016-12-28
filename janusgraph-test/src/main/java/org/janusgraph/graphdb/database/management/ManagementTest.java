@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
-import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.VertexLabelMaker;
+import org.janusgraph.graphdb.TitanGraphBaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;

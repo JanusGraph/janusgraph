@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.TitanSchemaType;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.graphdb.internal.ElementCategory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -31,7 +31,7 @@ public interface IndexType {
 
     /**
      * Resets the internal caches used to speed up lookups on this index.
-     * This is needed when the index gets modified in {@link com.thinkaurelius.titan.graphdb.database.management.ManagementSystem}.
+     * This is needed when the index gets modified in {@link org.janusgraph.graphdb.database.management.ManagementSystem}.
      */
     public void resetCache();
 

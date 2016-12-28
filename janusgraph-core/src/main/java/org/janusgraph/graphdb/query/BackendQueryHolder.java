@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.query.profile.ProfileObservable;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
 /**
  * Holds a {@link BackendQuery} and captures additional information that pertains to its execution and to be used by a

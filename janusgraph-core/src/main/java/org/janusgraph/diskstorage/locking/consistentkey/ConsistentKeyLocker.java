@@ -1,21 +1,21 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanConfigurationException;
+import org.janusgraph.core.TitanConfigurationException;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.locking.*;
-import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.diskstorage.util.time.Timer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.locking.*;
+import org.janusgraph.diskstorage.util.*;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -293,7 +293,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * new column with an updated timestamp and to delete the column that tried
      * to write when the store threw an exception. We continue like that up to
      * the retry limit. If the store throws anything else, such as an unchecked
-     * exception or a {@link com.thinkaurelius.titan.diskstorage.PermanentBackendException}, then we'll try to
+     * exception or a {@link org.janusgraph.diskstorage.PermanentBackendException}, then we'll try to
      * delete whatever we added and return without further retries.
      *
      * @param lockID lock to acquire
@@ -338,7 +338,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * @param wr      result of the mutation
      * @param txh     transaction attempting the lock
      * @throws Throwable if {@link WriteResult#getThrowable()} is not an instance of
-     *                   {@link com.thinkaurelius.titan.diskstorage.TemporaryBackendException}
+     *                   {@link org.janusgraph.diskstorage.TemporaryBackendException}
      */
     private void handleMutationFailure(KeyColumn lockID, StaticBuffer lockKey, WriteResult wr, StoreTransaction txh) throws Throwable {
         Throwable error = wr.getThrowable();

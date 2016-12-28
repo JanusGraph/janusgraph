@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
+package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,7 @@ public interface ScanJob extends Cloneable {
      *
      * @param jobConfiguration configuration for this particular job
      * @param graphConfiguration configuration options for the entire graph against which this job is executed
-     * @param metrics {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
+     * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
     public default void workerIterationStart(Configuration jobConfiguration,
                                              Configuration graphConfiguration, ScanMetrics metrics) {}
@@ -41,7 +41,7 @@ public interface ScanJob extends Cloneable {
      *
      * No-op default implementation.
      *
-     * @param metrics {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
+     * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
      */
     public default void workerIterationEnd(ScanMetrics metrics) {}
 
@@ -86,7 +86,7 @@ public interface ScanJob extends Cloneable {
      * Returns one or more {@code SliceQuery} instances belonging to this {@code ScanJob}.
      * <p>
      * Before calling
-     * {@link #process(com.thinkaurelius.titan.diskstorage.StaticBuffer, java.util.Map, ScanMetrics)},
+     * {@link #process(org.janusgraph.diskstorage.StaticBuffer, java.util.Map, ScanMetrics)},
      * users of this interface must check that the key in question contains at least one
      * entry matching the initial {@code SliceQuery} returned by this method.  See the javadoc
      * for the {@code process} method for more information.
@@ -101,7 +101,7 @@ public interface ScanJob extends Cloneable {
 
     /**
      * A predicate that determines whether
-     * {@link #process(com.thinkaurelius.titan.diskstorage.StaticBuffer, java.util.Map, ScanMetrics)}
+     * {@link #process(org.janusgraph.diskstorage.StaticBuffer, java.util.Map, ScanMetrics)}
      * should be invoked for the given key.  If the predicate returns true,
      * then users of this interface should invoke {@code process} for the key and
      * its associated entries.  If the predicate returns false, then users of this
@@ -123,7 +123,7 @@ public interface ScanJob extends Cloneable {
      * Returns a clone of this ScanJob. The clone will not yet be initialized for computation but all of
      * its internal state (if any) must match that of the original copy.
      *
-     * @return A clone of this {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob}
+     * @return A clone of this {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob}
      */
     public ScanJob clone();
 

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.thrift;
+package org.janusgraph.graphdb.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanOperationCountingTest;
-import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanOperationCountingTest;
+import org.janusgraph.graphdb.TitanPartitionGraphTest;
 import org.junit.BeforeClass;
 
 public class ThriftPartitionGraphTest extends TitanPartitionGraphTest {

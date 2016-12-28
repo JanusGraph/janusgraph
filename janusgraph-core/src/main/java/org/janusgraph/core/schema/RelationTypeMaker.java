@@ -1,21 +1,21 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 
 /**
- * RelationTypeMaker is a factory for {@link com.thinkaurelius.titan.core.RelationType}s. RelationType can be configured to provide data verification,
- * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link com.thinkaurelius.titan.core.TitanRelation}s
+ * RelationTypeMaker is a factory for {@link org.janusgraph.core.RelationType}s. RelationType can be configured to provide data verification,
+ * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link org.janusgraph.core.TitanRelation}s
  * of that type.
  * <p/>
- * There are two kinds of RelationTypes: {@link com.thinkaurelius.titan.core.EdgeLabel} and {@link com.thinkaurelius.titan.core.PropertyKey} which
+ * There are two kinds of RelationTypes: {@link org.janusgraph.core.EdgeLabel} and {@link com.thinkaurelius.titan.core.PropertyKey} which
  * are defined via their builders {@link EdgeLabelMaker} and {@link PropertyKeyMaker} respectively. This interface just defines builder methods
  * common to both of them.
  * <p/>
  *
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see com.thinkaurelius.titan.core.RelationType
+ * @see org.janusgraph.core.RelationType
  */
 public interface RelationTypeMaker {
 

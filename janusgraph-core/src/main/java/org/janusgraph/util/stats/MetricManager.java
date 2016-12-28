@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.stats;
+package org.janusgraph.util.stats;
 
 import com.codahale.metrics.*;
 import com.codahale.metrics.ganglia.GangliaReporter;

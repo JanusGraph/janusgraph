@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.olap.computer;
+package org.janusgraph.graphdb.olap.computer;
 
-import com.thinkaurelius.titan.core.TitanTransaction;
+import org.janusgraph.core.TitanTransaction;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 

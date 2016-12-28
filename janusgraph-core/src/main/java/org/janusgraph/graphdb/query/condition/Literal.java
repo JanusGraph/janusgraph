@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
 import java.util.Collections;
 
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.TitanElement;
 
 /**
  * Abstract literal condition.

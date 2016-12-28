@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
+package org.janusgraph.graphdb.database.serialize.attribute;
 
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 
 import java.lang.reflect.Array;
 

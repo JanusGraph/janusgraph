@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelation;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

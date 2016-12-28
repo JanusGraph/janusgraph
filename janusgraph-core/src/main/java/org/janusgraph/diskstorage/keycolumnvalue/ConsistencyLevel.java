@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
 /**
  * Consistency Levels for transactions.

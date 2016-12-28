@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.log.kcvs;
+package org.janusgraph.diskstorage.log.kcvs;
 
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.log.util.AbstractMessage;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.log.util.AbstractMessage;
 
 import java.time.Instant;
 

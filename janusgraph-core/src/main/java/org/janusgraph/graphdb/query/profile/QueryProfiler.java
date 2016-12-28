@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.query.profile;
+package org.janusgraph.graphdb.query.profile;
 
-import com.thinkaurelius.titan.graphdb.query.Query;
+import org.janusgraph.graphdb.query.Query;
 
 import java.util.Collection;
 import java.util.function.Function;

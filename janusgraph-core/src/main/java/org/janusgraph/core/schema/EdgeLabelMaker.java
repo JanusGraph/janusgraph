@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 
 /**
- * Used to define new {@link com.thinkaurelius.titan.core.EdgeLabel}s.
+ * Used to define new {@link org.janusgraph.core.EdgeLabel}s.
  * An edge label is defined by its name, {@link Multiplicity}, its directionality, and its signature - all of which
  * can be specified in this builder.
  *
@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.core.RelationType;
 public interface EdgeLabelMaker extends RelationTypeMaker {
 
     /**
-     * Sets the multiplicity of this label. The default multiplicity is {@link com.thinkaurelius.titan.core.Multiplicity#MULTI}.
+     * Sets the multiplicity of this label. The default multiplicity is {@link org.janusgraph.core.Multiplicity#MULTI}.
      * @return this EdgeLabelMaker
      * @see Multiplicity
      */
@@ -27,7 +27,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the label is directed.
      *
      * @return this EdgeLabelMaker
-     * @see com.thinkaurelius.titan.core.EdgeLabel#isDirected()
+     * @see org.janusgraph.core.EdgeLabel#isDirected()
      */
     public EdgeLabelMaker directed();
 
@@ -37,7 +37,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the type is directed.
      *
      * @return this EdgeLabelMaker
-     * @see com.thinkaurelius.titan.core.EdgeLabel#isUnidirected()
+     * @see org.janusgraph.core.EdgeLabel#isUnidirected()
      */
     public EdgeLabelMaker unidirected();
 
@@ -47,7 +47,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
 
 
     /**
-     * Defines the {@link com.thinkaurelius.titan.core.EdgeLabel} specified by this EdgeLabelMaker and returns the resulting label
+     * Defines the {@link org.janusgraph.core.EdgeLabel} specified by this EdgeLabelMaker and returns the resulting label
      *
      * @return the created {@link EdgeLabel}
      */

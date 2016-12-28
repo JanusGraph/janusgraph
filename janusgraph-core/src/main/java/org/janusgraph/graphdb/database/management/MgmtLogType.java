@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

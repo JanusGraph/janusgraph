@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexArrayList;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexLongList;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.graphdb.query.vertex.VertexArrayList;
+import org.janusgraph.graphdb.query.vertex.VertexLongList;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.junit.Test;
 
 import java.util.Iterator;

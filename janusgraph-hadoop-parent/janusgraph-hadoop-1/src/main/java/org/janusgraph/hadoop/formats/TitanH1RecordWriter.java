@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.hadoop.formats;
+package org.janusgraph.hadoop.formats;
 
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;

@@ -1,21 +1,21 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.attribute.*;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.testutil.RandomGenerator;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.testutil.RandomGenerator;
 
 import org.junit.After;
 import org.junit.Before;

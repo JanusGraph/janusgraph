@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.log;
+package org.janusgraph.core.log;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;

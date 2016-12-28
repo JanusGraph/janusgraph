@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.query.BackendQuery;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.query.Query;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.graphdb.query.BackendQuery;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.Query;
+import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.query.condition.Condition;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.List;

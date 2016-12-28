@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.diskstorage.cassandra;
+package org.janusgraph.diskstorage.cassandra;
 
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.thinkaurelius.titan.testcategory.StandaloneTests;
+import org.janusgraph.testcategory.StandaloneTests;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;

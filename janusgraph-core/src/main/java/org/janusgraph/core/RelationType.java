@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 
-import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.TitanSchemaType;
 
 /**
- * RelationType defines the schema for {@link TitanRelation}. RelationType can be configured through {@link com.thinkaurelius.titan.core.schema.RelationTypeMaker} to
+ * RelationType defines the schema for {@link TitanRelation}. RelationType can be configured through {@link org.janusgraph.core.schema.RelationTypeMaker} to
  * provide data verification, better storage efficiency, and higher retrieval performance.
  * <br />
  * Each {@link TitanRelation} has a unique type which defines many important characteristics of that relation.
  * <br />
- * RelationTypes are constructed through {@link com.thinkaurelius.titan.core.schema.RelationTypeMaker} which is accessed in the context of a {@link TitanTransaction}
- * via {@link com.thinkaurelius.titan.core.TitanTransaction#makePropertyKey(String)} for property keys or {@link com.thinkaurelius.titan.core.TitanTransaction#makeEdgeLabel(String)}
+ * RelationTypes are constructed through {@link org.janusgraph.core.schema.RelationTypeMaker} which is accessed in the context of a {@link TitanTransaction}
+ * via {@link org.janusgraph.core.TitanTransaction#makePropertyKey(String)} for property keys or {@link com.thinkaurelius.titan.core.TitanTransaction#makeEdgeLabel(String)}
  * for edge labels. Identical methods exist on {@link TitanGraph}.
  * Note, relation types will only be visible once the transaction in which they were created has been committed.
  * <br />
@@ -19,7 +19,7 @@ import com.thinkaurelius.titan.core.schema.TitanSchemaType;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see TitanRelation
- * @see com.thinkaurelius.titan.core.schema.RelationTypeMaker
+ * @see org.janusgraph.core.schema.RelationTypeMaker
  * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/schema.html">"Schema and Data Modeling" manual chapter</a>
  */
 public interface RelationType extends TitanVertex, TitanSchemaType {

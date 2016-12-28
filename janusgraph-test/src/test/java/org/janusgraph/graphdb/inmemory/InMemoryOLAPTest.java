@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.inmemory;
+package org.janusgraph.graphdb.inmemory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.olap.OLAPTest;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.olap.OLAPTest;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

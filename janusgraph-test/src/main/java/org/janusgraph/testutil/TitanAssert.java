@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;

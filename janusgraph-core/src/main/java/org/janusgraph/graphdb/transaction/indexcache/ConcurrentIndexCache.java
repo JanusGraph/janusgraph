@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.transaction.indexcache;
+package org.janusgraph.graphdb.transaction.indexcache;
 
 import com.google.common.collect.HashMultimap;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanVertexProperty;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
+package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

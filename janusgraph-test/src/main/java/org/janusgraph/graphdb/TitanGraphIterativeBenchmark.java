@@ -1,21 +1,21 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Random;
@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
  * underlying KeyColumnValueStore which is the basic operation underlying the
  * Fulgora OLAP component of Titan.
  * <p/>
- * Hence, this is effectively a benchmark for {@link com.thinkaurelius.titan.olap.OLAPTest}
+ * Hence, this is effectively a benchmark for {@link org.janusgraph.olap.OLAPTest}
  * or at least the primitive backend operations used therein.
  * <p/>
  *

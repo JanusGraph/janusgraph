@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.log;
+package org.janusgraph.diskstorage.log;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;

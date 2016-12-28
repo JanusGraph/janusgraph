@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.database;
+package org.janusgraph.graphdb.database;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.io.Closeable;

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.thinkaurelius.titan.graphdb.tinkerpop.ElementUtils;
+import org.janusgraph.graphdb.tinkerpop.ElementUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;

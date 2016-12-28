@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.core.attribute;
+package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 
 
 /**
@@ -15,12 +15,12 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
  * the database is initialized. Hence, the serializer must be on the classpath.
  * <br />
  * <p/>
- * When a {@link com.thinkaurelius.titan.core.PropertyKey} is defined using a data type specified via {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} for which a custom serializer
+ * When a {@link org.janusgraph.core.PropertyKey} is defined using a data type specified via {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} for which a custom serializer
  * is configured, then it will use this custom serializer for persistence operations.
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see com.thinkaurelius.titan.core.schema.RelationTypeMaker
+ * @see org.janusgraph.core.schema.RelationTypeMaker
  * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/serializer.html">
  *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */

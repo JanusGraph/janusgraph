@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.berkeleyje;
+package org.janusgraph.graphdb.berkeleyje;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanOperationCountingTest;
-import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanOperationCountingTest;
+import org.janusgraph.graphdb.TitanPartitionGraphTest;
 import org.junit.Ignore;
 
 

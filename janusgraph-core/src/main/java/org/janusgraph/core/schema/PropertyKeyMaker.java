@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
 
 /**
- * Used to define new {@link com.thinkaurelius.titan.core.PropertyKey}s.
+ * Used to define new {@link org.janusgraph.core.PropertyKey}s.
  * An property key is defined by its name, {@link Cardinality}, its data type, and its signature - all of which
  * can be specified in this builder.
  *
@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.core.RelationType;
 public interface PropertyKeyMaker extends RelationTypeMaker {
 
     /**
-     * Configures the {@link com.thinkaurelius.titan.core.Cardinality} of this property key.
+     * Configures the {@link org.janusgraph.core.Cardinality} of this property key.
      *
      * @param cardinality
      * @return this PropertyKeyMaker
@@ -33,7 +33,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      *
      * @param clazz Data type to be configured.
      * @return this PropertyKeyMaker
-     * @see com.thinkaurelius.titan.core.PropertyKey#dataType()
+     * @see org.janusgraph.core.PropertyKey#dataType()
      */
     public PropertyKeyMaker dataType(Class<?> clazz);
 
@@ -42,7 +42,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
 
 
     /**
-     * Defines the {@link com.thinkaurelius.titan.core.PropertyKey} specified by this PropertyKeyMaker and returns the resulting key.
+     * Defines the {@link org.janusgraph.core.PropertyKey} specified by this PropertyKeyMaker and returns the resulting key.
      *
      * @return the created {@link PropertyKey}
      */

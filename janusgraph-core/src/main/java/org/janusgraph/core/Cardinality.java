@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 // TODO is this vestigial now that TP3's VertexProperty.Cardinality exists?
 

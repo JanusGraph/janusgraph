@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 
 import java.util.HashSet;
@@ -8,8 +8,8 @@ import java.util.Set;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.*;
+import org.janusgraph.diskstorage.util.BufferUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,9 +17,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.RecordIterator;
 
 public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 

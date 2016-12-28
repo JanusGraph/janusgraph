@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.*;
+import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager.*;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

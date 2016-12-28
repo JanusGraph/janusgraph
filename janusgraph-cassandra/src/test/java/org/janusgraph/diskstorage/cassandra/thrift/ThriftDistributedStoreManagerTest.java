@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
+package org.janusgraph.diskstorage.cassandra.thrift;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.DistributedStoreManagerTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.DistributedStoreManagerTest;
 
 public class ThriftDistributedStoreManagerTest extends DistributedStoreManagerTest<CassandraThriftStoreManager> {
 

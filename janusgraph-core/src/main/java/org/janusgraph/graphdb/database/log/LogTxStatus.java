@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.log;
+package org.janusgraph.graphdb.database.log;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)

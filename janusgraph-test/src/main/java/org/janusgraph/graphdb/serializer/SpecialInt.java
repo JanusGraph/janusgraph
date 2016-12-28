@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.serializer;
+package org.janusgraph.graphdb.serializer;
 
 import java.io.Serializable;
 

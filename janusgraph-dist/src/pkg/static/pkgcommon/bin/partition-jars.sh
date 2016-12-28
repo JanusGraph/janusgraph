@@ -35,7 +35,7 @@ mvn_deps() {
     local outfile="$1"
     mvn dependency:list $MVN_OPTS \
         -Paurelius-release \
-        -DexcludeGroupIds=com.thinkaurelius.titan \
+        -DexcludeGroupIds=org.janusgraph \
         -DoutputFile=$outfile -DincludeScope=runtime \
         -DoutputAbsoluteArtifactFilename=true
     # Delete first two lines of human-readable junk and kill leading spaces

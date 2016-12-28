@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.graphdb.types.indextype;
+package org.janusgraph.graphdb.types.indextype;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.graphdb.types.ParameterType;
-import com.thinkaurelius.titan.graphdb.types.*;
+import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.graphdb.types.*;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

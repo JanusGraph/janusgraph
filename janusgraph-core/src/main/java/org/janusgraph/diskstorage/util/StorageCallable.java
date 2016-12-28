@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import java.util.concurrent.Callable;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendException;
 
 /**
  * Like {@link Callable}, except the exception type is narrowed from
- * {@link Exception} to {@link com.thinkaurelius.titan.diskstorage.BackendException}.
+ * {@link Exception} to {@link org.janusgraph.diskstorage.BackendException}.
  * 
  * @param <T>
  *            call return type

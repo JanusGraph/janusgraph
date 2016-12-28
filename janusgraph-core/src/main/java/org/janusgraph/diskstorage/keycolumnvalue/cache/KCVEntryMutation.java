@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
+package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Function;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.Mutation;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.Mutation;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import javax.annotation.Nullable;
 import java.util.List;

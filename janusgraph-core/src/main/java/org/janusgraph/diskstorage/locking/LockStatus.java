@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
 
 import java.time.Instant;

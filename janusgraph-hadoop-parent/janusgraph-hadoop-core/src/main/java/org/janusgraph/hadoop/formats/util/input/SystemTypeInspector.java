@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats.util.input;
+package org.janusgraph.hadoop.formats.util.input;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.inmemory;
+package org.janusgraph.graphdb.inmemory;
 
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

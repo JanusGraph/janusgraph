@@ -1,22 +1,22 @@
-package com.thinkaurelius.titan.graphdb.types.vertices;
+package org.janusgraph.graphdb.types.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexQuery;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.indextype.CompositeIndexTypeWrapper;
-import com.thinkaurelius.titan.graphdb.types.indextype.MixedIndexTypeWrapper;
-import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
-import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
-import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.TitanVertexQuery;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.transaction.RelationConstructor;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.*;
+import org.janusgraph.graphdb.types.indextype.CompositeIndexTypeWrapper;
+import org.janusgraph.graphdb.types.indextype.MixedIndexTypeWrapper;
+import org.janusgraph.graphdb.types.system.BaseKey;
+import org.janusgraph.graphdb.types.system.BaseLabel;
+import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -122,7 +122,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
 
     /**
      * Resets the internal caches used to speed up lookups on this index type.
-     * This is needed when the type gets modified in the {@link com.thinkaurelius.titan.graphdb.database.management.ManagementSystem}.
+     * This is needed when the type gets modified in the {@link org.janusgraph.graphdb.database.management.ManagementSystem}.
      */
     public void resetCache() {
         name = null;

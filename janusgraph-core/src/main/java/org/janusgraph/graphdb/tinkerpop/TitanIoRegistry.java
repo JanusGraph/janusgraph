@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop;
+package org.janusgraph.graphdb.tinkerpop;
 
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.tinkerpop.io.graphson.TitanGraphSONModule;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;

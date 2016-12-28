@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.RecordIterator;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @param key
      * @param value
      * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException;
 
@@ -35,17 +35,17 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @param query
      * @param txh
      * @return
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public RecordIterator<KeyValueEntry> getSlice(KVQuery query, StoreTransaction txh) throws BackendException;
 
 
     /**
-     * Like {@link #getSlice(KVQuery, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)} but executes
+     * Like {@link #getSlice(KVQuery, org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction)} but executes
      * all of the given queries at once and returns a map of all the result sets of each query.
      *
      * Only supported when the given store implementation supports multi-query, i.e.
-     * {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures#hasMultiQuery()} return true. Otherwise
+     * {@link org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures#hasMultiQuery()} return true. Otherwise
      * this method may throw a {@link UnsupportedOperationException}.
      *
      * @param queries

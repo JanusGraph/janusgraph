@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.blueprints.process;
+package org.janusgraph.blueprints.process;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.blueprints.HBaseGraphProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.blueprints.HBaseGraphProvider;
+import org.janusgraph.core.TitanGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;

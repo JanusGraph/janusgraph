@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.core.util;
+package org.janusgraph.core.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.schema.RelationTypeIndex;
+import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.TitanIndex;
+import org.janusgraph.core.schema.TitanManagement;
 
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
@@ -31,7 +31,7 @@ public class ManagementUtil {
      * final state within that time. The method simply returns when the index has reached the final state
      * prior to the time period expiring.
      *
-     * This is a utility method to be invoked between two {@link com.thinkaurelius.titan.core.schema.TitanManagement#updateIndex(TitanIndex, com.thinkaurelius.titan.core.schema.SchemaAction)} calls
+     * This is a utility method to be invoked between two {@link org.janusgraph.core.schema.TitanManagement#updateIndex(TitanIndex, com.thinkaurelius.titan.core.schema.SchemaAction)} calls
      * to ensure that the previous update has successfully persisted.
      *
      * @param g

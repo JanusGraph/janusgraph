@@ -17,8 +17,8 @@ For developing against the most current version of Titan, depend on Titan snapsh
 
 [source, xml]
 <dependency>
-   <groupId>com.thinkaurelius.titan</groupId>
-   <artifactId>titan-core</artifactId>
+   <groupId>org.janusgraph</groupId>
+   <artifactId>janusgraph-core</artifactId>
    <version>X.Y.Z-SNAPSHOT</version>
 </dependency>
 

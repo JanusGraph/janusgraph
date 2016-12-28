@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.log;
+package org.janusgraph.graphdb.log;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.log.Change;
-import com.thinkaurelius.titan.core.log.ChangeState;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import org.janusgraph.core.*;
+import org.janusgraph.core.log.Change;
+import org.janusgraph.core.log.ChangeState;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 
 /**
  * Immutable, {@link Builder}-customizable implementation of StoreFeatures.

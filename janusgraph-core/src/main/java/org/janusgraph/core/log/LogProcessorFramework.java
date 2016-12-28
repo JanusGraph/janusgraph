@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core.log;
+package org.janusgraph.core.log;
 
-import com.thinkaurelius.titan.core.TitanException;
+import org.janusgraph.core.TitanException;
 
 /**
  * Framework for processing transaction logs. Using the {@link LogProcessorBuilder} returned by
@@ -15,7 +15,7 @@ public interface LogProcessorFramework {
      * Only one processor may be registered per transaction log.
      *
      * @param logIdentifier Name that identifies the transaction log to be processed,
-     *                      i.e. the one used in {@link com.thinkaurelius.titan.core.TransactionBuilder#logIdentifier(String)}
+     *                      i.e. the one used in {@link org.janusgraph.core.TransactionBuilder#logIdentifier(String)}
      * @return
      */
     public LogProcessorBuilder addLogProcessor(String logIdentifier);
