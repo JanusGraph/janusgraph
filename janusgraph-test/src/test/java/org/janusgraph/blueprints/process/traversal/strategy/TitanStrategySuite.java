@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.blueprints.process.traversal.strategy;
+package org.janusgraph.blueprints.process.traversal.strategy;
 
-import com.thinkaurelius.titan.blueprints.process.traversal.strategy.optimization.TitanGraphStepStrategyTest;
+import org.janusgraph.blueprints.process.traversal.strategy.optimization.TitanGraphStepStrategyTest;
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalEngine;
 import org.junit.runners.model.InitializationError;

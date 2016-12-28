@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
+import org.janusgraph.graphdb.configuration.TitanConstants;
 
 import org.apache.tinkerpop.gremlin.util.Gremlin;
 

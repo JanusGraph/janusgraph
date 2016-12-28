@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.VertexList;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.VertexList;
 
 /**
  * Extends on the {@link VertexList} interface by provided methods to add elements to the list

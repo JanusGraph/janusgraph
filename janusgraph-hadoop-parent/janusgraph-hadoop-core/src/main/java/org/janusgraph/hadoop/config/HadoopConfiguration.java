@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.config;
+package org.janusgraph.hadoop.config;
 
 import java.lang.reflect.Constructor;
 import java.time.Duration;
@@ -15,8 +15,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.time.Durations;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.util.time.Durations;
 
 
 import javax.annotation.Nullable;

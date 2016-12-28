@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.log;
+package org.janusgraph.diskstorage.log;
 
 import com.google.common.base.Preconditions;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;

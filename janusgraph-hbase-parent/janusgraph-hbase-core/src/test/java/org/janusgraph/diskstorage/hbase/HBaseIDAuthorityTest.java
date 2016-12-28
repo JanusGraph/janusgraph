@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.IDAuthorityTest;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.IDAuthorityTest;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;

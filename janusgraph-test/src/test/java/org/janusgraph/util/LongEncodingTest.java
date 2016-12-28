@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.util;
+package org.janusgraph.util;
 
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.util.encoding.LongEncoding;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.junit.Test;
 
 import java.util.Random;

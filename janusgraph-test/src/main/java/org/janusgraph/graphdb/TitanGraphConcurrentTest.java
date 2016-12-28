@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.testcategory.PerformanceTests;
-import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
-import com.thinkaurelius.titan.testutil.RandomGenerator;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.testcategory.PerformanceTests;
+import org.janusgraph.testutil.JUnitBenchmarkProvider;
+import org.janusgraph.testutil.RandomGenerator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 

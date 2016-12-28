@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.Namifiable;
+import org.janusgraph.core.Namifiable;
 
 /**
  * Marks any element that is part of a Titan Schema.

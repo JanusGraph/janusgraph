@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.query.graph;
+package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.BackendTransaction;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.graphdb.query.BackendQuery;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import org.janusgraph.diskstorage.BackendTransaction;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.graphdb.query.BackendQuery;
+import org.janusgraph.graphdb.query.BaseQuery;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;

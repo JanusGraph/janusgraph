@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.log;
+package org.janusgraph.diskstorage.log;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.util.concurrent.Future;
 
@@ -77,7 +77,7 @@ public interface Log {
     /**
      * Closes this log and stops the reading process.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void close() throws BackendException;
 

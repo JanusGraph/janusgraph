@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 /**
  * Exception thrown when a user defined query (e.g. a {@link TitanVertex} or {@link TitanGraphQuery})

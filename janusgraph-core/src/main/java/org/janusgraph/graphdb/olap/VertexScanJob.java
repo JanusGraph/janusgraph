@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.olap;
+package org.janusgraph.graphdb.olap;
 
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 
 /**
  * Expresses a computation over all vertices ina a graph database. Process is called for each vertex that is previously
@@ -16,7 +16,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
 public interface VertexScanJob extends Cloneable {
 
     /**
-     * @see com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob
+     * @see org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob
      *
      * @param graph
      * @param config
@@ -25,7 +25,7 @@ public interface VertexScanJob extends Cloneable {
     public default void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {}
 
     /**
-     * @see com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob
+     * @see org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob
      *
      * @param metrics
      */

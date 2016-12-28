@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.util.encoding.StringEncoding;
+import org.janusgraph.util.encoding.StringEncoding;
 
 import java.util.ArrayList;
 import java.util.EnumMap;

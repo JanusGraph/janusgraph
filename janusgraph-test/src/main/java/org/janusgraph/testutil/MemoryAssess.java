@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
 public class MemoryAssess {
 

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.schema.Parameter;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.schema.Parameter;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

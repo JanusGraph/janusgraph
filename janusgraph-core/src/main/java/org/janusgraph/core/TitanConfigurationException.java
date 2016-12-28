@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 /**
  * Exception thrown due to invalid configuration options or when errors

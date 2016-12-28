@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.query.graph;
+package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.graphdb.query.BackendQuery;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
-import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
-import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.graphdb.query.BackendQuery;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.profile.ProfileObservable;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.IndexType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.List;
  * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
  * by the query processor of the enclosing transaction.
  * </p>
- * This query itself can contain multiple sub-queries which are individually executed by the {@link com.thinkaurelius.titan.graphdb.database.IndexSerializer}
+ * This query itself can contain multiple sub-queries which are individually executed by the {@link org.janusgraph.graphdb.database.IndexSerializer}
  * and the result sets merged.
  * </p>
  * Those sub-queries are either targeting an external indexing backend or the internal index store which is a distinction this

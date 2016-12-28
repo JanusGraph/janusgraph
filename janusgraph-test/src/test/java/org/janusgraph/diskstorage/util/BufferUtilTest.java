@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import com.google.common.primitives.Longs;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 

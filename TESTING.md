@@ -24,7 +24,7 @@ All of Titan's tests are written for JUnit.  Titan's JUnit tests are annotated w
 | UnorderedKeyStoreTests | test.skip.unordered | false (enabled) | Tests written for a storage backend that doesn't store data in key order |
 | (No&nbsp;category) | test.skip.default | false (enabled) | Tests without any Category annotations |
 
-**Category Name** above is a Java interface defined in the package [com.thinkaurelius.titan.testcategory](titan-test/src/main/com/thinkaurelius/titan/testcategory).  These interfaces appear as arguments to the JUnit `@Category(...)` annotation, e.g. `@Category({MemoryTests.class})`.
+**Category Name** above is a Java interface defined in the package [org.janusgraph.testcategory](titan-test/src/main/org/janusgraph/testcategory).  These interfaces appear as arguments to the JUnit `@Category(...)` annotation, e.g. `@Category({MemoryTests.class})`.
 
 **Maven Property** above is a boolean-valued pom.xml property that skips the associated test category when true and executes the associated test category when false.  The default values defined in pom.xml can be overridden on the command-line in the ordinary Maven way, e.g. `mvn -Dtest.skip.mem=false test`.
 

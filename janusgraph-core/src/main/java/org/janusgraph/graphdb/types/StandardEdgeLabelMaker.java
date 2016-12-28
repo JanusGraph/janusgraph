@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandler;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.database.serialize.AttributeHandler;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.INVISIBLE;
-import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.INVISIBLE;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

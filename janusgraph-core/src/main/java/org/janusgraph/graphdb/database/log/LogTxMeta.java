@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.database.log;
+package org.janusgraph.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TransactionBuilder;
-import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
+import org.janusgraph.core.TransactionBuilder;
+import org.janusgraph.graphdb.log.StandardTransactionId;
+import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

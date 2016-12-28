@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
+package org.janusgraph.graphdb.database.idassigner.placement;
 
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.internal.InternalElement;
+import org.janusgraph.graphdb.internal.InternalVertex;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ public interface IDPlacementStrategy {
     public void getPartitions(Map<InternalVertex, PartitionAssignment> vertices);
 
     /**
-     * After construction, the {@link com.thinkaurelius.titan.graphdb.idmanagement.IDManager} used by this graph instance
+     * After construction, the {@link org.janusgraph.graphdb.idmanagement.IDManager} used by this graph instance
      * is injected into this IDPlacementStrategy so that the id pattern of vertices can be inspected.
      * This method is guaranteed to be called before any partition assignments are made.
      *

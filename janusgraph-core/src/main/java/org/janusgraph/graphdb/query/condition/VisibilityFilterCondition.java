@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.schema.TitanSchemaElement;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.schema.TitanSchemaElement;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.graphdb.internal.InternalElement;
+import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**

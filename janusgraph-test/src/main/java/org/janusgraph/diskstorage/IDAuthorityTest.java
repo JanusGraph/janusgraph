@@ -1,24 +1,24 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.StorageSetup;
+import org.janusgraph.StorageSetup;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
+import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.Assert.*;
 
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
+import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import org.janusgraph.testutil.TestGraphConfigs;
 
 import org.junit.After;
 import org.junit.Assert;

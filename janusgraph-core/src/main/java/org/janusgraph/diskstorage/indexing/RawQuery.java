@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.graphdb.query.BaseQuery;
 import org.apache.commons.lang.StringUtils;
 
 /**

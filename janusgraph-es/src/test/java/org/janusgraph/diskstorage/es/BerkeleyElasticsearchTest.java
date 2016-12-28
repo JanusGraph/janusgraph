@@ -1,20 +1,20 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.TitanIndexTest;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.util.system.IOUtils;
 import org.junit.Test;
 
 import java.io.File;
 
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static com.thinkaurelius.titan.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -54,7 +54,7 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
     }
 
     /**
-     * Test {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#create(String)}.
+     * Test {@link org.janusgraph.example.GraphOfTheGodsFactory#create(String)}.
      */
     @Test
     public void testGraphOfTheGodsFactoryCreate() {

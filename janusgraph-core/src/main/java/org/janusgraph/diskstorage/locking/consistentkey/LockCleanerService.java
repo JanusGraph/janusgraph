@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.KeyColumn;
 
 import java.time.Instant;
 

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Temporals;
+import org.janusgraph.diskstorage.util.time.Temporals;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
 

@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.blueprints;
+package org.janusgraph.blueprints;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.GraphProvider;
 import org.apache.tinkerpop.gremlin.structure.Graph;

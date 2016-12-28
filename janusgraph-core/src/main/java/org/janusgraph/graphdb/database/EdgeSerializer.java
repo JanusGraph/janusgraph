@@ -1,30 +1,30 @@
-package com.thinkaurelius.titan.graphdb.database;
+package org.janusgraph.graphdb.database;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.carrotsearch.hppc.LongObjectHashMap;
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
-import com.thinkaurelius.titan.graphdb.internal.*;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.graphdb.types.TypeInspector;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.util.datastructures.Interval;
+import org.janusgraph.core.*;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.graphdb.database.idhandling.IDHandler;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.database.serialize.attribute.LongSerializer;
+import org.janusgraph.graphdb.internal.*;
+import org.janusgraph.graphdb.relations.EdgeDirection;
+import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.types.TypeInspector;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.util.datastructures.Interval;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.DirectionID;
-import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.RelationTypeParse;
-import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getBounds;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.DirectionID;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.RelationTypeParse;
+import static org.janusgraph.graphdb.database.idhandling.IDHandler.getBounds;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

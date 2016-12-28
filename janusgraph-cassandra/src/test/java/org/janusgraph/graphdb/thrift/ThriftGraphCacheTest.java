@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.thrift;
+package org.janusgraph.graphdb.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphTest;
 import org.junit.BeforeClass;
 
 public class ThriftGraphCacheTest extends TitanGraphTest {

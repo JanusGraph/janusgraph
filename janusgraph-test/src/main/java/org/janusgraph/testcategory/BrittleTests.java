@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testcategory;
+package org.janusgraph.testcategory;
 
 public interface BrittleTests {
 }

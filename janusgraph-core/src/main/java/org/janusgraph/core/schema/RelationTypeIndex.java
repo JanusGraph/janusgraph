@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.RelationType;
+import org.janusgraph.core.RelationType;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * A RelationTypeIndex is an index installed on a {@link RelationType} to speed up vertex-centric indexes for that type.
  * A RelationTypeIndex is created via
- * {@link TitanManagement#buildEdgeIndex(com.thinkaurelius.titan.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.thinkaurelius.titan.graphdb.internal.Order, com.thinkaurelius.titan.core.RelationType...)}
+ * {@link TitanManagement#buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.thinkaurelius.titan.graphdb.internal.Order, com.thinkaurelius.titan.core.RelationType...)}
  * for edge labels and
- * {@link TitanManagement#buildPropertyIndex(com.thinkaurelius.titan.core.PropertyKey, String, com.thinkaurelius.titan.graphdb.internal.Order, com.thinkaurelius.titan.core.RelationType...)}
+ * {@link TitanManagement#buildPropertyIndex(org.janusgraph.core.PropertyKey, String, com.thinkaurelius.titan.graphdb.internal.Order, com.thinkaurelius.titan.core.RelationType...)}
  * for property keys.
  * <p/>
  * This interface allows the inspection of already defined RelationTypeIndex'es. An existing index on a RelationType
- * can be retrieved via {@link TitanManagement#getRelationIndex(com.thinkaurelius.titan.core.RelationType, String)}.
+ * can be retrieved via {@link TitanManagement#getRelationIndex(org.janusgraph.core.RelationType, String)}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

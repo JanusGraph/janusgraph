@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.diskstorage.common;
+package org.janusgraph.diskstorage.common;
 
 
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
 import java.util.List;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Abstract Store Manager used as the basis for concrete StoreManager implementations.

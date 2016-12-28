@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop;
+package org.janusgraph.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.diskstorage.util.Hex;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.diskstorage.util.Hex;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.types.system.BaseVertexLabel;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
@@ -77,9 +77,9 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
+     * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
-     * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
+     * Use {@link org.janusgraph.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
      * @param keyValues key-value pairs of properties to characterize or attach to the vertex
      * @return New vertex
@@ -107,7 +107,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 //            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
 //                ((StandardTitanTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
 //        }
-        com.thinkaurelius.titan.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
+        org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
     }
 

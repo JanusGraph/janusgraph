@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.blueprints.process.traversal.strategy.optimization;
+package org.janusgraph.blueprints.process.traversal.strategy.optimization;
 
-import com.thinkaurelius.titan.blueprints.InMemoryGraphProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.graphdb.tinkerpop.optimize.TitanGraphStep;
+import org.janusgraph.blueprints.InMemoryGraphProvider;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.graphdb.tinkerpop.optimize.TitanGraphStep;
 
 import org.apache.tinkerpop.gremlin.process.AbstractGremlinProcessTest;
 import org.apache.tinkerpop.gremlin.process.IgnoreEngine;

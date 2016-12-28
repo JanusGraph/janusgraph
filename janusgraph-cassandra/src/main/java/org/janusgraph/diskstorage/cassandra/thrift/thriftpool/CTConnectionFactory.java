@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool;
+package org.janusgraph.diskstorage.cassandra.thrift.thriftpool;
 
 import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.thrift.*;

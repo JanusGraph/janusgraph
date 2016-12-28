@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.olap;
+package org.janusgraph.olap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
-import com.thinkaurelius.titan.graphdb.olap.*;
-import com.thinkaurelius.titan.graphdb.olap.job.GhostVertexRemover;
+import org.janusgraph.core.*;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.olap.*;
+import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.util.StaticVertexProgram;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static com.thinkaurelius.titan.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.TitanAssert.assertCount;
 import static org.junit.Assert.*;
 
 /**

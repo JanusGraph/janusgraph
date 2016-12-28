@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan;
+package org.janusgraph;
 
 
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;

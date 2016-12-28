@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb
+package org.janusgraph.graphdb
 
 /**
  * This interface exists solely to avoid autoboxing primitive longs with Long.

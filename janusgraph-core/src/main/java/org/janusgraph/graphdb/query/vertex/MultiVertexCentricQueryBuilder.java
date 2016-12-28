@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.*;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.RelationCategory;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Implementation of {@link TitanMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
- * {@link #execute(com.thinkaurelius.titan.graphdb.internal.RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
+ * {@link #execute(org.janusgraph.graphdb.internal.RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
  * </p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  *
@@ -64,11 +64,11 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 	 */
 
     /**
-     * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
+     * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}.
      * If the query asks for an implicit key, the resulting map is computed and returned directly.
      * If the query is empty, a map that maps each vertex to an empty list is returned.
      * Otherwise, the query is executed for all vertices through the transaction which will effectively
-     * pre-load the return result sets into the associated {@link com.thinkaurelius.titan.graphdb.vertices.CacheVertex} or
+     * pre-load the return result sets into the associated {@link org.janusgraph.graphdb.vertices.CacheVertex} or
      * don't do anything at all if the vertex is new (and hence no edges in the storage backend).
      * After that, a map is constructed that maps each vertex to the corresponding VertexCentricQuery and wrapped
      * into a QueryProcessor. Hence, upon iteration the query will be executed like any other VertexCentricQuery

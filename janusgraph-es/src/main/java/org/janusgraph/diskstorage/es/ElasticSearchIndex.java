@@ -1,30 +1,30 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.core.attribute.*;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.indexing.*;
+import org.janusgraph.diskstorage.util.DefaultTransaction;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 
-import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpty;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
@@ -242,13 +242,13 @@ public class ElasticSearchIndex implements IndexProvider {
     /**
      * Configure ElasticSearchIndex's ES client according to semantics introduced in
      * 0.5.1.  Allows greater flexibility than the previous config semantics.  See
-     * {@link com.thinkaurelius.titan.diskstorage.es.ElasticSearchSetup} for more
+     * {@link org.janusgraph.diskstorage.es.ElasticSearchSetup} for more
      * information.
      * <p>
      * This is activated by setting an explicit value for {@link #INTERFACE} in
      * the Titan configuration.
      *
-     * @see #legacyConfiguration(com.thinkaurelius.titan.diskstorage.configuration.Configuration)
+     * @see #legacyConfiguration(org.janusgraph.diskstorage.configuration.Configuration)
      * @param config a config passed to ElasticSearchIndex's constructor
      * @return a node and client object open and ready for use
      */
@@ -267,14 +267,14 @@ public class ElasticSearchIndex implements IndexProvider {
      * This checks local-mode first.  If local-mode is true, then it creates a Node that
      * uses JVM local transport and can't talk over the network.  If local-mode is
      * false, then it creates a TransportClient that can talk over the network and
-     * uses {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}
+     * uses {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}
      * as the server addresses.  Note that this configuration method
      * does not allow creating a Node that talks over the network.
      * <p>
      * This is activated by <b>not</b> setting an explicit value for {@link #INTERFACE} in the
      * Titan configuration.
      *
-     * @see #interfaceConfiguration(com.thinkaurelius.titan.diskstorage.configuration.Configuration)
+     * @see #interfaceConfiguration(org.janusgraph.diskstorage.configuration.Configuration)
      * @param config a config passed to ElasticSearchIndex's constructor
      * @return a node and client object open and ready for use
      */

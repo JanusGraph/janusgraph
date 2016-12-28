@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.olap;
+package org.janusgraph.olap;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

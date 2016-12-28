@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.*;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.*;
 
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.BaseQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

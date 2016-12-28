@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testcategory;
+package org.janusgraph.testcategory;
 
 /**
  * This is a JUnit category for performance-measuring tests implemented with

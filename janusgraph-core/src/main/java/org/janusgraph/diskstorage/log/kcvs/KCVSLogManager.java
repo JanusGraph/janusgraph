@@ -1,25 +1,25 @@
-package com.thinkaurelius.titan.diskstorage.log.kcvs;
+package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StoreMetaData;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.LogManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.util.encoding.ConversionHelper;
-import com.thinkaurelius.titan.util.stats.NumberUtil;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StoreMetaData;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.LogManager;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange;
+import org.janusgraph.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.util.encoding.ConversionHelper;
+import org.janusgraph.util.stats.NumberUtil;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
@@ -58,7 +58,7 @@ public class KCVSLogManager implements LogManager {
 
     /**
      * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured
-     * {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
+     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
      * the number by this constant.
      */
     public static final int CLUSTER_SIZE_DIVIDER = 8;

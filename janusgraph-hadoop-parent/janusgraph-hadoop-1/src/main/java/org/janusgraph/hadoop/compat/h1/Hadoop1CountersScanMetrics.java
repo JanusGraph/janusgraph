@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.hadoop.compat.h1;
+package org.janusgraph.hadoop.compat.h1;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.hadoop.scan.HadoopContextScanMetrics;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.hadoop.scan.HadoopContextScanMetrics;
 import org.apache.hadoop.mapreduce.Counters;
 
 public class Hadoop1CountersScanMetrics implements ScanMetrics {

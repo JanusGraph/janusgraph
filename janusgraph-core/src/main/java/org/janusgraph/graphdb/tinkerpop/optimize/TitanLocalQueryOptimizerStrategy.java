@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;

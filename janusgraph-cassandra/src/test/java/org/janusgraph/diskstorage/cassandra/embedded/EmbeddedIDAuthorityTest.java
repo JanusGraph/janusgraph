@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
+package org.janusgraph.diskstorage.cassandra.embedded;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.IDAuthorityTest;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.IDAuthorityTest;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 public class EmbeddedIDAuthorityTest extends IDAuthorityTest {
 

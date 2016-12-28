@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.types.indextype;
+package org.janusgraph.graphdb.types.indextype;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.graphdb.types.*;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.types.*;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

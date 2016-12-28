@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.example;
+package org.janusgraph.example;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.TitanManagement;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -133,14 +133,14 @@ public class GraphOfTheGodsFactory {
     /**
      * Calls {@link TitanFactory#open(String)}, passing the Titan configuration file path
      * which must be the sole element in the {@code args} array, then calls
-     * {@link #load(com.thinkaurelius.titan.core.TitanGraph)} on the opened graph,
-     * then calls {@link com.thinkaurelius.titan.core.TitanGraph#close()}
+     * {@link #load(org.janusgraph.core.TitanGraph)} on the opened graph,
+     * then calls {@link org.janusgraph.core.TitanGraph#close()}
      * and returns.
      * <p/>
      * This method may call {@link System#exit(int)} if it encounters an error, such as
      * failure to parse its arguments.  Only use this method when executing main from
      * a command line.  Use one of the other methods on this class ({@link #create(String)}
-     * or {@link #load(com.thinkaurelius.titan.core.TitanGraph)}) when calling from
+     * or {@link #load(org.janusgraph.core.TitanGraph)}) when calling from
      * an enclosing application.
      *
      * @param args a singleton array containing a path to a Titan config properties file

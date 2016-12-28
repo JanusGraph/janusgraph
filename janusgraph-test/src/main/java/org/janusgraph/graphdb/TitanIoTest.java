@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
+import org.janusgraph.example.GraphOfTheGodsFactory;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.GraphWriter;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;

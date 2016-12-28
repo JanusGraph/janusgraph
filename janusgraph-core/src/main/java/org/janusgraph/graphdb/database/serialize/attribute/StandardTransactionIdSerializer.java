@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
+package org.janusgraph.graphdb.database.serialize.attribute;
 
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
+import org.janusgraph.core.attribute.AttributeSerializer;
 
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInjected;
-import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.database.serialize.SerializerInjected;
+import org.janusgraph.graphdb.log.StandardTransactionId;
 
 import java.time.Instant;
 

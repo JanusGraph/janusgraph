@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.graphdb.internal.Order;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.graphdb.internal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
 

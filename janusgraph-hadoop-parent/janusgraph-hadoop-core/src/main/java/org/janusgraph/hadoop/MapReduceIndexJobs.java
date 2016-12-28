@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.hadoop;
+package org.janusgraph.hadoop;
 
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.olap.job.IndexRemoveJob;
-import com.thinkaurelius.titan.graphdb.olap.job.IndexRepairJob;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.scan.CassandraHadoopScanRunner;
-import com.thinkaurelius.titan.hadoop.scan.HBaseHadoopScanRunner;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
+import org.janusgraph.graphdb.olap.job.IndexRepairJob;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.scan.CassandraHadoopScanRunner;
+import org.janusgraph.hadoop.scan.HBaseHadoopScanRunner;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,8 +159,8 @@ public class MapReduceIndexJobs {
     private static ModifiableConfiguration getIndexJobConf(String indexName, String relationType) {
         ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.JOB_NS,
                 new CommonsConfiguration(new BaseConfiguration()), BasicConfiguration.Restriction.NONE);
-        mc.set(com.thinkaurelius.titan.graphdb.olap.job.IndexUpdateJob.INDEX_NAME, indexName);
-        mc.set(com.thinkaurelius.titan.graphdb.olap.job.IndexUpdateJob.INDEX_RELATION_TYPE, relationType);
+        mc.set(org.janusgraph.graphdb.olap.job.IndexUpdateJob.INDEX_NAME, indexName);
+        mc.set(org.janusgraph.graphdb.olap.job.IndexUpdateJob.INDEX_RELATION_TYPE, relationType);
         mc.set(GraphDatabaseConfiguration.JOB_START_TIME, System.currentTimeMillis());
         return mc;
     }

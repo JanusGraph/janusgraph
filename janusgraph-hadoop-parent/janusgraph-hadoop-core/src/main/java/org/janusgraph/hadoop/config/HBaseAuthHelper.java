@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.config;
+package org.janusgraph.hadoop.config;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;

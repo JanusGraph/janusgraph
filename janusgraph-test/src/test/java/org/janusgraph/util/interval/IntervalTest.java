@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.interval;
+package org.janusgraph.util.interval;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

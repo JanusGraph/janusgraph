@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.olap.computer;
+package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;

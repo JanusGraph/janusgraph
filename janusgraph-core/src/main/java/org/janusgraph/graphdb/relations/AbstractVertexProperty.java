@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import org.janusgraph.core.*;
+import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;

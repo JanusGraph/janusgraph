@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.util.time.*;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.util.time.*;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
 
 import java.time.Instant;
 

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.VertexLabel;
+import org.janusgraph.core.VertexLabel;
 
 /**
  * A builder to create new {@link VertexLabel}s.

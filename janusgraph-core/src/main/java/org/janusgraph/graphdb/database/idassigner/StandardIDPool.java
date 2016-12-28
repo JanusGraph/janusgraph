@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner;
+package org.janusgraph.graphdb.database.idassigner;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
@@ -18,13 +18,13 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.IDBlock;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.IDBlock;
 
-import com.thinkaurelius.titan.diskstorage.IDAuthority;
+import org.janusgraph.diskstorage.IDAuthority;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Temporals;
+import org.janusgraph.diskstorage.util.time.Temporals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

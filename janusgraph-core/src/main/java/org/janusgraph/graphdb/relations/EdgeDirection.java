@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

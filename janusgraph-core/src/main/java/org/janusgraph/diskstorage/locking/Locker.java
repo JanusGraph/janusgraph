@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.KeyColumn;
 
 /**
  * Threadsafe discretionary locking within and between processes Titan.

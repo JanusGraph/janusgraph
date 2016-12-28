@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 import java.util.Map;
 import java.util.Set;

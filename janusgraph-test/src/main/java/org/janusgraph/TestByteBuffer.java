@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan;
+package org.janusgraph;
 
 import com.carrotsearch.hppc.LongObjectMap;
 import com.carrotsearch.hppc.LongObjectHashMap;

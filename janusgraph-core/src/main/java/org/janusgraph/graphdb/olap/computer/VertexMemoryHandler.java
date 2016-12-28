@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.olap.computer;
+package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;

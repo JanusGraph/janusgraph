@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.thinkaurelius.titan</groupId>
-        <artifactId>titan</artifactId>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph</artifactId>
         <version>1.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -22,12 +22,12 @@
     
     <dependencies>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -263,7 +263,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                            <excludedGroups>${test.excluded.groups},com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
@@ -283,7 +283,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                            <excludedGroups>${test.excluded.groups},com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
+                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.SerialTests,com.thinkaurelius.titan.testcategory.CassandraSSLTests</excludedGroups>
                             <groups />
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
@@ -304,7 +304,7 @@
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur-ssl -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur-ssl</argLine>
                             <excludedGroups />
-                            <groups>com.thinkaurelius.titan.testcategory.CassandraSSLTests</groups>
+                            <groups>org.janusgraph.testcategory.CassandraSSLTests</groups>
                             <!-- The TP3 JUnit Suite/Runner ignores groups/@Category and I'm not sure why.  Redundant excludes to keep TP3 tests from using non-SSL configs on SSL -->
                             <excludes>
                                 <exclude>**/*ComputerTest.java</exclude>
@@ -330,7 +330,7 @@
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
                             <excludedGroups />
-                            <groups>com.thinkaurelius.titan.testcategory.SerialTests</groups>
+                            <groups>org.janusgraph.testcategory.SerialTests</groups>
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>
                             <parallel>none</parallel>

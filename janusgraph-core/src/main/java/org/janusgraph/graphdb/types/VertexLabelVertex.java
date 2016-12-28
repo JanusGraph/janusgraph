@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
-import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

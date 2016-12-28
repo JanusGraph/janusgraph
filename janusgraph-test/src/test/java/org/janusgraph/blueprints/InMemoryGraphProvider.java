@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.blueprints;
+package org.janusgraph.blueprints;
 
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 
 /**

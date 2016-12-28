@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.WriteBufferUtil;
+import org.janusgraph.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
 

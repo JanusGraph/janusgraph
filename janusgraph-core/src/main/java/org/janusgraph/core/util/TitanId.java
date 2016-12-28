@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.core.util;
+package org.janusgraph.core.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.graphdb.idmanagement.IDManager;
 
 /**
  * Utility methods for handling Titan ids and converting them between indexing and storage backend representations.

@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
+import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
 
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,7 +178,7 @@ public class ConfigOption<O> extends ConfigElement {
     /**
      * Returns true on config options whose values are not local or maskable, that is,
      * cluster-wide options that are either fixed or which can be changed only by using
-     * the {@link com.thinkaurelius.titan.graphdb.database.management.ManagementSystem}
+     * the {@link org.janusgraph.graphdb.database.management.ManagementSystem}
      * (and not by editing the local config).
      *
      * @return true for managed options, false otherwise

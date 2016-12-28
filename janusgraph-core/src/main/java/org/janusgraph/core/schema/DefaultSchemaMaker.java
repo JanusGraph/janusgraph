@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.VertexLabel;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.VertexLabel;
 
 /**
  * When a graph is configured to automatically create vertex/edge labels and property keys when they are first used,
@@ -61,7 +61,7 @@ public interface DefaultSchemaMaker {
     /**
      * Whether to ignore undefined types occurring in a query.
      * <p/>
-     * If this method returns true, then undefined types referred to in a {@link com.thinkaurelius.titan.core.TitanVertexQuery} will be silently
+     * If this method returns true, then undefined types referred to in a {@link org.janusgraph.core.TitanVertexQuery} will be silently
      * ignored and an empty result set will be returned. If this method returns false, then usage of undefined types
      * in queries results in an {@link IllegalArgumentException}.
      */

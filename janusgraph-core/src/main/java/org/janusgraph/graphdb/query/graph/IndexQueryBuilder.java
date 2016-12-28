@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.graphdb.query.graph;
+package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.diskstorage.indexing.RawQuery;
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

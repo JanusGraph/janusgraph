@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.blueprints.thrift.structure;
+package org.janusgraph.blueprints.thrift.structure;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.blueprints.thrift.ThriftGraphProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.blueprints.thrift.ThriftGraphProvider;
+import org.janusgraph.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.BeforeClass;

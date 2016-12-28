@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.Parameter;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.Parameter;
 
 /**
  * Helper class that provides information on the data type and additional parameters that
@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.core.schema.Parameter;
  * <p/>
  *
  * {@link IndexRetriever} returns {@link KeyInformation} for a given store and given key. This will be provided to an
- * index when the key is not fixed in the context, e.g. in {@link IndexProvider#mutate(java.util.Map, IndexRetriever, com.thinkaurelius.titan.diskstorage.BaseTransaction)}
+ * index when the key is not fixed in the context, e.g. in {@link IndexProvider#mutate(java.util.Map, IndexRetriever, org.janusgraph.diskstorage.BaseTransaction)}
  *
  * <p/>
  *
@@ -41,7 +41,7 @@ public interface KeyInformation {
     public Parameter[] getParameters();
 
     /**
-     * Returns the {@link com.thinkaurelius.titan.core.Cardinality} for this key.
+     * Returns the {@link org.janusgraph.core.Cardinality} for this key.
      * @return
      */
     public Cardinality getCardinality();

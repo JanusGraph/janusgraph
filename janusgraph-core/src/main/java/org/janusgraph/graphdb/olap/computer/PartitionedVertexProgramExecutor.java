@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.olap.computer;
+package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.util.WorkerPool;
-import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.olap.VertexJobConverter;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.util.WorkerPool;
+import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

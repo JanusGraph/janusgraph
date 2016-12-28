@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.attribute;
+package org.janusgraph.graphdb.attribute;
 
-import com.thinkaurelius.titan.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Cmp;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static com.thinkaurelius.titan.core.attribute.Text.*;
+import static org.janusgraph.core.attribute.Text.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,23 +1,23 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
-import com.thinkaurelius.titan.core.log.LogProcessorFramework;
-import com.thinkaurelius.titan.core.log.TransactionRecovery;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.core.log.LogProcessorFramework;
+import org.janusgraph.core.log.TransactionRecovery;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.StandardStoreManager;
+import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
 
-import com.thinkaurelius.titan.graphdb.log.StandardLogProcessorFramework;
-import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
+import org.janusgraph.graphdb.log.StandardLogProcessorFramework;
+import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -98,7 +98,7 @@ public class TitanFactory {
      * Returns a {@link Builder} that allows to set the configuration options for opening a Titan graph database.
      * <p />
      * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
-     * the graph can be opened with {@link com.thinkaurelius.titan.core.TitanFactory.Builder#open()}.
+     * the graph can be opened with {@link org.janusgraph.core.TitanFactory.Builder#open()}.
      *
      * @return
      */
@@ -143,7 +143,7 @@ public class TitanFactory {
     }
 
     /**
-     * Returns a {@link com.thinkaurelius.titan.core.log.LogProcessorFramework} for processing transaction log entries
+     * Returns a {@link org.janusgraph.core.log.LogProcessorFramework} for processing transaction log entries
      * against the provided graph instance.
      *
      * @param graph

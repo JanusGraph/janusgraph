@@ -1,4 +1,4 @@
-import com.thinkaurelius.titan.hadoop.FaunusVertex
+import org.janusgraph.hadoop.FaunusVertex
 import com.tinkerpop.blueprints.Direction
 
 def boolean read(FaunusVertex v, String line) {

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.TitanProperty;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

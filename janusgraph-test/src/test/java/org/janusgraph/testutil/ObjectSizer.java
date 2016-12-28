@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

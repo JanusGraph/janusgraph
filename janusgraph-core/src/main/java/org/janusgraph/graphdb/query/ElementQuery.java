@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.TitanElement;
 
 import java.util.Collection;
 import java.util.Comparator;

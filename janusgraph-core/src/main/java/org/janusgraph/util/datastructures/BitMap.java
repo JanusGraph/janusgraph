@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.datastructures;
+package org.janusgraph.util.datastructures;
 
 /**
  * Utility class for setting and reading individual bits in a byte.

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
-import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.graphdb.types.TypeDefinitionMap;
+import org.janusgraph.graphdb.types.TypeUtil;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang.StringUtils;
 

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.database.idhandling;
+package org.janusgraph.graphdb.database.idhandling;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.util.WriteByteBuffer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.hadoop.formats.util;
+package org.janusgraph.hadoop.formats.util;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.HadoopPoolsConfigurable;

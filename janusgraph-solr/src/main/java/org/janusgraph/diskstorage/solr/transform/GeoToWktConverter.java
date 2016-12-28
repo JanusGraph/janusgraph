@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.solr.transform;
+package org.janusgraph.diskstorage.solr.transform;
 
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.PermanentBackendException;
 
 public class GeoToWktConverter {
     /**
-     * {@link com.thinkaurelius.titan.core.attribute.Geoshape} stores Points in the String format: point[X.0,Y.0].
+     * {@link org.janusgraph.core.attribute.Geoshape} stores Points in the String format: point[X.0,Y.0].
      * Solr needs it to be in Well-Known Text format: POINT(X.0 Y.0)
      */
     public static String convertToWktString(Geoshape fieldValue) throws BackendException {

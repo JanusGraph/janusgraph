@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.vertices;
+package org.janusgraph.graphdb.vertices;
 
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Iterator;
 

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.idmanagement;
+package org.janusgraph.diskstorage.idmanagement;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,29 +10,29 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.util.stats.NumberUtil;
-import com.thinkaurelius.titan.diskstorage.util.time.*;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.util.*;
+import org.janusgraph.util.stats.NumberUtil;
+import org.janusgraph.diskstorage.util.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
 /**
- * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation
+ * {@link org.janusgraph.diskstorage.IDAuthority} implementation
  * assuming that the backing store supports consistent key operations.
  * <p/>
  * ID blocks are allocated by first applying for an id block, waiting for a

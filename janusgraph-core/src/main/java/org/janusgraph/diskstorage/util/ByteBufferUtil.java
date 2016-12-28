@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import java.nio.ByteBuffer;
 

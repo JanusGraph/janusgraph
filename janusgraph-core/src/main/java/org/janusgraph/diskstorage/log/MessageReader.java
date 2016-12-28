@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.log;
+package org.janusgraph.diskstorage.log;
 
 /**
  * Implementations of this interface are used to process messages read from the log.

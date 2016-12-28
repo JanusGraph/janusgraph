@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
 import java.io.File;
 import java.io.FileOutputStream;

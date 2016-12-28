@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.util;
+package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.janusgraph.core.*;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.*;
 
 import javax.annotation.Nullable;

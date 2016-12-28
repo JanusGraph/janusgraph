@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.formats;
+package org.janusgraph.hadoop.formats;
 
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.OutputCommitter;

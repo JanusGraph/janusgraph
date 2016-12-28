@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.TitanElement;
 
 import javax.annotation.Nullable;
 

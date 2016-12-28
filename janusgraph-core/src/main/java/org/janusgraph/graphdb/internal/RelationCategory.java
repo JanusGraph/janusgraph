@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanVertexQuery;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.TitanVertexQuery;
+import org.janusgraph.graphdb.query.condition.Condition;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
 import java.util.Arrays;
 
@@ -12,7 +12,7 @@ public class HBaseCompatLoader {
 
     private static final String DEFAULT_HBASE_COMPAT_VERSION = "1.0";
 
-    private static final String DEFAULT_HBASE_CLASS_NAME = "com.thinkaurelius.titan.diskstorage.hbase.HBaseCompat1_00";
+    private static final String DEFAULT_HBASE_CLASS_NAME = "org.janusgraph.diskstorage.hbase.HBaseCompat1_00";
 
     private static HBaseCompat cachedCompat;
 
@@ -34,7 +34,7 @@ public class HBaseCompatLoader {
             String hbaseVersion = VersionInfo.getVersion();
             for (String supportedVersion : Arrays.asList("0.94", "0.96", "0.98", "1.0")) {
                 if (hbaseVersion.startsWith(supportedVersion + ".")) {
-                    className = "com.thinkaurelius.titan.diskstorage.hbase.HBaseCompat" + supportedVersion.replaceAll("\\.", "_");
+                    className = "org.janusgraph.diskstorage.hbase.HBaseCompat" + supportedVersion.replaceAll("\\.", "_");
                     classNameSource = "supporting runtime HBase version " + hbaseVersion;
                     break;
                 }

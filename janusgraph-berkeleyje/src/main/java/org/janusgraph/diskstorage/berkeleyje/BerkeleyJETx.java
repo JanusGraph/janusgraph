@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.berkeleyje;
+package org.janusgraph.diskstorage.berkeleyje;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.configuration;
+package org.janusgraph.graphdb.configuration;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import static junit.framework.TestCase.assertTrue;

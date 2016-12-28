@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.graphdb.transaction;
+package org.janusgraph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
-import com.thinkaurelius.titan.graphdb.relations.CacheVertexProperty;
-import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.graphdb.types.TypeInspector;
-import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.graphdb.database.EdgeSerializer;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.relations.CacheEdge;
+import org.janusgraph.graphdb.relations.CacheVertexProperty;
+import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.types.TypeInspector;
+import org.janusgraph.graphdb.types.TypeUtil;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Iterator;

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.log.util;
+package org.janusgraph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.log.Message;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.log.Message;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -11,9 +11,9 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Abstract implementation of {@link com.thinkaurelius.titan.diskstorage.log.Message} which exposes the timestamp, sender, and payload
+ * Abstract implementation of {@link org.janusgraph.diskstorage.log.Message} which exposes the timestamp, sender, and payload
  * of a message.
- * Particular {@link com.thinkaurelius.titan.diskstorage.log.Log} implementations can extend this class.
+ * Particular {@link org.janusgraph.diskstorage.log.Log} implementations can extend this class.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

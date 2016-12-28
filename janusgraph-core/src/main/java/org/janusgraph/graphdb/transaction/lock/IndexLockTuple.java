@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.transaction.lock;
+package org.janusgraph.graphdb.transaction.lock;
 
-import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
+import org.janusgraph.graphdb.types.CompositeIndexType;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

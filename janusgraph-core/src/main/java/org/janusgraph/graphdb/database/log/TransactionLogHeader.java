@@ -1,21 +1,21 @@
-package com.thinkaurelius.titan.graphdb.database.log;
+package org.janusgraph.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.log.Change;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.HashingUtil;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.core.log.Change;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.HashingUtil;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.log.StandardTransactionId;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.apache.commons.lang.StringUtils;
 
 import java.time.Instant;
@@ -67,7 +67,7 @@ public class TransactionLogHeader {
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
             VariableLong.writePositive(out,rel.getVertex(0).longId());
-            com.thinkaurelius.titan.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
+            org.janusgraph.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);
         }
     }
@@ -218,7 +218,7 @@ public class TransactionLogHeader {
             long size = VariableLong.readPositive(in);
             for (int i = 0; i < size; i++) {
                 long vid = VariableLong.readPositive(in);
-                com.thinkaurelius.titan.diskstorage.Entry entry = BufferUtil.readEntry(in,serializer);
+                org.janusgraph.diskstorage.Entry entry = BufferUtil.readEntry(in,serializer);
                 mods.add(new Modification(state,vid,entry));
             }
             return mods;
@@ -248,9 +248,9 @@ public class TransactionLogHeader {
 
         public final Change state;
         public final long outVertexId;
-        public final com.thinkaurelius.titan.diskstorage.Entry relationEntry;
+        public final org.janusgraph.diskstorage.Entry relationEntry;
 
-        private Modification(Change state, long outVertexId, com.thinkaurelius.titan.diskstorage.Entry relationEntry) {
+        private Modification(Change state, long outVertexId, org.janusgraph.diskstorage.Entry relationEntry) {
             this.state = state;
             this.outVertexId = outVertexId;
             this.relationEntry = relationEntry;

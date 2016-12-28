@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
+package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.CacheMetricsAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.util.datastructures.ByteSize.*;
+import static org.janusgraph.util.datastructures.ByteSize.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

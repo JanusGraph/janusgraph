@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
+package org.janusgraph.diskstorage.cassandra.embedded;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.ByteBufferUtil;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.apache.cassandra.cache.CachingOptions;
 import org.apache.cassandra.config.CFMetaData;
@@ -44,8 +44,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
 

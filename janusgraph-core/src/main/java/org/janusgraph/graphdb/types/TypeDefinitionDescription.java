@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 

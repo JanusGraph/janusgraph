@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
-import com.thinkaurelius.titan.core.schema.SchemaManager;
+import org.janusgraph.core.schema.SchemaManager;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * TitanGraphTransaction defines a transactional context for a {@link com.thinkaurelius.titan.core.TitanGraph}. Since TitanGraph is a transactional graph
+ * TitanGraphTransaction defines a transactional context for a {@link org.janusgraph.core.TitanGraph}. Since TitanGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a TitanGraphTransaction.
  * <p/>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
@@ -52,7 +52,7 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
     public TitanGraphQuery<? extends TitanGraphQuery> query();
 
     /**
-     * Returns a {@link com.thinkaurelius.titan.core.TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
+     * Returns a {@link org.janusgraph.core.TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
      * the given query string. The query string is analyzed and answered by the underlying storage backend.
      * <p/>
      * Note, that using indexQuery will may ignore modifications in the current transaction.
@@ -65,7 +65,7 @@ public interface TitanGraphTransaction extends Graph, SchemaManager {
 
     /**
      * @return
-     * @see TitanGraph#multiQuery(com.thinkaurelius.titan.core.TitanVertex...)
+     * @see TitanGraph#multiQuery(org.janusgraph.core.TitanVertex...)
      */
     @Deprecated
     public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(TitanVertex... vertices);

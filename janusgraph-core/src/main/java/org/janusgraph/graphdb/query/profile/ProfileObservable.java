@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query.profile;
+package org.janusgraph.graphdb.query.profile;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

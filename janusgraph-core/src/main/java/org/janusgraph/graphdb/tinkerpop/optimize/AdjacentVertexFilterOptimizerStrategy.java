@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;

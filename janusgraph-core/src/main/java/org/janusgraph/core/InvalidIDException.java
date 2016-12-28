@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 /**
  * Titan represents element identifiers as longs, but not all numbers

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.compat.h2;
+package org.janusgraph.hadoop.compat.h2;
 
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;

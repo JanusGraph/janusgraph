@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
 /**
  * A BackendQuery is a query that can be updated to a new limit.

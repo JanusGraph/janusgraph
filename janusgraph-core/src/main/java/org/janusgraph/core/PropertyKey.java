@@ -1,5 +1,5 @@
 
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 
 /**

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 

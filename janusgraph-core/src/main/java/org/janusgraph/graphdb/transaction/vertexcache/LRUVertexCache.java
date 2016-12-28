@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.transaction.vertexcache;
+package org.janusgraph.graphdb.transaction.vertexcache;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.util.ConcurrentLRUCache;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.util.ConcurrentLRUCache;
+import org.janusgraph.util.datastructures.Retriever;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 

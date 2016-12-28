@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core.log;
+package org.janusgraph.core.log;
 
-import com.thinkaurelius.titan.core.*;
+import org.janusgraph.core.*;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -8,7 +8,7 @@ import java.util.Set;
 
 /**
  * Container interface for a set of changes against the graph caused by a particular transaction. This is passed as an argument to
- * {@link ChangeProcessor#process(com.thinkaurelius.titan.core.TitanTransaction, TransactionId, ChangeState)}
+ * {@link ChangeProcessor#process(org.janusgraph.core.TitanTransaction, TransactionId, ChangeState)}
  * for the user to retrieve changed elements and act upon it.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

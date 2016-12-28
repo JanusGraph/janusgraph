@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.blueprints.process;
+package org.janusgraph.blueprints.process;
 
-import com.thinkaurelius.titan.blueprints.BerkeleyGraphProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.blueprints.BerkeleyGraphProvider;
+import org.janusgraph.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessPerformanceSuite;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;

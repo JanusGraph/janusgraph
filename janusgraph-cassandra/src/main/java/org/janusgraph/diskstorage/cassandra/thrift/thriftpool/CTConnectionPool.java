@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool;
+package org.janusgraph.diskstorage.cassandra.thrift.thriftpool;
 
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;

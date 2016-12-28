@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.blueprints.process.traversal.strategy;
+package org.janusgraph.blueprints.process.traversal.strategy;
 
-import com.thinkaurelius.titan.blueprints.InMemoryGraphProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.blueprints.InMemoryGraphProvider;
+import org.janusgraph.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.junit.runner.RunWith;
 

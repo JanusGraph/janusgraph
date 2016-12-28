@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.pkgtest;
+package org.janusgraph.pkgtest;
 
 import org.junit.Test;
 

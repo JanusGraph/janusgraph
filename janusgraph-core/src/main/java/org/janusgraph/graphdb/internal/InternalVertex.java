@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Predicate;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
+import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.List;
 

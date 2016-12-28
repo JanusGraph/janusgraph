@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanElement;
 
 import java.util.ArrayList;
 import java.util.Comparator;

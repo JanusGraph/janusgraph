@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.schema;
+package org.janusgraph.graphdb.schema;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.Multiplicity;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.hadoop.scan;
+package org.janusgraph.hadoop.scan;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.hbase.HBaseBinaryInputFormat;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.olap.VertexScanJob;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.formats.hbase.HBaseBinaryInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

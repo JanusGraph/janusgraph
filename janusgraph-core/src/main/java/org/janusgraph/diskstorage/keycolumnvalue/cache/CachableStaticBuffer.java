@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
+package org.janusgraph.diskstorage.keycolumnvalue.cache;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

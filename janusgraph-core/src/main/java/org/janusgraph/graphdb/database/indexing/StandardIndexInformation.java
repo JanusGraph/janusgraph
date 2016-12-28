@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.database.indexing;
+package org.janusgraph.graphdb.database.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Contain;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.indexing.IndexInformation;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.graphdb.query.TitanPredicate;
 import org.apache.commons.lang.StringUtils;
 
 /**

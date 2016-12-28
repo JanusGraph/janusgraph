@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
+package org.janusgraph.diskstorage.cassandra.thrift;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -6,12 +6,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.*;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnection;
+import org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.*;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.thrift.ConsistencyLevel;
@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 /**
  * A Titan {@code KeyColumnValueStore} backed by Cassandra.
@@ -72,7 +72,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
      * be handled efficiently; a Thrift call might still be made
      * before returning the empty list.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *          when columnEnd < columnStart
      */
     @Override

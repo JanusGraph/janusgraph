@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -6,14 +6,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
-import com.thinkaurelius.titan.diskstorage.locking.Locker;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.locking.LocalLockMediator;
+import org.janusgraph.diskstorage.locking.Locker;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
+import org.janusgraph.diskstorage.util.BackendOperation;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.KeyColumn;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +133,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * <p>
      * If {@link #isMutationStarted()}, this does nothing.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *
      * @return true if this transaction holds at least one lock, false if the
      *         transaction holds no locks
@@ -152,7 +152,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * calls using this transaction.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     void checkAllLocks() throws BackendException {
         StoreTransaction lt = getConsistentTx();
@@ -170,7 +170,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * calls using this transaction.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     void checkAllExpectedValues() throws BackendException {
         for (final ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.hadoop.formats.util;
+package org.janusgraph.hadoop.formats.util;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetup;
-import com.thinkaurelius.titan.util.system.ConfigurationUtil;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.hadoop.formats.util.input.TitanHadoopSetup;
+import org.janusgraph.util.system.ConfigurationUtil;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -15,8 +15,8 @@ import org.apache.hadoop.mapreduce.*;
 import java.io.IOException;
 import java.util.List;
 
-import static com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_CLASS_NAME;
-import static com.thinkaurelius.titan.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
+import static org.janusgraph.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_CLASS_NAME;
+import static org.janusgraph.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
 
 public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable {
 

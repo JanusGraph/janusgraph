@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
 import com.google.common.collect.ImmutableSet;
 

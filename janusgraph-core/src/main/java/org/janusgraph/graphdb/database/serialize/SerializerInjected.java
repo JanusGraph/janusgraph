@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.database.serialize;
+package org.janusgraph.graphdb.database.serialize;
 
 /**
- * Marks a {@link com.thinkaurelius.titan.core.attribute.AttributeSerializer} that requires a {@link com.thinkaurelius.titan.graphdb.database.serialize.Serializer}
+ * Marks a {@link org.janusgraph.core.attribute.AttributeSerializer} that requires a {@link com.thinkaurelius.titan.graphdb.database.serialize.Serializer}
  * to serialize the internal state. It is expected that the serializer is passed into this object upon initialization and before usage.
- * Furthermore, such serializers will convert the {@link com.thinkaurelius.titan.diskstorage.WriteBuffer} passed into the
- * {@link com.thinkaurelius.titan.core.attribute.AttributeSerializer}'s write methods to be cast to {@link com.thinkaurelius.titan.graphdb.database.serialize.DataOutput}.
+ * Furthermore, such serializers will convert the {@link org.janusgraph.diskstorage.WriteBuffer} passed into the
+ * {@link org.janusgraph.core.attribute.AttributeSerializer}'s write methods to be cast to {@link com.thinkaurelius.titan.graphdb.database.serialize.DataOutput}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

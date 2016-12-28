@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.transaction;
+package org.janusgraph.graphdb.transaction;
 
-import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
 
 /**
- * Provides configuration options for {@link com.thinkaurelius.titan.core.TitanTransaction}.
+ * Provides configuration options for {@link org.janusgraph.core.TitanTransaction}.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
- * @see com.thinkaurelius.titan.core.TitanTransaction
+ * @see org.janusgraph.core.TitanTransaction
  */
 public interface TransactionConfiguration extends BaseTransactionConfig {
 

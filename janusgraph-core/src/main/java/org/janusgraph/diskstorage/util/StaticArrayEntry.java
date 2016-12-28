@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.MetaAnnotatable;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.graphdb.relations.RelationCache;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.MetaAnnotatable;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
 import java.util.Map;

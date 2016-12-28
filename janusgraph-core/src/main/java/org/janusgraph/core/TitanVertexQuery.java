@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.TitanPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -9,7 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 /**
  * A TitanVertexQuery is a VertexQuery executed for a single vertex.
  * <p />
- * Calling {@link com.thinkaurelius.titan.core.TitanVertex#query()} builds such a query against the vertex
+ * Calling {@link org.janusgraph.core.TitanVertex#query()} builds such a query against the vertex
  * this method is called on. This query builder provides the methods to specify which indicent edges or
  * properties to query for.
  *

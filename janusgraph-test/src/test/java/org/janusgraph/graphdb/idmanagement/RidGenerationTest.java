@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.idmanagement;
+package org.janusgraph.graphdb.idmanagement;
 
 import static org.junit.Assert.assertEquals;
 
@@ -8,12 +8,12 @@ import java.util.HashSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import org.janusgraph.diskstorage.common.DistributedStoreManager;
 
 public class RidGenerationTest {
 

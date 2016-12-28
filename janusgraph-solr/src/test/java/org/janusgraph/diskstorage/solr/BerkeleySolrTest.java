@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.solr;
+package org.janusgraph.diskstorage.solr;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanIndexTest;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanIndexTest;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import static com.thinkaurelius.titan.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

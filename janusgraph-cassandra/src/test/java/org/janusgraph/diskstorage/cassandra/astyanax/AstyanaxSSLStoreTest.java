@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
+package org.janusgraph.diskstorage.cassandra.astyanax;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.testcategory.CassandraSSLTests;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.testcategory.CassandraSSLTests;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 

@@ -1,22 +1,22 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.diskstorage.ResourceUnavailableException;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.diskstorage.ResourceUnavailableException;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.Message;
-import com.thinkaurelius.titan.diskstorage.log.MessageReader;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.diskstorage.util.time.Timer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.Message;
+import org.janusgraph.diskstorage.log.MessageReader;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.cache.SchemaCache;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

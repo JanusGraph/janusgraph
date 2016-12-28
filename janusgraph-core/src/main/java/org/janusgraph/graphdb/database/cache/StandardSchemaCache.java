@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.database.cache;
+package org.janusgraph.graphdb.database.cache;
 
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
-import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
-import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.relations.EdgeDirection;
+import org.janusgraph.graphdb.types.system.BaseKey;
+import org.janusgraph.graphdb.types.system.BaseLabel;
+import org.janusgraph.graphdb.types.system.BaseRelationType;
+import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 

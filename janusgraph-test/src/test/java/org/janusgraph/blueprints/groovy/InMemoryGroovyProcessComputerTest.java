@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.blueprints.groovy;
+package org.janusgraph.blueprints.groovy;
 
-import com.thinkaurelius.titan.blueprints.InMemoryGraphComputerProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.blueprints.InMemoryGraphComputerProvider;
+import org.janusgraph.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.GroovyProcessComputerSuite;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;

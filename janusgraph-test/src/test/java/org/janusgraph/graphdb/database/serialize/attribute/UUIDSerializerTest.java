@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
+package org.janusgraph.graphdb.database.serialize.attribute;
 
-import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.diskstorage.util.ReadArrayBuffer;
+import org.janusgraph.diskstorage.util.WriteByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 

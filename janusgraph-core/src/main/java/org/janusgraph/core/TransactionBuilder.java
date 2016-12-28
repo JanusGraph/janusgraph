@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
- * Constructor returned by {@link com.thinkaurelius.titan.core.TitanGraph#buildTransaction()} to build a new transaction.
+ * Constructor returned by {@link org.janusgraph.core.TitanGraph#buildTransaction()} to build a new transaction.
  * The TransactionBuilder allows certain aspects of the resulting transaction to be configured up-front.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Contain;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import org.janusgraph.core.*;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Contain;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.Nullable;
@@ -157,7 +157,7 @@ public class QueryUtil {
      * @param constraints
      * @param <E>
      * @return
-     * @see #isQueryNormalForm(com.thinkaurelius.titan.graphdb.query.condition.Condition)
+     * @see #isQueryNormalForm(org.janusgraph.graphdb.query.condition.Condition)
      */
     public static <E extends TitanElement> And<E> constraints2QNF(StandardTitanTx tx, List<PredicateCondition<String, E>> constraints) {
         And<E> conditions = new And<E>(constraints.size() + 4);

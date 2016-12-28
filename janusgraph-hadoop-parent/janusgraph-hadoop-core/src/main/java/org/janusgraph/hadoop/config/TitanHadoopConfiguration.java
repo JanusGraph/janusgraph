@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.hadoop.config;
+package org.janusgraph.hadoop.config;
 
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.configuration.*;
 
 public class TitanHadoopConfiguration {
 

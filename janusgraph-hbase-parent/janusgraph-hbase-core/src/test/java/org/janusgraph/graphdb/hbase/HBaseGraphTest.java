@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.hbase;
+package org.janusgraph.graphdb.hbase;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphTest;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;

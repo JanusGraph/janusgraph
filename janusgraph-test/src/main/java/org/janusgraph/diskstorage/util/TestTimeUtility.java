@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 
 import org.junit.Test;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 
 import java.time.Instant;
 import java.util.Random;

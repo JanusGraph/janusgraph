@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.profile;
+package org.janusgraph.graphdb.tinkerpop.profile;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 

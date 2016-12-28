@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.berkeleyje;
+package org.janusgraph.diskstorage.berkeleyje;
 
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.KeyColumnValueStoreTest;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

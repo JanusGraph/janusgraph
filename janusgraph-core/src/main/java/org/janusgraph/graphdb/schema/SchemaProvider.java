@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.schema;
+package org.janusgraph.graphdb.schema;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

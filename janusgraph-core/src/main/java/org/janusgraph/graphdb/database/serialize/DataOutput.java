@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.database.serialize;
+package org.janusgraph.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 
 public interface DataOutput extends WriteBuffer {
 

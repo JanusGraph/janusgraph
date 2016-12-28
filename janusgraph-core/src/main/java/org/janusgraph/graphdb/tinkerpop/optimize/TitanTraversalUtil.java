@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.optimize;
+package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraElementTraversal;
-import com.thinkaurelius.titan.graphdb.tinkerpop.TitanBlueprintsGraph;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
+import org.janusgraph.graphdb.tinkerpop.TitanBlueprintsGraph;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;

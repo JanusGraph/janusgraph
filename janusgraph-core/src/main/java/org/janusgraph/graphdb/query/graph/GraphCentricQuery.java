@@ -1,26 +1,26 @@
-package com.thinkaurelius.titan.graphdb.query.graph;
+package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.query.ElementQuery;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.query.condition.FixedCondition;
-import com.thinkaurelius.titan.graphdb.query.profile.ProfileObservable;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.BaseQuery;
+import org.janusgraph.graphdb.query.ElementQuery;
+import org.janusgraph.graphdb.query.QueryUtil;
+import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.query.condition.FixedCondition;
+import org.janusgraph.graphdb.query.profile.ProfileObservable;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.Comparator;
 
 /**
- * An executable {@link ElementQuery} for {@link com.thinkaurelius.titan.core.TitanGraphQuery}. This query contains
+ * An executable {@link ElementQuery} for {@link org.janusgraph.core.TitanGraphQuery}. This query contains
  * the condition, and only one sub-query {@link JointIndexQuery}.
- * It also maintains the ordering for the query result which is needed by the {@link com.thinkaurelius.titan.graphdb.query.QueryProcessor}
+ * It also maintains the ordering for the query result which is needed by the {@link org.janusgraph.graphdb.query.QueryProcessor}
  * to correctly order the result.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

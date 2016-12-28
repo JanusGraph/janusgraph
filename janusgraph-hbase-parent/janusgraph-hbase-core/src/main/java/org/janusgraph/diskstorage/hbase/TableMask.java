@@ -3,7 +3,7 @@
  * <p>
  * Please see the included license file for details.
  */
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
 import java.io.Closeable;
 import java.io.IOException;

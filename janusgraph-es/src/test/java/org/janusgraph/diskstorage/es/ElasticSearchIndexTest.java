@@ -1,37 +1,37 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.attribute.*;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.indexing.IndexProvider;
+import org.janusgraph.diskstorage.indexing.IndexProviderTest;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.diskstorage.indexing.IndexQuery;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.Date;
 import java.util.UUID;
 
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

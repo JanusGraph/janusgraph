@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.database;
+package org.janusgraph.graphdb.database;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.graphdb.types.TypeInspector;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.graphdb.relations.RelationCache;
+import org.janusgraph.graphdb.types.TypeInspector;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

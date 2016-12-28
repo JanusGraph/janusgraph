@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.util.system;
+package org.janusgraph.util.system;
 
-import com.thinkaurelius.titan.core.TitanTransaction;
+import org.janusgraph.core.TitanTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

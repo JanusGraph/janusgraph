@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
+package org.janusgraph.graphdb.database.serialize.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Namifiable;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerializer;
-import com.thinkaurelius.titan.util.encoding.StringEncoding;
+import org.janusgraph.core.Namifiable;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
+import org.janusgraph.graphdb.database.serialize.SupportsNullSerializer;
+import org.janusgraph.util.encoding.StringEncoding;
 
 import java.io.*;
 import java.util.zip.GZIPInputStream;

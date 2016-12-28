@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
 
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import org.janusgraph.core.schema.SchemaStatus;
 
 import java.time.Duration;
 

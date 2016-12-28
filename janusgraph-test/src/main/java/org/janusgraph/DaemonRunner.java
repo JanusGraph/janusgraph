@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan;
+package org.janusgraph;
 
 import com.google.common.base.Joiner;
 import org.slf4j.Logger;

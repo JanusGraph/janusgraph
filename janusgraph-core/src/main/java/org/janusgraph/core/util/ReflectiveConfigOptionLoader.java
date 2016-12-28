@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.util;
+package org.janusgraph.core.util;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -9,8 +9,8 @@ import java.util.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.diskstorage.util.time.Timer;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -19,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 
 /**
  * This class supports iteration over Titan's ConfigNamespaces at runtime.
@@ -103,20 +103,20 @@ public enum ReflectiveConfigOptionLoader {
          * but the benefit isn't substantial.
          */
         List<String> classnames = ImmutableList.of(
-            "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager",
-            "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
-            "com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager",
-            "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
-            "com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex",
-            "com.thinkaurelius.titan.diskstorage.solr.SolrIndex",
-            "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog",
-            "com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager",
-            "com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration",
-            "com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
-            "com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner",
-            //"com.thinkaurelius.titan.graphdb.TestMockIndexProvider",
-            //"com.thinkaurelius.titan.graphdb.TestMockLog",
-            "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+            "org.janusgraph.diskstorage.hbase.HBaseStoreManager",
+            "org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
+            "org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager",
+            "org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
+            "org.janusgraph.diskstorage.es.ElasticSearchIndex",
+            "org.janusgraph.diskstorage.solr.SolrIndex",
+            "org.janusgraph.diskstorage.log.kcvs.KCVSLog",
+            "org.janusgraph.diskstorage.log.kcvs.KCVSLogManager",
+            "org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration",
+            "org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
+            "org.janusgraph.graphdb.database.idassigner.VertexIDAssigner",
+            //"org.janusgraph.graphdb.TestMockIndexProvider",
+            //"org.janusgraph.graphdb.TestMockLog",
+            "org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager");
 
         Timer t = new Timer(TimestampProviders.MILLI);
         t.start();

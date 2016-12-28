@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.TitanElement;
 
 /**
  * Combines multiple conditions under semantic AND, i.e. all conditions must be true for this combination to be true

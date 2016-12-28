@@ -1,4 +1,4 @@
-import com.thinkaurelius.titan.core.TitanFactory
+import org.janusgraph.core.TitanFactory
 import com.tinkerpop.blueprints.Graph
 import org.apache.commons.configuration.BaseConfiguration
 

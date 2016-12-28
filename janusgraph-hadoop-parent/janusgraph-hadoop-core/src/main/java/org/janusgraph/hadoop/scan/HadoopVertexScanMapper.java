@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.hadoop.scan;
+package org.janusgraph.hadoop.scan;
 
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.olap.VertexJobConverter;
-import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.olap.VertexJobConverter;
+import org.janusgraph.graphdb.olap.VertexScanJob;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;
 
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+import static org.janusgraph.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 public class HadoopVertexScanMapper extends HadoopScanMapper {
 

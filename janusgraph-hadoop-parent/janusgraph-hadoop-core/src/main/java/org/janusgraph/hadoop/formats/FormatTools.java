@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.hadoop.formats;
+package org.janusgraph.hadoop.formats;
 
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+import static org.janusgraph.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.olap;
+package org.janusgraph.olap;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

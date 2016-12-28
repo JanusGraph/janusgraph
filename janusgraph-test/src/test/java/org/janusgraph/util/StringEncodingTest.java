@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.util;
+package org.janusgraph.util;
 
-import com.thinkaurelius.titan.util.encoding.StringEncoding;
+import org.janusgraph.util.encoding.StringEncoding;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

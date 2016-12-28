@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop;
+package org.janusgraph.graphdb.tinkerpop;
 
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

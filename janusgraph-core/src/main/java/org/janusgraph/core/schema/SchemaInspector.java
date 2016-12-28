@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.VertexLabel;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.core.VertexLabel;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -106,7 +106,7 @@ public interface SchemaInspector {
 
     /**
      * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
-     * automatically created through the registered {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker}.
+     * automatically created through the registered {@link org.janusgraph.core.schema.DefaultSchemaMaker}.
      * <p />
      * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
      *

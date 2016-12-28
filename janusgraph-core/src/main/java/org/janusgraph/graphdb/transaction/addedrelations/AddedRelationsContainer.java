@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.transaction.addedrelations;
+package org.janusgraph.graphdb.transaction.addedrelations;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Collection;
 import java.util.List;

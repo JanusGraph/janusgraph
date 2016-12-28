@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import static com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer.*;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import static org.janusgraph.diskstorage.util.StaticArrayBuffer.*;
+import org.janusgraph.diskstorage.WriteBuffer;
 
 import java.nio.ByteBuffer;
 

@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.berkeleyje;
+package org.janusgraph.graphdb.berkeleyje;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.olap.OLAPTest;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.olap.OLAPTest;
 
 public class BerkeleyOLAPTest extends OLAPTest {
 

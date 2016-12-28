@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.database.cache;
+package org.janusgraph.graphdb.database.cache;
 
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.graphdb.types.system.BaseRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -12,7 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
  * The SchemaCache speeds up two types of lookups:
  * <ul>
  *     <li>Retrieving a type by its name (index lookup)</li>
- *     <li>Retrieving the relations of a schema vertex for predefined {@link com.thinkaurelius.titan.graphdb.types.system.SystemRelationType}s</li>
+ *     <li>Retrieving the relations of a schema vertex for predefined {@link org.janusgraph.graphdb.types.system.SystemRelationType}s</li>
  * </ul>
  *
  * @author Matthias Broecheler (me@matthiasb.com)
