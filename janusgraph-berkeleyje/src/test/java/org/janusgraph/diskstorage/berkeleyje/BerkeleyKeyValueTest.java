@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.berkeleyje;
+package org.janusgraph.diskstorage.berkeleyje;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.KeyValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.KeyValueStoreTest;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 
 
 public class BerkeleyKeyValueTest extends KeyValueStoreTest {

@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.serializer;
+package org.janusgraph.graphdb.serializer;
 
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.graphdb.database.EdgeSerializer;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.internal.InternalRelation;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.core.attribute;
+package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.query.TitanPredicate;
 import org.apache.commons.lang.ArrayUtils;
 
 /**

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import org.janusgraph.core.schema.TitanManagement;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -22,7 +22,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
-@Graph.OptIn("com.thinkaurelius.titan.blueprints.process.traversal.strategy.TitanStrategySuite")
+@Graph.OptIn("org.janusgraph.blueprints.process.traversal.strategy.TitanStrategySuite")
 //------------------------
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
@@ -46,8 +46,8 @@ public interface TitanGraph extends TitanGraphTransaction {
     /**
      * Opens a new thread-independent {@link TitanTransaction}.
      * <p/>
-     * The transaction is open when it is returned but MUST be explicitly closed by calling {@link com.thinkaurelius.titan.core.TitanTransaction#commit()}
-     * or {@link com.thinkaurelius.titan.core.TitanTransaction#rollback()} when it is no longer needed.
+     * The transaction is open when it is returned but MUST be explicitly closed by calling {@link org.janusgraph.core.TitanTransaction#commit()}
+     * or {@link org.janusgraph.core.TitanTransaction#rollback()} when it is no longer needed.
      * <p/>
      * Note, that this returns a thread independent transaction object. It is not necessary to call this method
      * to use Blueprint's standard transaction framework which will automatically start a transaction with the first

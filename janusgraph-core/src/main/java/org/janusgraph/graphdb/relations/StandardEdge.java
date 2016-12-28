@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.graphdb.relations;
+package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.graphdb.internal.ElementLifeCycle;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
 
 import java.util.Collections;
 import java.util.HashMap;

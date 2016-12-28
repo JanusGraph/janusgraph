@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.hadoop.formats;
+package org.janusgraph.hadoop.formats;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.JobContext;

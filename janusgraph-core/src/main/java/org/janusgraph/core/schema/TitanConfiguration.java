@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
 /**
  * Used to read and change the global Titan configuration.

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.astyanax;
+package org.janusgraph.graphdb.astyanax;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
-import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphTest;
+import org.janusgraph.graphdb.TitanPartitionGraphTest;
 import org.junit.BeforeClass;
 
 public class AstyanaxPartitionGraphTest extends TitanPartitionGraphTest {

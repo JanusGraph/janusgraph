@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
-import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.Token;
+import org.janusgraph.graphdb.types.TypeUtil;
 
 import java.util.Map;
 import java.util.Set;

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.idmanagement;
+package org.janusgraph.graphdb.idmanagement;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -13,22 +13,22 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.IDBlock;
-import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.IDAuthority;
+import org.janusgraph.diskstorage.IDBlock;
+import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
 import junit.framework.Assert;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.Test;
 
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import com.thinkaurelius.titan.graphdb.database.idassigner.StandardIDPool;
-import com.thinkaurelius.titan.util.datastructures.IntHashSet;
-import com.thinkaurelius.titan.util.datastructures.IntSet;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import org.janusgraph.graphdb.database.idassigner.StandardIDPool;
+import org.janusgraph.util.datastructures.IntHashSet;
+import org.janusgraph.util.datastructures.IntSet;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

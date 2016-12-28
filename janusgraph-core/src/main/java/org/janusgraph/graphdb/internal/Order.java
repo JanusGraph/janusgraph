@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 /**
  * Constants to specify the ordering of a result set in queries.

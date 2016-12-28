@@ -1,37 +1,37 @@
-package com.thinkaurelius.titan.graphdb.configuration;
+package org.janusgraph.graphdb.configuration;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.StandardIndexProvider;
-import com.thinkaurelius.titan.diskstorage.StandardStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import com.thinkaurelius.titan.graphdb.tinkerpop.TitanDefaultSchemaMaker;
-import com.thinkaurelius.titan.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
-import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
-import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
-import com.thinkaurelius.titan.util.stats.NumberUtil;
-import com.thinkaurelius.titan.diskstorage.util.time.*;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
-import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
-import com.thinkaurelius.titan.graphdb.database.cache.StandardSchemaCache;
-import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.util.encoding.LongEncoding;
-import com.thinkaurelius.titan.util.system.ConfigurationUtil;
-import com.thinkaurelius.titan.util.system.NetworkUtil;
+import org.janusgraph.core.*;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.StandardIndexProvider;
+import org.janusgraph.diskstorage.StandardStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
+import org.janusgraph.graphdb.tinkerpop.TitanDefaultSchemaMaker;
+import org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
+import org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
+import org.janusgraph.util.stats.NumberUtil;
+import org.janusgraph.diskstorage.util.time.*;
+import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
+import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
+import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
+import org.janusgraph.graphdb.database.cache.MetricInstrumentedSchemaCache;
+import org.janusgraph.graphdb.database.cache.StandardSchemaCache;
+import org.janusgraph.graphdb.database.cache.SchemaCache;
+import org.janusgraph.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.util.encoding.LongEncoding;
+import org.janusgraph.util.system.ConfigurationUtil;
+import org.janusgraph.util.system.NetworkUtil;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
@@ -58,14 +58,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
+import org.janusgraph.graphdb.database.serialize.Serializer;
+import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
+import org.janusgraph.util.stats.MetricManager;
 
 /**
- * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.
+ * Provides functionality to configure a {@link org.janusgraph.core.TitanGraph} INSTANCE.
  * <p/>
  * <p/>
  * A graph database configuration is uniquely associated with a graph database and must not be used for multiple
@@ -611,7 +611,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, false);
 
     /**
-     * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
+     * Locker type to use.  The supported types are in {@link org.janusgraph.diskstorage.Backend}.
      */
     public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(LOCK_NS, "backend",
             "Locker type to use",
@@ -762,7 +762,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
-     * When Titan allocates IDs with {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
+     * When Titan allocates IDs with {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
      * configured, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
@@ -773,7 +773,7 @@ public class GraphDatabaseConfiguration {
      * should generally be set to 3 or more.
      * <p/>
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is not configured to
-     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}.
+     * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
@@ -790,7 +790,7 @@ public class GraphDatabaseConfiguration {
      * same value. Otherwise, data corruption will occur.
      *
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
-     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}. However, note that while the
+     * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}. However, note that while the
      * conflict avoidance mode can be changed, this setting cannot ever be changed and must therefore be considered a priori.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag-bits",
@@ -811,7 +811,7 @@ public class GraphDatabaseConfiguration {
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
      *
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
-     * {@link com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}.
+     * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag",
             "Conflict avoidance tag to be used by this Titan instance when allocating IDs",
@@ -971,7 +971,7 @@ public class GraphDatabaseConfiguration {
      * some kind of configuration object is in scope everywhere it is used, and
      * it could theoretically be stored in and read from that object.
      */
-    public static final String METRICS_PREFIX_DEFAULT = "com.thinkaurelius.titan";
+    public static final String METRICS_PREFIX_DEFAULT = "org.janusgraph";
     public static final String METRICS_SYSTEM_PREFIX_DEFAULT = METRICS_PREFIX_DEFAULT + "." + "sys";
     public static final String METRICS_SCHEMA_PREFIX_DEFAULT = METRICS_SYSTEM_PREFIX_DEFAULT + "." + "schema";
 
@@ -1281,7 +1281,7 @@ public class GraphDatabaseConfiguration {
             "Gremlin configuration options");
 
     public static final ConfigOption<String> GREMLIN_GRAPH = new ConfigOption<String>(GREMLIN_NS, "graph",
-            "The implementation of graph factory that will be used by gremlin server", ConfigOption.Type.LOCAL, "com.thinkaurelius.titan.core.TitanFactory");
+            "The implementation of graph factory that will be used by gremlin server", ConfigOption.Type.LOCAL, "org.janusgraph.core.TitanFactory");
 
     // ################ Begin Class Definition #######################
     // ###############################################################

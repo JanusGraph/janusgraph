@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 /**
  * Representation of a (key,value) pair.

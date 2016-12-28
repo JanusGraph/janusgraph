@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.hadoop.formats.cassandra;
+package org.janusgraph.hadoop.formats.cassandra;
 
-import com.thinkaurelius.titan.hadoop.formats.util.GiraphInputFormat;
+import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
 
 public class CassandraInputFormat extends GiraphInputFormat {
     public CassandraInputFormat() {

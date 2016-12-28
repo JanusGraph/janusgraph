@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalRelationType;
 
 public interface SystemRelationType extends InternalRelationType {
 

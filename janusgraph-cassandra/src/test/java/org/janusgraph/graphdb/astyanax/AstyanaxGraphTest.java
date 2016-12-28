@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.astyanax;
+package org.janusgraph.graphdb.astyanax;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.CassandraGraphTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.CassandraGraphTest;
 
 public class AstyanaxGraphTest extends CassandraGraphTest {
 

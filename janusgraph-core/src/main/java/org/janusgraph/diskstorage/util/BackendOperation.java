@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanException;
+import org.janusgraph.core.TitanException;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

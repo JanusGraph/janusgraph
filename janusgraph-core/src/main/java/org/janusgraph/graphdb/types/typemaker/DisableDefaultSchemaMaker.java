@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.types.typemaker;
+package org.janusgraph.graphdb.types.typemaker;
 
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
-import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
-import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.core.schema.EdgeLabelMaker;
+import org.janusgraph.core.schema.PropertyKeyMaker;
+import org.janusgraph.core.schema.VertexLabelMaker;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

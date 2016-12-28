@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
-import com.thinkaurelius.titan.graphdb.types.ParameterType;
+import org.janusgraph.diskstorage.indexing.KeyInformation;
+import org.janusgraph.graphdb.types.ParameterType;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}.
+ * {@link TitanManagement#addIndexKey(TitanGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
  * <p/>
  * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
  * ({@link #TEXT}) or indexed as a whole ({@link #STRING}), or both ({@link #TEXTSTRING}).
@@ -21,7 +21,7 @@ public enum Mapping {
     TEXTSTRING;
 
     /**
-     * Returns the mapping as a parameter so that it can be passed to {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}
+     * Returns the mapping as a parameter so that it can be passed to {@link TitanManagement#addIndexKey(TitanGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}
      * @return
      */
     public Parameter asParameter() {

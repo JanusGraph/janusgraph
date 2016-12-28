@@ -86,7 +86,7 @@ while getopts "elpv" opt; do
        ;;
     p) PROFILING_ENABLED=true
        ;;
-    v) MAIN_CLASS=com.thinkaurelius.titan.core.Titan
+    v) MAIN_CLASS=org.janusgraph.core.Titan
     esac
 done
 

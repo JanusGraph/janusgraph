@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

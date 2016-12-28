@@ -5,8 +5,8 @@
         <artifactId>oss-parent</artifactId>
         <version>7</version>
     </parent>
-    <groupId>com.thinkaurelius.titan</groupId>
-    <artifactId>titan</artifactId>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph</artifactId>
     <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
@@ -117,7 +117,7 @@
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
         <compiler.args />
-        <test.excluded.groups>com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.BrittleTests</test.excluded.groups>
+        <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.BrittleTests</test.excluded.groups>
     </properties>
     <modules>
         <module>janusgraph-core</module>
@@ -410,7 +410,7 @@
                           </settings>
                         -->
                         <server>github</server>
-                        <repositoryName>titan</repositoryName>
+                        <repositoryName>janusgraph</repositoryName>
                         <repositoryOwner>thinkaurelius</repositoryOwner>
                     </configuration>
                 </plugin>
@@ -1436,7 +1436,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>com.thinkaurelius.titan.testcategory.MemoryTests</groups>
+                                    <groups>org.janusgraph.testcategory.MemoryTests</groups>
                                     <excludedGroups />
                                 </configuration>
                             </execution>
@@ -1473,7 +1473,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
+                                    <groups>org.janusgraph.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
                                 </configuration>
                             </execution>

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 /**
  * A {@link KeySelector} utility that can be generated out of a given {@link KVQuery}

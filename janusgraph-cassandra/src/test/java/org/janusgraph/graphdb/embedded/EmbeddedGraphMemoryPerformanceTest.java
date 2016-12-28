@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.embedded;
+package org.janusgraph.graphdb.embedded;
 
 import org.junit.BeforeClass;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanGraphPerformanceMemoryTest;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

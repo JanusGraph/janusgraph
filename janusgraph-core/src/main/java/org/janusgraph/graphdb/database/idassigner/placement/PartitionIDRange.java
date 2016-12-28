@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
+package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

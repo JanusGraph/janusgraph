@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.diskstorage.log;
+package org.janusgraph.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 import org.junit.*;
 import org.junit.rules.TestName;

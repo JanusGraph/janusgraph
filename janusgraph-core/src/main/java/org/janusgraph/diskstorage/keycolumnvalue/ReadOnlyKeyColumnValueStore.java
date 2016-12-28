@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.util.List;
 import java.util.Map;

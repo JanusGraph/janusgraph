@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
-import static com.thinkaurelius.titan.diskstorage.Backend.EDGESTORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.ID_STORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.INDEXSTORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
-import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
+import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
+import static org.janusgraph.diskstorage.Backend.ID_STORE_NAME;
+import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
+import static org.janusgraph.diskstorage.Backend.LOCK_STORE_SUFFIX;
+import static org.janusgraph.diskstorage.Backend.SYSTEM_MGMT_LOG_NAME;
+import static org.janusgraph.diskstorage.Backend.SYSTEM_TX_LOG_NAME;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,8 +20,8 @@ import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.thinkaurelius.titan.diskstorage.StoreMetaData;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.StoreMetaData;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.apache.hadoop.hbase.ClusterStatus;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -56,31 +56,31 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.util.system.IOUtils;
-import com.thinkaurelius.titan.util.system.NetworkUtil;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.common.DistributedStoreManager;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.util.system.IOUtils;
+import org.janusgraph.util.system.NetworkUtil;
 
 /**
  * Storage Manager for HBase
@@ -268,7 +268,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
 
-    public HBaseStoreManager(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) throws BackendException {
+    public HBaseStoreManager(org.janusgraph.diskstorage.configuration.Configuration config) throws BackendException {
         super(config, PORT_DEFAULT);
 
         checkConfigDeprecation(config);
@@ -890,7 +890,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * @param putTimestamp The timestamp to use for Put commands.
      * @param delTimestamp The timestamp to use for Delete commands.
      * @return Commands sorted by key converted from Titan internal representation.
-     * @throws com.thinkaurelius.titan.diskstorage.PermanentBackendException
+     * @throws org.janusgraph.diskstorage.PermanentBackendException
      */
     private Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
                                                                    final long putTimestamp,
@@ -948,7 +948,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return shortCfNames ? shortenCfName(storeName) : storeName;
     }
 
-    private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
+    private void checkConfigDeprecation(org.janusgraph.diskstorage.configuration.Configuration config) {
         if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
                     ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_PORT), ConfigElement.getPath(HBASE_CONFIGURATION_NAMESPACE));

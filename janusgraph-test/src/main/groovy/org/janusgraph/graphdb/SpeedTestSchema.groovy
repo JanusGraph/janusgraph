@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb
+package org.janusgraph.graphdb
 
 import com.google.common.base.Preconditions
-import com.thinkaurelius.titan.core.Cardinality
-import com.thinkaurelius.titan.core.PropertyKey
-import com.thinkaurelius.titan.core.TitanGraph
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier
-import com.thinkaurelius.titan.core.schema.TitanManagement
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker
+import org.janusgraph.core.Cardinality
+import org.janusgraph.core.PropertyKey
+import org.janusgraph.core.TitanGraph
+import org.janusgraph.core.schema.ConsistencyModifier
+import org.janusgraph.core.schema.TitanManagement
+import org.janusgraph.graphdb.types.StandardEdgeLabelMaker
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.slf4j.Logger

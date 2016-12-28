@@ -74,7 +74,7 @@ if [ -z "${SCRIPT_DEBUG:-}" ]; then
 fi
 
 # Process options
-MAIN_CLASS=com.thinkaurelius.titan.util.system.ConfigurationLint
+MAIN_CLASS=org.janusgraph.util.system.ConfigurationLint
 
 while getopts "eilv" opt; do
     case "$opt" in

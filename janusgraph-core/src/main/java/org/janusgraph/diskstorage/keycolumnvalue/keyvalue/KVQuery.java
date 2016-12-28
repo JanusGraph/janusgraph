@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.graphdb.query.BaseQuery;
 
 /**
  * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and

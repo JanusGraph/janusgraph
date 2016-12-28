@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.database.serialize;
+package org.janusgraph.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 
 /**
  * Interface that extends {@link AttributeSerializer} to provide a serialization that is byte order preserving, i.e. the

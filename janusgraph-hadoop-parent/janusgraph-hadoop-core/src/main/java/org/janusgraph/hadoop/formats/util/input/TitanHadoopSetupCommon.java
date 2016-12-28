@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.hadoop.formats.util.input;
+package org.janusgraph.hadoop.formats.util.input;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -13,7 +13,7 @@ public abstract class TitanHadoopSetupCommon implements TitanHadoopSetup {
     public static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
 
-    public static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.util.input.";
+    public static final String SETUP_PACKAGE_PREFIX = "org.janusgraph.hadoop.formats.util.input.";
     public static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
 
     @Override

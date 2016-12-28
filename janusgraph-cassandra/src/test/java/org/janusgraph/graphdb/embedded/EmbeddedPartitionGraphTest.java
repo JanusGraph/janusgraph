@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.embedded;
+package org.janusgraph.graphdb.embedded;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanEventualGraphTest;
-import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.graphdb.TitanEventualGraphTest;
+import org.janusgraph.graphdb.TitanPartitionGraphTest;
 import org.junit.BeforeClass;
 
 public class EmbeddedPartitionGraphTest extends TitanPartitionGraphTest {

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

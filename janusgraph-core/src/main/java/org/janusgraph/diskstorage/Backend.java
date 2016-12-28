@@ -1,43 +1,43 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.TitanConfigurationException;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanFactory;
+import org.janusgraph.core.TitanConfigurationException;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.core.TitanFactory;
 
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.StandardScanner;
-import com.thinkaurelius.titan.diskstorage.locking.Locker;
-import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
-import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.LogManager;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
-import com.thinkaurelius.titan.util.system.ConfigurationUtil;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
+import org.janusgraph.diskstorage.indexing.*;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.NoKCVSCache;
+import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
+import org.janusgraph.diskstorage.locking.Locker;
+import org.janusgraph.diskstorage.locking.LockerProvider;
+import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.LogManager;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
+import org.janusgraph.diskstorage.util.BackendOperation;
+import org.janusgraph.diskstorage.util.MetricInstrumentedStore;
+import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
+import org.janusgraph.diskstorage.util.MetricInstrumentedStoreManager;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.TitanConstants;
+import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import org.janusgraph.util.system.ConfigurationUtil;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Orchestrates and configures all backend systems:
@@ -628,7 +628,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     }
 
     public static final Map<String,String> REGISTERED_LOG_MANAGERS = new HashMap<String, String>() {{
-        put("default","com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager");
+        put("default","org.janusgraph.diskstorage.log.kcvs.KCVSLogManager");
     }};
 
     private final Function<String, Locker> CONSISTENT_KEY_LOCKER_CREATOR = new Function<String, Locker>() {
@@ -649,7 +649,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         @Override
         public Locker apply(String lockerName) {
 
-            String expectedManagerName = "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager";
+            String expectedManagerName = "org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager";
             String actualManagerName = storeManager.getClass().getCanonicalName();
             // Require AstyanaxStoreManager
             Preconditions.checkArgument(expectedManagerName.equals(actualManagerName),
@@ -675,7 +675,7 @@ public class Backend implements LockerProvider, AutoCloseable {
 
         @Override
         public Locker apply(String lockerName) {
-            return openManagedLocker("com.thinkaurelius.titan.diskstorage.util.TestLockerManager",lockerName);
+            return openManagedLocker("org.janusgraph.diskstorage.util.TestLockerManager",lockerName);
 
         }
     };

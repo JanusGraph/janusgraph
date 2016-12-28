@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.idmanagement;
+package org.janusgraph.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.testutil.RandomGenerator;
+import org.janusgraph.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import org.janusgraph.testutil.RandomGenerator;
 import org.apache.commons.lang.time.StopWatch;
 import org.junit.Test;
 import org.slf4j.Logger;

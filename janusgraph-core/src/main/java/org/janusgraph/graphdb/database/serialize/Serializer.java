@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.database.serialize;
+package org.janusgraph.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.ScanBuffer;
 
 import java.io.Closeable;
 

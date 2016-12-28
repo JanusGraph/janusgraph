@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.hadoop.formats.hbase;
+package org.janusgraph.hadoop.formats.hbase;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;

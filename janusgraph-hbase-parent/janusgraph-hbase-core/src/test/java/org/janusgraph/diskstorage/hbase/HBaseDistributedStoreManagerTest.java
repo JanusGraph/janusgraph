@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendException;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.After;
@@ -11,8 +11,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.DistributedStoreManagerTest;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.DistributedStoreManagerTest;
 
 
 public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTest<HBaseStoreManager> {

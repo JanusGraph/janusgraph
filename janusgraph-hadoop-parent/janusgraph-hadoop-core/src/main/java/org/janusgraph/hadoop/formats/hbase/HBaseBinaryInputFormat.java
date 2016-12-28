@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.hadoop.formats.hbase;
+package org.janusgraph.hadoop.formats.hbase;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.formats.util.AbstractBinaryInputFormat;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.PermanentBackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;

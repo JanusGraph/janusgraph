@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
+package org.janusgraph.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraHelper;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.Schema;
@@ -40,7 +40,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore {
 
@@ -504,7 +504,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return ((Murmur3Partitioner) partitioner).getMinimumToken();
         } else if (partitioner instanceof ByteOrderedPartitioner) {
             //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
-            return new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
+            return new BytesToken(org.janusgraph.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
         } else {
             throw new PermanentBackendException("Unsupported partitioner: " + partitioner);
         }
@@ -519,7 +519,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return new LongToken(Murmur3Partitioner.MAXIMUM);
         } else if (partitioner instanceof ByteOrderedPartitioner) {
             //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
-            return new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
+            return new BytesToken(org.janusgraph.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
         } else {
             throw new PermanentBackendException("Unsupported partitioner: " + partitioner);
         }

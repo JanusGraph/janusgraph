@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.serializer;
+package org.janusgraph.graphdb.serializer;
 
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.serializer.attributes.*;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.serializer.attributes.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.*;

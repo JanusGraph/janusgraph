@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.Hex;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.Hex;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.apache.commons.configuration.BaseConfiguration;
 
 import java.io.IOException;

@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Function;
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.TitanElement;
 
 /**
  * A logical condition which evaluates against a provided element to true or false.

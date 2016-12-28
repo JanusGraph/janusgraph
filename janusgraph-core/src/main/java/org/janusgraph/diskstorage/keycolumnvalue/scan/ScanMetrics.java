@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
+package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 /**
  * Counters associated with a {@link ScanJob}.
@@ -16,8 +16,8 @@ public interface ScanMetrics {
 
     /**
      * An enum of standard counters.  A value of this enum is the only parameter
-     * accepted by {@link #get(com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}
-     * and {@link #increment(com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
+     * accepted by {@link #get(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}
+     * and {@link #increment(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
      */
     public enum Metric { FAILURE, SUCCESS }
 
@@ -25,7 +25,7 @@ public interface ScanMetrics {
      * Get the value of a custom counter.  Only the effects of prior calls to
      * {@link #incrementCustom(String)} and {@link #incrementCustom(String, long)}
      * should be observable through this method, never the effects of prior calls to
-     * {@link #increment(com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
+     * {@link #increment(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
      *
      * @param metric
      * @return
@@ -35,7 +35,7 @@ public interface ScanMetrics {
     /**
      * Increment a custom counter by {@code delta}.  The effects of calls
      * to method should only be observable through {@link #getCustom(String)},
-     * never through {@link #get(com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
+     * never through {@link #get(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
      *
      * @param metric the name of the counter
      * @param delta the amount to add to the counter

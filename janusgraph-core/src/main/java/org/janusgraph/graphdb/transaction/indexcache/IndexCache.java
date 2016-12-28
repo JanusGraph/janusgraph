@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.transaction.indexcache;
+package org.janusgraph.graphdb.transaction.indexcache;
 
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanVertexProperty;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

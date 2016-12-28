@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
 
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 
 public class ExpiredLockException extends TemporaryLockingException {
 

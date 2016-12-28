@@ -1,8 +1,8 @@
 
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import org.janusgraph.graphdb.relations.EdgeDirection;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

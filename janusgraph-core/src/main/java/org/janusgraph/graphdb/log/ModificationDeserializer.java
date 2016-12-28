@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.graphdb.log;
+package org.janusgraph.graphdb.log;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.log.Change;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.relations.*;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.log.Change;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.graphdb.database.log.TransactionLogHeader;
+import org.janusgraph.graphdb.internal.ElementLifeCycle;
+import org.janusgraph.graphdb.internal.InternalRelation;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.relations.*;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

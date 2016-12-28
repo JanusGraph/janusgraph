@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.hadoop;
+package org.janusgraph.hadoop;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 public class CassandraIndexManagementIT extends AbstractIndexManagementIT {
 

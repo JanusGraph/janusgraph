@@ -27,7 +27,7 @@
     </xsl:template>
 
     <!-- Rewrite failsafe dependency scan configuration (used in titan-dist) -->
-    <xsl:template match="dependenciesToScan/dependency[contains(text(), 'com.thinkaurelius.titan') and not(contains(text(), '-jre6'))]">
+    <xsl:template match="dependenciesToScan/dependency[contains(text(), 'org.janusgraph') and not(contains(text(), '-jre6'))]">
         <dependency><xsl:value-of select="./text()" />-jre6</dependency>
     </xsl:template>
 

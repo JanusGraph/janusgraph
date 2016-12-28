@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.hadoop.compat;
+package org.janusgraph.hadoop.compat;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

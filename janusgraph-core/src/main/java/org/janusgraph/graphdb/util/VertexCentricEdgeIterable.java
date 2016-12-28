@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.util;
+package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

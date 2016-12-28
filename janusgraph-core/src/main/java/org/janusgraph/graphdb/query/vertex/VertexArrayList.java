@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.VertexList;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.VertexList;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.util.datastructures.IterablesUtil;
 
 import java.util.*;
 

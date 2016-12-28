@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Wraps a {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore} as a proxy as a basis for
+ * Wraps a {@link org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore} as a proxy as a basis for
  * other wrappers
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);

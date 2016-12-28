@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.types.vertices;
+package org.janusgraph.graphdb.types.vertices;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.types.vertices;
+package org.janusgraph.graphdb.types.vertices;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey {

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
+import org.janusgraph.diskstorage.TemporaryBackendException;
 
 /**
  * This exception signifies a (potentially) temporary exception while attempting

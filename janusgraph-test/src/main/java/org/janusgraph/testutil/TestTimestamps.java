@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.junit.Assert;
 import org.junit.Test;
 

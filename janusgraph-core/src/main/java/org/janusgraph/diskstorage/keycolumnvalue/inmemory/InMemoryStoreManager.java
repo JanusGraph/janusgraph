@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
+package org.janusgraph.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.StoreMetaData;
-import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.StoreMetaData;
+import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.util.List;
 import java.util.Map;

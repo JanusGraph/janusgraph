@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -13,9 +13,9 @@ import java.util.Map;
  * It is subject to backwards-incompatible change.
  */
 public enum StandardIndexProvider {
-    LUCENE("com.thinkaurelius.titan.diskstorage.lucene.LuceneIndex", "lucene"),
-    ELASTICSEARCH("com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex", ImmutableList.of("elasticsearch", "es")),
-    SOLR("com.thinkaurelius.titan.diskstorage.solr.SolrIndex", "solr");
+    LUCENE("org.janusgraph.diskstorage.lucene.LuceneIndex", "lucene"),
+    ELASTICSEARCH("org.janusgraph.diskstorage.es.ElasticSearchIndex", ImmutableList.of("elasticsearch", "es")),
+    SOLR("org.janusgraph.diskstorage.solr.SolrIndex", "solr");
 
     private final String providerName;
     private final ImmutableList<String> shorthands;

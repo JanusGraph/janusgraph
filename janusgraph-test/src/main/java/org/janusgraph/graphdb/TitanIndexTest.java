@@ -1,47 +1,47 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanGraphQuery;
-import com.thinkaurelius.titan.core.TitanIndexQuery;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Geo;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Text;
-import com.thinkaurelius.titan.core.log.TransactionRecovery;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.schema.SchemaAction;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.util.ManagementUtil;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexFeatures;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
-import com.thinkaurelius.titan.graphdb.types.ParameterType;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
-import com.thinkaurelius.titan.testcategory.BrittleTests;
-import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.TitanGraphQuery;
+import org.janusgraph.core.TitanIndexQuery;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Text;
+import org.janusgraph.core.log.TransactionRecovery;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.core.schema.Parameter;
+import org.janusgraph.core.schema.SchemaAction;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.util.ManagementUtil;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.indexing.IndexFeatures;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.database.management.ManagementSystem;
+import org.janusgraph.graphdb.internal.ElementCategory;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
+import org.janusgraph.graphdb.types.ParameterType;
+import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
+import org.janusgraph.testcategory.BrittleTests;
+import org.janusgraph.testutil.TestGraphConfigs;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -64,9 +64,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.graphdb.TitanGraphTest.evaluateQuery;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static com.thinkaurelius.titan.testutil.TitanAssert.*;
+import static org.janusgraph.graphdb.TitanGraphTest.evaluateQuery;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.testutil.TitanAssert.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
 import static org.junit.Assert.*;
@@ -135,7 +135,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public TestName methodName = new TestName();
 
     /**
-     * Tests the {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#load(com.thinkaurelius.titan.core.TitanGraph)}
+     * Tests the {@link org.janusgraph.example.GraphOfTheGodsFactory#load(com.thinkaurelius.titan.core.TitanGraph)}
      * method used as the standard example that ships with Titan.
      */
     @Test

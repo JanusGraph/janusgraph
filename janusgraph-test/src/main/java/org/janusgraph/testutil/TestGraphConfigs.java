@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
 import java.io.File;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.time.Temporals;
+import org.janusgraph.diskstorage.util.time.Temporals;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
 
 /**
  * A central mechanism for overridding graph configuration parameters during

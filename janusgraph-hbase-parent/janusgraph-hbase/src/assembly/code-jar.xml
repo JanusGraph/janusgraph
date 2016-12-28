@@ -16,7 +16,7 @@
 	  </excludes>
 	</unpackOptions>
 	<includes>
-	  <include>com.thinkaurelius.titan:janusgraph-hbase-*</include>
+	  <include>org.janusgraph:janusgraph-hbase-*</include>
 	</includes>
       </dependencySet>
     </dependencySets>

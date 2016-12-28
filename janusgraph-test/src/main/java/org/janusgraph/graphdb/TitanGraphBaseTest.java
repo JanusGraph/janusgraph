@@ -1,25 +1,25 @@
-package com.thinkaurelius.titan.graphdb;
+package org.janusgraph.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.diskstorage.BackendException;
 
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.LogManager;
-import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
-import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+import org.janusgraph.diskstorage.Backend;
+import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.diskstorage.log.Log;
+import org.janusgraph.diskstorage.log.LogManager;
+import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
+import org.janusgraph.testutil.TestGraphConfigs;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

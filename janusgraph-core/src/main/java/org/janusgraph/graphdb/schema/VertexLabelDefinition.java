@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.schema;
+package org.janusgraph.graphdb.schema;
 
-import com.thinkaurelius.titan.core.VertexLabel;
+import org.janusgraph.core.VertexLabel;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

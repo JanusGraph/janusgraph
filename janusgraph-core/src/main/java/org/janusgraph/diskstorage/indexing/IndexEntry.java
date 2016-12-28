@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package org.janusgraph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.MetaAnnotatable;
-import com.thinkaurelius.titan.diskstorage.MetaAnnotated;
+import org.janusgraph.diskstorage.EntryMetaData;
+import org.janusgraph.diskstorage.MetaAnnotatable;
+import org.janusgraph.diskstorage.MetaAnnotated;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Map;

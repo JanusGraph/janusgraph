@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.thinkaurelius.titan</groupId>
-        <artifactId>titan</artifactId>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph</artifactId>
         <version>1.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -24,22 +24,22 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-cassandra</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-berkeleyje</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-hbase</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -59,20 +59,20 @@
             <version>${hadoop2.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-es</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!--
         Commented since it requires Hadoop 2 and TP3 requires Hadoop 1.
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-solr</artifactId>
             <version>${project.version}</version>
         </dependency>
         -->
         <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
+            <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-lucene</artifactId>
             <version>${project.version}</version>
         </dependency>

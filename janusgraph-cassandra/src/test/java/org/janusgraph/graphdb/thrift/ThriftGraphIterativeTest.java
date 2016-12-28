@@ -1,13 +1,13 @@
-package com.thinkaurelius.titan.graphdb.thrift;
+package org.janusgraph.graphdb.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.graphdb.TitanGraphIterativeBenchmark;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.graphdb.TitanGraphIterativeBenchmark;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.BeforeClass;
 
 public class ThriftGraphIterativeTest extends TitanGraphIterativeBenchmark {

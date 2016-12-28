@@ -1,27 +1,27 @@
-package com.thinkaurelius.titan.graphdb.transaction;
+package org.janusgraph.graphdb.transaction;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TransactionBuilder;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
+import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TransactionBuilder;
+import org.janusgraph.diskstorage.configuration.*;
 
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 /**
- * Used to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
+ * Used to configure a {@link org.janusgraph.core.TitanTransaction}.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
- * @see com.thinkaurelius.titan.core.TitanTransaction
+ * @see org.janusgraph.core.TitanTransaction
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 

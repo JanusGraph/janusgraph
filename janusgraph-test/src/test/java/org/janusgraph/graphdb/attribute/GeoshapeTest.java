@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.attribute;
+package org.janusgraph.graphdb.attribute;
 
-import com.thinkaurelius.titan.core.attribute.Geoshape;
+import org.janusgraph.core.attribute.Geoshape;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
 import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 import org.junit.Test;

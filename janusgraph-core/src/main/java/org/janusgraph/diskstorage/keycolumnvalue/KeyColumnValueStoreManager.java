@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StoreMetaData;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StoreMetaData;
 
 import java.util.Map;
 
@@ -22,7 +22,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *
      */
     default KeyColumnValueStore openDatabase(String name) throws BackendException {
@@ -36,7 +36,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      * @param name Name of database
      * @param metaData options specific to this store
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      *
      */
     KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException;
@@ -49,7 +49,7 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      *
      * @param mutations
      * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException;
 

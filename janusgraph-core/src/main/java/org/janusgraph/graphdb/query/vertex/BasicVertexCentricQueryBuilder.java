@@ -1,26 +1,26 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.internal.*;
-import com.thinkaurelius.titan.graphdb.query.*;
-import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
-import com.thinkaurelius.titan.graphdb.relations.StandardVertexProperty;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
+import org.janusgraph.core.*;
+import org.janusgraph.core.attribute.Cmp;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.database.EdgeSerializer;
+import org.janusgraph.graphdb.internal.*;
+import org.janusgraph.graphdb.query.*;
+import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.relations.StandardVertexProperty;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.types.system.ImplicitKey;
+import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import com.thinkaurelius.titan.util.datastructures.Interval;
-import com.thinkaurelius.titan.util.datastructures.PointInterval;
-import com.thinkaurelius.titan.util.datastructures.RangeInterval;
+import org.janusgraph.util.datastructures.Interval;
+import org.janusgraph.util.datastructures.PointInterval;
+import org.janusgraph.util.datastructures.RangeInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery} which
+ * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery} which
  * is then executed by one of the extending classes.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -60,7 +60,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     /**
      * Whether this query should only focus on the provided vertex representative of a (potentially) partitioned vertex.
      * This effectively disables the automatic querying for other vertex representatives and focuses on the provided
-     * vertex object only. This is used in combination with {@link com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex}, for example.
+     * vertex object only. This is used in combination with {@link org.janusgraph.graphdb.vertices.PreloadedVertex}, for example.
      */
     private boolean queryOnlyGivenVertex = false;
 
@@ -180,7 +180,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 	 */
 
     /**
-     * If {@link #isImplicitKeyQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)} is true,
+     * If {@link #isImplicitKeyQuery(org.janusgraph.graphdb.internal.RelationCategory)} is true,
      * this method provides the result set for the query based on the evaluation of the {@link ImplicitKey}.
      * </p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
@@ -353,11 +353,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     /**
      * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
-     * logic is taken from {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+     * logic is taken from {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}
      * This method only adds the additional conditions that are based on the base vertex.
      *
      * @param vertex for which to construct this query
-     * @param baseQuery as constructed by {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+     * @param baseQuery as constructed by {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}
      * @return
      */
     protected VertexCentricQuery constructQuery(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
@@ -701,7 +701,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * Updates a given user limit based on the number of conditions that can not be fulfilled by the backend query, i.e. the query
      * is not fitted and these remaining conditions must be enforced by filtering in-memory. By filtering in memory, we will discard
      * results returned from the backend and hence we should increase the limit to account for this "waste" in order to not have
-     * to adjust the limit too often in {@link com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator}.
+     * to adjust the limit too often in {@link org.janusgraph.graphdb.query.LimitAdjustingIterator}.
      *
      * @param remainingConditions
      * @param baseLimit

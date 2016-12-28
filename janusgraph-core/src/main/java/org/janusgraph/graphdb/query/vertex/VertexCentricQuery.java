@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.ElementQuery;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.relations.RelationComparator;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.internal.OrderList;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.ElementQuery;
+import org.janusgraph.graphdb.query.condition.Condition;
+import org.janusgraph.graphdb.relations.RelationComparator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Comparator;
@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * A vertex-centric query which implements {@link ElementQuery} so that it can be executed by
- * {@link com.thinkaurelius.titan.graphdb.query.QueryProcessor}. Most of the query definition
+ * {@link org.janusgraph.graphdb.query.QueryProcessor}. Most of the query definition
  * is in the extended {@link BaseVertexCentricQuery} - this class only adds the base vertex to the mix.
  *
  * @author Matthias Broecheler (me@matthiasb.com)

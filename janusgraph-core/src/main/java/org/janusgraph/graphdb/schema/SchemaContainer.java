@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.schema;
+package org.janusgraph.graphdb.schema;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.PropertyKey;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.VertexLabel;
+import org.janusgraph.core.schema.TitanManagement;
 
 import java.util.Map;
 

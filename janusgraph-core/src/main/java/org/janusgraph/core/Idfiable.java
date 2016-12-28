@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 /**
  * Represents an entity that can be uniquely identified by a long id.

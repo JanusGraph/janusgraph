@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.datastructures;
+package org.janusgraph.util.datastructures;
 
 /**
  * Interface to decorate elements that can be removed

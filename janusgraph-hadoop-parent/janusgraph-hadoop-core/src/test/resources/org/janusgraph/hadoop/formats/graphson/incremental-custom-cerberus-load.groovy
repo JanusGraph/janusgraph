@@ -1,4 +1,4 @@
-import com.thinkaurelius.titan.core.TitanVertexProperty
+import org.janusgraph.core.TitanVertexProperty
 
 def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
     String uniqueKey = "name";
@@ -20,8 +20,8 @@ def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
 
 def void getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) {
 
-    final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.propertyKey();
-    if (pkey.cardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
+    final org.janusgraph.core.PropertyKey pkey = faunusProperty.propertyKey();
+    if (pkey.cardinality().equals(org.janusgraph.core.Cardinality.SINGLE)) {
         vertex.property(pkey.name(), faunusProperty.value());
     } else {
         Iterator<TitanVertexProperty> itty = vertex.getProperties(pkey.name()).iterator();

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.time.Instant;
 

@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.graphdb.olap.computer;
+package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.TitanVertexProperty;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
+import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;

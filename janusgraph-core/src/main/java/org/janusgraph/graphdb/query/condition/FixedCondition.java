@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
-import com.thinkaurelius.titan.core.TitanElement;
+import org.janusgraph.core.TitanElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**

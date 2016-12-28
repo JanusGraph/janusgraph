@@ -30,11 +30,11 @@ def TitanEdge getOrCreateEdge(FaunusEdge faunusEdge, TitanVertex inVertex, Titan
 
 def void getOrCreateVertexProperty(TitanProperty faunusProperty, TitanVertex vertex, TitanGraph graph, TaskInputOutputContext context, Logger log) {
 
-    final com.thinkaurelius.titan.core.PropertyKey pkey = faunusProperty.propertyKey();
-    if (pkey.cardinality().equals(com.thinkaurelius.titan.core.Cardinality.SINGLE)) {
+    final org.janusgraph.core.PropertyKey pkey = faunusProperty.propertyKey();
+    if (pkey.cardinality().equals(org.janusgraph.core.Cardinality.SINGLE)) {
         vertex.property(pkey.name(), faunusProperty.value());
     } else {
-//        Iterator<com.thinkaurelius.titan.core.TitanProperty> itty = vertex.getProperties(pkey.getName()).iterator();
+//        Iterator<org.janusgraph.core.TitanProperty> itty = vertex.getProperties(pkey.getName()).iterator();
 //        if (!itty.hasNext()) {
             vertex.property(pkey.name(), faunusProperty.value());
 //        }

@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.hadoop;
+package org.janusgraph.hadoop;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.TitanVertex;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.TitanGraphBaseTest;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;

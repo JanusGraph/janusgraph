@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
+package org.janusgraph.diskstorage.locking.consistentkey;
 
 
-import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
+import org.janusgraph.diskstorage.locking.LockStatus;
 
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;

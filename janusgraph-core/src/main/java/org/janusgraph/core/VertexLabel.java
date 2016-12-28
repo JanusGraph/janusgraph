@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
-import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.TitanSchemaType;
 
 /**
  * A vertex label is a label attached to vertices in a Titan graph. This can be used to define the nature of a

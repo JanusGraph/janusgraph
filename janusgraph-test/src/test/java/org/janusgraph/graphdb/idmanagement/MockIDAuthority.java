@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.idmanagement;
+package org.janusgraph.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.diskstorage.*;
+import org.janusgraph.diskstorage.*;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import com.thinkaurelius.titan.graphdb.database.idassigner.StaticIDBlockSizer;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.WriteByteBuffer;
+import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
+import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import org.janusgraph.graphdb.database.idassigner.StaticIDBlockSizer;
 
 import java.time.Duration;
 import java.util.Arrays;

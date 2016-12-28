@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
+package org.janusgraph.diskstorage.cassandra.embedded;
 
 import static org.junit.Assert.assertTrue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreTest;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreTest;
+import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
+import org.janusgraph.testcategory.OrderedKeyStoreTests;
 
 public class EmbeddedStoreTest extends AbstractCassandraStoreTest {
 

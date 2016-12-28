@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.core.schema.SchemaStatus;
 
 import java.util.Collections;
 

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.transaction.lock;
+package org.janusgraph.graphdb.transaction.lock;
 
-import com.thinkaurelius.titan.core.TitanException;
+import org.janusgraph.core.TitanException;
 
 
 import org.slf4j.Logger;

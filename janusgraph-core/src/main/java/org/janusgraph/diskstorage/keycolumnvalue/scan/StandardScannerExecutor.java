@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
+package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
-import com.thinkaurelius.titan.util.system.Threads;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import org.janusgraph.util.system.Threads;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

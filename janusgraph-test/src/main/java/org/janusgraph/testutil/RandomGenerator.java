@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.testutil;
+package org.janusgraph.testutil;
 
 import org.junit.Test;
 import org.slf4j.Logger;

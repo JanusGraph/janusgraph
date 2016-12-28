@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 import java.io.IOException;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
 import org.apache.commons.lang.StringUtils;
 
 /**
  * This class is used by {@code MetricInstrumentedStore} to measure wallclock
  * time, method invocation counts, and exceptions thrown by the methods on
  * {@link RecordIterator} instances returned from
- * {@link MetricInstrumentedStore#getSlice(com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)}.
+ * {@link MetricInstrumentedStore#getSlice(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)}.
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */

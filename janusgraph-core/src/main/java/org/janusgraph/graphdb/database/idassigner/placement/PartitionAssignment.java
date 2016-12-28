@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
+package org.janusgraph.graphdb.database.idassigner.placement;
 
 /**
  * Utility interface used in {@link IDPlacementStrategy} to hold the partition assignment of

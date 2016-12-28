@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 import com.google.common.primitives.Longs;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import org.janusgraph.core.*;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.query.condition;
+package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanVertex;
+import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.TitanVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 

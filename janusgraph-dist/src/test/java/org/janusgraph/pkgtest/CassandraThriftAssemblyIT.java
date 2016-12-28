@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.pkgtest;
+package org.janusgraph.pkgtest;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
+import org.janusgraph.CassandraStorageSetup;
 
 public class CassandraThriftAssemblyIT extends AbstractTitanAssemblyIT {
 

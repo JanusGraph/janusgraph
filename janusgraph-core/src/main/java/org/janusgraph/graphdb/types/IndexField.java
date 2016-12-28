@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.PropertyKey;
+import org.janusgraph.core.PropertyKey;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**

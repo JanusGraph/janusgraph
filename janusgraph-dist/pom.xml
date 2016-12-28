@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.thinkaurelius.titan</groupId>
-        <artifactId>titan</artifactId>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph</artifactId>
         <version>1.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -250,9 +250,9 @@
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
+                            <mainClass>org.janusgraph.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
-                                <argument>com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
+                                <argument>org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS</argument>
                                 <argument>${asciidoc.output.dir}/listings/titan_cfg.txt</argument>
                                 <argument>true</argument>
                             </arguments>
@@ -271,7 +271,7 @@
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <!-- Main Classname -->
-                                <mainClass>com.thinkaurelius.titan.util.system.ConfigurationFileFilter</mainClass>
+                                <mainClass>org.janusgraph.util.system.ConfigurationFileFilter</mainClass>
                                 <!-- Input directory (processed recursively) -->
                                 <argument>${assembly.cfilter.in.dir}</argument>
                                 <!-- Output directory prefix -->
@@ -844,7 +844,7 @@
                                         <goal>integration-test</goal>
                                     </goals>
                                     <configuration>
-                                        <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>org.janusgraph.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
                                         <skip>${skipDefaultDistroIT}</skip>
                                         <failIfNoTests>false</failIfNoTests>
                                         <excludes>
@@ -862,7 +862,7 @@
                                     </goals>
                                     <configuration>
                                         <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
-                                        <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>org.janusgraph.testcategory.OrderedKeyStoreTests</excludedGroups>
                                         <reportNameSuffix>murmur</reportNameSuffix>
                                         <failIfNoTests>false</failIfNoTests>
                                         <includes>
@@ -878,7 +878,7 @@
                                     </goals>
                                     <configuration>
                                         <argLine>-Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                                        <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>org.janusgraph.testcategory.UnorderedKeyStoreTests</excludedGroups>
                                         <reportNameSuffix>bop</reportNameSuffix>
                                         <failIfNoTests>false</failIfNoTests>
                                         <includes>

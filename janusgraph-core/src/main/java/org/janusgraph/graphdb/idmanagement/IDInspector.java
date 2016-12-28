@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.idmanagement;
+package org.janusgraph.graphdb.idmanagement;
 
 /**
  * Interface for determining the type of element a particular id refers to.

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.datastructures;
+package org.janusgraph.util.datastructures;
 
 import org.junit.Test;
 import org.slf4j.Logger;

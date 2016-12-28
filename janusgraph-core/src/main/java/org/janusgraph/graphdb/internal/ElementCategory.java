@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.TitanSchemaType;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
-import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
-import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
+import org.janusgraph.core.*;
+import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.graphdb.relations.RelationIdentifier;
+import org.janusgraph.graphdb.types.VertexLabelVertex;
+import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
+import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

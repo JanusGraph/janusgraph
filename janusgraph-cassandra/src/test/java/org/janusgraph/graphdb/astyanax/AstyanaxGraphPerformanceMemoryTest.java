@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.astyanax;
+package org.janusgraph.graphdb.astyanax;
 
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.junit.BeforeClass;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.graphdb.TitanGraphPerformanceMemoryTest;
 
 public class AstyanaxGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
 

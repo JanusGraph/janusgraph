@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
+import org.janusgraph.diskstorage.keycolumnvalue.cache.NoKCVSCache;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
-import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
+import static org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
 
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
 
 import org.junit.After;
 import org.junit.Assert;

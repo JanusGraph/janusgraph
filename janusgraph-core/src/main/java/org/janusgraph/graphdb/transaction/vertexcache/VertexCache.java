@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.transaction.vertexcache;
+package org.janusgraph.graphdb.transaction.vertexcache;
 
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.List;
 

@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanGraphTransaction;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.TitanGraphTransaction;
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
 
 /**
  * Internal Element interface adding methods that should only be used by Titan

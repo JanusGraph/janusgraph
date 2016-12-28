@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.blueprints.structure;
+package org.janusgraph.blueprints.structure;
 
-import com.thinkaurelius.titan.blueprints.BerkeleyGraphProvider;
-import com.thinkaurelius.titan.core.TitanGraph;
+import org.janusgraph.blueprints.BerkeleyGraphProvider;
+import org.janusgraph.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
 import org.apache.tinkerpop.gremlin.structure.StructurePerformanceSuite;

@@ -137,7 +137,7 @@ The following loads some sample data into a BerkeleyDB-backed Titan database, de
 
 [source,java]
 ----
-import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem
+import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load some data from a file without any predefined schema
 graph = TitanFactory.open('conf/titan-berkeleyje.properties')
@@ -249,7 +249,7 @@ Example for MapReduce
 
 [source,java]
 ----
-import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem
+import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load the "Graph of the Gods" sample data
 graph = TitanFactory.open('conf/titan-cassandra-es.properties')
@@ -304,7 +304,7 @@ The following loads some indexed sample data into a BerkeleyDB-backed Titan data
 
 [source,java]
 ----
-import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem
+import org.janusgraph.graphdb.database.management.ManagementSystem
 
 // Load the "Graph of the Gods" sample data
 graph = TitanFactory.open('conf/titan-cassandra-es.properties')

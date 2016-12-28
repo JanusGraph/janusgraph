@@ -1,23 +1,23 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.attribute.Text;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.attribute.Text;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.configuration.BasicConfiguration;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
+import org.janusgraph.diskstorage.indexing.*;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProviders;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
@@ -31,10 +31,10 @@ import org.junit.Test;
 import java.io.File;
 import java.time.Duration;
 
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
+import static org.janusgraph.diskstorage.es.ElasticSearchIndex.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_CONF_FILE;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 import static org.junit.Assert.*;
 

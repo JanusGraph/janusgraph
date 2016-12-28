@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.locking;
+package org.janusgraph.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 
 /**

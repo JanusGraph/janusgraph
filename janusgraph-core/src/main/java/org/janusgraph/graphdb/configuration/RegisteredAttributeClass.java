@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.configuration;
+package org.janusgraph.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.graphdb.database.serialize.Serializer;
 
 /**
  * Helper class for registering data types with Titan

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
-import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import org.janusgraph.diskstorage.ReadBuffer;
 
 import java.nio.ByteBuffer;
 

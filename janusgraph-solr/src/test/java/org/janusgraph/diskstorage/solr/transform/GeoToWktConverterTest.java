@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.solr.transform;
+package org.janusgraph.diskstorage.solr.transform;
 
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.diskstorage.BackendException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

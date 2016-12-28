@@ -1,19 +1,19 @@
-package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
+package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import org.janusgraph.graphdb.idmanagement.IDManager;
+import org.janusgraph.graphdb.internal.InternalElement;
+import org.janusgraph.graphdb.internal.InternalVertex;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

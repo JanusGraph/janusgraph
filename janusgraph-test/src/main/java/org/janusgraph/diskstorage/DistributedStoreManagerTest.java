@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -8,11 +8,11 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.Deployment;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
+import org.janusgraph.diskstorage.common.DistributedStoreManager;
+import org.janusgraph.diskstorage.common.DistributedStoreManager.Deployment;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import org.janusgraph.testcategory.OrderedKeyStoreTests;
 
 public abstract class DistributedStoreManagerTest<T extends DistributedStoreManager> {
     

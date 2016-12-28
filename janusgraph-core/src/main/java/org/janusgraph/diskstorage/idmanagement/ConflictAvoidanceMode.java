@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.idmanagement;
+package org.janusgraph.diskstorage.idmanagement;
 
 
 /**

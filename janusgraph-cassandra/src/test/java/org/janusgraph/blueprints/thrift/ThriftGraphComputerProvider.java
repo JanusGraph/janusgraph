@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.blueprints.thrift;
+package org.janusgraph.blueprints.thrift;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.blueprints.AbstractTitanGraphComputerProvider;
-import com.thinkaurelius.titan.blueprints.AbstractTitanGraphProvider;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.blueprints.AbstractTitanGraphComputerProvider;
+import org.janusgraph.blueprints.AbstractTitanGraphProvider;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.tinkerpop.gremlin.GraphProvider;
 
 /**

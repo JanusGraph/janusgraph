@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.database.serialize;
+package org.janusgraph.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.PropertyKey;
+import org.janusgraph.core.PropertyKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

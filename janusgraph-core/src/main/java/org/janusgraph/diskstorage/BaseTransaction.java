@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 /**
  * Represents a transaction for a particular storage backend.

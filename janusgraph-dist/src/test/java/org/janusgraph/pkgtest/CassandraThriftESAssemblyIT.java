@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.pkgtest;
+package org.janusgraph.pkgtest;
 
-import com.thinkaurelius.titan.diskstorage.es.ElasticsearchRunner;
+import org.janusgraph.diskstorage.es.ElasticsearchRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
+import org.janusgraph.CassandraStorageSetup;
 
 public class CassandraThriftESAssemblyIT extends AbstractTitanAssemblyIT {
 

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package org.janusgraph.diskstorage.lucene;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -7,18 +7,18 @@ import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.schema.Mapping;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.schema.Mapping;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.core.attribute.*;
+import org.janusgraph.diskstorage.*;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.indexing.*;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.serialize.AttributeUtil;
+import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.condition.*;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -715,7 +715,7 @@ public class LuceneIndex implements IndexProvider {
 
     /**
      * Encapsulates a Lucene Query and Filter object pair that jointly express a Titan
-     * {@link com.thinkaurelius.titan.graphdb.query.Query} using Lucene's abstractions.
+     * {@link org.janusgraph.graphdb.query.Query} using Lucene's abstractions.
      * This object's state is mutable.
      */
     private static class SearchParams {

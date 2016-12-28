@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.utils;
+package org.janusgraph.diskstorage.cassandra.utils;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 

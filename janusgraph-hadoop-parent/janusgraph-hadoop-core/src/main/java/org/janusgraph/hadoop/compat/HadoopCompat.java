@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.hadoop.compat;
+package org.janusgraph.hadoop.compat;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import com.thinkaurelius.titan.graphdb.olap.VertexScanJob;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
-import com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer;
+import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 
 import java.io.IOException;
 
@@ -90,7 +90,7 @@ public interface HadoopCompat {
     public Configuration getJobContextConfiguration(JobContext context);
 
     /**
-     * Construct a {@link com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer}
+     * Construct a {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
      * that sets the Mapreduce job jar config key to the supplied value.  The job jar
      * should contain Faunus's classes plus its entire dependency tree ("fat" jar).
      *
@@ -100,7 +100,7 @@ public interface HadoopCompat {
     public JobClasspathConfigurer newMapredJarConfigurer(String mapredJarPath);
 
     /**
-     * Construct a {@link com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer}
+     * Construct a {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
      * that walks the classpath and adds all jars its finds to the Hadoop Jobs's
      * classpaths via the Hadoop Distributed Cache.
      *

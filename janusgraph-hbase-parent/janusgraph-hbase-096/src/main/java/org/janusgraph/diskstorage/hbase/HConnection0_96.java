@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
 

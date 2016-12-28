@@ -1,20 +1,20 @@
-package com.thinkaurelius.titan.graphdb.query.vertex;
+package org.janusgraph.graphdb.query.vertex;
 
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.profile.QueryProfiler;
-import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
+import org.janusgraph.core.*;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.graphdb.database.EdgeSerializer;
+import org.janusgraph.graphdb.internal.InternalVertex;
+import org.janusgraph.graphdb.query.BackendQueryHolder;
+import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import org.janusgraph.graphdb.transaction.RelationConstructor;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.util.datastructures.Retriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * This is an optimization of specifically for {@link VertexCentricQuery} that addresses the special but
  * common case that the query is simple (i.e. comprised of only one sub-query and that query is fitted, i.e. does not require
- * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link com.thinkaurelius.titan.graphdb.query.QueryProcessor}:
+ * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link org.janusgraph.graphdb.query.QueryProcessor}:
  * merging of result sets, in-memory filtering and the object instantiation required for in-memory filtering.
  * </p>
  * With those complexities removed, the query processor can be much simpler which makes it a lot faster and less
@@ -118,7 +118,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
 
-    private final class LimitAdjustingIterator extends com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator<Entry> {
+    private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<Entry> {
 
         private LimitAdjustingIterator() {
             super(query.getLimit(),sliceQuery.getLimit());

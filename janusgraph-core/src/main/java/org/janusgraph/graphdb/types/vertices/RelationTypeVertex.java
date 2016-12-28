@@ -1,17 +1,17 @@
-package com.thinkaurelius.titan.graphdb.types.vertices;
+package org.janusgraph.graphdb.types.vertices;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.SchemaSource;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
-import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.InternalRelationType;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.graphdb.types.SchemaSource;
+import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import org.janusgraph.graphdb.types.TypeUtil;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import javax.annotation.Nullable;

@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.util.RecordIterator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

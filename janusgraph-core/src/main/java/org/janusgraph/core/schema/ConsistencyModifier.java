@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core.schema;
+package org.janusgraph.core.schema;
 
 /**
  * Used to control Titan's consistency behavior on eventually consistent or other non-transactional backend systems.

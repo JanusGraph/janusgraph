@@ -1,29 +1,29 @@
-package com.thinkaurelius.titan.diskstorage.configuration.backend;
+package org.janusgraph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import org.janusgraph.core.TitanException;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
 
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.configuration.ConcurrentWriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.ConcurrentWriteConfiguration;
+import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.*;
+import org.janusgraph.diskstorage.util.BackendOperation;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import org.janusgraph.graphdb.database.serialize.DataOutput;
+import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.lang.StringUtils;
 
@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -79,7 +79,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      *
      * @param key Key identifying the configuration property
      * @return Value stored for the key or null if the configuration property has not (yet) been defined.
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public <O> O get(final String key, final Class<O> datatype) {
@@ -111,7 +111,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      *
      * @param key   Key identifying the configuration property
      * @param value Value to be stored for the key
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     @Override
     public <O> void set(String key, O value) {

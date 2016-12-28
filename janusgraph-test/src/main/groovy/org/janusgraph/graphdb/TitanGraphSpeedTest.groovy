@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb
+package org.janusgraph.graphdb
 
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
-import com.thinkaurelius.titan.graphdb.util.ElementHelper
+import org.janusgraph.diskstorage.configuration.WriteConfiguration
+import org.janusgraph.graphdb.util.ElementHelper
 
 import static org.junit.Assert.*
 
@@ -17,12 +17,12 @@ import org.slf4j.LoggerFactory
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions
 import com.google.common.base.Preconditions
 import com.google.common.collect.Iterables
-import com.thinkaurelius.titan.core.TitanEdge
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex
-import com.thinkaurelius.titan.testcategory.PerformanceTests
-import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider
-import com.thinkaurelius.titan.diskstorage.BackendException
+import org.janusgraph.core.TitanEdge
+import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.TitanVertex
+import org.janusgraph.testcategory.PerformanceTests
+import org.janusgraph.testutil.JUnitBenchmarkProvider
+import org.janusgraph.diskstorage.BackendException
 
 
 /**

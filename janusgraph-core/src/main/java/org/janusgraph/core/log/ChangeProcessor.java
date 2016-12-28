@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.core.log;
+package org.janusgraph.core.log;
 
-import com.thinkaurelius.titan.core.TitanTransaction;
+import org.janusgraph.core.TitanTransaction;
 
 /**
  * Allows the user to define custom behavior to process those transactional changes that are recorded in a transaction log.

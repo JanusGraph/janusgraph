@@ -1,9 +1,9 @@
-package com.thinkaurelius.titan.graphdb.transaction.lock;
+package org.janusgraph.graphdb.transaction.lock;
 
 import com.google.common.base.Preconditions;
 
-import com.thinkaurelius.titan.diskstorage.util.time.Timer;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.diskstorage.util.time.Timer;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Duration;
 

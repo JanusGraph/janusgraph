@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.serializer.attributes;
+package org.janusgraph.graphdb.serializer.attributes;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

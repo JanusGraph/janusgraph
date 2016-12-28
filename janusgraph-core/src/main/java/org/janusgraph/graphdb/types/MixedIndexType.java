@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
-import com.thinkaurelius.titan.core.PropertyKey;
+import org.janusgraph.core.PropertyKey;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

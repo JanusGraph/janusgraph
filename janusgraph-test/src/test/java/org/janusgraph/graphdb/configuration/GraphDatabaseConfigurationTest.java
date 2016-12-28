@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.configuration;
+package org.janusgraph.graphdb.configuration;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 

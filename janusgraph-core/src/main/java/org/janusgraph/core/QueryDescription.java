@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 
 import java.util.List;

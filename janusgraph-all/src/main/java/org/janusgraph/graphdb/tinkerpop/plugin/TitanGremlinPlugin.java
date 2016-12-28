@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.tinkerpop.plugin;
+package org.janusgraph.graphdb.tinkerpop.plugin;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.attribute.Geo;
-import com.thinkaurelius.titan.core.attribute.Text;
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.tinkerpop.TitanIoRegistry;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.attribute.Geo;
+import org.janusgraph.core.attribute.Text;
+import org.janusgraph.example.GraphOfTheGodsFactory;
+import org.janusgraph.graphdb.tinkerpop.TitanIoRegistry;
 import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
@@ -23,11 +23,11 @@ public class TitanGremlinPlugin implements GremlinPlugin {
     private static final String DOT_STAR = ".*";
 
     private static final Set<String> IMPORTS = new HashSet<String>() {{
-        add(IMPORT + "com.thinkaurelius.titan.core" + DOT_STAR);
-        add(IMPORT + "com.thinkaurelius.titan.core.attribute" + DOT_STAR);
-        add(IMPORT + "com.thinkaurelius.titan.core.schema" + DOT_STAR);
+        add(IMPORT + "org.janusgraph.core" + DOT_STAR);
+        add(IMPORT + "org.janusgraph.core.attribute" + DOT_STAR);
+        add(IMPORT + "org.janusgraph.core.schema" + DOT_STAR);
         add(IMPORT + GraphOfTheGodsFactory.class.getName());
-        add(IMPORT + "com.thinkaurelius.titan.hadoop.MapReduceIndexManagement");
+        add(IMPORT + "org.janusgraph.hadoop.MapReduceIndexManagement");
         add(IMPORT + "java.time" + DOT_STAR);
         add(IMPORT + TitanIoRegistry.class.getName());
 

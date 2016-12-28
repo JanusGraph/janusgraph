@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.graphdb.thrift;
+package org.janusgraph.graphdb.thrift;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.graphdb.SpeedTestSchema;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.graphdb.SpeedTestSchema;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.graphdb.TitanGraphSpeedTest;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.testcategory.PerformanceTests;
+import org.janusgraph.CassandraStorageSetup;
+import org.janusgraph.core.TitanFactory;
+import org.janusgraph.graphdb.TitanGraphSpeedTest;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.testcategory.PerformanceTests;
 
 @Category({PerformanceTests.class})
 public class ThriftGraphSpeedTest extends TitanGraphSpeedTest {

@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 public class BerkeleyManagementTest extends ManagementTest {
     @Override

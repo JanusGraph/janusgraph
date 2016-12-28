@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
+package org.janusgraph.diskstorage.keycolumnvalue;
 
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,7 @@ public interface KeyColumnValueStore {
      * @param query Query to get results for
      * @param txh   Transaction
      * @return List of entries up to a maximum of "limit" entries
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException when columnEnd < columnStart
+     * @throws org.janusgraph.diskstorage.BackendException when columnEnd < columnStart
      * @see KeySliceQuery
      */
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException;
@@ -46,7 +46,7 @@ public interface KeyColumnValueStore {
      * @param query Slicequery specifying matching entries
      * @param txh   Transaction
      * @return The result of the query for each of the given keys as a map from the key to the list of result entries.
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException;
 
@@ -71,7 +71,7 @@ public interface KeyColumnValueStore {
      * @param deletions the list of columns to delete from {@code key}, or null to
      *                  delete no columns
      * @param txh       the transaction to use
-     * @throws com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException if locking is supported by the implementation and at least
+     * @throws org.janusgraph.diskstorage.locking.PermanentLockingException if locking is supported by the implementation and at least
      *                          one lock acquisition attempted by
      *                          {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      *                          has failed
@@ -85,7 +85,7 @@ public interface KeyColumnValueStore {
      * <p/>
      * <p/>
      * If locking fails, implementations of this method may, but are not
-     * required to, throw {@link com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException}.
+     * required to, throw {@link org.janusgraph.diskstorage.locking.PermanentLockingException}.
      * This method is not required
      * to determine whether locking actually succeeded and may return without
      * throwing an exception even when the lock can't be acquired. Lock
@@ -126,7 +126,7 @@ public interface KeyColumnValueStore {
      *            to lock (null means the pair must have no value)
      * @param txh
      *            the transaction to use
-     * @throws com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException
+     * @throws org.janusgraph.diskstorage.locking.PermanentLockingException
      *             the lock could not be acquired due to contention with other
      *             transactions or a locking-specific storage problem
      */
@@ -141,7 +141,7 @@ public interface KeyColumnValueStore {
      * @param query
      * @param txh
      * @return
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException;
 
@@ -154,7 +154,7 @@ public interface KeyColumnValueStore {
      * @param query
      * @param txh
      * @return
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException;
     // like current getKeys if column-slice is such that it queries for vertex state property
@@ -170,7 +170,7 @@ public interface KeyColumnValueStore {
     /**
      * Closes this store
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void close() throws BackendException;
 

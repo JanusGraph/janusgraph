@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan;
+package org.janusgraph;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,7 +10,7 @@ import org.elasticsearch.common.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.util.system.IOUtils;
 
 public class HBaseStatus {
 

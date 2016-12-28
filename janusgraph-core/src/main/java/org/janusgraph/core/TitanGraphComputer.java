@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package org.janusgraph.core;
 
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 

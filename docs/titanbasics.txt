@@ -545,7 +545,7 @@ The default configuration described in <<titan-server-getting-started>> is alrea
 . Test a local connection to a Titan database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
 +
 ```
-gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
+gremlin.graph=org.janusgraph.core.TitanFactory
 ```
 
 . Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
@@ -594,7 +594,7 @@ The default configuration described in <<titan-server-getting-started>> is a Web
 . Test a local connection to a Titan database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/titan-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring Titan for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
 +
 ```
-gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
+gremlin.graph=org.janusgraph.core.TitanFactory
 ```
 
 . Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
@@ -672,7 +672,7 @@ For purposes of demonstration, these instructions will outline how to configure 
 
 [source,bourne]
 ----
-bin/gremlin-server.sh -i com.thinkaurelius.titan titan-all $VERSION
+bin/gremlin-server.sh -i org.janusgraph titan-all $VERSION
 ----
 
 When this process completes, Gremlin Server should now have all the Titan dependencies available to it and will thus be able to instantiate `TitanGraph` objects.
@@ -683,7 +683,7 @@ Create a file called `GREMLIN_SERVER_HOME/conf/titan.properties` with the follow
 
 [source,text]
 ----
-gremlin.graph=com.thinkaurelius.titan.core.TitanFactory
+gremlin.graph=org.janusgraph.core.TitanFactory
 storage.backend=berkeleyje
 storage.directory=db/berkeley
 ----
@@ -739,7 +739,7 @@ $ bin/gremlin-server.sh conf/gremlin-server-titan.yaml
 [INFO] GraphDatabaseConfiguration - Set default timestamp provider MICRO
 [INFO] GraphDatabaseConfiguration - Generated unique-instance-id=7f0000016240-ubuntu1
 [INFO] Backend - Initiated backend operations thread pool of size 8
-[INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
+[INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into org.janusgraph.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
 [INFO] GraphManager - Graph [graph] was successfully configured via [conf/titan.properties].
 [INFO] ServerGremlinExecutor - Initialized Gremlin thread pool.  Threads in pool named with pattern gremlin-*
 [INFO] ScriptEngines - Loaded gremlin-groovy ScriptEngine
@@ -1378,7 +1378,7 @@ Titan provides a user transaction log processor framework to process the recorde
 
 [source, gremlin]
 import java.util.concurrent.atomic.*;
-import com.thinkaurelius.titan.core.log.*;
+import org.janusgraph.core.log.*;
 import java.util.concurrent.*;
 logProcessor = TitanFactory.openTransactionLog(g);
 totalHumansAdded = new AtomicInteger(0);

@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Cardinality;
+import org.janusgraph.core.*;
+import org.janusgraph.core.Cardinality;
 
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.diskstorage.EntryMetaData;
 
-import com.thinkaurelius.titan.graphdb.internal.*;
+import org.janusgraph.graphdb.internal.*;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.StringUtils;

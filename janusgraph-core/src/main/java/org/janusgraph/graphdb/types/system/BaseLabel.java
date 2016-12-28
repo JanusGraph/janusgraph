@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
-import com.thinkaurelius.titan.core.EdgeLabel;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.core.EdgeLabel;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class BaseLabel extends BaseRelationType implements EdgeLabel {

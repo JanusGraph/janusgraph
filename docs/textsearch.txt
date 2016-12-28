@@ -36,7 +36,7 @@ When a string property is indexed as text, only full-text search predicates are 
 * `textContainsRegex`: is true if (at least) one word inside the text string matches the given regular expression
 
 [source, gremlin]
-import static com.thinkaurelius.titan.core.attribute.Text.*
+import static org.janusgraph.core.attribute.Text.*
 g.V().has('booksummary', textContains('unicorns'))
 g.V().has('booksummary', textContainsPrefix('uni'))
 g.V().has('booksummary', textContainsRegex('.*corn.*'))
@@ -65,7 +65,7 @@ When a string property is indexed as string, only the following predicates are s
 
 [source, gremlin]
 import static org.apache.tinkerpop.gremlin.process.traversal.P.*
-import static com.thinkaurelius.titan.core.attribute.Text.*
+import static org.janusgraph.core.attribute.Text.*
 g.V().has('bookname', eq('unicorns'))
 g.V().has('bookname', neq('unicorns'))
 g.V().has('bookname', textPrefix('uni'))

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool;
+package org.janusgraph.diskstorage.cassandra.thrift.thriftpool;
 
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.Cassandra.Client;
@@ -8,7 +8,7 @@ import java.io.Closeable;
 
 /**
  * Wraps a {@code Cassandra.Client} instance, its underlying {@code TTransport}
- * instance, and the {@link com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory.Config} instance used to setup
+ * instance, and the {@link org.janusgraph.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory.Config} instance used to setup
  * the connection.
  * 
  * @see CTConnectionFactory

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.lucene;
+package org.janusgraph.diskstorage.lucene;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.core.attribute.Geoshape;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;

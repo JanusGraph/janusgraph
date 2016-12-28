@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.blueprints;
+package org.janusgraph.blueprints;
 
-import com.thinkaurelius.titan.BerkeleyStorageSetup;
-import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJETx;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import org.janusgraph.BerkeleyStorageSetup;
+import org.janusgraph.StorageSetup;
+import org.janusgraph.diskstorage.berkeleyje.BerkeleyJETx;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.tinkerpop.gremlin.GraphProvider;
 
 import java.time.Duration;

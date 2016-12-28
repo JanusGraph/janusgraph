@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.diskstorage.common;
+package org.janusgraph.diskstorage.common;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.DirectoryUtil;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.util.DirectoryUtil;
 
 import java.io.File;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
 
 /**
  * Abstract Store Manager used as the basis for local StoreManager implementations.

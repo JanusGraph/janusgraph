@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.core.attribute;
+package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.TitanPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 /**

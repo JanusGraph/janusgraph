@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 
-import com.thinkaurelius.titan.core.schema.TitanConfiguration;
+import org.janusgraph.core.schema.TitanConfiguration;
 
 import java.lang.reflect.Array;
 import java.time.Duration;

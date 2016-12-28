@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.query;
+package org.janusgraph.graphdb.query;
 
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
+import org.janusgraph.core.*;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.OrderList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

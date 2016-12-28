@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

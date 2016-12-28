@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package org.janusgraph.diskstorage.es;
 
-import com.thinkaurelius.titan.DaemonRunner;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.DaemonRunner;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

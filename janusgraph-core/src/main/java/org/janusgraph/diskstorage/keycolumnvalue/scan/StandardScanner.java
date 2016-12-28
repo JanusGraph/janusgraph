@@ -1,15 +1,15 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan;
+package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.*;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;

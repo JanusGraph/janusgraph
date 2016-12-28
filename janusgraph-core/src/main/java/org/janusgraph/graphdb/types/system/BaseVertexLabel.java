@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.graphdb.types.system;
+package org.janusgraph.graphdb.types.system;
 
-import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
+import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**

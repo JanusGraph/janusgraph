@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
+package org.janusgraph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
  * Interface for a data store that represents data in the simple key->value data model where each key is uniquely
@@ -17,7 +17,7 @@ public interface KeyValueStore {
      *
      * @param key
      * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void delete(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
@@ -27,7 +27,7 @@ public interface KeyValueStore {
      * @param key
      * @param txh
      * @return
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
@@ -37,7 +37,7 @@ public interface KeyValueStore {
      * @param key
      * @param txh
      * @return
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
@@ -48,7 +48,7 @@ public interface KeyValueStore {
      * @param key
      * @param expectedValue
      * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 
@@ -62,7 +62,7 @@ public interface KeyValueStore {
     /**
      * Closes this store and releases its resources.
      *
-     * @throws com.thinkaurelius.titan.diskstorage.BackendException
+     * @throws org.janusgraph.diskstorage.BackendException
      */
     public void close() throws BackendException;
 

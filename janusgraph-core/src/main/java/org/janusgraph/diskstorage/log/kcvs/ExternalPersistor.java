@@ -1,7 +1,7 @@
-package com.thinkaurelius.titan.diskstorage.log.kcvs;
+package org.janusgraph.diskstorage.log.kcvs;
 
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

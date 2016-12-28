@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.util.time;
+package org.janusgraph.diskstorage.util.time;
 
 import com.google.common.base.Preconditions;
 

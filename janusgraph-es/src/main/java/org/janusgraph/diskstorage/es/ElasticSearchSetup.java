@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.es;
+package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -21,16 +21,16 @@ import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Create an ES {@link org.elasticsearch.client.transport.TransportClient} or
  * {@link org.elasticsearch.node.Node} from a Titan
- * {@link com.thinkaurelius.titan.diskstorage.configuration.Configuration}.
+ * {@link org.janusgraph.diskstorage.configuration.Configuration}.
  * <p>
  * TransportClient assumes that an ES cluster is already running.  It does not attempt
  * to start an embedded ES instance.  It just connects to whatever hosts are given in
- * {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
+ * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
  * <p>
  * Node can be configured to either behave strictly as a client or as both a client
  * and ES data node.  The latter is essentially a fully-fledged ES cluster node embedded in Titan.
@@ -39,29 +39,29 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * will use the network transport.
  * <p>
  * Setting arbitrary ES options is supported with both TransportClient and Node
- * via {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#INDEX_CONF_FILE}.
+ * via {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_CONF_FILE}.
  * When this is set, it will be opened as an ordinary file and the contents will be
  * parsed as Elasticsearch settings.  These settings override Titan's defaults but
  * options explicitly provided in Titan's config file (e.g. setting an explicit value for
- * {@link com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex#CLIENT_ONLY} in
+ * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#CLIENT_ONLY} in
  * Titan's properties will override any value that might be in the ES settings file).
  * <p>
  * After loading the index conf file (when provided), any key-value pairs under the
- * {@link com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex#ES_EXTRAS_NS} namespace
+ * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#ES_EXTRAS_NS} namespace
  * are copied into the Elasticsearch settings builder.  This allows overridding arbitrary
  * ES settings from within the Titan properties file.  Settings in the ext namespace take
  * precedence over those in the index conf file.
  * <p>
  * After loading the index conf file and any key-value pairs under the ext namespace,
  * Titan checks for ConfigOptions defined in
- * {@link com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex}
+ * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex}
  * that correspond directly to ES settings and copies them into the ES settings builder.
  */
 public enum ElasticSearchSetup {
 
     /**
      * Start an ES TransportClient connected to
-     * {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
+     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
      */
     TRANSPORT_CLIENT {
         @Override

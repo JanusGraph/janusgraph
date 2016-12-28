@@ -1,18 +1,18 @@
-package com.thinkaurelius.titan.hadoop.scan;
+package org.janusgraph.hadoop.scan;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.EntryArrayList;
-import com.thinkaurelius.titan.hadoop.config.ModifiableHadoopConfiguration;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.diskstorage.Entry;
+import org.janusgraph.diskstorage.EntryList;
+import org.janusgraph.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.configuration.ConfigNamespace;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.diskstorage.util.BufferUtil;
+import org.janusgraph.diskstorage.util.EntryArrayList;
+import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.slf4j.Logger;
@@ -23,10 +23,10 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
+import static org.janusgraph.hadoop.compat.HadoopCompatLoader.DEFAULT_COMPAT;
 
 /**
- * Run a {@link com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob}
+ * Run a {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob}
  * via a Hadoop {@link org.apache.hadoop.mapreduce.Mapper} over the edgestore.
  */
 public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, NullWritable, NullWritable> {
@@ -35,7 +35,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
 
     protected ScanJob job;
     protected HadoopContextScanMetrics metrics;
-    protected com.thinkaurelius.titan.diskstorage.configuration.Configuration jobConf;
+    protected org.janusgraph.diskstorage.configuration.Configuration jobConf;
     private Predicate<StaticBuffer> keyFilter;
     private SliceQuery initialQuery;
     private List<SliceQuery> subsequentQueries;

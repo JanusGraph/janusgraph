@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.pkgtest;
+package org.janusgraph.pkgtest;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,7 +23,7 @@ import org.apache.velocity.app.Velocity;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.TitanFactory;
+import org.janusgraph.core.TitanFactory;
 
 public abstract class AbstractTitanAssemblyIT {
 

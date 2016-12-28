@@ -1,21 +1,21 @@
-package com.thinkaurelius.titan.graphdb.types;
+package org.janusgraph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.schema.RelationTypeMaker;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandler;
-import com.thinkaurelius.titan.graphdb.internal.Order;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import org.janusgraph.core.*;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.schema.RelationTypeMaker;
+import org.janusgraph.core.schema.SchemaStatus;
+import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.database.serialize.AttributeHandler;
+import org.janusgraph.graphdb.internal.Order;
+import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.types.system.SystemTypeManager;
 
 import java.util.*;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
+import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
 
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
@@ -135,7 +135,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <br />
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link com.thinkaurelius.titan.core.TitanVertexQuery#interval(com.thinkaurelius.titan.core.PropertyKey, Comparable, Comparable)}.
+     * time interval using {@link org.janusgraph.core.TitanVertexQuery#interval(com.thinkaurelius.titan.core.PropertyKey, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
@@ -143,7 +143,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p/>
-     * {@link com.thinkaurelius.titan.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
      * @param keys TitanTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
@@ -155,8 +155,8 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     }
 
     /**
-     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link com.thinkaurelius.titan.graphdb.internal.Order#ASC}) or
-     * decreasing ({@link com.thinkaurelius.titan.graphdb.internal.Order#DESC}).
+     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link org.janusgraph.graphdb.internal.Order#ASC}) or
+     * decreasing ({@link org.janusgraph.graphdb.internal.Order#DESC}).
      *
      * Note, that only one sort order can be specified and that a sort key must be defined to use a sort order.
      *

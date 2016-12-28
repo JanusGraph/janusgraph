@@ -1,14 +1,14 @@
-package com.thinkaurelius.titan.diskstorage.log.util;
+package org.janusgraph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import com.thinkaurelius.titan.diskstorage.log.Message;
+import org.janusgraph.diskstorage.log.Message;
 
 /**
  * Implementation of a {@link java.util.concurrent.Future} for {@link Message}s that
- * are being added to the {@link com.thinkaurelius.titan.diskstorage.log.Log} via {@link com.thinkaurelius.titan.diskstorage.log.Log#add(com.thinkaurelius.titan.diskstorage.StaticBuffer)}.
+ * are being added to the {@link org.janusgraph.diskstorage.log.Log} via {@link com.thinkaurelius.titan.diskstorage.log.Log#add(com.thinkaurelius.titan.diskstorage.StaticBuffer)}.
  *
- * This class can be used by {@link com.thinkaurelius.titan.diskstorage.log.Log} implementations to wrap messages.
+ * This class can be used by {@link org.janusgraph.diskstorage.log.Log} implementations to wrap messages.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -30,7 +30,7 @@ public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
     }
 
     /**
-     * This method should be called by {@link com.thinkaurelius.titan.diskstorage.log.Log} implementations when the message was successfully
+     * This method should be called by {@link org.janusgraph.diskstorage.log.Log} implementations when the message was successfully
      * added to the log.
      */
     public void delivered() {

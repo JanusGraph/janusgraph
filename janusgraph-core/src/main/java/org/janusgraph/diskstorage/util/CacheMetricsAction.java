@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package org.janusgraph.diskstorage.util;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)

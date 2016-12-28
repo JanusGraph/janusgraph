@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanJob;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

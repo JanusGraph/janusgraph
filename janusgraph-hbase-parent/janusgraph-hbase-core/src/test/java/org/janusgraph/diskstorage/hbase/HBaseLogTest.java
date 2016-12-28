@@ -1,16 +1,16 @@
-package com.thinkaurelius.titan.diskstorage.hbase;
+package org.janusgraph.diskstorage.hbase;
 
 import java.io.IOException;
 
-import com.thinkaurelius.titan.diskstorage.BackendException;
+import org.janusgraph.diskstorage.BackendException;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.log.KCVSLogTest;
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import org.janusgraph.diskstorage.log.KCVSLogTest;
 
 public class HBaseLogTest extends KCVSLogTest {
 

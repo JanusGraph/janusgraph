@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage;
+package org.janusgraph.diskstorage;
 
 /**
  * This exception signifies a (potentially) temporary exception in a Titan storage backend,

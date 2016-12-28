@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.schema.SchemaStatus;
 
 
 import java.time.Duration;

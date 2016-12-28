@@ -1,6 +1,6 @@
-package com.thinkaurelius.titan.hadoop.formats.util.input;
+package org.janusgraph.hadoop.formats.util.input;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.janusgraph.diskstorage.StaticBuffer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

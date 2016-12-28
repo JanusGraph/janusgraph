@@ -1,8 +1,8 @@
-package com.thinkaurelius.titan.graphdb.schema;
+package org.janusgraph.graphdb.schema;
 
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.PropertyKey;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.PropertyKey;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

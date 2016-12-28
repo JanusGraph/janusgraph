@@ -1,10 +1,10 @@
-package com.thinkaurelius.titan.graphdb.internal;
+package org.janusgraph.graphdb.internal;
 
-import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.core.schema.SchemaStatus;
+import org.janusgraph.core.schema.ConsistencyModifier;
+import org.janusgraph.core.Multiplicity;
+import org.janusgraph.core.RelationType;
+import org.janusgraph.graphdb.types.IndexType;
+import org.janusgraph.core.schema.SchemaStatus;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**

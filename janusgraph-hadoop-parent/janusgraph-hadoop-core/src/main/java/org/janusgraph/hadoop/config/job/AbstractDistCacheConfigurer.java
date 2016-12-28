@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.hadoop.config.job;
+package org.janusgraph.hadoop.config.job;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Abstract base class for {@link com.thinkaurelius.titan.hadoop.config.job.JobClasspathConfigurer}
+ * Abstract base class for {@link org.janusgraph.hadoop.config.job.JobClasspathConfigurer}
  * implementations that use Hadoop's distributed cache to store push classfiles to the cluster.
  */
 public abstract class AbstractDistCacheConfigurer {

@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
+package org.janusgraph.graphdb.database.serialize.attribute;
 
 import java.lang.reflect.Array;
 
-import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerializer;
+import org.janusgraph.core.attribute.AttributeSerializer;
+import org.janusgraph.diskstorage.ScanBuffer;
+import org.janusgraph.diskstorage.WriteBuffer;
+import org.janusgraph.graphdb.database.serialize.SupportsNullSerializer;
 
 public class ByteArraySerializer extends ArraySerializer implements AttributeSerializer<byte[]> {
 
