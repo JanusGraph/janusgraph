@@ -1,0 +1,20 @@
+language: java
+sudo: false
+
+cache:
+  directories:
+    - ${HOME}/.m2
+
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      script: mvn clean package -B -DskipTests=true
+
+    - os: osx
+      script: mvn clean package -B -DskipTests=true
