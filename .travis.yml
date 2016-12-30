@@ -18,3 +18,8 @@ matrix:
 
     - os: osx
       script: mvn clean package -B -DskipTests=true
+
+# Syntax and more info: https://docs.travis-ci.com/user/notifications
+notifications:
+  email:
+    - janusgraph-ci@googlegroups.com
