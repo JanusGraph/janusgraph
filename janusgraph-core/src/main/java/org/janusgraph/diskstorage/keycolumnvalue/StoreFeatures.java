@@ -39,7 +39,7 @@ public interface StoreFeatures {
 
     /**
      * Whether this store supports locking via
-     * {@link KeyColumnValueStore#acquireLock(org.janusgraph.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, StoreTransaction)}
+     * {@link KeyColumnValueStore#acquireLock(org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, StoreTransaction)}
      *
      */
     public boolean hasLocking();

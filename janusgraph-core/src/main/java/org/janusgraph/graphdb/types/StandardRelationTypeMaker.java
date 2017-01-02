@@ -135,7 +135,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <br />
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link org.janusgraph.core.TitanVertexQuery#interval(com.thinkaurelius.titan.core.PropertyKey, Comparable, Comparable)}.
+     * time interval using {@link org.janusgraph.core.TitanVertexQuery#interval(org.janusgraph.core.PropertyKey, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.

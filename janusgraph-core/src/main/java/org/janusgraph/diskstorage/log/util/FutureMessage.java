@@ -6,7 +6,7 @@ import org.janusgraph.diskstorage.log.Message;
 
 /**
  * Implementation of a {@link java.util.concurrent.Future} for {@link Message}s that
- * are being added to the {@link org.janusgraph.diskstorage.log.Log} via {@link com.thinkaurelius.titan.diskstorage.log.Log#add(com.thinkaurelius.titan.diskstorage.StaticBuffer)}.
+ * are being added to the {@link org.janusgraph.diskstorage.log.Log} via {@link org.janusgraph.diskstorage.log.Log#add(org.janusgraph.diskstorage.StaticBuffer)}.
  *
  * This class can be used by {@link org.janusgraph.diskstorage.log.Log} implementations to wrap messages.
  *

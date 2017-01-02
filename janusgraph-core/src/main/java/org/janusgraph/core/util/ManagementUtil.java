@@ -31,7 +31,7 @@ public class ManagementUtil {
      * final state within that time. The method simply returns when the index has reached the final state
      * prior to the time period expiring.
      *
-     * This is a utility method to be invoked between two {@link org.janusgraph.core.schema.TitanManagement#updateIndex(TitanIndex, com.thinkaurelius.titan.core.schema.SchemaAction)} calls
+     * This is a utility method to be invoked between two {@link org.janusgraph.core.schema.TitanManagement#updateIndex(TitanIndex, org.janusgraph.core.schema.SchemaAction)} calls
      * to ensure that the previous update has successfully persisted.
      *
      * @param g

@@ -15,7 +15,7 @@ import org.janusgraph.diskstorage.WriteBuffer;
  * the database is initialized. Hence, the serializer must be on the classpath.
  * <br />
  * <p/>
- * When a {@link org.janusgraph.core.PropertyKey} is defined using a data type specified via {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} for which a custom serializer
+ * When a {@link org.janusgraph.core.PropertyKey} is defined using a data type specified via {@link org.janusgraph.core.schema.PropertyKeyMaker} for which a custom serializer
  * is configured, then it will use this custom serializer for persistence operations.
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
