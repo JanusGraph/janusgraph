@@ -57,9 +57,9 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:git@github.com:thinkaurelius/titan.git</connection>
-        <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
-        <url>git@github.com:thinkaurelius/titan.git</url>
+        <connection>scm:git:git@github.com:JanusGraph/janusgraph.git</connection>
+        <developerConnection>scm:git:git@github.com:JanusGraph/janusgraph.git</developerConnection>
+        <url>git@github.com:JanusGraph/janusgraph.git</url>
         <tag>HEAD</tag>
     </scm>
     <properties>
