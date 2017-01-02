@@ -12,7 +12,7 @@ import org.apache.commons.lang.StringUtils;
  * This class is used by {@code MetricInstrumentedStore} to measure wallclock
  * time, method invocation counts, and exceptions thrown by the methods on
  * {@link RecordIterator} instances returned from
- * {@link MetricInstrumentedStore#getSlice(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)}.
+ * {@link MetricInstrumentedStore#getSlice(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery, org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction)}.
  * 
  * @author Dan LaRocque <dalaro@hopcount.org>
  */

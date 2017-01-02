@@ -10,7 +10,7 @@ import org.janusgraph.core.schema.TitanSchemaType;
  * Each {@link TitanRelation} has a unique type which defines many important characteristics of that relation.
  * <br />
  * RelationTypes are constructed through {@link org.janusgraph.core.schema.RelationTypeMaker} which is accessed in the context of a {@link TitanTransaction}
- * via {@link org.janusgraph.core.TitanTransaction#makePropertyKey(String)} for property keys or {@link com.thinkaurelius.titan.core.TitanTransaction#makeEdgeLabel(String)}
+ * via {@link org.janusgraph.core.TitanTransaction#makePropertyKey(String)} for property keys or {@link org.janusgraph.core.TitanTransaction#makeEdgeLabel(String)}
  * for edge labels. Identical methods exist on {@link TitanGraph}.
  * Note, relation types will only be visible once the transaction in which they were created has been committed.
  * <br />

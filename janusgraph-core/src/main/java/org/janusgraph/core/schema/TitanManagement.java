@@ -41,7 +41,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
+     * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, com.tinkerpop.gremlin.structure.Direction, com.tinkerpop.gremlin.structure.Order, org.janusgraph.core.PropertyKey...)}
      * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#incr}.
      *
      * @param label
@@ -69,7 +69,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     public RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys);
 
     /**
-     * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, com.thinkaurelius.titan.core.PropertyKey...)}
+     * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, com.tinkerpop.gremlin.structure.Order, org.janusgraph.core.PropertyKey...)}
      * with default sort order {@link com.tinkerpop.gremlin.structure.Order#incr}.
      *
      * @param key
@@ -313,7 +313,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
 
     /**
      * If an index update job was triggered through {@link #updateIndex(TitanIndex, SchemaAction)} with schema actions
-     * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link com.thinkaurelius.titan.core.schema.SchemaAction#REMOVE_INDEX}
+     * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link org.janusgraph.core.schema.SchemaAction#REMOVE_INDEX}
      * then this method can be used to track the status of this asynchronous process.
      *
      * @param index

@@ -844,7 +844,7 @@
                                         <goal>integration-test</goal>
                                     </goals>
                                     <configuration>
-                                        <excludedGroups>org.janusgraph.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests</excludedGroups>
+                                        <excludedGroups>org.janusgraph.testcategory.OrderedKeyStoreTests,org.janusgraph.testcategory.UnorderedKeyStoreTests</excludedGroups>
                                         <skip>${skipDefaultDistroIT}</skip>
                                         <failIfNoTests>false</failIfNoTests>
                                         <excludes>
