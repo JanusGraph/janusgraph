@@ -135,7 +135,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public TestName methodName = new TestName();
 
     /**
-     * Tests the {@link org.janusgraph.example.GraphOfTheGodsFactory#load(com.thinkaurelius.titan.core.TitanGraph)}
+     * Tests the {@link org.janusgraph.example.GraphOfTheGodsFactory#load(org.janusgraph.core.TitanGraph)}
      * method used as the standard example that ships with Titan.
      */
     @Test

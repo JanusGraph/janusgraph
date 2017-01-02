@@ -6,7 +6,7 @@ package org.janusgraph.core.schema;
 public interface SchemaManager extends SchemaInspector {
 
     /**
-     * Returns a {@link org.janusgraph.core.schema.PropertyKeyMaker} instance to define a new {@link com.thinkaurelius.titan.core.PropertyKey} with the given name.
+     * Returns a {@link org.janusgraph.core.schema.PropertyKeyMaker} instance to define a new {@link org.janusgraph.core.PropertyKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.
      * <p/>
@@ -19,7 +19,7 @@ public interface SchemaManager extends SchemaInspector {
     public PropertyKeyMaker makePropertyKey(String name);
 
     /**
-     * Returns a {@link org.janusgraph.core.schema.EdgeLabelMaker} instance to define a new {@link com.thinkaurelius.titan.core.EdgeLabel} with the given name.
+     * Returns a {@link org.janusgraph.core.schema.EdgeLabelMaker} instance to define a new {@link org.janusgraph.core.EdgeLabel} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the label and associated consistency constraints.
      * <p/>

@@ -8,7 +8,7 @@ import org.janusgraph.core.RelationType;
  * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link org.janusgraph.core.TitanRelation}s
  * of that type.
  * <p/>
- * There are two kinds of RelationTypes: {@link org.janusgraph.core.EdgeLabel} and {@link com.thinkaurelius.titan.core.PropertyKey} which
+ * There are two kinds of RelationTypes: {@link org.janusgraph.core.EdgeLabel} and {@link org.janusgraph.core.PropertyKey} which
  * are defined via their builders {@link EdgeLabelMaker} and {@link PropertyKeyMaker} respectively. This interface just defines builder methods
  * common to both of them.
  * <p/>
