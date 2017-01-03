@@ -33,7 +33,7 @@ MAIN_CLASS=org.janusgraph.tinkerpop.gremlin.Console
 while getopts "elv" opt; do
     case "$opt" in
     e) MAIN_CLASS=org.janusgraph.tinkerpop.gremlin.ScriptExecutor
-       # For compatibility with behavior pre-Titan-0.5.0, stop
+       # For compatibility with behavior pre-Janus-0.5.0, stop
        # processing gremlin.sh arguments as soon as the -e switch is
        # seen; everything following -e becomes arguments to the
        # ScriptExecutor main class

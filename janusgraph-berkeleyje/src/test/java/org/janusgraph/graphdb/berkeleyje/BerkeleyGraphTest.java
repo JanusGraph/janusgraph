@@ -2,12 +2,12 @@ package org.janusgraph.graphdb.berkeleyje;
 
 import com.google.common.base.Joiner;
 
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.util.TitanCleanup;
+import org.janusgraph.core.JanusException;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.util.JanusCleanup;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusIndexTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -21,7 +21,7 @@ import org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager.IsolationLev
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphTest;
+import org.janusgraph.graphdb.JanusGraphTest;
 
 import java.io.File;
 import java.time.Duration;
@@ -32,7 +32,7 @@ import org.apache.commons.io.FileUtils;
 
 import static org.junit.Assert.*;
 
-public class BerkeleyGraphTest extends TitanGraphTest {
+public class BerkeleyGraphTest extends JanusGraphTest {
 
     @Rule
     public TestName methodNameRule = new TestName();
@@ -85,12 +85,12 @@ public class BerkeleyGraphTest extends TitanGraphTest {
         config.set("ids.authority.wait-time", Duration.of(0L, ChronoUnit.NANOS));
         config.set("ids.renew-timeout", Duration.of(1L, ChronoUnit.MILLIS));
         close();
-        TitanCleanup.clear(graph);
+        JanusCleanup.clear(graph);
         open(config);
         try {
             graph.addVertex();
             fail();
-        } catch (TitanException e) {
+        } catch (JanusException e) {
 
         }
 

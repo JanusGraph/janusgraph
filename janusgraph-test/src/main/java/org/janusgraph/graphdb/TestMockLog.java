@@ -4,7 +4,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
@@ -77,7 +77,7 @@ public class TestMockLog implements LogManager {
 
             if (failAdds) {
                 System.out.println("Failed message add");
-                throw new TitanException("Log unavailable");
+                throw new JanusException("Log unavailable");
             }
 
             if (readers.isEmpty()) {

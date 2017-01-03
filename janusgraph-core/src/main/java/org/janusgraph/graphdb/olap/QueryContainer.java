@@ -4,14 +4,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -28,14 +28,14 @@ public class QueryContainer {
     public static final int DEFAULT_HARD_QUERY_LIMIT = 100000;
     public static final String QUERY_NAME_PREFIX = "query$";
 
-    private final StandardTitanTx tx;
+    private final StandardJanusTx tx;
     private int hardQueryLimit;
     private final boolean requiresName;
 
     private Set<Query> queries;
     private SetMultimap<SliceQuery, Query> inverseQueries;
 
-    public QueryContainer(StandardTitanTx tx) {
+    public QueryContainer(StandardJanusTx tx) {
         Preconditions.checkArgument(tx != null);
         this.tx = tx;
         queries = new HashSet<>(6);
@@ -44,7 +44,7 @@ public class QueryContainer {
         requiresName = true;
     }
 
-    public TitanTransaction getTransaction() {
+    public JanusTransaction getTransaction() {
         return tx;
     }
 
@@ -190,7 +190,7 @@ public class QueryContainer {
         }
 
         @Override
-        public QueryBuilder has(String key, TitanPredicate predicate, Object value) {
+        public QueryBuilder has(String key, JanusPredicate predicate, Object value) {
             super.has(key, predicate, value);
             return this;
         }

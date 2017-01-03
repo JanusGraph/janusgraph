@@ -2,14 +2,14 @@ package org.janusgraph.graphdb.query.condition;
 
 import java.util.Collections;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 
 /**
  * Abstract literal condition.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class Literal<E extends TitanElement> implements Condition<E> {
+public abstract class Literal<E extends JanusElement> implements Condition<E> {
 
     @Override
     public Type getType() {

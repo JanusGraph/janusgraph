@@ -1,12 +1,12 @@
 package org.janusgraph.graphdb;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusFactory;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.graphdb.query.vertex.VertexArrayList;
 import org.janusgraph.graphdb.query.vertex.VertexLongList;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.junit.Test;
 
 import java.util.Iterator;
@@ -24,12 +24,12 @@ public class VertexListTest {
 
         int num = 13;
 
-        TitanGraph g = TitanFactory.open("inmemory");
-        StandardTitanTx tx = (StandardTitanTx) g.newTransaction();
+        JanusGraph g = JanusFactory.open("inmemory");
+        StandardJanusTx tx = (StandardJanusTx) g.newTransaction();
         VertexLongList vll = new VertexLongList(tx);
         VertexArrayList val = new VertexArrayList(tx);
         for (int i=0; i<num; i++) {
-            TitanVertex v = tx.addVertex();
+            JanusVertex v = tx.addVertex();
             vll.add(v);
             val.add(v);
         }
@@ -42,11 +42,11 @@ public class VertexListTest {
         assertTrue(vll.isSorted());
         assertTrue(val.isSorted());
 
-        for (Iterable<TitanVertex> iterable : new Iterable[]{val,vll}) {
-            Iterator<TitanVertex> iter = iterable.iterator();
-            TitanVertex previous = null;
+        for (Iterable<JanusVertex> iterable : new Iterable[]{val,vll}) {
+            Iterator<JanusVertex> iter = iterable.iterator();
+            JanusVertex previous = null;
             for (int i = 0; i < num; i++) {
-                TitanVertex next = iter.next();
+                JanusVertex next = iter.next();
                 if (previous!=null) assertTrue(previous.longId()<next.longId());
                 previous = next;
             }

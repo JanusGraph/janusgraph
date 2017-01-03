@@ -9,7 +9,7 @@ expect_after {
 
 # This file has three parts.
 #
-# 1. Open a database using ${graphConfig} as the Titan properties file.
+# 1. Open a database using ${graphConfig} as the Janus properties file.
 #    The database is assumed to contain Graph of the Gods with ES indices.
 #
 # 2. Run the queries from the Getting Started page in the docs
@@ -22,7 +22,7 @@ expect gremlin>
 send "100-10\r"
 expect "==>90"
 expect gremlin>
-send "g = TitanFactory.open(\"${graphConfig}\")\r"
+send "g = JanusFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
 expect gremlin>
 
@@ -34,7 +34,7 @@ expect gremlin>
 send "m.commit()\r"
 expect gremlin>
 send "g.shutdown()\r"
-send "g = TitanFactory.open(\"${graphConfig}\")\r"
+send "g = JanusFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
 expect gremlin>
 
@@ -49,7 +49,7 @@ if { -1 == [string first "==>age=10000"   $expect_out(buffer)] } { exit 1 }
 if { -1 == [string first "==>name=saturn" $expect_out(buffer)] } { exit 1 }
 
 send "saturn.getLabel()\r"
-expect ==>titan
+expect ==>janus
 expect gremlin>
 
 send "saturn.in('father').in('father').name\r"

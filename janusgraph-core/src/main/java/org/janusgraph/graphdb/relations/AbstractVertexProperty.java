@@ -13,7 +13,7 @@ import java.util.Iterator;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation implements TitanVertexProperty<V> {
+public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation implements JanusVertexProperty<V> {
 
     private InternalVertex vertex;
     private final Object value;
@@ -43,7 +43,7 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     }
 
     @Override
-    public TitanTransaction graph() {
+    public JanusTransaction graph() {
         return vertex.graph();
     }
 
@@ -63,7 +63,7 @@ public abstract class AbstractVertexProperty<V> extends AbstractTypedRelation im
     }
 
     @Override
-    public TitanVertex element() {
+    public JanusVertex element() {
         return vertex;
     }
 

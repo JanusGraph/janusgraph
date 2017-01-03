@@ -1,6 +1,6 @@
 package org.janusgraph.diskstorage.indexing;
 
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 
 /**
  * An IndexInformation gives basic information on what a particular {@link IndexProvider} supports.
@@ -13,10 +13,10 @@ public interface IndexInformation {
     /**
      * Whether the index supports executing queries with the given predicate against a key with the given information
      * @param information
-     * @param titanPredicate
+     * @param janusPredicate
      * @return
      */
-    public boolean supports(KeyInformation information, TitanPredicate titanPredicate);
+    public boolean supports(KeyInformation information, JanusPredicate janusPredicate);
 
     /**
      * Whether the index supports indexing a key with the given information
@@ -28,7 +28,7 @@ public interface IndexInformation {
 
     /**
      * Adjusts the name of the key so that it is a valid field name that can be used in the index.
-     * Titan stores this information and will use the returned name in all interactions with the index.
+     * Janus stores this information and will use the returned name in all interactions with the index.
      * <p/>
      * Note, that mapped field names (either configured on a per key basis or through a global configuration)
      * are not adjusted and handed to the index verbatim.

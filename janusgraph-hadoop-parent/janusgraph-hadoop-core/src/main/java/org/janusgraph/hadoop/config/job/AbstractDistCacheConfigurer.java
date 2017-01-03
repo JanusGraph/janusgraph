@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusHadoopConfiguration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -43,14 +43,14 @@ public abstract class AbstractDistCacheConfigurer {
 //    }
 //
 //    public static final ConfigOption<Boolean> SKIP_LOCAL_COPIES =
-//            new ConfigOption<Boolean>(TitanHadoopConfiguration.JARCACHE_NS, "skip-local-copies",
+//            new ConfigOption<Boolean>(JanusHadoopConfiguration.JARCACHE_NS, "skip-local-copies",
 //            "When this option is true and Hadoop is configured to use a LocalFileSystem as " +
-//            "its default, Titan will not attempt to copy jars from the classpath to the " +
+//            "its default, Janus will not attempt to copy jars from the classpath to the " +
 //            "LocalFileSystem (which is redundant when using the local JobRunner)", ConfigOption.Type.MASKABLE, true);
 
     private final Conf conf;
 
-    private static final String HDFS_TMP_LIB_DIR = "titanlib";
+    private static final String HDFS_TMP_LIB_DIR = "januslib";
 
     private static final Logger log =
             LoggerFactory.getLogger(AbstractDistCacheConfigurer.class);

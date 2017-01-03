@@ -3,7 +3,7 @@ package org.janusgraph.graphdb.transaction;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusRelation;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.graphdb.database.EdgeSerializer;
 import org.janusgraph.graphdb.internal.InternalRelation;
@@ -23,18 +23,18 @@ import java.util.Iterator;
  */
 public class RelationConstructor {
 
-    public static RelationCache readRelationCache(Entry data, StandardTitanTx tx) {
+    public static RelationCache readRelationCache(Entry data, StandardJanusTx tx) {
         return tx.getEdgeSerializer().readRelation(data, false, tx);
     }
 
-    public static Iterable<TitanRelation> readRelation(final InternalVertex vertex, final Iterable<Entry> data, final StandardTitanTx tx) {
-        return new Iterable<TitanRelation>() {
+    public static Iterable<JanusRelation> readRelation(final InternalVertex vertex, final Iterable<Entry> data, final StandardJanusTx tx) {
+        return new Iterable<JanusRelation>() {
             @Override
-            public Iterator<TitanRelation> iterator() {
-                return new Iterator<TitanRelation>() {
+            public Iterator<JanusRelation> iterator() {
+                return new Iterator<JanusRelation>() {
 
                     Iterator<Entry> iter = data.iterator();
-                    TitanRelation current = null;
+                    JanusRelation current = null;
 
                     @Override
                     public boolean hasNext() {
@@ -42,7 +42,7 @@ public class RelationConstructor {
                     }
 
                     @Override
-                    public TitanRelation next() {
+                    public JanusRelation next() {
                         current = readRelation(vertex,iter.next(),tx);
                         return current;
                     }
@@ -57,7 +57,7 @@ public class RelationConstructor {
         };
     }
 
-    public static InternalRelation readRelation(final InternalVertex vertex, final Entry data, final StandardTitanTx tx) {
+    public static InternalRelation readRelation(final InternalVertex vertex, final Entry data, final StandardJanusTx tx) {
         RelationCache relation = tx.getEdgeSerializer().readRelation(data, true, tx);
         return readRelation(vertex,relation,data,tx,tx);
     }

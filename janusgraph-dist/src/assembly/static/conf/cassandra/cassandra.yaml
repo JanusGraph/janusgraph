@@ -7,7 +7,7 @@
 
 # The name of the cluster. This is mainly used to prevent machines in
 # one logical cluster from joining another.
-cluster_name: 'Titan Cassandra Cluster'
+cluster_name: 'Janus Cassandra Cluster'
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data
@@ -22,11 +22,11 @@ cluster_name: 'Titan Cassandra Cluster'
 # If you already have a cluster with 1 token per node, and wish to migrate to 
 # multiple tokens per node, see http://wiki.apache.org/cassandra/Operations
 #
-# The default value that ships with Titan is smaller than the default value
+# The default value that ships with Janus is smaller than the default value
 # that ships with Apache Cassandra.  Fewer tokens means faster Faunus run
-# times on small datasets.  That's convenient when testing Titan(-Hadoop) on
+# times on small datasets.  That's convenient when testing Janus(-Hadoop) on
 # toy data.  However, increasing num_tokens is strongly recommended for
-# production Titan instances backed by Cassandra.  This low value is just
+# production Janus instances backed by Cassandra.  This low value is just
 # for development and testing.
 #num_tokens: 256 
 num_tokens: 4

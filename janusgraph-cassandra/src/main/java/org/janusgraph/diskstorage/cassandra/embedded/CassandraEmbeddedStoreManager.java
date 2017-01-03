@@ -164,9 +164,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> mutEntry : mutations.entrySet()) {
             String columnFamily = mutEntry.getKey();
-            for (Map.Entry<StaticBuffer, KCVMutation> titanMutation : mutEntry.getValue().entrySet()) {
-                StaticBuffer key = titanMutation.getKey();
-                KCVMutation mut = titanMutation.getValue();
+            for (Map.Entry<StaticBuffer, KCVMutation> janusMutation : mutEntry.getValue().entrySet()) {
+                StaticBuffer key = janusMutation.getKey();
+                KCVMutation mut = janusMutation.getValue();
 
                 org.apache.cassandra.db.Mutation rm = rowMutations.get(key);
                 if (rm == null) {

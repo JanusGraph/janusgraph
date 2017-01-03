@@ -17,14 +17,14 @@ import static org.junit.Assert.*;
  */
 public class QueryTest {
 
-    private TitanGraph graph;
-    private TitanTransaction tx;
+    private JanusGraph graph;
+    private JanusTransaction tx;
 
     @Before
     public void setup() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
-        graph = TitanFactory.open(config);
+        graph = JanusFactory.open(config);
         tx = graph.newTransaction();
     }
 
@@ -66,7 +66,7 @@ public class QueryTest {
         OrderList ol3 = new OrderList();
         ol3.add(weight,Order.DESC);
 
-        TitanVertex v1 = tx.addVertex("name","abc","time",20,"weight",2.5),
+        JanusVertex v1 = tx.addVertex("name","abc","time",20,"weight",2.5),
                 v2 = tx.addVertex("name","bcd","time",10,"weight",2.5),
                 v3 = tx.addVertex("name","abc","time",10,"weight",4.5);
 

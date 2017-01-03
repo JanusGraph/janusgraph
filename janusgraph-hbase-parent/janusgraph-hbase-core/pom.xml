@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-hbase-core</artifactId>
     <name>JanusGraph-HBase: Version-independent Core</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
     
     <properties>
         <hadoop.profile>2.0</hadoop.profile>

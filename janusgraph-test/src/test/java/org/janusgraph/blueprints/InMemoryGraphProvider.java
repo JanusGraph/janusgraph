@@ -7,9 +7,9 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 /**
  * Created by bryn on 06/05/15.
  */
-public class InMemoryGraphProvider extends AbstractTitanGraphProvider {
+public class InMemoryGraphProvider extends AbstractJanusGraphProvider {
     @Override
-    public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public ModifiableConfiguration getJanusConfiguration(String graphName, Class<?> test, String testMethodName) {
         return StorageSetup.getInMemoryConfiguration();
     }
 }

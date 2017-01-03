@@ -2,14 +2,14 @@ package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanVertexQuery;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.JanusVertexQuery;
 import org.janusgraph.graphdb.query.condition.Condition;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
 */
-public enum RelationCategory implements Condition<TitanRelation> {
+public enum RelationCategory implements Condition<JanusRelation> {
 
     EDGE, PROPERTY, RELATION;
 
@@ -24,7 +24,7 @@ public enum RelationCategory implements Condition<TitanRelation> {
         }
     }
 
-    public Iterable<TitanRelation> executeQuery(TitanVertexQuery query) {
+    public Iterable<JanusRelation> executeQuery(JanusVertexQuery query) {
         switch (this) {
             case EDGE: return (Iterable)query.edges();
             case PROPERTY: return (Iterable)query.properties();
@@ -58,7 +58,7 @@ public enum RelationCategory implements Condition<TitanRelation> {
     }
 
     @Override
-    public boolean evaluate(TitanRelation relation) {
+    public boolean evaluate(JanusRelation relation) {
         switch(this) {
             case EDGE:
                 return relation.isEdge();

@@ -16,7 +16,7 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.*;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.io.FileUtils;
@@ -446,62 +446,62 @@ public class LuceneIndex implements IndexProvider {
             PredicateCondition<String, ?> atom = (PredicateCondition) condition;
             Object value = atom.getValue();
             String key = atom.getKey();
-            TitanPredicate titanPredicate = atom.getPredicate();
+            JanusPredicate janusPredicate = atom.getPredicate();
             if (value instanceof Number) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on numeric types: " + titanPredicate);
+                Preconditions.checkArgument(janusPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusPredicate);
                 Preconditions.checkArgument(value instanceof Number);
-                params.addFilter(numericFilter(key, (Cmp) titanPredicate, (Number) value));
+                params.addFilter(numericFilter(key, (Cmp) janusPredicate, (Number) value));
             } else if (value instanceof String) {
                 Mapping map = Mapping.getMapping(informations.get(key));
-                if ((map==Mapping.DEFAULT || map==Mapping.TEXT) && !titanPredicate.toString().startsWith("CONTAINS"))
-                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + titanPredicate);
-                if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
-                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
+                if ((map==Mapping.DEFAULT || map==Mapping.TEXT) && !janusPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusPredicate);
+                if (map==Mapping.STRING && janusPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusPredicate);
 
 
 
-                if (titanPredicate == Text.CONTAINS) {
+                if (janusPredicate == Text.CONTAINS) {
                     value = ((String) value).toLowerCase();
                     BooleanFilter b = new BooleanFilter();
                     for (String term : Text.tokenize((String)value)) {
                         b.add(new TermsFilter(new Term(key, term)), BooleanClause.Occur.MUST);
                     }
                     params.addFilter(b);
-                } else if (titanPredicate == Text.CONTAINS_PREFIX) {
+                } else if (janusPredicate == Text.CONTAINS_PREFIX) {
                     value = ((String) value).toLowerCase();
                     params.addFilter(new PrefixFilter(new Term(key, (String) value)));
-                } else if (titanPredicate == Text.PREFIX) {
+                } else if (janusPredicate == Text.PREFIX) {
                     params.addFilter(new PrefixFilter(new Term(key, (String) value)));
-                } else if (titanPredicate == Text.REGEX) {
+                } else if (janusPredicate == Text.REGEX) {
                     RegexpQuery rq = new RegexpQuery(new Term(key, (String) value));
                     params.addQuery(rq);
-                } else if (titanPredicate == Text.CONTAINS_REGEX) {
+                } else if (janusPredicate == Text.CONTAINS_REGEX) {
                     // This is terrible -- there is probably a better way
                     RegexpQuery rq = new RegexpQuery(new Term(key, ".*" + (value) + ".*"));
                     params.addQuery(rq);
-                } else if (titanPredicate == Cmp.EQUAL) {
+                } else if (janusPredicate == Cmp.EQUAL) {
                     params.addFilter(new TermsFilter(new Term(key,(String)value)));
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (janusPredicate == Cmp.NOT_EQUAL) {
                     BooleanFilter q = new BooleanFilter();
                     q.add(new TermsFilter(new Term(key, (String) value)), BooleanClause.Occur.MUST_NOT);
                     params.addFilter(q);
                 } else
-                    throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
+                    throw new IllegalArgumentException("Relation is not supported for string value: " + janusPredicate);
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(titanPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + titanPredicate);
+                Preconditions.checkArgument(janusPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + janusPredicate);
                 Shape shape = ((Geoshape) value).convert2Spatial4j();
                 SpatialArgs args = new SpatialArgs(SpatialOperation.IsWithin, shape);
                 params.addFilter(getSpatialStrategy(key).makeFilter(args));
             } else if (value instanceof Date) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
-                params.addFilter(numericFilter(key, (Cmp) titanPredicate, ((Date) value).getTime()));
+                Preconditions.checkArgument(janusPredicate instanceof Cmp, "Relation not supported on date types: " + janusPredicate);
+                params.addFilter(numericFilter(key, (Cmp) janusPredicate, ((Date) value).getTime()));
             } else if (value instanceof Instant) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on instant types: " + titanPredicate);
-                params.addFilter(numericFilter(key, (Cmp) titanPredicate, ((Instant) value).toEpochMilli()));
+                Preconditions.checkArgument(janusPredicate instanceof Cmp, "Relation not supported on instant types: " + janusPredicate);
+                params.addFilter(numericFilter(key, (Cmp) janusPredicate, ((Instant) value).toEpochMilli()));
             }else if (value instanceof Boolean) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on boolean types: " + titanPredicate);
+                Preconditions.checkArgument(janusPredicate instanceof Cmp, "Relation not supported on boolean types: " + janusPredicate);
                 int intValue;
-                switch ((Cmp)titanPredicate) {
+                switch ((Cmp)janusPredicate) {
                     case EQUAL:
                         intValue = ((Boolean) value) ? 1 : 0;
                         params.addFilter(NumericRangeFilter.newIntRange(key, intValue, intValue, true, true));
@@ -515,15 +515,15 @@ public class LuceneIndex implements IndexProvider {
                 }
 
             } else if (value instanceof UUID) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on UUID types: " + titanPredicate);
-                if (titanPredicate == Cmp.EQUAL) {
+                Preconditions.checkArgument(janusPredicate instanceof Cmp, "Relation not supported on UUID types: " + janusPredicate);
+                if (janusPredicate == Cmp.EQUAL) {
                     params.addFilter(new TermsFilter(new Term(key, value.toString())));
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (janusPredicate == Cmp.NOT_EQUAL) {
                     BooleanFilter q = new BooleanFilter();
                     q.add(new TermsFilter(new Term(key, value.toString())), BooleanClause.Occur.MUST_NOT);
                     params.addFilter(q);
                 } else {
-                    throw new IllegalArgumentException("Relation is not supported for UUID type: " + titanPredicate);
+                    throw new IllegalArgumentException("Relation is not supported for UUID type: " + janusPredicate);
                 }
 
             } else {
@@ -584,30 +584,30 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
+    public boolean supports(KeyInformation information, JanusPredicate janusPredicate) {
         if (information.getCardinality()!= Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
-            if (titanPredicate instanceof Cmp) return true;
+            if (janusPredicate instanceof Cmp) return true;
         } else if (dataType == Geoshape.class) {
-            return titanPredicate == Geo.WITHIN;
+            return janusPredicate == Geo.WITHIN;
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.CONTAINS_PREFIX; // || titanPredicate == Text.CONTAINS_REGEX;
+                    return janusPredicate == Text.CONTAINS || janusPredicate == Text.CONTAINS_PREFIX; // || janusPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.PREFIX || titanPredicate==Text.REGEX;
+                    return janusPredicate == Cmp.EQUAL || janusPredicate==Cmp.NOT_EQUAL || janusPredicate==Text.PREFIX || janusPredicate==Text.REGEX;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
-            if (titanPredicate instanceof Cmp) return true;
+            if (janusPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
+            return janusPredicate == Cmp.EQUAL || janusPredicate == Cmp.NOT_EQUAL;
         } else if (dataType == UUID.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
+            return janusPredicate == Cmp.EQUAL || janusPredicate == Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -714,7 +714,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     /**
-     * Encapsulates a Lucene Query and Filter object pair that jointly express a Titan
+     * Encapsulates a Lucene Query and Filter object pair that jointly express a Janus
      * {@link org.janusgraph.graphdb.query.Query} using Lucene's abstractions.
      * This object's state is mutable.
      */

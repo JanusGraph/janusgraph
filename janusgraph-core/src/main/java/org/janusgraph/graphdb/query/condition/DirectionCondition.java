@@ -1,9 +1,9 @@
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanVertexProperty;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusVertexProperty;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.graphdb.relations.CacheEdge;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -12,12 +12,12 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
+public class DirectionCondition<E extends JanusRelation> extends Literal<E> {
 
-    private final TitanVertex baseVertex;
+    private final JanusVertex baseVertex;
     private final Direction direction;
 
-    public DirectionCondition(TitanVertex vertex, Direction dir) {
+    public DirectionCondition(JanusVertex vertex, Direction dir) {
         assert vertex != null && dir != null;
         this.baseVertex = vertex;
         this.direction = dir;
@@ -28,9 +28,9 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
         if (direction==Direction.BOTH) return true;
         if (element instanceof CacheEdge) {
             return direction==((CacheEdge)element).getVertexCentricDirection();
-        } else if (element instanceof TitanEdge) {
-            return ((TitanEdge)element).vertex(direction).equals(baseVertex);
-        } else if (element instanceof TitanVertexProperty) {
+        } else if (element instanceof JanusEdge) {
+            return ((JanusEdge)element).vertex(direction).equals(baseVertex);
+        } else if (element instanceof JanusVertexProperty) {
             return direction==Direction.OUT;
         }
         return false;

@@ -1,7 +1,7 @@
 
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -9,19 +9,19 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.
  * <p/>
- * A VertexQuery extends Blueprint's {@link com.tinkerpop.gremlin.structure.Query} by some Titan specific convenience methods
+ * A VertexQuery extends Blueprint's {@link com.tinkerpop.gremlin.structure.Query} by some Janus specific convenience methods
  * for querying for incident edges or properties.
  * Using VertexQuery proceeds in two steps:
  * 1) Define the query by specifying what to retrieve and
  * 2) execute the query for the elements to retrieve.
  * <p />
- * This is the base interface for the specific implementations of a VertexQuery. Calling {@link org.janusgraph.core.TitanVertex#query()}
- * returns a {@link TitanVertexQuery} for querying a single vertex.
- * Calling {@link TitanTransaction#multiQuery(java.util.Collection)} returns a {@link TitanMultiVertexQuery} to execute
+ * This is the base interface for the specific implementations of a VertexQuery. Calling {@link org.janusgraph.core.JanusVertex#query()}
+ * returns a {@link JanusVertexQuery} for querying a single vertex.
+ * Calling {@link JanusTransaction#multiQuery(java.util.Collection)} returns a {@link JanusMultiVertexQuery} to execute
  * the same query against multiple vertices at the same time which is typically faster.
  *
- * @see TitanVertexQuery
- * @see TitanMultiVertexQuery
+ * @see JanusVertexQuery
+ * @see JanusMultiVertexQuery
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
 public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
@@ -91,9 +91,9 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * this key-value pair.
      * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
      * and the query is restricted to edges or properties having an incident unidirectional edge pointing to the value which is
-     * expected to be a {@link org.janusgraph.core.TitanVertex}.
+     * expected to be a {@link org.janusgraph.core.JanusVertex}.
      *
-     * @param type  TitanType name
+     * @param type  JanusType name
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
@@ -125,7 +125,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      */
     public Q hasNot(String key, Object value);
 
-    public Q has(String key, TitanPredicate predicate, Object value);
+    public Q has(String key, JanusPredicate predicate, Object value);
 
     /**
      * Query for those edges or properties that have a property for the given key

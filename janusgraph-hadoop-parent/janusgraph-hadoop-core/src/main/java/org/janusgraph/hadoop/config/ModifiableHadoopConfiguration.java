@@ -32,7 +32,7 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         return conf;
     }
 
-    public ModifiableConfiguration getTitanGraphConf() {
-        return prefixView(GraphDatabaseConfiguration.ROOT_NS, TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, this);
+    public ModifiableConfiguration getJanusGraphConf() {
+        return prefixView(GraphDatabaseConfiguration.ROOT_NS, JanusHadoopConfiguration.GRAPH_CONFIG_KEYS, this);
     }
 }

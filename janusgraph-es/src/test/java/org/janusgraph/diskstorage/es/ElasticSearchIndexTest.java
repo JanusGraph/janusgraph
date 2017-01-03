@@ -6,7 +6,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.diskstorage.BackendException;
@@ -157,7 +157,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         try {
             tx.commit();
             fail("Commit should not have succeeded.");
-        } catch (TitanException e) {
+        } catch (JanusException e) {
             // Looking for a NumberFormatException since we tried to stick a string of text into a time field.
             if (!Throwables.getRootCause(e).getMessage().contains("NumberFormatException")) {
                 throw e;

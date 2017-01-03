@@ -4,10 +4,10 @@ import org.janusgraph.core.schema.DefaultSchemaMaker;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 
 /**
- * Provides configuration options for {@link org.janusgraph.core.TitanTransaction}.
+ * Provides configuration options for {@link org.janusgraph.core.JanusTransaction}.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
- * @see org.janusgraph.core.TitanTransaction
+ * @see org.janusgraph.core.JanusTransaction
  */
 public interface TransactionConfiguration extends BaseTransactionConfig {
 

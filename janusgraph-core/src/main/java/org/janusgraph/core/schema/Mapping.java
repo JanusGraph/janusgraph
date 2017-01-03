@@ -6,7 +6,7 @@ import org.janusgraph.graphdb.types.ParameterType;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link TitanManagement#addIndexKey(TitanGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
+ * {@link JanusManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
  * <p/>
  * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
  * ({@link #TEXT}) or indexed as a whole ({@link #STRING}), or both ({@link #TEXTSTRING}).
@@ -21,7 +21,7 @@ public enum Mapping {
     TEXTSTRING;
 
     /**
-     * Returns the mapping as a parameter so that it can be passed to {@link TitanManagement#addIndexKey(TitanGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}
+     * Returns the mapping as a parameter so that it can be passed to {@link JanusManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}
      * @return
      */
     public Parameter asParameter() {

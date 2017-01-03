@@ -40,8 +40,8 @@ public class HBaseCompatLoader {
                 }
             }
             if (null == className) {
-                log.info("The HBase version {} is not explicitly supported by Titan.  " +
-                         "Loading Titan's compatibility layer for its most recent supported HBase version ({})",
+                log.info("The HBase version {} is not explicitly supported by Janus.  " +
+                         "Loading Janus's compatibility layer for its most recent supported HBase version ({})",
                         hbaseVersion, DEFAULT_HBASE_COMPAT_VERSION);
                 className = DEFAULT_HBASE_CLASS_NAME;
                 classNameSource = " by default";

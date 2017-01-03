@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Determines how vertices are placed in individual graph partitions.
  * A particular implementation determines the partition id of a (newly created) vertex. The vertex is
- * then assigned to said partition by Titan.
+ * then assigned to said partition by Janus.
  *
  * The id placement strategy is configurable.
  *
@@ -56,12 +56,12 @@ public interface IDPlacementStrategy {
     public boolean supportsBulkPlacement();
 
     /**
-     * If Titan is embedded, this method is used to indicate to the placement strategy which
+     * If Janus is embedded, this method is used to indicate to the placement strategy which
      * part of the partition id space is hosted locally so that vertex and edge placements can be made accordingly
      * (i.e. preferring to assign partitions in the local ranges so that the data is hosted locally which is often
      * faster).
      * <p/>
-     * This method can be called at any time while Titan is running. It is typically called right
+     * This method can be called at any time while Janus is running. It is typically called right
      * after construction and when the id space is redistributed.
      * <p/>
      * Depending on the storage backend one or multiple ranges of partition ids may be given. However, this list is never

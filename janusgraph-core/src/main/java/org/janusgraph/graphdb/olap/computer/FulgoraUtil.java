@@ -1,10 +1,10 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.TitanTraversalUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.TitanVertexStep;
+import org.janusgraph.core.JanusTransaction;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusTraversalUtil;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -30,24 +30,24 @@ import java.util.Optional;
  */
 public class FulgoraUtil {
 
-    private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(TitanLocalQueryOptimizerStrategy.instance());;
+    private final static TraversalStrategies FULGORA_STRATEGIES = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(JanusLocalQueryOptimizerStrategy.instance());;
 
-    public static TitanVertexStep<Vertex> getReverseTitanVertexStep(final MessageScope.Local<?> scope,
-                                                                       final TitanTransaction graph) {
+    public static JanusVertexStep<Vertex> getReverseJanusVertexStep(final MessageScope.Local<?> scope,
+                                                                       final JanusTransaction graph) {
         FulgoraElementTraversal<Vertex,Edge> result = getReverseTraversal(scope,graph,null);
         result.asAdmin().applyStrategies();
         verifyIncidentTraversal(result);
-        return (TitanVertexStep)result.getStartStep();
+        return (JanusVertexStep)result.getStartStep();
     }
 
     public static Traversal<Vertex,Edge> getReverseElementTraversal(final MessageScope.Local<?> scope,
                                                                     final Vertex start,
-                                                                    final TitanTransaction graph) {
+                                                                    final JanusTransaction graph) {
         return getReverseTraversal(scope,graph,start);
     }
 
     private static FulgoraElementTraversal<Vertex,Edge> getReverseTraversal(final MessageScope.Local<?> scope,
-                                                      final TitanTransaction graph, @Nullable final Vertex start) {
+                                                      final JanusTransaction graph, @Nullable final Vertex start) {
         Traversal.Admin<Vertex,Edge> incident = scope.getIncidentTraversal().get().asAdmin();
         FulgoraElementTraversal<Vertex,Edge> result = FulgoraElementTraversal.of(graph);
 
@@ -63,12 +63,12 @@ public class FulgoraUtil {
 
 
     private static void verifyIncidentTraversal(FulgoraElementTraversal<Vertex,Edge> traversal) {
-        //First step must be TitanVertexStep
+        //First step must be JanusVertexStep
         List<Step> steps = traversal.getSteps();
         Step<Vertex,?> startStep = steps.get(0);
-        Preconditions.checkArgument(startStep instanceof TitanVertexStep &&
-                TitanTraversalUtil.isEdgeReturnStep((TitanVertexStep) startStep),"Expected first step to be an edge step but found: %s",startStep);
-        Optional<Step> violatingStep = steps.stream().filter(s -> !(s instanceof TitanVertexStep ||
+        Preconditions.checkArgument(startStep instanceof JanusVertexStep &&
+                JanusTraversalUtil.isEdgeReturnStep((JanusVertexStep) startStep),"Expected first step to be an edge step but found: %s",startStep);
+        Optional<Step> violatingStep = steps.stream().filter(s -> !(s instanceof JanusVertexStep ||
                 s instanceof OrderGlobalStep || s instanceof OrderLocalStep ||
                         s instanceof IdentityStep || s instanceof FilterStep)).findAny();
         if (violatingStep.isPresent()) throw new IllegalArgumentException("Encountered unsupported step in incident traversal: " + violatingStep.get());

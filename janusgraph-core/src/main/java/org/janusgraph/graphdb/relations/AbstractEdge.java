@@ -2,8 +2,8 @@ package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public abstract class AbstractEdge extends AbstractTypedRelation implements TitanEdge {
+public abstract class AbstractEdge extends AbstractTypedRelation implements JanusEdge {
 
     private InternalVertex start;
     private InternalVertex end;
@@ -74,13 +74,13 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
     }
 
     @Override
-    public TitanVertex vertex(Direction dir) {
+    public JanusVertex vertex(Direction dir) {
         return getVertex(EdgeDirection.position(dir));
     }
 
 
     @Override
-    public TitanVertex otherVertex(Vertex vertex) {
+    public JanusVertex otherVertex(Vertex vertex) {
         if (start.equals(vertex))
             return end;
 

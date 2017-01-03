@@ -28,11 +28,11 @@ EXT=$(pwd)
 CP="$CFG"
 # Add the slf4j-log4j12 binding
 CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
-# Add the jars in $BIN/../lib that start with "titan"
-CP="$CP":$(find -L $LIB -name 'titan*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../lib that start with "janus"
+CP="$CP":$(find -L $LIB -name 'janus*.jar' | sort | tr '\n' ':')
 # Add the remaining jars in $BIN/../lib.
 CP="$CP":$(find -L $LIB -name '*.jar' \
-                \! -name 'titan*' \
+                \! -name 'janus*' \
                 \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
 # Add the jars in $BIN/../ext (at any subdirectory depth)
 CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
@@ -72,7 +72,7 @@ MAIN_CLASS=org.apache.tinkerpop.gremlin.console.Console
 while getopts "elpv" opt; do
     case "$opt" in
     e) MAIN_CLASS=org.apache.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor
-       # For compatibility with behavior pre-Titan-0.5.0, stop
+       # For compatibility with behavior pre-Janus-0.5.0, stop
        # processing gremlin.sh arguments as soon as the -e switch is
        # seen; everything following -e becomes arguments to the
        # ScriptExecutor main class
@@ -86,7 +86,7 @@ while getopts "elpv" opt; do
        ;;
     p) PROFILING_ENABLED=true
        ;;
-    v) MAIN_CLASS=org.janusgraph.core.Titan
+    v) MAIN_CLASS=org.janusgraph.core.Janus
     esac
 done
 

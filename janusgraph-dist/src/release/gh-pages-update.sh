@@ -14,7 +14,7 @@ declare -r PAGE_BRANCH=gh-pages
 declare -r MAIN_INDEX=$MAVEN{project.build.directory}/release/index.html
 #declare -r HTDOC_DIR=$MAVEN{htmlchunk.output.dir}
 declare -r JAVADOC_DIR=$MAVEN{project.build.directory}/javadocs
-declare -r CLONE_DIR=/tmp/titanpages
+declare -r CLONE_DIR=/tmp/januspages
 
 if [ -z "${GIT_DIR:-}" -o -z "${GIT_TAG:-}" ]; then
     if [ -z "${1:-}" ]; then

@@ -1,7 +1,7 @@
 package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +13,7 @@ import java.util.Collection;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Contain implements TitanPredicate {
+public enum Contain implements JanusPredicate {
 
     /**
      * Whether an element is in a collection
@@ -27,7 +27,7 @@ public enum Contain implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return NOT_IN;
         }
     },
@@ -44,7 +44,7 @@ public enum Contain implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return IN;
         }
 

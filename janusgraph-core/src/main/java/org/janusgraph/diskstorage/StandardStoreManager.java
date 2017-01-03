@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.*;
 
 /**
- * This enum is only intended for use by Titan internals.
+ * This enum is only intended for use by Janus internals.
  * It is subject to backwards-incompatible change.
  */
 public enum StandardStoreManager {

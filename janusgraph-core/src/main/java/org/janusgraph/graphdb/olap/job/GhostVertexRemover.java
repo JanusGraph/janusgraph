@@ -2,9 +2,9 @@ package org.janusgraph.graphdb.olap.job;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -15,7 +15,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.util.datastructures.Retriever;
@@ -42,12 +42,12 @@ public class GhostVertexRemover extends VertexJobConverter {
     private final SliceQuery everythingQueryLimit = EVERYTHING_QUERY.updateLimit(RELATION_COUNT_LIMIT);
     private Instant jobStartTime;
 
-    public GhostVertexRemover(TitanGraph graph) {
+    public GhostVertexRemover(JanusGraph graph) {
         super(graph, new NoOpJob());
     }
 
     public GhostVertexRemover() {
-        this((TitanGraph)null);
+        this((JanusGraph)null);
     }
 
     protected GhostVertexRemover(GhostVertexRemover copy) { super(copy); }
@@ -68,7 +68,7 @@ public class GhostVertexRemover extends VertexJobConverter {
         txb.commitTime(jobStartTime);
         txb.checkExternalVertexExistence(false);
         txb.checkInternalVertexExistence(false);
-        tx = (StandardTitanTx)txb.start();
+        tx = (StandardJanusTx)txb.start();
     }
 
     @Override
@@ -85,7 +85,7 @@ public class GhostVertexRemover extends VertexJobConverter {
             return;
         }
 
-        TitanVertex vertex = tx.getInternalVertex(vertexId);
+        JanusVertex vertex = tx.getInternalVertex(vertexId);
         Preconditions.checkArgument(vertex instanceof CacheVertex,
                 "The bounding transaction is not configured correctly");
         CacheVertex v = (CacheVertex)vertex;
@@ -97,7 +97,7 @@ public class GhostVertexRemover extends VertexJobConverter {
         });
 
         int removedRelations = 0;
-        Iterator<TitanRelation> iter = v.query().noPartitionRestriction().relations().iterator();
+        Iterator<JanusRelation> iter = v.query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();
             iter.remove();
@@ -116,7 +116,7 @@ public class GhostVertexRemover extends VertexJobConverter {
     private static class NoOpJob implements VertexScanJob {
 
         @Override
-        public void process(TitanVertex vertex, ScanMetrics metrics) {
+        public void process(JanusVertex vertex, ScanMetrics metrics) {
             throw new UnsupportedOperationException();
         }
 

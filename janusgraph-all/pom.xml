@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-all</artifactId>
     <name>JanusGraph-All: Complete JanusGraph Distribution</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
 
     <!--
       This project depends on the rest of JanusGraph, so Maven users and

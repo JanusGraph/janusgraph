@@ -1,7 +1,7 @@
 package org.janusgraph.core.schema;
 
 /**
- * Designates the status of a {@link TitanIndex} in a graph.
+ * Designates the status of a {@link JanusIndex} in a graph.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

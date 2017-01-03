@@ -7,7 +7,7 @@ expect_after {
     }
 }
 expect gremlin>
-send "g = TitanFactory.open(\"${graphConfig}\")\r"
+send "g = JanusFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
 expect gremlin>
 send "v = g.addVertex()\r"

@@ -1,4 +1,4 @@
-Releasing Titan
+Releasing Janus
 ===============
 
 Prerequisites
@@ -54,8 +54,8 @@ Files in the main repo:
 * CHANGELOG.asc
 * NOTICE.txt
 * UPGRADE.asc
-* titan-site/src/site-resources/index.html
-  (this template generates a new http://thinkaurelius.github.io/titan/)
+* janus-site/src/site-resources/index.html
+  (this template generates a new http://thinkaurelius.github.io/janus/)
 
 Some of these updates could potentially be automated, but tweaking
 documentation before a release will always require at least human in
@@ -75,7 +75,7 @@ Recommended but not required:
 ```bash
 # This script does several things.
 #
-# * Prompts for a ${titan.compatible.versions} update
+# * Prompts for a ${janus.compatible.versions} update
 # * Locally commits the release using the release plugin
 # * Deploys Maven artifacts to Sonatype OSS (staging, not released yet)
 # * Uploads zipfiles to S3
@@ -87,13 +87,13 @@ Recommended but not required:
 # This step is still essentially reversible: just destroy the
 # local commit history, drop the Sonatype OSS Staging repo, and
 # delete the files uploaded to S3.
-titan-dist/src/release/release.sh
+janus-dist/src/release/release.sh
 ```
 
 ### Checking Artifacts & Archives
 
 This is a good time to inspect the archives just uploaded to
-http://s3.thinkaurelius.com/downloads/titan/.  Directory listing is
+http://s3.thinkaurelius.com/downloads/janus/.  Directory listing is
 normally disabled on that directory, so you may need to login to the
 S3 console to list the contents and check that nothing's out of place.
 
@@ -112,7 +112,7 @@ earlier.  It will appear on Maven Central in an hour or two.
 Finally, push your local changes to Github:
 
 ```bash 
-# cd to the titan repository root if not already there
+# cd to the janus repository root if not already there
 git push origin $BRANCH_NAME
 git push origin refs/tags/$RELEASE_VERSION
 git push origin gh-pages

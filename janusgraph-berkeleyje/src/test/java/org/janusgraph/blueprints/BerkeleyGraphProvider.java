@@ -12,10 +12,10 @@ import java.util.Set;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BerkeleyGraphProvider extends AbstractTitanGraphProvider {
+public class BerkeleyGraphProvider extends AbstractJanusGraphProvider {
 
     @Override
-    public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public ModifiableConfiguration getJanusConfiguration(String graphName, Class<?> test, String testMethodName) {
         return BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName)).set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(150L));
     }
 

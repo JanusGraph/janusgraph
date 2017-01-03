@@ -2,7 +2,7 @@ package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusManagement;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements TitanManagement.IndexJobFuture, Runnable {
+class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements JanusManagement.IndexJobFuture, Runnable {
 
     private static final Logger log =
             LoggerFactory.getLogger(StandardScannerExecutor.class);

@@ -24,7 +24,7 @@ send "test_graph_factory_class\r"
 expect "==>class"
 expect gremlin>
 
-send "test_titan_factory_class\r"
+send "test_janus_factory_class\r"
 expect "==>class"
 expect gremlin>
 
@@ -62,8 +62,8 @@ expect "Display stack trace?"
 send "n\r"
 expect gremlin>
 
-send "test_titan_factory_class\r"
-expect "No such property: test_titan_factory_class"
+send "test_janus_factory_class\r"
+expect "No such property: test_janus_factory_class"
 expect "Display stack trace?"
 send "n\r"
 expect gremlin>

@@ -2,7 +2,7 @@ package org.janusgraph.blueprints.process;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.blueprints.HBaseGraphProvider;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
@@ -18,7 +18,7 @@ import java.io.IOException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(ProcessStandardSuite.class)
-@GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
+@GraphProviderClass(provider = HBaseGraphProvider.class, graph = JanusGraph.class)
 public class HBaseProcessTest {
 
     @BeforeClass

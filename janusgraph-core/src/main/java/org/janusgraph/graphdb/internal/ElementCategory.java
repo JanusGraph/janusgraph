@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.*;
-import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.JanusSchemaType;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
@@ -19,9 +19,9 @@ public enum ElementCategory {
 
     public Class<? extends Element> getElementType() {
         switch(this) {
-            case VERTEX: return TitanVertex.class;
-            case EDGE: return TitanEdge.class;
-            case PROPERTY: return TitanVertexProperty.class;
+            case VERTEX: return JanusVertex.class;
+            case EDGE: return JanusEdge.class;
+            case PROPERTY: return JanusVertexProperty.class;
             default: throw new IllegalArgumentException();
         }
     }
@@ -35,7 +35,7 @@ public enum ElementCategory {
         }
     }
 
-    public boolean isValidConstraint(TitanSchemaType type) {
+    public boolean isValidConstraint(JanusSchemaType type) {
         Preconditions.checkNotNull(type);
         switch(this) {
             case VERTEX: return (type instanceof VertexLabelVertex);
@@ -45,19 +45,19 @@ public enum ElementCategory {
         }
     }
 
-    public boolean matchesConstraint(TitanSchemaType type, TitanElement element) {
+    public boolean matchesConstraint(JanusSchemaType type, JanusElement element) {
         Preconditions.checkArgument(type != null && element!=null);
         assert isInstance(element);
         assert isValidConstraint(type);
         switch(this) {
-            case VERTEX: return ((TitanVertex)element).vertexLabel().equals(type);
-            case EDGE: return ((TitanEdge)element).edgeLabel().equals(type);
-            case PROPERTY: return ((TitanVertexProperty)element).propertyKey().equals(type);
+            case VERTEX: return ((JanusVertex)element).vertexLabel().equals(type);
+            case EDGE: return ((JanusEdge)element).edgeLabel().equals(type);
+            case PROPERTY: return ((JanusVertexProperty)element).propertyKey().equals(type);
             default: throw new IllegalArgumentException();
         }
     }
 
-    public boolean isInstance(TitanElement element) {
+    public boolean isInstance(JanusElement element) {
         Preconditions.checkNotNull(element);
         return getElementType().isAssignableFrom(element.getClass());
     }
@@ -70,7 +70,7 @@ public enum ElementCategory {
         return toString().toLowerCase();
     }
 
-    public TitanElement retrieve(Object elementId, TitanTransaction tx) {
+    public JanusElement retrieve(Object elementId, JanusTransaction tx) {
         Preconditions.checkArgument(elementId!=null,"Must provide elementId");
         switch (this) {
             case VERTEX:
@@ -90,7 +90,7 @@ public enum ElementCategory {
         Preconditions.checkArgument(clazz!=null,"Need to provide a element class argument");
         if (Vertex.class.isAssignableFrom(clazz)) return VERTEX;
         else if (Edge.class.isAssignableFrom(clazz)) return EDGE;
-        else if (TitanVertexProperty.class.isAssignableFrom(clazz)) return PROPERTY;
+        else if (JanusVertexProperty.class.isAssignableFrom(clazz)) return PROPERTY;
         else throw new IllegalArgumentException("Invalid clazz provided: " + clazz);
     }
 

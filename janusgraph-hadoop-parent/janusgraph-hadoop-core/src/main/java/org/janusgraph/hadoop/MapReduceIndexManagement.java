@@ -3,12 +3,12 @@ package org.janusgraph.hadoop;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
-import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanIndex;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusIndex;
+import org.janusgraph.core.schema.JanusManagement;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
@@ -20,12 +20,12 @@ import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
 import org.janusgraph.graphdb.olap.job.IndexUpdateJob;
 import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusHadoopConfiguration;
 import org.janusgraph.hadoop.formats.cassandra.CassandraBinaryInputFormat;
 import org.janusgraph.hadoop.formats.hbase.HBaseBinaryInputFormat;
 import org.janusgraph.hadoop.scan.HadoopScanMapper;
@@ -51,7 +51,7 @@ public class MapReduceIndexManagement {
 
     private static final Logger log = LoggerFactory.getLogger(MapReduceIndexManagement.class);
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
 
     private static final EnumSet<SchemaAction> SUPPORTED_ACTIONS =
             EnumSet.of(SchemaAction.REINDEX, SchemaAction.REMOVE_INDEX);
@@ -66,8 +66,8 @@ public class MapReduceIndexManagement {
     private static final Set<Class<? extends KeyColumnValueStoreManager>> HBASE_STORE_MANAGER_CLASSES =
             ImmutableSet.of(HBaseStoreManager.class);
 
-    public MapReduceIndexManagement(TitanGraph g) {
-        this.graph = (StandardTitanGraph)g;
+    public MapReduceIndexManagement(JanusGraph g) {
+        this.graph = (StandardJanusGraph)g;
     }
 
     /**
@@ -80,7 +80,7 @@ public class MapReduceIndexManagement {
      *         this method blocks until the Hadoop MapReduce job completes
      */
     // TODO make this future actually async and update javadoc @return accordingly
-    public TitanManagement.IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction)
+    public JanusManagement.IndexJobFuture updateIndex(JanusIndex index, SchemaAction updateAction)
             throws BackendException {
 
         Preconditions.checkNotNull(index, "Index parameter must not be null", index);
@@ -90,13 +90,13 @@ public class MapReduceIndexManagement {
                 SchemaAction.class.getSimpleName(), SUPPORTED_ACTIONS_STRING, updateAction);
         Preconditions.checkArgument(
                 RelationTypeIndex.class.isAssignableFrom(index.getClass()) ||
-                        TitanGraphIndex.class.isAssignableFrom(index.getClass()),
+                        JanusGraphIndex.class.isAssignableFrom(index.getClass()),
                 "Index %s has class %s: must be a %s or %s (or subtype)",
-                index.getClass(), RelationTypeIndex.class.getSimpleName(), TitanGraphIndex.class.getSimpleName());
+                index.getClass(), RelationTypeIndex.class.getSimpleName(), JanusGraphIndex.class.getSimpleName());
 
         org.apache.hadoop.conf.Configuration hadoopConf = new org.apache.hadoop.conf.Configuration();
-        ModifiableHadoopConfiguration titanmrConf =
-                ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
+        ModifiableHadoopConfiguration janusmrConf =
+                ModifiableHadoopConfiguration.of(JanusHadoopConfiguration.MAPRED_NS, hadoopConf);
 
         // The job we'll execute to either REINDEX or REMOVE_INDEX
         final Class<? extends IndexUpdateJob> indexJobClass;
@@ -119,17 +119,17 @@ public class MapReduceIndexManagement {
         if (RelationTypeIndex.class.isAssignableFrom(index.getClass())) {
             readCF = Backend.EDGESTORE_NAME;
         } else {
-            TitanGraphIndex gindex = (TitanGraphIndex)index;
+            JanusGraphIndex gindex = (JanusGraphIndex)index;
             if (gindex.isMixedIndex() && !updateAction.equals(SchemaAction.REINDEX))
                 throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
 
-            Preconditions.checkState(TitanGraphIndex.class.isAssignableFrom(index.getClass()));
+            Preconditions.checkState(JanusGraphIndex.class.isAssignableFrom(index.getClass()));
             if (updateAction.equals(SchemaAction.REMOVE_INDEX))
                 readCF = Backend.INDEXSTORE_NAME;
             else
                 readCF = Backend.EDGESTORE_NAME;
         }
-        titanmrConf.set(TitanHadoopConfiguration.COLUMN_FAMILY_NAME, readCF);
+        janusmrConf.set(JanusHadoopConfiguration.COLUMN_FAMILY_NAME, readCF);
 
         // The MapReduce InputFormat class based on the open graph's store manager
         final Class<? extends InputFormat> inputFormat;
@@ -156,12 +156,12 @@ public class MapReduceIndexManagement {
         Preconditions.checkNotNull(indexName);
 
         // Set the class of the IndexUpdateJob
-        titanmrConf.set(TitanHadoopConfiguration.SCAN_JOB_CLASS, indexJobClass.getName());
+        janusmrConf.set(JanusHadoopConfiguration.SCAN_JOB_CLASS, indexJobClass.getName());
         // Set the configuration of the IndexUpdateJob
         copyIndexJobKeys(hadoopConf, indexName, relationTypeName);
-        titanmrConf.set(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
+        janusmrConf.set(JanusHadoopConfiguration.SCAN_JOB_CONFIG_ROOT,
                 GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
-        // Copy the StandardTitanGraph configuration under TitanHadoopConfiguration.GRAPH_CONFIG_KEYS
+        // Copy the StandardJanusGraph configuration under JanusHadoopConfiguration.GRAPH_CONFIG_KEYS
         org.apache.commons.configuration.Configuration localbc = graph.getConfiguration().getLocalConfiguration();
         localbc.clearProperty(Graph.GRAPH);
         copyInputKeys(hadoopConf, localbc);
@@ -191,7 +191,7 @@ public class MapReduceIndexManagement {
             if (!pid.element.isOption())
                 continue;
 
-            String k = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + key;
+            String k = ConfigElement.getPath(JanusHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + key;
             String v = source.getProperty(key).toString();
 
             hadoopConf.set(k, v);
@@ -200,18 +200,18 @@ public class MapReduceIndexManagement {
     }
 
     private static void copyIndexJobKeys(org.apache.hadoop.conf.Configuration hadoopConf, String indexName, String relationType) {
-        hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, true) + "." +
+        hadoopConf.set(ConfigElement.getPath(JanusHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, true) + "." +
                         ConfigElement.getPath(IndexUpdateJob.INDEX_NAME), indexName);
 
-        hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, true) + "." +
+        hadoopConf.set(ConfigElement.getPath(JanusHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, true) + "." +
                 ConfigElement.getPath(IndexUpdateJob.INDEX_RELATION_TYPE), relationType);
 
-        hadoopConf.set(ConfigElement.getPath(TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, true) + "." +
+        hadoopConf.set(ConfigElement.getPath(JanusHadoopConfiguration.SCAN_JOB_CONFIG_KEYS, true) + "." +
                 ConfigElement.getPath(GraphDatabaseConfiguration.JOB_START_TIME),
                 String.valueOf(System.currentTimeMillis()));
     }
 
-    private static class CompletedJobFuture implements TitanManagement.IndexJobFuture  {
+    private static class CompletedJobFuture implements JanusManagement.IndexJobFuture  {
 
         private final ScanMetrics completedJobMetrics;
 
@@ -250,7 +250,7 @@ public class MapReduceIndexManagement {
         }
     }
 
-    private static class FailedJobFuture implements TitanManagement.IndexJobFuture {
+    private static class FailedJobFuture implements JanusManagement.IndexJobFuture {
 
         private final Throwable cause;
 

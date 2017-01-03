@@ -4,9 +4,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusManagement;
 
 import java.util.Map;
 
@@ -18,10 +18,10 @@ public class SchemaContainer implements SchemaProvider {
     private final Map<String,VertexLabelDefinition> vertexLabels;
     private final Map<String,RelationTypeDefinition> relationTypes;
 
-    public SchemaContainer(TitanGraph graph) {
+    public SchemaContainer(JanusGraph graph) {
         vertexLabels = Maps.newHashMap();
         relationTypes = Maps.newHashMap();
-        TitanManagement mgmt = graph.openManagement();
+        JanusManagement mgmt = graph.openManagement();
 
         try {
             for (VertexLabel vl : mgmt.getVertexLabels()) {

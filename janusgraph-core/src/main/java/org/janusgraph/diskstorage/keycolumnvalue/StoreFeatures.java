@@ -39,7 +39,7 @@ public interface StoreFeatures {
 
     /**
      * Whether this store supports locking via
-     * {@link KeyColumnValueStore#acquireLock(org.janusgraph.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, StoreTransaction)}
+     * {@link KeyColumnValueStore#acquireLock(org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, StoreTransaction)}
      *
      */
     public boolean hasLocking();
@@ -52,7 +52,7 @@ public interface StoreFeatures {
     public boolean hasBatchMutation();
 
     /**
-     * Whether this storage backend preserves key locality. This affects Titan's
+     * Whether this storage backend preserves key locality. This affects Janus's
      * use of vertex ID partitioning.
      *
      */
@@ -106,7 +106,7 @@ public interface StoreFeatures {
      * assume timestamps in microseconds. This method should return null if the
      * backend has no preference for a specific timestamp resolution.
      *
-     * This method will be ignored by Titan if {@link #hasTimestamps()} is
+     * This method will be ignored by Janus if {@link #hasTimestamps()} is
      * false.
      *
      * @return null or a Timestamps enum value
@@ -117,7 +117,7 @@ public interface StoreFeatures {
      * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
      * is provided as a meta-data annotation on the {@link org.janusgraph.diskstorage.Entry}, the entry will
      * disappear from the storage backend after the given amount of time. See references to
-     * {@link org.janusgraph.diskstorage.EntryMetaData#TTL} for example usage in Titan internals.
+     * {@link org.janusgraph.diskstorage.EntryMetaData#TTL} for example usage in Janus internals.
      * This is the finer-grained of the two TTL modes.
      *
      * @return true if the storage backend supports cell-level TTL, else false

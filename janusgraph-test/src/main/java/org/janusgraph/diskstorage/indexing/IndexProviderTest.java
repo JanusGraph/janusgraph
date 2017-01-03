@@ -13,7 +13,7 @@ import org.janusgraph.diskstorage.EntryMetaData;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.testutil.RandomGenerator;
 
@@ -224,7 +224,7 @@ public abstract class IndexProviderTest {
                 result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "e[l]+(.*)")));
                 assertTrue(result.isEmpty());
             }
-            for (TitanPredicate tp : new Text[]{Text.PREFIX, Text.REGEX}) {
+            for (JanusPredicate tp : new Text[]{Text.PREFIX, Text.REGEX}) {
                 try {
                     assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, tp, "tzubull"))).size());
                     if (indexFeatures.supportsStringMapping(Mapping.TEXT)) fail();
@@ -236,7 +236,7 @@ public abstract class IndexProviderTest {
             assertEquals(3, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "bob"))).size());
             assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "Tomorrow"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "wor"))).size());
-            for (TitanPredicate tp : new Text[]{Text.CONTAINS,Text.CONTAINS_PREFIX, Text.CONTAINS_REGEX}) {
+            for (JanusPredicate tp : new Text[]{Text.CONTAINS,Text.CONTAINS_PREFIX, Text.CONTAINS_REGEX}) {
                 try {
                     assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, tp, "tzubull"))).size());
                     if (indexFeatures.supportsStringMapping(Mapping.STRING)) fail();

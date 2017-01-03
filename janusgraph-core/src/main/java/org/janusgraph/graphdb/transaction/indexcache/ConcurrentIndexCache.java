@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.transaction.indexcache;
 
 import com.google.common.collect.HashMultimap;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusVertexProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,26 +13,26 @@ import java.util.List;
 
 public class ConcurrentIndexCache implements IndexCache {
 
-    private final HashMultimap<Object,TitanVertexProperty> map;
+    private final HashMultimap<Object,JanusVertexProperty> map;
 
     public ConcurrentIndexCache() {
         this.map = HashMultimap.create();
     }
 
     @Override
-    public synchronized void add(TitanVertexProperty property) {
+    public synchronized void add(JanusVertexProperty property) {
         map.put(property.value(),property);
     }
 
     @Override
-    public synchronized void remove(TitanVertexProperty property) {
+    public synchronized void remove(JanusVertexProperty property) {
         map.remove(property.value(),property);
     }
 
     @Override
-    public synchronized Iterable<TitanVertexProperty> get(final Object value, final PropertyKey key) {
-        List<TitanVertexProperty> result = new ArrayList<TitanVertexProperty>(4);
-        for (TitanVertexProperty p : map.get(value)) {
+    public synchronized Iterable<JanusVertexProperty> get(final Object value, final PropertyKey key) {
+        List<JanusVertexProperty> result = new ArrayList<JanusVertexProperty>(4);
+        for (JanusVertexProperty p : map.get(value)) {
             if (p.propertyKey().equals(key)) result.add(p);
         }
         return result;

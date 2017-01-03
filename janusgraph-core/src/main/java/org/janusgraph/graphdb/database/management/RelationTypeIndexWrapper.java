@@ -5,7 +5,7 @@ import org.janusgraph.core.RelationType;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -48,7 +48,7 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public RelationType[] getSortKey() {
-        StandardTitanTx tx = type.tx();
+        StandardJanusTx tx = type.tx();
         long[] ids = type.getSortKey();
         RelationType[] keys = new RelationType[ids.length];
         for (int i = 0; i < keys.length; i++) {

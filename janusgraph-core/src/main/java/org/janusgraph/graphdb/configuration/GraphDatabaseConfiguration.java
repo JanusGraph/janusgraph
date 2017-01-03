@@ -10,7 +10,7 @@ import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import org.janusgraph.graphdb.tinkerpop.TitanDefaultSchemaMaker;
+import org.janusgraph.graphdb.tinkerpop.JanusDefaultSchemaMaker;
 import org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
@@ -65,7 +65,7 @@ import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.util.stats.MetricManager;
 
 /**
- * Provides functionality to configure a {@link org.janusgraph.core.TitanGraph} INSTANCE.
+ * Provides functionality to configure a {@link org.janusgraph.core.JanusGraph} INSTANCE.
  * <p/>
  * <p/>
  * A graph database configuration is uniquely associated with a graph database and must not be used for multiple
@@ -82,7 +82,7 @@ public class GraphDatabaseConfiguration {
             LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
 
-    public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Titan Graph Database");
+    public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Janus Graph Database");
 
     // ########## Graph-level Config Options ##########
     // ################################################
@@ -91,15 +91,15 @@ public class GraphDatabaseConfiguration {
             "General configuration options");
 
     public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(GRAPH_NS,"set-vertex-id",
-            "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled. " +
-            "Useful when operating Titan in concert with another storage system that assigns long ids but disables some " +
-            "of Titan's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
+            "Whether user provided vertex ids should be enabled and Janus's automatic id allocation be disabled. " +
+            "Useful when operating Janus in concert with another storage system that assigns long ids but disables some " +
+            "of Janus's advanced features which can lead to inconsistent data. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
 
     public static final ConfigOption<TimestampProviders> TIMESTAMP_PROVIDER = new ConfigOption<TimestampProviders>(GRAPH_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices. Sets the time granularity for the " +
             "entire graph cluster. To avoid potential inaccuracies, the configured time resolution should match " +
-            "those of the backend systems. Some Titan storage backends declare a preferred timestamp resolution that " +
+            "those of the backend systems. Some Janus storage backends declare a preferred timestamp resolution that " +
             "reflects design constraints in the underlying service. When the backend provides " +
             "a preferred default, and when this setting is not explicitly declared in the config file, the backend " +
             "default is used and the general default associated with this setting is ignored.  An explicit " +
@@ -108,22 +108,22 @@ public class GraphDatabaseConfiguration {
 
 //    public static final ConfigOption<KryoInstanceCacheImpl> KRYO_INSTANCE_CACHE = new ConfigOption<KryoInstanceCacheImpl>(GRAPH_NS, "kryo-instance-cache",
 //            "Controls how Kryo instances are created and cached.  Kryo instances are not " +
-//            "safe for concurrent access.  Titan is responsible guaranteeing that concurrent threads use separate " +
-//            "Kryo instances.  Titan defaults to a Kryo caching approach based on ThreadLocal, as recommended by the " +
+//            "safe for concurrent access.  Janus is responsible guaranteeing that concurrent threads use separate " +
+//            "Kryo instances.  Janus defaults to a Kryo caching approach based on ThreadLocal, as recommended by the " +
 //            "Kryo documentation (https://github.com/EsotericSoftware/kryo#threading).  " +
-//            "However, these ThreadLocals are not necessarily removed when Titan shuts down.  When Titan runs on an " +
+//            "However, these ThreadLocals are not necessarily removed when Janus shuts down.  When Janus runs on an " +
 //            "externally-controlled thread pool that reuses threads indefinitely, such as that provided by Tomcat, " +
 //            "these unremoved ThreadLocals can potentially cause unintended reference retention for as long as the " +
 //            "affected threads remain alive.  In that type of execution environment, consider setting this to " +
-//            "CONCURRENT_HASH_MAP.  The CHM implementation releases all references when Titan is shutdown, but it " +
+//            "CONCURRENT_HASH_MAP.  The CHM implementation releases all references when Janus is shutdown, but it " +
 //            "also subject to some synchronization-related performance overhead that the ThreadLocal-based default " +
 //            "implementation avoids.  Recent versions of Kryo include a class called KryoPool that offers another way " +
-//            "to solve this problem.  However, KryoPool is not supported in Titan 0.5.x because the version of Kryo " +
-//            "used by Titan 0.5.x predates KryoPool's introduction.",
+//            "to solve this problem.  However, KryoPool is not supported in Janus 0.5.x because the version of Kryo " +
+//            "used by Janus 0.5.x predates KryoPool's introduction.",
 //            ConfigOption.Type.MASKABLE, KryoInstanceCacheImpl.class, KryoInstanceCacheImpl.THREAD_LOCAL);
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(GRAPH_NS,"unique-instance-id",
-            "Unique identifier for this Titan instance.  This must be unique among all instances " +
+            "Unique identifier for this Janus instance.  This must be unique among all instances " +
             "concurrently accessing the same stores or indexes.  It's automatically generated by " +
             "concatenating the hostname, process id, and a static (process-wide) counter. " +
             "Leaving it unset is recommended.",
@@ -131,14 +131,14 @@ public class GraphDatabaseConfiguration {
 
 
     public static final ConfigOption<Short> UNIQUE_INSTANCE_ID_SUFFIX = new ConfigOption<Short>(GRAPH_NS,"unique-instance-id-suffix",
-            "When this is set and " + UNIQUE_INSTANCE_ID.getName() + " is not, this Titan " +
+            "When this is set and " + UNIQUE_INSTANCE_ID.getName() + " is not, this Janus " +
             "instance's unique identifier is generated by concatenating the hostname to the " +
             "provided number.  This is a legacy option which is currently only useful if the JVM's " +
             "ManagementFactory.getRuntimeMXBean().getName() is not unique between processes.",
             ConfigOption.Type.LOCAL, Short.class);
 
-    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(GRAPH_NS,"titan-version",
-            "The version of Titan with which this database was created. Automatically set on first start. Don't manually set this property.",
+    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(GRAPH_NS,"janus-version",
+            "The version of Janus with which this database was created. Automatically set on first start. Don't manually set this property.",
             ConfigOption.Type.FIXED, String.class).hide();
 
     public static final ConfigOption<Boolean> ALLOW_STALE_CONFIG = new ConfigOption<Boolean>(GRAPH_NS,"allow-stale-config",
@@ -146,8 +146,8 @@ public class GraphDatabaseConfiguration {
             "options with any of the following types: " + Joiner.on(", ").join(ConfigOption.getManagedTypes()) + ".  " +
             "These types are managed globally through the storage backend and cannot be overridden by changing the " +
             "local configuration.  This type of conflict usually indicates misconfiguration.  When this option is true, " +
-            "Titan will log these option conflicts, but continue normal operation using the storage-backend-hosted value " +
-            "for each conflicted option.  When this option is false, Titan will log these option conflicts, but then it " +
+            "Janus will log these option conflicts, but continue normal operation using the storage-backend-hosted value " +
+            "for each conflicted option.  When this option is false, Janus will log these option conflicts, but then it " +
             "will throw an exception, refusing to start.",
             ConfigOption.Type.MASKABLE, Boolean.class, true);
 
@@ -164,7 +164,7 @@ public class GraphDatabaseConfiguration {
     // ########## OLAP Style Processing ##########
     // ################################################
 
-    public static ConfigNamespace JOB_NS = new ConfigNamespace(null,"job","Root Configuration Namespace for Titan OLAP jobs");
+    public static ConfigNamespace JOB_NS = new ConfigNamespace(null,"job","Root Configuration Namespace for Janus OLAP jobs");
 
     public static final ConfigOption<Long> JOB_START_TIME = new ConfigOption<Long>(JOB_NS,"start-time",
             "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class).hide();
@@ -185,7 +185,7 @@ public class GraphDatabaseConfiguration {
             "Configuration options for transaction handling");
 
     public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(TRANSACTION_NS,"log-tx",
-            "Whether transaction mutations should be logged to Titan's write-ahead transaction log which can be used for recovery of partially failed transactions",
+            "Whether transaction mutations should be logged to Janus's write-ahead transaction log which can be used for recovery of partially failed transactions",
             ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<>(TRANSACTION_NS,"max-commit-time",
@@ -216,9 +216,9 @@ public class GraphDatabaseConfiguration {
 
 
     public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(QUERY_NS,"force-index",
-            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
-                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided " +
-                    "on large graphs. Recommended for production use of Titan.",
+            "Whether Janus should throw an exception if a graph query cannot be answered using an index. Doing so" +
+                    "limits the functionality of Janus's graph queries but ensures that slow graph queries are avoided " +
+                    "on large graphs. Recommended for production use of Janus.",
             ConfigOption.Type.MASKABLE, false);
 
 
@@ -263,7 +263,7 @@ public class GraphDatabaseConfiguration {
 
     private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
         put("none", DisableDefaultSchemaMaker.INSTANCE);
-        put("default", TitanDefaultSchemaMaker.INSTANCE);
+        put("default", JanusDefaultSchemaMaker.INSTANCE);
         put("tp3", Tp3DefaultSchemaMaker.INSTANCE);
     }};
 
@@ -271,11 +271,11 @@ public class GraphDatabaseConfiguration {
     // ################ CACHE #######################
     // ################################################
 
-    public static final ConfigNamespace CACHE_NS = new ConfigNamespace(ROOT_NS,"cache","Configuration options that modify Titan's caching behavior");
+    public static final ConfigNamespace CACHE_NS = new ConfigNamespace(ROOT_NS,"cache","Configuration options that modify Janus's caching behavior");
 
 
     public static final ConfigOption<Boolean> DB_CACHE = new ConfigOption<Boolean>(CACHE_NS,"db-cache",
-            "Whether to enable Titan's database-level cache, which is shared across all transactions. " +
+            "Whether to enable Janus's database-level cache, which is shared across all transactions. " +
             "Enabling this option speeds up traversals by holding hot graph elements in memory, " +
             "but also increases the likelihood of reading stale data.  Disabling it forces each " +
             "transaction to independently fetch graph elements from storage before reading/writing them.",
@@ -284,13 +284,13 @@ public class GraphDatabaseConfiguration {
     /**
      * The size of the database level cache.
      * If this value is between 0.0 (strictly bigger) and 1.0 (strictly smaller), then it is interpreted as a
-     * percentage of the total heap space available to the JVM this Titan instance is running in.
+     * percentage of the total heap space available to the JVM this Janus instance is running in.
      * If this value is bigger than 1.0 it is interpreted as an absolute size in bytes.
      */
 //    public static final String DB_CACHE_SIZE_KEY = "db-cache-size";
 //    public static final double DB_CACHE_SIZE_DEFAULT = 0.3;
     public static final ConfigOption<Double> DB_CACHE_SIZE = new ConfigOption<Double>(CACHE_NS,"db-cache-size",
-            "Size of Titan's database level cache.  Values between 0 and 1 are interpreted as a percentage " +
+            "Size of Janus's database level cache.  Values between 0 and 1 are interpreted as a percentage " +
             "of VM heap, while larger values are interpreted as an absolute size in bytes.",
             ConfigOption.Type.MASKABLE, 0.3);
 
@@ -310,9 +310,9 @@ public class GraphDatabaseConfiguration {
 
     /**
      * The default expiration time for elements held in the database level cache. This is the time period before
-     * Titan will check against storage backend for a newer query answer.
+     * Janus will check against storage backend for a newer query answer.
      * Setting this value to 0 will cache elements forever (unless they get evicted due to space constraints). This only
-     * makes sense when this is the only Titan instance interacting with a storage backend.
+     * makes sense when this is the only Janus instance interacting with a storage backend.
      */
 //    public static final String DB_CACHE_TIME_KEY = "db-cache-time";
 //    public static final long DB_CACHE_TIME_DEFAULT = 10000;
@@ -395,8 +395,8 @@ public class GraphDatabaseConfiguration {
      * Define the storage backed to use for persistence
      */
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<String>(STORAGE_NS,"backend",
-            "The primary persistence provider used by Titan.  This is required.  It should be set one of " +
-            "Titan's built-in shorthand names for its standard storage backends " +
+            "The primary persistence provider used by Janus.  This is required.  It should be set one of " +
+            "Janus's built-in shorthand names for its standard storage backends " +
             "(shorthands: " + Joiner.on(", ").join(StandardStoreManager.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party StoreManager implementation.",
             ConfigOption.Type.LOCAL, String.class);
@@ -444,7 +444,7 @@ public class GraphDatabaseConfiguration {
     /**
      * Number of times the database attempts to persist the transactional state to the storage layer.
      * Persisting the state of a committed transaction might fail for various reasons, some of which are
-     * temporary such as network failures. For temporary failures, Titan will re-attempt to persist the
+     * temporary such as network failures. For temporary failures, Janus will re-attempt to persist the
      * state up to the number of times specified.
      */
 //    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"write-attempts",
@@ -456,7 +456,7 @@ public class GraphDatabaseConfiguration {
     /**
      * Number of times the database attempts to execute a read operation against the storage layer in the current transaction.
      * A read operation might fail for various reasons, some of which are
-     * temporary such as network failures. For temporary failures, Titan will re-attempt to read the
+     * temporary such as network failures. For temporary failures, Janus will re-attempt to read the
      * state up to the number of times specified before failing the transaction
      */
 //    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"read-attempts",
@@ -467,31 +467,31 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
-            "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
+            "fails temporarily, Janus will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, Duration.ofSeconds(100L));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
-                    "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
+                    "fails temporarily, Janus will backoff exponentially and retry the operation until the wait time has been exhausted. ",
             ConfigOption.Type.MASKABLE, Duration.ofSeconds(10L));
 
     /**
-     * If enabled, Titan attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
-     * across the entire Titan graph database instance. Parallelization is only applicable to certain storage operations and
+     * If enabled, Janus attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
+     * across the entire Janus graph database instance. Parallelization is only applicable to certain storage operations and
      * can be beneficial when the operation is I/O bound.
      */
     public static final ConfigOption<Boolean> PARALLEL_BACKEND_OPS = new ConfigOption<Boolean>(STORAGE_NS,"parallel-backend-ops",
-            "Whether Titan should attempt to parallelize storage operations",
+            "Whether Janus should attempt to parallelize storage operations",
             ConfigOption.Type.MASKABLE, true);
 //    public static final String PARALLEL_BACKEND_OPS_KEY = "parallel-backend-ops";
 //    public static final boolean PARALLEL_BACKEND_OPS_DEFAULT = true;
 
     /**
-     * A unique identifier for the machine running the TitanGraph instance.
+     * A unique identifier for the machine running the JanusGraph instance.
      * It must be ensured that no other machine accessing the storage backend can have the same identifier.
      */
 //    public static final ConfigOption<String> INSTANCE_RID_RAW = new ConfigOption<String>(STORAGE_NS,"machine-id",
-//            "A unique identifier for the machine running the TitanGraph instance",
+//            "A unique identifier for the machine running the JanusGraph instance",
 //            ConfigOption.Type.LOCAL, String.class);
 //    public static final String INSTANCE_RID_RAW_KEY = "machine-id";
 
@@ -532,7 +532,7 @@ public class GraphDatabaseConfiguration {
 
     /**
      * Time in milliseconds for backend manager to wait for the storage backends to
-     * become available when Titan is run in server mode. Should the backend manager
+     * become available when Janus is run in server mode. Should the backend manager
      * experience exceptions when attempting to access the storage backend it will retry
      * until this timeout is exceeded.
      * <p/>
@@ -540,7 +540,7 @@ public class GraphDatabaseConfiguration {
      * <p/>
      */
     public static final ConfigOption<Duration> SETUP_WAITTIME = new ConfigOption<>(STORAGE_NS,"setup-wait",
-            "Time in milliseconds for backend manager to wait for the storage backends to become available when Titan is run in server mode",
+            "Time in milliseconds for backend manager to wait for the storage backends to become available when Janus is run in server mode",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(60000L));
 //    public static final int SETUP_WAITTIME_DEFAULT = 60000;
 //    public static final String SETUP_WAITTIME_KEY = "setup-wait";
@@ -551,7 +551,7 @@ public class GraphDatabaseConfiguration {
      * This is batch size of results to pull when iterating a result set.
      */
     public static final ConfigOption<Integer> PAGE_SIZE = new ConfigOption<Integer>(STORAGE_NS,"page-size",
-            "Titan break requests that may return many results from distributed storage backends " +
+            "Janus break requests that may return many results from distributed storage backends " +
             "into a series of requests for small chunks/pages of results, where each chunk contains " +
             "up to this many elements.",
             ConfigOption.Type.MASKABLE, 100);
@@ -625,10 +625,10 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> LOCK_LOCAL_MEDIATOR_GROUP =
             new ConfigOption<String>(LOCK_NS, "local-mediator-group",
             "This option determines the LocalLockMediator instance used for early detection of lock contention " +
-            "between concurrent Titan graph instances within the same process which are connected to the same " +
-            "storage backend.  Titan instances that have the same value for this variable will attempt to discover " +
+            "between concurrent Janus graph instances within the same process which are connected to the same " +
+            "storage backend.  Janus instances that have the same value for this variable will attempt to discover " +
             "lock contention among themselves in memory before proceeding with the general-case distributed locking " +
-            "code.  Titan generates an appropriate default value for this option at startup.  Overridding " +
+            "code.  Janus generates an appropriate default value for this option at startup.  Overridding " +
             "the default is generally only useful in testing.", ConfigOption.Type.LOCAL, String.class);
 
 
@@ -669,7 +669,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
             "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
-                    "in the Titan graph cluster. Must be bigger than 1 and a power of 2.",
+                    "in the Janus graph cluster. Must be bigger than 1 and a power of 2.",
             ConfigOption.Type.FIXED, 32, new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer integer) {
@@ -711,12 +711,12 @@ public class GraphDatabaseConfiguration {
 //    public static final boolean IDS_FLUSH_DEFAULT = true;
 
     /**
-     * The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block
+     * The number of milliseconds that the Janus id pool manager will wait before giving up on allocating a new block
      * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
      * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
      */
     public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<>(IDS_NS,"renew-timeout",
-            "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
+            "The number of milliseconds that the Janus id pool manager will wait before giving up on allocating a new block of ids",
             ConfigOption.Type.MASKABLE, Duration.ofMillis(120000L));
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
 //    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
@@ -728,7 +728,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Double> IDS_RENEW_BUFFER_PERCENTAGE = new ConfigOption<Double>(IDS_NS,"renew-percentage",
             "When the most-recently-reserved ID block has only this percentage of its total IDs remaining " +
-            "(expressed as a value between 0 and 1), Titan asynchronously begins reserving another block. " +
+            "(expressed as a value between 0 and 1), Janus asynchronously begins reserving another block. " +
             "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
 //    public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
@@ -752,23 +752,23 @@ public class GraphDatabaseConfiguration {
 
     /**
      * Sets the strategy used by {@link ConsistentKeyIDAuthority} to avoid
-     * contention in ID block alloction between Titan instances concurrently
+     * contention in ID block alloction between Janus instances concurrently
      * sharing a single distributed storage backend.
      */
     // This is set to GLOBAL_OFFLINE as opposed to MASKABLE or GLOBAL to prevent mixing both global-randomized and local-manual modes within the same cluster
     public static final ConfigOption<ConflictAvoidanceMode> IDAUTHORITY_CONFLICT_AVOIDANCE = new ConfigOption<ConflictAvoidanceMode>(IDAUTHORITY_NS,"conflict-avoidance-mode",
-            "This setting helps separate Titan instances sharing a single graph storage backend avoid contention when reserving ID blocks, " +
+            "This setting helps separate Janus instances sharing a single graph storage backend avoid contention when reserving ID blocks, " +
             "increasing overall throughput.",
             ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
-     * When Titan allocates IDs with {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
+     * When Janus allocates IDs with {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
      * configured, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
      * partition + uniqueid combination is already completely allocated, then
-     * Titan will generate a new random unique ID and try again. This controls
-     * the maximum number of attempts before Titan assumes the entire partition
+     * Janus will generate a new random unique ID and try again. This controls
+     * the maximum number of attempts before Janus assumes the entire partition
      * is allocated and fails the request. It must be set to at least 1 and
      * should generally be set to 3 or more.
      * <p/>
@@ -782,11 +782,11 @@ public class GraphDatabaseConfiguration {
 //    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
-     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
+     * Configures the number of bits of Janus assigned ids that are reserved for a unique id marker that
      * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
-     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
+     * when a lot of Janus instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
      *
-     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
+     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Janus instances must use the
      * same value. Otherwise, data corruption will occur.
      *
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
@@ -794,7 +794,7 @@ public class GraphDatabaseConfiguration {
      * conflict avoidance mode can be changed, this setting cannot ever be changed and must therefore be considered a priori.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag-bits",
-            "Configures the number of bits of Titan-assigned element IDs that are reserved for the conflict avoidance tag",
+            "Configures the number of bits of Janus-assigned element IDs that are reserved for the conflict avoidance tag",
             ConfigOption.Type.FIXED, 4 , new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer uniqueIdBitWidth) {
@@ -803,9 +803,9 @@ public class GraphDatabaseConfiguration {
     });
 
     /**
-     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
+     * Unique id marker to be used by this Janus instance when allocating ids. The unique id marker
      * must be non-negative and fit within the number of unique id bits configured.
-     * By assigning different unique id markers to individual Titan instances it can be assured
+     * By assigning different unique id markers to individual Janus instances it can be assured
      * that those instances don't conflict with one another when attempting to allocate new id blocks.
      *
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
@@ -814,7 +814,7 @@ public class GraphDatabaseConfiguration {
      * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag",
-            "Conflict avoidance tag to be used by this Titan instance when allocating IDs",
+            "Conflict avoidance tag to be used by this Janus instance when allocating IDs",
             ConfigOption.Type.LOCAL, 0);
 
 
@@ -830,12 +830,12 @@ public class GraphDatabaseConfiguration {
      * Define the indexing backed to use for index support
      */
     public static final ConfigOption<String> INDEX_BACKEND = new ConfigOption<String>(INDEX_NS,"backend",
-            "The indexing backend used to extend and optimize Titan's query functionality. " +
-            "This setting is optional.  Titan can use multiple heterogeneous index backends.  " +
+            "The indexing backend used to extend and optimize Janus's query functionality. " +
+            "This setting is optional.  Janus can use multiple heterogeneous index backends.  " +
             "Hence, this option can appear more than once, so long as the user-defined name between " +
             "\"" + INDEX_NS.getName() + "\" and \"backend\" is unique among appearances." +
             "Similar to the storage backend, this should be set to one of " +
-            "Titan's built-in shorthand names for its standard index backends " +
+            "Janus's built-in shorthand names for its standard index backends " +
             "(shorthands: " + Joiner.on(", ").join(StandardIndexProvider.getAllShorthands()) + ") " +
             "or to the full package and classname of a custom/third-party IndexProvider implementation.",
             ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
@@ -848,7 +848,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<String> INDEX_NAME = new ConfigOption<String>(INDEX_NS,"index-name",
             "Name of the index if required by the indexing backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, "titan");
+            ConfigOption.Type.GLOBAL_OFFLINE, "janus");
 
     public static final ConfigOption<String[]> INDEX_HOSTS = new ConfigOption<String[]>(INDEX_NS,"hostname",
             "The hostname or comma-separated list of hostnames of index backend servers.  " +
@@ -877,9 +877,9 @@ public class GraphDatabaseConfiguration {
     // ############## Logging System ######################
     // ################################################
 
-    public static final ConfigNamespace LOG_NS = new ConfigNamespace(GraphDatabaseConfiguration.ROOT_NS,"log","Configuration options for Titan's logging system",true);
+    public static final ConfigNamespace LOG_NS = new ConfigNamespace(GraphDatabaseConfiguration.ROOT_NS,"log","Configuration options for Janus's logging system",true);
 
-    public static final String MANAGEMENT_LOG = "titan";
+    public static final String MANAGEMENT_LOG = "janus";
     public static final String TRANSACTION_LOG = "tx";
     public static final String USER_LOG = "user";
     public static final String USER_LOG_PREFIX = "ulog_";
@@ -976,7 +976,7 @@ public class GraphDatabaseConfiguration {
     public static final String METRICS_SCHEMA_PREFIX_DEFAULT = METRICS_SYSTEM_PREFIX_DEFAULT + "." + "schema";
 
     /**
-     * The default name prefix for Metrics reported by Titan. All metric names
+     * The default name prefix for Metrics reported by Janus. All metric names
      * will begin with this string and a period. This value can be overridden on
      * a transaction-specific basis through
      * {@link StandardTransactionBuilder#groupName(String)}.
@@ -984,7 +984,7 @@ public class GraphDatabaseConfiguration {
      * Default = {@literal #METRICS_PREFIX_DEFAULT}
      */
     public static final ConfigOption<String> METRICS_PREFIX = new ConfigOption<String>(METRICS_NS,"prefix",
-            "The default name prefix for Metrics reported by Titan.",
+            "The default name prefix for Metrics reported by Janus.",
             ConfigOption.Type.MASKABLE, METRICS_PREFIX_DEFAULT);
 //    public static final String METRICS_PREFIX_KEY = "prefix";
 
@@ -994,7 +994,7 @@ public class GraphDatabaseConfiguration {
      * <p/>
      * If true, then metrics for each of these backends will use the same metric
      * name ("stores"). All of their measurements will be combined. This setting
-     * measures the sum of Titan's backend activity without distinguishing
+     * measures the sum of Janus's backend activity without distinguishing
      * between contributions of its various internal stores.
      * <p/>
      * If false, then metrics for each of these backends will use a unique
@@ -1281,7 +1281,7 @@ public class GraphDatabaseConfiguration {
             "Gremlin configuration options");
 
     public static final ConfigOption<String> GREMLIN_GRAPH = new ConfigOption<String>(GREMLIN_NS, "graph",
-            "The implementation of graph factory that will be used by gremlin server", ConfigOption.Type.LOCAL, "org.janusgraph.core.TitanFactory");
+            "The implementation of graph factory that will be used by gremlin server", ConfigOption.Type.LOCAL, "org.janusgraph.core.JanusFactory");
 
     // ################ Begin Class Definition #######################
     // ###############################################################
@@ -1344,9 +1344,9 @@ public class GraphDatabaseConfiguration {
                 //Copy over global configurations
                 globalWrite.setAll(getGlobalSubset(localbc.getAll()));
 
-                //Write Titan version
+                //Write Janus version
                 Preconditions.checkArgument(!globalWrite.has(INITIAL_TITAN_VERSION),"Database has already been initialized but not frozen");
-                globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
+                globalWrite.set(INITIAL_TITAN_VERSION,JanusConstants.VERSION);
 
                 /* If the configuration does not explicitly set a timestamp provider and
                  * the storage backend both supports timestamps and has a preference for
@@ -1368,9 +1368,9 @@ public class GraphDatabaseConfiguration {
                 globalWrite.freezeConfiguration();
             } else {
                 String version = globalWrite.get(INITIAL_TITAN_VERSION);
-                Preconditions.checkArgument(version!=null,"Titan version has not been initialized");
-                if (!TitanConstants.VERSION.equals(version) && !TitanConstants.COMPATIBLE_VERSIONS.contains(version)) {
-                    throw new TitanException("StorageBackend version is incompatible with current Titan version: storage=" + version + " vs. runtime=" + TitanConstants.VERSION);
+                Preconditions.checkArgument(version!=null,"Janus version has not been initialized");
+                if (!JanusConstants.VERSION.equals(version) && !JanusConstants.COMPATIBLE_VERSIONS.contains(version)) {
+                    throw new JanusException("StorageBackend version is incompatible with current Janus version: storage=" + version + " vs. runtime=" + JanusConstants.VERSION);
                 }
 
                 final boolean managedOverridesAllowed;
@@ -1420,7 +1420,7 @@ public class GraphDatabaseConfiguration {
 
                 if (0 < optionsWithDiscrepancies.size() && !managedOverridesAllowed) {
                     String template = "Local settings present for one or more globally managed options: [%s].  These options are controlled through the %s interface; local settings have no effect.";
-                    throw new TitanConfigurationException(String.format(template, Joiner.on(", ").join(optionsWithDiscrepancies), ManagementSystem.class.getSimpleName()));
+                    throw new JanusConfigurationException(String.format(template, Joiner.on(", ").join(optionsWithDiscrepancies), ManagementSystem.class.getSimpleName()));
                 }
             }
 
@@ -1507,7 +1507,7 @@ public class GraphDatabaseConfiguration {
         try {
             addrBytes = Inet4Address.getLocalHost().getAddress();
         } catch (UnknownHostException e) {
-            throw new TitanConfigurationException("Cannot determine local host", e);
+            throw new JanusConfigurationException("Cannot determine local host", e);
         }
         String uid = new String(Hex.encodeHex(addrBytes)) + suffix;
         for (char c : ConfigElement.ILLEGAL_CHARS) {
@@ -1838,7 +1838,7 @@ public class GraphDatabaseConfiguration {
 
     public org.apache.commons.configuration.Configuration getLocalConfiguration() {
         org.apache.commons.configuration.Configuration config = ((CommonsConfiguration)localConfiguration.getConfiguration()).getCommonConfiguration();
-        config.setProperty(Graph.GRAPH, TitanFactory.class.getName());
+        config.setProperty(Graph.GRAPH, JanusFactory.class.getName());
         return config;
     }
 

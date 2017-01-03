@@ -1,7 +1,7 @@
 package org.janusgraph.diskstorage;
 
 /**
- * This exception signifies a (potentially) temporary exception in a Titan storage backend,
+ * This exception signifies a (potentially) temporary exception in a Janus storage backend,
  * that is, an exception that is due to a temporary unavailability or other exception that
  * is not permanent in nature.
  * <p/>

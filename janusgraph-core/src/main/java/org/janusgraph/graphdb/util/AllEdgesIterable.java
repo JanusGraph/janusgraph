@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Constructs {@link Iterable}s over all {@link org.janusgraph.core.TitanEdge}s connecting a provided set of vertices.
+ * Constructs {@link Iterable}s over all {@link org.janusgraph.core.JanusEdge}s connecting a provided set of vertices.
  * <p/>
  * Given a set of vertices, one may be interested in all edges that are contained in the subgraph spanned
  * by those vertices.

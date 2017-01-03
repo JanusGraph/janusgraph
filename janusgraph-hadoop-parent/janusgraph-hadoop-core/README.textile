@@ -5,14 +5,14 @@ Faunus is a "property graph":https://github.com/tinkerpop/blueprints/wiki/Proper
 h2. Features
 
 * Support for various graph-based data sources/sinks
-  ** "Titan":http://thinkaurelius.github.com/titan/ distributed graph database
+  ** "Janus":http://thinkaurelius.github.com/janus/ distributed graph database
   *** "Apache Cassandra":http://cassandra.apache.org/
   *** "Apache HBase":http://hbase.apache.org/
   ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS
   **  EdgeList multi-relational text format stored in HDFS
   *** "RDF":http://www.w3.org/RDF/ text formats stored in HDFS
   ** Hadoop binary "sequence files":http://wiki.apache.org/hadoop/SequenceFile stored in HDFS
-  ** User defined import/export "scripts":https://github.com/thinkaurelius/faunus/wiki/Script-Format
+  ** User defined import/export "scripts":https://github.com/JanusGraph/faunus/wiki/Script-Format
 * Native integration with the "TinkerPop":http://www.tinkerpop.com graph stack:
 ** "Gremlin":http://gremlin.tinkerpop.com graph query language
 ** "Blueprints":http://blueprints.tinkerpop.com standard graph API
@@ -20,4 +20,4 @@ h2. Features
 
 h2. Getting Started
 
-Read the "Faunus documentation":https://github.com/thinkaurelius/faunus/wiki and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.
+Read the "Faunus documentation":https://github.com/JanusGraph/faunus/wiki and join the "mailing list":https://groups.google.com/forum/#!forum/aureliusgraphs.

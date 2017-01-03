@@ -5,7 +5,7 @@ import org.janusgraph.core.attribute.AttributeSerializer;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 
 /**
- * Helper class for registering data types with Titan
+ * Helper class for registering data types with Janus
  *
  * @param <T>
  */

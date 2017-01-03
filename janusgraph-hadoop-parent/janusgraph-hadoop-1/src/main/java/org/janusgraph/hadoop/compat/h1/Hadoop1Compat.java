@@ -1,8 +1,8 @@
 package org.janusgraph.hadoop.compat.h1;
 
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.configuration.TitanConstants;
+import org.janusgraph.graphdb.configuration.JanusConstants;
 import org.janusgraph.hadoop.config.job.JobClasspathConfigurer;
 import org.janusgraph.hadoop.formats.cassandra.CassandraBinaryInputFormat;
 import org.janusgraph.hadoop.scan.HadoopVertexScanMapper;
@@ -64,7 +64,7 @@ public class Hadoop1Compat implements HadoopCompat {
 
     @Override
     public JobClasspathConfigurer newDistCacheConfigurer() {
-        return new DistCacheConfigurer("titan-hadoop-core-" + TitanConstants.VERSION + ".jar");
+        return new DistCacheConfigurer("janus-hadoop-core-" + JanusConstants.VERSION + ".jar");
     }
 
     @Override

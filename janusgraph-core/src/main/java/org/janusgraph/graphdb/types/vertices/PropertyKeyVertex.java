@@ -2,13 +2,13 @@ package org.janusgraph.graphdb.types.vertices;
 
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey {
 
-    public PropertyKeyVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public PropertyKeyVertex(StandardJanusTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

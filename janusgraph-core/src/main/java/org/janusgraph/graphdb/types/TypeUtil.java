@@ -9,7 +9,7 @@ import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.database.management.ModifierType;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusSchemaCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -25,12 +25,12 @@ import java.util.Set;
  */
 public class TypeUtil {
 
-    public static boolean hasSimpleInternalVertexKeyIndex(TitanRelation rel) {
-        if (!(rel instanceof TitanVertexProperty)) return false;
-        else return hasSimpleInternalVertexKeyIndex((TitanVertexProperty)rel);
+    public static boolean hasSimpleInternalVertexKeyIndex(JanusRelation rel) {
+        if (!(rel instanceof JanusVertexProperty)) return false;
+        else return hasSimpleInternalVertexKeyIndex((JanusVertexProperty)rel);
     }
 
-    public static void checkTypeName(TitanSchemaCategory category, String name) {
+    public static void checkTypeName(JanusSchemaCategory category, String name) {
         switch (category) {
             case EDGELABEL:
             case VERTEXLABEL:
@@ -48,7 +48,7 @@ public class TypeUtil {
         }
     }
 
-    public static boolean hasSimpleInternalVertexKeyIndex(TitanVertexProperty prop) {
+    public static boolean hasSimpleInternalVertexKeyIndex(JanusVertexProperty prop) {
         return hasSimpleInternalVertexKeyIndex(prop.propertyKey());
     }
 

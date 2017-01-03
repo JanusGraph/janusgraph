@@ -1,6 +1,6 @@
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
@@ -8,7 +8,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FixedCondition<E extends TitanElement> extends Literal<E> {
+public class FixedCondition<E extends JanusElement> extends Literal<E> {
 
     private final boolean value;
 

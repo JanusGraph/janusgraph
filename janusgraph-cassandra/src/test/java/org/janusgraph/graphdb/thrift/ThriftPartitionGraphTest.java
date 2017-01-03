@@ -2,11 +2,11 @@ package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanOperationCountingTest;
-import org.janusgraph.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.graphdb.JanusOperationCountingTest;
+import org.janusgraph.graphdb.JanusPartitionGraphTest;
 import org.junit.BeforeClass;
 
-public class ThriftPartitionGraphTest extends TitanPartitionGraphTest {
+public class ThriftPartitionGraphTest extends JanusPartitionGraphTest {
 
     @BeforeClass
     public static void beforeClass() {

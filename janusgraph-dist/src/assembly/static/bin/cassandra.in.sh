@@ -65,7 +65,7 @@ case "`uname`" in
     CYGWIN*) logdir="`echo $logdir | cygpath --windows --path -f -`" ;;
 esac
 
-export JVM_OPTS="$JVM_OPTS -Dtitan.logdir=$logdir"
+export JVM_OPTS="$JVM_OPTS -Djanus.logdir=$logdir"
 
 # Change to $CASSANDRA_HOME
 # (typically the directory containing bin/)

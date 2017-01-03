@@ -1,38 +1,38 @@
 /*
  * This is the sample incremental loading script given in the manual.
  * 
- * See the documentation on Titan-Hadoop incremental loading and the 
+ * See the documentation on Janus-Hadoop incremental loading and the 
  * config option "loader-script-file" for more information.
  */
 
-def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
+def JanusVertex getOrCreateVertex(faunusVertex, graph, context, log) {
     String uniqueKey = "name";
     Object uniqueValue = faunusVertex.getProperty(uniqueKey);
-    Vertex titanVertex;
+    Vertex janusVertex;
     if (null == uniqueValue)
       throw new RuntimeException(faunusVertex + " has no value for key " + uniqueKey);
 
     Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator();
     if (itty.hasNext()) {
-      titanVertex = itty.next();
+      janusVertex = itty.next();
       if (itty.hasNext())
         log.info("The key {} has duplicated value {}", uniqueKey, uniqueValue);
     } else {
-      titanVertex = graph.addVertex(faunusVertex.getId());
+      janusVertex = graph.addVertex(faunusVertex.getId());
     }
-    return titanVertex;
+    return janusVertex;
 }
 
-def TitanEdge getOrCreateEdge(faunusEdge, inVertex, outVertex, graph, context, log) {
+def JanusEdge getOrCreateEdge(faunusEdge, inVertex, outVertex, graph, context, log) {
     final String label = faunusEdge.getLabel();
 
     log.debug("outVertex:{} label:{} inVertex:{}", outVertex, label, inVertex);
 
-    final Edge titanEdge = !outVertex.out(label).has("id", inVertex.getId()).hasNext() ?
+    final Edge janusEdge = !outVertex.out(label).has("id", inVertex.getId()).hasNext() ?
         graph.addEdge(null, outVertex, inVertex, label) :
         outVertex.outE(label).as("here").inV().has("id", inVertex.getId()).back("here").next();
 
-    return titanEdge;
+    return janusEdge;
 }
 
 def Object getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) {

@@ -1,9 +1,9 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusVertex;
+import org.janusgraph.core.JanusVertexProperty;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -38,7 +38,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
         vertexMemory.setProperty(vertexId,key,null);
     }
 
-    <V> TitanVertexProperty<V> constructProperty(String key, V value) {
+    <V> JanusVertexProperty<V> constructProperty(String key, V value) {
         assert key!=null && value!=null;
         return new FulgoraVertexProperty<V>(this,vertex,key,value);
     }
@@ -66,7 +66,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
     }
 
     @Override
-    public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
+    public <V> JanusVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
         if (!supports(key)) throw GraphComputer.Exceptions.providedKeyIsNotAnElementComputeKey(key);
         Preconditions.checkArgument(value != null);
         Preconditions.checkArgument(cardinality== VertexProperty.Cardinality.single,"Only single cardinality is supported, provided: %s",cardinality);
@@ -86,7 +86,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
 
             return IteratorUtils.stream(reverseIncident)
                     .map(e -> {
-                        M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((TitanEdge) e).otherVertex(vertex).longId()), localMessageScope);
+                        M msg = vertexMemory.getMessage(vertexMemory.getCanonicalId(((JanusEdge) e).otherVertex(vertex).longId()), localMessageScope);
                         return msg == null ? null : edgeFct.apply(msg, e);
                     })
                     .filter(m -> m != null);
@@ -109,7 +109,7 @@ class VertexMemoryHandler<M> implements PreloadedVertex.PropertyMixing, Messenge
         } else {
             ((MessageScope.Global) messageScope).vertices().forEach(v -> {
                 long vertexId;
-                if (v instanceof TitanVertex) vertexId=((TitanVertex)v).longId();
+                if (v instanceof JanusVertex) vertexId=((JanusVertex)v).longId();
                 else vertexId = (Long)v.id();
                 vertexMemory.sendMessage(vertexMemory.getCanonicalId(vertexId), m, messageScope);
             });

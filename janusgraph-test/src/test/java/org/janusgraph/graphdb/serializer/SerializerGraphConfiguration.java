@@ -2,10 +2,10 @@ package org.janusgraph.graphdb.serializer;
 
 import com.google.common.collect.Iterators;
 import org.janusgraph.core.*;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusManagement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.serializer.attributes.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
  */
 public class SerializerGraphConfiguration {
 
-    StandardTitanGraph graph;
+    StandardJanusGraph graph;
 
     @Before
     public void initialize() {
@@ -28,7 +28,7 @@ public class SerializerGraphConfiguration {
         config.set(GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS, TClass1Serializer.class.getName(), "attribute1");
         config.set(GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS, TEnum.class.getName(), "attribute4");
         config.set(GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS, TEnumSerializer.class.getName(), "attribute4");
-        graph = (StandardTitanGraph) TitanFactory.open(config);
+        graph = (StandardJanusGraph) JanusFactory.open(config);
     }
 
     @After
@@ -38,7 +38,7 @@ public class SerializerGraphConfiguration {
 
     @Test
     public void testOnlyRegisteredSerialization() {
-        TitanManagement mgmt = graph.openManagement();
+        JanusManagement mgmt = graph.openManagement();
         PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         PropertyKey any  = mgmt.makePropertyKey("any").cardinality(Cardinality.LIST).dataType(Object.class).make();
         mgmt.buildIndex("byTime",Vertex.class).addKey(time).buildCompositeIndex();
@@ -46,8 +46,8 @@ public class SerializerGraphConfiguration {
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         mgmt.commit();
 
-        TitanTransaction tx = graph.newTransaction();
-        TitanVertex v = tx.addVertex("person");
+        JanusTransaction tx = graph.newTransaction();
+        JanusVertex v = tx.addVertex("person");
         v.property("time", 5);
         v.property("any", new Double(5.0));
         v.property("any", new TClass1(5,1.5f));

@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-test</artifactId>
     <name>JanusGraph-Test: Test Suite for JanusGraph</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
     
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>

@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 /**
- * AbstractElement is the base class for all elements in Titan.
+ * AbstractElement is the base class for all elements in Janus.
  * It is defined and uniquely identified by its id.
  * </p>
  * For the id, it holds that:
@@ -21,7 +21,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class AbstractElement implements InternalElement, Comparable<TitanElement> {
+public abstract class AbstractElement implements InternalElement, Comparable<JanusElement> {
 
     private long id;
 
@@ -52,8 +52,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
         //Same type => they are the same if they have identical ids.
         if (other instanceof AbstractElement) {
             return getCompareId()==((AbstractElement)other).getCompareId();
-        } else if (other instanceof TitanElement) {
-            return ((TitanElement) other).hasId() && getCompareId()==((TitanElement)other).longId();
+        } else if (other instanceof JanusElement) {
+            return ((JanusElement) other).hasId() && getCompareId()==((JanusElement)other).longId();
         } else if (other instanceof Element) {
             Object otherId = ((Element)other).id();
             if (otherId instanceof RelationIdentifier) return ((RelationIdentifier) otherId).getRelationId()==getCompareId();
@@ -63,11 +63,11 @@ public abstract class AbstractElement implements InternalElement, Comparable<Tit
 
 
     @Override
-    public int compareTo(TitanElement other) {
+    public int compareTo(JanusElement other) {
         return compare(this,other);
     }
 
-    public static int compare(TitanElement e1, TitanElement e2) {
+    public static int compare(JanusElement e1, JanusElement e2) {
         long e1id = (e1 instanceof AbstractElement)?((AbstractElement)e1).getCompareId():e1.longId();
         long e2id = (e2 instanceof AbstractElement)?((AbstractElement)e2).getCompareId():e2.longId();
         return Longs.compare(e1id,e2id);

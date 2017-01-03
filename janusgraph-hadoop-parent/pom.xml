@@ -9,7 +9,7 @@
     <artifactId>janusgraph-hadoop-parent</artifactId>
     <name>JanusGraph-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
 
     <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
@@ -272,10 +272,10 @@
                             <configuration>
                                 <excludes>
                                     <exclude>**/*PipelineTest.java</exclude>
-                                    <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                                    <exclude>**/JanusCassandraOutputFormatTest.java</exclude>
                                     <exclude>**/*ReindexTest.java</exclude>
                                     <exclude>**/*ScanJobTest.java</exclude>
-                                    <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
+                                    <exclude>**/JanusHBaseOutputFormatTest.java</exclude>
                                 </excludes>
                             </configuration>
                         </execution>

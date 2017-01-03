@@ -1,12 +1,12 @@
 package org.janusgraph.graphdb.database.idassigner;
 
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IDPoolExhaustedException extends TitanException {
+public class IDPoolExhaustedException extends JanusException {
 
     public IDPoolExhaustedException(String msg) {
         super(msg);

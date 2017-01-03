@@ -1,6 +1,6 @@
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 
 /**
  * Combines multiple conditions under semantic OR, i.e. at least one condition must be true for this combination to be true
@@ -8,7 +8,7 @@ import org.janusgraph.core.TitanElement;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class Or<E extends TitanElement> extends MultiCondition<E> {
+public class Or<E extends JanusElement> extends MultiCondition<E> {
 
     public Or(Condition<E>... elements) {
         super(elements);
@@ -49,7 +49,7 @@ public class Or<E extends TitanElement> extends MultiCondition<E> {
         return false;
     }
 
-    public static <E extends TitanElement> Or<E> of(Condition<E>... elements) {
+    public static <E extends JanusElement> Or<E> of(Condition<E>... elements) {
         return new Or<E>(elements);
     }
 

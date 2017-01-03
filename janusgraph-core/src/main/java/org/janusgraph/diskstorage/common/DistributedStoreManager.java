@@ -111,7 +111,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     }
 
     /*
-     * TODO this should go away once we have a TitanConfig that encapsulates TimestampProvider
+     * TODO this should go away once we have a JanusConfig that encapsulates TimestampProvider
      */
     public TimestampProvider getTimestampProvider() {
         return times;
@@ -172,7 +172,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 //            try {
 //                tentativeRid = Hex.decodeHex(ridText.toCharArray());
 //            } catch (DecoderException e) {
-//                throw new TitanConfigurationException("Could not decode hex value", e);
+//                throw new JanusConfigurationException("Could not decode hex value", e);
 //            }
 //
 //            log.debug("Set rid from hex string: 0x{}", ridText);
@@ -201,7 +201,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 //            try {
 //                addrBytes = Inet4Address.getLocalHost().getAddress();
 //            } catch (UnknownHostException e) {
-//                throw new TitanConfigurationException("Unknown host specified", e);
+//                throw new JanusConfigurationException("Unknown host specified", e);
 //            }
 //
 //            tentativeRid = new byte[addrBytes.length + endBytes.length];

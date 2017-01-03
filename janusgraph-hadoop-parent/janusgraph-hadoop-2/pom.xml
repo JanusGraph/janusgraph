@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-hadoop-2</artifactId>
     <name>JanusGraph-Hadoop: 2.x Compatibility Shim</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
 
     <properties>
         <top.level.basedir>${basedir}/../..</top.level.basedir>

@@ -3,7 +3,7 @@ package org.janusgraph.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 import org.janusgraph.graphdb.query.BackendQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.Query;
@@ -57,7 +57,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
         this(store, condition, NO_ORDER, limit);
     }
 
-    public Condition<TitanElement> getCondition() {
+    public Condition<JanusElement> getCondition() {
         return condition;
     }
 

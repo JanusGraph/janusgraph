@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 
 import javax.annotation.Nullable;
 
@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
  */
 public class ConditionUtil {
 
-    public static final<E extends TitanElement> Condition<E> literalTransformation(Condition<E> condition, final Function<Condition<E>,Condition<E>> transformation) {
+    public static final<E extends JanusElement> Condition<E> literalTransformation(Condition<E> condition, final Function<Condition<E>,Condition<E>> transformation) {
         return transformation(condition,new Function<Condition<E>, Condition<E>>() {
             @Nullable
             @Override
@@ -24,7 +24,7 @@ public class ConditionUtil {
         });
     }
 
-    public static final<E extends TitanElement> Condition<E> transformation(Condition<E> condition, Function<Condition<E>,Condition<E>> transformation) {
+    public static final<E extends JanusElement> Condition<E> transformation(Condition<E> condition, Function<Condition<E>,Condition<E>> transformation) {
         Condition<E> transformed = transformation.apply(condition);
         if (transformed!=null) return transformed;
         //if transformed==null we go a level deeper
@@ -53,7 +53,7 @@ public class ConditionUtil {
         return false;
     }
 
-    public static final<E extends TitanElement> void traversal(Condition<E> condition, Predicate<Condition<E>> evaluator) {
+    public static final<E extends JanusElement> void traversal(Condition<E> condition, Predicate<Condition<E>> evaluator) {
         if (!evaluator.apply(condition)) return; //Abort if the evaluator returns false
 
         if (condition.getType()== Condition.Type.LITERAL) {

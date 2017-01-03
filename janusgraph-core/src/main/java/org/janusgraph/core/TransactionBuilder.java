@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
- * Constructor returned by {@link org.janusgraph.core.TitanGraph#buildTransaction()} to build a new transaction.
+ * Constructor returned by {@link org.janusgraph.core.JanusGraph#buildTransaction()} to build a new transaction.
  * The TransactionBuilder allows certain aspects of the resulting transaction to be configured up-front.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -22,7 +22,7 @@ public interface TransactionBuilder {
     public TransactionBuilder readOnly();
 
     /**
-     * Enabling batch loading disables a number of consistency checks inside Titan to speed up the ingestion of
+     * Enabling batch loading disables a number of consistency checks inside Janus to speed up the ingestion of
      * data under the assumptions that inconsistencies are resolved prior to loading.
      *
      * @return
@@ -74,7 +74,7 @@ public interface TransactionBuilder {
      * Enables/disables checking whether the vertex with a user provided id indeed exists. If the user is absolutely sure
      * that the vertices for the ids provided in this transaction exist in the underlying data store, then disabling the
      * vertex existence check will improve performance because it eliminates a database call.
-     * However, if a provided vertex id does not exist in the database and checking is disabled, Titan will assume it
+     * However, if a provided vertex id does not exist in the database and checking is disabled, Janus will assume it
      * exists which can lead to data and query inconsistencies.
      *
      * @param enabled
@@ -132,7 +132,7 @@ public interface TransactionBuilder {
      *
      * Sets the name prefix used for Metrics recorded by this transaction. If
      * metrics is enabled via {@link GraphDatabaseConfiguration#BASIC_METRICS},
-     * this string will be prepended to all Titan metric names.
+     * this string will be prepended to all Janus metric names.
      *
      * @param name
      *            Metric name prefix for this transaction
@@ -171,6 +171,6 @@ public interface TransactionBuilder {
      *
      * @return A new transaction configured according to this builder
      */
-    public TitanTransaction start();
+    public JanusTransaction start();
 
 }

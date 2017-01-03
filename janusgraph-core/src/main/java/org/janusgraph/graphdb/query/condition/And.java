@@ -1,13 +1,13 @@
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 
 /**
  * Combines multiple conditions under semantic AND, i.e. all conditions must be true for this combination to be true
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class And<E extends TitanElement> extends MultiCondition<E> {
+public class And<E extends JanusElement> extends MultiCondition<E> {
 
     public And(Condition<E>... elements) {
         super(elements);
@@ -45,7 +45,7 @@ public class And<E extends TitanElement> extends MultiCondition<E> {
         return true;
     }
 
-    public static <E extends TitanElement> And<E> of(Condition<E>... elements) {
+    public static <E extends JanusElement> And<E> of(Condition<E>... elements) {
         return new And<E>(elements);
     }
 

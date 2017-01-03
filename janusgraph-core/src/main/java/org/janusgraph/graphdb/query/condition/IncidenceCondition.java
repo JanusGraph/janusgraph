@@ -1,21 +1,21 @@
 package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.JanusVertex;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IncidenceCondition<E extends TitanRelation> extends Literal<E> {
+public class IncidenceCondition<E extends JanusRelation> extends Literal<E> {
 
-    private final TitanVertex baseVertex;
-    private final TitanVertex otherVertex;
+    private final JanusVertex baseVertex;
+    private final JanusVertex otherVertex;
 
-    public IncidenceCondition(TitanVertex baseVertex, TitanVertex otherVertex) {
+    public IncidenceCondition(JanusVertex baseVertex, JanusVertex otherVertex) {
         Preconditions.checkNotNull(baseVertex);
         Preconditions.checkNotNull(otherVertex);
         this.baseVertex = baseVertex;
@@ -24,7 +24,7 @@ public class IncidenceCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public boolean evaluate(E relation) {
-        return relation.isEdge() && ((TitanEdge) relation).otherVertex(baseVertex).equals(otherVertex);
+        return relation.isEdge() && ((JanusEdge) relation).otherVertex(baseVertex).equals(otherVertex);
     }
 
     @Override

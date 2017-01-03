@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.olap;
 
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 
@@ -22,7 +22,7 @@ public interface VertexScanJob extends Cloneable {
      * @param config
      * @param metrics
      */
-    public default void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {}
+    public default void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {}
 
     /**
      * @see org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob
@@ -37,7 +37,7 @@ public interface VertexScanJob extends Cloneable {
      * @param vertex
      * @param metrics
      */
-    public void process(TitanVertex vertex, ScanMetrics metrics);
+    public void process(JanusVertex vertex, ScanMetrics metrics);
 
 
     /**

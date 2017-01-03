@@ -1,7 +1,7 @@
-!http://thinkaurelius.github.io/titan/images/titan-logo.png!
+!http://thinkaurelius.github.io/janus/images/janus-logo.png!
 
-Titan is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. Titan is a transactional database that can support thousands of concurrent users, complex traversals, and analytic graph queries.
+Janus is a highly scalable "graph database":http://en.wikipedia.org/wiki/Graph_database optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. Janus is a transactional database that can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
 h2. Learn More
 
-The "project homepage":http://titandb.io contains more information on Titan and provides links to documentation, getting-started guides and release downloads.
+The "project homepage":http://janusdb.io contains more information on Janus and provides links to documentation, getting-started guides and release downloads.

@@ -7,7 +7,7 @@ import org.janusgraph.graphdb.internal.AbstractElement;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.system.BaseLabel;
 import org.janusgraph.graphdb.types.system.BaseVertexLabel;
@@ -22,10 +22,10 @@ import java.util.Iterator;
 
 public abstract class AbstractVertex extends AbstractElement implements InternalVertex, Vertex {
 
-    private final StandardTitanTx tx;
+    private final StandardJanusTx tx;
 
 
-    protected AbstractVertex(StandardTitanTx tx, long id) {
+    protected AbstractVertex(StandardJanusTx tx, long id) {
         super(id);
         assert tx != null;
         this.tx = tx;
@@ -42,7 +42,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public final StandardTitanTx tx() {
+    public final StandardJanusTx tx() {
         return tx.isOpen() ? tx : tx.getNextTx();
     }
 
@@ -82,20 +82,20 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     public synchronized void remove() {
         verifyAccess();
 //        if (isRemoved()) return; //Remove() is idempotent
-        Iterator<TitanRelation> iter = it().query().noPartitionRestriction().relations().iterator();
+        Iterator<JanusRelation> iter = it().query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();
             iter.remove();
         }
         //Remove all system types on the vertex
-        for (TitanRelation r : it().query().noPartitionRestriction().system().relations()) {
+        for (JanusRelation r : it().query().noPartitionRestriction().system().relations()) {
             RelationType t = r.getType();
             r.remove();
         }
     }
 
 	/* ---------------------------------------------------------------
-	 * TitanRelation Iteration/Access
+	 * JanusRelation Iteration/Access
 	 * ---------------------------------------------------------------
 	 */
 
@@ -127,27 +127,27 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
 	/* ---------------------------------------------------------------
-	 * Convenience Methods for TitanElement Creation
+	 * Convenience Methods for JanusElement Creation
 	 * ---------------------------------------------------------------
 	 */
 
-    public<V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
-        TitanVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
+    public<V> JanusVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+        JanusVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key), value);
         ElementHelper.attachProperties(p,keyValues);
         return p;
     }
 
     @Override
-    public <V> TitanVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
-        TitanVertexProperty<V> p = tx().addProperty(cardinality, it(), tx().getOrCreatePropertyKey(key), value);
+    public <V> JanusVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
+        JanusVertexProperty<V> p = tx().addProperty(cardinality, it(), tx().getOrCreatePropertyKey(key), value);
         ElementHelper.attachProperties(p,keyValues);
         return p;
     }
 
     @Override
-    public TitanEdge addEdge(String label, Vertex vertex, Object... keyValues) {
-        Preconditions.checkArgument(vertex instanceof TitanVertex,"Invalid vertex provided: %s",vertex);
-        TitanEdge edge = tx().addEdge(it(), (TitanVertex) vertex, tx().getOrCreateEdgeLabel(label));
+    public JanusEdge addEdge(String label, Vertex vertex, Object... keyValues) {
+        Preconditions.checkArgument(vertex instanceof JanusVertex,"Invalid vertex provided: %s",vertex);
+        JanusEdge edge = tx().addEdge(it(), (JanusVertex) vertex, tx().getOrCreateEdgeLabel(label));
         ElementHelper.attachProperties(edge,keyValues);
         return edge;
     }

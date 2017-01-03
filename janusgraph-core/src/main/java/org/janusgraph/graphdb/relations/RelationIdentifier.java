@@ -4,14 +4,14 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.JanusTransaction;
+import org.janusgraph.core.JanusVertex;
+import org.janusgraph.core.JanusVertexProperty;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -135,22 +135,22 @@ public final class RelationIdentifier implements Serializable {
         }
     }
 
-    TitanRelation findRelation(TitanTransaction tx) {
-        TitanVertex v = ((StandardTitanTx)tx).getInternalVertex(outVertexId);
+    JanusRelation findRelation(JanusTransaction tx) {
+        JanusVertex v = ((StandardJanusTx)tx).getInternalVertex(outVertexId);
         if (v == null || v.isRemoved()) return null;
-        TitanVertex typeVertex = tx.getVertex(typeId);
+        JanusVertex typeVertex = tx.getVertex(typeId);
         if (typeVertex == null) return null;
         if (!(typeVertex instanceof RelationType))
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
 
         RelationType type = (RelationType) typeVertex;
-        Iterable<? extends TitanRelation> rels;
+        Iterable<? extends JanusRelation> rels;
         if (((RelationType) typeVertex).isEdgeLabel()) {
             Direction dir = Direction.OUT;
-            TitanVertex other = ((StandardTitanTx)tx).getInternalVertex(inVertexId);
+            JanusVertex other = ((StandardJanusTx)tx).getInternalVertex(inVertexId);
             if (other==null || other.isRemoved()) return null;
-            if (((StandardTitanTx) tx).isPartitionedVertex(v) && !((StandardTitanTx) tx).isPartitionedVertex(other)) { //Swap for likely better performance
-                TitanVertex tmp = other;
+            if (((StandardJanusTx) tx).isPartitionedVertex(v) && !((StandardJanusTx) tx).isPartitionedVertex(other)) { //Swap for likely better performance
+                JanusVertex tmp = other;
                 other = v;
                 v = tmp;
                 dir = Direction.IN;
@@ -160,7 +160,7 @@ public final class RelationIdentifier implements Serializable {
             rels = ((VertexCentricQueryBuilder) v.query()).noPartitionRestriction().types((PropertyKey) type).properties();
         }
 
-        for (TitanRelation r : rels) {
+        for (JanusRelation r : rels) {
             //Find current or previous relation
             if (r.longId() == relationId ||
                     ((r instanceof StandardRelation) && ((StandardRelation) r).getPreviousID() == relationId)) return r;
@@ -168,17 +168,17 @@ public final class RelationIdentifier implements Serializable {
         return null;
     }
 
-    public TitanEdge findEdge(TitanTransaction tx) {
-        TitanRelation r = findRelation(tx);
+    public JanusEdge findEdge(JanusTransaction tx) {
+        JanusRelation r = findRelation(tx);
         if (r == null) return null;
-        else if (r instanceof TitanEdge) return (TitanEdge) r;
+        else if (r instanceof JanusEdge) return (JanusEdge) r;
         else throw new UnsupportedOperationException("Referenced relation is a property not an edge");
     }
 
-    public TitanVertexProperty findProperty(TitanTransaction tx) {
-        TitanRelation r = findRelation(tx);
+    public JanusVertexProperty findProperty(JanusTransaction tx) {
+        JanusRelation r = findRelation(tx);
         if (r == null) return null;
-        else if (r instanceof TitanVertexProperty) return (TitanVertexProperty) r;
+        else if (r instanceof JanusVertexProperty) return (JanusVertexProperty) r;
         else throw new UnsupportedOperationException("Referenced relation is a edge not a property");
     }
 

@@ -1,7 +1,7 @@
 package org.janusgraph.core;
 
 /**
- * Titan represents element identifiers as longs, but not all numbers
+ * Janus represents element identifiers as longs, but not all numbers
  * in the representable space of longs are valid.  This exception can
  * be thrown when an invalid long ID is encountered.
  */

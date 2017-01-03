@@ -1,16 +1,16 @@
 package org.janusgraph.graphdb.internal;
 
-import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanGraphTransaction;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.JanusElement;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusTransaction;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 
 /**
- * Internal Element interface adding methods that should only be used by Titan
+ * Internal Element interface adding methods that should only be used by Janus
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface InternalElement extends TitanElement {
+public interface InternalElement extends JanusElement {
 
     /**
      * Returns this element in the context of the current transaction.
@@ -23,11 +23,11 @@ public interface InternalElement extends TitanElement {
      * Returns the transaction to which the element is currently bound or should be refreshed into
      * @return
      */
-    public StandardTitanTx tx();
+    public StandardJanusTx tx();
 
 
     @Override
-    public default TitanTransaction graph() {
+    public default JanusTransaction graph() {
         return tx();
     }
 

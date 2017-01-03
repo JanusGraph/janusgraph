@@ -189,7 +189,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * .
      * <p/>
      * Calling this method at the appropriate time is handled automatically by
-     * {@link ExpectedValueCheckingStore}. Titan users don't need to call this
+     * {@link ExpectedValueCheckingStore}. Janus users don't need to call this
      * method by hand.
      */
     private void mutationStarted() {

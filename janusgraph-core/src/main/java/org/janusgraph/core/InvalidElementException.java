@@ -11,15 +11,15 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public class InvalidElementException extends TitanException {
+public class InvalidElementException extends JanusException {
 
-    private final TitanElement element;
+    private final JanusElement element;
 
     /**
      * @param msg     Exception message
      * @param element The invalid element causing the exception
      */
-    public InvalidElementException(String msg, TitanElement element) {
+    public InvalidElementException(String msg, JanusElement element) {
         super(msg);
         this.element = element;
     }
@@ -29,7 +29,7 @@ public class InvalidElementException extends TitanException {
      *
      * @return The element causing the exception
      */
-    public TitanElement getElement() {
+    public JanusElement getElement() {
         return element;
     }
 
@@ -38,7 +38,7 @@ public class InvalidElementException extends TitanException {
         return super.toString() + " [" + element.toString() + "]";
     }
 
-    public static IllegalStateException removedException(TitanElement element) {
+    public static IllegalStateException removedException(JanusElement element) {
         Class elementClass = Vertex.class.isAssignableFrom(element.getClass())?Vertex.class:
                 (Edge.class.isAssignableFrom(element.getClass())?Edge.class:VertexProperty.class);
         return Element.Exceptions.elementAlreadyRemoved(elementClass, element.id());

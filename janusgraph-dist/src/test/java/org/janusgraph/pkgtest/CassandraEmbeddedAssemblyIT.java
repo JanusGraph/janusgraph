@@ -2,10 +2,10 @@ package org.janusgraph.pkgtest;
 
 import org.junit.Test;
 
-public class CassandraEmbeddedAssemblyIT extends AbstractTitanAssemblyIT {
+public class CassandraEmbeddedAssemblyIT extends AbstractJanusAssemblyIT {
 
     @Test
     public void testEmbeddedCassandraSimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/titan-cassandra-embedded.properties", "embeddedcassandra");
+        testSimpleGremlinSession("conf/janus-cassandra-embedded.properties", "embeddedcassandra");
     }
 }

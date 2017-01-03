@@ -13,7 +13,7 @@ import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.log.StandardTransactionId;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.apache.commons.lang.StringUtils;
@@ -53,7 +53,7 @@ public class TransactionLogHeader {
         return logKey;
     }
 
-    public StaticBuffer serializeModifications(Serializer serializer, LogTxStatus status, StandardTitanTx tx,
+    public StaticBuffer serializeModifications(Serializer serializer, LogTxStatus status, StandardJanusTx tx,
                                                final Collection<InternalRelation> addedRelations,
                                                final Collection<InternalRelation> deletedRelations) {
         Preconditions.checkArgument(status==LogTxStatus.PRECOMMIT || status==LogTxStatus.USER_LOG);
@@ -63,7 +63,7 @@ public class TransactionLogHeader {
         return out.getStaticBuffer();
     }
 
-    private static void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
+    private static void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardJanusTx tx) {
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
             VariableLong.writePositive(out,rel.getVertex(0).longId());

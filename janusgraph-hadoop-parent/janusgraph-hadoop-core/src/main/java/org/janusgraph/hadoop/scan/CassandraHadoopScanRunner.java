@@ -5,7 +5,7 @@ import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.olap.VertexScanJob;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusHadoopConfiguration;
 import org.janusgraph.hadoop.formats.cassandra.CassandraBinaryInputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +43,12 @@ public class CassandraHadoopScanRunner extends AbstractHadoopScanRunner<Cassandr
         org.apache.hadoop.conf.Configuration hadoopConf = null != baseHadoopConf ?
                 baseHadoopConf : new org.apache.hadoop.conf.Configuration();
 
-        if (null != titanConf) {
-            for (String k : titanConf.getKeys("")) {
-                String prefix = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
-                hadoopConf.set(prefix + k, titanConf.get(k, Object.class).toString());
+        if (null != janusConf) {
+            for (String k : janusConf.getKeys("")) {
+                String prefix = ConfigElement.getPath(JanusHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
+                hadoopConf.set(prefix + k, janusConf.get(k, Object.class).toString());
                 log.debug("Set: {}={}", prefix + k,
-                        titanConf.<Object>get(k, Object.class).toString());
+                        janusConf.<Object>get(k, Object.class).toString());
             }
         }
 

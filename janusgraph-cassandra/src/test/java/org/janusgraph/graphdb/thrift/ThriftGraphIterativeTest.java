@@ -6,11 +6,11 @@ import org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.graphdb.TitanGraphIterativeBenchmark;
+import org.janusgraph.graphdb.JanusGraphIterativeBenchmark;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.BeforeClass;
 
-public class ThriftGraphIterativeTest extends TitanGraphIterativeBenchmark {
+public class ThriftGraphIterativeTest extends JanusGraphIterativeBenchmark {
 
     @Override
     public WriteConfiguration getConfiguration() {

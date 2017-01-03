@@ -3,13 +3,13 @@ package org.janusgraph.example;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusFactory;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusTransaction;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusManagement;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -18,7 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.io.File;
 
 /**
- * Example Graph factory that creates a {@link TitanGraph} based on roman mythology.
+ * Example Graph factory that creates a {@link JanusGraph} based on roman mythology.
  * Used in the documentation examples and tutorials.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -27,8 +27,8 @@ public class GraphOfTheGodsFactory {
 
     public static final String INDEX_NAME = "search";
 
-    public static TitanGraph create(final String directory) {
-        TitanFactory.Builder config = TitanFactory.build();
+    public static JanusGraph create(final String directory) {
+        JanusFactory.Builder config = JanusFactory.build();
         config.set("storage.backend", "berkeleyje");
         config.set("storage.directory", directory);
         config.set("index." + INDEX_NAME + ".backend", "elasticsearch");
@@ -36,28 +36,28 @@ public class GraphOfTheGodsFactory {
         config.set("index." + INDEX_NAME + ".elasticsearch.local-mode", true);
         config.set("index." + INDEX_NAME + ".elasticsearch.client-only", false);
 
-        TitanGraph graph = config.open();
+        JanusGraph graph = config.open();
         GraphOfTheGodsFactory.load(graph);
         return graph;
     }
 
-    public static void loadWithoutMixedIndex(final TitanGraph graph, boolean uniqueNameCompositeIndex) {
+    public static void loadWithoutMixedIndex(final JanusGraph graph, boolean uniqueNameCompositeIndex) {
         load(graph, null, uniqueNameCompositeIndex);
     }
 
-    public static void load(final TitanGraph graph) {
+    public static void load(final JanusGraph graph) {
         load(graph, INDEX_NAME, true);
     }
 
-    public static void load(final TitanGraph graph, String mixedIndexName, boolean uniqueNameCompositeIndex) {
+    public static void load(final JanusGraph graph, String mixedIndexName, boolean uniqueNameCompositeIndex) {
 
         //Create Schema
-        TitanManagement mgmt = graph.openManagement();
+        JanusManagement mgmt = graph.openManagement();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        TitanManagement.IndexBuilder nameIndexBuilder = mgmt.buildIndex("name", Vertex.class).addKey(name);
+        JanusManagement.IndexBuilder nameIndexBuilder = mgmt.buildIndex("name", Vertex.class).addKey(name);
         if (uniqueNameCompositeIndex)
             nameIndexBuilder.unique();
-        TitanGraphIndex namei = nameIndexBuilder.buildCompositeIndex();
+        JanusGraphIndex namei = nameIndexBuilder.buildCompositeIndex();
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
         if (null != mixedIndexName)
@@ -77,7 +77,7 @@ public class GraphOfTheGodsFactory {
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();
 
-        mgmt.makeVertexLabel("titan").make();
+        mgmt.makeVertexLabel("janus").make();
         mgmt.makeVertexLabel("location").make();
         mgmt.makeVertexLabel("god").make();
         mgmt.makeVertexLabel("demigod").make();
@@ -86,10 +86,10 @@ public class GraphOfTheGodsFactory {
 
         mgmt.commit();
 
-        TitanTransaction tx = graph.newTransaction();
+        JanusTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = tx.addVertex(T.label, "titan", "name", "saturn", "age", 10000);
+        Vertex saturn = tx.addVertex(T.label, "janus", "name", "saturn", "age", 10000);
         Vertex sky = tx.addVertex(T.label, "location", "name", "sky");
         Vertex sea = tx.addVertex(T.label, "location", "name", "sea");
         Vertex jupiter = tx.addVertex(T.label, "god", "name", "jupiter", "age", 5000);
@@ -131,27 +131,27 @@ public class GraphOfTheGodsFactory {
     }
 
     /**
-     * Calls {@link TitanFactory#open(String)}, passing the Titan configuration file path
+     * Calls {@link JanusFactory#open(String)}, passing the Janus configuration file path
      * which must be the sole element in the {@code args} array, then calls
-     * {@link #load(org.janusgraph.core.TitanGraph)} on the opened graph,
-     * then calls {@link org.janusgraph.core.TitanGraph#close()}
+     * {@link #load(org.janusgraph.core.JanusGraph)} on the opened graph,
+     * then calls {@link org.janusgraph.core.JanusGraph#close()}
      * and returns.
      * <p/>
      * This method may call {@link System#exit(int)} if it encounters an error, such as
      * failure to parse its arguments.  Only use this method when executing main from
      * a command line.  Use one of the other methods on this class ({@link #create(String)}
-     * or {@link #load(org.janusgraph.core.TitanGraph)}) when calling from
+     * or {@link #load(org.janusgraph.core.JanusGraph)}) when calling from
      * an enclosing application.
      *
-     * @param args a singleton array containing a path to a Titan config properties file
+     * @param args a singleton array containing a path to a Janus config properties file
      */
     public static void main(String args[]) {
         if (null == args || 1 != args.length) {
-            System.err.println("Usage: GraphOfTheGodsFactory <titan-config-file>");
+            System.err.println("Usage: GraphOfTheGodsFactory <janus-config-file>");
             System.exit(1);
         }
 
-        TitanGraph g = TitanFactory.open(args[0]);
+        JanusGraph g = JanusFactory.open(args[0]);
         load(g);
         g.close();
     }

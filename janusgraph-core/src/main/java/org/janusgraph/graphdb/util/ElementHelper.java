@@ -17,18 +17,18 @@ import java.util.Set;
  */
 public class ElementHelper {
 
-    public static Iterable<Object> getValues(TitanElement element, PropertyKey key) {
-        if (element instanceof TitanRelation) {
+    public static Iterable<Object> getValues(JanusElement element, PropertyKey key) {
+        if (element instanceof JanusRelation) {
             Object value = element.valueOrNull(key);
             if (value==null) return Collections.EMPTY_LIST;
             else return ImmutableList.of(value);
         } else {
-            assert element instanceof TitanVertex;
-            return Iterables.transform((((TitanVertex) element).query()).keys(key.name()).properties(), new Function<TitanVertexProperty, Object>() {
+            assert element instanceof JanusVertex;
+            return Iterables.transform((((JanusVertex) element).query()).keys(key.name()).properties(), new Function<JanusVertexProperty, Object>() {
                 @Nullable
                 @Override
-                public Object apply(@Nullable TitanVertexProperty titanProperty) {
-                    return titanProperty.value();
+                public Object apply(@Nullable JanusVertexProperty janusProperty) {
+                    return janusProperty.value();
                 }
             });
         }
@@ -41,7 +41,7 @@ public class ElementHelper {
         else throw new IllegalArgumentException("Element identifier has unrecognized type: " + id);
     }
 
-    public static void attachProperties(TitanRelation element, Object... keyValues) {
+    public static void attachProperties(JanusRelation element, Object... keyValues) {
         if (keyValues==null || keyValues.length==0) return; //Do nothing
         org.apache.tinkerpop.gremlin.structure.util.ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (org.apache.tinkerpop.gremlin.structure.util.ElementHelper.getIdValue(keyValues).isPresent()) throw Edge.Exceptions.userSuppliedIdsNotSupported();
@@ -52,12 +52,12 @@ public class ElementHelper {
     /**
      * This is essentially an adjusted copy&paste from TinkerPop's ElementHelper class.
      * The reason for copying it is so that we can determine the cardinality of a property key based on
-     * Titan's schema which is tied to this particular transaction and not the graph.
+     * Janus's schema which is tied to this particular transaction and not the graph.
      *
      * @param vertex
      * @param propertyKeyValues
      */
-    public static void attachProperties(final TitanVertex vertex, final Object... propertyKeyValues) {
+    public static void attachProperties(final JanusVertex vertex, final Object... propertyKeyValues) {
         if (null == vertex)
             throw Graph.Exceptions.argumentCanNotBeNull("vertex");
 
@@ -67,7 +67,7 @@ public class ElementHelper {
         }
     }
 
-    public static Set<String> getPropertyKeys(TitanVertex v) {
+    public static Set<String> getPropertyKeys(JanusVertex v) {
         final Set<String> s = new HashSet<>();
         v.query().properties().forEach( p -> s.add(p.propertyKey().name()));
         return s;

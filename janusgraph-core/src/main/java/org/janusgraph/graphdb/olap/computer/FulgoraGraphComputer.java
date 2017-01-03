@@ -4,15 +4,15 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanGraphComputer;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.JanusException;
+import org.janusgraph.core.JanusGraphComputer;
+import org.janusgraph.core.JanusTransaction;
+import org.janusgraph.core.schema.JanusManagement;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.util.WorkerPool;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraGraphComputer implements TitanGraphComputer {
+public class FulgoraGraphComputer implements JanusGraphComputer {
 
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraGraphComputer.class);
@@ -56,7 +56,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private VertexProgram<?> vertexProgram;
     private final Set<MapReduce> mapReduces = new HashSet<>();
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
     private int expectedNumVertices = 10000;
     private FulgoraMemory memory;
     private FulgoraVertexMemory vertexMemory;
@@ -73,7 +73,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     private String name;
     private String jobId;
 
-    public FulgoraGraphComputer(final StandardTitanGraph graph, final Configuration configuration) {
+    public FulgoraGraphComputer(final StandardJanusGraph graph, final Configuration configuration) {
         this.graph = graph;
         this.writeBatchSize = configuration.get(GraphDatabaseConfiguration.BUFFER_SIZE);
         this.readBatchSize = this.writeBatchSize * 10;
@@ -95,21 +95,21 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
     }
 
     @Override
-    public TitanGraphComputer workers(int threads) {
+    public JanusGraphComputer workers(int threads) {
         Preconditions.checkArgument(threads > 0, "Invalid number of threads: %s", threads);
         numThreads = threads;
         return this;
     }
 
     @Override
-    public TitanGraphComputer program(final VertexProgram vertexProgram) {
+    public JanusGraphComputer program(final VertexProgram vertexProgram) {
         Preconditions.checkState(this.vertexProgram == null, "A vertex program has already been set");
         this.vertexProgram = vertexProgram;
         return this;
     }
 
     @Override
-    public TitanGraphComputer mapReduce(final MapReduce mapReduce) {
+    public JanusGraphComputer mapReduce(final MapReduce mapReduce) {
         this.mapReduces.add(mapReduce);
         return this;
     }
@@ -164,16 +164,16 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         ScanMetrics jobResult = scanBuilder.execute().get();
                         long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
                         if (failures > 0) {
-                            throw new TitanException("Failed to process [" + failures + "] vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
+                            throw new JanusException("Failed to process [" + failures + "] vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
                         }
                         //Runs the vertex program on all aggregated, partitioned vertices.
                         pvpe.run(numThreads, jobResult);
                         failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
                         if (failures > 0) {
-                            throw new TitanException("Failed to process [" + failures + "] partitioned vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
+                            throw new JanusException("Failed to process [" + failures + "] partitioned vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
                         }
                     } catch (Exception e) {
-                        throw new TitanException(e);
+                        throw new JanusException(e);
                     }
 
                     vertexMemory.completeIteration();
@@ -210,14 +210,14 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 ScanMetrics jobResult = scanBuilder.execute().get();
                 long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
                 if (failures > 0) {
-                    throw new TitanException("Failed to process [" + failures + "] vertices in map phase. Computer is aborting.");
+                    throw new JanusException("Failed to process [" + failures + "] vertices in map phase. Computer is aborting.");
                 }
                 failures = jobResult.getCustom(VertexMapJob.MAP_JOB_FAILURE);
                 if (failures > 0) {
-                    throw new TitanException("Failed to process [" + failures + "] individual map jobs. Computer is aborting.");
+                    throw new JanusException("Failed to process [" + failures + "] individual map jobs. Computer is aborting.");
                 }
             } catch (Exception e) {
-                throw new TitanException(e);
+                throw new JanusException(e);
             }
             // Execute reduce phase and add to memory
             for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
@@ -233,7 +233,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         }
                         workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
                     } catch (Exception e) {
-                        throw new TitanException("Exception while executing reduce phase", e);
+                        throw new JanusException("Exception while executing reduce phase", e);
                     }
 //                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
 
@@ -251,7 +251,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                 resultgraph = EmptyGraph.instance();
             } else if (persistMode != Persist.NOTHING && vertexProgram != null && !vertexProgram.getElementComputeKeys().isEmpty()) {
                 //First, create property keys in graph if they don't already exist
-                TitanManagement mgmt = graph.openManagement();
+                JanusManagement mgmt = graph.openManagement();
                 try {
                     for (String key : vertexProgram.getElementComputeKeys()) {
                         if (!mgmt.containsPropertyKey(key))
@@ -289,10 +289,10 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
                         }
                         if (!subset.isEmpty()) workers.submit(new VertexPropertyWriter(subset, failures));
                     } catch (Exception e) {
-                        throw new TitanException("Exception while attempting to persist result into graph", e);
+                        throw new JanusException("Exception while attempting to persist result into graph", e);
                     }
                     if (failures.get() > 0)
-                        throw new TitanException("Could not persist program results to graph. Check log for details.");
+                        throw new JanusException("Could not persist program results to graph. Check log for details.");
                 } else if (resultGraphMode == ResultGraph.NEW) {
                     resultgraph = graph.newTransaction();
                     for (Map.Entry<Long, Map<String, Object>> vprop : mutatedProperties.entrySet()) {
@@ -324,7 +324,7 @@ public class FulgoraGraphComputer implements TitanGraphComputer {
 
         @Override
         public void run() {
-            TitanTransaction tx = graph.buildTransaction().enableBatchLoading().start();
+            JanusTransaction tx = graph.buildTransaction().enableBatchLoading().start();
             try {
                 for (Map.Entry<Long, Map<String, Object>> vprop : properties) {
                     Vertex v = tx.getVertex(vprop.getKey());

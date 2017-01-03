@@ -1,12 +1,12 @@
 package org.janusgraph.graphdb;
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.JanusFactory;
 import org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -17,7 +17,7 @@ import static org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager
 /**
  * @author Joshua Shinavier (http://fortytwo.net)
  */
-public abstract class CassandraGraphTest extends TitanGraphTest {
+public abstract class CassandraGraphTest extends JanusGraphTest {
 
     @BeforeClass
     public static void startCassandra() {
@@ -41,9 +41,9 @@ public abstract class CassandraGraphTest extends TitanGraphTest {
         wc.set(ConfigElement.getPath(CASSANDRA_READ_CONSISTENCY), "ALL");
         wc.set(ConfigElement.getPath(CASSANDRA_WRITE_CONSISTENCY), "LOCAL_QUORUM");
 
-        graph = (StandardTitanGraph) TitanFactory.open(wc);
+        graph = (StandardJanusGraph) JanusFactory.open(wc);
 
-        StandardTitanTx tx = (StandardTitanTx)graph.getCurrentThreadTx();
+        StandardJanusTx tx = (StandardJanusTx)graph.getCurrentThreadTx();
         assertEquals("ALL",
                 tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
                         .get(AbstractCassandraStoreManager.CASSANDRA_READ_CONSISTENCY));
@@ -59,9 +59,9 @@ public abstract class CassandraGraphTest extends TitanGraphTest {
         wc.set(ConfigElement.getPath(CASSANDRA_READ_CONSISTENCY), "TWO");
         wc.set(ConfigElement.getPath(CASSANDRA_WRITE_CONSISTENCY), "THREE");
 
-        graph = (StandardTitanGraph) TitanFactory.open(wc);
+        graph = (StandardJanusGraph) JanusFactory.open(wc);
 
-        StandardTitanTx tx = (StandardTitanTx)graph.newTransaction();
+        StandardJanusTx tx = (StandardJanusTx)graph.newTransaction();
         assertEquals("TWO",
                 tx.getTxHandle().getBaseTransactionConfig().getCustomOptions()
                         .get(AbstractCassandraStoreManager.CASSANDRA_READ_CONSISTENCY));
@@ -78,9 +78,9 @@ public abstract class CassandraGraphTest extends TitanGraphTest {
         wc.set(ConfigElement.getPath(CASSANDRA_READ_CONSISTENCY), "ALL");
         wc.set(ConfigElement.getPath(CASSANDRA_WRITE_CONSISTENCY), "ALL");
 
-        graph = (StandardTitanGraph) TitanFactory.open(wc);
+        graph = (StandardJanusGraph) JanusFactory.open(wc);
 
-        StandardTitanTx tx = (StandardTitanTx)graph.buildTransaction()
+        StandardJanusTx tx = (StandardJanusTx)graph.buildTransaction()
                 .customOption(ConfigElement.getPath(CASSANDRA_READ_CONSISTENCY), "ONE")
                 .customOption(ConfigElement.getPath(CASSANDRA_WRITE_CONSISTENCY), "TWO").start();
 

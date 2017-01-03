@@ -1,13 +1,13 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.util.WorkerPool;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
@@ -24,7 +24,7 @@ public class PartitionedVertexProgramExecutor<M> {
     private static final Logger log =
             LoggerFactory.getLogger(PartitionedVertexProgramExecutor.class);
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
     private final IDManager idManager;
     private final FulgoraMemory memory;
     private final FulgoraVertexMemory<M> vertexMemory;
@@ -35,7 +35,7 @@ public class PartitionedVertexProgramExecutor<M> {
     public static final String PARTITION_VERTEX_POSTSUCCESS = "partition-success";
     public static final String PARTITION_VERTEX_POSTFAIL = "partition-fail";
 
-    public PartitionedVertexProgramExecutor(StandardTitanGraph graph, FulgoraMemory memory,
+    public PartitionedVertexProgramExecutor(StandardJanusGraph graph, FulgoraMemory memory,
                                  FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
         this.graph=graph;
         this.idManager = graph.getIDManager();
@@ -45,7 +45,7 @@ public class PartitionedVertexProgramExecutor<M> {
     }
 
     public void run(int numThreads, ScanMetrics metrics) {
-        StandardTitanTx tx=null;
+        StandardJanusTx tx=null;
         Map<Long,EntryList> pVertexAggregates = vertexMemory.retrievePartitionAggregates();
         if (pVertexAggregates.isEmpty()) return; //Nothing to do here
 
@@ -70,10 +70,10 @@ public class PartitionedVertexProgramExecutor<M> {
 
         private final long vertexId;
         private final EntryList preloaded;
-        private final StandardTitanTx tx;
+        private final StandardJanusTx tx;
         private final ScanMetrics metrics;
 
-        private PartitionedVertexProcessor(long vertexId, EntryList preloaded, StandardTitanTx tx, ScanMetrics metrics) {
+        private PartitionedVertexProcessor(long vertexId, EntryList preloaded, StandardJanusTx tx, ScanMetrics metrics) {
             Preconditions.checkArgument(idManager.isPartitionedVertex(vertexId) && idManager.isCanonicalVertexId(vertexId));
             assert preloaded!=null;
             this.vertexId = vertexId;
@@ -85,7 +85,7 @@ public class PartitionedVertexProgramExecutor<M> {
         @Override
         public void run() {
             try {
-                TitanVertex vertex = tx.getInternalVertex(vertexId);
+                JanusVertex vertex = tx.getInternalVertex(vertexId);
                 Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                         "The bounding transaction is not configured correctly");
                 PreloadedVertex v = (PreloadedVertex)vertex;

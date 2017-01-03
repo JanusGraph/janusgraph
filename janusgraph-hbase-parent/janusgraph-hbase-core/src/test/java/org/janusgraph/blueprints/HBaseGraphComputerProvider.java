@@ -13,10 +13,10 @@ import java.io.IOException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @GraphProvider.Descriptor(computer = FulgoraGraphComputer.class)
-public class HBaseGraphComputerProvider extends AbstractTitanGraphComputerProvider {
+public class HBaseGraphComputerProvider extends AbstractJanusGraphComputerProvider {
 
     @Override
-    public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public ModifiableConfiguration getJanusConfiguration(String graphName, Class<?> test, String testMethodName) {
         return HBaseStorageSetup.getHBaseConfiguration(graphName);
     }
 

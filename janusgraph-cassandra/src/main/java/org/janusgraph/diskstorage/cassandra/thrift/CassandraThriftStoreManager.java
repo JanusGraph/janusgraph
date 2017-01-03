@@ -47,7 +47,7 @@ import static org.janusgraph.diskstorage.configuration.ConfigOption.disallowEmpt
 
 /**
  * This class creates {@see CassandraThriftKeyColumnValueStore}s and
- * handles Cassandra-backed allocation of vertex IDs for Titan (when so
+ * handles Cassandra-backed allocation of vertex IDs for Janus (when so
  * configured).
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
@@ -75,7 +75,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     public static final ConfigNamespace THRIFT_NS =
             new ConfigNamespace(AbstractCassandraStoreManager.CASSANDRA_NS, "thrift",
-                    "Options for Titan's own Thrift Cassandra backend");
+                    "Options for Janus's own Thrift Cassandra backend");
 
     public static final ConfigNamespace CPOOL_NS =
             new ConfigNamespace(THRIFT_NS, "cpool", "Options for the Apache commons-pool connection manager");

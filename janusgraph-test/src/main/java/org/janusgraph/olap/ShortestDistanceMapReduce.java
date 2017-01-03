@@ -12,7 +12,7 @@ import java.util.Iterator;
 
 public class ShortestDistanceMapReduce extends StaticMapReduce<Object, Long, Object, Long, Iterator<KeyValue<Object, Long>>> {
 
-    public static final String SHORTEST_DISTANCE_MEMORY_KEY = "titan.shortestDistanceMapReduce.memoryKey";
+    public static final String SHORTEST_DISTANCE_MEMORY_KEY = "janus.shortestDistanceMapReduce.memoryKey";
     public static final String DEFAULT_MEMORY_KEY = "shortestDistance";
 
     private String memoryKey = DEFAULT_MEMORY_KEY;

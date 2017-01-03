@@ -3,9 +3,9 @@ package org.janusgraph.graphdb
 import com.google.common.base.Preconditions
 import org.janusgraph.core.Cardinality
 import org.janusgraph.core.PropertyKey
-import org.janusgraph.core.TitanGraph
+import org.janusgraph.core.JanusGraph
 import org.janusgraph.core.schema.ConsistencyModifier
-import org.janusgraph.core.schema.TitanManagement
+import org.janusgraph.core.schema.JanusManagement
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker
 import org.apache.tinkerpop.gremlin.structure.Edge
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -238,10 +238,10 @@ class SpeedTestSchema {
     }
 
 
-    public void makeTypes(TitanGraph g) {
+    public void makeTypes(JanusGraph g) {
         Preconditions.checkArgument(edgeLabels <= edgePropKeys);
 
-        TitanManagement mgmt = g.openManagement();
+        JanusManagement mgmt = g.openManagement();
         for (int i = 0; i < vertexPropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
             mgmt.setConsistency(key, ConsistencyModifier.LOCK);

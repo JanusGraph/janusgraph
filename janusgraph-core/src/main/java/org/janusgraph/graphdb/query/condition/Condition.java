@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Function;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 
 /**
  * A logical condition which evaluates against a provided element to true or false.
@@ -12,7 +12,7 @@ import org.janusgraph.core.TitanElement;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface Condition<E extends TitanElement> {
+public interface Condition<E extends JanusElement> {
 
     public enum Type { AND, OR, NOT, LITERAL}
 

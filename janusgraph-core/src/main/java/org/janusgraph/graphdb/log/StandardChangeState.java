@@ -21,16 +21,16 @@ import java.util.Set;
  */
 class StandardChangeState implements ChangeState {
 
-    private final EnumMap<Change,Set<TitanVertex>> vertices;
-    private final EnumMap<Change,Set<TitanRelation>> relations;
+    private final EnumMap<Change,Set<JanusVertex>> vertices;
+    private final EnumMap<Change,Set<JanusRelation>> relations;
 
 
     StandardChangeState() {
-        vertices = new EnumMap<Change, Set<TitanVertex>>(Change.class);
-        relations = new EnumMap<Change, Set<TitanRelation>>(Change.class);
+        vertices = new EnumMap<Change, Set<JanusVertex>>(Change.class);
+        relations = new EnumMap<Change, Set<JanusRelation>>(Change.class);
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
-            vertices.put(state,new HashSet<TitanVertex>());
-            relations.put(state,new HashSet<TitanRelation>());
+            vertices.put(state,new HashSet<JanusVertex>());
+            relations.put(state,new HashSet<JanusRelation>());
         }
     }
 
@@ -44,13 +44,13 @@ class StandardChangeState implements ChangeState {
     }
 
     @Override
-    public Set<TitanVertex> getVertices(Change change) {
+    public Set<JanusVertex> getVertices(Change change) {
         if (change.isProper()) return vertices.get(change);
         assert change==Change.ANY;
-        Set<TitanVertex> all = new HashSet<TitanVertex>();
+        Set<JanusVertex> all = new HashSet<JanusVertex>();
         for (Change state : new Change[]{Change.ADDED,Change.REMOVED}) {
             all.addAll(vertices.get(state));
-            for (TitanRelation rel : relations.get(state)) {
+            for (JanusRelation rel : relations.get(state)) {
                 InternalRelation irel = (InternalRelation)rel;
                 for (int p=0;p<irel.getLen();p++) all.add(irel.getVertex(p));
             }
@@ -63,46 +63,46 @@ class StandardChangeState implements ChangeState {
         return Sets.newHashSet(types);
     }
 
-    private Iterable<TitanRelation> getRelations(final Change change, final Predicate<TitanRelation> filter) {
-        Iterable<TitanRelation> base;
+    private Iterable<JanusRelation> getRelations(final Change change, final Predicate<JanusRelation> filter) {
+        Iterable<JanusRelation> base;
         if(change.isProper()) base=relations.get(change);
         else base=Iterables.concat(relations.get(Change.ADDED),relations.get(Change.REMOVED));
         return Iterables.filter(base,filter);
     }
 
     @Override
-    public Iterable<TitanRelation> getRelations(final Change change, final RelationType... types) {
+    public Iterable<JanusRelation> getRelations(final Change change, final RelationType... types) {
         final Set<RelationType> stypes = toSet(types);
-        return getRelations(change, new Predicate<TitanRelation>() {
+        return getRelations(change, new Predicate<JanusRelation>() {
             @Override
-            public boolean apply(@Nullable TitanRelation titanRelation) {
-                return stypes.isEmpty() || stypes.contains(titanRelation.getType());
+            public boolean apply(@Nullable JanusRelation janusRelation) {
+                return stypes.isEmpty() || stypes.contains(janusRelation.getType());
             }
         });
     }
 
     @Override
-    public Iterable<TitanEdge> getEdges(final Vertex vertex, final Change change, final Direction dir, final String... labels) {
+    public Iterable<JanusEdge> getEdges(final Vertex vertex, final Change change, final Direction dir, final String... labels) {
         final Set<String> stypes = toSet(labels);
-        return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
+        return (Iterable)getRelations(change, new Predicate<JanusRelation>() {
             @Override
-            public boolean apply(@Nullable TitanRelation titanRelation) {
-                return titanRelation.isEdge() && titanRelation.isIncidentOn(vertex) &&
-                        (dir==Direction.BOTH || ((TitanEdge)titanRelation).vertex(dir).equals(vertex)) &&
-                        (stypes.isEmpty() || stypes.contains(titanRelation.getType().name()));
+            public boolean apply(@Nullable JanusRelation janusRelation) {
+                return janusRelation.isEdge() && janusRelation.isIncidentOn(vertex) &&
+                        (dir==Direction.BOTH || ((JanusEdge)janusRelation).vertex(dir).equals(vertex)) &&
+                        (stypes.isEmpty() || stypes.contains(janusRelation.getType().name()));
             }
         });
     }
 
 
     @Override
-    public Iterable<TitanVertexProperty> getProperties(final Vertex vertex, final Change change, final String... keys) {
+    public Iterable<JanusVertexProperty> getProperties(final Vertex vertex, final Change change, final String... keys) {
         final Set<String> stypes = toSet(keys);
-        return (Iterable)getRelations(change, new Predicate<TitanRelation>() {
+        return (Iterable)getRelations(change, new Predicate<JanusRelation>() {
             @Override
-            public boolean apply(@Nullable TitanRelation titanRelation) {
-                return titanRelation.isProperty() && titanRelation.isIncidentOn(vertex) &&
-                        (stypes.isEmpty() || stypes.contains(titanRelation.getType().name()));
+            public boolean apply(@Nullable JanusRelation janusRelation) {
+                return janusRelation.isProperty() && janusRelation.isIncidentOn(vertex) &&
+                        (stypes.isEmpty() || stypes.contains(janusRelation.getType().name()));
             }
         });
     }

@@ -1,9 +1,9 @@
 package org.janusgraph.graphdb.query.vertex;
 
 import com.carrotsearch.hppc.LongArrayList;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.core.VertexList;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.util.datastructures.AbstractLongListUtil;
 
 import java.util.Arrays;
@@ -22,15 +22,15 @@ import java.util.NoSuchElementException;
  */
 public class VertexLongList implements VertexListInternal {
 
-    private final StandardTitanTx tx;
+    private final StandardJanusTx tx;
     private LongArrayList vertices;
     private boolean sorted;
 
-    public VertexLongList(StandardTitanTx tx) {
+    public VertexLongList(StandardJanusTx tx) {
         this(tx,new LongArrayList(10),true);
     }
 
-    public VertexLongList(StandardTitanTx tx, LongArrayList vertices, boolean sorted) {
+    public VertexLongList(StandardJanusTx tx, LongArrayList vertices, boolean sorted) {
         assert !sorted || AbstractLongListUtil.isSorted(vertices);
         this.tx = tx;
         this.vertices = vertices;
@@ -38,7 +38,7 @@ public class VertexLongList implements VertexListInternal {
     }
 
     @Override
-    public void add(TitanVertex n) {
+    public void add(JanusVertex n) {
         if (!vertices.isEmpty()) sorted = sorted && vertices.get(vertices.size()-1)<=n.longId();
         vertices.add(n.longId());
     }
@@ -54,7 +54,7 @@ public class VertexLongList implements VertexListInternal {
     }
 
     @Override
-    public TitanVertex get(int pos) {
+    public JanusVertex get(int pos) {
         return tx.getInternalVertex(getID(pos));
     }
 
@@ -113,8 +113,8 @@ public class VertexLongList implements VertexListInternal {
     }
 
     @Override
-    public Iterator<TitanVertex> iterator() {
-        return new Iterator<TitanVertex>() {
+    public Iterator<JanusVertex> iterator() {
+        return new Iterator<JanusVertex>() {
 
             private int pos = -1;
 
@@ -124,7 +124,7 @@ public class VertexLongList implements VertexListInternal {
             }
 
             @Override
-            public TitanVertex next() {
+            public JanusVertex next() {
                 if (!hasNext()) throw new NoSuchElementException();
                 pos++;
                 return get(pos);

@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Implementation of {@link TitanVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
+ * Implementation of {@link JanusVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
  * {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}. However, there is
  * one important special case: If the constructed query is simple (i.e. {@link org.janusgraph.graphdb.query.vertex.VertexCentricQuery#isSimple()=true}
@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements TitanVertexQuery<VertexCentricQueryBuilder> {
+public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements JanusVertexQuery<VertexCentricQueryBuilder> {
 
     private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
 
@@ -80,19 +80,19 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     //#### RELATIONS
 
     @Override
-    public Iterable<TitanEdge> edges() {
+    public Iterable<JanusEdge> edges() {
         return (Iterable)execute(RelationCategory.EDGE,new RelationConstructor());
     }
 
     @Override
-    public Iterable<TitanVertexProperty> properties() {
+    public Iterable<JanusVertexProperty> properties() {
         return (Iterable)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
                 executeImplicitKeyQuery(vertex):
                 execute(RelationCategory.PROPERTY, new RelationConstructor()));
     }
 
     @Override
-    public Iterable<TitanRelation> relations() {
+    public Iterable<JanusRelation> relations() {
         return (Iterable)(isImplicitKeyQuery(RelationCategory.RELATION)?
                 executeImplicitKeyQuery(vertex):
                 execute(RelationCategory.RELATION,new RelationConstructor()));
@@ -101,7 +101,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<Ve
     //#### VERTICES
 
     @Override
-    public Iterable<TitanVertex> vertices() {
+    public Iterable<JanusVertex> vertices() {
         return (Iterable)execute(RelationCategory.EDGE,new VertexConstructor());
     }
 

@@ -81,10 +81,10 @@ ES_HOME=`dirname "$SCRIPT"`/..
 # make ELASTICSEARCH_HOME absolute
 ES_HOME=`cd "$ES_HOME"; pwd`
 
-#### Start Titan-specific edit
+#### Start Janus-specific edit
 ES_INCLUDE="$ES_HOME/bin/elasticsearch.in.sh"
 ES_CLASSPATH="`cat $ES_HOME/target/es_classpath.txt`"
-#### End Titan-specific edit
+#### End Janus-specific edit
 
 # If an include wasn't specified in the environment, then search for one...
 if [ "x$ES_INCLUDE" = "x" ]; then

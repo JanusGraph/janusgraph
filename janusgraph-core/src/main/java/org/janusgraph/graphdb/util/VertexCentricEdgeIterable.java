@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class VertexCentricEdgeIterable<R extends TitanRelation> implements Iterable<R> {
+public class VertexCentricEdgeIterable<R extends JanusRelation> implements Iterable<R> {
 
     private final Iterable<InternalVertex> vertices;
     private final RelationCategory relationCategory;
@@ -36,8 +36,8 @@ public class VertexCentricEdgeIterable<R extends TitanRelation> implements Itera
     private class EdgeIterator implements Iterator<R> {
 
         private final Iterator<InternalVertex> vertexIter;
-        private Iterator<TitanRelation> currentOutEdges;
-        private TitanRelation nextEdge = null;
+        private Iterator<JanusRelation> currentOutEdges;
+        private JanusRelation nextEdge = null;
 
         public EdgeIterator() {
             this.vertexIter = vertices.iterator();
@@ -68,7 +68,7 @@ public class VertexCentricEdgeIterable<R extends TitanRelation> implements Itera
         @Override
         public R next() {
             if (nextEdge == null) throw new NoSuchElementException();
-            TitanRelation returnEdge = nextEdge;
+            JanusRelation returnEdge = nextEdge;
             getNextEdge();
             return (R)returnEdge;
         }

@@ -5,7 +5,7 @@ import org.janusgraph.graphdb.types.system.BaseRelationType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
- * This interface defines the methods that a SchemaCache must implement. A SchemaCache is maintained by the Titan graph
+ * This interface defines the methods that a SchemaCache must implement. A SchemaCache is maintained by the Janus graph
  * database in order to make the frequent lookups of schema vertices and their attributes more efficient through a dedicated
  * caching layer. Schema vertices are type vertices and related vertices.
  *

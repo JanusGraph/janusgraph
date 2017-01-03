@@ -4,13 +4,13 @@ import org.junit.BeforeClass;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphPerformanceMemoryTest;
+import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class EmbeddedGraphMemoryPerformanceTest extends TitanGraphPerformanceMemoryTest {
+public class EmbeddedGraphMemoryPerformanceTest extends JanusGraphPerformanceMemoryTest {
 
     @BeforeClass
     public static void startCassandra() {

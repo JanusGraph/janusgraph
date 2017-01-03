@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-hbase-094</artifactId>
     <name>JanusGraph-HBase: 0.94 Compatibility Shim</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
     
     <properties>
         <hadoop.version>${hadoop1.version}</hadoop.version>
@@ -192,9 +192,9 @@
                             <relocations>
                                 <!-- Don't do this. The shade plugin relocates absolutely all classes and class 
                                 references with this kind of configuration. This results to garbage classfiles that contain 
-                                references to "titan03.java.lang.String", for example.
+                                references to "janus03.java.lang.String", for example.
                                 <relocation>
-                                    <shadedPattern>titan03.</shadedPattern>
+                                    <shadedPattern>janus03.</shadedPattern>
                                 </relocation>
                                 -->
                                 <relocation>
@@ -302,7 +302,7 @@
                 <hbase094.version>0.94.12-mapr-1310</hbase094.version>
                 <hadoop.version>1.0.3-mapr-3.0.2</hadoop.version>
                 <zookeeper.version>3.4.5</zookeeper.version>
-                <titan.hbase.mvn.opts.extra>-Dzookeeper.version=${zookeeper.version}</titan.hbase.mvn.opts.extra>
+                <janus.hbase.mvn.opts.extra>-Dzookeeper.version=${zookeeper.version}</janus.hbase.mvn.opts.extra>
             </properties>
             <repositories>
                 <repository>

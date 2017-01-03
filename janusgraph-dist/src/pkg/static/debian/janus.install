@@ -1,0 +1,7 @@
+/usr/bin/gremlin.sh
+/usr/sbin/janus
+/usr/share/janus/janus.in.sh
+/etc/janus/janus-env.sh
+/etc/janus/config.properties
+/etc/janus/log4j.properties
+../payload/cassandra.yaml /etc/janus/

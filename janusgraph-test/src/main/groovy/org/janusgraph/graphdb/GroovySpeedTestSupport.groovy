@@ -14,9 +14,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import com.google.common.base.Preconditions
-import org.janusgraph.core.TitanVertex
-import org.janusgraph.core.TitanGraph
-import org.janusgraph.graphdb.database.StandardTitanGraph
+import org.janusgraph.core.JanusVertex
+import org.janusgraph.core.JanusGraph
+import org.janusgraph.graphdb.database.StandardJanusGraph
 import org.janusgraph.diskstorage.BackendException
 
 import com.google.common.collect.Iterables
@@ -39,7 +39,7 @@ abstract class GroovySpeedTestSupport {
     public static final int DEFAULT_VERTICES_PER_TX = 100
     public static final int DEFAULT_ITERATIONS = DEFAULT_TX_COUNT * DEFAULT_VERTICES_PER_TX
 
-    public static final String RELATION_FILE = "../titan-test/data/v10k.graphml.gz"
+    public static final String RELATION_FILE = "../janus-test/data/v10k.graphml.gz"
 
     // Mutable state
 
@@ -50,7 +50,7 @@ abstract class GroovySpeedTestSupport {
      */
     protected Random random = new Random(7)
     protected SpeedTestSchema schema
-    protected TitanGraph graph
+    protected JanusGraph graph
     protected WriteConfiguration conf
 
     static {
@@ -88,7 +88,7 @@ abstract class GroovySpeedTestSupport {
             graph.shutdown()
     }
 
-    protected abstract StandardTitanGraph getGraph() throws BackendException;
+    protected abstract StandardJanusGraph getGraph() throws BackendException;
 
     protected abstract SpeedTestSchema getSchema();
 
@@ -119,12 +119,12 @@ abstract class GroovySpeedTestSupport {
         long offset = Math.abs(random.nextLong()) % schema.getMaxUid()
         def uids = new SequentialLongIterator(count, schema.getMaxUid(), offset)
         def tx = graph.newTransaction()
-        TitanVertex[] vbuf = new TitanVertex[chunksize]
+        JanusVertex[] vbuf = new JanusVertex[chunksize]
         int vloaded = 0
 
         while (uids.hasNext()) {
             long u = uids.next()
-            TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,Schema.UID_PROP, u))
+            JanusVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(tx,Schema.UID_PROP, u))
             assertNotNull(v)
             vbuf[vloaded++] = v
             if (vloaded == chunksize) {
@@ -189,7 +189,7 @@ abstract class GroovySpeedTestSupport {
         tx.commit()
     }
 
-    protected void initializeGraph(TitanGraph g) throws BackendException {
+    protected void initializeGraph(JanusGraph g) throws BackendException {
         log.info("Initializing graph...");
         long before = System.currentTimeMillis()
         SpeedTestSchema schema = getSchema();

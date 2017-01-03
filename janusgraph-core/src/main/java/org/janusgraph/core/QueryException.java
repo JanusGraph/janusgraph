@@ -1,12 +1,12 @@
 package org.janusgraph.core;
 
 /**
- * Exception thrown when a user defined query (e.g. a {@link TitanVertex} or {@link TitanGraphQuery})
+ * Exception thrown when a user defined query (e.g. a {@link JanusVertex} or {@link JanusGraphQuery})
  * is invalid or could not be processed.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public class QueryException extends TitanException {
+public class QueryException extends JanusException {
 
     private static final long serialVersionUID = 1L;
 

@@ -1,0 +1,5 @@
+/etc/default/
+/usr/share/janus/lib/
+/var/lib/janus/
+/var/log/janus/
+/var/run/janus/

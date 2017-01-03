@@ -15,7 +15,7 @@ import java.lang.reflect.Method;
  * when a MR job needs to talk to a HBase cluster secured by Kerberos.
  *
  * This class uses reflection to avoid linking against HBase classes that
- * might not be on the classpath at runtime (e.g. when running Titan-HBase
+ * might not be on the classpath at runtime (e.g. when running Janus-HBase
  * on Cassandra).  Its methods log errors but otherwise serve as noops if
  * HBase is not available or if reflection fails for some other reason.
  */

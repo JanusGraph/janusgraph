@@ -1,5 +1,5 @@
 ==============================================================
- Titan: Distributed Graph Database
+ Janus: Distributed Graph Database
  Copyright 2012 and onwards Aurelius
 ==============================================================
 

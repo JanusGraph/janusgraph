@@ -2,10 +2,10 @@ package org.janusgraph.graphdb.internal;
 
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusRelation;
 
 /**
- * Internal Relation interface adding methods that should only be used by Titan.
+ * Internal Relation interface adding methods that should only be used by Janus.
  *
  * The "direct" qualifier in the method names indicates that the corresponding action is executed on this relation
  * object and not migrated to a different transactional context. It also means that access returns the "raw" value of
@@ -13,7 +13,7 @@ import org.janusgraph.core.TitanRelation;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface InternalRelation extends TitanRelation, InternalElement {
+public interface InternalRelation extends JanusRelation, InternalElement {
 
     /**
      * Returns this relation in the current transactional context

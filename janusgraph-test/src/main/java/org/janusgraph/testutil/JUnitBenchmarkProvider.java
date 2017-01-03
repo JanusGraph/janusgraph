@@ -51,7 +51,7 @@ public class JUnitBenchmarkProvider {
     public static final String ENV_WARMUP_ROUNDS = "JUB_WARMUP_ROUNDS";
     public static final String ENV_TARGET_RUNTIME_MS = "JUB_TARGET_RUNTIME_MS";
 
-    public static final String DEFAULT_EFFORT_FILE = "../titan-test/data/jub-effort.txt";
+    public static final String DEFAULT_EFFORT_FILE = "../janus-test/data/jub-effort.txt";
     public static final long TARGET_RUNTIME_MS;
     public static final int DEFAULT_ROUNDS;
     public static final int WARMUP_ROUNDS;
@@ -67,7 +67,7 @@ public class JUnitBenchmarkProvider {
     }
 
     /**
-     * Get a JUnitBenchmarks rule configured for Titan performance testing.
+     * Get a JUnitBenchmarks rule configured for Janus performance testing.
      * <p>
      * The returned rule will write results to an XML file named
      * jub.(abs(current nanotime)).xml and to the console.

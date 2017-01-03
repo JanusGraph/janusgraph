@@ -1,19 +1,19 @@
 package org.janusgraph.graphdb.olap.computer;
 
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.idhandling.IDHandler;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
-import org.janusgraph.graphdb.tinkerpop.optimize.TitanVertexStep;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusVertexStep;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -58,7 +58,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     }
 
     @Override
-    public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+    public void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {
         vertexProgram.workerIterationStart(memory.asImmutable());
     }
 
@@ -68,7 +68,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     }
 
     @Override
-    public void process(TitanVertex vertex, ScanMetrics metrics) {
+    public void process(JanusVertex vertex, ScanMetrics metrics) {
         PreloadedVertex v = (PreloadedVertex)vertex;
         long vertexId = v.longId();
         VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
@@ -111,7 +111,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
                 queries.addQuery().direction(Direction.BOTH).edges();
             } else {
                 assert scope instanceof MessageScope.Local;
-                TitanVertexStep<Vertex> startStep = FulgoraUtil.getReverseTitanVertexStep((MessageScope.Local) scope,queries.getTransaction());
+                JanusVertexStep<Vertex> startStep = FulgoraUtil.getReverseJanusVertexStep((MessageScope.Local) scope,queries.getTransaction());
                 QueryContainer.QueryBuilder qb = queries.addQuery();
                 startStep.makeQuery(qb);
                 qb.edges();
@@ -120,7 +120,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
     }
 
 
-    public static<M> Executor getVertexProgramScanJob(StandardTitanGraph graph, FulgoraMemory memory,
+    public static<M> Executor getVertexProgramScanJob(StandardJanusGraph graph, FulgoraMemory memory,
                                                   FulgoraVertexMemory vertexMemory, VertexProgram<M> vertexProgram) {
         VertexProgramScanJob<M> job = new VertexProgramScanJob<M>(graph.getIDManager(),memory,vertexMemory,vertexProgram);
         return new Executor(graph,job);
@@ -133,7 +133,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
 
     public static class Executor extends VertexJobConverter {
 
-        private Executor(TitanGraph graph, VertexProgramScanJob job) {
+        private Executor(JanusGraph graph, VertexProgramScanJob job) {
             super(graph, job);
         }
 

@@ -2,7 +2,7 @@ package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.apache.commons.lang.ArrayUtils;
 
 /**
@@ -11,7 +11,7 @@ import org.apache.commons.lang.ArrayUtils;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Cmp implements TitanPredicate {
+public enum Cmp implements JanusPredicate {
 
     EQUAL {
 
@@ -46,7 +46,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return NOT_EQUAL;
         }
     },
@@ -78,7 +78,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return EQUAL;
         }
     },
@@ -108,7 +108,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return GREATER_THAN_EQUAL;
         }
     },
@@ -138,7 +138,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return GREATER_THAN;
         }
     },
@@ -168,7 +168,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return LESS_THAN_EQUAL;
         }
     },
@@ -198,7 +198,7 @@ public enum Cmp implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusPredicate negate() {
             return LESS_THAN;
         }
     };

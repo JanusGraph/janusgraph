@@ -3,7 +3,7 @@ package org.janusgraph.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusSchemaCategory;
 import org.janusgraph.graphdb.internal.Token;
 import org.apache.commons.lang.StringUtils;
 
@@ -13,7 +13,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     private final long id;
 
 
-    BaseRelationType(String name, long id, TitanSchemaCategory type) {
+    BaseRelationType(String name, long id, JanusSchemaCategory type) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = Token.systemETprefix + name;
         this.id = getSystemTypeId(id, type);
@@ -50,7 +50,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
     }
 
 
-    static long getSystemTypeId(long id, TitanSchemaCategory type) {
+    static long getSystemTypeId(long id, JanusSchemaCategory type) {
         Preconditions.checkArgument(id > 0);
         Preconditions.checkArgument(type.isRelationType());
         switch (type) {

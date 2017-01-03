@@ -11,15 +11,15 @@ cd - >/dev/null
 cd "`dirname $0`"/.. 
 . pkgcommon/etc/config.sh
 . pkgcommon/etc/version.sh
-[ ! -h "$TOPDIR/BUILD/titan-$RPM_VERSION" ] && ln -s "$REPO_ROOT" "$TOPDIR"/BUILD/titan-$RPM_VERSION
+[ ! -h "$TOPDIR/BUILD/janus-$RPM_VERSION" ] && ln -s "$REPO_ROOT" "$TOPDIR"/BUILD/janus-$RPM_VERSION
 
 # Prepend version and release macro definitions to specfile
 cd "`dirname $0`"
-cat > titan.spec <<EOF
-%define titan_version $RPM_VERSION
-%define titan_release $RPM_RELEASE
+cat > janus.spec <<EOF
+%define janus_version $RPM_VERSION
+%define janus_release $RPM_RELEASE
 EOF
-cat titan.spec.base >> titan.spec
+cat janus.spec.base >> janus.spec
 
-rpmbuild -bb titan.spec
-rpmsign --addsign --key-id=$SIGNING_KEY_ID "$TOPDIR"/RPMS/noarch/titan*-$RPM_VERSION-$RPM_RELEASE.noarch.rpm
+rpmbuild -bb janus.spec
+rpmsign --addsign --key-id=$SIGNING_KEY_ID "$TOPDIR"/RPMS/noarch/janus*-$RPM_VERSION-$RPM_RELEASE.noarch.rpm

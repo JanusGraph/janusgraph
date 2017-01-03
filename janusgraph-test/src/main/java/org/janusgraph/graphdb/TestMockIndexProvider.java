@@ -5,7 +5,7 @@ import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.indexing.*;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusPredicate;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
@@ -79,8 +79,8 @@ public class TestMockIndexProvider implements IndexProvider {
     }
 
     @Override
-    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
-        return index.supports(information,titanPredicate);
+    public boolean supports(KeyInformation information, JanusPredicate janusPredicate) {
+        return index.supports(information,janusPredicate);
     }
 
     @Override

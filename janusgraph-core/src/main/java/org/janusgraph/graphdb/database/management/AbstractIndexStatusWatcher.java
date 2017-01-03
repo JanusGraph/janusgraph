@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.SchemaStatus;
 
 
@@ -12,12 +12,12 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {
 
-    protected TitanGraph g;
+    protected JanusGraph g;
     protected SchemaStatus status;
     protected Duration timeout;
     protected Duration poll;
 
-    public AbstractIndexStatusWatcher(TitanGraph g) {
+    public AbstractIndexStatusWatcher(JanusGraph g) {
         this.g = g;
         this.status = SchemaStatus.REGISTERED;
         this.timeout = Duration.ofSeconds(60L);

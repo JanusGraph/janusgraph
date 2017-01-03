@@ -1,6 +1,6 @@
 package org.janusgraph.graphdb.query;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 
 import java.util.Iterator;
@@ -10,7 +10,7 @@ import java.util.Iterator;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface QueryExecutor<Q extends ElementQuery,R extends TitanElement,B extends BackendQuery> {
+public interface QueryExecutor<Q extends ElementQuery,R extends JanusElement,B extends BackendQuery> {
 
     /**
      * Returns all newly created elements in a transactional context that match the given query.
@@ -22,7 +22,7 @@ public interface QueryExecutor<Q extends ElementQuery,R extends TitanElement,B e
 
     /**
      * Whether the transactional context contains any deletions that could potentially affect the result set of the given query.
-     * This is used to determine whether results need to be checked for deletion with {@link #isDeleted(ElementQuery, org.janusgraph.core.TitanElement)}.
+     * This is used to determine whether results need to be checked for deletion with {@link #isDeleted(ElementQuery, org.janusgraph.core.JanusElement)}.
      *
      * @param query
      * @return

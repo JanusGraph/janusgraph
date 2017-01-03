@@ -18,7 +18,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.IDBlock;
 
@@ -111,7 +111,7 @@ public class StandardIDPool implements IDPool {
         exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), new ThreadFactoryBuilder()
                         .setDaemon(false)
-                        .setNameFormat("TitanID(" + partition + ")("+idNamespace+")[%d]")
+                        .setNameFormat("JanusID(" + partition + ")("+idNamespace+")[%d]")
                         .build());
         //exec.allowCoreThreadTimeOut(false);
         //exec.prestartCoreThread();
@@ -130,7 +130,7 @@ public class StandardIDPool implements IDPool {
             } catch (ExecutionException e) {
                 String msg = String.format("ID block allocation on partition(%d)-namespace(%d) failed with an exception in %s",
                         partition, idNamespace, sw.stop());
-                throw new TitanException(msg, e);
+                throw new JanusException(msg, e);
             } catch (TimeoutException e) {
                 String msg = String.format("ID block allocation on partition(%d)-namespace(%d) timed out in %s",
                         partition, idNamespace, sw.stop());
@@ -147,11 +147,11 @@ public class StandardIDPool implements IDPool {
                     }
                     closeBlockers.add(idBlockFuture);
                 }
-                throw new TitanException(msg, e);
+                throw new JanusException(msg, e);
             } catch (CancellationException e) {
                 String msg = String.format("ID block allocation on partition(%d)-namespace(%d) was cancelled after %s",
                         partition, idNamespace, sw.stop());
-                throw new TitanException(msg, e);
+                throw new JanusException(msg, e);
             } finally {
                 idBlockFuture = null;
             }
@@ -197,7 +197,7 @@ public class StandardIDPool implements IDPool {
             try {
                 nextBlock();
             } catch (InterruptedException e) {
-                throw new TitanException("Could not renew id block due to interruption", e);
+                throw new JanusException("Could not renew id block due to interruption", e);
             }
         }
 
@@ -218,14 +218,14 @@ public class StandardIDPool implements IDPool {
         try {
             waitForIDBlockGetter();
         } catch (InterruptedException e) {
-            throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
+            throw new JanusException("Interrupted while waiting for id renewer thread to finish", e);
         }
 
         for (Future<?> closeBlocker : closeBlockers) {
             try {
                 closeBlocker.get();
             } catch (InterruptedException e) {
-                throw new TitanException("Interrupted while waiting for runaway ID renewer task " + closeBlocker, e);
+                throw new JanusException("Interrupted while waiting for runaway ID renewer task " + closeBlocker, e);
             } catch (ExecutionException e) {
                 log.debug("Runaway ID renewer task completed with exception", e);
             }
@@ -273,7 +273,7 @@ public class StandardIDPool implements IDPool {
                     log.debug("Aborting ID block retrieval on partition({})-namespace({}) after " +
                             "graceful shutdown was requested, exec time {}, exec+q time {}",
                             partition, idNamespace, running.stop(), alive.stop());
-                    throw new TitanException("ID block retrieval aborted by caller");
+                    throw new JanusException("ID block retrieval aborted by caller");
                 }
                 IDBlock idBlock = idAuthority.getIDBlock(partition, idNamespace, renewTimeout);
                 log.debug("Retrieved ID block from authority on partition({})-namespace({}), " +
@@ -282,7 +282,7 @@ public class StandardIDPool implements IDPool {
                 Preconditions.checkArgument(idBlock!=null && idBlock.numIds()>0);
                 return idBlock;
             } catch (BackendException e) {
-                throw new TitanException("Could not acquire new ID block from storage", e);
+                throw new JanusException("Could not acquire new ID block from storage", e);
             } catch (IDPoolExhaustedException e) {
                 return ID_POOL_EXHAUSTION;
             }

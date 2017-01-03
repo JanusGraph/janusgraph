@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-lucene</artifactId>
     <name>JanusGraph-Lucene: Indexing Support</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://thinkaurelius.github.com/janus/</url>
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>

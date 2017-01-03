@@ -2,9 +2,9 @@ package org.janusgraph.graphdb.idmanagement;
 
 import com.carrotsearch.hppc.LongHashSet;
 import com.carrotsearch.hppc.LongSet;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusFactory;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusVertex;
 
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
@@ -86,12 +86,12 @@ public class VertexIDAssignerTest {
         }
     }
 
-    private static TitanGraph getInMemoryGraph() {
+    private static JanusGraph getInMemoryGraph() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         config.set(GraphDatabaseConfiguration.IDS_FLUSH, false);
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(1L));
-        return TitanFactory.open(config);
+        return JanusFactory.open(config);
     }
 
     @Test
@@ -102,16 +102,16 @@ public class VertexIDAssignerTest {
         int totalVertices = 0;
         for (int trial = 0; trial < 10; trial++) {
             for (boolean flush : new boolean[]{true, false}) {
-                TitanGraph graph = getInMemoryGraph();
+                JanusGraph graph = getInMemoryGraph();
                 int numVertices = 1000;
-                List<TitanVertex> vertices = new ArrayList<TitanVertex>(numVertices);
+                List<JanusVertex> vertices = new ArrayList<JanusVertex>(numVertices);
                 List<InternalRelation> relations = new ArrayList<InternalRelation>();
-                TitanVertex old = null;
+                JanusVertex old = null;
                 totalRelations+=2*numVertices;
                 totalVertices+=numVertices;
                 try {
                     for (int i = 0; i < numVertices; i++) {
-                        TitanVertex next = graph.addVertex();
+                        JanusVertex next = graph.addVertex();
                         InternalRelation edge = null;
                         if (old != null) {
                             edge = (InternalRelation) old.addEdge("knows", next);
@@ -132,7 +132,7 @@ public class VertexIDAssignerTest {
                     if (totalRelations>maxIDAssignments || totalVertices>maxIDAssignments) fail();
 
                     //Verify that ids are set and unique
-                    for (TitanVertex v : vertices) {
+                    for (JanusVertex v : vertices) {
                         assertTrue(v.hasId());
                         long id = v.longId();
                         assertTrue(id>0 && id<Long.MAX_VALUE);

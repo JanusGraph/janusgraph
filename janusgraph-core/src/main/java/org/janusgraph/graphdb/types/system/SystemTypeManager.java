@@ -3,7 +3,7 @@ package org.janusgraph.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusSchemaCategory;
 import org.janusgraph.graphdb.internal.Token;
 import org.janusgraph.graphdb.types.TypeUtil;
 
@@ -52,7 +52,7 @@ public abstract class SystemTypeManager {
         return SYSTEM_TYPES_BY_NAME.get(name);
     }
 
-    public static boolean isNotSystemName(TitanSchemaCategory category, String name) {
+    public static boolean isNotSystemName(JanusSchemaCategory category, String name) {
         TypeUtil.checkTypeName(category, name);
         if (SystemTypeManager.isSystemType(name.toLowerCase()) || Token.isSystemName(name))
             throw new IllegalArgumentException("Name cannot be in protected namespace: "+name);

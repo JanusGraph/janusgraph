@@ -4,16 +4,16 @@ import com.google.common.collect.Iterables;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusManagement;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
+public abstract class AbstractIndexManagementIT extends JanusGraphBaseTest {
 
     @Test
     public void testRemoveGraphIndex() throws InterruptedException, BackendException, ExecutionException {
@@ -40,8 +40,8 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
         GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true);
 
         // Disable the "name" composite index
-        TitanManagement m = graph.openManagement();
-        TitanGraphIndex nameIndex = m.getGraphIndex("name");
+        JanusManagement m = graph.openManagement();
+        JanusGraphIndex nameIndex = m.getGraphIndex("name");
         m.updateIndex(nameIndex, SchemaAction.DISABLE_INDEX);
         m.commit();
         graph.tx().commit();
@@ -53,7 +53,7 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
         // Remove index
         MapReduceIndexManagement mri = new MapReduceIndexManagement(graph);
         m = graph.openManagement();
-        TitanGraphIndex index = m.getGraphIndex("name");
+        JanusGraphIndex index = m.getGraphIndex("name");
         ScanMetrics metrics = mri.updateIndex(index, SchemaAction.REMOVE_INDEX).get();
 
         assertEquals(12, metrics.getCustom(IndexRemoveJob.DELETED_RECORDS_COUNT));
@@ -68,7 +68,7 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
         GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true);
 
         // Disable the "battlesByTime" index
-        TitanManagement m = graph.openManagement();
+        JanusManagement m = graph.openManagement();
         RelationType battled = m.getRelationType("battled");
         RelationTypeIndex battlesByTime = m.getRelationIndex(battled, "battlesByTime");
         m.updateIndex(battlesByTime, SchemaAction.DISABLE_INDEX);
@@ -98,7 +98,7 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
         GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true);
 
         // Create and enable a graph index on age
-        TitanManagement m = graph.openManagement();
+        JanusManagement m = graph.openManagement();
         PropertyKey age = m.getPropertyKey("age");
         m.buildIndex("verticesByAge", Vertex.class).addKey(age).buildCompositeIndex();
         m.commit();
@@ -109,7 +109,7 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
                 .status(SchemaStatus.REGISTERED).call().getSucceeded());
 
         m = graph.openManagement();
-        TitanGraphIndex index = m.getGraphIndex("verticesByAge");
+        JanusGraphIndex index = m.getGraphIndex("verticesByAge");
         m.updateIndex(index, SchemaAction.ENABLE_INDEX);
         m.commit();
         graph.tx().commit();
@@ -129,10 +129,10 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
         assertEquals(6, metrics.getCustom(IndexRepairJob.ADDED_RECORDS_COUNT));
 
         // Test the index
-        Iterable<TitanVertex> hits = graph.query().has("age", 4500).vertices();
+        Iterable<JanusVertex> hits = graph.query().has("age", 4500).vertices();
         assertNotNull(hits);
         assertEquals(1, Iterables.size(hits));
-        TitanVertex v = Iterables.getOnlyElement(hits);
+        JanusVertex v = Iterables.getOnlyElement(hits);
         assertNotNull(v);
 
         assertEquals("neptune", v.value("name"));
@@ -147,7 +147,7 @@ public abstract class AbstractIndexManagementIT extends TitanGraphBaseTest {
         GraphOfTheGodsFactory.loadWithoutMixedIndex(graph, true);
 
         // Create and enable a relation index on lives edges by reason
-        TitanManagement m = graph.openManagement();
+        JanusManagement m = graph.openManagement();
         PropertyKey reason = m.getPropertyKey("reason");
         EdgeLabel lives = m.getEdgeLabel("lives");
         m.buildEdgeIndex(lives, "livesByReason", Direction.BOTH, Order.decr, reason);

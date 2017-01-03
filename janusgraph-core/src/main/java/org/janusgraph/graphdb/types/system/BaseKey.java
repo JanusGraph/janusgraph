@@ -7,9 +7,9 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.JanusSchemaType;
 import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusSchemaCategory;
 import org.janusgraph.graphdb.internal.Token;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
@@ -34,7 +34,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
             new BaseKey("SchemaDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
 
     public static final BaseKey SchemaCategory =
-            new BaseKey("SchemaCategory", TitanSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
+            new BaseKey("SchemaCategory", JanusSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
 
     public static final BaseKey SchemaDefinitionDesc =
             new BaseKey("SchemaDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
@@ -49,7 +49,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     private final Cardinality cardinality;
 
     private BaseKey(String name, Class<?> dataType, int id, Index index, Cardinality cardinality) {
-        super(name, id, TitanSchemaCategory.PROPERTYKEY);
+        super(name, id, JanusSchemaCategory.PROPERTYKEY);
         Preconditions.checkArgument(index!=null && cardinality!=null);
         this.dataType = dataType;
         this.index = index;
@@ -95,7 +95,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     private final CompositeIndexType indexDef = new CompositeIndexType() {
 
         private final IndexField[] fields = {IndexField.of(BaseKey.this)};
-//        private final Set<TitanKey> fieldSet = ImmutableSet.of((TitanKey)SystemKey.this);
+//        private final Set<JanusKey> fieldSet = ImmutableSet.of((JanusKey)SystemKey.this);
 
         @Override
         public String toString() {
@@ -148,7 +148,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         }
 
         @Override
-        public TitanSchemaType getSchemaTypeConstraint() {
+        public JanusSchemaType getSchemaTypeConstraint() {
             return null;
         }
 

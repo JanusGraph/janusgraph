@@ -22,11 +22,11 @@ EXT=$(pwd)
 CP="$CFG"
 # Add the slf4j-log4j12 binding
 CP="$CP":$(find -L $LIB -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
-# Add the jars in $BIN/../lib that start with "titan"
-CP="$CP":$(find -L $LIB -name 'titan*.jar' | sort | tr '\n' ':')
+# Add the jars in $BIN/../lib that start with "janus"
+CP="$CP":$(find -L $LIB -name 'janus*.jar' | sort | tr '\n' ':')
 # Add the remaining jars in $BIN/../lib.
 CP="$CP":$(find -L $LIB -name '*.jar' \
-                \! -name 'titan*' \
+                \! -name 'janus*' \
                 \! -name 'slf4j-log4j12*.jar' | sort | tr '\n' ':')
 # Add the jars in $BIN/../ext (at any subdirectory depth)
 CP="$CP":$(find -L $EXT -name '*.jar' | sort | tr '\n' ':')
@@ -57,11 +57,11 @@ fi
 set -x
 if [ "$1" = "-i" ]; then
   shift
-  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH org.apache.tinkerpop.gremlin.server.util.GremlinServerInstall "$@"
+  exec $JAVA -Djanus.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH org.apache.tinkerpop.gremlin.server.util.GremlinServerInstall "$@"
 else
   ARGS="$@"
   if [ $# = 0 ] ; then
     ARGS="conf/gremlin-server/gremlin-server.yaml"
   fi
-  exec $JAVA -Dtitan.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH org.apache.tinkerpop.gremlin.server.GremlinServer $ARGS
+  exec $JAVA -Djanus.logdir="$TITAN_LOGDIR" -Dlog4j.configuration=conf/gremlin-server/log4j-server.properties $JAVA_OPTIONS -cp $CP:$CLASSPATH org.apache.tinkerpop.gremlin.server.GremlinServer $ARGS
 fi

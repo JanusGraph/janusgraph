@@ -1,0 +1,129 @@
+# This specfile needs the janus_version and janus_release macros.
+# These two macros can be defined in two ways:
+#
+# 1. Defined on rpmbuild commandline, e.g.
+#    $ rpmbuild --define='janus_release 2' --define='janus_version 0.4.0'
+#
+# 2. Prepended to this file, e.g.
+#    $ echo '<percent>define janus_version 0.4.0' >  janus.spec.new
+#    $ echo '<percent>define janus_release 2'     >> janus.spec.new
+#    $ cat  janus.spec.base                       >> janus.spec.new
+#    $ mv   janus.spec.new janus.spec
+#
+#    The <percent> strings above should be literal percent symbols, but
+#    rpmbuild appears to parse percents even inside specfile comments like
+#    this one (!), so I can't write a literal percent sign.
+
+%define __jar_repack 0
+%define payload_dir redhat/payload
+
+Name:           janus
+Version:        %{janus_version}
+Release:        %{janus_release}
+Summary:        Janus Distributed Graph Database
+Requires:       java >= 1.7.0
+Requires(pre):  shadow-utils
+Group:          Applications/Databases
+License:        ASL 2.0
+URL:            http://janus.thinkaurelius.com/
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildArch:      noarch
+
+%description
+Janus is a scalable graph database optimized for storing and querying
+graphs containing hundreds of billions of vertices and edges
+distributed across a multi-machine cluster. Janus is a transactional
+database that can support thousands of concurrent users executing
+complex graph traversals.
+
+%prep
+
+%build
+cd %{name}-%{version}
+mvn clean install --batch-mode -Dgpg.skip=true -Paurelius-release -DskipTests=true
+
+
+%check
+
+
+
+# User & group creation based on Fedora guidelines:
+# https://fedoraproject.org/wiki/Packaging:UsersAndGroups?rd=Packaging/UsersAndGroups
+#
+# N.B. This user and group is deliberately left behind by uninstallation.
+# From the guidelines above:
+# "Do not remove users or groups. We never remove users or groups
+#  created by packages. There's no sane way to check if files owned
+#  by those users/groups are left behind..."
+%pre
+getent group janus >/dev/null || groupadd -r janus
+getent passwd janus >/dev/null || \
+    useradd -r -g janus -d /tmp -s /sbin/nologin \
+    -c "Janus graph database" janus
+exit 0
+
+%post
+chown janus:janus /var/lib/janus /var/log/janus /var/run/janus
+
+
+%install
+cd %{name}-%{version}
+
+# create directory structure
+mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
+mkdir -p "$RPM_BUILD_ROOT"/etc/rc.d/init.d
+mkdir -p "$RPM_BUILD_ROOT"/etc/janus
+mkdir -p "$RPM_BUILD_ROOT"/usr/bin
+mkdir -p "$RPM_BUILD_ROOT"/usr/sbin
+mkdir -p "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}
+mkdir -p "$RPM_BUILD_ROOT"/usr/share/janus/lib
+mkdir -p "$RPM_BUILD_ROOT"/var/log/janus
+mkdir -p "$RPM_BUILD_ROOT"/var/lib/janus
+mkdir -p "$RPM_BUILD_ROOT"/var/run/janus
+
+# copy files
+pkgcommon/bin/install-payload.sh "$RPM_BUILD_ROOT"
+pkgcommon/bin/install-jars.sh "$RPM_BUILD_ROOT"/usr/share/janus/lib
+cp %{payload_dir}/janus.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/janus
+cp %{payload_dir}/janus.sysconfig "$RPM_BUILD_ROOT"/etc/sysconfig/janus
+
+# docs
+#mv doc/ "$RPM_BUILD_ROOT"/usr/share/doc/janus-%{version}/
+#mv CHANGELOG.textile "$RPM_BUILD_ROOT"/usr/share/doc/janus-%{version}/CHANGES.txt
+#mv LICENSE.txt "$RPM_BUILD_ROOT"/usr/share/doc/janus-%{version}/
+## TODO: NEWS.txt ?
+#mv NOTICE.txt "$RPM_BUILD_ROOT"/usr/share/doc/janus-%{version}/
+#mv README.txt "$RPM_BUILD_ROOT"/usr/share/doc/janus-%{version}/README.txt
+for x in CHANGELOG.textile LICENSE.txt NOTICE.txt README.textile UPGRADE.textile; do
+    cp $x  "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}/
+done
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root,-)
+#%doc CHANGELOG.textile LICENSE.txt NOTICE.txt README.txt UPGRADE.textile doc/
+%doc /usr/share/doc/%{name}-%{version}/CHANGELOG.textile
+%doc /usr/share/doc/%{name}-%{version}/LICENSE.txt
+%doc /usr/share/doc/%{name}-%{version}/NOTICE.txt
+%doc /usr/share/doc/%{name}-%{version}/README.textile
+%doc /usr/share/doc/%{name}-%{version}/UPGRADE.textile
+%attr(0644, root, root) %config /etc/janus/cassandra.yaml
+%attr(0644, root, root) %config /etc/janus/config.properties
+%attr(0644, root, root) %config /etc/janus/log4j.properties
+%attr(0644, root, root) %config /etc/janus/janus-env.sh
+%attr(0644, root, root) %config /etc/sysconfig/janus
+%attr(0755, root, root) %config /etc/rc.d/init.d/janus
+%attr(0755, janus, janus) %dir /var/log/janus/
+%attr(0755, janus, janus) %dir /var/lib/janus/
+%attr(0755, janus, janus) %dir /var/run/janus/
+%attr(0755, root, root) /usr/bin/gremlin.sh
+%attr(0755, root, root) /usr/sbin/janus
+%attr(0444, root, root) /usr/share/janus/lib/*.jar
+%attr(0644, root, root) /usr/share/janus/janus.in.sh
+
+
+%changelog

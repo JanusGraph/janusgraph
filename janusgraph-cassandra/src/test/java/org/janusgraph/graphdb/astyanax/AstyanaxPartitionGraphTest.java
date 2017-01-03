@@ -2,11 +2,11 @@ package org.janusgraph.graphdb.astyanax;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphTest;
-import org.janusgraph.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.graphdb.JanusGraphTest;
+import org.janusgraph.graphdb.JanusPartitionGraphTest;
 import org.junit.BeforeClass;
 
-public class AstyanaxPartitionGraphTest extends TitanPartitionGraphTest {
+public class AstyanaxPartitionGraphTest extends JanusPartitionGraphTest {
 
     @BeforeClass
     public static void startCassandra() {

@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 public class GeoToWktConverterTest {
 
     /**
-     * Titan Geoshapes are converted to a string that gets sent to its respective index. Unfortunately, the string format
+     * Janus Geoshapes are converted to a string that gets sent to its respective index. Unfortunately, the string format
      * is not compatible with Solr 4. The GeoToWktConverter transforms the Geoshape's string value into a Well-Known Text
      * format understood by Solr.
      */

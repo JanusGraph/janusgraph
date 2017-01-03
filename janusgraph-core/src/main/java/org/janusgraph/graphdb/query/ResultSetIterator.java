@@ -1,6 +1,6 @@
 package org.janusgraph.graphdb.query;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusElement;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ResultSetIterator<R extends TitanElement> implements Iterator<R> {
+public class ResultSetIterator<R extends JanusElement> implements Iterator<R> {
 
     private final Iterator<R> iter;
     private final int limit;
@@ -62,7 +62,7 @@ public class ResultSetIterator<R extends TitanElement> implements Iterator<R> {
             throw new UnsupportedOperationException();
     }
 
-    public static<R extends TitanElement> Iterable<R> wrap(final Iterable<R> inner, final int limit) {
+    public static<R extends JanusElement> Iterable<R> wrap(final Iterable<R> inner, final int limit) {
         return new Iterable<R>() {
 
             @Override

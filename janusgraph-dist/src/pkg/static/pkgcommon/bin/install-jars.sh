@@ -5,7 +5,7 @@ set -e
 
 if [ -z "${1:-}" ]; then
     echo "Usage: $0 directory" >&2
-    echo "  Copies Titan's jars to the specified directory"
+    echo "  Copies Janus's jars to the specified directory"
     echo "  The directory is created if it does not exist"
     exit 1
 fi
@@ -18,7 +18,7 @@ cd "$1"
 absolutepath="`pwd`"
 cd - >/dev/null
 
-cd "`dirname $0`"/../../titan-dist
+cd "`dirname $0`"/../../janus-dist
 
 mvn dependency:copy-dependencies $MVN_OPTS \
     -Paurelius-release \

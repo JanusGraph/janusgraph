@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -15,8 +15,8 @@ public class ElementUtils {
     public static long getVertexId(Object id) {
         if (null == id) return 0;
 
-        if (id instanceof TitanVertex) //allows vertices to be "re-attached" to the current transaction
-            return ((TitanVertex) id).longId();
+        if (id instanceof JanusVertex) //allows vertices to be "re-attached" to the current transaction
+            return ((JanusVertex) id).longId();
         if (id instanceof Long)
             return (Long) id;
         if (id instanceof Number)
@@ -37,7 +37,7 @@ public class ElementUtils {
         if (null == id) return null;
 
         try {
-            if (id instanceof TitanEdge) return (RelationIdentifier) ((TitanEdge) id).id();
+            if (id instanceof JanusEdge) return (RelationIdentifier) ((JanusEdge) id).id();
             else if (id instanceof RelationIdentifier) return (RelationIdentifier) id;
             else if (id instanceof String) return RelationIdentifier.parse((String) id);
             else if (id instanceof long[]) return RelationIdentifier.get((long[]) id);

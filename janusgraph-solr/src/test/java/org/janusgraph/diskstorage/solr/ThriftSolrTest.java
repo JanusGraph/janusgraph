@@ -5,7 +5,7 @@ import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusIndexTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -14,7 +14,7 @@ import java.io.File;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 
-public class ThriftSolrTest extends SolrTitanIndexTest {
+public class ThriftSolrTest extends SolrJanusIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -31,8 +31,8 @@ public class ThriftSolrTest extends SolrTitanIndexTest {
     @BeforeClass
     public static void beforeClass() {
         String userDir = System.getProperty("user.dir");
-        String cassandraDirFormat = Joiner.on(File.separator).join(userDir, userDir.contains("titan-solr")
-                                        ? "target" : "titan-solr/target", "cassandra", "%s", "localhost-murmur");
+        String cassandraDirFormat = Joiner.on(File.separator).join(userDir, userDir.contains("janus-solr")
+                                        ? "target" : "janus-solr/target", "cassandra", "%s", "localhost-murmur");
 
         System.setProperty("test.cassandra.confdir", String.format(cassandraDirFormat, "conf"));
         System.setProperty("test.cassandra.datadir", String.format(cassandraDirFormat, "data"));

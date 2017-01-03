@@ -5,11 +5,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.TitanConfigurationException;
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.JanusConfigurationException;
+import org.janusgraph.core.JanusException;
+import org.janusgraph.core.JanusFactory;
 
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusManagement;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import org.janusgraph.diskstorage.indexing.*;
@@ -35,7 +35,7 @@ import org.janusgraph.diskstorage.util.MetricInstrumentedStoreManager;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.configuration.TitanConstants;
+import org.janusgraph.graphdb.configuration.JanusConstants;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.util.system.ConfigurationUtil;
 
@@ -78,7 +78,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public static final String EDGESTORE_NAME = "edgestore";
     public static final String INDEXSTORE_NAME = "graphindex";
 
-    public static final String ID_STORE_NAME = "titan_ids";
+    public static final String ID_STORE_NAME = "janus_ids";
 
     public static final String METRICS_STOREMANAGER_NAME = "storeManager";
     public static final String METRICS_MERGED_STORE = "stores";
@@ -182,7 +182,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         if (REGISTERED_LOCKERS.containsKey(lockBackendName)) {
             lockerCreator = REGISTERED_LOCKERS.get(lockBackendName);
         } else {
-            throw new TitanConfigurationException("Unknown lock backend \"" +
+            throw new JanusConfigurationException("Unknown lock backend \"" +
                     lockBackendName + "\".  Known lock backends: " +
                     Joiner.on(", ").join(REGISTERED_LOCKERS.keySet()) + ".");
         }
@@ -298,7 +298,7 @@ public class Backend implements LockerProvider, AutoCloseable {
             },systemConfigStore,USER_CONFIGURATION_IDENTIFIER,configuration);
 
         } catch (BackendException e) {
-            throw new TitanException("Could not initialize backend", e);
+            throw new JanusException("Could not initialize backend", e);
         }
     }
 
@@ -321,7 +321,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         try {
             return txLogManager.openLog(SYSTEM_TX_LOG_NAME);
         } catch (BackendException e) {
-            throw new TitanException("Could not re-open transaction log", e);
+            throw new JanusException("Could not re-open transaction log", e);
         }
     }
 
@@ -329,7 +329,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         try {
             return mgmtLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
         } catch (BackendException e) {
-            throw new TitanException("Could not re-open management log", e);
+            throw new JanusException("Could not re-open management log", e);
         }
     }
 
@@ -354,7 +354,7 @@ public class Backend implements LockerProvider, AutoCloseable {
                 .setWorkBlockSize(10000);
     }
 
-    public TitanManagement.IndexJobFuture getScanJobStatus(Object jobId) {
+    public JanusManagement.IndexJobFuture getScanJobStatus(Object jobId) {
         return scanner.getRunningJob(jobId);
     }
 
@@ -428,7 +428,7 @@ public class Backend implements LockerProvider, AutoCloseable {
             kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
             return kcvsConfig;
         } catch (BackendException e) {
-            throw new TitanException("Could not open global configuration",e);
+            throw new JanusException("Could not open global configuration",e);
         }
     }
 
@@ -448,7 +448,7 @@ public class Backend implements LockerProvider, AutoCloseable {
                 }
             },manager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME),config);
         } catch (BackendException e) {
-            throw new TitanException("Could not open global configuration",e);
+            throw new JanusException("Could not open global configuration",e);
         }
     }
 
@@ -638,7 +638,7 @@ public class Backend implements LockerProvider, AutoCloseable {
             try {
                 lockerStore = storeManager.openDatabase(lockerName);
             } catch (BackendException e) {
-                throw new TitanConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
+                throw new JanusConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
             }
             return new ConsistentKeyLocker.Builder(lockerStore, storeManager).fromConfig(configuration).build();
         }

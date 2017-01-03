@@ -60,7 +60,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
         assert Token.isSystemName(name);
         this.datatype=datatype;
         this.name=name;
-        this.id= BaseRelationType.getSystemTypeId(id, TitanSchemaCategory.PROPERTYKEY);
+        this.id= BaseRelationType.getSystemTypeId(id, JanusSchemaCategory.PROPERTYKEY);
     }
 
 
@@ -72,10 +72,10 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
         } else if (this==LABEL) {
             return (O)e.label();
         } else if (this==KEY) {
-            if (e instanceof TitanProperty) return (O)((TitanProperty)e).key();
+            if (e instanceof JanusProperty) return (O)((JanusProperty)e).key();
             else return null;
         } else if (this==VALUE) {
-            if (e instanceof TitanProperty) return (O)((TitanProperty)e).value();
+            if (e instanceof JanusProperty) return (O)((JanusProperty)e).value();
             else return null;
         } else if (this==TIMESTAMP || this==VISIBILITY) {
             if (e instanceof InternalRelation) {

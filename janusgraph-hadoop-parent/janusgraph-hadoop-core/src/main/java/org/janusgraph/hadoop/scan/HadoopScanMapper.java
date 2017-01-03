@@ -12,7 +12,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.diskstorage.util.EntryArrayList;
 import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusHadoopConfiguration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.slf4j.Logger;
@@ -44,10 +44,10 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
+        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(JanusHadoopConfiguration.MAPRED_NS, hadoopConf);
         job = getJob(scanConf);
         metrics = new HadoopContextScanMetrics(context);
-        Configuration graphConf = getTitanConfiguration(context);
+        Configuration graphConf = getJanusConfiguration(context);
         finishSetup(scanConf, graphConf);
     }
 
@@ -204,7 +204,7 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
     }
 
     private ScanJob getJob(Configuration scanConf) {
-        String jobClass = scanConf.get(TitanHadoopConfiguration.SCAN_JOB_CLASS);
+        String jobClass = scanConf.get(JanusHadoopConfiguration.SCAN_JOB_CLASS);
 
         try {
             return (ScanJob)Class.forName(jobClass).newInstance();
@@ -217,18 +217,18 @@ public class HadoopScanMapper extends Mapper<StaticBuffer, Iterable<Entry>, Null
         }
     }
 
-    static ModifiableConfiguration getTitanConfiguration(Context context) {
+    static ModifiableConfiguration getJanusConfiguration(Context context) {
         org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        return ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf).getTitanGraphConf();
+        return ModifiableHadoopConfiguration.of(JanusHadoopConfiguration.MAPRED_NS, hadoopConf).getJanusGraphConf();
     }
 
     static Configuration getJobConfiguration(ModifiableHadoopConfiguration scanConf) {
-        if (!scanConf.has(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT)) {
+        if (!scanConf.has(JanusHadoopConfiguration.SCAN_JOB_CONFIG_ROOT)) {
             log.debug("No job configuration root provided");
             return null;
         }
-        ConfigNamespace jobRoot = getJobRoot(scanConf.get(TitanHadoopConfiguration.SCAN_JOB_CONFIG_ROOT));
-        return ModifiableHadoopConfiguration.prefixView(jobRoot, TitanHadoopConfiguration.SCAN_JOB_CONFIG_KEYS,
+        ConfigNamespace jobRoot = getJobRoot(scanConf.get(JanusHadoopConfiguration.SCAN_JOB_CONFIG_ROOT));
+        return ModifiableHadoopConfiguration.prefixView(jobRoot, JanusHadoopConfiguration.SCAN_JOB_CONFIG_KEYS,
                 scanConf);
     }
 

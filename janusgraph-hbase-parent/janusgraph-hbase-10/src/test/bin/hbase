@@ -172,12 +172,12 @@ add_maven_deps_to_classpath() {
   f="${HBASE_HOME}/target/cached_classpath.txt"
   if [ ! -f "${f}" ]; then
     # -------------------
-    # Titan build support
+    # Janus build support
     # -------------------
     # Check for Maven command line options file.
-    # If titan-hbase has already been built, then this file will contain options
+    # If janus-hbase has already been built, then this file will contain options
     # to target the version of Hadoop used during compilation.  This is
-    # necessary when the user compiles titan-hbase with a non-default Hadoop
+    # necessary when the user compiles janus-hbase with a non-default Hadoop
     # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
     # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
     MVN_OPTS=

@@ -7,8 +7,8 @@ import java.util.Map;
 
 /**
  * Store-specific (Columnfamily-specific) options passed between
- * Titan core and its underlying KeyColumnValueStore implementation.
- * This is part of Titan's internals and is not user-facing in
+ * Janus core and its underlying KeyColumnValueStore implementation.
+ * This is part of Janus's internals and is not user-facing in
  * ordinary operation.
  */
 public interface StoreMetaData<T> {

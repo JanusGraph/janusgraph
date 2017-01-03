@@ -3,9 +3,9 @@ package org.janusgraph.graphdb.types;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.schema.VertexLabelMaker;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusSchemaCategory;
 import org.janusgraph.graphdb.internal.Token;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -18,19 +18,19 @@ import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
  */
 public class StandardVertexLabelMaker implements VertexLabelMaker {
 
-    private final StandardTitanTx tx;
+    private final StandardJanusTx tx;
 
     private String name;
     private boolean partitioned;
     private boolean isStatic;
 
-    public StandardVertexLabelMaker(StandardTitanTx tx) {
+    public StandardVertexLabelMaker(StandardJanusTx tx) {
         this.tx = tx;
     }
 
     public StandardVertexLabelMaker name(String name) {
         //Verify name
-        SystemTypeManager.isNotSystemName(TitanSchemaCategory.VERTEXLABEL, name);
+        SystemTypeManager.isNotSystemName(JanusSchemaCategory.VERTEXLABEL, name);
         this.name=name;
         return this;
     }
@@ -59,6 +59,6 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
         def.setValue(PARTITIONED, partitioned);
         def.setValue(STATIC, isStatic);
 
-        return (VertexLabelVertex)tx.makeSchemaVertex(TitanSchemaCategory.VERTEXLABEL,name,def);
+        return (VertexLabelVertex)tx.makeSchemaVertex(JanusSchemaCategory.VERTEXLABEL,name,def);
     }
 }

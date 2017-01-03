@@ -49,7 +49,7 @@ public class HBaseStorageSetup {
         HBASE_PARENT_DIR = parentDir;
     }
 
-    private static final String HBASE_STAT_FILE = "/tmp/titan-hbase-test-daemon.stat";
+    private static final String HBASE_STAT_FILE = "/tmp/janus-hbase-test-daemon.stat";
 
     private volatile static HBaseStatus HBASE = null;
 
@@ -65,7 +65,7 @@ public class HBaseStorageSetup {
         Matcher m = HBASE_SUPPORTED_VERSION_PATTERN.matcher(hv);
         if (m.matches()) {
             String majorDotMinor = m.group(1);
-            String result = String.format("%s%stitan-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdir);
+            String result = String.format("%s%sjanus-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdir);
             log.debug("Built {} path for HBase version {}: {}", lastSubdir, hv, result);
             return result;
         } else {

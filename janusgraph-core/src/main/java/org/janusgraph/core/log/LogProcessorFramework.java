@@ -1,6 +1,6 @@
 package org.janusgraph.core.log;
 
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 
 /**
  * Framework for processing transaction logs. Using the {@link LogProcessorBuilder} returned by
@@ -31,9 +31,9 @@ public interface LogProcessorFramework {
     /**
      * Closes all log processors, their associated logs, and the backing graph instance
      *
-     * @throws TitanException
+     * @throws JanusException
      */
-    public void shutdown() throws TitanException;
+    public void shutdown() throws JanusException;
 
 
 }

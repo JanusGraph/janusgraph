@@ -1,8 +1,8 @@
 package org.janusgraph;
 
 
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusFactory;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.ReadConfiguration;
@@ -20,7 +20,7 @@ public class StorageSetup {
     //############ UTILITIES #############
 
     public static final String getHomeDir(String subdir) {
-        String homedir = System.getProperty("titan.testdir");
+        String homedir = System.getProperty("janus.testdir");
         if (null == homedir) {
             homedir = "target" + File.separator + "db";
         }
@@ -55,8 +55,8 @@ public class StorageSetup {
         return buildGraphConfiguration().set(STORAGE_BACKEND, "inmemory").set(IDAUTHORITY_WAIT, Duration.ZERO);
     }
 
-    public static TitanGraph getInMemoryGraph() {
-        return TitanFactory.open(getInMemoryConfiguration());
+    public static JanusGraph getInMemoryGraph() {
+        return JanusFactory.open(getInMemoryConfiguration());
     }
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {

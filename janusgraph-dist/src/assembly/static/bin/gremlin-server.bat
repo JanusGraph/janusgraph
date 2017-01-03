@@ -27,10 +27,10 @@ IF NOT DEFINED TITAN_HOME (
     SET TITAN_HOME=%CD%
 )
 
-:: location of the Titan lib directory
+:: location of the Janus lib directory
 SET TITAN_LIB=%TITAN_HOME%\lib
 
-:: location of the Titan extensions directory
+:: location of the Janus extensions directory
 IF NOT DEFINED TITAN_EXT (
     SET TITAN_EXT=%TITAN_HOME%\ext
 )
@@ -54,14 +54,14 @@ IF NOT DEFINED HADOOP_HOME (
     )
 )
 
-:: set HADOOP_GREMLIN_LIBS by default to the Titan lib
+:: set HADOOP_GREMLIN_LIBS by default to the Janus lib
 IF NOT DEFINED HADOOP_GREMLIN_LIBS (
     SET HADOOP_GREMLIN_LIBS=%TITAN_LIB%
 )
 
 CD %TITAN_LIB%
 
-FOR /F "tokens=*" %%G IN ('dir /b "titan-*.jar"') DO SET TITAN_JARS=!TITAN_JARS!;%TITAN_LIB%\%%G
+FOR /F "tokens=*" %%G IN ('dir /b "janus-*.jar"') DO SET TITAN_JARS=!TITAN_JARS!;%TITAN_LIB%\%%G
 
 FOR /F "tokens=*" %%G IN ('dir /b "jamm-*.jar"') DO SET JAMM_JAR=%TITAN_LIB%\%%G
 
@@ -75,14 +75,14 @@ FOR /D /r %%i in (*) do (
 
 CD %TITAN_HOME%
 
-:: put slf4j-log4j12 and Titan jars first because of conflict with logback
+:: put slf4j-log4j12 and Janus jars first because of conflict with logback
 SET CP=%CLASSPATH%;%SLF4J_LOG4J_JAR%;%TITAN_JARS%;%TITAN_LIB%\*;%EXTDIR_JARS%
 
 :: to debug plugin :install include -Divy.message.logger.level=4 -Dgroovy.grape.report.downloads=true
 :: to debug log4j include -Dlog4j.debug=true
 IF NOT DEFINED JAVA_OPTIONS (
  SET JAVA_OPTIONS=-Xms32m -Xmx512m ^
- -Dtitan.logdir=%TITAN_HOME%\log ^
+ -Djanus.logdir=%TITAN_HOME%\log ^
  -Dtinkerpop.ext=%TITAN_EXT% ^
  -Dlogback.configurationFile=conf\logback.xml ^
  -Dlog4j.configuration=file:/%TITAN_HOME%\conf\gremlin-server\log4j-server.properties ^

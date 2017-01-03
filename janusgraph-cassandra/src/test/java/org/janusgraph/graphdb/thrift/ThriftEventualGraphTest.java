@@ -2,12 +2,12 @@ package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanEventualGraphTest;
-import org.janusgraph.graphdb.TitanGraphTest;
+import org.janusgraph.graphdb.JanusEventualGraphTest;
+import org.janusgraph.graphdb.JanusGraphTest;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 
-public class ThriftEventualGraphTest extends TitanEventualGraphTest {
+public class ThriftEventualGraphTest extends JanusEventualGraphTest {
 
     @Override
     public WriteConfiguration getConfiguration() {

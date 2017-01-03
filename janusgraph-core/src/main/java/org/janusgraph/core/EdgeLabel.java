@@ -2,7 +2,7 @@
 package org.janusgraph.core;
 
 /**
- * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in Titan has a label.
+ * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in Janus has a label.
  * <p/>
  * An edge label defines the following characteristics of an edge:
  * <ul>

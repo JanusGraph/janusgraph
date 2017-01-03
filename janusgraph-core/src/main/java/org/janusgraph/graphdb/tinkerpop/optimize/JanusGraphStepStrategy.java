@@ -1,0 +1,60 @@
+package org.janusgraph.graphdb.tinkerpop.optimize;
+
+import org.janusgraph.graphdb.tinkerpop.ElementUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+
+import java.util.Iterator;
+
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
+
+    private static final JanusGraphStepStrategy INSTANCE = new JanusGraphStepStrategy();
+
+    private JanusGraphStepStrategy() {
+    }
+
+    @Override
+    public void apply(final Traversal.Admin<?, ?> traversal) {
+        if (traversal.getEngine().isComputer())
+            return;
+
+        TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
+            if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {
+                //Try to optimize for index calls
+                final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
+                TraversalHelper.replaceStep(originalGraphStep, (Step) janusGraphStep, traversal);
+
+                HasStepFolder.foldInHasContainer(janusGraphStep, traversal);
+                HasStepFolder.foldInOrder(janusGraphStep, traversal, traversal, janusGraphStep.returnsVertex());
+                HasStepFolder.foldInRange(janusGraphStep, traversal);
+            } else {
+                //Make sure that any provided "start" elements are instantiated in the current transaction
+                Object[] ids = originalGraphStep.getIds();
+                ElementUtils.verifyArgsMustBeEitherIdorElement(ids);
+                if (ids[0] instanceof Element) {
+                    //GraphStep constructor ensures that the entire array is elements
+                    final Object[] elementIds = new Object[ids.length];
+                    for (int i = 0; i < ids.length; i++) {
+                        elementIds[i] = ((Element) ids[i]).id();
+                    }
+                    originalGraphStep.setIteratorSupplier(() -> (Iterator) (originalGraphStep.returnsVertex() ?
+                            ((Graph) originalGraphStep.getTraversal().getGraph().get()).vertices(elementIds) :
+                            ((Graph) originalGraphStep.getTraversal().getGraph().get()).edges(elementIds)));
+                }
+            }
+        });
+    }
+
+    public static JanusGraphStepStrategy instance() {
+        return INSTANCE;
+    }
+}

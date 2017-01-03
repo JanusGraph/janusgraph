@@ -2,8 +2,8 @@ package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusElement;
+import org.janusgraph.core.JanusRelation;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
@@ -11,7 +11,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class RelationTypeCondition<E extends TitanElement> extends Literal<E> {
+public class RelationTypeCondition<E extends JanusElement> extends Literal<E> {
 
     private final RelationType relationType;
 
@@ -22,8 +22,8 @@ public class RelationTypeCondition<E extends TitanElement> extends Literal<E> {
 
     @Override
     public boolean evaluate(E element) {
-        Preconditions.checkArgument(element instanceof TitanRelation);
-        return relationType.equals(((TitanRelation)element).getType());
+        Preconditions.checkArgument(element instanceof JanusRelation);
+        return relationType.equals(((JanusRelation)element).getType());
     }
 
     @Override

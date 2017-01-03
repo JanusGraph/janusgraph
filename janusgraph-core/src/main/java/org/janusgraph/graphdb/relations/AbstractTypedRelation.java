@@ -5,7 +5,7 @@ import org.janusgraph.graphdb.internal.AbstractElement;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -37,7 +37,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public final StandardTitanTx tx() {
+    public final StandardJanusTx tx() {
         return getVertex(0).tx();
     }
 
@@ -105,7 +105,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         PropertyKey pkey = tx().getOrCreatePropertyKey(key);
         Object normalizedValue = tx().verifyAttribute(pkey,value);
         it().setPropertyDirect(pkey,normalizedValue);
-        return new SimpleTitanProperty<V>(this,pkey,value);
+        return new SimpleJanusProperty<V>(this,pkey,value);
     }
 
     @Override
@@ -142,7 +142,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
             keys = Stream.of(keyNames)
                     .map(s -> tx().getPropertyKey(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
         }
-        return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
+        return keys.map( rt -> (Property<V>)new SimpleJanusProperty<V>(this,rt,valueInternal(rt))).iterator();
     }
 
     /* ---------------------------------------------------------------
@@ -175,7 +175,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 //            keys = Stream.of(keyNames)
 //                    .map(s -> tx().getRelationType(s)).filter(rt -> rt != null && getValueDirect(rt)!=null);
 //        }
-//        return keys.map( rt -> (Property<V>)new SimpleTitanProperty<V>(this,rt,valueInternal(rt))).iterator();
+//        return keys.map( rt -> (Property<V>)new SimpleJanusProperty<V>(this,rt,valueInternal(rt))).iterator();
 //    }
 
 

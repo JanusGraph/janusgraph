@@ -4,8 +4,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusFactory;
+import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import static junit.framework.TestCase.assertTrue;
@@ -14,7 +14,7 @@ import static org.junit.Assert.assertFalse;
 public class TinkerpopFeaturesTest
 {
 
-    private TitanGraph graph;
+    private JanusGraph graph;
 
     @Before
     public void setupGraph()
@@ -29,9 +29,9 @@ public class TinkerpopFeaturesTest
             graph.close();
     }
 
-    public TitanGraph open(boolean useVertexIdSetting)
+    public JanusGraph open(boolean useVertexIdSetting)
     {
-        TitanFactory.Builder builder = TitanFactory.build();
+        JanusFactory.Builder builder = JanusFactory.build();
         builder.set("storage.backend", "inmemory");
         builder.set("graph.set-vertex-id", useVertexIdSetting);
         return builder.open();

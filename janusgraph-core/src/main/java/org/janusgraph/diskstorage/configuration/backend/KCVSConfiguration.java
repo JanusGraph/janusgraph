@@ -5,7 +5,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.Configuration;
 
@@ -225,7 +225,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             txProvider.close();
             IOUtils.closeQuietly(serializer);
         } catch (BackendException e) {
-            throw new TitanException("Could not close configuration store",e);
+            throw new JanusException("Could not close configuration store",e);
         }
     }
 

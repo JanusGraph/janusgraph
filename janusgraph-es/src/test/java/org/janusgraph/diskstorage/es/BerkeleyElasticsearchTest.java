@@ -2,11 +2,11 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 import org.janusgraph.StorageSetup;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusIndexTest;
 import org.janusgraph.util.system.IOUtils;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BerkeleyElasticsearchTest extends TitanIndexTest {
+public class BerkeleyElasticsearchTest extends JanusIndexTest {
 
     public BerkeleyElasticsearchTest() {
         super(true, true, true);
@@ -61,8 +61,8 @@ public class BerkeleyElasticsearchTest extends TitanIndexTest {
         File bdbtmp = new File("target/gotgfactory");
         IOUtils.deleteDirectory(bdbtmp, true);
 
-        TitanGraph gotg = GraphOfTheGodsFactory.create(bdbtmp.getPath());
-        TitanIndexTest.assertGraphOfTheGods(gotg);
+        JanusGraph gotg = GraphOfTheGodsFactory.create(bdbtmp.getPath());
+        JanusIndexTest.assertGraphOfTheGods(gotg);
         gotg.close();
     }
 }

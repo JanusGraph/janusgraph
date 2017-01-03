@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusRelation;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
@@ -31,7 +31,7 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
     /**
      * The condition of this query in QNF
      */
-    protected final Condition<TitanRelation> condition;
+    protected final Condition<JanusRelation> condition;
     /**
      * The individual component {@link SliceQuery} of this query. This query is considered an OR
      * of the individual components (possibly filtered by the condition if not fitted).
@@ -46,7 +46,7 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
      */
     protected final Direction direction;
 
-    public BaseVertexCentricQuery(Condition<TitanRelation> condition, Direction direction,
+    public BaseVertexCentricQuery(Condition<JanusRelation> condition, Direction direction,
                                   List<BackendQueryHolder<SliceQuery>> queries, OrderList orders,
                                   int limit) {
         super(limit);
@@ -66,14 +66,14 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
      * Construct an empty query
      */
     protected BaseVertexCentricQuery() {
-        this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),OrderList.NO_ORDER,0);
+        this(new FixedCondition<JanusRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),OrderList.NO_ORDER,0);
     }
 
     public static BaseVertexCentricQuery emptyQuery() {
         return new BaseVertexCentricQuery();
     }
 
-    public Condition<TitanRelation> getCondition() {
+    public Condition<JanusRelation> getCondition() {
         return condition;
     }
 
@@ -110,7 +110,7 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
         return queries.get(position);
     }
 
-    public boolean matches(TitanRelation relation) {
+    public boolean matches(JanusRelation relation) {
         return condition.evaluate(relation);
     }
 

@@ -73,7 +73,7 @@ public class ExpectedValueCheckingStore extends KCVSProxy {
      * <p/>
      * Consider the following scenario. This method is called twice with
      * identical key, column, and txh arguments, but with different
-     * expectedValue arguments in each call. In testing, it seems titan's
+     * expectedValue arguments in each call. In testing, it seems janus's
      * graphdb requires that implementations discard the second expectedValue
      * and, when checking expectedValues vs actual values just prior to mutate,
      * only the initial expectedValue argument should be considered.

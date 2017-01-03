@@ -8,7 +8,7 @@ import java.util.Set;
 
 /**
  * Container interface for a set of changes against the graph caused by a particular transaction. This is passed as an argument to
- * {@link ChangeProcessor#process(org.janusgraph.core.TitanTransaction, TransactionId, ChangeState)}
+ * {@link ChangeProcessor#process(org.janusgraph.core.JanusTransaction, TransactionId, ChangeState)}
  * for the user to retrieve changed elements and act upon it.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -22,7 +22,7 @@ public interface ChangeState {
      * @param change
      * @return
      */
-    public Set<TitanVertex> getVertices(Change change);
+    public Set<JanusVertex> getVertices(Change change);
 
     /**
      * Returns all relations that match the change state and any of the provided relation types. If no relation types
@@ -32,7 +32,7 @@ public interface ChangeState {
      * @param types
      * @return
      */
-    public Iterable<TitanRelation> getRelations(Change change, RelationType... types);
+    public Iterable<JanusRelation> getRelations(Change change, RelationType... types);
 
     /**
      * Returns all edges incident on the given vertex in the given direction that match the provided change state and edge labels.
@@ -43,7 +43,7 @@ public interface ChangeState {
      * @param labels
      * @return
      */
-    public Iterable<TitanEdge> getEdges(Vertex vertex, Change change, Direction dir, String... labels);
+    public Iterable<JanusEdge> getEdges(Vertex vertex, Change change, Direction dir, String... labels);
 
 
     /**
@@ -54,7 +54,7 @@ public interface ChangeState {
      * @param keys
      * @return
      */
-    public Iterable<TitanVertexProperty> getProperties(Vertex vertex, Change change, String... keys);
+    public Iterable<JanusVertexProperty> getProperties(Vertex vertex, Change change, String... keys);
 
 
 

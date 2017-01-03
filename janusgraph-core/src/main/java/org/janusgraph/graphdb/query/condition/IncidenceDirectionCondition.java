@@ -1,9 +1,9 @@
 package org.janusgraph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.JanusVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -11,12 +11,12 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IncidenceDirectionCondition<E extends TitanRelation> extends Literal<E> {
+public class IncidenceDirectionCondition<E extends JanusRelation> extends Literal<E> {
 
     private final Direction direction;
-    private final TitanVertex otherVertex;
+    private final JanusVertex otherVertex;
 
-    public IncidenceDirectionCondition(Direction direction, TitanVertex otherVertex) {
+    public IncidenceDirectionCondition(Direction direction, JanusVertex otherVertex) {
         Preconditions.checkNotNull(direction);
         Preconditions.checkNotNull(otherVertex);
         this.direction = direction;
@@ -25,7 +25,7 @@ public class IncidenceDirectionCondition<E extends TitanRelation> extends Litera
 
     @Override
     public boolean evaluate(E relation) {
-        return relation.isEdge() && ((TitanEdge) relation).vertex(direction).equals(otherVertex);
+        return relation.isEdge() && ((JanusEdge) relation).vertex(direction).equals(otherVertex);
     }
 
     @Override

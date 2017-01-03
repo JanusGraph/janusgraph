@@ -3,7 +3,7 @@
 set -e
 set -u
 
-# Change to titan repository root
+# Change to janus repository root
 cd "`dirname $0`/../../"
 
 # Load config

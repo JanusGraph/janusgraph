@@ -24,7 +24,7 @@ import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.Test;
 
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusException;
 import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.janusgraph.graphdb.database.idassigner.StandardIDPool;
 import org.janusgraph.util.datastructures.IntHashSet;
@@ -120,7 +120,7 @@ public class IDPoolTest {
         try {
             pool.nextID();
             fail();
-        } catch (TitanException e) {
+        } catch (JanusException e) {
 
         }
 
@@ -193,7 +193,7 @@ public class IDPoolTest {
         try {
             pool.nextID();
             fail();
-        } catch (TitanException e) {
+        } catch (JanusException e) {
 
         }
 

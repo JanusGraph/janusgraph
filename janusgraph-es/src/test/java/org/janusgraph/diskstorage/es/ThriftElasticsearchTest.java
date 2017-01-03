@@ -5,7 +5,7 @@ import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusIndexTest;
 import org.junit.BeforeClass;
 
 import static org.janusgraph.CassandraStorageSetup.*;
@@ -14,7 +14,7 @@ import static org.janusgraph.diskstorage.es.ElasticSearchIndex.LOCAL_MODE;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
 
-public class ThriftElasticsearchTest extends TitanIndexTest {
+public class ThriftElasticsearchTest extends JanusIndexTest {
 
     public ThriftElasticsearchTest() {
         super(true, true, true);

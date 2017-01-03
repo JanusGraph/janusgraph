@@ -2,10 +2,10 @@ package org.janusgraph.graphdb.berkeleyje;
 
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphTest;
-import org.janusgraph.graphdb.TitanOperationCountingTest;
+import org.janusgraph.graphdb.JanusGraphTest;
+import org.janusgraph.graphdb.JanusOperationCountingTest;
 
-public class BerkeleyOperationCountingTest extends TitanOperationCountingTest {
+public class BerkeleyOperationCountingTest extends JanusOperationCountingTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {

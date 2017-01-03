@@ -3,9 +3,9 @@ package org.janusgraph.graphdb.query.vertex;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.core.VertexList;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.util.datastructures.IterablesUtil;
 
 import java.util.*;
@@ -18,34 +18,34 @@ import java.util.*;
  */
 public class VertexArrayList implements VertexListInternal {
 
-    public static final Comparator<TitanVertex> VERTEX_ID_COMPARATOR = new Comparator<TitanVertex>() {
+    public static final Comparator<JanusVertex> VERTEX_ID_COMPARATOR = new Comparator<JanusVertex>() {
         @Override
-        public int compare(TitanVertex o1, TitanVertex o2) {
+        public int compare(JanusVertex o1, JanusVertex o2) {
             return Long.compare(o1.longId(),o2.longId());
         }
     };
 
-    private final StandardTitanTx tx;
-    private List<TitanVertex> vertices;
+    private final StandardJanusTx tx;
+    private List<JanusVertex> vertices;
     private boolean sorted;
 
-    private VertexArrayList(StandardTitanTx tx, List<TitanVertex> vertices, boolean sorted) {
+    private VertexArrayList(StandardJanusTx tx, List<JanusVertex> vertices, boolean sorted) {
         Preconditions.checkArgument(tx!=null && vertices!=null);
         this.tx = tx;
         this.vertices=vertices;
         this.sorted=sorted;
     }
 
-    public VertexArrayList(StandardTitanTx tx) {
+    public VertexArrayList(StandardJanusTx tx) {
         Preconditions.checkNotNull(tx);
         this.tx=tx;
-        vertices = new ArrayList<TitanVertex>();
+        vertices = new ArrayList<JanusVertex>();
         sorted = true;
     }
 
 
     @Override
-    public void add(TitanVertex n) {
+    public void add(JanusVertex n) {
         if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size()-1).longId()<=n.longId());
         vertices.add(n);
     }
@@ -61,7 +61,7 @@ public class VertexArrayList implements VertexListInternal {
     }
 
     @Override
-    public TitanVertex get(int pos) {
+    public JanusVertex get(int pos) {
         return vertices.get(pos);
     }
 
@@ -107,7 +107,7 @@ public class VertexArrayList implements VertexListInternal {
     }
 
     @Override
-    public Iterator<TitanVertex> iterator() {
+    public Iterator<JanusVertex> iterator() {
         return Iterators.unmodifiableIterator(vertices.iterator());
     }
 
@@ -117,9 +117,9 @@ public class VertexArrayList implements VertexListInternal {
      * @param vertices
      * @return
      */
-    private static final LongArrayList toLongList(List<TitanVertex> vertices) {
+    private static final LongArrayList toLongList(List<JanusVertex> vertices) {
         LongArrayList result = new LongArrayList(vertices.size());
-        for (TitanVertex n : vertices) {
+        for (JanusVertex n : vertices) {
             result.add(n.longId());
         }
         return result;

@@ -2,8 +2,8 @@ package org.janusgraph.graphdb.hbase;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanOperationCountingTest;
-import org.janusgraph.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.graphdb.JanusOperationCountingTest;
+import org.janusgraph.graphdb.JanusPartitionGraphTest;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
@@ -14,7 +14,7 @@ import java.io.IOException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class HBasePartitionGraphTest extends TitanPartitionGraphTest {
+public class HBasePartitionGraphTest extends JanusPartitionGraphTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {

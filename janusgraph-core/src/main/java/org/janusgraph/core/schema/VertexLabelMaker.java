@@ -8,7 +8,7 @@ import org.janusgraph.core.VertexLabel;
  * A vertex label is defined by its name and additional properties such as:
  * <ul>
  *     <li>Partition: Whether the vertices of this label should be partitioned. A partitioned vertex is split across the partitions
- *     in a graph such that each partition contains on "sub-vertex". This allows Titan to effectively manage
+ *     in a graph such that each partition contains on "sub-vertex". This allows Janus to effectively manage
  *     vertices with very large degrees but is inefficient for vertices with small degree</li>
  * </ul>
  *

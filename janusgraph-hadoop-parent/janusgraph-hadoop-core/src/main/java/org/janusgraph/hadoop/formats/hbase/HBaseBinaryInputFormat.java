@@ -6,7 +6,7 @@ import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusHadoopConfiguration;
 import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
@@ -34,7 +34,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private TableRecordReader tableReader;
     private byte[] inputCFBytes;
-    private RecordReader<StaticBuffer, Iterable<Entry>> titanRecordReader;
+    private RecordReader<StaticBuffer, Iterable<Entry>> janusRecordReader;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -45,9 +45,9 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         tableReader =
                 (TableRecordReader) tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        titanRecordReader =
+        janusRecordReader =
                 new HBaseBinaryRecordReader(tableReader, inputCFBytes);
-        return titanRecordReader;
+        return janusRecordReader;
     }
 
     @Override
@@ -55,18 +55,18 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         super.setConf(config);
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, titanConf.get(HBaseStoreManager.HBASE_TABLE));
+        config.set(TableInputFormat.INPUT_TABLE, janusConf.get(HBaseStoreManager.HBASE_TABLE));
         //config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+        config.set(HConstants.ZOOKEEPER_QUORUM, janusConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
 //        if (basicConf.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-        if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(titanConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (janusConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(janusConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         config.set("autotype", "none");
         log.debug("hbase.security.authentication={}", config.get("hbase.security.authentication"));
         Scan scanner = new Scan();
-        String cfName = mrConf.get(TitanHadoopConfiguration.COLUMN_FAMILY_NAME);
+        String cfName = mrConf.get(JanusHadoopConfiguration.COLUMN_FAMILY_NAME);
         // TODO the space-saving short name mapping leaks from HBaseStoreManager here
-        if (titanConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
+        if (janusConf.get(HBaseStoreManager.SHORT_CF_NAMES)) {
             try {
                 cfName = HBaseStoreManager.shortenCfName(cfName);
             } catch (PermanentBackendException e) {
@@ -76,7 +76,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         scanner.addFamily(cfName.getBytes());
         inputCFBytes = Bytes.toBytes(cfName);
 
-        //scanner.setFilter(getColumnFilter(titanSetup.inputSlice(this.vertexQuery))); // TODO
+        //scanner.setFilter(getColumnFilter(janusSetup.inputSlice(this.vertexQuery))); // TODO
         //TODO (minor): should we set other options in http://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/Scan.html for optimization?
         Method converter;
         try {
@@ -100,7 +100,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private Filter getColumnFilter(SliceQuery query) {
         return null;
-        //TODO: return HBaseKeyColumnValueStore.getFilter(titanSetup.inputSlice(inputFilter));
+        //TODO: return HBaseKeyColumnValueStore.getFilter(janusSetup.inputSlice(inputFilter));
     }
 
     @Override

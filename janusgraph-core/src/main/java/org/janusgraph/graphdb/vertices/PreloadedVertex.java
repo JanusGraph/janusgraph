@@ -2,14 +2,14 @@ package org.janusgraph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusEdge;
+import org.janusgraph.core.JanusVertexProperty;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusTx;
 import org.janusgraph.graphdb.util.ElementHelper;
 import org.janusgraph.util.datastructures.Retriever;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -37,7 +37,7 @@ public class PreloadedVertex extends CacheVertex {
     private PropertyMixing mixin = NO_MIXIN;
     private AccessCheck accessCheck = DEFAULT_CHECK;
 
-    public PreloadedVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public PreloadedVertex(StandardJanusTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
         assert lifecycle == ElementLifeCycle.Loaded : "Invalid lifecycle encountered: " + lifecycle;
     }
@@ -94,14 +94,14 @@ public class PreloadedVertex extends CacheVertex {
     }
 
     @Override
-    public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
+    public <V> JanusVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
         accessCheck.accessSetProperty();
-        TitanVertexProperty<V> p = mixin.property(cardinality, key, value);
+        JanusVertexProperty<V> p = mixin.property(cardinality, key, value);
         ElementHelper.attachProperties(p, keyValues);
         return p;
     }
 
-    public <V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
+    public <V> JanusVertexProperty<V> property(final String key, final V value, final Object... keyValues) {
         return property(VertexProperty.Cardinality.single, key, value, keyValues);
     }
 
@@ -119,7 +119,7 @@ public class PreloadedVertex extends CacheVertex {
     }
 
     @Override
-    public TitanEdge addEdge(String s, Vertex vertex, Object... keyValues) {
+    public JanusEdge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw GraphComputer.Exceptions.adjacentVertexEdgesAndVerticesCanNotBeReadOrUpdated();
     }
 
@@ -236,7 +236,7 @@ public class PreloadedVertex extends CacheVertex {
 
         public boolean supports(String key);
 
-        public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
+        public <V> JanusVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value);
 
     }
 
@@ -252,7 +252,7 @@ public class PreloadedVertex extends CacheVertex {
         }
 
         @Override
-        public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
+        public <V> JanusVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value) {
             throw new UnsupportedOperationException("Provided key is not supported: " + key);
         }
     };

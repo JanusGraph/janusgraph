@@ -261,7 +261,7 @@ public class EdgeSerializer implements RelationReader {
         } else {
             assert relation.isProperty();
             Preconditions.checkArgument(relation.isProperty());
-            Object value = ((TitanVertexProperty) relation).value();
+            Object value = ((JanusVertexProperty) relation).value();
             Preconditions.checkNotNull(value);
             PropertyKey key = (PropertyKey) type;
             assert key.dataType().isInstance(value);

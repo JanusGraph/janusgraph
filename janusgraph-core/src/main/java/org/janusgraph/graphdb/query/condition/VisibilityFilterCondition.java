@@ -1,9 +1,9 @@
 package org.janusgraph.graphdb.query.condition;
 
-import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.schema.TitanSchemaElement;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusElement;
+import org.janusgraph.core.JanusRelation;
+import org.janusgraph.core.schema.JanusSchemaElement;
+import org.janusgraph.core.JanusVertex;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -13,7 +13,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class VisibilityFilterCondition<E extends TitanElement> extends Literal<E> {
+public class VisibilityFilterCondition<E extends JanusElement> extends Literal<E> {
 
     public enum Visibility { NORMAL, SYSTEM }
 
@@ -27,9 +27,9 @@ public class VisibilityFilterCondition<E extends TitanElement> extends Literal<E
     public boolean evaluate(E element) {
         switch(visibility) {
             case NORMAL: return !((InternalElement)element).isInvisible();
-            case SYSTEM: return (element instanceof TitanRelation &&
-                                    ((TitanRelation)element).getType() instanceof SystemRelationType)
-                    || (element instanceof TitanVertex && element instanceof TitanSchemaElement);
+            case SYSTEM: return (element instanceof JanusRelation &&
+                                    ((JanusRelation)element).getType() instanceof SystemRelationType)
+                    || (element instanceof JanusVertex && element instanceof JanusSchemaElement);
             default: throw new AssertionError("Unrecognized visibility: " + visibility);
         }
     }

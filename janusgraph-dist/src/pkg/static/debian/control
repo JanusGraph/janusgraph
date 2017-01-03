@@ -1,24 +1,24 @@
-Source: titan
+Source: janus
 Section: misc
 Priority: extra
 Maintainer: Dan LaRocque <dalaro@hopcount.org>
 Build-Depends: debhelper (>= 7), openjdk-7-jdk | java7-sdk, maven
-Homepage: http://titan.thinkaurelius.com
-Vcs-Git: https://github.com/thinkaurelius/titan.git
-Vcs-Browser: https://github.com/thinkaurelius/titan
+Homepage: http://janus.thinkaurelius.com
+Vcs-Git: https://github.org/janusgraph.git
+Vcs-Browser: https://github.org/janusgraph
 Standards-Version: 3.9.4
 
-Package: titan
+Package: janus
 Architecture: all
 Depends: openjdk-7-jre-headless | openjdk-7-jre | java7-runtime, adduser, ${misc:Depends}
 Recommends: ntp
-Description: Titan is a scalable, distributed, concurrent graph database 
- Titan is a scalable graph database optimized for storing
+Description: Janus is a scalable, distributed, concurrent graph database 
+ Janus is a scalable graph database optimized for storing
  and querying graphs containing hundreds of billions of
  vertices and edges distributed across a multi-machine
- cluster.  Titan is open-source and liberally licensed.
+ cluster.  Janus is open-source and liberally licensed.
  .
- Titan supports:
+ Janus supports:
  * Cassandra
  * HBase
  * BerkeleyDB

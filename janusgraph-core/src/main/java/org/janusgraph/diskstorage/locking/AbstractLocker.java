@@ -329,7 +329,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
 
         // We never receive interrupts in normal operation; one can only appear
         // during Thread.sleep(), and in that case it probably means the entire
-        // Titan process is shutting down; for this reason, we return ASAP on an
+        // Janus process is shutting down; for this reason, we return ASAP on an
         // interrupt
         boolean ok = false;
         try {

@@ -25,7 +25,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Create an ES {@link org.elasticsearch.client.transport.TransportClient} or
- * {@link org.elasticsearch.node.Node} from a Titan
+ * {@link org.elasticsearch.node.Node} from a Janus
  * {@link org.janusgraph.diskstorage.configuration.Configuration}.
  * <p>
  * TransportClient assumes that an ES cluster is already running.  It does not attempt
@@ -33,7 +33,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
  * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_HOSTS}.
  * <p>
  * Node can be configured to either behave strictly as a client or as both a client
- * and ES data node.  The latter is essentially a fully-fledged ES cluster node embedded in Titan.
+ * and ES data node.  The latter is essentially a fully-fledged ES cluster node embedded in Janus.
  * Node can also be configured to use either network or JVM local transport.
  * In practice, JVM local transport is usually only useful for testing.  Most deployments
  * will use the network transport.
@@ -41,19 +41,19 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
  * Setting arbitrary ES options is supported with both TransportClient and Node
  * via {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#INDEX_CONF_FILE}.
  * When this is set, it will be opened as an ordinary file and the contents will be
- * parsed as Elasticsearch settings.  These settings override Titan's defaults but
- * options explicitly provided in Titan's config file (e.g. setting an explicit value for
+ * parsed as Elasticsearch settings.  These settings override Janus's defaults but
+ * options explicitly provided in Janus's config file (e.g. setting an explicit value for
  * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#CLIENT_ONLY} in
- * Titan's properties will override any value that might be in the ES settings file).
+ * Janus's properties will override any value that might be in the ES settings file).
  * <p>
  * After loading the index conf file (when provided), any key-value pairs under the
  * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex#ES_EXTRAS_NS} namespace
  * are copied into the Elasticsearch settings builder.  This allows overridding arbitrary
- * ES settings from within the Titan properties file.  Settings in the ext namespace take
+ * ES settings from within the Janus properties file.  Settings in the ext namespace take
  * precedence over those in the index conf file.
  * <p>
  * After loading the index conf file and any key-value pairs under the ext namespace,
- * Titan checks for ConfigOptions defined in
+ * Janus checks for ConfigOptions defined in
  * {@link org.janusgraph.diskstorage.es.ElasticSearchIndex}
  * that correspond directly to ES settings and copies them into the ES settings builder.
  */
@@ -111,7 +111,7 @@ public enum ElasticSearchSetup {
 
             NodeBuilder nodeBuilder = NodeBuilder.nodeBuilder().settings(settingsBuilder.build());
 
-            // Apply explicit Titan properties file overrides (otherwise conf-file or ES defaults apply)
+            // Apply explicit Janus properties file overrides (otherwise conf-file or ES defaults apply)
             if (config.has(ElasticSearchIndex.CLIENT_ONLY)) {
                 boolean clientOnly = config.get(ElasticSearchIndex.CLIENT_ONLY);
                 nodeBuilder.client(clientOnly).data(!clientOnly);
@@ -130,7 +130,7 @@ public enum ElasticSearchSetup {
     };
 
     /**
-     * Build and setup a new ES settings builder by consulting all Titan config options
+     * Build and setup a new ES settings builder by consulting all Janus config options
      * relevant to TransportClient or Node.  Options may be specific to a single client,
      * but in this case they have no effect/are ignored on the other client.
      * <p>
@@ -150,7 +150,7 @@ public enum ElasticSearchSetup {
      *
      * This method then returns the builder.
      *
-     * @param config a Titan configuration possibly containing Elasticsearch index settings
+     * @param config a Janus configuration possibly containing Elasticsearch index settings
      * @return ES settings builder configured according to the {@code config} parameter
      * @throws java.io.IOException if conf-file was set but could not be read
      */
@@ -158,16 +158,16 @@ public enum ElasticSearchSetup {
 
         ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 
-        // Set Titan defaults
+        // Set Janus defaults
         settings.put("client.transport.ignore_cluster_name", true);
 
         // Apply overrides from ES conf file
         applySettingsFromFile(settings, config, INDEX_CONF_FILE);
 
-        // Apply ext.* overrides from Titan conf file
-        applySettingsFromTitanConf(settings, config, ElasticSearchIndex.ES_EXTRAS_NS);
+        // Apply ext.* overrides from Janus conf file
+        applySettingsFromJanusConf(settings, config, ElasticSearchIndex.ES_EXTRAS_NS);
 
-        // Apply individual Titan ConfigOptions that map to ES settings
+        // Apply individual Janus ConfigOptions that map to ES settings
 
         if (config.has(ElasticSearchIndex.CLUSTER_NAME)) {
             String clustername = config.get(ElasticSearchIndex.CLUSTER_NAME);
@@ -188,7 +188,7 @@ public enum ElasticSearchSetup {
         String disableScriptsKey = "script.disable_dynamic";
         String disableScriptsVal = settings.get(disableScriptsKey);
         if (null != disableScriptsVal && !"false".equals(disableScriptsVal)) {
-            log.warn("Titan requires Elasticsearch dynamic scripting.  Setting {} to false.  " +
+            log.warn("Janus requires Elasticsearch dynamic scripting.  Setting {} to false.  " +
                     "Dynamic scripting must be allowed in the Elasticsearch cluster configuration.",
                     disableScriptsKey);
         }
@@ -216,7 +216,7 @@ public enum ElasticSearchSetup {
         }
     }
 
-    static void applySettingsFromTitanConf(ImmutableSettings.Builder settings,
+    static void applySettingsFromJanusConf(ImmutableSettings.Builder settings,
                                                    Configuration config,
                                                    ConfigNamespace rootNS) {
         int keysLoaded = 0;
@@ -244,7 +244,7 @@ public enum ElasticSearchSetup {
             log.debug("[ES ext.* cfg] Set {}: {}", key, val);
             keysLoaded++;
         }
-        log.debug("Loaded {} settings from the {} Titan config namespace", keysLoaded, rootNS);
+        log.debug("Loaded {} settings from the {} Janus config namespace", keysLoaded, rootNS);
     }
 
 

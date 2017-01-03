@@ -2,8 +2,8 @@ package org.janusgraph.diskstorage.es;
 
 import com.google.common.base.Joiner;
 
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusFactory;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
@@ -39,7 +39,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IN
 import static org.junit.Assert.*;
 
 /**
- * Test behavior Titan ConfigOptions governing ES client setup.
+ * Test behavior Janus ConfigOptions governing ES client setup.
  *
  * {@link ElasticSearchIndexTest#testConfiguration()} exercises legacy
  * config options using an embedded JVM-local-transport ES instance.  By contrast,
@@ -58,10 +58,10 @@ public class ElasticSearchConfigTest {
     }
 
     @Test
-    public void testTitanFactoryBuilder()
+    public void testJanusFactoryBuilder()
     {
-        String baseDir = Joiner.on(File.separator).join("target", "es", "titanfactory_jvmlocal_ext");
-        TitanFactory.Builder builder = TitanFactory.build();
+        String baseDir = Joiner.on(File.separator).join("target", "es", "janusfactory_jvmlocal_ext");
+        JanusFactory.Builder builder = JanusFactory.build();
         builder.set("storage.backend", "inmemory");
         builder.set("index." + INDEX_NAME + ".elasticsearch.interface", "NODE");
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.node.data", "true");
@@ -70,7 +70,7 @@ public class ElasticSearchConfigTest {
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.data", baseDir + File.separator + "data");
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.work", baseDir + File.separator + "work");
         builder.set("index." + INDEX_NAME + ".elasticsearch.ext.path.logs", baseDir + File.separator + "logs");
-        TitanGraph graph = builder.open(); // Must not throw an exception
+        JanusGraph graph = builder.open(); // Must not throw an exception
         assertTrue(graph.isOpen());
         graph.close();
     }
@@ -267,8 +267,8 @@ public class ElasticSearchConfigTest {
         nodeBuilder.client(true).data(false).local(false);
         Node n = nodeBuilder.build().start();
 
-        GetSettingsResponse response = n.client().admin().indices().getSettings(new GetSettingsRequest().indices("titan")).actionGet();
-        assertEquals(String.valueOf(shards), response.getSetting("titan", "index.number_of_shards"));
+        GetSettingsResponse response = n.client().admin().indices().getSettings(new GetSettingsRequest().indices("janus")).actionGet();
+        assertEquals(String.valueOf(shards), response.getSetting("janus", "index.number_of_shards"));
 
         idx.close();
         n.stop();

@@ -12,7 +12,7 @@
     </xsl:template>
 
     <!-- Rewrite artifactIds -->
-    <xsl:template match="artifactId[starts-with(text(), 'titan' ) and not(contains(text(), '-jre6')) and not(text() = 'titan-site')]">
+    <xsl:template match="artifactId[starts-with(text(), 'janus' ) and not(contains(text(), '-jre6')) and not(text() = 'janus-site')]">
         <artifactId xmlns="http://maven.apache.org/POM/4.0.0"><xsl:value-of select="./text()" />-jre6</artifactId>
     </xsl:template>
 
@@ -21,12 +21,12 @@
         <compiler.target>1.6</compiler.target>
     </xsl:template>
 
-    <!-- Rewrite assembly archive names (used in titan-dist) -->
+    <!-- Rewrite assembly archive names (used in janus-dist) -->
     <xsl:template match="/project/properties/distribution.assembly.name[not(contains(text(), '-jre6'))]">
         <distribution.assembly.name><xsl:value-of select="./text()" />-jre6</distribution.assembly.name>
     </xsl:template>
 
-    <!-- Rewrite failsafe dependency scan configuration (used in titan-dist) -->
+    <!-- Rewrite failsafe dependency scan configuration (used in janus-dist) -->
     <xsl:template match="dependenciesToScan/dependency[contains(text(), 'org.janusgraph') and not(contains(text(), '-jre6'))]">
         <dependency><xsl:value-of select="./text()" />-jre6</dependency>
     </xsl:template>
