@@ -7,7 +7,7 @@ http://tinkerpop.incubator.apache.org/[Tinkerpop] provides a set of common http:
 Using ElementIdStrategy
 ~~~~~~~~~~~~~
 
-It is possible to use http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_elementidstrategy[ElementIdStrategy] with Titan. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of Titans's long identifiers.
+It is possible to use http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_elementidstrategy[ElementIdStrategy] with Titan. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of Titan's long identifiers.
 
 [IMPORTANT]
 The target property key must be created and covered by a unique index in Titan prior to using `ElementIdStrategy` with Titan, otherwise Vertex lookups will result in sequential scans of the graph.
