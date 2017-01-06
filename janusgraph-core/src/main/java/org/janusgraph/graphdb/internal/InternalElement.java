@@ -1,7 +1,6 @@
 package org.janusgraph.graphdb.internal;
 
 import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanGraphTransaction;
 import org.janusgraph.core.TitanTransaction;
 import org.janusgraph.graphdb.transaction.StandardTitanTx;
 
