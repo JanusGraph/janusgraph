@@ -30,7 +30,7 @@ public class TitanFeatures implements Graph.Features {
     private final StandardTitanGraph graph;
 
     private TitanFeatures(StandardTitanGraph graph, StoreFeatures storageFeatures) {
-        graphFeatures = new TitanGraphFeatures(storageFeatures.supportsPersistence());
+        graphFeatures = new TitanGraphGeneralFeatures(storageFeatures.supportsPersistence());
         vertexFeatures = new TitanVertexFeatures();
         edgeFeatures = new TitanEdgeFeatures();
         this.graph = graph;
@@ -85,11 +85,11 @@ public class TitanFeatures implements Graph.Features {
 
     private static class TitanVariableFeatures extends TitanDataTypeFeatures implements VariableFeatures { }
 
-    private static class TitanGraphFeatures extends TitanDataTypeFeatures implements GraphFeatures {
+    private static class TitanGraphGeneralFeatures extends TitanDataTypeFeatures implements GraphFeatures {
 
         private final boolean persists;
 
-        private TitanGraphFeatures(boolean persists) {
+        private TitanGraphGeneralFeatures(boolean persists) {
             this.persists = persists;
         }
 
