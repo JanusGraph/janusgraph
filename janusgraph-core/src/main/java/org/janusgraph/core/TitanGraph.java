@@ -1,8 +1,10 @@
 package org.janusgraph.core;
 
 import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.graphdb.configuration.TitanConstants;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.util.Gremlin;
 
 /**
  * Titan graph database implementation of the Blueprint's interface.
@@ -104,8 +106,16 @@ public interface TitanGraph extends TitanGraphTransaction {
     @Override
     public void close() throws TitanException;
 
+    /**
+     * The version of this Titan graph database
+     *
+     * @return
+     */
+    public static String version() {
+        return TitanConstants.VERSION;
+    }
 
-
-
-
+    public static void main(String[] args) {
+        System.out.println("Titan " + Titan.version() + ", Apache TinkerPop " + Gremlin.version());
+    }
 }
