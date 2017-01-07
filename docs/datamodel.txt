@@ -26,7 +26,7 @@ Titan Data Layout
 ~~~~~~~~~~~~~~~~~
 
 [.tss-center]
-image:titanstoragelayout.png[]
+image:storagelayout.png[]
 
 Titan stores each adjacency list as a row in the underlying storage backend. The (64 bit) vertex id (which Titan uniquely assigns to every vertex) is the key which points to the row containing the vertex's adjacency list. Each edge and property is stored as an individual cell in the row which allows for efficient insertions and deletions.
 The maximum number of cells allowed per row in a particular storage backend is therefore also the maximum degree of a vertex that Titan can support against this backend.

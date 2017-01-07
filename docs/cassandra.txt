@@ -23,7 +23,7 @@ Do so by running `./bin/nodetool enablethrift`.
 Local Server Mode
 ~~~~~~~~~~~~~~~~~
 
-image:titan-modes-local.png[]
+image:modes-local.png[]
 
 Cassandra can be run as a standalone database on the same local host as Titan and the end-user application. In this model, Titan and Cassandra communicate with one another via a `localhost` socket. Running Titan over Cassandra requires the following setup steps:
 
@@ -43,7 +43,7 @@ In the Gremlin shell, you can not define the type of the variables `conf` and `g
 Remote Server Mode
 ~~~~~~~~~~~~~~~~~~
 
-image:titan-modes-distributed.png[]
+image:modes-distributed.png[]
 
 When the graph needs to scale beyond the confines of a single machine, then Cassandra and Titan are logically separated into different machines. In this model, the Cassandra cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the Cassandra cluster. The end-user application can directly interact with Titan within the same JVM as Titan.
 
@@ -86,7 +86,7 @@ For more information about gremlin server see the latest http://tinkerpop.incuba
 Titan Embedded Mode
 ~~~~~~~~~~~~~~~~~~~
 
-image:titan-modes-embedded.png[]
+image:modes-embedded.png[]
 
 Finally, Cassandra can be embedded in Titan, which means, that Titan and Cassandra run in the same JVM and communicate via in process calls rather than over the network. This removes the (de)serialization and network protocol overhead and can therefore lead to considerable performance improvements. In this deployment mode, Titan internally starts a cassandra daemon and Titan no longer connects to an existing cluster but is its own cluster.
 

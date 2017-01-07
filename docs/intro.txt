@@ -105,7 +105,7 @@ Broadly speaking, applications can interact with Titan in two ways:
 * Interact with a local or remote Titan instance by submitting Gremlin queries to the server. Titan natively supports the Gremlin Server component of the http://tinkerpop.incubator.apache.org/[Tinkerpop] stack.
 
 .High-level Titan Architecture and Context
-image::titan-architecture-layer-diagram.svg[]
+image::architecture-layer-diagram.svg[]
 
 [[getting-started]]
 Getting Started
