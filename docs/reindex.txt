@@ -395,6 +395,6 @@ Each mapper opens and quickly closes several sockets to Cassandra.  The kernel o
 
 Here are a few suggestions for dealing with the "Too many open files" problem during reindexing on a single machine:
 
-* Reduce the maximum size of the Cassandra connection pool.  For example, consider setting the cassandrathrift storage backend's `max-active` and `max-idle` options to 1 each, and setting `max-total` to -1.  See <<titan-config-ref>> for full listings of connection pool settings on the Cassandra storage backends.
+* Reduce the maximum size of the Cassandra connection pool.  For example, consider setting the cassandrathrift storage backend's `max-active` and `max-idle` options to 1 each, and setting `max-total` to -1.  See <<janusgraph-config-ref>> for full listings of connection pool settings on the Cassandra storage backends.
 * Increase the `nofile` ulimit.  The ideal value depends on the size of the Cassandra dataset and the throughput of the reindex mappers; if starting at 1024, try an order of magnitude larger: 10000.  This is just necessary to sustain lingering TIME_WAIT sockets.  The reindex job won't try to open nearly that many sockets at once.
 * Run the reindex task on a multi-node MapReduce cluster to spread out the socket load.
