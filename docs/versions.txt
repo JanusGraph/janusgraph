@@ -3,9 +3,6 @@
 Version Compatibility
 ---------------------
 
-[.tss-floatright.tss-width-250]
-image:titan-logo.png[]
-
 The Titan project is growing along with the rest of the Aurelius Graph Cluster technology and utilized storage and indexing backends. Below are version compatibilities between the various versions of components. For dependent backend systems, different minor versions are typically supported as well. It is strongly encouraged to verify version compatibility prior to deploying Titan.
 
 [NOTE]

@@ -2,9 +2,6 @@
 Cassandra
 ---------
 
-[.tss-center.tss-width-250]
-image:http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/", width=250]
-
 [quote, 'http://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
 scalability and high availability without compromising
@@ -62,8 +59,6 @@ In the Gremlin shell, you can not define the type of the variables `conf` and `g
 
 Remote Server Mode with Gremlin Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-image:http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/images/gremlin-server.png[]
 
 Gremlin Server can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin Server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 

@@ -476,8 +476,6 @@ The Gremlin overview presented in this section focused on the Gremlin-Groovy lan
 Titan Server
 ------------
 
-image:http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/images/gremlin-server.png[width=400]
-
 Titan uses the http://tinkerpop.incubator.apache.org/docs/{tinkerpop_version}/#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in Titan, Gremlin Server is called Titan Server.
 
 Titan Server must be started manually in order to use it.  Titan Server provides a way to remotely execute Gremlin scripts against one or more Titan instances hosted within it. This section will describe how to use the WebSockets configuration, as well as describe how to configure Titan Server to handle REST-style interactions.
@@ -1536,8 +1534,6 @@ When numerous clients are connecting to ElasticSearch, it is likely that an `Out
 [[limitations]]
 Technical Limitations
 ---------------------
-
-image:titan-head.png[]
 
 There are various limitations and "gotchas" that one should be aware
 of when using Titan. Some of these limitations are necessary design
