@@ -1597,7 +1597,7 @@
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${xsl.output.dir}/titansingle.xsl</stylesheet>
+                                            <stylesheet>${xsl.output.dir}/single.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>
@@ -1622,7 +1622,7 @@
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${xsl.output.dir}/titanchunk.xsl</stylesheet>
+                                            <stylesheet>${xsl.output.dir}/chunk.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>

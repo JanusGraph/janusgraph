@@ -47,10 +47,10 @@
   <!-- Misc style -->
   <xsl:param name="phrase.propagates.style" select="1"/>
 
-  <xsl:param name="titan.top.nav.links" select="0" />
+  <xsl:param name="janusgraph.top.nav.links" select="0" />
 
-  <!-- Titan-themed output templates -->
-  <xsl:template name="titan.head">
+  <!-- JanusGraph-themed output templates -->
+  <xsl:template name="janusgraph.head">
     <script type='text/javascript' src='js/jquery/jquery-1.11.0.js'></script>
     <script type='text/javascript' src='js/jquery/jquery-migrate-1.2.1.min.js'></script>
 
@@ -66,7 +66,7 @@
     <link rel='stylesheet' id='media-css-css'  href='avada-stub/css/media.css' type='text/css' media='all' />
     <link rel='stylesheet' id='animate-css-css'  href='avada-stub/css/animate-custom.css' type='text/css' media='all' />
     <link rel='stylesheet' id='inline-blob-from-avada-prototype' href='avada-stub/css/inlineblob.css' type='text/css' media='all' />
-    <link rel='stylesheet' id='inline-blob-from-avada-prototype-titan-docs-specific' href='css/titandocs.css' type='text/css' media='all' />
+    <link rel='stylesheet' id='inline-blob-from-avada-prototype-janusgraph-docs-specific' href='css/docs.css' type='text/css' media='all' />
 
     <script type="text/javascript">
       WebFontConfig = {
@@ -94,7 +94,7 @@
     </script>
   </xsl:template>
 
-  <xsl:template name="titan.header.navigation">
+  <xsl:template name="janusgraph.header.navigation">
     <xsl:param name="prev" select="/d:foo"/>
     <xsl:param name="next" select="/d:foo"/>
     <xsl:param name="nav.context"/>
@@ -103,15 +103,15 @@
         <header id="header">
           <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
             <div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
-              <a href="http://titandb.io">
-                <img src="avada-stub/images/titandb-logo.png" alt="Titan" class="normal_logo" />
+              <a href="http://janusgraph.org">
+                <img src="avada-stub/images/titandb-logo.png" alt="JanusGraph" class="normal_logo" />
               </a>
             </div>
             <nav id="nav" class="nav-holder">
               <ul class="navigation menu fusion-navbar-nav">
-                <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">Documentation ($MAVEN{project.version})</a></li>
-                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Other Versions</a></li>
-                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download Titan</a></li>
+                <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a href="index.html">Documentation ($MAVEN{project.version})</a></li>
+                <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a href="https://github.com/JanusGraph/janusgraph/releases">Other Versions</a></li>
+                <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a href="https://github.com/JanusGraph/janusgraph/releases">Download JanusGraph</a></li>
               </ul>
             </nav>
             <div class="mobile-nav-holder main-menu"></div>
@@ -124,15 +124,15 @@
       <div class="sticky-shadow">
         <div class="avada-row">
           <div class="logo">
-            <a href="http://titandb.io">
-              <img src="avada-stub/images/titandb-logo.png" alt="Titan" data-max-width="" class="normal_logo" />
+            <a href="http://janusgraph.org">
+              <img src="avada-stub/images/titandb-logo.png" alt="JanusGraph" data-max-width="" class="normal_logo" />
             </a>
           </div>
           <nav id="sticky-nav" class="nav-holder">
             <ul class="navigation menu fusion-navbar-nav">
-              <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a    href="index.html">Documentation ($MAVEN{project.version})</a></li>
-              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Other Versions</a></li>
-              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a    href="https://github.com/thinkaurelius/titan/wiki/Downloads">Download Titan</a></li>
+              <li id="menu-item-4711" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4711"><a href="index.html">Documentation ($MAVEN{project.version})</a></li>
+              <li id="menu-item-4712" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4712"><a href="https://github.com/JanusGraph/janusgraph/releases">Other Versions</a></li>
+              <li id="menu-item-4710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-4710"><a href="https://github.com/JanusGraph/janusgraph/releases">Download JanusGraph</a></li>
             </ul>
           </nav>
           <div class="mobile-nav-holder"></div>
@@ -141,7 +141,7 @@
     </header>
   </xsl:template>
 
-  <xsl:template name="titan.body">
+  <xsl:template name="janusgraph.body">
     <xsl:param name="prev"/>
     <xsl:param name="next"/>
     <xsl:param name="maincontent"/>
@@ -165,10 +165,12 @@
 	  <div class="avada-row">
 	    <ul class="copyright">
 	      <li>
-                Copyright 2015 All Rights Reserved - Titan is a trademark of <a href="http://datastax.com/">DataStax</a>.<br />
-	        Cassandra, HBase, and Hadoop are trademarks of the Apache Software Foundation.<br />
-                Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.<br />
-                Documentation generated with <a href="http://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="http://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.
+              Copyright © 2017 JanusGraph Authors. All rights reserved.<br />
+              The Linux Foundation has registered trademarks and uses trademarks. For a list of<br />
+              trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a> page.<br />
+              Cassandra, HBase, and Hadoop are trademarks of the Apache Software Foundation.<br />
+              Berkeley DB and Berkeley DB Java Edition are trademarks of Oracle.<br />
+              Documentation generated with <a href="http://www.methods.co.nz/asciidoc/">AsciiDoc</a>, <a href="http://asciidoctor.org/">AsciiDoctor</a>, <a href="http://docbook.sourceforge.net/">DocBook</a>, and <a href="http://saxon.sourceforge.net/">Saxon</a>.
               </li>
 	    </ul>
 	  </div>
