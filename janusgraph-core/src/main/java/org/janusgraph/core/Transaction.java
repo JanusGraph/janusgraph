@@ -7,8 +7,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * TitanGraphTransaction defines a transactional context for a {@link org.janusgraph.core.TitanGraph}. Since TitanGraph is a transactional graph
- * database, all interactions with the graph are mitigated by a TitanGraphTransaction.
+ * Transaction defines a transactional context for a {@link org.janusgraph.core.TitanGraph}. Since TitanGraph is a transactional graph
+ * database, all interactions with the graph are mitigated by a Transaction.
  * <p/>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
  * deletions into one transaction. A graph transaction is analogous to a
@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanGraphTransaction extends Graph, SchemaManager {
+public interface Transaction extends Graph, SchemaManager {
 
    /* ---------------------------------------------------------------
     * Modifications

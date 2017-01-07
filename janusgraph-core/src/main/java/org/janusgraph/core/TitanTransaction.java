@@ -27,7 +27,7 @@ import java.util.Iterator;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanTransaction extends TitanGraphTransaction {
+public interface TitanTransaction extends Transaction {
 
    /* ---------------------------------------------------------------
     * Modifications

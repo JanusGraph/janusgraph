@@ -38,7 +38,7 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldProcessResultGraphNewWithPersistVertexProperties",
         reason = "The result graph should return an empty iterator when vertex.edges() or vertex.vertices() is called.")
-public interface TitanGraph extends TitanGraphTransaction {
+public interface TitanGraph extends Transaction {
 
    /* ---------------------------------------------------------------
     * Transactions and general admin

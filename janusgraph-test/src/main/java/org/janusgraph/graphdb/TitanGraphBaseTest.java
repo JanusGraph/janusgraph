@@ -383,16 +383,16 @@ public abstract class TitanGraphBaseTest {
 //        return result;
 //    }
 
-    public static void assertMissing(TitanGraphTransaction g, Object vid) {
+    public static void assertMissing(Transaction g, Object vid) {
         assertFalse(g.vertices(vid).hasNext());
     }
 
-    public static TitanVertex getV(TitanGraphTransaction g, Object vid) {
+    public static TitanVertex getV(Transaction g, Object vid) {
         if (!g.vertices(vid).hasNext()) return null;
         return (TitanVertex)g.vertices(vid).next();
     }
 
-    public static TitanEdge getE(TitanGraphTransaction g, Object eid) {
+    public static TitanEdge getE(Transaction g, Object eid) {
         if (!g.edges(eid).hasNext()) return null;
         return (TitanEdge)g.edges(eid).next();
     }
