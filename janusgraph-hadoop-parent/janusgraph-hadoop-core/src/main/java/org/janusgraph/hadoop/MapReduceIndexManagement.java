@@ -7,7 +7,7 @@ import org.janusgraph.core.TitanGraph;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanIndex;
+import org.janusgraph.core.schema.Index;
 import org.janusgraph.core.schema.TitanManagement;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
@@ -80,7 +80,7 @@ public class MapReduceIndexManagement {
      *         this method blocks until the Hadoop MapReduce job completes
      */
     // TODO make this future actually async and update javadoc @return accordingly
-    public TitanManagement.IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction)
+    public TitanManagement.IndexJobFuture updateIndex(Index index, SchemaAction updateAction)
             throws BackendException {
 
         Preconditions.checkNotNull(index, "Index parameter must not be null", index);

@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.RelationType;
 import org.janusgraph.core.TitanException;
 import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.schema.TitanIndex;
+import org.janusgraph.core.schema.Index;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -52,7 +52,7 @@ public abstract class IndexUpdateJob {
     protected StandardTitanGraph graph;
     protected ManagementSystem mgmt = null;
     protected StandardTitanTx writeTx;
-    protected TitanIndex index;
+    protected Index index;
     protected RelationType indexRelationType;
     protected Instant jobStartTime;
 

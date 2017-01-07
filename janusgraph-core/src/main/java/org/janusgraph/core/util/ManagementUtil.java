@@ -6,7 +6,7 @@ import org.janusgraph.core.TitanException;
 import org.janusgraph.core.TitanGraph;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanIndex;
+import org.janusgraph.core.schema.Index;
 import org.janusgraph.core.schema.TitanManagement;
 
 
@@ -31,7 +31,7 @@ public class ManagementUtil {
      * final state within that time. The method simply returns when the index has reached the final state
      * prior to the time period expiring.
      *
-     * This is a utility method to be invoked between two {@link org.janusgraph.core.schema.TitanManagement#updateIndex(TitanIndex, org.janusgraph.core.schema.SchemaAction)} calls
+     * This is a utility method to be invoked between two {@link org.janusgraph.core.schema.TitanManagement#updateIndex(Index, org.janusgraph.core.schema.SchemaAction)} calls
      * to ensure that the previous update has successfully persisted.
      *
      * @param g

@@ -27,7 +27,7 @@ import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.core.schema.TitanConfiguration;
 import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanIndex;
+import org.janusgraph.core.schema.Index;
 import org.janusgraph.core.schema.TitanManagement;
 import org.janusgraph.core.schema.TitanSchemaElement;
 import org.janusgraph.core.schema.TitanSchemaType;
@@ -652,7 +652,7 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     @Override
-    public IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction) {
+    public IndexJobFuture updateIndex(Index index, SchemaAction updateAction) {
         Preconditions.checkArgument(index != null, "Need to provide an index");
         Preconditions.checkArgument(updateAction != null, "Need to provide update action");
 
@@ -904,7 +904,7 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public IndexJobFuture getIndexJobStatus(TitanIndex index) {
+    public IndexJobFuture getIndexJobStatus(Index index) {
         IndexIdentifier indexId = new IndexIdentifier(index);
         return graph.getBackend().getScanJobStatus(indexId);
     }
@@ -938,7 +938,7 @@ public class ManagementSystem implements TitanManagement {
         private final String relationTypeName;
         private final int hashcode;
 
-        private IndexIdentifier(TitanIndex index) {
+        private IndexIdentifier(Index index) {
             Preconditions.checkArgument(index != null);
             indexName = index.name();
             if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex) index).getType().name();
@@ -947,7 +947,7 @@ public class ManagementSystem implements TitanManagement {
             hashcode = new HashCodeBuilder().append(indexName).append(relationTypeName).toHashCode();
         }
 
-        private TitanIndex retrieve(ManagementSystem mgmt) {
+        private Index retrieve(ManagementSystem mgmt) {
             if (relationTypeName == null) return mgmt.getGraphIndex(indexName);
             else return mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), indexName);
         }
@@ -985,7 +985,7 @@ public class ManagementSystem implements TitanManagement {
                         if (action != null) {
                             ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
                             try {
-                                TitanIndex index = retrieve(mgmt);
+                                Index index = retrieve(mgmt);
                                 mgmt.updateIndex(index, action);
                             } finally {
                                 mgmt.commit();

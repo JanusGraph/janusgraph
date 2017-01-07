@@ -309,17 +309,17 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param updateAction
      * @return a future that completes when the index action is done
      */
-    public IndexJobFuture updateIndex(TitanIndex index, SchemaAction updateAction);
+    public IndexJobFuture updateIndex(Index index, SchemaAction updateAction);
 
     /**
-     * If an index update job was triggered through {@link #updateIndex(TitanIndex, SchemaAction)} with schema actions
+     * If an index update job was triggered through {@link #updateIndex(Index, SchemaAction)} with schema actions
      * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link org.janusgraph.core.schema.SchemaAction#REMOVE_INDEX}
      * then this method can be used to track the status of this asynchronous process.
      *
      * @param index
      * @return A message that reflects the status of the index job
      */
-    public IndexJobFuture getIndexJobStatus(TitanIndex index);
+    public IndexJobFuture getIndexJobStatus(Index index);
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################

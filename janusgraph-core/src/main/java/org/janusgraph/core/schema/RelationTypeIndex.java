@@ -17,7 +17,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface RelationTypeIndex extends TitanIndex {
+public interface RelationTypeIndex extends Index {
 
     /**
      * Returns the {@link RelationType} on which this index is installed.

@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanGraphIndex extends TitanIndex {
+public interface TitanGraphIndex extends Index {
 
     /**
      * Returns the name of the index
