@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.TitanConfigurationException;
+import org.janusgraph.core.JanusGraphConfigurationException;
 
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 
@@ -34,7 +34,7 @@ import java.util.List;
  * <h2>Protocol and internals</h2>
  * <p/>
  * Locking is done in two stages: first between threads inside a shared process,
- * and then between processes in a Titan cluster.
+ * and then between processes in a JanusGraph cluster.
  * <p/>
  * <h3>Inter-thread lock contention</h3>
  * <p/>
@@ -71,7 +71,7 @@ import java.util.List;
  * <dt>column</dt>
  * <dd>the approximate current timestamp in nanoseconds followed by this
  * process's {@code rid} (an opaque identifier which uniquely identifie
- * this process either globally or at least within the Titan cluster)</dd>
+ * this process either globally or at least within the JanusGraph cluster)</dd>
  * <dt>value</dt>
  * <dd>the single byte 0; this is unused but reserved for future use</dd>
  * </dl>
@@ -264,7 +264,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         @Override
         protected LocalLockMediator<StoreTransaction> getDefaultMediator() {
-            throw new TitanConfigurationException("Local lock mediator prefix must not be empty or null");
+            throw new JanusGraphConfigurationException("Local lock mediator prefix must not be empty or null");
         }
     }
 

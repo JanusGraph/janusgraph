@@ -1,6 +1,6 @@
 package org.janusgraph.diskstorage.solr;
 
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusGraphIndexTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -8,7 +8,7 @@ import org.junit.Test;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class SolrTitanIndexTest extends TitanIndexTest {
+public abstract class SolrJanusGraphIndexTest extends JanusGraphIndexTest {
 
     @BeforeClass
     public static void setUpMiniCluster() throws Exception {
@@ -21,7 +21,7 @@ public abstract class SolrTitanIndexTest extends TitanIndexTest {
     }
 
 
-    protected SolrTitanIndexTest() {
+    protected SolrJanusGraphIndexTest() {
         super(true, true, true);
     }
 
@@ -37,7 +37,7 @@ public abstract class SolrTitanIndexTest extends TitanIndexTest {
 
     @Test
     public void testRawQueries() {
-        clopen(option(SolrIndex.DYNAMIC_FIELDS,TitanIndexTest.INDEX),false);
+        clopen(option(SolrIndex.DYNAMIC_FIELDS,JanusGraphIndexTest.INDEX),false);
         super.testRawQueries();
     }
 

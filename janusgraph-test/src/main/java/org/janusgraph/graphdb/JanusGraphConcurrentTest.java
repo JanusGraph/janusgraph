@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.janusgraph.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
  * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
  */
 @Category({PerformanceTests.class})
-public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
+public abstract class JanusGraphConcurrentTest extends JanusGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
@@ -47,7 +47,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
     private static final int REL_COUNT = 5;
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanGraphConcurrentTest.class);
+            LoggerFactory.getLogger(JanusGraphConcurrentTest.class);
 
     private ExecutorService executor;
 
@@ -117,7 +117,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
             threads[t] = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    TitanTransaction tx = graph.newTransaction();
+                    JanusGraphTransaction tx = graph.newTransaction();
                     for (int i = 0; i < numTypes; i++) {
                         RelationType type = tx.getRelationType("test" + i);
                         if (i < numTypes / 2) assertTrue(type.isPropertyKey());
@@ -221,10 +221,10 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
             @Override
             public void run() {
                 while (run.get()) {
-                    TitanTransaction tx = graph.newTransaction();
+                    JanusGraphTransaction tx = graph.newTransaction();
                     try {
                         for (int i = 0; i < batchV; i++) {
-                            TitanVertex v = tx.addVertex();
+                            JanusGraphVertex v = tx.addVertex();
                             v.property("k", random.nextInt(maxK));
                             v.property("q", random.nextInt(maxQ));
                         }
@@ -241,12 +241,12 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
             @Override
             public void run() {
                 while (run.get()) {
-                    TitanTransaction tx = graph.newTransaction();
+                    JanusGraphTransaction tx = graph.newTransaction();
                     try {
                         for (int i = 0; i < batchR; i++) {
                             Set<Vertex> vs = new HashSet<Vertex>();
-                            Iterable<TitanVertex> vertices = tx.query().has("k",random.nextInt(maxK)).has("q",random.nextInt(maxQ)).vertices();
-                            for (TitanVertex v : vertices) {
+                            Iterable<JanusGraphVertex> vertices = tx.query().has("k",random.nextInt(maxK)).has("q",random.nextInt(maxQ)).vertices();
+                            for (JanusGraphVertex v : vertices) {
                                 if (!vs.add(v)) {
                                     duplicates.incrementAndGet();
                                     System.err.println("Duplicate vertex: " + v);
@@ -302,7 +302,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         log.info("Creating vertices");
         // Write vertices with indexed properties
         for (int i = 0; i < vertexCount; i++) {
-            TitanVertex v = tx.addVertex();
+            JanusGraphVertex v = tx.addVertex();
             for (int p = 0; p < propCount; p++) {
                 v.property("p" + p, i);
             }
@@ -320,12 +320,12 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
     }
 
     private static class RandomPropertyMaker implements Runnable {
-        private final TitanTransaction tx;
+        private final JanusGraphTransaction tx;
         private final int nodeCount; //inclusive
         private final String idKey;
         private final String randomKey;
 
-        public RandomPropertyMaker(TitanTransaction tx, int nodeCount,
+        public RandomPropertyMaker(JanusGraphTransaction tx, int nodeCount,
                                    String idKey, String randomKey) {
             this.tx = tx;
             this.nodeCount = nodeCount;
@@ -337,7 +337,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             while (true) {
                 // Set propType to a random value on a random node
-                TitanVertex n = getOnlyVertex(tx.query().has(idKey, RandomGenerator.randomInt(0, nodeCount)));
+                JanusGraphVertex n = getOnlyVertex(tx.query().has(idKey, RandomGenerator.randomInt(0, nodeCount)));
                 String propVal = RandomGenerator.randomString();
                 n.property(randomKey, propVal);
                 if (Thread.interrupted())
@@ -356,12 +356,12 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
      */
     private static class FixedRelationshipMaker implements Runnable {
 
-        private final TitanTransaction tx;
+        private final JanusGraphTransaction tx;
         //		private final int nodeCount; //inclusive
         private final String idKey;
         private final String elabel;
 
-        public FixedRelationshipMaker(TitanTransaction tx,
+        public FixedRelationshipMaker(JanusGraphTransaction tx,
                                       String id, String elabel) {
             this.tx = tx;
             this.idKey = id;
@@ -372,8 +372,8 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         public void run() {
             while (true) {
                 // Make or break relType between two (possibly same) random nodes
-                TitanVertex source = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, 0).vertices());
-                TitanVertex sink = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, 1).vertices());
+                JanusGraphVertex source = Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has(idKey, 0).vertices());
+                JanusGraphVertex sink = Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has(idKey, 1).vertices());
                 for (Edge r : source.query().direction(Direction.OUT).labels(elabel).edges()) {
                     if (getId(r.inVertex()) == getId(sink)) {
                         r.remove();
@@ -396,7 +396,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
         private final int expectedEdges;
         private final String idKey;
 
-        public SimpleReader(TitanTransaction tx, CountDownLatch startLatch,
+        public SimpleReader(JanusGraphTransaction tx, CountDownLatch startLatch,
                             CountDownLatch stopLatch, int startNodeId, String label2Traverse, int expectedEdges, String idKey) {
             super(tx, startLatch, stopLatch);
             this.vertexid = startNodeId;
@@ -407,11 +407,11 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
         @Override
         protected void doRun() throws Exception {
-            TitanVertex v = Iterables.<TitanVertex>getOnlyElement(tx.query().has(idKey, vertexid).vertices());
+            JanusGraphVertex v = Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has(idKey, vertexid).vertices());
 
             for (int i = 0; i < nodeTraversalCount; i++) {
                 assertCount(expectedEdges, v.query().labels(label2Traverse).direction(Direction.BOTH).edges());
-                for (TitanEdge r : v.query().direction(Direction.OUT).labels(label2Traverse).edges()) {
+                for (JanusGraphEdge r : v.query().direction(Direction.OUT).labels(label2Traverse).edges()) {
                     v = r.vertex(Direction.IN);
                 }
             }
@@ -420,11 +420,11 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
     private abstract static class BarrierRunnable implements Runnable {
 
-        protected final TitanTransaction tx;
+        protected final JanusGraphTransaction tx;
         protected final CountDownLatch startLatch;
         protected final CountDownLatch stopLatch;
 
-        public BarrierRunnable(TitanTransaction tx, CountDownLatch startLatch, CountDownLatch stopLatch) {
+        public BarrierRunnable(JanusGraphTransaction tx, CountDownLatch startLatch, CountDownLatch stopLatch) {
             this.tx = tx;
             this.startLatch = startLatch;
             this.stopLatch = stopLatch;

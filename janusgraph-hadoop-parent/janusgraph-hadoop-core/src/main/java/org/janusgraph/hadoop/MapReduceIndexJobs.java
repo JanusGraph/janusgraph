@@ -8,7 +8,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.olap.job.IndexRemoveJob;
 import org.janusgraph.graphdb.olap.job.IndexRepairJob;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.scan.CassandraHadoopScanRunner;
 import org.janusgraph.hadoop.scan.HBaseHadoopScanRunner;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -27,12 +27,12 @@ public class MapReduceIndexJobs {
     private static final Logger log =
             LoggerFactory.getLogger(MapReduceIndexJobs.class);
 
-    public static ScanMetrics cassandraRepair(String titanPropertiesPath, String indexName, String relationType, String partitionerName)
+    public static ScanMetrics cassandraRepair(String janusgraphPropertiesPath, String indexName, String relationType, String partitionerName)
             throws InterruptedException, IOException, ClassNotFoundException {
         Properties p = new Properties();
         FileInputStream fis = null;
         try {
-            fis = new FileInputStream(titanPropertiesPath);
+            fis = new FileInputStream(janusgraphPropertiesPath);
             p.load(fis);
             return cassandraRepair(p, indexName, relationType, partitionerName);
         } finally {
@@ -40,19 +40,19 @@ public class MapReduceIndexJobs {
         }
     }
 
-    public static ScanMetrics cassandraRepair(Properties titanProperties, String indexName, String relationType,
+    public static ScanMetrics cassandraRepair(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName)
             throws InterruptedException, IOException, ClassNotFoundException {
-        return cassandraRepair(titanProperties, indexName, relationType, partitionerName, new Configuration());
+        return cassandraRepair(janusgraphProperties, indexName, relationType, partitionerName, new Configuration());
     }
 
-    public static ScanMetrics cassandraRepair(Properties titanProperties, String indexName, String relationType,
+    public static ScanMetrics cassandraRepair(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName, Configuration hadoopBaseConf)
             throws InterruptedException, IOException, ClassNotFoundException {
         IndexRepairJob job = new IndexRepairJob();
         CassandraHadoopScanRunner cr = new CassandraHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
         cr.partitionerOverride(partitionerName);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
@@ -61,12 +61,12 @@ public class MapReduceIndexJobs {
     }
 
 
-    public static ScanMetrics cassandraRemove(String titanPropertiesPath, String indexName, String relationType, String partitionerName)
+    public static ScanMetrics cassandraRemove(String janusgraphPropertiesPath, String indexName, String relationType, String partitionerName)
             throws InterruptedException, IOException, ClassNotFoundException {
         Properties p = new Properties();
         FileInputStream fis = null;
         try {
-            fis = new FileInputStream(titanPropertiesPath);
+            fis = new FileInputStream(janusgraphPropertiesPath);
             p.load(fis);
             return cassandraRemove(p, indexName, relationType, partitionerName);
         } finally {
@@ -74,19 +74,19 @@ public class MapReduceIndexJobs {
         }
     }
 
-    public static ScanMetrics cassandraRemove(Properties titanProperties, String indexName, String relationType,
+    public static ScanMetrics cassandraRemove(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName)
             throws InterruptedException, IOException, ClassNotFoundException {
-        return cassandraRemove(titanProperties, indexName, relationType, partitionerName, new Configuration());
+        return cassandraRemove(janusgraphProperties, indexName, relationType, partitionerName, new Configuration());
     }
 
-    public static ScanMetrics cassandraRemove(Properties titanProperties, String indexName, String relationType,
+    public static ScanMetrics cassandraRemove(Properties janusgraphProperties, String indexName, String relationType,
                                               String partitionerName, Configuration hadoopBaseConf)
             throws InterruptedException, IOException, ClassNotFoundException {
         IndexRemoveJob job = new IndexRemoveJob();
         CassandraHadoopScanRunner cr = new CassandraHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
         cr.partitionerOverride(partitionerName);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
@@ -94,12 +94,12 @@ public class MapReduceIndexJobs {
         return cr.run();
     }
 
-    public static ScanMetrics hbaseRepair(String titanPropertiesPath, String indexName, String relationType)
+    public static ScanMetrics hbaseRepair(String janusgraphPropertiesPath, String indexName, String relationType)
             throws InterruptedException, IOException, ClassNotFoundException {
         Properties p = new Properties();
         FileInputStream fis = null;
         try {
-            fis = new FileInputStream(titanPropertiesPath);
+            fis = new FileInputStream(janusgraphPropertiesPath);
             p.load(fis);
             return hbaseRepair(p, indexName, relationType);
         } finally {
@@ -107,30 +107,30 @@ public class MapReduceIndexJobs {
         }
     }
 
-    public static ScanMetrics hbaseRepair(Properties titanProperties, String indexName, String relationType)
+    public static ScanMetrics hbaseRepair(Properties janusgraphProperties, String indexName, String relationType)
             throws InterruptedException, IOException, ClassNotFoundException {
-        return hbaseRepair(titanProperties, indexName, relationType, new Configuration());
+        return hbaseRepair(janusgraphProperties, indexName, relationType, new Configuration());
     }
 
-    public static ScanMetrics hbaseRepair(Properties titanProperties, String indexName, String relationType,
+    public static ScanMetrics hbaseRepair(Properties janusgraphProperties, String indexName, String relationType,
                                           Configuration hadoopBaseConf)
             throws InterruptedException, IOException, ClassNotFoundException {
         IndexRepairJob job = new IndexRepairJob();
         HBaseHadoopScanRunner cr = new HBaseHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
         cr.baseHadoopConf(hadoopBaseConf);
         return cr.run();
     }
 
-    public static ScanMetrics hbaseRemove(String titanPropertiesPath, String indexName, String relationType)
+    public static ScanMetrics hbaseRemove(String janusgraphPropertiesPath, String indexName, String relationType)
             throws InterruptedException, IOException, ClassNotFoundException {
         Properties p = new Properties();
         FileInputStream fis = null;
         try {
-            fis = new FileInputStream(titanPropertiesPath);
+            fis = new FileInputStream(janusgraphPropertiesPath);
             p.load(fis);
             return hbaseRemove(p, indexName, relationType);
         } finally {
@@ -138,18 +138,18 @@ public class MapReduceIndexJobs {
         }
     }
 
-    public static ScanMetrics hbaseRemove(Properties titanProperties, String indexName, String relationType)
+    public static ScanMetrics hbaseRemove(Properties janusgraphProperties, String indexName, String relationType)
             throws InterruptedException, IOException, ClassNotFoundException {
-        return hbaseRemove(titanProperties, indexName, relationType, new Configuration());
+        return hbaseRemove(janusgraphProperties, indexName, relationType, new Configuration());
     }
 
-    public static ScanMetrics hbaseRemove(Properties titanProperties, String indexName, String relationType,
+    public static ScanMetrics hbaseRemove(Properties janusgraphProperties, String indexName, String relationType,
                                           Configuration hadoopBaseConf)
             throws InterruptedException, IOException, ClassNotFoundException {
         IndexRemoveJob job = new IndexRemoveJob();
         HBaseHadoopScanRunner cr = new HBaseHadoopScanRunner(job);
         ModifiableConfiguration mc = getIndexJobConf(indexName, relationType);
-        copyPropertiesToInputAndOutputConf(hadoopBaseConf, titanProperties);
+        copyPropertiesToInputAndOutputConf(hadoopBaseConf, janusgraphProperties);
         cr.scanJobConf(mc);
         cr.scanJobConfRoot(GraphDatabaseConfiguration.class.getName() + "#JOB_NS");
         cr.baseHadoopConf(hadoopBaseConf);
@@ -166,7 +166,7 @@ public class MapReduceIndexJobs {
     }
 
     private static void copyPropertiesToInputAndOutputConf(Configuration sink, Properties source) {
-        final String prefix = ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
+        final String prefix = ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".";
         for (Map.Entry<Object, Object> e : source.entrySet()) {
             String k;
             String v = e.getValue().toString();

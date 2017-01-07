@@ -3,7 +3,7 @@ package org.janusgraph.core.schema;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -16,15 +16,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
- * The TitanManagement interface provides methods to define, update, and inspect the schema of a Titan graph.
- * It wraps a {@link TitanTransaction} and therefore copies many of its methods as they relate to schema inspection
+ * The JanusGraphManagement interface provides methods to define, update, and inspect the schema of a JanusGraph graph.
+ * It wraps a {@link JanusGraphTransaction} and therefore copies many of its methods as they relate to schema inspection
  * and definition.
  * <p/>
- * TitanManagement behaves like a transaction in that it opens a transactional scope for reading the schema and making
+ * JanusGraphManagement behaves like a transaction in that it opens a transactional scope for reading the schema and making
  * changes to it. As such, it needs to be explicitly closed via its {@link #commit()} or {@link #rollback()} methods.
- * A TitanManagement transaction is opened on a graph via {@link org.janusgraph.core.TitanGraph#openManagement()}.
+ * A JanusGraphManagement transaction is opened on a graph via {@link org.janusgraph.core.JanusGraph#openManagement()}.
  * <p/>
- * TitanManagement provides methods to:
+ * JanusGraphManagement provides methods to:
  * <ul>
  * <li>Schema Types: View, update, and create vertex labels, edge labels, and property keys</li>
  * <li>Relation Type Index: View and create vertex-centric indexes on edge labels and property keys</li>
@@ -34,7 +34,7 @@ import java.util.concurrent.Future;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanManagement extends TitanConfiguration, SchemaManager {
+public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaManager {
 
     /*
     ##################### RELATION TYPE INDEX ##########################
@@ -139,7 +139,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param name
      * @return
      */
-    public TitanGraphIndex getGraphIndex(String name);
+    public JanusGraphIndex getGraphIndex(String name);
 
     /**
      * Returns all graph indexes that index the given element type.
@@ -147,10 +147,10 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param elementType
      * @return
      */
-    public Iterable<TitanGraphIndex> getGraphIndexes(final Class<? extends Element> elementType);
+    public Iterable<JanusGraphIndex> getGraphIndexes(final Class<? extends Element> elementType);
 
     /**
-     * Returns an {@link IndexBuilder} to add a graph index to this Titan graph. The index to-be-created
+     * Returns an {@link IndexBuilder} to add a graph index to this JanusGraph graph. The index to-be-created
      * has the provided name and indexes elements of the given type.
      *
      * @param indexName
@@ -160,10 +160,10 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     public IndexBuilder buildIndex(String indexName, Class<? extends Element> elementType);
 
 
-    public void addIndexKey(final TitanGraphIndex index, final PropertyKey key, Parameter... parameters);
+    public void addIndexKey(final JanusGraphIndex index, final PropertyKey key, Parameter... parameters);
 
     /**
-     * Builder for {@link TitanGraphIndex}. Allows for the configuration of a graph index prior to its construction.
+     * Builder for {@link JanusGraphIndex}. Allows for the configuration of a graph index prior to its construction.
      */
     public interface IndexBuilder {
 
@@ -192,7 +192,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
          * @param schemaType
          * @return this IndexBuilder
          */
-        public IndexBuilder indexOnly(TitanSchemaType schemaType);
+        public IndexBuilder indexOnly(JanusGraphSchemaType schemaType);
 
         /**
          * Makes this a unique index for the configured element type,
@@ -205,18 +205,18 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
         /**
          * Builds a composite index according to the specification
          *
-         * @return the created composite {@link TitanGraphIndex}
+         * @return the created composite {@link JanusGraphIndex}
          */
-        public TitanGraphIndex buildCompositeIndex();
+        public JanusGraphIndex buildCompositeIndex();
 
         /**
          * Builds a mixed index according to the specification against the backend index with the given name (i.e.
          * the name under which that index is configured in the graph configuration)
          *
          * @param backingIndex the name of the mixed index
-         * @return the created mixed {@link TitanGraphIndex}
+         * @return the created mixed {@link JanusGraphIndex}
          */
-        public TitanGraphIndex buildMixedIndex(String backingIndex);
+        public JanusGraphIndex buildMixedIndex(String backingIndex);
 
     }
 
@@ -251,34 +251,34 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Retrieves the consistency modifier for the given {@link TitanSchemaElement}. If none has been explicitly
+     * Retrieves the consistency modifier for the given {@link JanusGraphSchemaElement}. If none has been explicitly
      * defined, {@link ConsistencyModifier#DEFAULT} is returned.
      *
      * @param element
      * @return
      */
-    public ConsistencyModifier getConsistency(TitanSchemaElement element);
+    public ConsistencyModifier getConsistency(JanusGraphSchemaElement element);
 
     /**
-     * Sets the consistency modifier for the given {@link TitanSchemaElement}. Note, that only {@link RelationType}s
+     * Sets the consistency modifier for the given {@link JanusGraphSchemaElement}. Note, that only {@link RelationType}s
      * and composite graph indexes allow changing of the consistency level.
      *
      * @param element
      * @param consistency
      */
-    public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency);
+    public void setConsistency(JanusGraphSchemaElement element, ConsistencyModifier consistency);
 
     /**
-     * Retrieves the time-to-live for the given {@link TitanSchemaType} as a {@link Duration}.
+     * Retrieves the time-to-live for the given {@link JanusGraphSchemaType} as a {@link Duration}.
      * If no TTL has been defined, the returned Duration will be zero-length ("lives forever").
      *
      * @param type
      * @return
      */
-    public Duration getTTL(TitanSchemaType type);
+    public Duration getTTL(JanusGraphSchemaType type);
 
     /**
-     * Sets the time-to-live for the given {@link TitanSchemaType}. The most granular time unit used for TTL values
+     * Sets the time-to-live for the given {@link JanusGraphSchemaType}. The most granular time unit used for TTL values
      * is seconds. Any argument will be rounded to seconds if it is more granular than that.
      * The {@code ttl} must be nonnegative.  When {@code ttl} is zero, any existing TTL on {@code type} is removed
      * ("lives forever"). Positive {@code ttl} values are interpreted literally.
@@ -287,20 +287,20 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      * @param ttl  time-to-live
      * @param unit time unit of the specified ttl
      */
-    public void setTTL(TitanSchemaType type, Duration duration);
+    public void setTTL(JanusGraphSchemaType type, Duration duration);
 
     /*
     ##################### SCHEMA UPDATE ##########################
      */
 
     /**
-     * Changes the name of a {@link TitanSchemaElement} to the provided new name.
+     * Changes the name of a {@link JanusGraphSchemaElement} to the provided new name.
      * The new name must be valid and not already in use, otherwise an {@link IllegalArgumentException} is thrown.
      *
      * @param element
      * @param newName
      */
-    public void changeName(TitanSchemaElement element, String newName);
+    public void changeName(JanusGraphSchemaElement element, String newName);
 
     /**
      * Updates the provided index according to the given {@link SchemaAction}
@@ -326,7 +326,7 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
      */
 
     /**
-     * Returns a set of unique instance ids for all Titan instances that are currently
+     * Returns a set of unique instance ids for all JanusGraph instances that are currently
      * part of this graph cluster.
      *
      * @return
@@ -334,9 +334,9 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     public Set<String> getOpenInstances();
 
     /**
-     * Forcefully removes a Titan instance from this graph cluster as identified by its name.
+     * Forcefully removes a JanusGraph instance from this graph cluster as identified by its name.
      * <p/>
-     * This method should be used with great care and only in cases where a Titan instance
+     * This method should be used with great care and only in cases where a JanusGraph instance
      * has been abnormally terminated (i.e. killed instead of properly shut-down). If this happens, the instance
      * will continue to be listed as an open instance which means that 1) a new instance with the same id cannot
      * be started and 2) schema updates will fail because the killed instance cannot acknowledge the schema update.
@@ -377,14 +377,14 @@ public interface TitanManagement extends TitanConfiguration, SchemaManager {
     /**
      * Commits this management transaction and persists all schema changes. Closes this transaction.
      *
-     * @see org.janusgraph.core.TitanTransaction#commit()
+     * @see org.janusgraph.core.JanusGraphTransaction#commit()
      */
     public void commit();
 
     /**
      * Closes this management transaction and discards all changes.
      *
-     * @see org.janusgraph.core.TitanTransaction#rollback()
+     * @see org.janusgraph.core.JanusGraphTransaction#rollback()
      */
     public void rollback();
 

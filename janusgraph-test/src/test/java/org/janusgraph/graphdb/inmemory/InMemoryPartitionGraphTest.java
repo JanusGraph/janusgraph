@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.inmemory;
 
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
@@ -12,7 +12,7 @@ import static org.junit.Assert.assertFalse;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class InMemoryPartitionGraphTest extends TitanPartitionGraphTest {
+public class InMemoryPartitionGraphTest extends JanusGraphPartitionGraphTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {

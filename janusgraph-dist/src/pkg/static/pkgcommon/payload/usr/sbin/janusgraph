@@ -31,7 +31,7 @@
 #
 #   CLASSPATH -- A Java classpath containing everything necessary to run.
 #   JVM_OPTS -- Additional arguments to the JVM for heap size, etc
-#   TITAN_CONF -- Directory containing Titan configuration files.
+#   JANUSGRAPH_CONF -- Directory containing JanusGraph configuration files.
 #
 # As a convenience, a fragment of shell is sourced in order to set one or
 # more of these variables. This so-called `include' can be placed in a 
@@ -42,37 +42,37 @@
 #
 # Any serious use-case though will likely require customization of the
 # include. For production installations, it is recommended that you copy
-# the sample to one of /usr/share/titan/titan.in.sh,
-# /usr/local/share/titan/titan.in.sh, or 
-# /opt/titan/titan.in.sh and make your modifications there.
+# the sample to one of /usr/share/janusgraph/janusgraph.in.sh,
+# /usr/local/share/janusgraph/janusgraph.in.sh, or 
+# /opt/janusgraph/janusgraph.in.sh and make your modifications there.
 #
 # Another option is to specify the full path to the include file in the
 # environment. For example:
 #
-#   $ TITAN_INCLUDE=/path/to/in.sh titan -p /var/run/titan.pid
+#   $ JANUSGRAPH_INCLUDE=/path/to/in.sh janusgraph -p /var/run/janusgraph.pid
 #
 # If you would rather configure startup entirely from the environment, you
-# can disable the include by exporting an empty TITAN_INCLUDE, or by 
+# can disable the include by exporting an empty JANUSGRAPH_INCLUDE, or by 
 # ensuring that no include files exist in the aforementioned search list.
 # Be aware that you will be entirely responsible for populating the needed
 # environment variables.
 
 # If an include wasn't specified in the environment, then search for one...
-if [ "x$TITAN_INCLUDE" = "x" ]; then
+if [ "x$JANUSGRAPH_INCLUDE" = "x" ]; then
     # Locations (in order) to use when searching for an include file.
-    for include in /usr/share/titan/titan.in.sh \
-                   /usr/local/share/titan/titan.in.sh \
-                   /opt/titan/titan.in.sh \
-                   "$HOME/.titan.in.sh" \
-                   "`dirname "$0"`/titan.in.sh"; do
+    for include in /usr/share/janusgraph/janusgraph.in.sh \
+                   /usr/local/share/janusgraph/janusgraph.in.sh \
+                   /opt/janusgraph/janusgraph.in.sh \
+                   "$HOME/.janusgraph.in.sh" \
+                   "`dirname "$0"`/janusgraph.in.sh"; do
         if [ -r "$include" ]; then
             . "$include"
             break
         fi
     done
 # ...otherwise, source the specified include.
-elif [ -r "$TITAN_INCLUDE" ]; then
-    . "$TITAN_INCLUDE"
+elif [ -r "$JANUSGRAPH_INCLUDE" ]; then
+    . "$JANUSGRAPH_INCLUDE"
 fi
 
 # Use JAVA_HOME if set, otherwise look for java in PATH
@@ -82,21 +82,21 @@ else
     JAVA=java
 fi
 
-if [ -z "$TITAN_CONF" -o -z "$CLASSPATH" ]; then
-    echo "You must set the TITAN_CONF and CLASSPATH vars" >&2
+if [ -z "$JANUSGRAPH_CONF" -o -z "$CLASSPATH" ]; then
+    echo "You must set the JANUSGRAPH_CONF and CLASSPATH vars" >&2
     exit 1
 fi
 
 # Run shell fragment to setup core environment.
-if [ -f "$TITAN_CONF/titan-env.sh" ]; then
-    . "$TITAN_CONF/titan-env.sh"
+if [ -f "$JANUSGRAPH_CONF/janusgraph-env.sh" ]; then
+    . "$JANUSGRAPH_CONF/janusgraph-env.sh"
 fi
 
 # Special-case path variables.
 case "`uname`" in
     CYGWIN*) 
         CLASSPATH=`cygpath -p -w "$CLASSPATH"`
-        TITAN_CONF=`cygpath -p -w "$TITAN_CONF"`
+        JANUSGRAPH_CONF=`cygpath -p -w "$JANUSGRAPH_CONF"`
     ;;
 esac
 
@@ -106,14 +106,14 @@ launch_service()
     foreground="$2"
     props="$3"
     class="$4"
-    #parms="-Dlog4j.configuration=file://"$TITAN_CONF"/log4j.properties -Dlog4j.defaultInitOverride=true"
+    #parms="-Dlog4j.configuration=file://"$JANUSGRAPH_CONF"/log4j.properties -Dlog4j.defaultInitOverride=true"
     parms=''
 
     # Gremlin Server is  hardcoded to use either log4j.properties in the current
     # working directory or to use the one shipped in its own jar.
     # It always overrides the default log4j configuration mechanism (!) 
     # Switch to the directory containing our log4j.properties as a workaround
-    cd "$TITAN_CONF"
+    cd "$JANUSGRAPH_CONF"
 
     if [ "x$foreground" != "x" ]; then
         export CLASSPATH

@@ -68,7 +68,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     private final KeyColumnValueStore idStore;
     private final StandardBaseTransactionConfig.Builder storeTxConfigBuilder;
     /**
-     * This belongs in TitanConfig.
+     * This belongs in JanusGraphConfig.
      */
     private final TimestampProvider times;
 
@@ -284,7 +284,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
                         if (blocks.isEmpty())
                             throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
-                                    "If you have multiple Titan instances running on one physical machine, ensure that they have unique machine idAuthorities");
+                                    "If you have multiple JanusGraph instances running on one physical machine, ensure that they have unique machine idAuthorities");
 
                         /* If our claim is the lexicographically first one, then our claim
                          * is the most senior one and we own this id block

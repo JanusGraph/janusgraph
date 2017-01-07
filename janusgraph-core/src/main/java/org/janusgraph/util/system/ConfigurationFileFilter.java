@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 public class ConfigurationFileFilter {
 
-    private static final Pattern REPLACEMENT_PATTERN = Pattern.compile("^#TITANCFG\\{((.+)=(.*))\\}$");
+    private static final Pattern REPLACEMENT_PATTERN = Pattern.compile("^#JANUSGRAPHCFG\\{((.+)=(.*))\\}$");
 
     private static final Logger log =
             LoggerFactory.getLogger(ConfigurationFileFilter.class);
@@ -173,18 +173,18 @@ public class ConfigurationFileFilter {
                             mut += "\n#\n# ";
                             if (opt.getType().equals(ConfigOption.Type.FIXED)) {
                                 mut += "This setting is " + opt.getType() +
-                                        " and cannot be changed after bootstrapping Titan.";
+                                        " and cannot be changed after bootstrapping JanusGraph.";
                             } else {
                                 final String warning =
                                     "Settings with mutability " + opt.getType() + " are centrally managed in " +
-                                    "Titan's storage backend.  After starting the database for the first time, " +
-                                    "this file's copy of this setting is ignored.  Use Titan's Management " +
+                                    "JanusGraph's storage backend.  After starting the database for the first time, " +
+                                    "this file's copy of this setting is ignored.  Use JanusGraph's Management " +
                                     "System to read or modify this value after bootstrapping.";
                                 mut += WordUtils.wrap(warning, WRAP_COLUMNS, "\n# ", false);
                             }
                         }
                         String umbrella = null;
-                        // This background info on umbrellas isn't critical when getting started with an Titan config
+                        // This background info on umbrellas isn't critical when getting started with an JanusGraph config
 //                        if (pid.hasUmbrellaElements() && 1 == pid.umbrellaElements.length) {
 //                            String s = "# " +
 //                                    "This setting is under an umbrella namespace.  " +
@@ -220,7 +220,7 @@ public class ConfigurationFileFilter {
             IOUtils.closeQuietly(in);
         }
 
-        // Read what we just wrote.  Make sure it validates as a Titan config.
+        // Read what we just wrote.  Make sure it validates as a JanusGraph config.
         ConfigurationLint.Status stat = ConfigurationLint.validate(outputFile.getAbsolutePath());
         if (0 != stat.getErrorSettingCount())
             log.error("Output file {} failed to validate", outputFile);

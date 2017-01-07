@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.hbase;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphConcurrentTest;
+import org.janusgraph.graphdb.JanusGraphConcurrentTest;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
@@ -10,7 +10,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 
-public class HBaseGraphConcurrentTest extends TitanGraphConcurrentTest {
+public class HBaseGraphConcurrentTest extends JanusGraphConcurrentTest {
 
     @BeforeClass
     public static void startHBase() throws IOException {

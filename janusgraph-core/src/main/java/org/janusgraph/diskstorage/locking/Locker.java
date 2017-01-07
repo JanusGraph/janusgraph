@@ -4,7 +4,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.KeyColumn;
 
 /**
- * Threadsafe discretionary locking within and between processes Titan.
+ * Threadsafe discretionary locking within and between processes JanusGraph.
  * <p>
  * Locks are identified {@link KeyColumn} instances.
  * {@code KeyColumn#equals(Object)} should be used to determine whether two
@@ -15,9 +15,9 @@ import org.janusgraph.diskstorage.util.KeyColumn;
  * can be used to compare these instances.
  * <p>
  * This interface follows a three-step locking model that supports both
- * nonblocking and blocking locking primitives. Not all Titan
+ * nonblocking and blocking locking primitives. Not all JanusGraph
  * {@code StoreTransaction}s will need locks and use this interface. For those
- * {@code StoreTransaction}s that do take one or more locks, Titan will call the
+ * {@code StoreTransaction}s that do take one or more locks, JanusGraph will call the
  * methods on this interface in the following order. {@code tx} refers to the
  * same {@code StoreTransaction} instance in each step.
  * 

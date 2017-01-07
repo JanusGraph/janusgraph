@@ -7,9 +7,9 @@ import org.junit.Test;
 
 import org.janusgraph.CassandraStorageSetup;
 
-public class CassandraThriftESAssemblyIT extends AbstractTitanAssemblyIT {
+public class CassandraThriftESAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
-    public static final String ES_HOME = "../../titan-es";
+    public static final String ES_HOME = "../../janusgraph-es";
 
     @BeforeClass
     public static void startCassandra() {
@@ -23,7 +23,7 @@ public class CassandraThriftESAssemblyIT extends AbstractTitanAssemblyIT {
 
     @Test
     public void testCassandraGettingStarted() throws Exception {
-        testGettingStartedGremlinSession("conf/titan-cassandra-es.properties", "cassandrathrift");
+        testGettingStartedGremlinSession("conf/janusgraph-cassandra-es.properties", "cassandrathrift");
     }
 
     @AfterClass

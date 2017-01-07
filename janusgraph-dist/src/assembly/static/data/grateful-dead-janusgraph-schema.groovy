@@ -1,16 +1,16 @@
-/* titan-schema.groovy
+/* janusgraph-schema.groovy
  *
- * Helper functions for declaring Titan schema elements
+ * Helper functions for declaring JanusGraph schema elements
  * (vertex labels, edge labels, property keys) to accommodate
  * TP3 sample data.
  *
  * Sample usage in a gremlin.sh session:
  *
- * gremlin> :load data/titan-schema-grateful-dead.groovy
+ * gremlin> :load data/janusgraph-schema-grateful-dead.groovy
  * ==>true
  * ==>true
- * gremlin> t = TitanFactory.open('conf/titan-cassandra.properties')
- * ==>standardtitangraph[cassandrathrift:[127.0.0.1]]
+ * gremlin> t = JanusGraphFactory.open('conf/janusgraph-cassandra.properties')
+ * ==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
  * gremlin> defineGratefulDeadSchema(t)
  * ==>null
  * gremlin> t.close()
@@ -18,8 +18,8 @@
  * gremlin>
  */
 
-def defineGratefulDeadSchema(titanGraph) {
-    m = titanGraph.openManagement()
+def defineGratefulDeadSchema(janusGraph) {
+    m = janusGraph.openManagement()
     // vertex labels
     artist = m.makeVertexLabel("artist").make()
     song   = m.makeVertexLabel("song").make()

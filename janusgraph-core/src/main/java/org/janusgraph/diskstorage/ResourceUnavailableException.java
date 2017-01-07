@@ -1,7 +1,7 @@
 package org.janusgraph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -11,7 +11,7 @@ import org.apache.commons.lang.StringUtils;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ResourceUnavailableException extends TitanException {
+public class ResourceUnavailableException extends JanusGraphException {
 
     private static final long serialVersionUID = 482890657293484420L;
 

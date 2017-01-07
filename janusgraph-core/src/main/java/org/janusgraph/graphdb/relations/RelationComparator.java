@@ -3,21 +3,21 @@ package org.janusgraph.graphdb.relations;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.internal.*;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Comparator;
 
 
 /**
- * A {@link Comparator} for {@link TitanRelation} that uses a defined order to compare the relations with
+ * A {@link Comparator} for {@link JanusGraphRelation} that uses a defined order to compare the relations with
  * or otherwise uses the natural order of relations.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class RelationComparator implements Comparator<InternalRelation> {
 
-    private final StandardTitanTx tx;
+    private final StandardJanusGraphTx tx;
     private final InternalVertex vertex;
     private final OrderList orders;
 
@@ -48,7 +48,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         int reltypecompare = (r1.isProperty()?1:2) - (r2.isProperty()?1:2);
         if (reltypecompare != 0) return reltypecompare;
 
-        //3) TitanType
+        //3) JanusGraphType
         InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
         int typecompare = AbstractElement.compare(t1,t2);
         if (typecompare != 0) return typecompare;
@@ -80,8 +80,8 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
         // 6) Compare property objects or other vertices
         if (r1.isProperty()) {
-            Object o1 = ((TitanVertexProperty) r1).value();
-            Object o2 = ((TitanVertexProperty) r2).value();
+            Object o1 = ((JanusGraphVertexProperty) r1).value();
+            Object o2 = ((JanusGraphVertexProperty) r2).value();
             Preconditions.checkArgument(o1 != null && o2 != null);
             if (!o1.equals(o2)) {
                 int objectcompare = 0;
@@ -120,11 +120,11 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
     }
 
-    private int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid, Order order) {
+    private int compareOnKey(JanusGraphRelation r1, JanusGraphRelation r2, long typeid, Order order) {
         return compareOnKey(r1,r2,tx.getExistingPropertyKey(typeid),order);
     }
 
-    private int compareOnKey(TitanRelation r1, TitanRelation r2, PropertyKey type, Order order) {
+    private int compareOnKey(JanusGraphRelation r1, JanusGraphRelation r2, PropertyKey type, Order order) {
         Object v1 = r1.valueOrNull(type), v2 = r2.valueOrNull(type);
         return compareValues(v1, v2,order);
     }

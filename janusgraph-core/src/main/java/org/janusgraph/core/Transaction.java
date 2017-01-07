@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Transaction defines a transactional context for a {@link org.janusgraph.core.TitanGraph}. Since TitanGraph is a transactional graph
+ * Transaction defines a transactional context for a {@link org.janusgraph.core.JanusGraph}. Since JanusGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a Transaction.
  * <p/>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
@@ -40,42 +40,42 @@ public interface Transaction extends Graph, SchemaManager {
      * @param vertexLabel the name of the vertex label to use
      * @return a new vertex in the graph created in the context of this transaction
      */
-    public TitanVertex addVertex(String vertexLabel);
+    public JanusGraphVertex addVertex(String vertexLabel);
 
     @Override
-    public TitanVertex addVertex(Object... objects);
+    public JanusGraphVertex addVertex(Object... objects);
 
     /**
      * @return
-     * @see TitanGraph#query()
+     * @see JanusGraph#query()
      */
-    public TitanGraphQuery<? extends TitanGraphQuery> query();
+    public JanusGraphQuery<? extends JanusGraphQuery> query();
 
     /**
-     * Returns a {@link org.janusgraph.core.TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
+     * Returns a {@link org.janusgraph.core.JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using
      * the given query string. The query string is analyzed and answered by the underlying storage backend.
      * <p/>
      * Note, that using indexQuery will may ignore modifications in the current transaction.
      *
      * @param indexName Name of the indexing backend to query as configured
      * @param query Query string
-     * @return TitanIndexQuery object to query the index directly
+     * @return JanusGraphIndexQuery object to query the index directly
      */
-    public TitanIndexQuery indexQuery(String indexName, String query);
+    public JanusGraphIndexQuery indexQuery(String indexName, String query);
 
     /**
      * @return
-     * @see TitanGraph#multiQuery(org.janusgraph.core.TitanVertex...)
+     * @see JanusGraph#multiQuery(org.janusgraph.core.JanusGraphVertex...)
      */
     @Deprecated
-    public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(TitanVertex... vertices);
+    public JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(JanusGraphVertex... vertices);
 
     /**
      * @return
-     * @see TitanGraph#multiQuery(java.util.Collection)
+     * @see JanusGraph#multiQuery(java.util.Collection)
      */
     @Deprecated
-    public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(Collection<TitanVertex> vertices);
+    public JanusGraphMultiVertexQuery<? extends JanusGraphMultiVertexQuery> multiQuery(Collection<JanusGraphVertex> vertices);
 
     @Override
     public void close();

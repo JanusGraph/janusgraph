@@ -3,9 +3,9 @@ package org.janusgraph.graphdb;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * A benchmark to test the performance of sequential row retrieval from the
  * underlying KeyColumnValueStore which is the basic operation underlying the
- * Fulgora OLAP component of Titan.
+ * Fulgora OLAP component of JanusGraph.
  * <p/>
  * Hence, this is effectively a benchmark for {@link org.janusgraph.olap.OLAPTest}
  * or at least the primitive backend operations used therein.
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
+public abstract class JanusGraphIterativeBenchmark extends JanusGraphBaseTest {
 
     private static final Random random = new Random();
 
@@ -92,14 +92,14 @@ public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
             exe.submit(new Runnable() {
                 @Override
                 public void run() {
-                    TitanTransaction tx = graph.newTransaction();
-                    TitanVertex[] vs = new TitanVertex[verticesPerTask];
+                    JanusGraphTransaction tx = graph.newTransaction();
+                    JanusGraphVertex[] vs = new JanusGraphVertex[verticesPerTask];
                     for (int j=0;j<verticesPerTask;j++) {
                         vs[j]=tx.addVertex();
                         vs[j].property(VertexProperty.Cardinality.single, "w",  random.nextInt(maxWeight));
                     }
                     for (int j=0;j<verticesPerTask*10;j++) {
-                        TitanEdge e = vs[random.nextInt(verticesPerTask)].addEdge("l",vs[random.nextInt(verticesPerTask)]);
+                        JanusGraphEdge e = vs[random.nextInt(verticesPerTask)].addEdge("l",vs[random.nextInt(verticesPerTask)]);
                         e.property("t",random.nextInt(maxTime));
                     }
                     System.out.print(".");

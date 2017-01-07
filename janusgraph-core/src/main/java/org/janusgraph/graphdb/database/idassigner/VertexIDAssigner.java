@@ -22,7 +22,7 @@ import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,9 +144,9 @@ public class VertexIDAssigner implements AutoCloseable {
     private void assignID(InternalElement element, IDManager.VertexIDType vertexIDType) {
         for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS; attempt++) {
             long partitionID = -1;
-            if (element instanceof TitanSchemaVertex) {
+            if (element instanceof JanusGraphSchemaVertex) {
                 partitionID = IDManager.SCHEMA_PARTITION;
-            } else if (element instanceof TitanVertex) {
+            } else if (element instanceof JanusGraphVertex) {
                 if (vertexIDType== IDManager.VertexIDType.PartitionedVertex)
                     partitionID = IDManager.PARTITIONED_VERTEX_PARTITION;
                 else
@@ -237,7 +237,7 @@ public class VertexIDAssigner implements AutoCloseable {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasId()) {
-                        assert !(vertex instanceof TitanSchemaVertex); //Those are assigned ids immediately in the transaction
+                        assert !(vertex instanceof JanusGraphSchemaVertex); //Those are assigned ids immediately in the transaction
                         if (vertex.vertexLabel().isPartitioned())
                             assignID(vertex, getVertexIDType(vertex)); //Assign partitioned vertex ids immediately
                         else
@@ -285,12 +285,12 @@ public class VertexIDAssigner implements AutoCloseable {
     private void assignID(final InternalElement element, final long partitionIDl, final IDManager.VertexIDType userVertexIDType) {
         Preconditions.checkNotNull(element);
         Preconditions.checkArgument(!element.hasId());
-        Preconditions.checkArgument((element instanceof TitanRelation) ^ (userVertexIDType!=null));
+        Preconditions.checkArgument((element instanceof JanusGraphRelation) ^ (userVertexIDType!=null));
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl < partitionIdBound, partitionIDl);
         final int partitionID = (int) partitionIDl;
 
         long count;
-        if (element instanceof TitanSchemaVertex) {
+        if (element instanceof JanusGraphSchemaVertex) {
             Preconditions.checkArgument(partitionID==IDManager.SCHEMA_PARTITION);
             count = schemaIdPool.nextID();
         } else if (userVertexIDType==IDManager.VertexIDType.PartitionedVertex) {
@@ -310,7 +310,7 @@ public class VertexIDAssigner implements AutoCloseable {
                 throw new IDPoolExhaustedException("Exhausted id pool for partition: " + partitionID);
             }
             IDPool idPool;
-            if (element instanceof TitanRelation) {
+            if (element instanceof JanusGraphRelation) {
                 idPool = partitionPool.getPool(PoolType.RELATION);
             } else {
                 Preconditions.checkArgument(userVertexIDType!=null);
@@ -336,7 +336,7 @@ public class VertexIDAssigner implements AutoCloseable {
             elementId = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
         } else if (element instanceof VertexLabel) {
             elementId = idManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
-        } else if (element instanceof TitanSchemaVertex) {
+        } else if (element instanceof JanusGraphSchemaVertex) {
             elementId = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
         } else {
             elementId = idManager.getVertexID(count, partitionID, userVertexIDType);
@@ -356,7 +356,7 @@ public class VertexIDAssigner implements AutoCloseable {
         }
     }
 
-    private static IDManager.VertexIDType getVertexIDType(TitanVertex v) {
+    private static IDManager.VertexIDType getVertexIDType(JanusGraphVertex v) {
         return getVertexIDType(v.vertexLabel());
     }
 

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.SortedMap;
 
 /**
- * Wraps a ColumnFamilyRecordReader and converts CFRR's binary types to Titan binary types.
+ * Wraps a ColumnFamilyRecordReader and converts CFRR's binary types to JanusGraph binary types.
  */
 public class CassandraBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<Entry>> {
 

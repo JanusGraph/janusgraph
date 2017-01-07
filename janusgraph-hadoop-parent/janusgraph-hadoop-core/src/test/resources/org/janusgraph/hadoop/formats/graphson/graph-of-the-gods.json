@@ -1,4 +1,4 @@
-{"name":"saturn","type":"titan","_id":0,"_inE":[{"_label":"father","_id":12,"_outV":1}]}
+{"name":"saturn","type":"janusgraph","_id":0,"_inE":[{"_label":"father","_id":12,"_outV":1}]}
 {"name":"jupiter","type":"god","_id":1,"_outE":[{"_label":"lives","_id":13,"_inV":4},{"_label":"brother","_id":16,"_inV":3},{"_label":"brother","_id":14,"_inV":2},{"_label":"father","_id":12,"_inV":0}],"_inE":[{"_label":"brother","_id":17,"_outV":3},{"_label":"brother","_id":15,"_outV":2},{"_label":"father","_id":24,"_outV":7}]}
 {"name":"neptune","type":"god","_id":2,"_outE":[{"_label":"lives","_id":20,"_inV":5},{"_label":"brother","_id":19,"_inV":3},{"_label":"brother","_id":15,"_inV":1}],"_inE":[{"_label":"brother","_id":18,"_outV":3},{"_label":"brother","_id":14,"_outV":1}]}
 {"name":"pluto","type":"god","_id":3,"_outE":[{"_label":"pet","_id":23,"_inV":11},{"_label":"lives","_id":21,"_inV":6},{"_label":"brother","_id":17,"_inV":1},{"_label":"brother","_id":18,"_inV":2}],"_inE":[{"_label":"brother","_id":19,"_outV":2},{"_label":"brother","_id":16,"_outV":1}]}

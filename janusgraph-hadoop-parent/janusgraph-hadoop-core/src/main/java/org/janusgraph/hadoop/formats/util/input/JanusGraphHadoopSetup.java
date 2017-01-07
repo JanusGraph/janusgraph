@@ -8,7 +8,7 @@ import org.janusgraph.graphdb.types.TypeInspector;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanHadoopSetup {
+public interface JanusGraphHadoopSetup {
 
     public TypeInspector getTypeInspector();
 

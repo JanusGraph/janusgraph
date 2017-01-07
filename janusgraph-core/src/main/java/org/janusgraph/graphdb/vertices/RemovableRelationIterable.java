@@ -1,11 +1,11 @@
 package org.janusgraph.graphdb.vertices;
 
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.graphdb.internal.InternalRelation;
 
 import java.util.Iterator;
 
-public class RemovableRelationIterable<O extends TitanRelation>
+public class RemovableRelationIterable<O extends JanusGraphRelation>
         implements Iterable<O> {
 
     private final Iterable<InternalRelation> iterable;

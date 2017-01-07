@@ -6,7 +6,7 @@ import java.util.concurrent.Callable;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.util.stats.MetricManager;
 
@@ -15,7 +15,7 @@ import org.janusgraph.util.stats.MetricManager;
  *
  * @author Dan LaRocque (dan@thinkaurelius.com)
  */
-public class MetricsQueryExecutor<Q extends ElementQuery,R extends TitanElement,B extends BackendQuery> implements QueryExecutor<Q,R,B> {
+public class MetricsQueryExecutor<Q extends ElementQuery,R extends JanusGraphElement,B extends BackendQuery> implements QueryExecutor<Q,R,B> {
 
     private final QueryExecutor<Q,R,B> qe;
     private final String metricsPrefix;

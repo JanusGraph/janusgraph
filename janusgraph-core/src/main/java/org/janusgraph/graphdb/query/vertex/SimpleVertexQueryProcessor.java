@@ -13,7 +13,7 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +39,14 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     private static final Logger log = LoggerFactory.getLogger(SimpleVertexQueryProcessor.class);
 
     private final VertexCentricQuery query;
-    private final StandardTitanTx tx;
+    private final StandardJanusGraphTx tx;
     private final EdgeSerializer edgeSerializer;
     private final InternalVertex vertex;
     private final QueryProfiler profiler;
 
     private SliceQuery sliceQuery;
 
-    public SimpleVertexQueryProcessor(VertexCentricQuery query, StandardTitanTx tx) {
+    public SimpleVertexQueryProcessor(VertexCentricQuery query, StandardJanusGraphTx tx) {
         Preconditions.checkArgument(query.isSimple());
         this.query=query;
         this.tx=tx;
@@ -71,11 +71,11 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
     /**
-     * Converts the entries from this query result into actual {@link TitanRelation}.
+     * Converts the entries from this query result into actual {@link JanusGraphRelation}.
      *
      * @return
      */
-    public Iterable<TitanRelation> relations() {
+    public Iterable<JanusGraphRelation> relations() {
         return RelationConstructor.readRelation(vertex, this, tx);
     }
 

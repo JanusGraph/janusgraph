@@ -20,7 +20,7 @@ import org.janusgraph.graphdb.database.serialize.attribute.*;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.log.StandardTransactionId;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.janusgraph.core.schema.SchemaStatus;
@@ -92,9 +92,9 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(29,boolean[].class, new BooleanArraySerializer());
         registerClassInternal(30, String[].class, new StringArraySerializer());
 
-        //Needed by Titan
+        //Needed by JanusGraph
         registerClassInternal(41,TypeDefinitionCategory.class, new EnumSerializer<>(TypeDefinitionCategory.class));
-        registerClassInternal(42,TitanSchemaCategory.class, new EnumSerializer<>(TitanSchemaCategory.class));
+        registerClassInternal(42,JanusGraphSchemaCategory.class, new EnumSerializer<>(JanusGraphSchemaCategory.class));
         registerClassInternal(43,ParameterType.class, new EnumSerializer<>(ParameterType.class));
         registerClassInternal(44,RelationCategory.class, new EnumSerializer<>(RelationCategory.class));
         registerClassInternal(45,Order.class, new EnumSerializer<>(Order.class));

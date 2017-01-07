@@ -12,11 +12,11 @@ import java.util.Set;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphVariables implements Graph.Variables {
+public class JanusGraphVariables implements Graph.Variables {
 
     private final WriteConfiguration config;
 
-    public TitanGraphVariables(WriteConfiguration config) {
+    public JanusGraphVariables(WriteConfiguration config) {
         this.config = config;
     }
 

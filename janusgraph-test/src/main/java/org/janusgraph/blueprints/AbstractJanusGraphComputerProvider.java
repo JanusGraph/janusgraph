@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class AbstractTitanGraphComputerProvider extends AbstractTitanGraphProvider {
+public abstract class AbstractJanusGraphComputerProvider extends AbstractJanusGraphProvider {
 
     @Override
     public GraphTraversalSource traversal(final Graph graph) {

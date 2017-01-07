@@ -13,7 +13,7 @@ import java.util.Iterator;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanAssert {
+public class JanusGraphAssert {
 
     public static void assertCount(long expected, Object object) {
         org.junit.Assert.assertEquals(expected, size(object));

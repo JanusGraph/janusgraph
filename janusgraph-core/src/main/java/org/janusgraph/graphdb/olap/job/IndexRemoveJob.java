@@ -3,11 +3,11 @@ package org.janusgraph.graphdb.olap.job;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.EntryList;
@@ -23,17 +23,17 @@ import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.util.BufferUtil;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -64,7 +64,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         if (copy.graph.isProvided()) this.graph.setGraph(copy.graph.get());
     }
 
-    public IndexRemoveJob(final TitanGraph graph, final String indexName, final String indexType) {
+    public IndexRemoveJob(final JanusGraph graph, final String indexName, final String indexType) {
         super(indexName,indexType);
         this.graph.setGraph(graph);
     }
@@ -92,17 +92,17 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     protected void validateIndexStatus() {
         if (index instanceof RelationTypeIndex) {
             //Nothing specific to be done
-        } else if (index instanceof TitanGraphIndex) {
-            TitanGraphIndex gindex = (TitanGraphIndex)index;
+        } else if (index instanceof JanusGraphIndex) {
+            JanusGraphIndex gindex = (JanusGraphIndex)index;
             if (gindex.isMixedIndex())
-                throw new UnsupportedOperationException("Cannot remove mixed indexes through Titan. This can " +
+                throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
             CompositeIndexType indexType = (CompositeIndexType)mgmt.getSchemaVertex(index).asIndexType();
             graphIndexId = indexType.getID();
         } else throw new UnsupportedOperationException("Unsupported index found: "+index);
 
         //Must be a relation type index or a composite graph index
-        TitanSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
         SchemaStatus actualStatus = schemaVertex.getStatus();
         Preconditions.checkArgument(actualStatus==SchemaStatus.DISABLED,"The index [%s] must be disabled before it can be removed",indexName);
     }
@@ -129,7 +129,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             mgmt.rollback();
             writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
-            throw new TitanException(e.getMessage(), e);
+            throw new JanusGraphException(e.getMessage(), e);
         }
     }
 
@@ -145,7 +145,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             for (Direction dir : Direction.values()) if (wrappedType.isUnidirected(dir)) direction=dir;
             assert direction!=null;
 
-            StandardTitanTx tx = (StandardTitanTx)graph.get().buildTransaction().readOnly().start();
+            StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.get().buildTransaction().readOnly().start();
             try {
                 QueryContainer qc = new QueryContainer(tx);
                 qc.addQuery().type(wrappedType).direction(direction).relations();

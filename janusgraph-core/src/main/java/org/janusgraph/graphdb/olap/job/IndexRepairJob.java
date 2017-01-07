@@ -25,7 +25,7 @@ import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.system.BaseLabel;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.*;
@@ -63,7 +63,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     }
 
     @Override
-    public void workerIterationStart(final TitanGraph graph, Configuration config, ScanMetrics metrics) {
+    public void workerIterationStart(final JanusGraph graph, Configuration config, ScanMetrics metrics) {
         super.workerIterationStart(graph, config, metrics);
     }
 
@@ -72,20 +72,20 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
      */
     @Override
     protected void validateIndexStatus() {
-        TitanSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
+        JanusGraphSchemaVertex schemaVertex = mgmt.getSchemaVertex(index);
         Set<SchemaStatus> acceptableStatuses = SchemaAction.REINDEX.getApplicableStatus();
         boolean isValidIndex = true;
         String invalidIndexHint;
         if (index instanceof RelationTypeIndex ||
-                (index instanceof TitanGraphIndex && ((TitanGraphIndex)index).isCompositeIndex()) ) {
+                (index instanceof JanusGraphIndex && ((JanusGraphIndex)index).isCompositeIndex()) ) {
             SchemaStatus actualStatus = schemaVertex.getStatus();
             isValidIndex = acceptableStatuses.contains(actualStatus);
             invalidIndexHint = String.format(
                     "The index has status %s, but one of %s is required",
                     actualStatus, acceptableStatuses);
         } else {
-            Preconditions.checkArgument(index instanceof TitanGraphIndex,"Unexpected index: %s",index);
-            TitanGraphIndex gindex = (TitanGraphIndex)index;
+            Preconditions.checkArgument(index instanceof JanusGraphIndex,"Unexpected index: %s",index);
+            JanusGraphIndex gindex = (JanusGraphIndex)index;
             Preconditions.checkArgument(gindex.isMixedIndex());
             Map<String, SchemaStatus> invalidKeyStatuses = new HashMap<>();
             int acceptableFields = 0;
@@ -113,7 +113,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
 
     @Override
-    public void process(TitanVertex vertex, ScanMetrics metrics) {
+    public void process(JanusGraphVertex vertex, ScanMetrics metrics) {
         try {
             BackendTransaction mutator = writeTx.getTxHandle();
             if (index instanceof RelationTypeIndex) {
@@ -122,44 +122,44 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 EdgeSerializer edgeSerializer = writeTx.getEdgeSerializer();
                 List<Entry> additions = new ArrayList<>();
 
-                for (TitanRelation relation : vertex.query().types(indexRelationTypeName).direction(Direction.OUT).relations()) {
-                    InternalRelation titanRelation = (InternalRelation)relation;
-                    for (int pos = 0; pos < titanRelation.getArity(); pos++) {
+                for (JanusGraphRelation relation : vertex.query().types(indexRelationTypeName).direction(Direction.OUT).relations()) {
+                    InternalRelation janusgraphRelation = (InternalRelation)relation;
+                    for (int pos = 0; pos < janusgraphRelation.getArity(); pos++) {
                         if (!wrappedType.isUnidirected(Direction.BOTH) && !wrappedType.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
-                        Entry entry = edgeSerializer.writeRelation(titanRelation, wrappedType, pos, writeTx);
+                        Entry entry = edgeSerializer.writeRelation(janusgraphRelation, wrappedType, pos, writeTx);
                         additions.add(entry);
                     }
                 }
                 StaticBuffer vertexKey = writeTx.getIdInspector().getKey(vertex.longId());
                 mutator.mutateEdges(vertexKey, additions, KCVSCache.NO_DELETIONS);
                 metrics.incrementCustom(ADDED_RECORDS_COUNT, additions.size());
-            } else if (index instanceof TitanGraphIndex) {
+            } else if (index instanceof JanusGraphIndex) {
                 IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
                 assert indexType!=null;
                 IndexSerializer indexSerializer = graph.getIndexSerializer();
                 //Gather elements to index
-                List<TitanElement> elements;
+                List<JanusGraphElement> elements;
                 switch (indexType.getElement()) {
                     case VERTEX:
                         elements = ImmutableList.of(vertex);
                         break;
                     case PROPERTY:
                         elements = Lists.newArrayList();
-                        for (TitanVertexProperty p : addIndexSchemaConstraint(vertex.query(),indexType).properties()) {
+                        for (JanusGraphVertexProperty p : addIndexSchemaConstraint(vertex.query(),indexType).properties()) {
                             elements.add(p);
                         }
                         break;
                     case EDGE:
                         elements = Lists.newArrayList();
-                        for (TitanEdge e : addIndexSchemaConstraint(vertex.query().direction(Direction.OUT),indexType).edges()) {
+                        for (JanusGraphEdge e : addIndexSchemaConstraint(vertex.query().direction(Direction.OUT),indexType).edges()) {
                             elements.add(e);
                         }
                         break;
                     default: throw new AssertionError("Unexpected category: " + indexType.getElement());
                 }
                 if (indexType.isCompositeIndex()) {
-                    for (TitanElement element : elements) {
+                    for (JanusGraphElement element : elements) {
                         Set<IndexSerializer.IndexUpdate<StaticBuffer,Entry>> updates =
                                 indexSerializer.reindexElement(element, (CompositeIndexType) indexType);
                         for (IndexSerializer.IndexUpdate<StaticBuffer,Entry> update : updates) {
@@ -171,7 +171,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
                 } else {
                     assert indexType.isMixedIndex();
                     Map<String,Map<String,List<IndexEntry>>> documentsPerStore = new HashMap<>();
-                    for (TitanElement element : elements) {
+                    for (JanusGraphElement element : elements) {
                         indexSerializer.reindexElement(element, (MixedIndexType) indexType, documentsPerStore);
                         metrics.incrementCustom(DOCUMENT_UPDATES_COUNT);
                     }
@@ -183,7 +183,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
             mgmt.rollback();
             writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
-            throw new TitanException(e.getMessage(), e);
+            throw new JanusGraphException(e.getMessage(), e);
         }
     }
 
@@ -191,7 +191,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     public void getQueries(QueryContainer queries) {
         if (index instanceof RelationTypeIndex) {
             queries.addQuery().types(indexRelationTypeName).direction(Direction.OUT).relations();
-        } else if (index instanceof TitanGraphIndex) {
+        } else if (index instanceof JanusGraphIndex) {
             IndexType indexType = mgmt.getSchemaVertex(index).asIndexType();
             switch (indexType.getElement()) {
                 case PROPERTY:
@@ -217,7 +217,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
 
     private static<Q extends BaseVertexQuery> Q addIndexSchemaConstraint(Q query, IndexType indexType) {
         if (indexType.hasSchemaTypeConstraint()) {
-            TitanSchemaType constraint = indexType.getSchemaTypeConstraint();
+            JanusGraphSchemaType constraint = indexType.getSchemaTypeConstraint();
             Preconditions.checkArgument(constraint instanceof RelationType,"Expected constraint to be a " +
                     "relation type: %s",constraint);
             query.types((RelationType)constraint);

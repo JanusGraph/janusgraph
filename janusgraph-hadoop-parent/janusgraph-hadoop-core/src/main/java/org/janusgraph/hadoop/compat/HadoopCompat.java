@@ -12,15 +12,15 @@ import java.io.IOException;
 
 /**
  * This interface encapsulates both API and bytecode-level
- * IncompatibleClassChanges in Hadoop core. In theory, titan-hadoop-core should
+ * IncompatibleClassChanges in Hadoop core. In theory, janusgraph-hadoop-core should
  * only touch parts of Hadoop core ABI that have remained stable since 1.0, and
  * everything else should be hidden behind the compat layer.
  * <p>
  * This interface is public, but should be considered unstable and likely to
  * change in the future as new Hadoop versions are released, or as
- * titan-hadoop-core uses additional Hadoop features, or as bugs are discovered.
+ * janusgraph-hadoop-core uses additional Hadoop features, or as bugs are discovered.
  * It's possible to write and use a third-party implementation, but be prepared
- * to update it when upgrading to a newer Titan release.
+ * to update it when upgrading to a newer JanusGraph release.
  */
 public interface HadoopCompat {
 

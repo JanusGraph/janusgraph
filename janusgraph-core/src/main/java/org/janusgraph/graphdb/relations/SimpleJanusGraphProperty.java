@@ -2,8 +2,8 @@ package org.janusgraph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanProperty;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphProperty;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -15,13 +15,13 @@ import java.util.NoSuchElementException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class SimpleTitanProperty<V> implements TitanProperty<V> {
+public class SimpleJanusGraphProperty<V> implements JanusGraphProperty<V> {
 
     private final PropertyKey key;
     private final V value;
     private final InternalRelation relation;
 
-    public SimpleTitanProperty(InternalRelation relation, PropertyKey key, V value) {
+    public SimpleJanusGraphProperty(InternalRelation relation, PropertyKey key, V value) {
         this.key = key;
         this.value = value;
         this.relation = relation;
@@ -43,7 +43,7 @@ public class SimpleTitanProperty<V> implements TitanProperty<V> {
     }
 
     @Override
-    public TitanElement element() {
+    public JanusGraphElement element() {
         return relation;
     }
 

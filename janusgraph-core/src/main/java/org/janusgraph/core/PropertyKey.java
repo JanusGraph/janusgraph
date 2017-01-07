@@ -3,7 +3,7 @@ package org.janusgraph.core;
 
 
 /**
- * PropertyKey is an extension of {@link RelationType} for properties. Each property in Titan has a key.
+ * PropertyKey is an extension of {@link RelationType} for properties. Each property in JanusGraph has a key.
  * <p/>
  * A property key defines the following characteristics of a property:
  * <ul>

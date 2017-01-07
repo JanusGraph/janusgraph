@@ -15,10 +15,10 @@ import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.olap.OLAPTest;
 import org.janusgraph.testcategory.OrderedKeyStoreTests;
 import org.janusgraph.testcategory.UnorderedKeyStoreTests;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.janusgraph.testutil.TitanAssert.*;
+import static org.janusgraph.testutil.JanusGraphAssert.*;
 import static org.junit.Assert.*;
 
 /**
@@ -45,10 +45,10 @@ import static org.junit.Assert.*;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
+public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanPartitionGraphTest.class);
+            LoggerFactory.getLogger(JanusGraphPartitionGraphTest.class);
 
     final static Random random = new Random();
     final static int numPartitions = 8;
@@ -117,7 +117,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         final long[] gids = new long[numG];
 
         for (int i = 0; i < numG; i++) {
-            TitanVertex g = tx.addVertex("group");
+            JanusGraphVertex g = tx.addVertex("group");
             g.property(VertexProperty.Cardinality.single, "gid", i);
             g.property(VertexProperty.Cardinality.single, "sig", 0);
             for (String n : names) {
@@ -138,7 +138,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         }
 
         for (int i = 0; i < numG; i++) {
-            TitanVertex g = getV(tx, gids[i]);
+            JanusGraphVertex g = getV(tx, gids[i]);
             assertCount(1, g.query().direction(Direction.BOTH).labels("one").edges());
             assertCount(1, g.query().direction(i % 2 == 0 ? Direction.IN : Direction.OUT).labels("one").edges());
             assertCount(0, g.query().direction(i % 2 == 1 ? Direction.IN : Direction.OUT).labels("one").edges());
@@ -156,17 +156,17 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             long gId = gids[i];
             assertTrue(idManager.isPartitionedVertex(gId));
             assertEquals(idManager.getCanonicalVertexId(gId), gId);
-            TitanVertex g = getV(tx, gId);
+            JanusGraphVertex g = getV(tx, gId);
             final int canonicalPartition = getPartitionID(g);
             assertEquals(g, (Vertex) getOnlyElement(tx.query().has("gid", i).vertices()));
             assertEquals(i, g.<Integer>value("gid").intValue());
             assertCount(names.size(), g.properties("name"));
 
             //Verify that properties are distributed correctly
-            TitanVertexProperty p = (TitanVertexProperty) getOnlyElement(g.properties("gid"));
+            JanusGraphVertexProperty p = (JanusGraphVertexProperty) getOnlyElement(g.properties("gid"));
             assertEquals(canonicalPartition, getPartitionID(p));
             for (Iterator<VertexProperty<Object>> niter = g.properties("name"); niter.hasNext(); ) {
-                assertEquals(canonicalPartition,getPartitionID((TitanVertex) niter.next().element()));
+                assertEquals(canonicalPartition,getPartitionID((JanusGraphVertex) niter.next().element()));
             }
 
             //Copied from above
@@ -188,9 +188,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         Multiset<Integer> partitions = HashMultiset.create();
 
         for (int t = 1; t <= numTx; t++) {
-            TitanVertex g1 = getV(tx, gids[0]), g2 = getV(tx, gids[1]);
+            JanusGraphVertex g1 = getV(tx, gids[0]), g2 = getV(tx, gids[1]);
             assertNotNull(g1);
-            TitanVertex[] vs = new TitanVertex[vPerTx];
+            JanusGraphVertex[] vs = new JanusGraphVertex[vPerTx];
             for (int vi = 0; vi < vPerTx; vi++) {
                 vs[vi] = tx.addVertex("person");
                 vs[vi].property(VertexProperty.Cardinality.single, "sig", t);
@@ -205,7 +205,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             }
             newTx();
             //Verify that all elements are in the same partition
-            TitanTransaction txx = graph.buildTransaction().readOnly().start();
+            JanusGraphTransaction txx = graph.buildTransaction().readOnly().start();
             g1 = getV(tx, gids[0]);
             g2 = getV(tx, gids[1]);
             int partition = -1;
@@ -215,12 +215,12 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
                 if (partition < 0) partition = pid;
                 else assertEquals(partition, pid);
                 int numRels = 0;
-                TitanVertex v = getV(txx, vs[vi].longId());
-                for (TitanRelation r : v.query().relations()) {
+                JanusGraphVertex v = getV(txx, vs[vi].longId());
+                for (JanusGraphRelation r : v.query().relations()) {
                     numRels++;
                     assertEquals(partition, getPartitionID(r));
-                    if (r instanceof TitanEdge) {
-                        TitanVertex o = ((TitanEdge) r).otherVertex(v);
+                    if (r instanceof JanusGraphEdge) {
+                        JanusGraphVertex o = ((JanusGraphEdge) r).otherVertex(v);
                         assertTrue(o.equals(g1) || o.equals(g2));
                     }
                 }
@@ -234,7 +234,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         newTx();
         //Verify edge querying across partitions
-        TitanVertex g1 = getV(tx, gids[0]);
+        JanusGraphVertex g1 = getV(tx, gids[0]);
         assertEquals(0, g1.<Integer>value("gid").intValue());
         assertEquals("group", g1.label());
         assertCount(names.size(), g1.properties("name"));
@@ -257,7 +257,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             int[] partarr = new int[numP];
             int i = 0;
             for (Integer part : parts) partarr[i++] = part;
-            TitanTransaction tx2 = graph.buildTransaction().restrictedPartitions(partarr).readOnly().start();
+            JanusGraphTransaction tx2 = graph.buildTransaction().restrictedPartitions(partarr).readOnly().start();
             //Copied from above
             g1 = getV(tx2, gids[0]);
             assertEquals(0, g1.<Integer>value("gid").intValue());
@@ -268,7 +268,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
             assertCount(numV * 2, g1.query().direction(Direction.BOTH).labels("knows").edges());
 
             //Test local intersection
-            TitanVertex g2 = getV(tx2, gids[1]);
+            JanusGraphVertex g2 = getV(tx2, gids[1]);
             VertexList v1 = g1.query().direction(Direction.IN).labels("knows").vertexIds();
             VertexList v2 = g2.query().direction(Direction.IN).labels("knows").vertexIds();
             assertEquals(numV, v1.size());
@@ -300,15 +300,15 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
         int numVertices = 0;
-        TitanVertex[] groups = new TitanVertex[groupDegrees.length];
+        JanusGraphVertex[] groups = new JanusGraphVertex[groupDegrees.length];
         for (int i = 0; i < groupDegrees.length; i++) {
             groups[i]=tx.addVertex("group");
             groups[i].property("groupid","group"+i);
             numVertices++;
             if (commitMode==CommitMode.PER_VERTEX) newTx();
             for (int noEdges = 0; noEdges < groupDegrees[i]; noEdges++) {
-                TitanVertex g = vInTx(groups[i],tx);
-                TitanVertex p = tx.addVertex("name","person"+i+":"+noEdges,"clusterId","group"+i);
+                JanusGraphVertex g = vInTx(groups[i],tx);
+                JanusGraphVertex p = tx.addVertex("name","person"+i+":"+noEdges,"clusterId","group"+i);
                 numVertices++;
                 p.addEdge("member",g);
                 g.addEdge("contain", p);
@@ -320,7 +320,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         return numVertices;
     }
 
-    private static TitanVertex vInTx(TitanVertex v, TitanTransaction tx) {
+    private static JanusGraphVertex vInTx(JanusGraphVertex v, JanusGraphTransaction tx) {
         if (!v.hasId()) return v;
         else return tx.getVertex(v.longId());
     }
@@ -354,13 +354,13 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         IntSet partitionIds = new IntHashSet(numVertices); //to track the "spread" of partition ids
         for (int i=0;i<groupDegrees.length;i++) {
-            TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
+            JanusGraphVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             assertCount(groupDegrees[i],g.edges(Direction.OUT,"contain"));
             assertCount(groupDegrees[i],g.edges(Direction.IN,"member"));
             assertCount(groupDegrees[i],g.query().direction(Direction.OUT).edges());
             assertCount(groupDegrees[i],g.query().direction(Direction.IN).edges());
             assertCount(groupDegrees[i]*2,g.query().edges());
-            for (TitanVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
+            for (JanusGraphVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
                 int pid = getPartitionID(v);
                 partitionIds.add(pid);
                 assertEquals(g, getOnlyElement(v.query().direction(Direction.OUT).labels("member").vertices()));
@@ -409,8 +409,8 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         clopen(options);
 
         //Test OLAP works with partitioned vertices
-        TitanGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        JanusGraphComputer computer = graph.compute(FulgoraGraphComputer.class);
+        computer.resultMode(JanusGraphComputer.ResultMode.NONE);
         computer.workers(1);
         computer.program(new OLAPTest.DegreeCounter());
         computer.mapReduce(new OLAPTest.DegreeMapper());
@@ -460,9 +460,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         IntSet partitionIds = new IntHashSet(numVertices); //to track the "spread" of partition ids
         for (int i=0;i<groupDegrees.length;i++) {
-            TitanVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
+            JanusGraphVertex g = getOnlyVertex(tx.query().has("groupid","group"+i));
             int partitionId = -1;
-            for (TitanVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
+            for (JanusGraphVertex v : g.query().direction(Direction.IN).labels("member").vertices()) {
                 if (partitionId<0) partitionId = getPartitionID(v);
                 assertEquals(partitionId,getPartitionID(v));
                 partitionIds.add(partitionId);
@@ -472,13 +472,13 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
 
-    public int getPartitionID(TitanVertex vertex) {
+    public int getPartitionID(JanusGraphVertex vertex) {
         long p = idManager.getPartitionId(vertex.longId());
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;
     }
 
-    public int getPartitionID(TitanRelation relation) {
+    public int getPartitionID(JanusGraphRelation relation) {
         long p = relation.longId() & (idManager.getPartitionBound()-1);
         assertTrue(p>=0 && p<idManager.getPartitionBound() && p<Integer.MAX_VALUE);
         return (int)p;

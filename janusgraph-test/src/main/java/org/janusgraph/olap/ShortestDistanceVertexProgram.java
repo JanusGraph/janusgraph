@@ -30,10 +30,10 @@ public class ShortestDistanceVertexProgram extends StaticVertexProgram<Long> {
 
     private MessageScope.Local<Long> incidentMessageScope;
 
-    public static final String DISTANCE = "titan.shortestDistanceVertexProgram.distance";
-    public static final String MAX_DEPTH = "titan.shortestDistanceVertexProgram.maxDepth";
-    public static final String WEIGHT_PROPERTY = "titan.shortestDistanceVertexProgram.weightProperty";
-    public static final String SEED = "titan.shortestDistanceVertexProgram.seedID";
+    public static final String DISTANCE = "janusgraph.shortestDistanceVertexProgram.distance";
+    public static final String MAX_DEPTH = "janusgraph.shortestDistanceVertexProgram.maxDepth";
+    public static final String WEIGHT_PROPERTY = "janusgraph.shortestDistanceVertexProgram.weightProperty";
+    public static final String SEED = "janusgraph.shortestDistanceVertexProgram.seedID";
 
     private int maxDepth;
     private long seed;

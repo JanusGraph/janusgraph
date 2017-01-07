@@ -8,7 +8,7 @@ import com.google.common.collect.*;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.Configuration;
@@ -41,19 +41,19 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
 import org.janusgraph.graphdb.query.QueryUtil;
 import org.janusgraph.graphdb.relations.EdgeDirection;
-import org.janusgraph.graphdb.tinkerpop.TitanBlueprintsGraph;
-import org.janusgraph.graphdb.tinkerpop.TitanFeatures;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
 import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.TitanGraphStepStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.TitanLocalQueryOptimizerStrategy;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
+import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.transaction.TransactionConfiguration;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.types.system.BaseRelationType;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.util.ExceptionFactory;
 import org.janusgraph.util.system.IOUtils;
 import org.janusgraph.util.system.TXUtils;
@@ -75,19 +75,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
-public class StandardTitanGraph extends TitanBlueprintsGraph {
+public class StandardJanusGraph extends JanusGraphBlueprintsGraph {
 
     private static final Logger log =
-            LoggerFactory.getLogger(StandardTitanGraph.class);
+            LoggerFactory.getLogger(StandardJanusGraph.class);
 
 
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
-                .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(), TitanLocalQueryOptimizerStrategy.instance(), TitanGraphStepStrategy.instance());
+                .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(), JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance());
 
         //Register with cache
-        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanGraph.class, graphStrategies);
-        TraversalStrategies.GlobalCache.registerStrategies(StandardTitanTx.class, graphStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, graphStrategies);
     }
 
     private GraphDatabaseConfiguration config;
@@ -115,9 +115,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private volatile boolean isOpen = true;
     private AtomicLong txCounter;
 
-    private Set<StandardTitanTx> openTransactions;
+    private Set<StandardJanusGraphTx> openTransactions;
 
-    public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
+    public StandardJanusGraph(GraphDatabaseConfiguration configuration) {
 
         this.config = configuration;
         this.backend = configuration.getBackend();
@@ -137,13 +137,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         isOpen = true;
         txCounter = new AtomicLong(0);
-        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100, 0.75f, 1));
+        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardJanusGraphTx, Boolean>(100, 0.75f, 1));
 
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();
         ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
         if (globalConfig.has(REGISTRATION_TIME, uniqueInstanceId)) {
-            throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
+            throw new JanusGraphException(String.format("A JanusGraph graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
         }
         globalConfig.set(REGISTRATION_TIME, times.getTime(), uniqueInstanceId);
 
@@ -168,7 +168,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     @Override
-    public synchronized void close() throws TitanException {
+    public synchronized void close() throws JanusGraphException {
         try {
             closeInternal();
         } finally {
@@ -180,7 +180,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         if (!isOpen) return;
 
-        Map<TitanTransaction, RuntimeException> txCloseExceptions = new HashMap<>();
+        Map<JanusGraphTransaction, RuntimeException> txCloseExceptions = new HashMap<>();
 
         try {
             //Unregister instance
@@ -197,7 +197,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
              * 1. no concurrent modifications during graph shutdown
              * 2. all contained txs are open
              */
-            for (StandardTitanTx otx : openTransactions) {
+            for (StandardJanusGraphTx otx : openTransactions) {
                 try {
                     otx.close();
                 } catch (RuntimeException e) {
@@ -250,7 +250,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public Features features() {
-        return TitanFeatures.getFeatures(this, backend.getStoreFeatures());
+        return JanusGraphFeatures.getFeatures(this, backend.getStoreFeatures());
     }
 
 
@@ -288,18 +288,18 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     @Override
-    public TitanManagement openManagement() {
+    public JanusGraphManagement openManagement() {
         return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger, schemaCache);
     }
 
-    public Set<? extends TitanTransaction> getOpenTransactions() {
+    public Set<? extends JanusGraphTransaction> getOpenTransactions() {
         return Sets.newHashSet(openTransactions);
     }
 
     // ################### TRANSACTIONS #########################
 
     @Override
-    public TitanTransaction newTransaction() {
+    public JanusGraphTransaction newTransaction() {
         return buildTransaction().start();
     }
 
@@ -309,28 +309,28 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     @Override
-    public TitanTransaction newThreadBoundTransaction() {
+    public JanusGraphTransaction newThreadBoundTransaction() {
         return buildTransaction().threadBound().start();
     }
 
-    public StandardTitanTx newTransaction(final TransactionConfiguration configuration) {
+    public StandardJanusGraphTx newTransaction(final TransactionConfiguration configuration) {
         if (!isOpen) ExceptionFactory.graphShutdown();
         try {
-            StandardTitanTx tx = new StandardTitanTx(this, configuration);
+            StandardJanusGraphTx tx = new StandardJanusGraphTx(this, configuration);
             tx.setBackendTransaction(openBackendTransaction(tx));
             openTransactions.add(tx);
             return tx;
         } catch (BackendException e) {
-            throw new TitanException("Could not start new transaction", e);
+            throw new JanusGraphException("Could not start new transaction", e);
         }
     }
 
-    private BackendTransaction openBackendTransaction(StandardTitanTx tx) throws BackendException {
+    private BackendTransaction openBackendTransaction(StandardJanusGraphTx tx) throws BackendException {
         IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever(tx);
         return backend.beginTransaction(tx.getConfiguration(), retriever);
     }
 
-    public void closeTransaction(StandardTitanTx tx) {
+    public void closeTransaction(StandardJanusGraphTx tx) {
         openTransactions.remove(tx);
     }
 
@@ -342,12 +342,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         public Long retrieveSchemaByName(String typeName) {
             // Get a consistent tx
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
-            StandardTitanTx consistentTx = null;
+            StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardTitanGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        StandardTitanGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
+                        StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
                 consistentTx.getTxHandle().disableCache();
-                TitanVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
+                JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
                 return v!=null?v.longId():null;
             } finally {
                 TXUtils.rollbackQuietly(consistentTx);
@@ -358,10 +358,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir) {
             SliceQuery query = queryCache.getQuery(type,dir);
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
-            StandardTitanTx consistentTx = null;
+            StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardTitanGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        StandardTitanGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
+                        StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
                 consistentTx.getTxHandle().disableCache();
                 EntryList result = edgeQuery(schemaId, query, consistentTx.getTxHandle());
                 return result;
@@ -493,7 +493,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public ModificationSummary prepareCommit(final Collection<InternalRelation> addedRelations,
                                      final Collection<InternalRelation> deletedRelations,
                                      final Predicate<InternalRelation> filter,
-                                     final BackendTransaction mutator, final StandardTitanTx tx,
+                                     final BackendTransaction mutator, final StandardJanusGraphTx tx,
                                      final boolean acquireLocks) throws BackendException {
 
 
@@ -618,7 +618,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private static final Predicate<InternalRelation> SCHEMA_FILTER = new Predicate<InternalRelation>() {
         @Override
         public boolean apply(@Nullable InternalRelation internalRelation) {
-            return internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
+            return internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
         }
     };
 
@@ -632,7 +632,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
 
     public void commit(final Collection<InternalRelation> addedRelations,
-                     final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) {
+                     final Collection<InternalRelation> deletedRelations, final StandardJanusGraphTx tx) {
         if (addedRelations.isEmpty() && deletedRelations.isEmpty()) return;
         //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
@@ -640,7 +640,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final Instant txTimestamp = tx.getConfiguration().getCommitTime();
         final long transactionId = txCounter.incrementAndGet();
 
-        //2. Assign TitanVertex IDs
+        //2. Assign JanusGraphVertex IDs
         if (!tx.getConfiguration().hasAssignIDsImmediately())
             idAssigner.assignIDs(addedRelations);
 
@@ -784,15 +784,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 log.error("Could not roll-back transaction ["+transactionId+"] after failure due to exception",e2);
             }
             if (e instanceof RuntimeException) throw (RuntimeException)e;
-            else throw new TitanException("Unexpected exception",e);
+            else throw new JanusGraphException("Unexpected exception",e);
         }
     }
 
 
     private static class ShutdownThread extends Thread {
-        private final StandardTitanGraph graph;
+        private final StandardJanusGraph graph;
 
-        public ShutdownThread(StandardTitanGraph graph) {
+        public ShutdownThread(StandardJanusGraph graph) {
             this.graph = graph;
         }
 

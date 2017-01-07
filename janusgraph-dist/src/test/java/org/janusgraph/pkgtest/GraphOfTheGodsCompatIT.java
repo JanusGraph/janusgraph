@@ -13,7 +13,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
+public class GraphOfTheGodsCompatIT extends AbstractJanusGraphAssemblyIT {
 
     private static final Logger log =
             LoggerFactory.getLogger(GraphOfTheGodsCompatIT.class);
@@ -21,7 +21,7 @@ public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
     private static final String BDB_ES = "bdb-es";
 
     /**
-     * Download and open databases created by previous versions of Titan.
+     * Download and open databases created by previous versions of JanusGraph.
      * A basic check for cluster-restart forward-compatibility.
      */
     @Test
@@ -77,13 +77,13 @@ public class GraphOfTheGodsCompatIT extends AbstractTitanAssemblyIT {
         FileUtils.deleteQuietly(new File(ZIPFILE_EXTRACTED));
         unzip(BUILD_DIR, ZIPFILE_PATH);
 
-        // Now download the archive at the URL containing DB files from an older Titan version
+        // Now download the archive at the URL containing DB files from an older JanusGraph version
         downloadFile(archiveurl, "old_db.zip", new File(ZIPFILE_EXTRACTED));
         unzip(ZIPFILE_EXTRACTED, "old_db.zip");
 
         // Now start the current release using the old DB files (new code, old data) and query it
         // The config file below must point at the the data unzipped in the previous step
-        testGotGQueries("conf/titan-berkeleyje-es.properties");
+        testGotGQueries("conf/janusgraph-berkeleyje-es.properties");
     }
 
     private void downloadFile(String url, String toLocalPath, File workingDir) throws IOException, InterruptedException {

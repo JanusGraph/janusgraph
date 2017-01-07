@@ -11,7 +11,7 @@ import org.apache.commons.lang.StringUtils;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum TitanSchemaCategory {
+public enum JanusGraphSchemaCategory {
 
     EDGELABEL, PROPERTYKEY, VERTEXLABEL, GRAPHINDEX, TYPE_MODIFIER;
 

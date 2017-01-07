@@ -23,16 +23,16 @@ SET work=%CD%
 
 IF [%work:~-3%]==[bin] CD ..
 
-IF NOT DEFINED TITAN_HOME (
-    SET TITAN_HOME=%CD%
+IF NOT DEFINED JANUSGRAPH_HOME (
+    SET JANUSGRAPH_HOME=%CD%
 )
 
-:: location of the Titan lib directory
-SET TITAN_LIB=%TITAN_HOME%\lib
+:: location of the JanusGraph lib directory
+SET JANUSGRAPH_LIB=%JANUSGRAPH_HOME%\lib
 
-:: location of the Titan extensions directory
-IF NOT DEFINED TITAN_EXT (
-    SET TITAN_EXT=%TITAN_HOME%\ext
+:: location of the JanusGraph extensions directory
+IF NOT DEFINED JANUSGRAPH_EXT (
+    SET JANUSGRAPH_EXT=%JANUSGRAPH_HOME%\ext
 )
 
 :: Set default message threshold for Log4j Gremlin's console appender
@@ -42,50 +42,50 @@ IF NOT DEFINED GREMLIN_LOG_LEVEL (
 
 :: Hadoop winutils.exe needs to be available because hadoop-gremlin is installed and active by default
 IF NOT DEFINED HADOOP_HOME (
-    SET TITAN_WINUTILS=%TITAN_HOME%\bin\winutils.exe
-    IF EXIST !TITAN_WINUTILS! (
-        SET HADOOP_HOME=%TITAN_HOME%
+    SET JANUSGRAPH_WINUTILS=%JANUSGRAPH_HOME%\bin\winutils.exe
+    IF EXIST !JANUSGRAPH_WINUTILS! (
+        SET HADOOP_HOME=%JANUSGRAPH_HOME%
     ) ELSE (
         ECHO HADOOP_HOME is not set.
         ECHO Download http://public-repo-1.hortonworks.com/hdp-win-alpha/winutils.exe
-        ECHO Place it under !TITAN_WINUTILS!
+        ECHO Place it under !JANUSGRAPH_WINUTILS!
         PAUSE
         GOTO :eof
     )
 )
 
-:: set HADOOP_GREMLIN_LIBS by default to the Titan lib
+:: set HADOOP_GREMLIN_LIBS by default to the JanusGraph lib
 IF NOT DEFINED HADOOP_GREMLIN_LIBS (
-    SET HADOOP_GREMLIN_LIBS=%TITAN_LIB%
+    SET HADOOP_GREMLIN_LIBS=%JANUSGRAPH_LIB%
 )
 
-CD %TITAN_LIB%
+CD %JANUSGRAPH_LIB%
 
-FOR /F "tokens=*" %%G IN ('dir /b "titan-*.jar"') DO SET TITAN_JARS=!TITAN_JARS!;%TITAN_LIB%\%%G
+FOR /F "tokens=*" %%G IN ('dir /b "janusgraph-*.jar"') DO SET JANUSGRAPH_JARS=!JANUSGRAPH_JARS!;%JANUSGRAPH_LIB%\%%G
 
-FOR /F "tokens=*" %%G IN ('dir /b "jamm-*.jar"') DO SET JAMM_JAR=%TITAN_LIB%\%%G
+FOR /F "tokens=*" %%G IN ('dir /b "jamm-*.jar"') DO SET JAMM_JAR=%JANUSGRAPH_LIB%\%%G
 
-FOR /F "tokens=*" %%G IN ('dir /b "slf4j-log4j12-*.jar"') DO SET SLF4J_LOG4J_JAR=%TITAN_LIB%\%%G
+FOR /F "tokens=*" %%G IN ('dir /b "slf4j-log4j12-*.jar"') DO SET SLF4J_LOG4J_JAR=%JANUSGRAPH_LIB%\%%G
 
-CD %TITAN_EXT%
+CD %JANUSGRAPH_EXT%
 
 FOR /D /r %%i in (*) do (
     SET EXTDIR_JARS=!EXTDIR_JARS!;%%i\*
 )
 
-CD %TITAN_HOME%
+CD %JANUSGRAPH_HOME%
 
-:: put slf4j-log4j12 and Titan jars first because of conflict with logback
-SET CP=%CLASSPATH%;%SLF4J_LOG4J_JAR%;%TITAN_JARS%;%TITAN_LIB%\*;%EXTDIR_JARS%
+:: put slf4j-log4j12 and JanusGraph jars first because of conflict with logback
+SET CP=%CLASSPATH%;%SLF4J_LOG4J_JAR%;%JANUSGRAPH_JARS%;%JANUSGRAPH_LIB%\*;%EXTDIR_JARS%
 
 :: to debug plugin :install include -Divy.message.logger.level=4 -Dgroovy.grape.report.downloads=true
 :: to debug log4j include -Dlog4j.debug=true
 IF NOT DEFINED JAVA_OPTIONS (
  SET JAVA_OPTIONS=-Xms32m -Xmx512m ^
- -Dtitan.logdir=%TITAN_HOME%\log ^
- -Dtinkerpop.ext=%TITAN_EXT% ^
+ -Djanusgraph.logdir=%JANUSGRAPH_HOME%\log ^
+ -Dtinkerpop.ext=%JANUSGRAPH_EXT% ^
  -Dlogback.configurationFile=conf\logback.xml ^
- -Dlog4j.configuration=file:/%TITAN_HOME%\conf\gremlin-server\log4j-server.properties ^
+ -Dlog4j.configuration=file:/%JANUSGRAPH_HOME%\conf\gremlin-server\log4j-server.properties ^
  -Dlog4j.debug=true ^
  -Dgremlin.log4j.level=%GREMLIN_LOG_LEVEL% ^
  -javaagent:%JAMM_JAR%
@@ -105,7 +105,7 @@ IF "%1" == "-i" (
 :server
 
 IF "%1" == "" (
-  SET GREMLIN_SERVER_YAML=%TITAN_HOME%\conf\gremlin-server\gremlin-server.yaml
+  SET GREMLIN_SERVER_YAML=%JANUSGRAPH_HOME%\conf\gremlin-server\gremlin-server.yaml
 ) ELSE (
   SET GREMLIN_SERVER_YAML=%1
 )

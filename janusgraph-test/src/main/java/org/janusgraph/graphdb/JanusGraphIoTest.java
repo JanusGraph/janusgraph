@@ -11,11 +11,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
 /**
- * Tests Titan specific serialization classes not covered by the TinkerPop suite.
+ * Tests JanusGraph specific serialization classes not covered by the TinkerPop suite.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public abstract class TitanIoTest extends TitanGraphBaseTest {
+public abstract class JanusGraphIoTest extends JanusGraphBaseTest {
 
     @Test
     public void testGeoShapeSerializationReadWriteAsGraphSONEmbedded() throws Exception {
@@ -32,7 +32,7 @@ public abstract class TitanIoTest extends TitanGraphBaseTest {
         FileInputStream fis = new FileInputStream("/tmp/test.json");
         reader.readGraph(fis, graph);
 
-        TitanIndexTest.assertGraphOfTheGods(graph);
+        JanusGraphIndexTest.assertGraphOfTheGods(graph);
     }
 
     @Test
@@ -45,6 +45,6 @@ public abstract class TitanIoTest extends TitanGraphBaseTest {
 
         graph.io(IoCore.gryo()).readGraph("/tmp/test.kryo");
 
-        TitanIndexTest.assertGraphOfTheGods(graph);
+        JanusGraphIndexTest.assertGraphOfTheGods(graph);
     }
 }

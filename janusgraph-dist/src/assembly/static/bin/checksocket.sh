@@ -21,4 +21,4 @@ else
     JAVA=java
 fi
 
-"$JAVA" -cp lib/titan-core-*.jar org.janusgraph.util.system.CheckSocket $1 $2
+"$JAVA" -cp lib/janusgraph-core-*.jar org.janusgraph.util.system.CheckSocket $1 $2

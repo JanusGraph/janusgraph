@@ -1,11 +1,11 @@
 package org.janusgraph.core.schema;
 
 /**
- * Used to control Titan's consistency behavior on eventually consistent or other non-transactional backend systems.
- * The consistency behavior can be defined for individual {@link TitanSchemaElement}s which then applies to all instances.
+ * Used to control JanusGraph's consistency behavior on eventually consistent or other non-transactional backend systems.
+ * The consistency behavior can be defined for individual {@link JanusGraphSchemaElement}s which then applies to all instances.
  * <p/>
- * Consistency modifiers are installed on schema elements via {@link TitanManagement#setConsistency(TitanSchemaElement, ConsistencyModifier)}
- * and can be read using {@link TitanManagement#getConsistency(TitanSchemaElement)}.
+ * Consistency modifiers are installed on schema elements via {@link JanusGraphManagement#setConsistency(JanusGraphSchemaElement, ConsistencyModifier)}
+ * and can be read using {@link JanusGraphManagement#getConsistency(JanusGraphSchemaElement)}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -31,7 +31,7 @@ public enum ConsistencyModifier {
 
 
     /**
-     * Causes Titan to delete and add a new edge/property instead of overwriting an existing one, hence avoiding potential
+     * Causes JanusGraph to delete and add a new edge/property instead of overwriting an existing one, hence avoiding potential
      * concurrent write conflicts. This only applies to multi-edges and list-properties.
      * </p>
      * Note, that this potentially impacts how the data should be read.

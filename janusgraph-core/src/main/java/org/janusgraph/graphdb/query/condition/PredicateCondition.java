@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.internal.InternalElement;
 import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -15,13 +15,13 @@ import java.util.Iterator;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
+public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<E> {
 
     private final K key;
-    private final TitanPredicate predicate;
+    private final JanusGraphPredicate predicate;
     private final Object value;
 
-    public PredicateCondition(K key, TitanPredicate predicate, Object value) {
+    public PredicateCondition(K key, JanusGraphPredicate predicate, Object value) {
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(key instanceof String || key instanceof RelationType);
         Preconditions.checkNotNull(predicate);
@@ -60,7 +60,7 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
             return satisfiesCondition(null);
         } else {
             assert ((InternalRelationType)type).multiplicity().isUnique(Direction.OUT);
-            return satisfiesCondition((TitanVertex)element.value(type.name()));
+            return satisfiesCondition((JanusGraphVertex)element.value(type.name()));
         }
     }
 
@@ -68,7 +68,7 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
         return key;
     }
 
-    public TitanPredicate getPredicate() {
+    public JanusGraphPredicate getPredicate() {
         return predicate;
     }
 
@@ -98,8 +98,8 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
         return key.toString() + " " + predicate.toString() + " " + String.valueOf(value);
     }
 
-    public static <K, E extends TitanElement> PredicateCondition<K, E> of(K key, TitanPredicate titanPredicate, Object condition) {
-        return new PredicateCondition<K, E>(key, titanPredicate, condition);
+    public static <K, E extends JanusGraphElement> PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {
+        return new PredicateCondition<K, E>(key, janusgraphPredicate, condition);
     }
 
 }

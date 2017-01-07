@@ -1,6 +1,6 @@
 package org.janusgraph.core.log;
 
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphTransaction;
 
 /**
  * Allows the user to define custom behavior to process those transactional changes that are recorded in a transaction log.
@@ -18,6 +18,6 @@ public interface ChangeProcessor {
      * @param txId
      * @param changeState
      */
-    public void process(TitanTransaction tx, TransactionId txId, ChangeState changeState);
+    public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState);
 
 }

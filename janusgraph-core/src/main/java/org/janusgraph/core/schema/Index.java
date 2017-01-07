@@ -5,6 +5,6 @@ package org.janusgraph.core.schema;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface Index extends TitanSchemaElement {
+public interface Index extends JanusGraphSchemaElement {
 
 }

@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import org.janusgraph.CassandraStorageSetup;
 
-public class CassandraThriftAssemblyIT extends AbstractTitanAssemblyIT {
+public class CassandraThriftAssemblyIT extends AbstractJanusGraphAssemblyIT {
 
     @BeforeClass
     public static void startCassandra() {
@@ -14,6 +14,6 @@ public class CassandraThriftAssemblyIT extends AbstractTitanAssemblyIT {
 
     @Test
     public void testCassandraThriftSimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/titan-cassandra.properties", "cassandrathrift");
+        testSimpleGremlinSession("conf/janusgraph-cassandra.properties", "cassandrathrift");
     }
 }

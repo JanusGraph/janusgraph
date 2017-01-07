@@ -2,13 +2,13 @@ package org.janusgraph.graphdb.berkeleyje;
 
 import org.janusgraph.BerkeleyStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanOperationCountingTest;
-import org.janusgraph.graphdb.TitanPartitionGraphTest;
+import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
+import org.janusgraph.graphdb.JanusGraphPartitionGraphTest;
 import org.junit.Ignore;
 
 
 
-public class BerkeleyPartitionGraphTest extends TitanPartitionGraphTest {
+public class BerkeleyPartitionGraphTest extends JanusGraphPartitionGraphTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {

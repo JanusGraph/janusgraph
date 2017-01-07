@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.IndexType;
@@ -74,7 +74,7 @@ public abstract class IndexTypeWrapper implements IndexType {
     }
 
     private volatile boolean cachedTypeConstraint = false;
-    private volatile TitanSchemaType schemaTypeConstraint = null;
+    private volatile JanusGraphSchemaType schemaTypeConstraint = null;
 
     @Override
     public boolean hasSchemaTypeConstraint() {
@@ -82,15 +82,15 @@ public abstract class IndexTypeWrapper implements IndexType {
     }
 
     @Override
-    public TitanSchemaType getSchemaTypeConstraint() {
-        TitanSchemaType constraint;
+    public JanusGraphSchemaType getSchemaTypeConstraint() {
+        JanusGraphSchemaType constraint;
         if (!cachedTypeConstraint) {
             Iterable<SchemaSource.Entry> related = base.getRelated(TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, Direction.OUT);
             if (Iterables.isEmpty(related)) {
                 constraint=null;
             } else {
                 constraint =
-                        (TitanSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
+                        (JanusGraphSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
                 assert constraint!=null;
             }
             schemaTypeConstraint = constraint;

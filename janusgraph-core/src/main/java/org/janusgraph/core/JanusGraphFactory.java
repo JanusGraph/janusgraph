@@ -14,7 +14,7 @@ import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import org.janusgraph.graphdb.log.StandardLogProcessorFramework;
 import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
@@ -33,72 +33,72 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
- * TitanFactory is used to open or instantiate a Titan graph database.
+ * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see TitanGraph
+ * @see JanusGraph
  */
 
-public class TitanFactory {
+public class JanusGraphFactory {
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanFactory.class);
+            LoggerFactory.getLogger(JanusGraphFactory.class);
 
     /**
-     * Opens a {@link TitanGraph} database.
+     * Opens a {@link JanusGraph} database.
      * <p/>
-     * If the argument points to a configuration file, the configuration file is loaded to configure the Titan graph
-     * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned Titan graph.
+     * If the argument points to a configuration file, the configuration file is loaded to configure the JanusGraph graph
+     * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned JanusGraph graph.
      * <p />
      * A configuration short-cut is of the form:
      * [STORAGE_BACKEND_NAME]:[DIRECTORY_OR_HOST]
      *
      * @param shortcutOrFile Configuration file name or configuration short-cut
-     * @return Titan graph database configured according to the provided configuration
+     * @return JanusGraph graph database configured according to the provided configuration
      * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/configuration.html">"Configuration" manual chapter</a>
      * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/titan-config-ref.html">Configuration Reference</a>
      */
-    public static TitanGraph open(String shortcutOrFile) {
+    public static JanusGraph open(String shortcutOrFile) {
         return open(getLocalConfiguration(shortcutOrFile));
     }
 
     /**
-     * Opens a {@link TitanGraph} database configured according to the provided configuration.
+     * Opens a {@link JanusGraph} database configured according to the provided configuration.
      *
      * @param configuration Configuration for the graph database
-     * @return Titan graph database
+     * @return JanusGraph graph database
      * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/configuration.html">"Configuration" manual chapter</a>
      * @see <a href="http://s3.thinkaurelius.com/docs/titan/current/titan-config-ref.html">Configuration Reference</a>
      */
-    public static TitanGraph open(Configuration configuration) {
+    public static JanusGraph open(Configuration configuration) {
         return open(new CommonsConfiguration(configuration));
     }
 
     /**
-     * Opens a {@link TitanGraph} database configured according to the provided configuration.
+     * Opens a {@link JanusGraph} database configured according to the provided configuration.
      *
      * @param configuration Configuration for the graph database
-     * @return Titan graph database
+     * @return JanusGraph graph database
      */
-    public static TitanGraph open(BasicConfiguration configuration) {
+    public static JanusGraph open(BasicConfiguration configuration) {
         return open(configuration.getConfiguration());
     }
 
     /**
-     * Opens a {@link TitanGraph} database configured according to the provided configuration.
+     * Opens a {@link JanusGraph} database configured according to the provided configuration.
      *
      * @param configuration Configuration for the graph database
-     * @return Titan graph database
+     * @return JanusGraph graph database
      */
-    public static TitanGraph open(ReadConfiguration configuration) {
-        return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
+    public static JanusGraph open(ReadConfiguration configuration) {
+        return new StandardJanusGraph(new GraphDatabaseConfiguration(configuration));
     }
 
     /**
-     * Returns a {@link Builder} that allows to set the configuration options for opening a Titan graph database.
+     * Returns a {@link Builder} that allows to set the configuration options for opening a JanusGraph graph database.
      * <p />
      * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
-     * the graph can be opened with {@link org.janusgraph.core.TitanFactory.Builder#open()}.
+     * the graph can be opened with {@link org.janusgraph.core.JanusGraphFactory.Builder#open()}.
      *
      * @return
      */
@@ -129,14 +129,14 @@ public class TitanFactory {
         }
 
         /**
-         * Opens a Titan graph with the previously configured options.
+         * Opens a JanusGraph graph with the previously configured options.
          *
          * @return
          */
-        public TitanGraph open() {
+        public JanusGraph open() {
             ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                     writeConfiguration.copy(), BasicConfiguration.Restriction.NONE);
-            return TitanFactory.open(mc);
+            return JanusGraphFactory.open(mc);
         }
 
 
@@ -149,8 +149,8 @@ public class TitanFactory {
      * @param graph
      * @return
      */
-    public static LogProcessorFramework openTransactionLog(TitanGraph graph) {
-        return new StandardLogProcessorFramework((StandardTitanGraph)graph);
+    public static LogProcessorFramework openTransactionLog(JanusGraph graph) {
+        return new StandardLogProcessorFramework((StandardJanusGraph)graph);
     }
 
     /**
@@ -161,8 +161,8 @@ public class TitanFactory {
      * @param start
      * @return
      */
-    public static TransactionRecovery startTransactionRecovery(TitanGraph graph, Instant start) {
-        return new StandardTransactionLogProcessor((StandardTitanGraph)graph, start);
+    public static TransactionRecovery startTransactionRecovery(JanusGraph graph, Instant start) {
+        return new StandardTransactionLogProcessor((StandardJanusGraph)graph, start);
     }
 
     //###################################
@@ -197,7 +197,7 @@ public class TitanFactory {
     }
 
     /**
-     * Load a properties file containing a Titan graph configuration.
+     * Load a properties file containing a JanusGraph graph configuration.
      * <p/>
      * <ol>
      * <li>Load the file contents into a {@link org.apache.commons.configuration.PropertiesConfiguration}</li>
@@ -228,7 +228,7 @@ public class TitanFactory {
 
             if (null == tmpParent) {
                 /*
-                 * null usually means we were given a Titan config file path
+                 * null usually means we were given a JanusGraph config file path
                  * string like "foo.properties" that refers to the current
                  * working directory of the process.
                  */

@@ -15,10 +15,10 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @GraphProvider.Descriptor(computer = FulgoraGraphComputer.class)
-public class BerkeleyGraphComputerProvider extends AbstractTitanGraphComputerProvider {
+public class BerkeleyGraphComputerProvider extends AbstractJanusGraphComputerProvider {
 
     @Override
-    public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
         ModifiableConfiguration config = BerkeleyStorageSetup.getBerkeleyJEConfiguration(StorageSetup.getHomeDir(graphName));
         config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, Duration.ofMillis(20));
         config.set(GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL,false);

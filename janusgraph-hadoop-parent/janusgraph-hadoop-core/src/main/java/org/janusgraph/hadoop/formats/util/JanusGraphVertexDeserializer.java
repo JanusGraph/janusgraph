@@ -11,7 +11,7 @@ import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.relations.RelationCache;
 import org.janusgraph.graphdb.types.TypeInspector;
 import org.janusgraph.hadoop.formats.util.input.SystemTypeInspector;
-import org.janusgraph.hadoop.formats.util.input.TitanHadoopSetup;
+import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -25,18 +25,18 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class TitanVertexDeserializer implements AutoCloseable {
+public class JanusGraphVertexDeserializer implements AutoCloseable {
 
-    private final TitanHadoopSetup setup;
+    private final JanusGraphHadoopSetup setup;
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final IDManager idManager;
     private final boolean verifyVertexExistence = false;
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanVertexDeserializer.class);
+            LoggerFactory.getLogger(JanusGraphVertexDeserializer.class);
 
-    public TitanVertexDeserializer(final TitanHadoopSetup setup) {
+    public JanusGraphVertexDeserializer(final JanusGraphHadoopSetup setup) {
         this.setup = setup;
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
@@ -193,7 +193,7 @@ public class TitanVertexDeserializer implements AutoCloseable {
 //                            frel.setProperty(el, new FaunusVertex(configuration,(Long)next.value));
 //                        }
 //                    }
-//                    for (TitanRelation rel : frel.query().queryAll().relations())
+//                    for (JanusGraphRelation rel : frel.query().queryAll().relations())
 //                        ((FaunusRelation)rel).setLifeCycle(ElementLifeCycle.Loaded);
 //                }
 //                frel.setLifeCycle(ElementLifeCycle.Loaded);

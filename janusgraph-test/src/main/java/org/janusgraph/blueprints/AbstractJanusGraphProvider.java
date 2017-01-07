@@ -3,34 +3,34 @@ package org.janusgraph.blueprints;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
 import org.janusgraph.diskstorage.configuration.ConfigElement;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
 import org.janusgraph.graphdb.olap.computer.FulgoraVertexProperty;
 import org.janusgraph.graphdb.relations.CacheEdge;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
-import org.janusgraph.graphdb.relations.SimpleTitanProperty;
+import org.janusgraph.graphdb.relations.SimpleJanusGraphProperty;
 import org.janusgraph.graphdb.relations.StandardEdge;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
-import org.janusgraph.graphdb.tinkerpop.TitanFeatures;
-import org.janusgraph.graphdb.tinkerpop.TitanGraphVariables;
-import org.janusgraph.graphdb.tinkerpop.TitanIoRegistry;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphVariables;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.VertexLabelVertex;
 import org.janusgraph.graphdb.types.system.EmptyVertex;
 import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
 import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.graphdb.vertices.CacheVertex;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
 import org.janusgraph.graphdb.vertices.StandardVertex;
@@ -54,11 +54,11 @@ import java.util.stream.Stream;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
+public abstract class AbstractJanusGraphProvider extends AbstractGraphProvider {
 
     private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
-        add(StandardTitanGraph.class);
-        add(StandardTitanTx.class);
+        add(StandardJanusGraph.class);
+        add(StandardJanusGraphTx.class);
 
         add(StandardVertex.class);
         add(CacheVertex.class);
@@ -66,7 +66,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         add(EdgeLabelVertex.class);
         add(PropertyKeyVertex.class);
         add(VertexLabelVertex.class);
-        add(TitanSchemaVertex.class);
+        add(JanusGraphSchemaVertex.class);
         add(EmptyVertex.class);
 
         add(StandardEdge.class);
@@ -76,11 +76,11 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 
         add(StandardVertexProperty.class);
         add(CacheVertexProperty.class);
-        add(SimpleTitanProperty.class);
+        add(SimpleJanusGraphProperty.class);
         add(CacheVertexProperty.class);
         add(FulgoraVertexProperty.class);
 
-        add(TitanGraphVariables.class);
+        add(JanusGraphVariables.class);
 
         add(FulgoraElementTraversal.class);
     }};
@@ -105,7 +105,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
 //    @Override
 //    public <ID> ID reconstituteGraphSONIdentifier(final Class<? extends Element> clazz, final Object id) {
 //        if (Edge.class.isAssignableFrom(clazz)) {
-//            // TitanGraphSONModule toStrings the edgeid - expect a String value for the id
+//            // JanusGraphSONModule toStrings the edgeid - expect a String value for the id
 //            if (!(id instanceof String)) throw new RuntimeException("Expected a String value for the RelationIdentifier");
 //            return (ID) RelationIdentifier.parse((String) id);
 //        } else {
@@ -117,7 +117,7 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
     public void clear(Graph g, final Configuration configuration) throws Exception {
         if (null != g) {
             while (g instanceof WrappedGraph) g = ((WrappedGraph<? extends Graph>) g).getBaseGraph();
-            TitanGraph graph = (TitanGraph) g;
+            JanusGraph graph = (JanusGraph) g;
             if (graph.isOpen()) {
                 if (g.tx().isOpen()) g.tx().rollback();
                 g.close();
@@ -127,30 +127,30 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         WriteConfiguration config = new CommonsConfiguration(configuration);
         BasicConfiguration readConfig = new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS, config, BasicConfiguration.Restriction.NONE);
         if (readConfig.has(GraphDatabaseConfiguration.STORAGE_BACKEND)) {
-            TitanGraphBaseTest.clearGraph(config);
+            JanusGraphBaseTest.clearGraph(config);
         }
     }
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, final LoadGraphWith.GraphData loadGraphWith) {
-        ModifiableConfiguration conf = getTitanConfiguration(graphName, test, testMethodName);
+        ModifiableConfiguration conf = getJanusGraphConfiguration(graphName, test, testMethodName);
         conf.set(GraphDatabaseConfiguration.COMPUTER_RESULT_MODE, "persist");
         conf.set(GraphDatabaseConfiguration.AUTO_TYPE, "tp3");
         Map<String, Object> result = new HashMap<>();
         conf.getAll().entrySet().stream().forEach(e -> result.put(ConfigElement.getPath(e.getKey().element, e.getKey().umbrellaElements), e.getValue()));
-        result.put(Graph.GRAPH, TitanFactory.class.getName());
+        result.put(Graph.GRAPH, JanusGraphFactory.class.getName());
         return result;
     }
 
-    public abstract ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName);
+    public abstract ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName);
 
     @Override
     public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith, final Class testClass, final String testName) {
         if (loadGraphWith != null) {
-            this.createIndices((TitanGraph) g, loadGraphWith.value());
+            this.createIndices((JanusGraph) g, loadGraphWith.value());
         } else {
             if (TransactionTest.class.equals(testClass) && testName.equalsIgnoreCase("shouldExecuteWithCompetingThreads")) {
-                TitanManagement mgmt = ((TitanGraph) g).openManagement();
+                JanusGraphManagement mgmt = ((JanusGraph) g).openManagement();
                 mgmt.makePropertyKey("blah").dataType(Double.class).make();
                 mgmt.makePropertyKey("bloop").dataType(Integer.class).make();
                 mgmt.makePropertyKey("test").dataType(Object.class).make();
@@ -161,8 +161,8 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
         super.loadGraphData(g, loadGraphWith, testClass, testName);
     }
 
-    private void createIndices(final TitanGraph g, final LoadGraphWith.GraphData graphData) {
-        TitanManagement mgmt = g.openManagement();
+    private void createIndices(final JanusGraph g, final LoadGraphWith.GraphData graphData) {
+        JanusGraphManagement mgmt = g.openManagement();
         if (graphData.equals(LoadGraphWith.GraphData.GRATEFUL)) {
             VertexLabel artist = mgmt.makeVertexLabel("artist").make();
             VertexLabel song = mgmt.makeVertexLabel("song").make();

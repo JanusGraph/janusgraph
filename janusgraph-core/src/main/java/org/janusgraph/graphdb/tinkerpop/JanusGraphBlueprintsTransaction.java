@@ -1,8 +1,8 @@
 package org.janusgraph.graphdb.tinkerpop;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.diskstorage.util.Hex;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
@@ -26,21 +26,21 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Blueprints specific implementation of {@link TitanTransaction}.
- * Provides utility methods that wrap Titan calls with Blueprints terminology.
+ * Blueprints specific implementation of {@link JanusGraphTransaction}.
+ * Provides utility methods that wrap JanusGraph calls with Blueprints terminology.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanBlueprintsTransaction implements TitanTransaction {
+public abstract class JanusGraphBlueprintsTransaction implements JanusGraphTransaction {
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanBlueprintsTransaction.class);
+            LoggerFactory.getLogger(JanusGraphBlueprintsTransaction.class);
 
     /**
      * Returns the graph that this transaction is based on
      * @return
      */
-    protected abstract TitanBlueprintsGraph getGraph();
+    protected abstract JanusGraphBlueprintsGraph getGraph();
 
     @Override
     public Features features() {
@@ -74,18 +74,18 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     /**
      * Creates a new vertex in the graph with the given vertex id.
-     * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
+     * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p/>
      * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
-     * Use {@link org.janusgraph.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
+     * Use {@link org.janusgraph.core.util.JanusGraphId#toVertexId(long)} to construct a valid JanusGraph vertex id from a user id.
      *
      * @param keyValues key-value pairs of properties to characterize or attach to the vertex
      * @return New vertex
      */
     @Override
-    public TitanVertex addVertex(Object... keyValues) {
+    public JanusGraphVertex addVertex(Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent()) throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         Object labelValue = null;
@@ -102,10 +102,10 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
             label = (labelValue instanceof VertexLabel)?(VertexLabel)labelValue:getOrCreateVertexLabel((String) labelValue);
         }
 
-        final TitanVertex vertex = addVertex(null,label);
+        final JanusGraphVertex vertex = addVertex(null,label);
 //        for (int i = 0; i < keyValues.length; i = i + 2) {
 //            if (!keyValues[i].equals(T.id) && !keyValues[i].equals(T.label))
-//                ((StandardTitanTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
+//                ((StandardJanusGraphTx)this).addPropertyInternal(vertex,getOrCreatePropertyKey((String) keyValues[i]),keyValues[i+1]);
 //        }
         org.janusgraph.graphdb.util.ElementHelper.attachProperties(vertex, keyValues);
         return vertex;
@@ -170,28 +170,28 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
             @Override
             public void doCommit() {
-                TitanBlueprintsTransaction.this.commit();
+                JanusGraphBlueprintsTransaction.this.commit();
             }
 
             @Override
             public void doRollback() {
-                TitanBlueprintsTransaction.this.rollback();
+                JanusGraphBlueprintsTransaction.this.rollback();
             }
 
             @Override
             public <R> Workload<R> submit(Function<Graph, R> graphRFunction) {
-                throw new UnsupportedOperationException("Titan does not support nested transactions. " +
-                        "Call submit on a TitanGraph not an individual transaction.");
+                throw new UnsupportedOperationException("JanusGraph does not support nested transactions. " +
+                        "Call submit on a JanusGraph not an individual transaction.");
             }
 
             @Override
             public <G extends Graph> G createThreadedTx() {
-                throw new UnsupportedOperationException("Titan does not support nested transactions.");
+                throw new UnsupportedOperationException("JanusGraph does not support nested transactions.");
             }
 
             @Override
             public boolean isOpen() {
-                return TitanBlueprintsTransaction.this.isOpen();
+                return JanusGraphBlueprintsTransaction.this.isOpen();
             }
 
             @Override

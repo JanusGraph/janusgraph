@@ -15,11 +15,11 @@ import java.util.Iterator;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
+public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
-    private static final TitanGraphStepStrategy INSTANCE = new TitanGraphStepStrategy();
+    private static final JanusGraphStepStrategy INSTANCE = new JanusGraphStepStrategy();
 
-    private TitanGraphStepStrategy() {
+    private JanusGraphStepStrategy() {
     }
 
     @Override
@@ -30,12 +30,12 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
             if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {
                 //Try to optimize for index calls
-                final TitanGraphStep<?, ?> titanGraphStep = new TitanGraphStep<>(originalGraphStep);
-                TraversalHelper.replaceStep(originalGraphStep, (Step) titanGraphStep, traversal);
+                final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
+                TraversalHelper.replaceStep(originalGraphStep, (Step) janusGraphStep, traversal);
 
-                HasStepFolder.foldInHasContainer(titanGraphStep, traversal);
-                HasStepFolder.foldInOrder(titanGraphStep, traversal, traversal, titanGraphStep.returnsVertex());
-                HasStepFolder.foldInRange(titanGraphStep, traversal);
+                HasStepFolder.foldInHasContainer(janusGraphStep, traversal);
+                HasStepFolder.foldInOrder(janusGraphStep, traversal, traversal, janusGraphStep.returnsVertex());
+                HasStepFolder.foldInRange(janusGraphStep, traversal);
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
                 Object[] ids = originalGraphStep.getIds();
@@ -54,7 +54,7 @@ public class TitanGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
         });
     }
 
-    public static TitanGraphStepStrategy instance() {
+    public static JanusGraphStepStrategy instance() {
         return INSTANCE;
     }
 }

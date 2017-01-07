@@ -213,7 +213,7 @@ clean() {
 
     if cd "$BIN"/../log; then
         rm -f cassandra.log
-        rm -f rexstitan.log
+        rm -f rexsjanusgraph.log
         echo "Deleted logs in `pwd`" >&2
         cd - >/dev/null
     fi

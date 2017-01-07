@@ -22,7 +22,7 @@ build-arch:
 
 build-indep: changes
 	dh_testdir
-	$(MVN) $(MVN_OPTS) clean install -pl titan-dist -am -Paurelius-release -Dgpg.skip=true -DskipTests=true
+	$(MVN) $(MVN_OPTS) clean install -pl janusgraph-dist -am -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
 
 build: build-indep build-arch
 # No-op
@@ -32,9 +32,9 @@ install: build
 	dh_testroot
 	mkdir debian/tmp 2>/dev/null || true
 	dh_installdirs
-	pkgcommon/bin/install-jars.sh debian/titan/usr/share/titan/lib
-	pkgcommon/bin/install-payload.sh debian/titan
-	cp -a debian/titan.default debian/titan/etc/default/titan
+	pkgcommon/bin/install-jars.sh debian/janusgraph/usr/share/janusgraph/lib
+	pkgcommon/bin/install-payload.sh debian/janusgraph
+	cp -a debian/janusgraph.default debian/janusgraph/etc/default/janusgraph
 
 # Build architecture-independent files here.
 binary-indep: build install

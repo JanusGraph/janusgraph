@@ -80,7 +80,7 @@
             </exclusions>
         </dependency>
 
-        <!-- TITAN -->
+        <!-- JANUSGRAPH -->
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-core</artifactId>
@@ -272,10 +272,10 @@
                             <configuration>
                                 <excludes>
                                     <exclude>**/*PipelineTest.java</exclude>
-                                    <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                                    <exclude>**/JanusGraphCassandraOutputFormatTest.java</exclude>
                                     <exclude>**/*ReindexTest.java</exclude>
                                     <exclude>**/*ScanJobTest.java</exclude>
-                                    <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
+                                    <exclude>**/JanusGraphHBaseOutputFormatTest.java</exclude>
                                 </excludes>
                             </configuration>
                         </execution>

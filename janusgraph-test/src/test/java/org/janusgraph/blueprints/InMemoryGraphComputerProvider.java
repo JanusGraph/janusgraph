@@ -10,10 +10,10 @@ import org.apache.tinkerpop.gremlin.GraphProvider;
  * Created by bryn on 06/05/15.
  */
 @GraphProvider.Descriptor(computer = FulgoraGraphComputer.class)
-public class InMemoryGraphComputerProvider extends AbstractTitanGraphComputerProvider {
+public class InMemoryGraphComputerProvider extends AbstractJanusGraphComputerProvider {
 
     @Override
-    public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
         ModifiableConfiguration config = StorageSetup.getInMemoryConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL,false);
         return config;

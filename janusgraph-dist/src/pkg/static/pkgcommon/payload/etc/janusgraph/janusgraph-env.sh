@@ -141,17 +141,17 @@ if [ "x$MAX_HEAP_SIZE" = "x" ] && [ "x$HEAP_NEWSIZE" = "x" ]; then
     calculate_heap_sizes
 else
     if [ "x$MAX_HEAP_SIZE" = "x" ] ||  [ "x$HEAP_NEWSIZE" = "x" ]; then
-        echo "please set or unset MAX_HEAP_SIZE and HEAP_NEWSIZE in pairs (see titan-env.sh)"
+        echo "please set or unset MAX_HEAP_SIZE and HEAP_NEWSIZE in pairs (see janusgraph-env.sh)"
         exit 1
     fi
 fi
 
-# Specifies the default port over which Titan will be available for
+# Specifies the default port over which JanusGraph will be available for
 # JMX connections.
 JMX_PORT="8189" # N.B. 7199 is Cassandra's default JMX port
 
 # Here we create the arguments that will get passed to the jvm when
-# starting Titan.
+# starting JanusGraph.
 
 # enable assertions.  disabling this in production will give a modest
 # performance benefit.
@@ -160,9 +160,9 @@ JVM_OPTS="$JVM_OPTS -ea"
 # add the jamm javaagent if it is available
 if [ "$JVM_VENDOR" != "OpenJDK" -o "$JVM_VERSION" \> "1.6.0" ] \
       || [ "$JVM_VERSION" = "1.6.0" -a "$JVM_PATCH_VERSION" -ge 23 ] \
-      && [ -e "$TITAN_HOME/lib/jamm-0.2.5.jar" ]
+      && [ -e "$JANUSGRAPH_HOME/lib/jamm-0.2.5.jar" ]
 then
-    JVM_OPTS="$JVM_OPTS -javaagent:$TITAN_HOME/lib/jamm-0.2.5.jar"
+    JVM_OPTS="$JVM_OPTS -javaagent:$JANUSGRAPH_HOME/lib/jamm-0.2.5.jar"
 fi
 
 # enable thread priorities, primarily so we can give periodic tasks
@@ -181,9 +181,9 @@ JVM_OPTS="$JVM_OPTS -Xmx${MAX_HEAP_SIZE}"
 JVM_OPTS="$JVM_OPTS -Xmn${HEAP_NEWSIZE}"
 JVM_OPTS="$JVM_OPTS -XX:+HeapDumpOnOutOfMemoryError"
 
-# set jvm HeapDumpPath with TITAN_HEAPDUMP_DIR
-if [ "x$TITAN_HEAPDUMP_DIR" != "x" ]; then
-    JVM_OPTS="$JVM_OPTS -XX:HeapDumpPath=$TITAN_HEAPDUMP_DIR/titan-`date +%s`-pid$$.hprof"
+# set jvm HeapDumpPath with JANUSGRAPH_HEAPDUMP_DIR
+if [ "x$JANUSGRAPH_HEAPDUMP_DIR" != "x" ]; then
+    JVM_OPTS="$JVM_OPTS -XX:HeapDumpPath=$JANUSGRAPH_HEAPDUMP_DIR/janusgraph-`date +%s`-pid$$.hprof"
 fi
 
 
@@ -220,15 +220,15 @@ fi
 # JVM_OPTS="$JVM_OPTS -XX:+PrintGCApplicationStoppedTime"
 # JVM_OPTS="$JVM_OPTS -XX:+PrintPromotionFailure"
 # JVM_OPTS="$JVM_OPTS -XX:PrintFLSStatistics=1"
-# JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/titan/gc-`date +%s`.log"
+# JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/janusgraph/gc-`date +%s`.log"
 # If you are using JDK 6u34 7u2 or later you can enable GC log rotation
 # don't stick the date in the log name if rotation is on.
-# JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/titan/gc.log"
+# JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/janusgraph/gc.log"
 # JVM_OPTS="$JVM_OPTS -XX:+UseGCLogFileRotation"
 # JVM_OPTS="$JVM_OPTS -XX:NumberOfGCLogFiles=10"
 # JVM_OPTS="$JVM_OPTS -XX:GCLogFileSize=10M"
 
-# uncomment to have Titan JVM listen for remote debuggers/profilers on port 1414
+# uncomment to have JanusGraph JVM listen for remote debuggers/profilers on port 1414
 # JVM_OPTS="$JVM_OPTS -Xdebug -Xnoagent -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1414"
 
 # Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See 

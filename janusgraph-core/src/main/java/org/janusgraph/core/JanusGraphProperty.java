@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanProperty<V> extends Property<V> {
+public interface JanusGraphProperty<V> extends Property<V> {
 
     public PropertyKey propertyKey();
 

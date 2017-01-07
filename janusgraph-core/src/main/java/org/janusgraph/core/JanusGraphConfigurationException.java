@@ -2,19 +2,19 @@ package org.janusgraph.core;
 
 /**
  * Exception thrown due to invalid configuration options or when errors
- * occur during the configuration and initialization of Titan.
+ * occur during the configuration and initialization of JanusGraph.
  * <p/>
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TitanConfigurationException extends TitanException {
+public class JanusGraphConfigurationException extends JanusGraphException {
 
     private static final long serialVersionUID = 4056436257763972423L;
 
     /**
      * @param msg Exception message
      */
-    public TitanConfigurationException(String msg) {
+    public JanusGraphConfigurationException(String msg) {
         super(msg);
     }
 
@@ -22,7 +22,7 @@ public class TitanConfigurationException extends TitanException {
      * @param msg   Exception message
      * @param cause Cause of the exception
      */
-    public TitanConfigurationException(String msg, Throwable cause) {
+    public JanusGraphConfigurationException(String msg, Throwable cause) {
         super(msg, cause);
     }
 
@@ -31,7 +31,7 @@ public class TitanConfigurationException extends TitanException {
      *
      * @param cause Cause of the exception
      */
-    public TitanConfigurationException(Throwable cause) {
+    public JanusGraphConfigurationException(Throwable cause) {
         this("Exception in graph database configuration", cause);
     }
 

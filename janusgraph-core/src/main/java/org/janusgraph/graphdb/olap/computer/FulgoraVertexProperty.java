@@ -2,8 +2,8 @@ package org.janusgraph.graphdb.olap.computer;
 
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -16,15 +16,15 @@ import java.util.NoSuchElementException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraVertexProperty<V> implements TitanVertexProperty<V> {
+public class FulgoraVertexProperty<V> implements JanusGraphVertexProperty<V> {
 
     private final VertexMemoryHandler mixinParent;
-    private final TitanVertex vertex;
+    private final JanusGraphVertex vertex;
     private final String key;
     private final V value;
     private boolean isRemoved = false;
 
-    public FulgoraVertexProperty(VertexMemoryHandler mixinParent, TitanVertex vertex, String key, V value) {
+    public FulgoraVertexProperty(VertexMemoryHandler mixinParent, JanusGraphVertex vertex, String key, V value) {
         this.mixinParent = mixinParent;
         this.vertex = vertex;
         this.key = key;
@@ -47,7 +47,7 @@ public class FulgoraVertexProperty<V> implements TitanVertexProperty<V> {
     }
 
     @Override
-    public TitanVertex element() {
+    public JanusGraphVertex element() {
         return vertex;
     }
 

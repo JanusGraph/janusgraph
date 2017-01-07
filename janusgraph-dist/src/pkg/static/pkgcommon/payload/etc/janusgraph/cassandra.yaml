@@ -1,5 +1,5 @@
 # Cassandra storage config YAML
-# Used when Titan runs with Cassandra embedded inside its own JVM
+# Used when JanusGraph runs with Cassandra embedded inside its own JVM
 
 # NOTE:
 #   See http://wiki.apache.org/cassandra/StorageConfiguration for
@@ -8,7 +8,7 @@
 
 # The name of the cluster. This is mainly used to prevent machines in
 # one logical cluster from joining another.
-cluster_name: 'Titan'
+cluster_name: 'JanusGraph'
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data

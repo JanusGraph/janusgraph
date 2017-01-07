@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 
 import org.janusgraph.diskstorage.indexing.IndexQuery;
 import org.janusgraph.diskstorage.indexing.IndexTransaction;
@@ -295,10 +295,10 @@ public class BackendTransaction implements LoggableTransaction {
                 try {
                     doneSignal.await();
                 } catch (InterruptedException e) {
-                    throw new TitanException("Interrupted while waiting for multi-query to complete", e);
+                    throw new JanusGraphException("Interrupted while waiting for multi-query to complete", e);
                 }
                 if (failureCount.get() > 0) {
-                    throw new TitanException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
+                    throw new JanusGraphException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
                 }
                 for (int i=0;i<keys.size();i++) {
                     assert resultArray[i]!=null;
@@ -424,7 +424,7 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
 
-    private final <V> V executeRead(Callable<V> exe) throws TitanException {
+    private final <V> V executeRead(Callable<V> exe) throws JanusGraphException {
         return BackendOperation.execute(exe, maxReadTime);
     }
 

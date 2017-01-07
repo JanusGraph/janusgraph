@@ -11,11 +11,11 @@ import org.janusgraph.core.schema.VertexLabelMaker;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanDefaultSchemaMaker implements DefaultSchemaMaker {
+public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
 
-    public static final DefaultSchemaMaker INSTANCE = new TitanDefaultSchemaMaker();
+    public static final DefaultSchemaMaker INSTANCE = new JanusGraphDefaultSchemaMaker();
 
-    private TitanDefaultSchemaMaker() {
+    private JanusGraphDefaultSchemaMaker() {
     }
 
     @Override

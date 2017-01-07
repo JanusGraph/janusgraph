@@ -1,12 +1,12 @@
 #!/bin/sh
 #
-# titan        Titan graph database startup script
+# janusgraph        JanusGraph graph database startup script
 #
 # chkconfig: - 64 36
-# description: Titan graph database.
-# pidfile: /var/run/titan.pid
+# description: JanusGraph graph database.
+# pidfile: /var/run/janusgraph.pid
 ### BEGIN INIT INFO
-# Provides:          titan
+# Provides:          janusgraph
 # Required-Start:    $network $named $time
 # Required-Stop:     $network $named $time
 # Should-Start:      ntp cassandra
@@ -14,10 +14,10 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: distributed graph database
-# Description:       Titan is a highly scalable graph database
+# Description:       JanusGraph is a highly scalable graph database
 #                    optimized for storing and querying large graphs
 #                    with billions of vertices and edges distributed
-#                    across a multi-machine cluster. Titan is a
+#                    across a multi-machine cluster. JanusGraph is a
 #                    transactional database that can support
 #                    thousands of concurrent users.
 ### END INIT INFO
@@ -28,10 +28,10 @@
 . /etc/rc.d/init.d/functions
 
 # Get local environment overrides
-. /etc/sysconfig/titan
+. /etc/sysconfig/janusgraph
 
 # Find the name of the script
-NAME=titan
+NAME=janusgraph
 #NAME=`basename $0`
 #if [ ${NAME:0:1} = "S" -o ${NAME:0:1} = "K" ]
 #then
@@ -67,7 +67,7 @@ do_status() {
 do_start() {
     local stat
     echo -n $"Starting $NAME: "
-    daemon $SU titan -c "/usr/sbin/titan\ -p\ $pidfile\ >/var/log/titan/console.log"
+    daemon $SU janusgraph -c "/usr/sbin/janusgraph\ -p\ $pidfile\ >/var/log/janusgraph/console.log"
     stat=$?
     echo
     return $stat

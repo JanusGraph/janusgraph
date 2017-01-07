@@ -29,7 +29,7 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      * any type of value but comes at the expense of longer serialization because class information
      * is stored with the value.
      * <p/>
-     * It is strongly advised to pick an appropriate data type class so Titan can enforce it throughout the database.
+     * It is strongly advised to pick an appropriate data type class so JanusGraph can enforce it throughout the database.
      *
      * @param clazz Data type to be configured.
      * @return this PropertyKeyMaker

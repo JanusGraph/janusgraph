@@ -1,22 +1,22 @@
 package org.janusgraph.core.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 
 import org.janusgraph.diskstorage.util.BackendOperation;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class containing methods that simplify Titan clean-up processes.
+ * Utility class containing methods that simplify JanusGraph clean-up processes.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanCleanup {
+public class JanusGraphCleanup {
 
     /**
      * Clears out the entire graph. This will delete ALL of the data stored in this graph and the data will NOT be
@@ -24,12 +24,12 @@ public class TitanCleanup {
      *
      * @param graph
      * @throws IllegalArgumentException if the graph has not been shut down
-     * @throws org.janusgraph.core.TitanException if clearing the storage is unsuccessful
+     * @throws org.janusgraph.core.JanusGraphException if clearing the storage is unsuccessful
      */
-    public static final void clear(TitanGraph graph) {
+    public static final void clear(JanusGraph graph) {
         Preconditions.checkNotNull(graph);
-        Preconditions.checkArgument(graph instanceof StandardTitanGraph,"Invalid graph instance detected: %s",graph.getClass());
-        StandardTitanGraph g = (StandardTitanGraph)graph;
+        Preconditions.checkArgument(graph instanceof StandardJanusGraph,"Invalid graph instance detected: %s",graph.getClass());
+        StandardJanusGraph g = (StandardJanusGraph)graph;
         Preconditions.checkArgument(!g.isOpen(),"Graph needs to be shut down before it can be cleared.");
         final GraphDatabaseConfiguration config = g.getConfiguration();
         BackendOperation.execute(new Callable<Boolean>(){

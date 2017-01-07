@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.janusgraph.core.*;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
 
 import org.janusgraph.diskstorage.Backend;
@@ -16,7 +16,7 @@ import org.janusgraph.diskstorage.log.Log;
 import org.janusgraph.diskstorage.log.LogManager;
 import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
 import org.janusgraph.testutil.TestGraphConfigs;
@@ -42,21 +42,21 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanGraphBaseTest {
+public abstract class JanusGraphBaseTest {
 
     public static final String LABEL_NAME = T.label.getAccessor();
     public static final String ID_NAME = T.id.getAccessor();
 
     public WriteConfiguration config;
     public BasicConfiguration readConfig;
-    public StandardTitanGraph graph;
+    public StandardJanusGraph graph;
     public StoreFeatures features;
-    public TitanTransaction tx;
-    public TitanManagement mgmt;
+    public JanusGraphTransaction tx;
+    public JanusGraphManagement mgmt;
 
     public Map<String,LogManager> logManagers;
 
-    public TitanGraphBaseTest() {
+    public JanusGraphBaseTest() {
     }
 
     public abstract WriteConfiguration getConfiguration();
@@ -86,7 +86,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public void open(WriteConfiguration config) {
-        graph = (StandardTitanGraph) TitanFactory.open(config);
+        graph = (StandardJanusGraph) JanusGraphFactory.open(config);
         features = graph.getConfiguration().getStoreFeatures();
         tx = graph.newTransaction();
         mgmt = graph.openManagement();
@@ -141,7 +141,7 @@ public abstract class TitanGraphBaseTest {
         if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
             Map<TestConfigOption,Object> options = validateConfigOptions(settings);
-            TitanManagement gconf = null;
+            JanusGraphManagement gconf = null;
             ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
@@ -195,7 +195,7 @@ public abstract class TitanGraphBaseTest {
                 logStoreManager=null;
             }
         } catch (BackendException e) {
-            throw new TitanException(e);
+            throw new JanusGraphException(e);
         }
     }
 
@@ -204,7 +204,7 @@ public abstract class TitanGraphBaseTest {
             try {
                 logManagers.remove(logManagerName).close();
             } catch (BackendException e) {
-                throw new TitanException("Could not close log manager " + logManagerName,e);
+                throw new JanusGraphException("Could not close log manager " + logManagerName,e);
             }
         }
     }
@@ -241,7 +241,7 @@ public abstract class TitanGraphBaseTest {
             assert logManagers.containsKey(logManagerName);
             return logManagers.get(logManagerName).openLog(logName);
         } catch (BackendException e) {
-            throw new TitanException("Could not open log: "+ logName,e);
+            throw new JanusGraphException("Could not open log: "+ logName,e);
         }
     }
 
@@ -269,15 +269,15 @@ public abstract class TitanGraphBaseTest {
         createExternalIndex(key,Edge.class,backingIndex);
     }
 
-    public TitanGraphIndex getExternalIndex(Class<? extends Element> clazz, String backingIndex) {
+    public JanusGraphIndex getExternalIndex(Class<? extends Element> clazz, String backingIndex) {
         String prefix;
         if (Vertex.class.isAssignableFrom(clazz)) prefix = "v";
         else if (Edge.class.isAssignableFrom(clazz)) prefix = "e";
-        else if (TitanVertexProperty.class.isAssignableFrom(clazz)) prefix = "p";
+        else if (JanusGraphVertexProperty.class.isAssignableFrom(clazz)) prefix = "p";
         else throw new AssertionError(clazz.toString());
 
         String indexName = prefix+backingIndex;
-        TitanGraphIndex index = mgmt.getGraphIndex(indexName);
+        JanusGraphIndex index = mgmt.getGraphIndex(indexName);
         if (index==null) {
             index = mgmt.buildIndex(indexName,clazz).buildMixedIndex(backingIndex);
         }
@@ -310,7 +310,7 @@ public abstract class TitanGraphBaseTest {
     public static final int DEFAULT_THREAD_COUNT = 4;
 
     public static int getThreadCount() {
-        String s = System.getProperty("titan.test.threads");
+        String s = System.getProperty("janusgraph.test.threads");
         if (null != s)
             return Integer.valueOf(s);
         else
@@ -323,19 +323,19 @@ public abstract class TitanGraphBaseTest {
         return value;
     }
 
-    public TitanVertex getVertex(String key, Object value) {
+    public JanusGraphVertex getVertex(String key, Object value) {
         return getVertex(tx,key,value);
     }
 
-    public TitanVertex getVertex(PropertyKey key, Object value) {
+    public JanusGraphVertex getVertex(PropertyKey key, Object value) {
         return getVertex(tx,key,value);
     }
 
-    public static TitanVertex getVertex(TitanTransaction tx, String key, Object value) {
-        return (TitanVertex)getOnlyElement(tx.query().has(key,value).vertices(),null);
+    public static JanusGraphVertex getVertex(JanusGraphTransaction tx, String key, Object value) {
+        return (JanusGraphVertex)getOnlyElement(tx.query().has(key,value).vertices(),null);
     }
 
-    public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
+    public static JanusGraphVertex getVertex(JanusGraphTransaction tx, PropertyKey key, Object value) {
         return getVertex(tx, key.name(), value);
     }
 
@@ -343,12 +343,12 @@ public abstract class TitanGraphBaseTest {
         return Math.round(d*1000.0)/1000.0;
     }
 
-    public static TitanVertex getOnlyVertex(TitanGraphQuery<?> query) {
-        return (TitanVertex)getOnlyElement(query.vertices());
+    public static JanusGraphVertex getOnlyVertex(JanusGraphQuery<?> query) {
+        return (JanusGraphVertex)getOnlyElement(query.vertices());
     }
 
-    public static TitanEdge getOnlyEdge(TitanVertexQuery<?> query) {
-        return (TitanEdge)getOnlyElement(query.edges());
+    public static JanusGraphEdge getOnlyEdge(JanusGraphVertexQuery<?> query) {
+        return (JanusGraphEdge)getOnlyElement(query.edges());
     }
 
     public static<E> E getOnlyElement(Iterable<E> traversal) {
@@ -387,14 +387,14 @@ public abstract class TitanGraphBaseTest {
         assertFalse(g.vertices(vid).hasNext());
     }
 
-    public static TitanVertex getV(Transaction g, Object vid) {
+    public static JanusGraphVertex getV(Transaction g, Object vid) {
         if (!g.vertices(vid).hasNext()) return null;
-        return (TitanVertex)g.vertices(vid).next();
+        return (JanusGraphVertex)g.vertices(vid).next();
     }
 
-    public static TitanEdge getE(Transaction g, Object eid) {
+    public static JanusGraphEdge getE(Transaction g, Object eid) {
         if (!g.edges(eid).hasNext()) return null;
-        return (TitanEdge)g.edges(eid).next();
+        return (JanusGraphEdge)g.edges(eid).next();
     }
 
     public static String n(Object obj) {
@@ -403,7 +403,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public static long getId(Element e) {
-        return ((TitanElement)e).longId();
+        return ((JanusGraphElement)e).longId();
     }
 
     public static void verifyElementOrder(Iterable<? extends Element> elements, String key, Order order, int expectedCount) {

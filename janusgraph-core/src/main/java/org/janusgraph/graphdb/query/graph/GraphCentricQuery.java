@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
@@ -18,20 +18,20 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.util.Comparator;
 
 /**
- * An executable {@link ElementQuery} for {@link org.janusgraph.core.TitanGraphQuery}. This query contains
+ * An executable {@link ElementQuery} for {@link org.janusgraph.core.JanusGraphQuery}. This query contains
  * the condition, and only one sub-query {@link JointIndexQuery}.
  * It also maintains the ordering for the query result which is needed by the {@link org.janusgraph.graphdb.query.QueryProcessor}
  * to correctly order the result.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanElement, JointIndexQuery>, ProfileObservable {
+public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGraphElement, JointIndexQuery>, ProfileObservable {
 
     /**
      * The condition of this query, the result set is the set of all elements in the graph for which this
      * condition evaluates to true.
      */
-    private final Condition<TitanElement> condition;
+    private final Condition<JanusGraphElement> condition;
     /**
      * The {@link JointIndexQuery} to execute against the indexing backends and index store.
      */
@@ -45,7 +45,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
      */
     private final ElementCategory resultType;
 
-    public GraphCentricQuery(ElementCategory resultType, Condition<TitanElement> condition, OrderList orders,
+    public GraphCentricQuery(ElementCategory resultType, Condition<JanusGraphElement> condition, OrderList orders,
                              BackendQueryHolder<JointIndexQuery> indexQuery, int limit) {
         super(limit);
         Preconditions.checkNotNull(condition);
@@ -60,13 +60,13 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     }
 
     public static final GraphCentricQuery emptyQuery(ElementCategory resultType) {
-        Condition<TitanElement> cond = new FixedCondition<TitanElement>(false);
+        Condition<JanusGraphElement> cond = new FixedCondition<JanusGraphElement>(false);
         return new GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
                 new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(),
                         true, false), 0);
     }
 
-    public Condition<TitanElement> getCondition() {
+    public Condition<JanusGraphElement> getCondition() {
         return condition;
     }
 
@@ -125,7 +125,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     }
 
     @Override
-    public Comparator<TitanElement> getSortOrder() {
+    public Comparator<JanusGraphElement> getSortOrder() {
         if (orders.isEmpty()) return new ComparableComparator();
         else return orders;
     }
@@ -136,7 +136,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     }
 
     @Override
-    public boolean matches(TitanElement element) {
+    public boolean matches(JanusGraphElement element) {
         return condition.evaluate(element);
     }
 

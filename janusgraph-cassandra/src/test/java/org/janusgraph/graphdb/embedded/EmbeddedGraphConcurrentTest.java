@@ -5,7 +5,7 @@ import org.junit.experimental.categories.Category;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphConcurrentTest;
+import org.janusgraph.graphdb.JanusGraphConcurrentTest;
 import org.janusgraph.testcategory.PerformanceTests;
 
 /**
@@ -13,7 +13,7 @@ import org.janusgraph.testcategory.PerformanceTests;
  */
 
 @Category({PerformanceTests.class})
-public class EmbeddedGraphConcurrentTest extends TitanGraphConcurrentTest {
+public class EmbeddedGraphConcurrentTest extends JanusGraphConcurrentTest {
 
     @BeforeClass
     public static void startCassandra() {

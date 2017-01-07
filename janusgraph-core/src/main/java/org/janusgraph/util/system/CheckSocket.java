@@ -12,7 +12,7 @@ import java.net.Socket;
  *  Many widely available *NIX programs do this task better (e.g.
  *  netcat, telnet, nmap, socat, ... we could even use netstat since
  *  we're interested only in the status of local ports).  But we want
- *  to keep the Titan distribution self-contained insofar as is
+ *  to keep the JanusGraph distribution self-contained insofar as is
  *  reasonable.
  */
 public class CheckSocket {

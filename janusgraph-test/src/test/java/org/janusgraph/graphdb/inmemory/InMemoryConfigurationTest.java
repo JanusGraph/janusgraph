@@ -1,11 +1,11 @@
 package org.janusgraph.graphdb.inmemory;
 
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,13 +16,13 @@ import static org.junit.Assert.*;
  */
 public class InMemoryConfigurationTest {
 
-    StandardTitanGraph graph;
+    StandardJanusGraph graph;
 
     public void initialize(ConfigOption option, Object value) {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
         config.set(option,value);
-        graph = (StandardTitanGraph) TitanFactory.open(config);
+        graph = (StandardJanusGraph) JanusGraphFactory.open(config);
     }
 
     @After
@@ -35,7 +35,7 @@ public class InMemoryConfigurationTest {
     public void testReadOnly() {
         initialize(GraphDatabaseConfiguration.STORAGE_READONLY,true);
 
-        TitanTransaction tx = graph.newTransaction();
+        JanusGraphTransaction tx = graph.newTransaction();
         try {
             tx.addVertex();
             fail();

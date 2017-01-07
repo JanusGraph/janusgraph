@@ -1,9 +1,9 @@
 package org.janusgraph.graphdb.olap;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.configuration.BasicConfiguration;
@@ -12,11 +12,11 @@ import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.query.Query;
 import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.vertices.PreloadedVertex;
@@ -47,10 +47,10 @@ public class VertexJobConverter implements ScanJob {
     protected final GraphProvider graph;
     protected final VertexScanJob job;
 
-    protected StandardTitanTx tx;
+    protected StandardJanusGraphTx tx;
     private IDManager idManager;
 
-    protected VertexJobConverter(TitanGraph graph, VertexScanJob job) {
+    protected VertexJobConverter(JanusGraph graph, VertexScanJob job) {
         Preconditions.checkArgument(job!=null);
         this.graph = new GraphProvider();
         if (graph!=null) this.graph.setGraph(graph);
@@ -63,7 +63,7 @@ public class VertexJobConverter implements ScanJob {
         this.job = copy.job.clone();
     }
 
-    public static ScanJob convert(TitanGraph graph, VertexScanJob vertexJob) {
+    public static ScanJob convert(JanusGraph graph, VertexScanJob vertexJob) {
         return new VertexJobConverter(graph,vertexJob);
     }
 
@@ -71,13 +71,13 @@ public class VertexJobConverter implements ScanJob {
         return new VertexJobConverter(null,vertexJob);
     }
 
-    public static StandardTitanTx startTransaction(StandardTitanGraph graph) {
+    public static StandardJanusGraphTx startTransaction(StandardJanusGraph graph) {
         StandardTransactionBuilder txb = graph.buildTransaction().readOnly();
         txb.setPreloadedData(true);
         txb.checkInternalVertexExistence(false);
         txb.dirtyVertexSize(0);
         txb.vertexCacheSize(0);
-        return (StandardTitanTx)txb.start();
+        return (StandardJanusGraphTx)txb.start();
     }
 
     @Override
@@ -113,7 +113,7 @@ public class VertexJobConverter implements ScanJob {
             metrics.incrementCustom(GHOST_VERTEX_COUNT);
             return;
         }
-        TitanVertex vertex = tx.getInternalVertex(vertexId);
+        JanusGraphVertex vertex = tx.getInternalVertex(vertexId);
         Preconditions.checkArgument(vertex instanceof PreloadedVertex,
                 "The bounding transaction is not configured correctly");
         PreloadedVertex v = (PreloadedVertex)vertex;
@@ -172,18 +172,18 @@ public class VertexJobConverter implements ScanJob {
 
     public static class GraphProvider {
 
-        private StandardTitanGraph graph=null;
+        private StandardJanusGraph graph=null;
         private boolean provided=false;
 
-        public void setGraph(TitanGraph graph) {
+        public void setGraph(JanusGraph graph) {
             Preconditions.checkArgument(graph!=null && graph.isOpen(),"Need to provide open graph");
-            this.graph = (StandardTitanGraph)graph;
+            this.graph = (StandardJanusGraph)graph;
             provided = true;
         }
 
         public void initializeGraph(Configuration config) {
             if (!provided) {
-                this.graph = (StandardTitanGraph) TitanFactory.open((BasicConfiguration) config);
+                this.graph = (StandardJanusGraph) JanusGraphFactory.open((BasicConfiguration) config);
             }
         }
 
@@ -198,7 +198,7 @@ public class VertexJobConverter implements ScanJob {
             return provided;
         }
 
-        public final StandardTitanGraph get() {
+        public final StandardJanusGraph get() {
             Preconditions.checkState(graph!=null);
             return graph;
         }

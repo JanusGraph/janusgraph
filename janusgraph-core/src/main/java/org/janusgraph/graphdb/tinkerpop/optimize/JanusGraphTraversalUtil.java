@@ -1,10 +1,10 @@
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.graphdb.olap.computer.FulgoraElementTraversal;
-import org.janusgraph.graphdb.tinkerpop.TitanBlueprintsGraph;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphBlueprintsGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -21,26 +21,26 @@ import java.util.Optional;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanTraversalUtil {
+public class JanusGraphTraversalUtil {
 
-    public static TitanVertex getTitanVertex(Element v) {
+    public static JanusGraphVertex getJanusGraphVertex(Element v) {
         while (v instanceof WrappedVertex) {
             v = ((WrappedVertex<Vertex>) v).getBaseVertex();
         }
-        if (v instanceof TitanVertex) {
-            return (TitanVertex) v;
-        } else throw new IllegalArgumentException("Expected traverser of Titan vertex but found: " + v);
+        if (v instanceof JanusGraphVertex) {
+            return (JanusGraphVertex) v;
+        } else throw new IllegalArgumentException("Expected traverser of JanusGraph vertex but found: " + v);
     }
 
-    public static TitanVertex getTitanVertex(Traverser<? extends Element> traverser) {
-        return getTitanVertex(traverser.get());
+    public static JanusGraphVertex getJanusGraphVertex(Traverser<? extends Element> traverser) {
+        return getJanusGraphVertex(traverser.get());
     }
 
-    public static boolean isEdgeReturnStep(TitanVertexStep vstep) {
+    public static boolean isEdgeReturnStep(JanusGraphVertexStep vstep) {
         return Edge.class.isAssignableFrom(vstep.getReturnClass());
     }
 
-    public static boolean isVertexReturnStep(TitanVertexStep vstep) {
+    public static boolean isVertexReturnStep(JanusGraphVertexStep vstep) {
         return Vertex.class.isAssignableFrom(vstep.getReturnClass());
     }
 
@@ -51,24 +51,24 @@ public class TitanTraversalUtil {
         return currentStep;
     }
 
-    public static TitanTransaction getTx(Traversal.Admin<?, ?> traversal) {
-        TitanTransaction tx = null;
+    public static JanusGraphTransaction getTx(Traversal.Admin<?, ?> traversal) {
+        JanusGraphTransaction tx = null;
         Optional<Graph> optGraph = TraversalHelper.getRootTraversal(traversal.asAdmin()).getGraph();
 
         if (traversal instanceof FulgoraElementTraversal) {
-            tx = (TitanTransaction) optGraph.get();
+            tx = (JanusGraphTransaction) optGraph.get();
         } else {
             if (!optGraph.isPresent())
                 throw new IllegalArgumentException("Traversal is not bound to a graph: " + traversal);
             Graph graph = optGraph.get();
-            if (graph instanceof TitanTransaction) tx = (TitanTransaction) graph;
-            else if (graph instanceof TitanBlueprintsGraph) tx = ((TitanBlueprintsGraph) graph).getCurrentThreadTx();
-            else throw new IllegalArgumentException("Traversal is not bound to a Titan Graph, but: " + graph);
+            if (graph instanceof JanusGraphTransaction) tx = (JanusGraphTransaction) graph;
+            else if (graph instanceof JanusGraphBlueprintsGraph) tx = ((JanusGraphBlueprintsGraph) graph).getCurrentThreadTx();
+            else throw new IllegalArgumentException("Traversal is not bound to a JanusGraph Graph, but: " + graph);
         }
         if (tx == null)
-            throw new IllegalArgumentException("Not a valid start step for a Titan traversal: " + traversal);
+            throw new IllegalArgumentException("Not a valid start step for a JanusGraph traversal: " + traversal);
         if (tx.isOpen()) return tx;
-        else return ((StandardTitanTx) tx).getNextTx();
+        else return ((StandardJanusGraphTx) tx).getNextTx();
     }
 
 }
