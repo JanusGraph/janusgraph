@@ -254,9 +254,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + result.memory().getRuntime());
             assertEquals(2,result.memory().getIteration());
 
-            TitanGraphTransaction gview = null;
+            Transaction gview = null;
             switch (mode) {
-                case LOCALTX: gview = (TitanGraphTransaction) result.graph(); break;
+                case LOCALTX: gview = (Transaction) result.graph(); break;
                 case PERSIST: newTx(); gview = tx; break;
                 case NONE: break;
                 default: throw new AssertionError(mode);
