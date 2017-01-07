@@ -2,9 +2,6 @@
 Elasticsearch
 -------------
 
-//[.tss-center.tss-width-250]
-//image:titan-elasticsearch.png[]
-
 [quote, 'http://www.elasticsearch.org/overview/[Elasticsearch Overview]']
 Elasticsearch is a flexible and powerful open source, distributed, real-time search and analytics engine. Architected from the ground up for use in distributed environments where reliability and scalability are must haves, Elasticsearch gives you the ability to move easily beyond simple full-text search.
 

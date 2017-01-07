@@ -2,8 +2,6 @@
 Building Titan
 --------------
 
-image:building-titan.png[]
-
 To build Titan you need http://git-scm.com/[git] and http://maven.apache.org/[Maven].
 
 . Clone the https://github.com/thinkaurelius/titan[Titan repository from GitHub] to a local directory.

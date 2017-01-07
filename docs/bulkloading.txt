@@ -2,9 +2,6 @@
 Bulk Loading
 ------------
 
-[.tss-floatright.tss-width-125]
-image:titan-seated.png[] 
-
 There are a number of configuration options and tools that make ingesting large amounts of graph data into Titan more efficient. Such ingestion is referred to as _bulk loading_ in contrast to the default _transactional loading_ where small amounts of data are added through individual transactions.
 
 There are a number of use cases for bulk loading data into Titan, including:
