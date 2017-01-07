@@ -5,7 +5,7 @@ Faunus is a "property graph":https://github.com/tinkerpop/blueprints/wiki/Proper
 h2. Features
 
 * Support for various graph-based data sources/sinks
-  ** "Titan":http://thinkaurelius.github.com/titan/ distributed graph database
+  ** "JanusGraph":http://thinkaurelius.github.com/titan/ distributed graph database
   *** "Apache Cassandra":http://cassandra.apache.org/
   *** "Apache HBase":http://hbase.apache.org/
   ** "GraphSON":https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library text format stored in HDFS

@@ -7,5 +7,5 @@ JanusGraph documentation can be found online at:
 
   http://s3.thinkaurelius.com/docs/titan/current/
 
-Titan is provided by Aurelius [http://thinkaurelius.com]
+JanusGraph is provided by Aurelius [http://thinkaurelius.com]
 "Applying Network Science and Graph Theory"
