@@ -19,16 +19,16 @@
 # with Apache Cassandra version 1.2.8.
 #
 
-TITAN_HOME="/usr/share/titan"
-TITAN_CONF="/etc/titan"
-TITAN_CFG="$TITAN_CONF/config.properties"
+JANUSGRAPH_HOME="/usr/share/janusgraph"
+JANUSGRAPH_CONF="/etc/janusgraph"
+JANUSGRAPH_CFG="$JANUSGRAPH_CONF/config.properties"
 
 # JAVA_HOME can optionally be set here
 #JAVA_HOME=/usr/local/jdk6
 
 # The java classpath (required)
-CLASSPATH="$TITAN_CONF"
-# Include Titan core jars
-for jar in "$TITAN_HOME"/lib/*.jar; do
+CLASSPATH="$JANUSGRAPH_CONF"
+# Include JanusGraph core jars
+for jar in "$JANUSGRAPH_HOME"/lib/*.jar; do
     CLASSPATH="$CLASSPATH:$jar"
 done

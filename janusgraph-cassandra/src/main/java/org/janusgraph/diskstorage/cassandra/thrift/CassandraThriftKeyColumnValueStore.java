@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import static org.janusgraph.diskstorage.cassandra.CassandraTransaction.getTx;
 
 /**
- * A Titan {@code KeyColumnValueStore} backed by Cassandra.
+ * A JanusGraph {@code KeyColumnValueStore} backed by Cassandra.
  * This uses the Cassandra Thrift API.
  *
  * @author Dan LaRocque <dalaro@hopcount.org>

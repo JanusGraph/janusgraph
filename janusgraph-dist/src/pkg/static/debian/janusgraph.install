@@ -1,7 +1,7 @@
 /usr/bin/gremlin.sh
-/usr/sbin/titan
-/usr/share/titan/titan.in.sh
-/etc/titan/titan-env.sh
-/etc/titan/config.properties
-/etc/titan/log4j.properties
-../payload/cassandra.yaml /etc/titan/
+/usr/sbin/janusgraph
+/usr/share/janusgraph/janusgraph.in.sh
+/etc/janusgraph/janusgraph-env.sh
+/etc/janusgraph/config.properties
+/etc/janusgraph/log4j.properties
+../payload/cassandra.yaml /etc/janusgraph/

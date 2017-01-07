@@ -1,7 +1,7 @@
-diff --git a/titan-hbase/bin/hirb.rb b/titan-hbase/bin/hirb.rb
+diff --git a/janusgraph-hbase/bin/hirb.rb b/janusgraph-hbase/bin/hirb.rb
 index 32a51b3..c792515 100755
---- a/titan-hbase/bin/hirb.rb
-+++ b/titan-hbase/bin/hirb.rb
+--- a/janusgraph-hbase/bin/hirb.rb
++++ b/janusgraph-hbase/bin/hirb.rb
 @@ -37,12 +37,9 @@ include Java
  # Some goodies for hirb. Should these be left up to the user's discretion?
  require 'irb/completion'

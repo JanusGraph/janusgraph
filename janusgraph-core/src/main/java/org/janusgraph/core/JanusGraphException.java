@@ -4,18 +4,18 @@ package org.janusgraph.core;
 import org.janusgraph.util.datastructures.ExceptionUtil;
 
 /**
- * Most general type of exception thrown by the Titan graph database.
+ * Most general type of exception thrown by the JanusGraph graph database.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public class TitanException extends RuntimeException {
+public class JanusGraphException extends RuntimeException {
 
     private static final long serialVersionUID = 4056436257763972423L;
 
     /**
      * @param msg Exception message
      */
-    public TitanException(String msg) {
+    public JanusGraphException(String msg) {
         super(msg);
     }
 
@@ -23,7 +23,7 @@ public class TitanException extends RuntimeException {
      * @param msg   Exception message
      * @param cause Cause of the exception
      */
-    public TitanException(String msg, Throwable cause) {
+    public JanusGraphException(String msg, Throwable cause) {
         super(msg, cause);
     }
 
@@ -32,8 +32,8 @@ public class TitanException extends RuntimeException {
      *
      * @param cause Cause of the exception
      */
-    public TitanException(Throwable cause) {
-        this("Exception in Titan", cause);
+    public JanusGraphException(Throwable cause) {
+        this("Exception in JanusGraph", cause);
     }
 
     /**

@@ -7,8 +7,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * TitanTransaction defines a transactional context for a {@link TitanGraph}. Since TitanGraph is a transactional graph
- * database, all interactions with the graph are mitigated by a TitanTransaction.
+ * JanusGraphTransaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph
+ * database, all interactions with the graph are mitigated by a JanusGraphTransaction.
  * <p/>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
  * deletions into one transaction. A graph transaction is analogous to a
@@ -27,7 +27,7 @@ import java.util.Iterator;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanTransaction extends Transaction {
+public interface JanusGraphTransaction extends Transaction {
 
    /* ---------------------------------------------------------------
     * Modifications
@@ -36,18 +36,18 @@ public interface TitanTransaction extends Transaction {
 
     /**
      * Creates a new vertex in the graph with the given vertex id and the given vertex label.
-     * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
+     * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists.
      * <p/>
      * Custom id setting must be enabled via the configuration option {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
-     * Use {@link org.janusgraph.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
+     * Use {@link org.janusgraph.core.util.JanusGraphId#toVertexId(long)} to construct a valid JanusGraph vertex id from a user id.
      *
      * @param id vertex id of the vertex to be created
      * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
      * @return New vertex
      */
-    public TitanVertex addVertex(Long id, VertexLabel vertexLabel);
+    public JanusGraphVertex addVertex(Long id, VertexLabel vertexLabel);
 
     /**
      * Retrieves the vertex for the specified id.
@@ -57,12 +57,12 @@ public interface TitanTransaction extends Transaction {
      * @param id id of the vertex to retrieve
      * @return vertex with the given id if it exists, else null
      */
-    public TitanVertex getVertex(long id);
+    public JanusGraphVertex getVertex(long id);
 
 
-    public Iterable<TitanVertex> getVertices(long... ids);
+    public Iterable<JanusGraphVertex> getVertices(long... ids);
 
-    public Iterable<TitanEdge> getEdges(RelationIdentifier... ids);
+    public Iterable<JanusGraphEdge> getEdges(RelationIdentifier... ids);
 
    /* ---------------------------------------------------------------
     * Closing and admin

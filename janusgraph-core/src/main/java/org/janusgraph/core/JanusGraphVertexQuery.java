@@ -1,15 +1,15 @@
 package org.janusgraph.core;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
- * A TitanVertexQuery is a VertexQuery executed for a single vertex.
+ * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.
  * <p />
- * Calling {@link org.janusgraph.core.TitanVertex#query()} builds such a query against the vertex
+ * Calling {@link org.janusgraph.core.JanusGraphVertex#query()} builds such a query against the vertex
  * this method is called on. This query builder provides the methods to specify which indicent edges or
  * properties to query for.
  *
@@ -17,7 +17,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * @see BaseVertexQuery
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVertexQuery<Q> {
+public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification (overwrite to merge BaseVertexQuery with Blueprint's VertexQuery)
@@ -55,7 +55,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q hasNot(String key, Object value);
 
     @Override
-    public Q has(String key, TitanPredicate predicate, Object value);
+    public Q has(String key, JanusGraphPredicate predicate, Object value);
 
     @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
@@ -77,24 +77,24 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      *
      * @return Iterable over all incident edges that match this query
      */
-    public Iterable<TitanEdge> edges();
+    public Iterable<JanusGraphEdge> edges();
 
 
-    public Iterable<TitanVertex> vertices();
+    public Iterable<JanusGraphVertex> vertices();
 
     /**
      * Returns an iterable over all incident properties that match this query
      *
      * @return Iterable over all incident properties that match this query
      */
-    public Iterable<TitanVertexProperty> properties();
+    public Iterable<JanusGraphVertexProperty> properties();
 
     /**
      * Returns an iterable over all incident relations that match this query
      *
      * @return Iterable over all incident relations that match this query
      */
-    public Iterable<TitanRelation> relations();
+    public Iterable<JanusGraphRelation> relations();
 
     /**
      * Returns the number of relations that match this query

@@ -3,7 +3,7 @@ package org.janusgraph.diskstorage.lucene;
 import org.janusgraph.StorageSetup;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusGraphIndexTest;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_DIRECTORY;
@@ -12,7 +12,7 @@ import static org.janusgraph.BerkeleyStorageSetup.getBerkeleyJEConfiguration;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class BerkeleyLuceneTest extends TitanIndexTest {
+public class BerkeleyLuceneTest extends JanusGraphIndexTest {
 
     public BerkeleyLuceneTest() {
         super(true, true, true);

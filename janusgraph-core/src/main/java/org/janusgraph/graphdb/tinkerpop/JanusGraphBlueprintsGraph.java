@@ -6,7 +6,7 @@ import org.janusgraph.core.schema.EdgeLabelMaker;
 import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.core.schema.VertexLabelMaker;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.olap.computer.FulgoraGraphComputer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -25,15 +25,15 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 
 /**
- * Blueprints specific implementation for {@link TitanGraph}.
+ * Blueprints specific implementation for {@link JanusGraph}.
  * Handles thread-bound transactions.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanBlueprintsGraph implements TitanGraph {
+public abstract class JanusGraphBlueprintsGraph implements JanusGraph {
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanBlueprintsGraph.class);
+            LoggerFactory.getLogger(JanusGraphBlueprintsGraph.class);
 
 
 
@@ -42,36 +42,36 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     final GraphTransaction tinkerpopTxContainer = new GraphTransaction();
 
-    private ThreadLocal<TitanBlueprintsTransaction> txs = new ThreadLocal<TitanBlueprintsTransaction>() {
+    private ThreadLocal<JanusGraphBlueprintsTransaction> txs = new ThreadLocal<JanusGraphBlueprintsTransaction>() {
 
-        protected TitanBlueprintsTransaction initialValue() {
+        protected JanusGraphBlueprintsTransaction initialValue() {
             return null;
         }
 
     };
 
-    public abstract TitanTransaction newThreadBoundTransaction();
+    public abstract JanusGraphTransaction newThreadBoundTransaction();
 
-    private TitanBlueprintsTransaction getAutoStartTx() {
+    private JanusGraphBlueprintsTransaction getAutoStartTx() {
         if (txs == null) throw new IllegalStateException("Graph has been closed");
         tinkerpopTxContainer.readWrite();
 
-        TitanBlueprintsTransaction tx = txs.get();
+        JanusGraphBlueprintsTransaction tx = txs.get();
         Preconditions.checkState(tx!=null,"Invalid read-write behavior configured: " +
                 "Should either open transaction or throw exception.");
         return tx;
     }
 
-    private TitanBlueprintsTransaction startNewTx() {
-        TitanBlueprintsTransaction tx = txs.get();
+    private JanusGraphBlueprintsTransaction startNewTx() {
+        JanusGraphBlueprintsTransaction tx = txs.get();
         if (tx!=null && tx.isOpen()) throw Transaction.Exceptions.transactionAlreadyOpen();
-        tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
+        tx = (JanusGraphBlueprintsTransaction) newThreadBoundTransaction();
         txs.set(tx);
         log.debug("Created new thread-bound transaction {}", tx);
         return tx;
     }
 
-    public TitanTransaction getCurrentThreadTx() {
+    public JanusGraphTransaction getCurrentThreadTx() {
         return getAutoStartTx();
     }
 
@@ -88,30 +88,30 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public String toString() {
-        GraphDatabaseConfiguration config = ((StandardTitanGraph) this).getConfiguration();
+        GraphDatabaseConfiguration config = ((StandardJanusGraph) this).getConfiguration();
         return StringFactory.graphString(this,config.getBackendDescription());
     }
 
     @Override
     public Variables variables() {
-        return new TitanGraphVariables(((StandardTitanGraph)this).getBackend().getUserConfiguration());
+        return new JanusGraphVariables(((StandardJanusGraph)this).getBackend().getUserConfiguration());
     }
 
     @Override
     public Configuration configuration() {
-        GraphDatabaseConfiguration config = ((StandardTitanGraph) this).getConfiguration();
+        GraphDatabaseConfiguration config = ((StandardJanusGraph) this).getConfiguration();
         return config.getConfigurationAtOpen();
     }
 
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
-        return (I) builder.graph(this).registry(TitanIoRegistry.getInstance()).create();
+        return (I) builder.graph(this).registry(JanusGraphIoRegistry.getInstance()).create();
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################
 
     @Override
-    public TitanVertex addVertex(Object... keyValues) {
+    public JanusGraphVertex addVertex(Object... keyValues) {
         return getAutoStartTx().addVertex(keyValues);
     }
 
@@ -141,34 +141,34 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public FulgoraGraphComputer compute() throws IllegalArgumentException {
-        StandardTitanGraph graph = (StandardTitanGraph)this;
+        StandardJanusGraph graph = (StandardJanusGraph)this;
         return new FulgoraGraphComputer(graph,graph.getConfiguration().getConfiguration());
     }
 
     @Override
-    public TitanVertex addVertex(String vertexLabel) {
+    public JanusGraphVertex addVertex(String vertexLabel) {
         return getAutoStartTx().addVertex(vertexLabel);
     }
 
     @Override
-    public TitanGraphQuery<? extends TitanGraphQuery> query() {
+    public JanusGraphQuery<? extends JanusGraphQuery> query() {
         return getAutoStartTx().query();
     }
 
     @Override
-    public TitanIndexQuery indexQuery(String indexName, String query) {
+    public JanusGraphIndexQuery indexQuery(String indexName, String query) {
         return getAutoStartTx().indexQuery(indexName,query);
     }
 
     @Override
     @Deprecated
-    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
+    public JanusGraphMultiVertexQuery multiQuery(JanusGraphVertex... vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }
 
     @Override
     @Deprecated
-    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
+    public JanusGraphMultiVertexQuery multiQuery(Collection<JanusGraphVertex> vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }
 
@@ -250,7 +250,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     class GraphTransaction extends AbstractThreadLocalTransaction {
 
         public GraphTransaction() {
-            super(TitanBlueprintsGraph.this);
+            super(JanusGraphBlueprintsGraph.this);
         }
 
         @Override
@@ -269,7 +269,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         }
 
         @Override
-        public TitanTransaction createThreadedTx() {
+        public JanusGraphTransaction createThreadedTx() {
             return newTransaction();
         }
 
@@ -279,7 +279,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
                 // Graph has been closed
                 return false;
             }
-            TitanBlueprintsTransaction tx = txs.get();
+            JanusGraphBlueprintsTransaction tx = txs.get();
             return tx!=null && tx.isOpen();
         }
 

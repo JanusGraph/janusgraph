@@ -5,7 +5,7 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanGraphComputer extends GraphComputer {
+public interface JanusGraphComputer extends GraphComputer {
 
     public enum ResultMode {
         NONE, PERSIST, LOCALTX;
@@ -31,9 +31,9 @@ public interface TitanGraphComputer extends GraphComputer {
     }
 
     @Override
-    public TitanGraphComputer workers(int threads);
+    public JanusGraphComputer workers(int threads);
 
-    public default TitanGraphComputer resultMode(ResultMode mode) {
+    public default JanusGraphComputer resultMode(ResultMode mode) {
         result(mode.toResultGraph());
         persist(mode.toPersist());
         return this;

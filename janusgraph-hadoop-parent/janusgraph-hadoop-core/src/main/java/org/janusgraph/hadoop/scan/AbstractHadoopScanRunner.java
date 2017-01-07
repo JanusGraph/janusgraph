@@ -16,7 +16,7 @@ abstract class AbstractHadoopScanRunner<R> {
     protected final VertexScanJob vertexScanJob;
     protected String scanJobConfRoot;
     protected Configuration scanJobConf;
-    protected ReadConfiguration titanConf;
+    protected ReadConfiguration janusgraphConf;
     protected org.apache.hadoop.conf.Configuration baseHadoopConf;
 
     public AbstractHadoopScanRunner(ScanJob scanJob) {
@@ -46,8 +46,8 @@ abstract class AbstractHadoopScanRunner<R> {
         return self();
     }
 
-    public R useTitanConfiguration(ReadConfiguration titanConf) {
-        this.titanConf = titanConf;
+    public R useJanusGraphConfiguration(ReadConfiguration janusgraphConf) {
+        this.janusgraphConf = janusgraphConf;
         return self();
     }
 }

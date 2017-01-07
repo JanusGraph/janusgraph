@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.hbase;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphPerformanceMemoryTest;
+import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
@@ -10,7 +10,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 
-public class HBaseGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
+public class HBaseGraphPerformanceMemoryTest extends JanusGraphPerformanceMemoryTest {
     @BeforeClass
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();

@@ -8,13 +8,13 @@ import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.BackendQueryHolder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
 
 /**
- * Implementation of {@link TitanMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
+ * Implementation of {@link JanusGraphMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
  * {@link #execute(org.janusgraph.graphdb.internal.RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
  * </p>
@@ -22,14 +22,14 @@ import java.util.*;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<MultiVertexCentricQueryBuilder> implements TitanMultiVertexQuery<MultiVertexCentricQueryBuilder> {
+public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<MultiVertexCentricQueryBuilder> implements JanusGraphMultiVertexQuery<MultiVertexCentricQueryBuilder> {
 
     /**
      * The base vertices of this query
      */
     private final Set<InternalVertex> vertices;
 
-    public MultiVertexCentricQueryBuilder(final StandardTitanTx tx) {
+    public MultiVertexCentricQueryBuilder(final StandardJanusGraphTx tx) {
         super(tx);
         vertices = Sets.newHashSet();
     }
@@ -45,7 +45,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 	 */
 
     @Override
-    public TitanMultiVertexQuery addVertex(Vertex vertex) {
+    public JanusGraphMultiVertexQuery addVertex(Vertex vertex) {
         assert vertex != null;
         assert vertex instanceof InternalVertex;
         vertices.add(((InternalVertex)vertex).it());
@@ -53,7 +53,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
-    public TitanMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices) {
+    public JanusGraphMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices) {
         for (Vertex v : vertices) addVertex(v);
         return this;
     }
@@ -78,9 +78,9 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
      * @param returnType
      * @return
      */
-    protected<Q> Map<TitanVertex,Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
+    protected<Q> Map<JanusGraphVertex,Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
-        Map<TitanVertex, Q> result = new HashMap<TitanVertex, Q>(vertices.size());
+        Map<JanusGraphVertex, Q> result = new HashMap<JanusGraphVertex, Q>(vertices.size());
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION,true);
         profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
@@ -102,44 +102,44 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
                 result.put(v, resultConstructor.getResult(v, bq));
             }
         } else {
-            for (TitanVertex v : vertices)
+            for (JanusGraphVertex v : vertices)
                 result.put(v, resultConstructor.emptyResult());
         }
         return result;
     }
 
-    public Map<TitanVertex, Iterable<? extends TitanRelation>> executeImplicitKeyQuery() {
-        return new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size()){{
+    public Map<JanusGraphVertex, Iterable<? extends JanusGraphRelation>> executeImplicitKeyQuery() {
+        return new HashMap<JanusGraphVertex, Iterable<? extends JanusGraphRelation>>(vertices.size()){{
             for (InternalVertex v : vertices ) put(v,executeImplicitKeyQuery(v));
         }};
     }
 
     @Override
-    public Map<TitanVertex, Iterable<TitanEdge>> edges() {
+    public Map<JanusGraphVertex, Iterable<JanusGraphEdge>> edges() {
         return (Map) execute(RelationCategory.EDGE, new RelationConstructor());
     }
 
     @Override
-    public Map<TitanVertex, Iterable<TitanVertexProperty>> properties() {
+    public Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties() {
         return (Map)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
                 executeImplicitKeyQuery():
                 execute(RelationCategory.PROPERTY, new RelationConstructor()));
     }
 
     @Override
-    public Map<TitanVertex, Iterable<TitanRelation>> relations() {
+    public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> relations() {
         return (Map)(isImplicitKeyQuery(RelationCategory.RELATION)?
                 executeImplicitKeyQuery():
                 execute(RelationCategory.RELATION, new RelationConstructor()));
     }
 
     @Override
-    public Map<TitanVertex, Iterable<TitanVertex>> vertices() {
+    public Map<JanusGraphVertex, Iterable<JanusGraphVertex>> vertices() {
         return execute(RelationCategory.EDGE, new VertexConstructor());
     }
 
     @Override
-    public Map<TitanVertex, VertexList> vertexIds() {
+    public Map<JanusGraphVertex, VertexList> vertexIds() {
         return execute(RelationCategory.EDGE, new VertexIdConstructor());
     }
 

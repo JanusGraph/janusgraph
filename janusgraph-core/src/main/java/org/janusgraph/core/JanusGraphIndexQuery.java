@@ -12,7 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanIndexQuery {
+public interface JanusGraphIndexQuery {
 
     /**
      * Specifies the maxium number of elements to return
@@ -20,14 +20,14 @@ public interface TitanIndexQuery {
      * @param limit
      * @return
      */
-    public TitanIndexQuery limit(int limit);
+    public JanusGraphIndexQuery limit(int limit);
 
     /**
      * Specifies the offset of the query. Query results will be retrieved starting at the given offset.
      * @param offset
      * @return
      */
-    public TitanIndexQuery offset(int offset);
+    public JanusGraphIndexQuery offset(int offset);
 
     /**
      * Adds the given parameter to the list of parameters of this query.
@@ -35,7 +35,7 @@ public interface TitanIndexQuery {
      * @param para
      * @return
      */
-    public TitanIndexQuery addParameter(Parameter para);
+    public JanusGraphIndexQuery addParameter(Parameter para);
 
     /**
      * Adds the given parameters to the list of parameters of this query.
@@ -43,7 +43,7 @@ public interface TitanIndexQuery {
      * @param paras
      * @return
      */
-    public TitanIndexQuery addParameters(Iterable<Parameter> paras);
+    public JanusGraphIndexQuery addParameters(Iterable<Parameter> paras);
 
     /**
      * Adds the given parameters to the list of parameters of this query.
@@ -51,7 +51,7 @@ public interface TitanIndexQuery {
      * @param paras
      * @return
      */
-    public TitanIndexQuery addParameters(Parameter... paras);
+    public JanusGraphIndexQuery addParameters(Parameter... paras);
 
     /**
      * Sets the element identifier string that is used by this query builder as the token to identifier key references
@@ -63,28 +63,28 @@ public interface TitanIndexQuery {
      * @param identifier The element identifier which must not be blank
      * @return This query builder
      */
-    public TitanIndexQuery setElementIdentifier(String identifier);
+    public JanusGraphIndexQuery setElementIdentifier(String identifier);
 
     /**
      * Returns all vertices that match the query in the indexing backend.
      *
      * @return
      */
-    public Iterable<Result<TitanVertex>> vertices();
+    public Iterable<Result<JanusGraphVertex>> vertices();
 
     /**
      * Returns all edges that match the query in the indexing backend.
      *
      * @return
      */
-    public Iterable<Result<TitanEdge>> edges();
+    public Iterable<Result<JanusGraphEdge>> edges();
 
     /**
      * Returns all properties that match the query in the indexing backend.
      *
      * @return
      */
-    public Iterable<Result<TitanVertexProperty>> properties();
+    public Iterable<Result<JanusGraphVertexProperty>> properties();
 
     /**
      * Container of a query result with its score.

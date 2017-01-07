@@ -1,17 +1,17 @@
 package org.janusgraph.graphdb.transaction.indexcache;
 
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusGraphVertexProperty;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface IndexCache {
 
-    public void add(TitanVertexProperty property);
+    public void add(JanusGraphVertexProperty property);
 
-    public void remove(TitanVertexProperty property);
+    public void remove(JanusGraphVertexProperty property);
 
-    public Iterable<TitanVertexProperty> get(Object value, PropertyKey key);
+    public Iterable<JanusGraphVertexProperty> get(Object value, PropertyKey key);
 
 }

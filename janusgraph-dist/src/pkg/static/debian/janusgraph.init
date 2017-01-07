@@ -1,6 +1,6 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          titan
+# Provides:          janusgraph
 # Required-Start:    $network $named $time
 # Required-Stop:     $network $named $time
 # Should-Start:      ntp cassandra elasticsearch
@@ -8,18 +8,18 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: distributed graph database
-# Description:       Titan is a highly scalable graph database
+# Description:       JanusGraph is a highly scalable graph database
 #                    optimized for storing and querying large graphs
 #                    with billions of vertices and edges distributed
-#                    across a multi-machine cluster. Titan is a
+#                    across a multi-machine cluster. JanusGraph is a
 #                    transactional database that can support
 #                    thousands of concurrent users.
 ### END INIT INFO
 
 # Author: Dan LaRocque <dalaro@hopcount.org>
 
-NAME=titan
-PIDFILE=/var/run/titan/$NAME.pid
+NAME=janusgraph
+PIDFILE=/var/run/janusgraph/$NAME.pid
 PATHNAME=/usr/sbin/$NAME
 
 # Read configuration variable file if it is present
@@ -43,15 +43,15 @@ printusage() {
 start() {
     local errmsg stat
     privilegecheck
-    log_daemon_msg "Starting Titan graph database" "main"
-    su titan -c "$PATHNAME -p $PIDFILE >/var/log/titan/console.log"
+    log_daemon_msg "Starting JanusGraph graph database" "main"
+    su janusgraph -c "$PATHNAME -p $PIDFILE >/var/log/janusgraph/console.log"
     log_end_msg $?
 }
 
 stop() {
     local errmsg stat
     privilegecheck
-    log_daemon_msg "Stopping Titan graph database" "main"
+    log_daemon_msg "Stopping JanusGraph graph database" "main"
     errmsg="`killproc -p $PIDFILE $PATHNAME 2>&1`"
     stat=$?
     log_end_msg $stat

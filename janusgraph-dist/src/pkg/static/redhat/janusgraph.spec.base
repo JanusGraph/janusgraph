@@ -1,14 +1,14 @@
-# This specfile needs the titan_version and titan_release macros.
+# This specfile needs the janusgraph_version and janusgraph_release macros.
 # These two macros can be defined in two ways:
 #
 # 1. Defined on rpmbuild commandline, e.g.
-#    $ rpmbuild --define='titan_release 2' --define='titan_version 0.4.0'
+#    $ rpmbuild --define='janusgraph_release 2' --define='janusgraph_version 0.4.0'
 #
 # 2. Prepended to this file, e.g.
-#    $ echo '<percent>define titan_version 0.4.0' >  titan.spec.new
-#    $ echo '<percent>define titan_release 2'     >> titan.spec.new
-#    $ cat  titan.spec.base                       >> titan.spec.new
-#    $ mv   titan.spec.new titan.spec
+#    $ echo '<percent>define janusgraph_version 0.4.0' >  janusgraph.spec.new
+#    $ echo '<percent>define janusgraph_release 2'     >> janusgraph.spec.new
+#    $ cat  janusgraph.spec.base                       >> janusgraph.spec.new
+#    $ mv   janusgraph.spec.new janusgraph.spec
 #
 #    The <percent> strings above should be literal percent symbols, but
 #    rpmbuild appears to parse percents even inside specfile comments like
@@ -17,10 +17,10 @@
 %define __jar_repack 0
 %define payload_dir redhat/payload
 
-Name:           titan
-Version:        %{titan_version}
-Release:        %{titan_release}
-Summary:        Titan Distributed Graph Database
+Name:           janusgraph
+Version:        %{janusgraph_version}
+Release:        %{janusgraph_release}
+Summary:        JanusGraph Distributed Graph Database
 Requires:       java >= 1.7.0
 Requires(pre):  shadow-utils
 Group:          Applications/Databases
@@ -30,9 +30,9 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
 %description
-Titan is a scalable graph database optimized for storing and querying
+JanusGraph is a scalable graph database optimized for storing and querying
 graphs containing hundreds of billions of vertices and edges
-distributed across a multi-machine cluster. Titan is a transactional
+distributed across a multi-machine cluster. JanusGraph is a transactional
 database that can support thousands of concurrent users executing
 complex graph traversals.
 
@@ -40,7 +40,7 @@ complex graph traversals.
 
 %build
 cd %{name}-%{version}
-mvn clean install --batch-mode -Dgpg.skip=true -Paurelius-release -DskipTests=true
+mvn clean install --batch-mode -Dgpg.skip=true -Pjanusgraph-release -DskipTests=true
 
 
 %check
@@ -56,14 +56,14 @@ mvn clean install --batch-mode -Dgpg.skip=true -Paurelius-release -DskipTests=tr
 #  created by packages. There's no sane way to check if files owned
 #  by those users/groups are left behind..."
 %pre
-getent group titan >/dev/null || groupadd -r titan
-getent passwd titan >/dev/null || \
-    useradd -r -g titan -d /tmp -s /sbin/nologin \
-    -c "Titan graph database" titan
+getent group janusgraph >/dev/null || groupadd -r janusgraph
+getent passwd janusgraph >/dev/null || \
+    useradd -r -g janusgraph -d /tmp -s /sbin/nologin \
+    -c "JanusGraph graph database" janusgraph
 exit 0
 
 %post
-chown titan:titan /var/lib/titan /var/log/titan /var/run/titan
+chown janusgraph:janusgraph /var/lib/janusgraph /var/log/janusgraph /var/run/janusgraph
 
 
 %install
@@ -72,28 +72,28 @@ cd %{name}-%{version}
 # create directory structure
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 mkdir -p "$RPM_BUILD_ROOT"/etc/rc.d/init.d
-mkdir -p "$RPM_BUILD_ROOT"/etc/titan
+mkdir -p "$RPM_BUILD_ROOT"/etc/janusgraph
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 mkdir -p "$RPM_BUILD_ROOT"/usr/sbin
 mkdir -p "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}
-mkdir -p "$RPM_BUILD_ROOT"/usr/share/titan/lib
-mkdir -p "$RPM_BUILD_ROOT"/var/log/titan
-mkdir -p "$RPM_BUILD_ROOT"/var/lib/titan
-mkdir -p "$RPM_BUILD_ROOT"/var/run/titan
+mkdir -p "$RPM_BUILD_ROOT"/usr/share/janusgraph/lib
+mkdir -p "$RPM_BUILD_ROOT"/var/log/janusgraph
+mkdir -p "$RPM_BUILD_ROOT"/var/lib/janusgraph
+mkdir -p "$RPM_BUILD_ROOT"/var/run/janusgraph
 
 # copy files
 pkgcommon/bin/install-payload.sh "$RPM_BUILD_ROOT"
-pkgcommon/bin/install-jars.sh "$RPM_BUILD_ROOT"/usr/share/titan/lib
-cp %{payload_dir}/titan.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/titan
-cp %{payload_dir}/titan.sysconfig "$RPM_BUILD_ROOT"/etc/sysconfig/titan
+pkgcommon/bin/install-jars.sh "$RPM_BUILD_ROOT"/usr/share/janusgraph/lib
+cp %{payload_dir}/janusgraph.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/janusgraph
+cp %{payload_dir}/janusgraph.sysconfig "$RPM_BUILD_ROOT"/etc/sysconfig/janusgraph
 
 # docs
-#mv doc/ "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/
-#mv CHANGELOG.textile "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/CHANGES.txt
-#mv LICENSE.txt "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/
+#mv doc/ "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/
+#mv CHANGELOG.textile "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/CHANGES.txt
+#mv LICENSE.txt "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/
 ## TODO: NEWS.txt ?
-#mv NOTICE.txt "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/
-#mv README.txt "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/README.txt
+#mv NOTICE.txt "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/
+#mv README.txt "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/README.txt
 for x in CHANGELOG.textile LICENSE.txt NOTICE.txt README.textile UPGRADE.textile; do
     cp $x  "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}/
 done
@@ -111,19 +111,19 @@ rm -rf $RPM_BUILD_ROOT
 %doc /usr/share/doc/%{name}-%{version}/NOTICE.txt
 %doc /usr/share/doc/%{name}-%{version}/README.textile
 %doc /usr/share/doc/%{name}-%{version}/UPGRADE.textile
-%attr(0644, root, root) %config /etc/titan/cassandra.yaml
-%attr(0644, root, root) %config /etc/titan/config.properties
-%attr(0644, root, root) %config /etc/titan/log4j.properties
-%attr(0644, root, root) %config /etc/titan/titan-env.sh
-%attr(0644, root, root) %config /etc/sysconfig/titan
-%attr(0755, root, root) %config /etc/rc.d/init.d/titan
-%attr(0755, titan, titan) %dir /var/log/titan/
-%attr(0755, titan, titan) %dir /var/lib/titan/
-%attr(0755, titan, titan) %dir /var/run/titan/
+%attr(0644, root, root) %config /etc/janusgraph/cassandra.yaml
+%attr(0644, root, root) %config /etc/janusgraph/config.properties
+%attr(0644, root, root) %config /etc/janusgraph/log4j.properties
+%attr(0644, root, root) %config /etc/janusgraph/janusgraph-env.sh
+%attr(0644, root, root) %config /etc/sysconfig/janusgraph
+%attr(0755, root, root) %config /etc/rc.d/init.d/janusgraph
+%attr(0755, janusgraph, janusgraph) %dir /var/log/janusgraph/
+%attr(0755, janusgraph, janusgraph) %dir /var/lib/janusgraph/
+%attr(0755, janusgraph, janusgraph) %dir /var/run/janusgraph/
 %attr(0755, root, root) /usr/bin/gremlin.sh
-%attr(0755, root, root) /usr/sbin/titan
-%attr(0444, root, root) /usr/share/titan/lib/*.jar
-%attr(0644, root, root) /usr/share/titan/titan.in.sh
+%attr(0755, root, root) /usr/sbin/janusgraph
+%attr(0444, root, root) /usr/share/janusgraph/lib/*.jar
+%attr(0644, root, root) /usr/share/janusgraph/janusgraph.in.sh
 
 
 %changelog

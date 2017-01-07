@@ -24,7 +24,7 @@ public class ConfigurationLint {
 
     public static void main(String args[]) throws IOException {
         if (1 != args.length) {
-            System.err.println("Usage: ConfigurationLint titan.properties");
+            System.err.println("Usage: ConfigurationLint janusgraph.properties");
             System.err.println("  Reads the supplied config file from disk and checks for unknown options.");
             System.exit(1);
         }
@@ -66,7 +66,7 @@ public class ConfigurationLint {
             String value = apc.getString(key);
             try {
                 ConfigElement.PathIdentifier pid = ConfigElement.parse(GraphDatabaseConfiguration.ROOT_NS, key);
-                // ConfigElement shouldn't return null; failure here probably relates to titan-core, not the file
+                // ConfigElement shouldn't return null; failure here probably relates to janusgraph-core, not the file
                 Preconditions.checkState(null != pid);
                 Preconditions.checkState(null != pid.element);
                 if (!pid.element.isOption()) {

@@ -7,7 +7,7 @@ import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer;
 import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
 import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
@@ -27,7 +27,7 @@ public class StandardVertex extends AbstractVertex {
     private byte lifecycle;
     private volatile AddedRelationsContainer addedRelations=AddedRelationsContainer.EMPTY;
 
-    public StandardVertex(final StandardTitanTx tx, final long id, byte lifecycle) {
+    public StandardVertex(final StandardJanusGraphTx tx, final long id, byte lifecycle) {
         super(tx, id);
         this.lifecycle=lifecycle;
     }

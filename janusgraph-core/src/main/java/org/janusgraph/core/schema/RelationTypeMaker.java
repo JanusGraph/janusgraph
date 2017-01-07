@@ -5,7 +5,7 @@ import org.janusgraph.core.RelationType;
 
 /**
  * RelationTypeMaker is a factory for {@link org.janusgraph.core.RelationType}s. RelationType can be configured to provide data verification,
- * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link org.janusgraph.core.TitanRelation}s
+ * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link org.janusgraph.core.JanusGraphRelation}s
  * of that type.
  * <p/>
  * There are two kinds of RelationTypes: {@link org.janusgraph.core.EdgeLabel} and {@link org.janusgraph.core.PropertyKey} which

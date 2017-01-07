@@ -1,12 +1,12 @@
 package org.janusgraph.core.schema;
 
 /**
- * Used to read and change the global Titan configuration.
+ * Used to read and change the global JanusGraph configuration.
  * The configuration options are read from the graph and affect the entire database.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanConfiguration {
+public interface JanusGraphConfiguration {
 
     /**
      * Returns a string representation of the provided configuration option or namespace for inspection.
@@ -24,6 +24,6 @@ public interface TitanConfiguration {
      * @param path
      * @param value
      */
-    public TitanConfiguration set(String path, Object value);
+    public JanusGraphConfiguration set(String path, Object value);
 
 }

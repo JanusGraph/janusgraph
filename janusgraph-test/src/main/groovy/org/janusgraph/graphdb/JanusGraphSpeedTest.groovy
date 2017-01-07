@@ -17,9 +17,9 @@ import org.slf4j.LoggerFactory
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions
 import com.google.common.base.Preconditions
 import com.google.common.collect.Iterables
-import org.janusgraph.core.TitanEdge
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex
+import org.janusgraph.core.JanusGraphEdge
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex
 import org.janusgraph.testcategory.PerformanceTests
 import org.janusgraph.testutil.JUnitBenchmarkProvider
 import org.janusgraph.diskstorage.BackendException
@@ -33,14 +33,14 @@ import org.janusgraph.diskstorage.BackendException
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @BenchmarkOptions(warmupRounds = 1, benchmarkRounds = 1)
 @Category([PerformanceTests.class])
-public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
+public abstract class JanusGraphSpeedTest extends GroovySpeedTestSupport {
 
-    private static final Logger log = LoggerFactory.getLogger(TitanGraphSpeedTest)
+    private static final Logger log = LoggerFactory.getLogger(JanusGraphSpeedTest)
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get()
 
-    TitanGraphSpeedTest(WriteConfiguration conf) throws BackendException {
+    JanusGraphSpeedTest(WriteConfiguration conf) throws BackendException {
         super(conf)
     }
 
@@ -97,7 +97,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
      * - edges:    schema.getEdgePropertyName(n)
      * 
      * The graph was generated and written to a file with
-     * c.t.titan.testutil.gen.{Schema, GraphGenerator}.
+     * c.t.janusgraph.testutil.gen.{Schema, GraphGenerator}.
      */
 
     @Test
@@ -276,7 +276,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         String labelName = schema.getEdgeLabelName(0)
         sequentialUidTask { tx, vertex ->
             if (-1 != last && last != vertex.id()) {
-                TitanVertex target = tx.v(last)
+                JanusGraphVertex target = tx.v(last)
                 vertex.addEdge(labelName, target)
                 edgesAdded++
             } else {
@@ -303,7 +303,7 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
 //            Vertex v = null
 //            while (null == v) {
 //                uid = Math.abs(random.nextLong()) % gen.getMaxUid();
-//                TitanKey uidKey = tx.getPropertyKey(Schema.UID_PROP);
+//                JanusGraphKey uidKey = tx.getPropertyKey(Schema.UID_PROP);
 //                v = tx.getVertex(uidKey, uid);
 //            }
 //            assertNotNull(v)
@@ -313,9 +313,9 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
 //
 //        def tx = graph.newTransaction()
 //        // Insert new vertices with the same uids as removed vertices, but no edges or properties besides uid
-//        TitanKey uidKey = tx.getPropertyKey(Schema.UID_PROP)
+//        JanusGraphKey uidKey = tx.getPropertyKey(Schema.UID_PROP)
 //        for (long uid : visited) {
-//            TitanVertex v = tx.addVertex()
+//            JanusGraphVertex v = tx.addVertex()
 //            v.setProperty(uidKey, uid)
 //        }
 //        tx.commit()
@@ -331,9 +331,9 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         log.debug("Noop test executed");
     }
 
-    private void multiVertexQueryTask(TitanTransaction tx, TitanVertex[] vbuf, int vcount) {
+    private void multiVertexQueryTask(JanusGraphTransaction tx, JanusGraphVertex[] vbuf, int vcount) {
         if (vcount != vbuf.length) {
-            def newbuf = new TitanVertex[vcount]
+            def newbuf = new JanusGraphVertex[vcount]
             for (int i = 0; i < vcount; i++) {
                 newbuf[i] = vbuf[i]
                 Preconditions.checkArgument(null != newbuf[i])
@@ -345,9 +345,9 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         // Preconditions failure because Query.isQueryNormalForm returns false
         int n = 0
         for (int i = 0; i < schema.edgeLabels; i++) {
-            Map<TitanVertex, Iterable<TitanEdge>> m = tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).edges()
-            for (Iterable<TitanEdge> iter : m.values()) {
-                for (TitanEdge e : iter) {
+            Map<JanusGraphVertex, Iterable<JanusGraphEdge>> m = tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).edges()
+            for (Iterable<JanusGraphEdge> iter : m.values()) {
+                for (JanusGraphEdge e : iter) {
                     n++
                 }
             }
@@ -355,10 +355,10 @@ public abstract class TitanGraphSpeedTest extends GroovySpeedTestSupport {
         assertTrue(0 < n)
     }
 
-    private void singleVertexQueryTask(TitanTransaction tx, TitanVertex v) {
+    private void singleVertexQueryTask(JanusGraphTransaction tx, JanusGraphVertex v) {
         int n = 0
         for (int i = 0; i < schema.edgeLabels; i++) {
-            for (TitanEdge iter : v.query().labels(schema.edgeLabelNames[i]).edges()) {
+            for (JanusGraphEdge iter : v.query().labels(schema.edgeLabelNames[i]).edges()) {
                 n++
             }
         }

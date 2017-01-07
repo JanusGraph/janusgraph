@@ -5,7 +5,7 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.core.attribute.Geo;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.tinkerpop.TitanIoRegistry;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
 import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
 
@@ -16,7 +16,7 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanGremlinPlugin implements GremlinPlugin {
+public class JanusGraphGremlinPlugin implements GremlinPlugin {
 
     private static final String IMPORT = "import ";
     private static final String IMPORT_STATIC = IMPORT + "static ";
@@ -29,7 +29,7 @@ public class TitanGremlinPlugin implements GremlinPlugin {
         add(IMPORT + GraphOfTheGodsFactory.class.getName());
         add(IMPORT + "org.janusgraph.hadoop.MapReduceIndexManagement");
         add(IMPORT + "java.time" + DOT_STAR);
-        add(IMPORT + TitanIoRegistry.class.getName());
+        add(IMPORT + JanusGraphIoRegistry.class.getName());
 
         // Static imports on enum values used in query constraint expressions
         add(IMPORT_STATIC + Geo.class.getName() + DOT_STAR);
@@ -42,7 +42,7 @@ public class TitanGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "aurelius.titan";
+        return "janusgraph.convenience";
     }
 
     @Override

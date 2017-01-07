@@ -6,7 +6,7 @@ import com.google.common.collect.Iterables;
 import org.janusgraph.core.*;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.olap.*;
 import org.janusgraph.graphdb.olap.job.GhostVertexRemover;
 import org.apache.tinkerpop.gremlin.process.computer.*;
@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static org.janusgraph.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class OLAPTest extends TitanGraphBaseTest {
+public abstract class OLAPTest extends JanusGraphBaseTest {
 
     private static final double EPSILON = 0.00001;
 
@@ -65,7 +65,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         mgmt.makePropertyKey("numvals").dataType(Integer.class).make();
         finishSchema();
         int numE = 0;
-        TitanVertex[] vs = new TitanVertex[numV];
+        JanusGraphVertex[] vs = new JanusGraphVertex[numV];
         for (int i=0;i<numV;i++) {
             vs[i] = tx.addVertex("uid",i+1);
             int numVals = random.nextInt(5)+1;
@@ -76,9 +76,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
         for (int i=0;i<numV;i++) {
             int edges = i+1;
-            TitanVertex v = vs[i];
+            JanusGraphVertex v = vs[i];
             for (int j=0;j<edges;j++) {
-                TitanVertex u = vs[random.nextInt(numV)];
+                JanusGraphVertex u = vs[random.nextInt(numV)];
                 v.addEdge("knows", u);
                 numE++;
             }
@@ -98,7 +98,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         ScanMetrics result1 = executeScanJob(new VertexScanJob() {
 
             @Override
-            public void process(TitanVertex vertex, ScanMetrics metrics) {
+            public void process(JanusGraphVertex vertex, ScanMetrics metrics) {
                 long outDegree = vertex.query().labels("knows").direction(Direction.OUT).edgeCount();
                 assertEquals(0, vertex.query().labels("knows").direction(Direction.IN).edgeCount());
                 assertEquals(1, vertex.query().labels("uid").propertyCount());
@@ -122,7 +122,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         ScanMetrics result2 = executeScanJob(new VertexScanJob() {
 
             @Override
-            public void process(TitanVertex vertex, ScanMetrics metrics) {
+            public void process(JanusGraphVertex vertex, ScanMetrics metrics) {
                 metrics.incrementCustom(VERTEX_COUNT);
                 assertEquals(1 ,vertex.query().labels("numvals").propertyCount());
                 int numvals = vertex.value("numvals");
@@ -143,11 +143,11 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     @Test
     public void removeGhostVertices() throws Exception {
-        TitanVertex v1 = tx.addVertex("person");
+        JanusGraphVertex v1 = tx.addVertex("person");
         v1.property("name","stephen");
-        TitanVertex v2 = tx.addVertex("person");
+        JanusGraphVertex v2 = tx.addVertex("person");
         v1.property("name","marko");
-        TitanVertex v3 = tx.addVertex("person");
+        JanusGraphVertex v3 = tx.addVertex("person");
         v1.property("name","dan");
         v2.addEdge("knows",v3);
         v1.addEdge("knows",v2);
@@ -161,7 +161,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         v3.remove();
         tx.commit();
 
-        TitanTransaction xx = graph.buildTransaction().checkExternalVertexExistence(false).start();
+        JanusGraphTransaction xx = graph.buildTransaction().checkExternalVertexExistence(false).start();
         v3 = getV(xx, v3id);
         assertNotNull(v3);
         v1 = getV(xx, v1id);
@@ -196,8 +196,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final JanusGraphComputer computer = graph.compute();
+        computer.resultMode(JanusGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(new DegreeCounter());
         computer.mapReduce(new DegreeMapper());
@@ -210,7 +210,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int totalCount = 0;
         for (Map.Entry<Long,Integer> entry : degrees.entrySet()) {
             int degree = entry.getValue();
-            TitanVertex v = getV(tx, entry.getKey().longValue());
+            JanusGraphVertex v = getV(tx, entry.getKey().longValue());
             int count = v.value("uid");
             assertEquals(count,degree);
             totalCount+= degree;
@@ -226,8 +226,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final JanusGraphComputer computer = graph.compute();
+        computer.resultMode(JanusGraphComputer.ResultMode.NONE);
         computer.workers(1);
         computer.program(new ExceptionProgram());
 
@@ -244,9 +244,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         int numE = generateRandomGraph(numV);
         clopen();
 
-        // TODO does this iteration over TitanGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
-        for (TitanGraphComputer.ResultMode mode : TitanGraphComputer.ResultMode.values()) {
-            final TitanGraphComputer computer = graph.compute();
+        // TODO does this iteration over JanusGraphComputer.ResultMode values imply that DegreeVariation's ResultGraph/Persist should also change?
+        for (JanusGraphComputer.ResultMode mode : JanusGraphComputer.ResultMode.values()) {
+            final JanusGraphComputer computer = graph.compute();
             computer.resultMode(mode);
             computer.workers(1);
             computer.program(new DegreeCounter(2));
@@ -263,17 +263,17 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             }
             if (gview == null) continue;
 
-            for (TitanVertex v : gview.query().vertices()) {
+            for (JanusGraphVertex v : gview.query().vertices()) {
                 long degree2 = ((Integer)v.value(DegreeCounter.DEGREE)).longValue();
                 long actualDegree2 = 0;
-                for (TitanVertex w : v.query().direction(Direction.OUT).vertices()) {
+                for (JanusGraphVertex w : v.query().direction(Direction.OUT).vertices()) {
                     actualDegree2 += Iterables.size(w.query().direction(Direction.OUT).vertices());
                 }
                 assertEquals(actualDegree2,degree2);
             }
-            if (mode== TitanGraphComputer.ResultMode.LOCALTX) {
-                assertTrue(gview instanceof TitanTransaction);
-                ((TitanTransaction)gview).rollback();
+            if (mode== JanusGraphComputer.ResultMode.LOCALTX) {
+                assertTrue(gview instanceof JanusGraphTransaction);
+                ((JanusGraphTransaction)gview).rollback();
             }
         }
     }
@@ -476,9 +476,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     private void expand(Vertex v, final int distance, final int diameter, final int branch) {
         v.property(VertexProperty.Cardinality.single, "distance", distance);
         if (distance<diameter) {
-            TitanVertex previous = null;
+            JanusGraphVertex previous = null;
             for (int i=0;i<branch;i++) {
-                TitanVertex u = tx.addVertex();
+                JanusGraphVertex u = tx.addVertex();
                 u.addEdge("likes",v);
                 log.debug("likes {}->{}", u.id(), v.id());
                 // Commented since the PageRank implementation does not discriminate by label
@@ -502,7 +502,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         final int diameter = 5;
         final double alpha = 0.85d;
         int numV = (int)((Math.pow(branch,diameter+1)-1)/(branch-1));
-        TitanVertex v = tx.addVertex();
+        JanusGraphVertex v = tx.addVertex();
         expand(v,0,diameter,branch);
         clopen();
         assertCount(numV, tx.query().vertices());
@@ -519,13 +519,13 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         double correctPRSum = 0;
-        Iterator<TitanVertex> iv = tx.query().vertices().iterator();
+        Iterator<JanusGraphVertex> iv = tx.query().vertices().iterator();
         while (iv.hasNext()) {
             correctPRSum += correctPR[iv.next().<Integer>value("distance")];
         }
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final JanusGraphComputer computer = graph.compute();
+        computer.resultMode(JanusGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(PageRankVertexProgram.build().iterations(10).vertexCount(numV).dampingFactor(alpha).create(graph));
         computer.mapReduce(PageRankMapReduce.build().create());
@@ -543,7 +543,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             final Double computedPR = rank.getValue();
             assertNotNull(vertexID);
             assertNotNull(computedPR);
-            final TitanVertex u = getV(tx, vertexID);
+            final JanusGraphVertex u = getV(tx, vertexID);
             final int distance = u.<Integer>value("distance");
             vertexCounter++;
 
@@ -569,7 +569,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         int maxDepth = 16;
         int maxBranch = 5;
-        TitanVertex vertex = tx.addVertex();
+        JanusGraphVertex vertex = tx.addVertex();
         //Grow a star-shaped graph around vertex which will be the single-source for this shortest path computation
         final int numV = growVertex(vertex,0,maxDepth, maxBranch);
         final int numE = numV-1;
@@ -581,8 +581,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         clopen();
 
-        final TitanGraphComputer computer = graph.compute();
-        computer.resultMode(TitanGraphComputer.ResultMode.NONE);
+        final JanusGraphComputer computer = graph.compute();
+        computer.resultMode(JanusGraphComputer.ResultMode.NONE);
         computer.workers(4);
         computer.program(ShortestDistanceVertexProgram.build().seed((long)vertex.id()).maxDepth(maxDepth + 4).create(graph));
         computer.mapReduce(ShortestDistanceMapReduce.build().create());
@@ -597,7 +597,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             final KeyValue<Long, Long> kv = distances.next();
             final long dist = kv.getValue();
             assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
-            TitanVertex v = getV(tx, kv.getKey());
+            JanusGraphVertex v = getV(tx, kv.getKey());
             assertEquals(v.<Integer>value("distance").intValue(), dist);
             vertexCount++;
         }
@@ -613,7 +613,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
         for (int i=0;i<random.nextInt(maxBranch)+1;i++) {
             int dist = random.nextInt(3)+1;
-            TitanVertex n = tx.addVertex();
+            JanusGraphVertex n = tx.addVertex();
             n.addEdge("connect",vertex, "distance",dist);
             total+=growVertex(n,depth+dist,maxDepth,maxBranch);
         }

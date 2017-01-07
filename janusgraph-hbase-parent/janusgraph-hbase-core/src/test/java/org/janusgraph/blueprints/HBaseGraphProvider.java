@@ -10,10 +10,10 @@ import java.io.IOException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class HBaseGraphProvider extends AbstractTitanGraphProvider {
+public class HBaseGraphProvider extends AbstractJanusGraphProvider {
 
     @Override
-    public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public ModifiableConfiguration getJanusGraphConfiguration(String graphName, Class<?> test, String testMethodName) {
         return HBaseStorageSetup.getHBaseConfiguration(graphName);
     }
 

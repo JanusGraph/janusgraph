@@ -11,15 +11,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
- * is a special case of a {@link TitanRelation}.
+ * A JanusGraphEdge connects two {@link JanusGraphVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
+ * is a special case of a {@link JanusGraphRelation}.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see Edge
- * @see TitanRelation
+ * @see JanusGraphRelation
  * @see EdgeLabel
  */
-public interface TitanEdge extends TitanRelation, Edge {
+public interface JanusGraphEdge extends JanusGraphRelation, Edge {
 
     /**
      * Returns the edge label of this edge
@@ -37,15 +37,15 @@ public interface TitanEdge extends TitanRelation, Edge {
      *
      * @return the vertex for the specified direction
      */
-    public TitanVertex vertex(Direction dir);
+    public JanusGraphVertex vertex(Direction dir);
 
     @Override
-    public default TitanVertex outVertex() {
+    public default JanusGraphVertex outVertex() {
         return vertex(Direction.OUT);
     }
 
     @Override
-    public default TitanVertex inVertex() {
+    public default JanusGraphVertex inVertex() {
         return vertex(Direction.IN);
     }
 
@@ -57,7 +57,7 @@ public interface TitanEdge extends TitanRelation, Edge {
      * @return The vertex at the opposite end of the edge.
      * @throws InvalidElementException if the edge is not incident on the specified vertex
      */
-    public TitanVertex otherVertex(Vertex vertex);
+    public JanusGraphVertex otherVertex(Vertex vertex);
 
 
     @Override

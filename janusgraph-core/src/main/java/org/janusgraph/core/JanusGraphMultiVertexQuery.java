@@ -1,6 +1,6 @@
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -9,21 +9,21 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A MultiVertexQuery is identical to a {@link TitanVertexQuery} but executed against a set of vertices simultaneously.
- * In other words, {@link TitanMultiVertexQuery} allows identical {@link TitanVertexQuery} executed against a non-trivial set
+ * A MultiVertexQuery is identical to a {@link JanusGraphVertexQuery} but executed against a set of vertices simultaneously.
+ * In other words, {@link JanusGraphMultiVertexQuery} allows identical {@link JanusGraphVertexQuery} executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
  * <p/>
- * The query specification methods are identical to {@link TitanVertexQuery}. The result set method return Maps from the specified
+ * The query specification methods are identical to {@link JanusGraphVertexQuery}. The result set method return Maps from the specified
  * set of anchor vertices to their respective individual result sets.
  * <p/>
- * Call {@link TitanTransaction#multiQuery(java.util.Collection)} to construct a multi query in the enclosing transaction.
+ * Call {@link JanusGraphTransaction#multiQuery(java.util.Collection)} to construct a multi query in the enclosing transaction.
  * <p/>
  * Note, that the {@link #limit(int)} constraint applies to each individual result set.
  *
- * @see TitanVertexQuery
+ * @see JanusGraphVertexQuery
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {
+public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification
@@ -36,7 +36,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      * @param vertex
      * @return this query builder
      */
-    public TitanMultiVertexQuery addVertex(Vertex vertex);
+    public JanusGraphMultiVertexQuery addVertex(Vertex vertex);
 
     /**
      * Adds the given collection of vertices to the set of vertices against which to execute this query.
@@ -44,7 +44,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      * @param vertices
      * @return this query builder
      */
-    public TitanMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices);
+    public JanusGraphMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices);
 
 
     @Override
@@ -78,7 +78,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
     public Q hasNot(String key, Object value);
 
     @Override
-    public Q has(String key, TitanPredicate predicate, Object value);
+    public Q has(String key, JanusGraphPredicate predicate, Object value);
 
     @Override
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
@@ -99,14 +99,14 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      *
      * @return Iterable over all incident edges that match this query for each vertex
      */
-    public Map<TitanVertex, Iterable<TitanEdge>> edges();
+    public Map<JanusGraphVertex, Iterable<JanusGraphEdge>> edges();
 
     /**
      * Returns an iterable over all incident properties that match this query for each vertex
      *
      * @return Iterable over all incident properties that match this query for each vertex
      */
-    public Map<TitanVertex, Iterable<TitanVertexProperty>> properties();
+    public Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties();
 
 
     /**
@@ -114,7 +114,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      *
      * @return Iterable over all incident relations that match this query for each vertex
      */
-    public Map<TitanVertex, Iterable<TitanRelation>> relations();
+    public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> relations();
 
     /**
      * Retrieves all vertices connected to each of the query's base vertices by edges
@@ -123,7 +123,7 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      *
      * @return An iterable of all vertices connected to each of the query's central vertices by matching edges
      */
-    public Map<TitanVertex, Iterable<TitanVertex>> vertices();
+    public Map<JanusGraphVertex, Iterable<JanusGraphVertex>> vertices();
 
     /**
      * Retrieves all vertices connected to each of the query's central vertices by edges
@@ -133,6 +133,6 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
      *
      * @return A list of all vertices' ids connected to each of the query's central vertex by matching edges
      */
-    public Map<TitanVertex, VertexList> vertexIds();
+    public Map<JanusGraphVertex, VertexList> vertexIds();
 
 }

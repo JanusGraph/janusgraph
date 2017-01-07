@@ -1,10 +1,10 @@
 package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.TitanGraphQuery;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphQuery;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder {
+public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implements HasStepFolder<S, E>, Profiling, HasContainerHolder {
 
     private final List<HasContainer> hasContainers = new ArrayList<>();
     private int limit = BaseQuery.NO_LIMIT;
@@ -33,14 +33,14 @@ public class TitanGraphStep<S, E extends Element> extends GraphStep<S, E> implem
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
 
-    public TitanGraphStep(final GraphStep<S, E> originalStep) {
+    public JanusGraphStep(final GraphStep<S, E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.isStartStep(), originalStep.getIds());
         originalStep.getLabels().forEach(this::addLabel);
         this.setIteratorSupplier(() -> {
-            TitanTransaction tx = TitanTraversalUtil.getTx(traversal);
-            TitanGraphQuery query = tx.query();
+            JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(traversal);
+            JanusGraphQuery query = tx.query();
             for (HasContainer condition : hasContainers) {
-                query.has(condition.getKey(), TitanPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+                query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
             }
             for (OrderEntry order : orders) query.orderBy(order.key, order.order);
             if (limit != BaseQuery.NO_LIMIT) query.limit(limit);

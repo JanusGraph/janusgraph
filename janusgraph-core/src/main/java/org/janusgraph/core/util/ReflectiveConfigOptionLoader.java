@@ -23,22 +23,22 @@ import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 
 /**
- * This class supports iteration over Titan's ConfigNamespaces at runtime.
+ * This class supports iteration over JanusGraph's ConfigNamespaces at runtime.
  *
- * Titan's ConfigOptions and ConfigNamespaces are defined by public static final fields
- * spread across more than ten classes in various titan modules/jars.  A ConfigOption
+ * JanusGraph's ConfigOptions and ConfigNamespaces are defined by public static final fields
+ * spread across more than ten classes in various janusgraph modules/jars.  A ConfigOption
  * effectively does not exist at runtime until the static initializer of the field in
  * which it is defined is executed by the JVM.  This class contains utility methods
- * internally called by Titan to preload ConfigOptions when performing lookups or
+ * internally called by JanusGraph to preload ConfigOptions when performing lookups or
  * iterations in which a ConfigOption might not necessarily be loaded yet (such as
  * when iterating over the collection of ConfigOption children in a ConfigNamespace).
- * Normally, only Titan internals should use this class.
+ * Normally, only JanusGraph internals should use this class.
  */
 public enum ReflectiveConfigOptionLoader {
     INSTANCE;
 
-    private static final String SYS_PROP_NAME = "titan.load.cfg.opts";
-    private static final String ENV_VAR_NAME  = "TITAN_LOAD_CFG_OPTS";
+    private static final String SYS_PROP_NAME = "janusgraph.load.cfg.opts";
+    private static final String ENV_VAR_NAME  = "JANUSGRAPH_LOAD_CFG_OPTS";
 
     private static final Logger log =
             LoggerFactory.getLogger(ReflectiveConfigOptionLoader.class);
@@ -97,9 +97,9 @@ public enum ReflectiveConfigOptionLoader {
             return;
 
         /*
-         * Aside from the classes in titan-core, we can't guarantee the presence
+         * Aside from the classes in janusgraph-core, we can't guarantee the presence
          * of these classes at runtime.  That's why they're loaded reflectively.
-         * We could probably hard-code the initialization of the titan-core classes,
+         * We could probably hard-code the initialization of the janusgraph-core classes,
          * but the benefit isn't substantial.
          */
         List<String> classnames = ImmutableList.of(

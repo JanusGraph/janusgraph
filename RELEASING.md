@@ -1,4 +1,4 @@
-Releasing Titan
+Releasing JanusGraph
 ===============
 
 Prerequisites
@@ -54,7 +54,7 @@ Files in the main repo:
 * CHANGELOG.asc
 * NOTICE.txt
 * UPGRADE.asc
-* titan-site/src/site-resources/index.html
+* janusgraph-site/src/site-resources/index.html
   (this template generates a new http://thinkaurelius.github.io/titan/)
 
 Some of these updates could potentially be automated, but tweaking
@@ -75,7 +75,7 @@ Recommended but not required:
 ```bash
 # This script does several things.
 #
-# * Prompts for a ${titan.compatible.versions} update
+# * Prompts for a ${janusgraph.compatible.versions} update
 # * Locally commits the release using the release plugin
 # * Deploys Maven artifacts to Sonatype OSS (staging, not released yet)
 # * Uploads zipfiles to S3
@@ -87,7 +87,7 @@ Recommended but not required:
 # This step is still essentially reversible: just destroy the
 # local commit history, drop the Sonatype OSS Staging repo, and
 # delete the files uploaded to S3.
-titan-dist/src/release/release.sh
+janusgraph-dist/src/release/release.sh
 ```
 
 ### Checking Artifacts & Archives
@@ -112,7 +112,7 @@ earlier.  It will appear on Maven Central in an hour or two.
 Finally, push your local changes to Github:
 
 ```bash 
-# cd to the titan repository root if not already there
+# cd to the janusgraph repository root if not already there
 git push origin $BRANCH_NAME
 git push origin refs/tags/$RELEASE_VERSION
 git push origin gh-pages

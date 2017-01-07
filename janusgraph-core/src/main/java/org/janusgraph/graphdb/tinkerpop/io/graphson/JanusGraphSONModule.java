@@ -19,9 +19,9 @@ import java.io.IOException;
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class TitanGraphSONModule extends SimpleModule {
+public class JanusGraphSONModule extends SimpleModule {
 
-    private TitanGraphSONModule() {
+    private JanusGraphSONModule() {
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
         addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer());
 
@@ -29,9 +29,9 @@ public class TitanGraphSONModule extends SimpleModule {
         addDeserializer(Geoshape.class, new Geoshape.GeoshapeGsonDeserializer());
     }
 
-    private static final TitanGraphSONModule INSTANCE = new TitanGraphSONModule();
+    private static final JanusGraphSONModule INSTANCE = new JanusGraphSONModule();
 
-    public static final TitanGraphSONModule getInstance() {
+    public static final JanusGraphSONModule getInstance() {
         return INSTANCE;
     }
 

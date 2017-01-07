@@ -9,14 +9,14 @@ import java.util.function.BiPredicate;
 
 /**
  * A special kind of {@link BiPredicate} which marks all the predicates that are natively supported by
- * Titan and known to the query optimizer. Contains some custom methods that Titan needs for
+ * JanusGraph and known to the query optimizer. Contains some custom methods that JanusGraph needs for
  * query answering and evaluation.
  * </p>
- * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding Titan predicates.
+ * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding JanusGraph predicates.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanPredicate extends BiPredicate<Object, Object> {
+public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
     /**
      * Whether the given condition is a valid condition for this predicate.
@@ -50,7 +50,7 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
      * Returns the negation of this predicate if it exists, otherwise an exception is thrown. Check {@link #hasNegation()} first.
      * @return
      */
-    public TitanPredicate negate();
+    public JanusGraphPredicate negate();
 
     /**
      * Returns true if this predicate is in query normal form.
@@ -66,15 +66,15 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
     public static class Converter {
 
         /**
-         * Convert Tinkerpop's comparison operators to Titan's
+         * Convert Tinkerpop's comparison operators to JanusGraph's
          *
          * @param p Any predicate
-         * @return A TitanPredicate equivalent to the given predicate
+         * @return A JanusGraphPredicate equivalent to the given predicate
          * @throws IllegalArgumentException if the given Predicate is unknown
          */
-        public static final TitanPredicate convertInternal(BiPredicate p) {
-            if (p instanceof TitanPredicate) {
-                return (TitanPredicate)p;
+        public static final JanusGraphPredicate convertInternal(BiPredicate p) {
+            if (p instanceof JanusGraphPredicate) {
+                return (JanusGraphPredicate)p;
             } else if (p instanceof Compare) {
                 Compare comp = (Compare)p;
                 switch(comp) {
@@ -97,10 +97,10 @@ public interface TitanPredicate extends BiPredicate<Object, Object> {
             } else return null;
         }
 
-        public static final TitanPredicate convert(BiPredicate p) {
-            TitanPredicate titanPred = convertInternal(p);
-            if (titanPred==null) throw new IllegalArgumentException("Titan does not support the given predicate: " + p);
-            return titanPred;
+        public static final JanusGraphPredicate convert(BiPredicate p) {
+            JanusGraphPredicate janusgraphPred = convertInternal(p);
+            if (janusgraphPred==null) throw new IllegalArgumentException("JanusGraph does not support the given predicate: " + p);
+            return janusgraphPred;
         }
 
         public static final boolean supports(BiPredicate p) {

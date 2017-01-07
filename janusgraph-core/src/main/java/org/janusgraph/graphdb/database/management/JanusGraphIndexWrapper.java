@@ -6,7 +6,7 @@ import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.IndexField;
@@ -16,11 +16,11 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanGraphIndexWrapper implements TitanGraphIndex {
+public class JanusGraphIndexWrapper implements JanusGraphIndex {
 
     private final IndexType index;
 
-    public TitanGraphIndexWrapper(IndexType index) {
+    public JanusGraphIndexWrapper(IndexType index) {
         this.index = index;
     }
 

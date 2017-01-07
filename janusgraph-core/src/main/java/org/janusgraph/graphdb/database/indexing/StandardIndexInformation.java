@@ -6,7 +6,7 @@ import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.diskstorage.indexing.IndexFeatures;
 import org.janusgraph.diskstorage.indexing.IndexInformation;
 import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -23,8 +23,8 @@ public class StandardIndexInformation implements IndexInformation {
     }
 
     @Override
-    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
-        return titanPredicate == Cmp.EQUAL || titanPredicate == Contain.IN;
+    public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
+        return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Contain.IN;
     }
 
     @Override

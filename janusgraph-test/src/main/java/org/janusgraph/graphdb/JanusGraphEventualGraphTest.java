@@ -9,7 +9,7 @@ import org.janusgraph.core.attribute.Cmp;
 
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.diskstorage.util.TestLockerManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.testcategory.SerialTests;
@@ -29,7 +29,7 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.janusgraph.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -38,9 +38,9 @@ import static org.junit.Assert.assertEquals;
  */
 
 @Category({ SerialTests.class })
-public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
+public abstract class JanusGraphEventualGraphTest extends JanusGraphBaseTest {
 
-    private Logger log = LoggerFactory.getLogger(TitanEventualGraphTest.class);
+    private Logger log = LoggerFactory.getLogger(JanusGraphEventualGraphTest.class);
 
     @Test
     public void verifyEligibility() {
@@ -55,19 +55,19 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         finishSchema();
 
 
-        TitanVertex v = tx.addVertex("uid", "v");
+        JanusGraphVertex v = tx.addVertex("uid", "v");
 
         clopen();
 
         //Concurrent index addition
-        TitanTransaction tx1 = graph.newTransaction();
-        TitanTransaction tx2 = graph.newTransaction();
+        JanusGraphTransaction tx1 = graph.newTransaction();
+        JanusGraphTransaction tx2 = graph.newTransaction();
         getVertex(tx1, "uid", "v").property(VertexProperty.Cardinality.single, "value",  11);
         getVertex(tx2, "uid", "v").property(VertexProperty.Cardinality.single, "value",  11);
         tx1.commit();
         tx2.commit();
 
-        assertEquals("v", Iterators.<String>getOnlyElement(Iterables.<TitanVertex>getOnlyElement(tx.query().has("value", 11).vertices()).values("uid")));
+        assertEquals("v", Iterators.<String>getOnlyElement(Iterables.<JanusGraphVertex>getOnlyElement(tx.query().has("value", 11).vertices()).values("uid")));
     }
 
     /**
@@ -80,13 +80,13 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
-        TitanTransaction tx1 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(100)).start();
+        JanusGraphTransaction tx1 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(100)).start();
         String name = "name";
         String age = "age";
         String address = "address";
 
-        TitanVertex v1 = tx1.addVertex(name, "a");
-        TitanVertex v2 = tx1.addVertex(age, "14", name, "b", age, "42");
+        JanusGraphVertex v1 = tx1.addVertex(name, "a");
+        JanusGraphVertex v2 = tx1.addVertex(age, "14", name, "b", age, "42");
         tx1.commit();
 
         // Fetch vertex ids
@@ -95,7 +95,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
-        TitanTransaction tx2 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1000)).start();
+        JanusGraphTransaction tx2 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1000)).start();
         v1 = getV(tx2,id1);
         v2 = getV(tx2,id2);
         for (Iterator<VertexProperty<Object>> propiter = v1.properties(name); propiter.hasNext(); ) {
@@ -120,7 +120,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx2.commit();
         Object edgeId = edge.id();
 
-        TitanVertex afterTx2 = getV(graph,id1);
+        JanusGraphVertex afterTx2 = getV(graph,id1);
 
         // Verify that "name" property is gone
         assertFalse(afterTx2.keys().contains(name));
@@ -134,24 +134,24 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
-        TitanTransaction tx3 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(200)).start();
+        JanusGraphTransaction tx3 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(200)).start();
         v1 = getV(tx3,id1);
         v1.property(address).remove();
         tx3.commit();
 
-        TitanVertex afterTx3 = getV(graph,id1);
+        JanusGraphVertex afterTx3 = getV(graph,id1);
         graph.tx().commit();
         // Verify that "address" is still set
         assertEquals("xyz", afterTx3.value(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
-        TitanTransaction tx4 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(2000)).start();
+        JanusGraphTransaction tx4 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(2000)).start();
         v2 = getV(tx4,id2);
         v2.property(VertexProperty.Cardinality.single, age,  "15");
         getE(tx4,edgeId).remove();
         tx4.commit();
 
-        TitanVertex afterTx4 = getV(graph,id2);
+        JanusGraphVertex afterTx4 = getV(graph,id2);
         // Verify that "age" property is modified
         assertEquals("15", afterTx4.value(age));
         // Verify that edge is no longer registered with the endpoint vertex
@@ -160,11 +160,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertNull(getE(graph,edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
-        TitanTransaction tx5 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1500)).start();
+        JanusGraphTransaction tx5 = graph.buildTransaction().commitTime(Instant.ofEpochSecond(1500)).start();
         v2 = getV(tx5,id2);
         v2.property(VertexProperty.Cardinality.single, age,  "16");
         tx5.commit();
-        TitanVertex afterTx5 = getV(graph,id2);
+        JanusGraphVertex afterTx5 = getV(graph,id2);
 
         // Verify that the property value is unchanged
         assertEquals("15", afterTx5.value(age));
@@ -178,9 +178,9 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS, "edgestore"), true,
                 option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
         // Transaction 1: Init graph with two vertices and one edge
-        TitanTransaction tx = graph.buildTransaction().commitTime(Instant.ofEpochSecond(100)).start();
-        TitanVertex v1 = tx.addVertex();
-        TitanVertex v2 = tx.addVertex();
+        JanusGraphTransaction tx = graph.buildTransaction().commitTime(Instant.ofEpochSecond(100)).start();
+        JanusGraphVertex v1 = tx.addVertex();
+        JanusGraphVertex v2 = tx.addVertex();
         Edge e = v1.addEdge("related",v2);
         e.property("time", 25);
         tx.commit();
@@ -219,7 +219,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         try {
             testBatchLoadingLocking(false);
             fail();
-        } catch (TitanException e) {
+        } catch (JanusGraphException e) {
             Throwable cause = e;
             while (cause.getCause()!=null) cause=cause.getCause();
             assertEquals(UnsupportedOperationException.class,cause.getClass());
@@ -228,7 +228,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     public void testBatchLoadingLocking(boolean batchloading) {
         PropertyKey uid = makeKey("uid",Long.class);
-        TitanGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
+        JanusGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().addKey(uid).buildCompositeIndex();
         mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
         mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
@@ -243,7 +243,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         int numV = 10000;
         long start = System.currentTimeMillis();
         for (int i=0;i<numV;i++) {
-            TitanVertex v = tx.addVertex("uid",i+1);
+            JanusGraphVertex v = tx.addVertex("uid",i+1);
             v.addEdge("knows",v);
         }
         clopen();
@@ -251,7 +251,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         for (int i=0;i<Math.min(numV,300);i++) {
             assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
-            TitanVertex v = Iterables.<TitanVertex>getOnlyElement(graph.query().has("uid", i + 1).vertices());
+            JanusGraphVertex v = Iterables.<JanusGraphVertex>getOnlyElement(graph.query().has("uid", i + 1).vertices());
             assertEquals(1, Iterables.size(v.query().direction(OUT).labels("knows").edges()));
         }
     }
@@ -277,8 +277,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         finishSchema();
 
-        TitanVertex u = tx.addVertex(), v = tx.addVertex();
-        TitanRelation[] rs = new TitanRelation[9];
+        JanusGraphVertex u = tx.addVertex(), v = tx.addVertex();
+        JanusGraphRelation[] rs = new JanusGraphRelation[9];
         final int txid = 1;
         rs[0]=sign(v.property("weight",5.0),txid);
         rs[1]=sign(v.property("name","John"),txid);
@@ -294,8 +294,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         newTx();
         long vid = getId(v), uid = getId(u);
 
-        TitanTransaction tx1 = graph.newTransaction();
-        TitanTransaction tx2 = graph.newTransaction();
+        JanusGraphTransaction tx1 = graph.newTransaction();
+        JanusGraphTransaction tx2 = graph.newTransaction();
         final int wintx = 20;
         processTx(tx1,wintx-10,vid,uid);
         processTx(tx2,wintx,vid,uid);
@@ -341,9 +341,9 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     }
 
 
-    private void processTx(TitanTransaction tx, int txid, long vid, long uid) {
-        TitanVertex v = getV(tx,vid);
-        TitanVertex u = getV(tx,uid);
+    private void processTx(JanusGraphTransaction tx, int txid, long vid, long uid) {
+        JanusGraphVertex v = getV(tx,vid);
+        JanusGraphVertex u = getV(tx,uid);
         assertEquals(5.0,v.<Double>value("weight").doubleValue(),0.00001);
         VertexProperty p = getOnlyElement(v.properties("weight"));
         assertEquals(1,p.<Integer>value("sig").intValue());
@@ -357,7 +357,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
             p = getOnlyElement(v.properties(pkey));
             assertEquals(1,p.<Integer>value("sig").intValue());
             assertEquals(2,p.value());
-            sign((TitanVertexProperty)p,txid);
+            sign((JanusGraphVertexProperty)p,txid);
         }
 
         Edge e = getOnlyElement(v.query().direction(OUT).labels("es").edges());
@@ -366,7 +366,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         sign(v.addEdge("es",u),txid);
         e = getOnlyElement(v.query().direction(OUT).labels("o2o").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
-        sign((TitanEdge)e,txid);
+        sign((JanusGraphEdge)e,txid);
         e = getOnlyElement(v.query().direction(OUT).labels("o2m").edges());
         assertEquals(1,e.<Integer>value("sig").intValue());
         e.remove();
@@ -374,12 +374,12 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         for (String label : new String[]{"em","emf"}) {
             e = getOnlyElement(v.query().direction(OUT).labels(label).edges());
             assertEquals(1,e.<Integer>value("sig").intValue());
-            sign((TitanEdge)e,txid);
+            sign((JanusGraphEdge)e,txid);
         }
     }
 
 
-    private TitanRelation sign(TitanRelation r, int id) {
+    private JanusGraphRelation sign(JanusGraphRelation r, int id) {
         r.property("sig",id);
         return r;
     }

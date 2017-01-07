@@ -1,10 +1,10 @@
 package org.janusgraph.graphdb.tinkerpop;
 
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -12,27 +12,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Blueprint's features of a TitanGraph.
+ * Blueprint's features of a JanusGraph.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TitanFeatures implements Graph.Features {
+public class JanusGraphFeatures implements Graph.Features {
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanFeatures.class);
+            LoggerFactory.getLogger(JanusGraphFeatures.class);
 
 
     private final GraphFeatures graphFeatures;
     private final VertexFeatures vertexFeatures;
     private final EdgeFeatures edgeFeatures;
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
 
-    private TitanFeatures(StandardTitanGraph graph, StoreFeatures storageFeatures) {
-        graphFeatures = new TitanGraphGeneralFeatures(storageFeatures.supportsPersistence());
-        vertexFeatures = new TitanVertexFeatures();
-        edgeFeatures = new TitanEdgeFeatures();
+    private JanusGraphFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures) {
+        graphFeatures = new JanusGraphGeneralFeatures(storageFeatures.supportsPersistence());
+        vertexFeatures = new JanusGraphVertexFeatures();
+        edgeFeatures = new JanusGraphEdgeFeatures();
         this.graph = graph;
     }
 
@@ -56,11 +56,11 @@ public class TitanFeatures implements Graph.Features {
         return StringFactory.featureString(this);
     }
 
-    public static TitanFeatures getFeatures(StandardTitanGraph graph, StoreFeatures storageFeatures) {
-        return new TitanFeatures(graph,storageFeatures);
+    public static JanusGraphFeatures getFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures) {
+        return new JanusGraphFeatures(graph,storageFeatures);
     }
 
-    private static class TitanDataTypeFeatures implements DataTypeFeatures {
+    private static class JanusGraphDataTypeFeatures implements DataTypeFeatures {
 
         @Override
         public boolean supportsMapValues() {
@@ -83,19 +83,19 @@ public class TitanFeatures implements Graph.Features {
         }
     }
 
-    private static class TitanVariableFeatures extends TitanDataTypeFeatures implements VariableFeatures { }
+    private static class JanusGraphVariableFeatures extends JanusGraphDataTypeFeatures implements VariableFeatures { }
 
-    private static class TitanGraphGeneralFeatures extends TitanDataTypeFeatures implements GraphFeatures {
+    private static class JanusGraphGeneralFeatures extends JanusGraphDataTypeFeatures implements GraphFeatures {
 
         private final boolean persists;
 
-        private TitanGraphGeneralFeatures(boolean persists) {
+        private JanusGraphGeneralFeatures(boolean persists) {
             this.persists = persists;
         }
 
         @Override
         public VariableFeatures variables() {
-            return new TitanVariableFeatures();
+            return new JanusGraphVariableFeatures();
         }
 
         @Override
@@ -119,7 +119,7 @@ public class TitanFeatures implements Graph.Features {
         }
     }
 
-    private static class TitanVertexPropertyFeatures extends TitanDataTypeFeatures implements VertexPropertyFeatures {
+    private static class JanusGraphVertexPropertyFeatures extends JanusGraphDataTypeFeatures implements VertexPropertyFeatures {
 
         @Override
         public boolean supportsUserSuppliedIds() {
@@ -140,15 +140,15 @@ public class TitanFeatures implements Graph.Features {
         }
     }
 
-    private static class TitanEdgePropertyFeatures extends TitanDataTypeFeatures implements EdgePropertyFeatures {
+    private static class JanusGraphEdgePropertyFeatures extends JanusGraphDataTypeFeatures implements EdgePropertyFeatures {
 
     }
 
-    private class TitanVertexFeatures implements VertexFeatures {
+    private class JanusGraphVertexFeatures implements VertexFeatures {
 
         @Override
         public VertexProperty.Cardinality getCardinality(final String key) {
-            StandardTitanTx tx = (StandardTitanTx)TitanFeatures.this.graph.newTransaction();
+            StandardJanusGraphTx tx = (StandardJanusGraphTx)JanusGraphFeatures.this.graph.newTransaction();
             try {
                 if (!tx.containsPropertyKey(key)) return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
                 return tx.getPropertyKey(key).cardinality().convert();
@@ -159,7 +159,7 @@ public class TitanFeatures implements Graph.Features {
 
         @Override
         public VertexPropertyFeatures properties() {
-            return new TitanVertexPropertyFeatures();
+            return new JanusGraphVertexPropertyFeatures();
         }
 
         @Override
@@ -170,7 +170,7 @@ public class TitanFeatures implements Graph.Features {
 
         @Override
         public boolean supportsUserSuppliedIds() {
-            return TitanFeatures.this.graph.getConfiguration().allowVertexIdSetting();
+            return JanusGraphFeatures.this.graph.getConfiguration().allowVertexIdSetting();
         }
 
         @Override
@@ -196,10 +196,10 @@ public class TitanFeatures implements Graph.Features {
         }
     }
 
-    private static class TitanEdgeFeatures implements EdgeFeatures {
+    private static class JanusGraphEdgeFeatures implements EdgeFeatures {
         @Override
         public EdgePropertyFeatures properties() {
-            return new TitanEdgePropertyFeatures();
+            return new JanusGraphEdgePropertyFeatures();
         }
 
         @Override

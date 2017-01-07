@@ -1,10 +1,10 @@
 package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.RelationTypeIndex;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.slf4j.Logger;
@@ -18,7 +18,7 @@ public class RelationIndexStatusWatcher
     private String relationIndexName;
     private String relationTypeName;
 
-    public RelationIndexStatusWatcher(TitanGraph g, String relationIndexName, String relationTypeName) {
+    public RelationIndexStatusWatcher(JanusGraph g, String relationIndexName, String relationTypeName) {
         super(g);
         this.relationIndexName = relationIndexName;
         this.relationTypeName = relationTypeName;
@@ -47,7 +47,7 @@ public class RelationIndexStatusWatcher
         boolean timedOut;
         while (true) {
             SchemaStatus actualStatus = null;
-            TitanManagement mgmt = null;
+            JanusGraphManagement mgmt = null;
             try {
                 mgmt = g.openManagement();
                 idx = mgmt.getRelationIndex(mgmt.getRelationType(relationTypeName), relationIndexName);

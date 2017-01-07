@@ -8,11 +8,11 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 
 /**
- * TitanElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting
+ * JanusGraphElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting
  * with entities.
- * The two basic entities in a graph database are {@link TitanRelation} and {@link TitanVertex}.
+ * The two basic entities in a graph database are {@link JanusGraphRelation} and {@link JanusGraphVertex}.
  * Entities have a life cycle state which reflects the current state of the entity with respect
- * to the {@link TitanTransaction} in which it occurs. An entity may be in any one of these states
+ * to the {@link JanusGraphTransaction} in which it occurs. An entity may be in any one of these states
  * and any given time:
  * <ul>
  * <li><strong>New:</strong> The entity has been created in the current transaction</li>
@@ -25,13 +25,13 @@ import org.apache.tinkerpop.gremlin.structure.Property;
  * (use {@link #hasId} to determine if a given entity has a unique ID).
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see TitanVertex
- * @see TitanRelation
+ * @see JanusGraphVertex
+ * @see JanusGraphRelation
  */
-public interface TitanElement extends Element, Idfiable, Removable {
+public interface JanusGraphElement extends Element, Idfiable, Removable {
 
     @Override
-    public TitanTransaction graph();
+    public JanusGraphTransaction graph();
 
     /**
      * Returns a unique identifier for this entity.
@@ -39,7 +39,7 @@ public interface TitanElement extends Element, Idfiable, Removable {
      * The unique identifier may only be set when the transaction in which entity is created commits.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
      * <p/>
-     * Titan allocates blocks of identifiers and automatically assigns identifiers to elements
+     * JanusGraph allocates blocks of identifiers and automatically assigns identifiers to elements
      * automatically be default.  This behavior can be partially overridden by setting
      * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}
      *

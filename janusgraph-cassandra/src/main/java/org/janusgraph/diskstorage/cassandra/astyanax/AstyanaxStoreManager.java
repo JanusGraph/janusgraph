@@ -73,7 +73,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     public static final ConfigOption<String> CLUSTER_NAME =
             new ConfigOption<String>(ASTYANAX_NS, "cluster-name",
             "Default name for the Cassandra cluster",
-            ConfigOption.Type.MASKABLE, "Titan Cluster");
+            ConfigOption.Type.MASKABLE, "JanusGraph Cluster");
 
     /**
      * Maximum pooled connections per host.
@@ -106,7 +106,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Maximum pooled "cluster" connections per host.
      * <p/>
      * These connections are mostly idle and only used for DDL operations
-     * (like creating keyspaces).  Titan doesn't need many of these connections
+     * (like creating keyspaces).  JanusGraph doesn't need many of these connections
      * in ordinary operation.
      */
     public static final ConfigOption<Integer> MAX_CLUSTER_CONNECTIONS_PER_HOST =
@@ -249,7 +249,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             "this value will be passed into ConnectionPoolConfigurationImpl.setLocalDatacenter. " +
             "When unset or set to whitespace, setLocalDatacenter will not be invoked.",
             /* It's between either LOCAL or MASKABLE.  MASKABLE could be useful for cases where
-               all the Titan instances are closest to the same Cassandra DC. */
+               all the JanusGraph instances are closest to the same Cassandra DC. */
             ConfigOption.Type.MASKABLE, String.class);
 
     private final String clusterName;
@@ -357,22 +357,22 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 // The CLMs for additions and deletions are separated because
                 // Astyanax's operation timestamp cannot be set on a per-delete
                 // or per-addition basis.
-                KCVMutation titanMutation = ent.getValue();
+                KCVMutation janusgraphMutation = ent.getValue();
                 ByteBuffer key = ent.getKey().asByteBuffer();
 
-                if (titanMutation.hasDeletions()) {
+                if (janusgraphMutation.hasDeletions()) {
                     ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
                     dels.setTimestamp(commitTime.getDeletionTime(times));
 
-                    for (StaticBuffer b : titanMutation.getDeletions())
+                    for (StaticBuffer b : janusgraphMutation.getDeletions())
                         dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
                 }
 
-                if (titanMutation.hasAdditions()) {
+                if (janusgraphMutation.hasAdditions()) {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
                     upds.setTimestamp(commitTime.getAdditionTime(times));
 
-                    for (Entry e : titanMutation.getAdditions()) {
+                    for (Entry e : janusgraphMutation.getAdditions()) {
                         Integer ttl = (Integer) e.getMetaData().get(EntryMetaData.TTL);
 
                         if (null != ttl && ttl > 0) {
@@ -483,7 +483,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         final int connectionTimeout = (int) connectionTimeoutMS.toMillis();
 
         ConnectionPoolConfigurationImpl cpool =
-                new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
+                new ConnectionPoolConfigurationImpl(usedFor + "JanusGraphConnectionPool")
                         .setPort(port)
                         .setMaxOperationsPerConnection(maxOperationsPerConnection)
                         .setMaxConnsPerHost(maxConnsPerHost)

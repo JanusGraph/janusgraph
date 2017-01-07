@@ -2,13 +2,13 @@ package org.janusgraph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanMultiVertexQuery;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexQuery;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphMultiVertexQuery;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
@@ -31,9 +31,9 @@ import java.util.Map;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profiling, MultiQueriable<Vertex,E> {
+public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> implements HasStepFolder<Vertex, E>, Profiling, MultiQueriable<Vertex,E> {
 
-    public TitanVertexStep(VertexStep<E> originalStep) {
+    public JanusGraphVertexStep(VertexStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnClass(), originalStep.getDirection(), originalStep.getEdgeLabels());
         originalStep.getLabels().forEach(this::addLabel);
         this.hasContainers = new ArrayList<>();
@@ -42,7 +42,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
 
     private boolean initialized = false;
     private boolean useMultiQuery = false;
-    private Map<TitanVertex, Iterable<? extends TitanElement>> multiQueryResults = null;
+    private Map<JanusGraphVertex, Iterable<? extends JanusGraphElement>> multiQueryResults = null;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
     @Override
@@ -54,7 +54,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         query.labels(getEdgeLabels());
         query.direction(getDirection());
         for (HasContainer condition : hasContainers) {
-            query.has(condition.getKey(), TitanPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+            query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
         }
         for (OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
@@ -68,7 +68,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
         initialized = true;
         if (useMultiQuery) {
             if (!starts.hasNext()) throw FastNoSuchElementException.instance();
-            TitanMultiVertexQuery mquery = TitanTraversalUtil.getTx(traversal).multiQuery();
+            JanusGraphMultiVertexQuery mquery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
             List<Traverser.Admin<Vertex>> vertices = new ArrayList<>();
             starts.forEachRemaining(v -> {
                 vertices.add(v);
@@ -94,7 +94,7 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
             assert multiQueryResults != null;
             return (Iterator<E>) multiQueryResults.get(traverser.get()).iterator();
         } else {
-            TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(traverser)).query());
+            JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
             return (Vertex.class.isAssignableFrom(getReturnClass())) ? query.vertices().iterator() : query.edges().iterator();
         }
     }
@@ -106,8 +106,8 @@ public class TitanVertexStep<E extends Element> extends VertexStep<E> implements
     }
 
     @Override
-    public TitanVertexStep<E> clone() {
-        final TitanVertexStep<E> clone = (TitanVertexStep<E>) super.clone();
+    public JanusGraphVertexStep<E> clone() {
+        final JanusGraphVertexStep<E> clone = (JanusGraphVertexStep<E>) super.clone();
         clone.initialized = false;
         return clone;
     }

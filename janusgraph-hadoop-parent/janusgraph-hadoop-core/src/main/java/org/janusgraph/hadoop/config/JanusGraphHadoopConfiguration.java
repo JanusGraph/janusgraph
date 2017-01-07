@@ -3,10 +3,10 @@ package org.janusgraph.hadoop.config;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.configuration.*;
 
-public class TitanHadoopConfiguration {
+public class JanusGraphHadoopConfiguration {
 
     public static final ConfigNamespace MAPRED_NS =
-            new ConfigNamespace(null, "titanmr", "Titan MapReduce configuration root");
+            new ConfigNamespace(null, "janusgraphmr", "JanusGraph MapReduce configuration root");
 
     // ScanJob configuration
 
@@ -26,20 +26,20 @@ public class TitanHadoopConfiguration {
                     "A string in the form \"PACKAGE.CLASS\" representing the ScanJob to use.  Must have a no-arg constructor.",
                     ConfigOption.Type.LOCAL, String.class);
 
-    // Titan Hadoop I/O format configuration
+    // JanusGraph Hadoop I/O format configuration
 
     public static final ConfigNamespace IOFORMAT_NS =
-            new ConfigNamespace(MAPRED_NS, "ioformat", "Titan input configuration");
+            new ConfigNamespace(MAPRED_NS, "ioformat", "JanusGraph input configuration");
 
     public static final ConfigNamespace GRAPH_CONFIG_KEYS =
-            new ConfigNamespace(IOFORMAT_NS, "conf", "Settings to be passed to TitanFactory.open");
+            new ConfigNamespace(IOFORMAT_NS, "conf", "Settings to be passed to JanusGraphFactory.open");
 
     public static final ConfigOption<Boolean> FILTER_PARTITIONED_VERTICES =
             new ConfigOption<>(IOFORMAT_NS, "filter-partitioned-vertices",
                     "True to drop partitioned vertices and relations incident on partitioned vertices when reading " +
-                    "from Titan.  This currently must be true when partitioned vertices are present in the " +
+                    "from JanusGraph.  This currently must be true when partitioned vertices are present in the " +
                     "input; if it is false when a partitioned vertex is encountered, then an exception is thrown.  " +
-                    "This limitation may be lifted in a later version of Titan-Hadoop.",
+                    "This limitation may be lifted in a later version of JanusGraph-Hadoop.",
                     ConfigOption.Type.LOCAL, false);
 
     public static final ConfigOption<String> COLUMN_FAMILY_NAME =
@@ -47,18 +47,18 @@ public class TitanHadoopConfiguration {
                     "The name of the column family from which the Hadoop input format should read.  " +
                             "Usually edgestore or graphindex.", ConfigOption.Type.LOCAL, Backend.EDGESTORE_NAME);
 
-    // Titan bulkload vertex program configuration
+    // JanusGraph bulkload vertex program configuration
 
     public static final ConfigNamespace BULKLOAD_NS =
-            new ConfigNamespace(MAPRED_NS, "bulkload", "Titan BulkLoaderVertexProgram configuration");
+            new ConfigNamespace(MAPRED_NS, "bulkload", "JanusGraph BulkLoaderVertexProgram configuration");
 
     public static final ConfigNamespace BULKLOAD_GRAPH_CONFIG_KEYS =
-            new ConfigNamespace(BULKLOAD_NS, "conf", "Settings to be passed to TitanFactory.open");
+            new ConfigNamespace(BULKLOAD_NS, "conf", "Settings to be passed to JanusGraphFactory.open");
 
     public static final ConfigOption<Boolean> BULKLOAD_SCHEMA_CHECK =
             new ConfigOption<>(BULKLOAD_NS, "filter-partitioned-vertices",
                     "Whether to enforce best-effort checks on edge multiplicity and property cardinality.  " +
-                    "These checks do not read the existing properties and edges in Titan.  They only consider " +
+                    "These checks do not read the existing properties and edges in JanusGraph.  They only consider " +
                     "those elements visible from a single MapReduce worker.  Hence, these checks do not " +
                     "guarantee that invalid input data will be detected and rejected.",
                     ConfigOption.Type.LOCAL, false);

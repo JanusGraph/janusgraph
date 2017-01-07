@@ -3,7 +3,7 @@ package org.janusgraph.blueprints.process;
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.blueprints.HBaseGraphComputerProvider;
 import org.janusgraph.blueprints.HBaseGraphProvider;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.process.ProcessComputerSuite;
@@ -19,7 +19,7 @@ import java.io.IOException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(ProcessComputerSuite.class)
-@GraphProviderClass(provider = HBaseGraphComputerProvider.class, graph = TitanGraph.class)
+@GraphProviderClass(provider = HBaseGraphComputerProvider.class, graph = JanusGraph.class)
 public class HBaseComputerTest {
 
     @BeforeClass

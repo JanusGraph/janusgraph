@@ -1,13 +1,13 @@
 package org.janusgraph.graphdb.olap.computer;
 
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.olap.QueryContainer;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
@@ -77,7 +77,7 @@ public class VertexMapJob implements VertexScanJob {
     }
 
     @Override
-    public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
+    public void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {
         for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
             mapJob.getKey().workerStart(MapReduce.Stage.MAP);
         }
@@ -91,7 +91,7 @@ public class VertexMapJob implements VertexScanJob {
     }
 
     @Override
-    public void process(TitanVertex vertex, ScanMetrics metrics) {
+    public void process(JanusGraphVertex vertex, ScanMetrics metrics) {
         PreloadedVertex v = (PreloadedVertex) vertex;
         if (vertexMemory != null) {
             VertexMemoryHandler vh = new VertexMemoryHandler(vertexMemory, v);
@@ -119,7 +119,7 @@ public class VertexMapJob implements VertexScanJob {
 
     }
 
-    public static Executor getVertexMapJob(StandardTitanGraph graph, FulgoraVertexMemory vertexMemory,
+    public static Executor getVertexMapJob(StandardJanusGraph graph, FulgoraVertexMemory vertexMemory,
                                            Map<MapReduce, FulgoraMapEmitter> mapJobs) {
         VertexMapJob job = new VertexMapJob(graph.getIDManager(), vertexMemory, mapJobs);
         for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
@@ -130,7 +130,7 @@ public class VertexMapJob implements VertexScanJob {
 
     public static class Executor extends VertexJobConverter {
 
-        private Executor(TitanGraph graph, VertexMapJob job) {
+        private Executor(JanusGraph graph, VertexMapJob job) {
             super(graph, job);
         }
 

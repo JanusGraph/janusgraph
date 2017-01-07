@@ -15,14 +15,14 @@ import java.time.Instant;
 public interface TransactionId {
 
     /**
-     * Returns the unique id of the Titan graph instance which executed the transaction.
+     * Returns the unique id of the JanusGraph graph instance which executed the transaction.
      *
      * @return
      */
     public String getInstanceId();
 
     /**
-     * Returns the unique transaction id within a particular Titan instance.
+     * Returns the unique transaction id within a particular JanusGraph instance.
      * @return
      */
     public long getTransactionId();

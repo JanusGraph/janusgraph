@@ -34,7 +34,7 @@ public interface SchemaInspector {
     public RelationType getRelationType(String name);
 
     /**
-     * Checks whether a property key of the given name has been defined in the Titan schema.
+     * Checks whether a property key of the given name has been defined in the JanusGraph schema.
      *
      * @param name name of the property key
      * @return true, if the property key exists, else false
@@ -62,7 +62,7 @@ public interface SchemaInspector {
     public PropertyKey getPropertyKey(String name);
 
     /**
-     * Checks whether an edge label of the given name has been defined in the Titan schema.
+     * Checks whether an edge label of the given name has been defined in the JanusGraph schema.
      *
      * @param name name of the edge label
      * @return true, if the edge label exists, else false

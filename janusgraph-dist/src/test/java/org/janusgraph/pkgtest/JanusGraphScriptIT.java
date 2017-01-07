@@ -3,12 +3,12 @@ package org.janusgraph.pkgtest;
 import org.junit.Test;
 
 /**
- * Test the titan.sh script that starts and stops Cassandra, ES, and Gremlin Server.
+ * Test the janusgraph.sh script that starts and stops Cassandra, ES, and Gremlin Server.
  */
-public class TitanScriptIT extends AbstractTitanAssemblyIT {
+public class JanusGraphScriptIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testGraphOfTheGodsGraphSON() throws Exception {
-        unzipAndRunExpect("titan-sh.expect.vm");
+        unzipAndRunExpect("janusgraph-sh.expect.vm");
     }
 }

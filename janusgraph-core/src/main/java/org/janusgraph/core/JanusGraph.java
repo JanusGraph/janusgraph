@@ -1,18 +1,18 @@
 package org.janusgraph.core;
 
-import org.janusgraph.core.schema.TitanManagement;
-import org.janusgraph.graphdb.configuration.TitanConstants;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.util.Gremlin;
 
 /**
- * Titan graph database implementation of the Blueprint's interface.
- * Use {@link TitanFactory} to open and configure TitanGraph instances.
+ * JanusGraph graph database implementation of the Blueprint's interface.
+ * Use {@link JanusGraphFactory} to open and configure JanusGraph instances.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see TitanFactory
- * @see TitanTransaction
+ * @see JanusGraphFactory
+ * @see JanusGraphTransaction
  */
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
@@ -24,21 +24,21 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
-@Graph.OptIn("org.janusgraph.blueprints.process.traversal.strategy.TitanStrategySuite")
+@Graph.OptIn("org.janusgraph.blueprints.process.traversal.strategy.JanusGraphStrategySuite")
 //------------------------
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.VertexPropertyTest$VertexPropertyAddition",
         method = "shouldHandleSetVertexProperties",
-        reason = "Titan can only handle SET cardinality for properties when defined in the schema.")
+        reason = "JanusGraph can only handle SET cardinality for properties when defined in the schema.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldOnlyAllowReadingVertexPropertiesInMapReduce",
-        reason = "Titan simply throws the wrong exception -- should not be a ReadOnly transaction exception but a specific one for MapReduce. This is too cumbersome to refactor in Titan.")
+        reason = "JanusGraph simply throws the wrong exception -- should not be a ReadOnly transaction exception but a specific one for MapReduce. This is too cumbersome to refactor in JanusGraph.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldProcessResultGraphNewWithPersistVertexProperties",
         reason = "The result graph should return an empty iterator when vertex.edges() or vertex.vertices() is called.")
-public interface TitanGraph extends Transaction {
+public interface JanusGraph extends Transaction {
 
    /* ---------------------------------------------------------------
     * Transactions and general admin
@@ -46,10 +46,10 @@ public interface TitanGraph extends Transaction {
     */
 
     /**
-     * Opens a new thread-independent {@link TitanTransaction}.
+     * Opens a new thread-independent {@link JanusGraphTransaction}.
      * <p/>
-     * The transaction is open when it is returned but MUST be explicitly closed by calling {@link org.janusgraph.core.TitanTransaction#commit()}
-     * or {@link org.janusgraph.core.TitanTransaction#rollback()} when it is no longer needed.
+     * The transaction is open when it is returned but MUST be explicitly closed by calling {@link org.janusgraph.core.JanusGraphTransaction#commit()}
+     * or {@link org.janusgraph.core.JanusGraphTransaction#rollback()} when it is no longer needed.
      * <p/>
      * Note, that this returns a thread independent transaction object. It is not necessary to call this method
      * to use Blueprint's standard transaction framework which will automatically start a transaction with the first
@@ -57,10 +57,10 @@ public interface TitanGraph extends Transaction {
      *
      * @return Transaction object representing a transactional context.
      */
-    public TitanTransaction newTransaction();
+    public JanusGraphTransaction newTransaction();
 
     /**
-     * Returns a {@link TransactionBuilder} to construct a new thread-independent {@link TitanTransaction}.
+     * Returns a {@link TransactionBuilder} to construct a new thread-independent {@link JanusGraphTransaction}.
      *
      * @return a new TransactionBuilder
      * @see TransactionBuilder
@@ -76,7 +76,7 @@ public interface TitanGraph extends Transaction {
      *
      * @return
      */
-    public TitanManagement openManagement();
+    public JanusGraphManagement openManagement();
 
     /**
      * Checks whether the graph is open.
@@ -101,21 +101,21 @@ public interface TitanGraph extends Transaction {
      * Closing a graph database requires that all open thread-independent transactions have been closed -
      * otherwise they will be left abandoned.
      *
-     * @throws TitanException if closing the graph database caused errors in the storage backend
+     * @throws JanusGraphException if closing the graph database caused errors in the storage backend
      */
     @Override
-    public void close() throws TitanException;
+    public void close() throws JanusGraphException;
 
     /**
-     * The version of this Titan graph database
+     * The version of this JanusGraph graph database
      *
      * @return
      */
     public static String version() {
-        return TitanConstants.VERSION;
+        return JanusGraphConstants.VERSION;
     }
 
     public static void main(String[] args) {
-        System.out.println("Titan " + Titan.version() + ", Apache TinkerPop " + Gremlin.version());
+        System.out.println("JanusGraph " + JanusGraph.version() + ", Apache TinkerPop " + Gremlin.version());
     }
 }

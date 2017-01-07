@@ -1,6 +1,6 @@
 package org.janusgraph.core;
 
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 
 /**
@@ -8,14 +8,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
  * that match all conditions.
  * <p/>
  * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have
- * been defined for the keys. See {@link org.janusgraph.core.schema.TitanManagement} for more information
- * on how to define index structures in Titan.
+ * been defined for the keys. See {@link org.janusgraph.core.schema.JanusGraphManagement} for more information
+ * on how to define index structures in JanusGraph.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  * @since 0.3.0
  */
 
-public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
+public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
 
    /* ---------------------------------------------------------------
     * Query Specification
@@ -31,7 +31,7 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      * @param condition
      * @return This query
      */
-    public Q has(String key, TitanPredicate predicate, Object condition);
+    public Q has(String key, JanusGraphPredicate predicate, Object condition);
 
     public Q has(String key);
 
@@ -72,21 +72,21 @@ public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> {
      *
      * @return
      */
-    public Iterable<TitanVertex> vertices();
+    public Iterable<JanusGraphVertex> vertices();
 
     /**
      * Returns all edges that match the conditions.
      *
      * @return
      */
-    public Iterable<TitanEdge> edges();
+    public Iterable<JanusGraphEdge> edges();
 
     /**
      * Returns all properties that match the conditions
      *
      * @return
      */
-    public Iterable<TitanVertexProperty> properties();
+    public Iterable<JanusGraphVertexProperty> properties();
 
 
 }

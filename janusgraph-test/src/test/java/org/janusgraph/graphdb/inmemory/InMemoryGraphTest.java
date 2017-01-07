@@ -3,7 +3,7 @@ package org.janusgraph.graphdb.inmemory;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphTest;
+import org.janusgraph.graphdb.JanusGraphTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 
@@ -13,7 +13,7 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class InMemoryGraphTest extends TitanGraphTest {
+public class InMemoryGraphTest extends JanusGraphTest {
 
     public WriteConfiguration getConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();

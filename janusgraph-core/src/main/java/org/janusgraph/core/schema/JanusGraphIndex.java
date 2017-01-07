@@ -4,16 +4,16 @@ import org.janusgraph.core.PropertyKey;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 /**
- * A TitanGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements
+ * A JanusGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements
  * by their properties.
- * A TitanGraphIndex may either be a composite or mixed index and is created via {@link TitanManagement#buildIndex(String, Class)}.
+ * A JanusGraphIndex may either be a composite or mixed index and is created via {@link JanusGraphManagement#buildIndex(String, Class)}.
  * <p/>
  * This interface allows introspecting an existing graph index. Existing graph indexes can be retrieved via
- * {@link TitanManagement#getGraphIndex(String)} or {@link TitanManagement#getGraphIndexes(Class)}.
+ * {@link JanusGraphManagement#getGraphIndex(String)} or {@link JanusGraphManagement#getGraphIndexes(Class)}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanGraphIndex extends Index {
+public interface JanusGraphIndex extends Index {
 
     /**
      * Returns the name of the index

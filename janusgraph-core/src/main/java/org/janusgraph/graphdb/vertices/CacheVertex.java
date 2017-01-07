@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.vertices;
 
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
 
 import java.util.HashMap;
@@ -19,7 +19,7 @@ public class CacheVertex extends StandardVertex {
     // is super low in a single transaction
     protected final Map<SliceQuery, EntryList> queryCache;
 
-    public CacheVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public CacheVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
         queryCache = new HashMap<SliceQuery, EntryList>(4);
     }

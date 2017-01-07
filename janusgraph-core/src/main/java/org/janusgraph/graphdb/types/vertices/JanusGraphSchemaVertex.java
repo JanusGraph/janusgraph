@@ -3,14 +3,14 @@ package org.janusgraph.graphdb.types.vertices;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanVertexProperty;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexQuery;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphVertexProperty;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexQuery;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.graphdb.types.indextype.CompositeIndexTypeWrapper;
 import org.janusgraph.graphdb.types.indextype.MixedIndexTypeWrapper;
@@ -22,9 +22,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 
-public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
+public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 
-    public TitanSchemaVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public JanusGraphSchemaVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 
@@ -33,10 +33,10 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
     @Override
     public String name() {
         if (name == null) {
-            TitanVertexProperty<String> p;
+            JanusGraphVertexProperty<String> p;
             if (isLoaded()) {
-                StandardTitanTx tx = tx();
-                p = (TitanVertexProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
+                StandardJanusGraphTx tx = tx();
+                p = (JanusGraphVertexProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
                         tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseKey.SchemaName, Direction.OUT),
                         tx), null);
             } else {
@@ -46,7 +46,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             name = p.value();
         }
         assert name != null;
-        return TitanSchemaCategory.getName(name);
+        return JanusGraphSchemaCategory.getName(name);
     }
 
     @Override
@@ -61,16 +61,16 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         TypeDefinitionMap def = definition;
         if (def == null) {
             def = new TypeDefinitionMap();
-            Iterable<TitanVertexProperty> ps;
+            Iterable<JanusGraphVertexProperty> ps;
             if (isLoaded()) {
-                StandardTitanTx tx = tx();
+                StandardJanusGraphTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
                         tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseKey.SchemaDefinitionProperty, Direction.OUT),
                         tx);
             } else {
                 ps = query().type(BaseKey.SchemaDefinitionProperty).properties();
             }
-            for (TitanVertexProperty property : ps) {
+            for (JanusGraphVertexProperty property : ps) {
                 TypeDefinitionDescription desc = property.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
                 def.setValue(desc.getCategory(), property.value());
@@ -92,25 +92,25 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         ListMultimap<TypeDefinitionCategory,Entry> rels = dir==Direction.OUT?outRelations:inRelations;
         if (rels==null) {
             ImmutableListMultimap.Builder<TypeDefinitionCategory,Entry> b = ImmutableListMultimap.builder();
-            Iterable<TitanEdge> edges;
+            Iterable<JanusGraphEdge> edges;
             if (isLoaded()) {
-                StandardTitanTx tx = tx();
+                StandardJanusGraphTx tx = tx();
                 edges = (Iterable)RelationConstructor.readRelation(this,
                         tx.getGraph().getSchemaCache().getSchemaRelations(longId(), BaseLabel.SchemaDefinitionEdge, dir),
                         tx);
             } else {
                 edges = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir).edges();
             }
-            for (TitanEdge edge: edges) {
-                TitanVertex oth = edge.vertex(dir.opposite());
-                assert oth instanceof TitanSchemaVertex;
+            for (JanusGraphEdge edge: edges) {
+                JanusGraphVertex oth = edge.vertex(dir.opposite());
+                assert oth instanceof JanusGraphSchemaVertex;
                 TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 Object modifier = null;
                 if (desc.getCategory().hasDataType()) {
                     assert desc.getModifier()!=null && desc.getModifier().getClass().equals(desc.getCategory().getDataType());
                     modifier = desc.getModifier();
                 }
-                b.put(desc.getCategory(), new Entry((TitanSchemaVertex) oth, modifier));
+                b.put(desc.getCategory(), new Entry((JanusGraphSchemaVertex) oth, modifier));
             }
             rels = b.build();
             if (dir==Direction.OUT) outRelations=rels;
@@ -131,16 +131,16 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         inRelations=null;
     }
 
-    public Iterable<TitanEdge> getEdges(final TypeDefinitionCategory def, final Direction dir) {
+    public Iterable<JanusGraphEdge> getEdges(final TypeDefinitionCategory def, final Direction dir) {
         return getEdges(def,dir,null);
     }
 
-    public Iterable<TitanEdge> getEdges(final TypeDefinitionCategory def, final Direction dir, TitanSchemaVertex other) {
-        TitanVertexQuery query = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
+    public Iterable<JanusGraphEdge> getEdges(final TypeDefinitionCategory def, final Direction dir, JanusGraphSchemaVertex other) {
+        JanusGraphVertexQuery query = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
         if (other!=null) query.adjacent(other);
-        return Iterables.filter(query.edges(),new Predicate<TitanEdge>() {
+        return Iterables.filter(query.edges(),new Predicate<JanusGraphEdge>() {
             @Override
-            public boolean apply(@Nullable TitanEdge edge) {
+            public boolean apply(@Nullable JanusGraphEdge edge) {
                 TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
                 return desc.getCategory()==def;
             }

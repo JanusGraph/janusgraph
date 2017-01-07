@@ -1,7 +1,7 @@
 package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.collect.Lists;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -26,7 +26,7 @@ public class ExternalCachePersistor implements ExternalPersistor {
         try {
             kcvs.mutateEntries(key, Lists.newArrayList(cell), KCVSCache.NO_DELETIONS,tx);
         } catch (BackendException e) {
-            throw new TitanException("Unexpected storage exception in log persistence against cache",e);
+            throw new JanusGraphException("Unexpected storage exception in log persistence against cache",e);
         }
     }
 }

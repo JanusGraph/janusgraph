@@ -6,17 +6,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
- * TitanVertex is the basic unit of a {@link TitanGraph}.
+ * JanusGraphVertex is the basic unit of a {@link JanusGraph}.
  * It extends the functionality provided by Blueprint's {@link Vertex} by helper and convenience methods.
  * <p />
  * Vertices have incident edges and properties. Edge connect the vertex to other vertices. Properties attach key-value
  * pairs to this vertex to define it.
  * <p />
- * Like {@link TitanRelation} a vertex has a vertex label.
+ * Like {@link JanusGraphRelation} a vertex has a vertex label.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanVertex extends TitanElement, Vertex {
+public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
     /* ---------------------------------------------------------------
       * Creation and modification methods
@@ -26,7 +26,7 @@ public interface TitanVertex extends TitanElement, Vertex {
     /**
      * Creates a new edge incident on this vertex.
      * <p/>
-     * Creates and returns a new {@link TitanEdge} of the specified label with this vertex being the outgoing vertex
+     * Creates and returns a new {@link JanusGraphEdge} of the specified label with this vertex being the outgoing vertex
      * and the given vertex being the incoming vertex.
      * <br />
      * Automatically creates the edge label if it does not exist and automatic creation of types is enabled. Otherwise,
@@ -37,12 +37,12 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return new edge
      */
     @Override
-    public TitanEdge addEdge(String label, Vertex vertex, Object... keyValues);
+    public JanusGraphEdge addEdge(String label, Vertex vertex, Object... keyValues);
 
     /**
      * Creates a new property for this vertex and given key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanVertexProperty} for the given key on this vertex with the specified
+     * Creates and returns a new {@link JanusGraphVertexProperty} for the given key on this vertex with the specified
      * object being the value.
      * <br />
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
@@ -54,16 +54,16 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @throws IllegalArgumentException if the value does not match the data type of the property key.
      */
     @Override
-    public default<V> TitanVertexProperty<V> property(String key, V value) {
+    public default<V> JanusGraphVertexProperty<V> property(String key, V value) {
         return this.property(key, value, EMPTY_ARGS);
     }
 
     @Override
-    public <V> TitanVertexProperty<V> property(final String key, final V value, final Object... keyValues);
+    public <V> JanusGraphVertexProperty<V> property(final String key, final V value, final Object... keyValues);
 
 
     @Override
-    public <V> TitanVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues);
+    public <V> JanusGraphVertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues);
 
      /* ---------------------------------------------------------------
       * Vertex Label
@@ -88,19 +88,19 @@ public interface TitanVertex extends TitanElement, Vertex {
     public VertexLabel vertexLabel();
 
 	/* ---------------------------------------------------------------
-     * Incident TitanRelation Access methods
+     * Incident JanusGraphRelation Access methods
 	 * ---------------------------------------------------------------
 	 */
 
     /**
-     * Starts a new {@link TitanVertexQuery} for this vertex.
+     * Starts a new {@link JanusGraphVertexQuery} for this vertex.
      * <p/>
-     * Initializes and returns a new {@link TitanVertexQuery} based on this vertex.
+     * Initializes and returns a new {@link JanusGraphVertexQuery} based on this vertex.
      *
-     * @return New TitanQuery for this vertex
-     * @see TitanVertexQuery
+     * @return New JanusGraphQuery for this vertex
+     * @see JanusGraphVertexQuery
      */
-    public TitanVertexQuery<? extends TitanVertexQuery> query();
+    public JanusGraphVertexQuery<? extends JanusGraphVertexQuery> query();
 
     /**
      * Checks whether this entity has been loaded into the current transaction and modified.

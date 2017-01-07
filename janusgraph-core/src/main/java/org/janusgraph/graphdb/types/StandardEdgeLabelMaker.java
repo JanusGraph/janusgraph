@@ -7,8 +7,8 @@ import org.janusgraph.core.Multiplicity;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
 import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import static org.janusgraph.graphdb.types.TypeDefinitionCategory.INVISIBLE;
@@ -22,7 +22,7 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
 
     private Direction unidirectionality;
 
-    public StandardEdgeLabelMaker(final StandardTitanTx tx,
+    public StandardEdgeLabelMaker(final StandardJanusGraphTx tx,
                                   final String name, final IndexSerializer indexSerializer,
                                   final AttributeHandler attributeHandler) {
         super(tx, name, indexSerializer, attributeHandler);
@@ -30,8 +30,8 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     }
 
     @Override
-    TitanSchemaCategory getSchemaCategory() {
-        return TitanSchemaCategory.EDGELABEL;
+    JanusGraphSchemaCategory getSchemaCategory() {
+        return JanusGraphSchemaCategory.EDGELABEL;
     }
 
     @Override

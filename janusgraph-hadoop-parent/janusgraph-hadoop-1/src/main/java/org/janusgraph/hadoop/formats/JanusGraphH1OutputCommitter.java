@@ -6,10 +6,10 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class TitanH1OutputCommitter extends OutputCommitter {
-    private final TitanH1OutputFormat tof;
+public class JanusGraphH1OutputCommitter extends OutputCommitter {
+    private final JanusGraphH1OutputFormat tof;
 
-    public TitanH1OutputCommitter(TitanH1OutputFormat tof) {
+    public JanusGraphH1OutputCommitter(JanusGraphH1OutputFormat tof) {
         this.tof = tof;
     }
 

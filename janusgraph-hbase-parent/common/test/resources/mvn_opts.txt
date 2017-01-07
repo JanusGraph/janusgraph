@@ -1,1 +1,1 @@
-${titan.hbase.mvn.opts}
+${janusgraph.hbase.mvn.opts}

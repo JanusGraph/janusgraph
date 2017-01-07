@@ -261,7 +261,7 @@ public class EdgeSerializer implements RelationReader {
         } else {
             assert relation.isProperty();
             Preconditions.checkArgument(relation.isProperty());
-            Object value = ((TitanVertexProperty) relation).value();
+            Object value = ((JanusGraphVertexProperty) relation).value();
             Preconditions.checkNotNull(value);
             PropertyKey key = (PropertyKey) type;
             assert key.dataType().isInstance(value);
@@ -399,9 +399,9 @@ public class EdgeSerializer implements RelationReader {
 
                 if (i>=sortKeyIDs.length) {
                     assert !type.multiplicity().isUnique(dir);
-                    assert (skey instanceof ImplicitKey) && (skey==ImplicitKey.TITANID || skey==ImplicitKey.ADJACENT_ID);
+                    assert (skey instanceof ImplicitKey) && (skey==ImplicitKey.JANUSGRAPHID || skey==ImplicitKey.ADJACENT_ID);
                     assert skey!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
-                    assert skey!=ImplicitKey.TITANID || (!type.multiplicity().isConstrained() &&
+                    assert skey!=ImplicitKey.JANUSGRAPHID || (!type.multiplicity().isConstrained() &&
                                                   (i==sortKeyIDs.length && skey.isPropertyKey() || i==sortKeyIDs.length+1 && skey.isEdgeLabel() ));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoints();
@@ -416,7 +416,7 @@ public class EdgeSerializer implements RelationReader {
                     break;
                 }
                 if (interval.isPoints()) {
-                    if (skey==ImplicitKey.TITANID || skey==ImplicitKey.ADJACENT_ID) {
+                    if (skey==ImplicitKey.JANUSGRAPHID || skey==ImplicitKey.ADJACENT_ID) {
                         assert !type.multiplicity().isUnique(dir);
                         VariableLong.writePositiveBackward(colStart, (Long)interval.getStart());
                         VariableLong.writePositiveBackward(colEnd, (Long)interval.getEnd());

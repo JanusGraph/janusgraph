@@ -5,7 +5,7 @@ import com.google.common.collect.Iterators;
 import org.janusgraph.core.*;
 import org.janusgraph.graphdb.query.BaseQuery;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
@@ -26,9 +26,9 @@ import java.util.*;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element, E>, Profiling, MultiQueriable<Element,E> {
+public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements HasStepFolder<Element, E>, Profiling, MultiQueriable<Element,E> {
 
-    public TitanPropertiesStep(PropertiesStep<E> originalStep) {
+    public JanusGraphPropertiesStep(PropertiesStep<E> originalStep) {
         super(originalStep.getTraversal(), originalStep.getReturnType(), originalStep.getPropertyKeys());
         originalStep.getLabels().forEach(this::addLabel);
         this.hasContainers = new ArrayList<>();
@@ -37,7 +37,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
 
     private boolean initialized = false;
     private boolean useMultiQuery = false;
-    private Map<TitanVertex, Iterable<? extends TitanProperty>> multiQueryResults = null;
+    private Map<JanusGraphVertex, Iterable<? extends JanusGraphProperty>> multiQueryResults = null;
     private QueryProfiler queryProfiler = QueryProfiler.NO_OP;
 
 
@@ -50,7 +50,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         String[] keys = getPropertyKeys();
         query.keys(keys);
         for (HasContainer condition : hasContainers) {
-            query.has(condition.getKey(), TitanPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
+            query.has(condition.getKey(), JanusGraphPredicate.Converter.convert(condition.getBiPredicate()), condition.getValue());
         }
         for (OrderEntry order : orders) query.orderBy(order.key, order.order);
         if (limit != BaseQuery.NO_LIMIT) query.limit(limit);
@@ -58,10 +58,10 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         return query;
     }
 
-    private Iterator<E> convertIterator(Iterable<? extends TitanProperty> iterable) {
+    private Iterator<E> convertIterator(Iterable<? extends JanusGraphProperty> iterable) {
         if (getReturnType().forProperties()) return (Iterator<E>) iterable.iterator();
         assert getReturnType().forValues();
-        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> ((TitanProperty) p).value());
+        return (Iterator<E>) Iterators.transform(iterable.iterator(), p -> ((JanusGraphProperty) p).value());
     }
 
     @SuppressWarnings("deprecation")
@@ -79,7 +79,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         useMultiQuery = useMultiQuery && elements.stream().noneMatch(e -> !(e.get() instanceof Vertex));
 
         if (useMultiQuery) {
-            TitanMultiVertexQuery mquery = TitanTraversalUtil.getTx(traversal).multiQuery();
+            JanusGraphMultiVertexQuery mquery = JanusGraphTraversalUtil.getTx(traversal).multiQuery();
             elements.forEach(e -> mquery.addVertex((Vertex) e.get()));
             makeQuery(mquery);
 
@@ -99,7 +99,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
             assert multiQueryResults != null;
             return convertIterator(multiQueryResults.get(traverser.get()));
         } else if (traverser.get() instanceof Vertex) {
-            TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(traverser)).query());
+            JanusGraphVertexQuery query = makeQuery((JanusGraphTraversalUtil.getJanusGraphVertex(traverser)).query());
             return convertIterator(query.properties());
         } else {
             //It is some other element (edge or vertex property)
@@ -126,8 +126,8 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
     }
 
     @Override
-    public TitanPropertiesStep<E> clone() {
-        final TitanPropertiesStep<E> clone = (TitanPropertiesStep<E>) super.clone();
+    public JanusGraphPropertiesStep<E> clone() {
+        final JanusGraphPropertiesStep<E> clone = (JanusGraphPropertiesStep<E>) super.clone();
         clone.initialized = false;
         return clone;
     }

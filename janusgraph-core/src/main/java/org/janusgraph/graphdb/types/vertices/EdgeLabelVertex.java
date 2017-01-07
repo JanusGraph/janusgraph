@@ -1,13 +1,13 @@
 package org.janusgraph.graphdb.types.vertices;
 
 import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
 
-    public EdgeLabelVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public EdgeLabelVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

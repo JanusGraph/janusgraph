@@ -4,7 +4,7 @@ package org.janusgraph.graphdb.query.condition;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * @see Or
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class MultiCondition<E extends TitanElement> extends ArrayList<Condition<E>> implements Condition<E> {
+public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayList<Condition<E>> implements Condition<E> {
 
     MultiCondition() {
         this(5);

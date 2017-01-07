@@ -7,21 +7,21 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.TransactionBuilder;
 import org.janusgraph.diskstorage.configuration.*;
 
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 /**
- * Used to configure a {@link org.janusgraph.core.TitanTransaction}.
+ * Used to configure a {@link org.janusgraph.core.JanusGraphTransaction}.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
- * @see org.janusgraph.core.TitanTransaction
+ * @see org.janusgraph.core.JanusGraphTransaction
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 
@@ -69,12 +69,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final Configuration customOptions;
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
 
     /**
-     * Constructs a new TitanTransaction configuration with default configuration parameters.
+     * Constructs a new JanusGraphTransaction configuration with default configuration parameters.
      */
-    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardTitanGraph graph) {
+    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         if (graphConfig.isReadOnly()) readOnly();
@@ -92,7 +92,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
-    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardTitanGraph graph, Configuration customOptions) {
+    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph, Configuration customOptions) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         if (graphConfig.isReadOnly()) readOnly();
@@ -216,7 +216,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public TitanTransaction start() {
+    public JanusGraphTransaction start() {
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, preloadedData, forceIndexUsage, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,

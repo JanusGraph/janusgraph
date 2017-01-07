@@ -1,5 +1,5 @@
 --- /home/dalaro/hbase-0.96.1.1-hadoop1/bin/hbase	2013-12-17 14:05:37.000000000 -0500
-+++ /home/dalaro/tinkerelius/titan/titan-hbase/titan-hbase-096/src/test/bin/hbase	2014-02-12 11:25:18.000000000 -0500
++++ /home/dalaro/tinkerelius/janusgraph/janusgraph-hbase/janusgraph-hbase-096/src/test/bin/hbase	2014-02-12 11:25:18.000000000 -0500
 @@ -143,10 +143,24 @@
  
  add_maven_deps_to_classpath() {
@@ -10,12 +10,12 @@
 -      exit 1
 +  if [ ! -f "${f}" ]; then
 +    # -------------------
-+    # Titan build support
++    # JanusGraph build support
 +    # -------------------
 +    # Check for Maven command line options file.
-+    # If titan-hbase has already been built, then this file will contain options
++    # If janusgraph-hbase has already been built, then this file will contain options
 +    # to target the version of Hadoop used during compilation.  This is
-+    # necessary when the user compiles titan-hbase with a non-default Hadoop
++    # necessary when the user compiles janusgraph-hbase with a non-default Hadoop
 +    # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
 +    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
 +    MVN_OPTS=

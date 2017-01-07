@@ -11,7 +11,7 @@ import org.janusgraph.diskstorage.indexing.RawQuery;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * Implementation of {@link TitanIndexQuery} for string based queries that are issued directly against the specified
+ * Implementation of {@link JanusGraphIndexQuery} for string based queries that are issued directly against the specified
  * indexing backend. It is assumed that the given string conforms to the query language of the indexing backend.
  * This class does not understand or verify the provided query. However, it will introspect the query and replace
  * any reference to `v.SOME_KEY`, `e.SOME_KEY` or `p.SOME_KEY` with the respective key reference. This replacement
@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
+public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery {
 
     private static final Logger log = LoggerFactory.getLogger(IndexQueryBuilder.class);
 
@@ -47,7 +47,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     private static final String EDGE_PREFIX = "e.";
     private static final String PROPERTY_PREFIX = "p.";
 
-    private final StandardTitanTx tx;
+    private final StandardJanusGraphTx tx;
     private final IndexSerializer serializer;
 
     /**
@@ -79,7 +79,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     private int offset;
 
 
-    public IndexQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
+    public IndexQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
         this.tx = tx;
@@ -173,41 +173,41 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
         return this;
     }
 
-    private Iterable<Result<TitanElement>> execute(ElementCategory resultType) {
+    private Iterable<Result<JanusGraphElement>> execute(ElementCategory resultType) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkNotNull(query);
         if (tx.hasModifications())
             log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}",query);
         Iterable<RawQuery.Result> result = serializer.executeQuery(this,resultType,tx.getTxHandle(),tx);
-        final Function<Object, ? extends TitanElement> conversionFct = tx.getConversionFunction(resultType);
-        return Iterables.filter(Iterables.transform(result, new Function<RawQuery.Result, Result<TitanElement>>() {
+        final Function<Object, ? extends JanusGraphElement> conversionFct = tx.getConversionFunction(resultType);
+        return Iterables.filter(Iterables.transform(result, new Function<RawQuery.Result, Result<JanusGraphElement>>() {
             @Nullable
             @Override
-            public Result<TitanElement> apply(@Nullable RawQuery.Result result) {
-                return new ResultImpl<TitanElement>(conversionFct.apply(result.getResult()),result.getScore());
+            public Result<JanusGraphElement> apply(@Nullable RawQuery.Result result) {
+                return new ResultImpl<JanusGraphElement>(conversionFct.apply(result.getResult()),result.getScore());
             }
-        }),new Predicate<Result<TitanElement>>() {
+        }),new Predicate<Result<JanusGraphElement>>() {
             @Override
-            public boolean apply(@Nullable Result<TitanElement> r) {
+            public boolean apply(@Nullable Result<JanusGraphElement> r) {
                 return !r.getElement().isRemoved();
             }
         });
     }
 
     @Override
-    public Iterable<Result<TitanVertex>> vertices() {
+    public Iterable<Result<JanusGraphVertex>> vertices() {
         setPrefixInternal(VERTEX_PREFIX);
         return (Iterable)execute(ElementCategory.VERTEX);
     }
 
     @Override
-    public Iterable<Result<TitanEdge>> edges() {
+    public Iterable<Result<JanusGraphEdge>> edges() {
         setPrefixInternal(EDGE_PREFIX);
         return (Iterable)execute(ElementCategory.EDGE);
     }
 
     @Override
-    public Iterable<Result<TitanVertexProperty>> properties() {
+    public Iterable<Result<JanusGraphVertexProperty>> properties() {
         setPrefixInternal(PROPERTY_PREFIX);
         return (Iterable)execute(ElementCategory.PROPERTY);
     }

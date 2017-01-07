@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.transaction;
 
 import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.idmanagement.IDManager;
 import org.janusgraph.graphdb.internal.InternalVertex;
 
@@ -14,10 +14,10 @@ import java.util.NoSuchElementException;
 
 public class VertexIterable implements Iterable<InternalVertex> {
 
-    private final StandardTitanTx tx;
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraphTx tx;
+    private final StandardJanusGraph graph;
 
-    public VertexIterable(final StandardTitanGraph graph, final StandardTitanTx tx) {
+    public VertexIterable(final StandardJanusGraph graph, final StandardJanusGraphTx tx) {
         this.graph = graph;
         this.tx = tx;
     }

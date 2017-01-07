@@ -1,8 +1,8 @@
 package org.janusgraph.hadoop.compat.h2;
 
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.configuration.TitanConstants;
+import org.janusgraph.graphdb.configuration.JanusGraphConstants;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
@@ -69,7 +69,7 @@ public class Hadoop2Compat implements HadoopCompat {
          * Distributed Cache, but setting one avoids a warning from JobClient:
          *     "No job jar file set.  User classes may not be found."
          */
-        return new DistCacheConfigurer("titan-hadoop-core-" + TitanConstants.VERSION + ".jar");
+        return new DistCacheConfigurer("janusgraph-hadoop-core-" + JanusGraphConstants.VERSION + ".jar");
     }
 
     @Override
@@ -93,9 +93,9 @@ public class Hadoop2Compat implements HadoopCompat {
             JobStatus js = j.getStatus();
             return String.format("state=%s, failureinfo=%s", js.getState(), js.getFailureInfo());
         } catch (IOException e) {
-            throw new TitanException(e);
+            throw new JanusGraphException(e);
         } catch (InterruptedException e) {
-            throw new TitanException(e);
+            throw new JanusGraphException(e);
         }
     }
 }

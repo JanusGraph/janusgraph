@@ -23,9 +23,9 @@ import org.apache.velocity.app.Velocity;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.JanusGraphFactory;
 
-public abstract class AbstractTitanAssemblyIT {
+public abstract class AbstractJanusGraphAssemblyIT {
 
     protected static final String BUILD_DIR;
     protected static final String EXPECT_DIR;

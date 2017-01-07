@@ -2,11 +2,11 @@ package org.janusgraph.hadoop;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class CassandraInputFormatIT extends TitanGraphBaseTest {
+public class CassandraInputFormatIT extends JanusGraphBaseTest {
 
 
     @Test
@@ -76,7 +76,7 @@ public class CassandraInputFormatIT extends TitanGraphBaseTest {
         assertEquals(12L, (long) graph.traversal().V().count().next());
 
         // Add a self-loop on sky with edge label "lives"; it's nonsense, but at least it needs no schema changes
-        TitanVertex sky = (TitanVertex)graph.query().has("name", "sky").vertices().iterator().next();
+        JanusGraphVertex sky = (JanusGraphVertex)graph.query().has("name", "sky").vertices().iterator().next();
         assertNotNull(sky);
         assertEquals("sky", sky.value("name"));
         assertEquals(1L, sky.query().direction(Direction.IN).edgeCount());

@@ -7,14 +7,14 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanHadoopSetupCommon implements TitanHadoopSetup {
+public abstract class JanusGraphHadoopSetupCommon implements JanusGraphHadoopSetup {
 
     private static final StaticBuffer DEFAULT_COLUMN = StaticArrayBuffer.of(new byte[0]);
     public static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
 
     public static final String SETUP_PACKAGE_PREFIX = "org.janusgraph.hadoop.formats.util.input.";
-    public static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
+    public static final String SETUP_CLASS_NAME = ".JanusGraphHadoopSetupImpl";
 
     @Override
     public SliceQuery inputSlice() {

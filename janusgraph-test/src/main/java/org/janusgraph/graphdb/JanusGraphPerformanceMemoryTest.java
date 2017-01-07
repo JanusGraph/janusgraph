@@ -1,6 +1,6 @@
 package org.janusgraph.graphdb;
 
-import static org.janusgraph.testutil.TitanAssert.assertCount;
+import static org.janusgraph.testutil.JanusGraphAssert.assertCount;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -19,9 +19,9 @@ import org.junit.rules.TestRule;
 
 import com.google.common.collect.Iterables;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanEdge;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphEdge;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.testcategory.MemoryTests;
 import org.janusgraph.testutil.JUnitBenchmarkProvider;
 import org.janusgraph.testutil.MemoryAssess;
@@ -30,7 +30,7 @@ import org.janusgraph.testutil.MemoryAssess;
  * These tests focus on the in-memory data structures of individual transactions and how they hold up to high memory pressure
  */
 @Category({ MemoryTests.class })
-public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest {
+public abstract class JanusGraphPerformanceMemoryTest extends JanusGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
@@ -49,7 +49,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
             for (int t = 0; t < 1000; t++) {
                 graph.addVertex();
                 graph.tx().rollback();
-                TitanTransaction tx = graph.newTransaction();
+                JanusGraphTransaction tx = graph.newTransaction();
                 tx.addVertex();
                 tx.rollback();
             }
@@ -84,10 +84,10 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
                 @Override
                 public void run() {
                     for (int r = 0; r < rounds; r++) {
-                        TitanTransaction tx = graph.newTransaction();
-                        TitanVertex previous = null;
+                        JanusGraphTransaction tx = graph.newTransaction();
+                        JanusGraphVertex previous = null;
                         for (int c = 0; c < commitSize; c++) {
-                            TitanVertex v = tx.addVertex();
+                            JanusGraphVertex v = tx.addVertex();
                             long uid = uidCounter.incrementAndGet();
                             v.property(VertexProperty.Cardinality.single, "uid",  uid);
                             v.property(VertexProperty.Cardinality.single, "name",  "user" + uid);
@@ -116,14 +116,14 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
             readThreads[t] = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    TitanTransaction tx = graph.newTransaction();
+                    JanusGraphTransaction tx = graph.newTransaction();
                     long ruid = random.nextInt(maxUID) + 1;
                     getVertex(tx,"uid", ruid).property(VertexProperty.Cardinality.single, "name",  fixedName);
                     for (int t = 1; t <= trials; t++) {
-                        TitanVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
+                        JanusGraphVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
                         assertCount(2, v.properties());
                         int count = 0;
-                        for (TitanEdge e : v.query().direction(Direction.BOTH).edges()) {
+                        for (JanusGraphEdge e : v.query().direction(Direction.BOTH).edges()) {
                             count++;
                             assertTrue(e.<Integer>value("time") >= 0);
                         }

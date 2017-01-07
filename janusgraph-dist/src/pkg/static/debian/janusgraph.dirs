@@ -1,5 +1,5 @@
 /etc/default/
-/usr/share/titan/lib/
-/var/lib/titan/
-/var/log/titan/
-/var/run/titan/
+/usr/share/janusgraph/lib/
+/var/lib/janusgraph/
+/var/log/janusgraph/
+/var/run/janusgraph/

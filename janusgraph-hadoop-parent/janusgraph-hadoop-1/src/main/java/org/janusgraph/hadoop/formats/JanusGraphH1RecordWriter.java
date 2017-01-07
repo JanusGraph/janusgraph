@@ -1,6 +1,6 @@
 package org.janusgraph.hadoop.formats;
 
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -14,15 +14,15 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 
-public class TitanH1RecordWriter extends RecordWriter<NullWritable, VertexWritable> {
+public class JanusGraphH1RecordWriter extends RecordWriter<NullWritable, VertexWritable> {
 
-    private static final Logger log = LoggerFactory.getLogger(TitanH1RecordWriter.class);
+    private static final Logger log = LoggerFactory.getLogger(JanusGraphH1RecordWriter.class);
 
     private final TaskAttemptContext taskAttemptContext;
-    private final StandardTitanTx tx;
+    private final StandardJanusGraphTx tx;
     private final Set<String> persistableKeys;
 
-    public TitanH1RecordWriter(TaskAttemptContext taskAttemptContext, StandardTitanTx tx, Set<String> persistableKeys) {
+    public JanusGraphH1RecordWriter(TaskAttemptContext taskAttemptContext, StandardJanusGraphTx tx, Set<String> persistableKeys) {
         this.taskAttemptContext = taskAttemptContext;
         this.tx = tx;
         this.persistableKeys = persistableKeys;
@@ -47,7 +47,7 @@ public class TitanH1RecordWriter extends RecordWriter<NullWritable, VertexWritab
 
     @Override
     public void close(TaskAttemptContext context) throws IOException, InterruptedException {
-        // commit/rollback happens in TitanOutputCommitter
+        // commit/rollback happens in JanusGraphOutputCommitter
         // nothing to do here
     }
 }

@@ -7,14 +7,14 @@ import com.google.common.collect.Sets;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.TitanGraphQuery;
-import org.janusgraph.core.TitanIndexQuery;
-import org.janusgraph.core.TitanTransaction;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphQuery;
+import org.janusgraph.core.JanusGraphIndexQuery;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.core.VertexLabel;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Geo;
@@ -25,7 +25,7 @@ import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.Parameter;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanGraphIndex;
+import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.util.ManagementUtil;
 import org.janusgraph.diskstorage.Backend;
 import org.janusgraph.diskstorage.BackendException;
@@ -64,9 +64,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static org.janusgraph.graphdb.TitanGraphTest.evaluateQuery;
+import static org.janusgraph.graphdb.JanusGraphTest.evaluateQuery;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
-import static org.janusgraph.testutil.TitanAssert.*;
+import static org.janusgraph.testutil.JanusGraphAssert.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.decr;
 import static org.apache.tinkerpop.gremlin.process.traversal.Order.incr;
 import static org.junit.Assert.*;
@@ -75,7 +75,7 @@ import static org.junit.Assert.*;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanIndexTest extends TitanGraphBaseTest {
+public abstract class JanusGraphIndexTest extends JanusGraphBaseTest {
 
     public static final String INDEX = GraphOfTheGodsFactory.INDEX_NAME;
     public static final String VINDEX = "v" + INDEX;
@@ -90,9 +90,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public IndexFeatures indexFeatures;
 
     private static final Logger log =
-            LoggerFactory.getLogger(TitanIndexTest.class);
+            LoggerFactory.getLogger(JanusGraphIndexTest.class);
 
-    protected TitanIndexTest(boolean supportsGeoPoint, boolean supportsNumeric, boolean supportsText) {
+    protected JanusGraphIndexTest(boolean supportsGeoPoint, boolean supportsNumeric, boolean supportsText) {
         this.supportsGeoPoint = supportsGeoPoint;
         this.supportsNumeric = supportsNumeric;
         this.supportsText = supportsText;
@@ -135,8 +135,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public TestName methodName = new TestName();
 
     /**
-     * Tests the {@link org.janusgraph.example.GraphOfTheGodsFactory#load(org.janusgraph.core.TitanGraph)}
-     * method used as the standard example that ships with Titan.
+     * Tests the {@link org.janusgraph.example.GraphOfTheGodsFactory#load(org.janusgraph.core.JanusGraph)}
+     * method used as the standard example that ships with JanusGraph.
      */
     @Test
     public void testGraphOfTheGods() {
@@ -145,10 +145,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     }
 
 
-    public static void assertGraphOfTheGods(TitanGraph gotg) {
+    public static void assertGraphOfTheGods(JanusGraph gotg) {
         assertCount(12, gotg.query().vertices());
         assertCount(3, gotg.query().has(LABEL_NAME, "god").vertices());
-        TitanVertex h = getOnlyVertex(gotg.query().has("name", "hercules"));
+        JanusGraphVertex h = getOnlyVertex(gotg.query().has("name", "hercules"));
         assertEquals(30, h.<Integer>value("age").intValue());
         assertEquals("demigod", h.label());
         assertCount(5, h.query().direction(Direction.BOTH).edges());
@@ -163,7 +163,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("namee", Edge.class).addKey(name).buildMixedIndex(INDEX);
         finishSchema();
 
-        TitanVertex v = tx.addVertex("name", "Marko Rodriguez");
+        JanusGraphVertex v = tx.addVertex("name", "Marko Rodriguez");
         Edge e = v.addEdge("knows", v, "name", "Hulu Bubab");
         assertCount(1, tx.query().has("name", Text.CONTAINS, "marko").vertices());
         assertCount(1, tx.query().has("name", Text.CONTAINS, "Hulu").edges());
@@ -216,14 +216,14 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
 
         clopen();
-        String[] words = {"world", "aurelius", "titan", "graph"};
+        String[] words = {"world", "aurelius", "janusgraph", "graph"};
         int numCategories = 5;
         int numGroups = 10;
         double distance, offset;
         int numV = 100;
         final int originalNumV = numV;
         for (int i = 0; i < numV; i++) {
-            TitanVertex v = tx.addVertex();
+            JanusGraphVertex v = tx.addVertex();
             v.property(VertexProperty.Cardinality.single, "uid", i);
             v.property(VertexProperty.Cardinality.single, "category", i % numCategories);
             v.property(VertexProperty.Cardinality.single, "group", i % numGroups);
@@ -248,7 +248,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             //Test ordering
             for (String orderKey : new String[]{"time", "category"}) {
                 for (Order order : Order.values()) {
-                    for (TitanGraphQuery traversal : ImmutableList.of(
+                    for (JanusGraphQuery traversal : ImmutableList.of(
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
                     )) {
@@ -301,7 +301,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             //Test ordering
             for (String orderKey : new String[]{"time", "category"}) {
                 for (Order order : Order.values()) {
-                    for (TitanGraphQuery traversal : ImmutableList.of(
+                    for (JanusGraphQuery traversal : ImmutableList.of(
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP()),
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order.getTP())
                     )) {
@@ -388,10 +388,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
         clopen();
 
-        TitanVertex v1 = graph.addVertex();
+        JanusGraphVertex v1 = graph.addVertex();
         v1.property("visible", true);
 
-        TitanVertex v2 = graph.addVertex();
+        JanusGraphVertex v2 = graph.addVertex();
         v2.property("visible", false);
 
         assertCount(2, graph.vertices());
@@ -420,10 +420,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         finishSchema();
         clopen();
 
-        TitanVertex v1 = graph.addVertex();
+        JanusGraphVertex v1 = graph.addVertex();
         v1.property("date", new Date(1));
 
-        TitanVertex v2 = graph.addVertex();
+        JanusGraphVertex v2 = graph.addVertex();
         v2.property("date", new Date(2000));
 
 
@@ -459,16 +459,16 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         Instant firstTimestamp = Instant.ofEpochMilli(1);
         Instant secondTimestamp = Instant.ofEpochMilli(2000);
 
-        TitanVertex v1 = graph.addVertex();
+        JanusGraphVertex v1 = graph.addVertex();
         v1.property("instant", firstTimestamp);
 
-        TitanVertex v2 = graph.addVertex();
+        JanusGraphVertex v2 = graph.addVertex();
         v2.property("instant", secondTimestamp);
 
         testInstant(firstTimestamp, secondTimestamp, v1, v2);
 
         firstTimestamp = Instant.ofEpochSecond(0, 1);
-        v1 = (TitanVertex) graph.vertices(v1.id()).next();
+        v1 = (JanusGraphVertex) graph.vertices(v1.id()).next();
         v1.property("instant", firstTimestamp);
         if (indexFeatures.supportsNanoseconds()) {
             testInstant(firstTimestamp, secondTimestamp, v1, v2);
@@ -484,7 +484,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     }
 
-    private void testInstant(Instant firstTimestamp, Instant secondTimestamp, TitanVertex v1, TitanVertex v2) {
+    private void testInstant(Instant firstTimestamp, Instant secondTimestamp, JanusGraphVertex v1, JanusGraphVertex v2) {
         assertEquals(v1, getOnlyVertex(graph.query().has("instant", Cmp.EQUAL, firstTimestamp)));
         assertEquals(v2, getOnlyVertex(graph.query().has("instant", Cmp.GREATER_THAN, firstTimestamp)));
         assertEquals(Sets.newHashSet(v1, v2), Sets.newHashSet(graph.query().has("instant", Cmp.GREATER_THAN_EQUAL, firstTimestamp).vertices()));
@@ -516,10 +516,10 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         UUID uid1 = UUID.randomUUID();
         UUID uid2 = UUID.randomUUID();
 
-        TitanVertex v1 = graph.addVertex();
+        JanusGraphVertex v1 = graph.addVertex();
         v1.property("uid", uid1);
 
-        TitanVertex v2 = graph.addVertex();
+        JanusGraphVertex v2 = graph.addVertex();
         v2.property("uid", uid2);
 
         assertCount(2, graph.query().vertices());
@@ -552,11 +552,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         VertexLabel org = mgmt.makeVertexLabel("org").make();
 
-        TitanGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).
+        JanusGraphIndex index1 = mgmt.buildIndex("index1", Vertex.class).
                 addKey(name, getStringMapping()).buildMixedIndex(INDEX);
-        TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexOnly(person).
+        JanusGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexOnly(person).
                 addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
-        TitanGraphIndex index3 = mgmt.buildIndex("index3", Vertex.class).indexOnly(org).
+        JanusGraphIndex index3 = mgmt.buildIndex("index3", Vertex.class).indexOnly(org).
                 addKey(text, getTextMapping()).addKey(weight).buildMixedIndex(INDEX);
 
         // ########### INSPECTION & FAILURE ##############
@@ -661,7 +661,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assert numV % (modulo * strs.length * 2) == 0;
 
         for (int i = 0; i < numV; i++) {
-            TitanVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
+            JanusGraphVertex v = tx.addVertex(i % 2 == 0 ? "person" : "org");
             v.property("name", strs[i % strs.length]);
             v.property("text", strs[i % strs.length]);
             v.property("weight", (i % modulo) + 0.5);
@@ -732,8 +732,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey text = makeKey("text", String.class);
         PropertyKey flag = makeKey("flag", Boolean.class);
 
-        TitanGraphIndex composite = mgmt.buildIndex("composite", Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
-        TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
+        JanusGraphIndex composite = mgmt.buildIndex("composite", Vertex.class).addKey(name).addKey(weight).buildCompositeIndex();
+        JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(weight)
                 .addKey(text, getTextMapping()).buildMixedIndex(INDEX);
         mixed.name();
         composite.name();
@@ -747,7 +747,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         final int divisor = modulo * strs.length;
 
         for (int i = 0; i < numV; i++) {
-            TitanVertex v = tx.addVertex();
+            JanusGraphVertex v = tx.addVertex();
             v.property("name", strs[i % strs.length]);
             v.property("text", strs[i % strs.length]);
             v.property("weight", (i % modulo) + 0.5);
@@ -800,9 +800,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     private void setupChainGraph(int numV, String[] strs, boolean sameNameMapping) {
         clopen(option(INDEX_NAME_MAPPING, INDEX), sameNameMapping);
-        TitanGraphIndex vindex = getExternalIndex(Vertex.class, INDEX);
-        TitanGraphIndex eindex = getExternalIndex(Edge.class, INDEX);
-        TitanGraphIndex pindex = getExternalIndex(TitanVertexProperty.class, INDEX);
+        JanusGraphIndex vindex = getExternalIndex(Vertex.class, INDEX);
+        JanusGraphIndex eindex = getExternalIndex(Edge.class, INDEX);
+        JanusGraphIndex pindex = getExternalIndex(JanusGraphVertexProperty.class, INDEX);
         PropertyKey name = makeKey("name", String.class);
 
         mgmt.addIndexKey(vindex, name, getStringMapping());
@@ -815,9 +815,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.makeEdgeLabel("knows").signature(name).make();
         mgmt.makePropertyKey("uid").dataType(String.class).signature(text).make();
         finishSchema();
-        TitanVertex previous = null;
+        JanusGraphVertex previous = null;
         for (int i = 0; i < numV; i++) {
-            TitanVertex v = graph.addVertex("name", strs[i % strs.length], "text", strs[i % strs.length]);
+            JanusGraphVertex v = graph.addVertex("name", strs[i % strs.length], "text", strs[i % strs.length]);
             Edge e = v.addEdge("knows", previous == null ? v : previous,
                     "name", strs[i % strs.length], "text", strs[i % strs.length]);
             VertexProperty p = v.property("uid", "v" + i,
@@ -1004,7 +1004,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         if (!indexFeatures.supportsStringMapping(Mapping.TEXTSTRING)) return;
 
         PropertyKey name = makeKey("name", String.class);
-        TitanGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
+        JanusGraphIndex mixed = mgmt.buildIndex("mixed", Vertex.class).addKey(name, Mapping.TEXTSTRING.asParameter()).buildMixedIndex(INDEX);
         mixed.name();
         finishSchema();
 
@@ -1072,7 +1072,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
         mgmt.buildIndex("mi", Vertex.class).addKey(name, getTextMapping()).addKey(age).buildMixedIndex(INDEX);
         finishSchema();
-        Vertex vs[] = new TitanVertex[4];
+        Vertex vs[] = new JanusGraphVertex[4];
 
         vs[0] = tx.addVertex("name", "Big Boy Bobson", "age", 55);
         newTx();
@@ -1097,7 +1097,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         /*
         Transaction Recovery
          */
-        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(graph, startTime);
+        TransactionRecovery recovery = JanusGraphFactory.startTransactionRecovery(graph, startTime);
         //wait
         Thread.sleep(12000L);
 
@@ -1110,7 +1110,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX, 2, new boolean[]{true, true}, "mi");
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "long"),
                 ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
-//        TitanVertex v = Iterables.getOnlyElement(tx.query().has("name",Text.CONTAINS,"long").vertices());
+//        JanusGraphVertex v = Iterables.getOnlyElement(tx.query().has("name",Text.CONTAINS,"long").vertices());
 //        System.out.println(v.getProperty("age"));
         evaluateQuery(tx.query().has("name", Text.CONTAINS, "long").interval("age", 30, 40),
                 ElementCategory.VERTEX, 1, new boolean[]{true, true}, "mi");
@@ -1239,7 +1239,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.updateIndex(mgmt.getGraphIndex("theIndex"), SchemaAction.ENABLE_INDEX);
         finishSchema();
 
-        TitanGraphIndex index = mgmt.getGraphIndex("theIndex");
+        JanusGraphIndex index = mgmt.getGraphIndex("theIndex");
         for (PropertyKey key : index.getFieldKeys()) {
             assertEquals(SchemaStatus.ENABLED, index.getIndexStatus(key));
         }
@@ -1313,7 +1313,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     private void addVertex(int time, String text, double height, String[] phones) {
         newTx();
-        TitanVertex v = tx.addVertex("text", text, "time", time, "height", height);
+        JanusGraphVertex v = tx.addVertex("text", text, "time", time, "height", height);
         for (String phone : phones) {
             v.property("phone", phone);
         }
@@ -1351,12 +1351,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(Duration.ofSeconds(eventTTLSeconds), mgmt.getTTL(event));
         finishSchema();
 
-        TitanVertex v1 = tx.addVertex("event");
+        JanusGraphVertex v1 = tx.addVertex("event");
         v1.property(VertexProperty.Cardinality.single, "name", "first event");
         v1.property(VertexProperty.Cardinality.single, "text", "this text will help to identify the first event");
         long time1 = System.currentTimeMillis();
         v1.property(VertexProperty.Cardinality.single, "time", time1);
-        TitanVertex v2 = tx.addVertex("event");
+        JanusGraphVertex v2 = tx.addVertex("event");
         v2.property(VertexProperty.Cardinality.single, "name", "second event");
         v2.property(VertexProperty.Cardinality.single, "text", "this text won't match");
         long time2 = time1 + 1;
@@ -1423,7 +1423,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(Duration.ofSeconds(likesTTLSeconds), mgmt.getTTL(label));
         finishSchema();
 
-        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
+        JanusGraphVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
 
         Edge e1 = v1.addEdge("likes", v2, "name", "v1 likes v2", "text", "this will help to identify the edge");
         long time1 = System.currentTimeMillis();
@@ -1520,9 +1520,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("store1", Vertex.class).addKey(textKey).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        TitanVertex v1 = tx.addVertex();
-        TitanVertex v2 = tx.addVertex();
-        TitanVertex v3 = tx.addVertex();
+        JanusGraphVertex v1 = tx.addVertex();
+        JanusGraphVertex v2 = tx.addVertex();
+        JanusGraphVertex v3 = tx.addVertex();
 
         v1.property("text", "Hello Hello Hello Hello Hello Hello Hello Hello");
         v2.property("text", "Hello abab abab fsdfsd sfdfsd sdffs fsdsdf fdf fsdfsd aera fsad abab abab fsdfsd sfdf");
@@ -1533,7 +1533,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         Thread.sleep(5000);
 
         Set<Double> scores = new HashSet<Double>();
-        for (TitanIndexQuery.Result<TitanVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
+        for (JanusGraphIndexQuery.Result<JanusGraphVertex> r : graph.indexQuery("store1", "v.text:(Hello)").vertices()) {
             scores.add(r.getScore());
         }
 
@@ -1550,14 +1550,14 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         mgmt.buildIndex("store1", Vertex.class).addKey(name).buildMixedIndex(INDEX);
         mgmt.commit();
 
-        TitanVertex v1 = tx.addVertex();
+        JanusGraphVertex v1 = tx.addVertex();
         v1.property("name", "hercules was here");
 
         tx.commit();
 
         Thread.sleep(2000);
 
-        TitanVertex r = Iterables.<TitanVertex>get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
+        JanusGraphVertex r = Iterables.<JanusGraphVertex>get(graph.query().has("name", Text.CONTAINS, "hercules here").vertices(), 0);
         Assert.assertEquals(r.property("name").value(), "hercules was here");
     }
 
@@ -1588,7 +1588,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         createExternalVertexIndex(prop, INDEX);
         finishSchema();
 
-        TitanVertex v = graph.addVertex();
+        JanusGraphVertex v = graph.addVertex();
         if (null != initialValue)
             v.property(VertexProperty.Cardinality.single, propName, initialValue);
         graph.tx().commit();
@@ -1596,8 +1596,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         Object id = v.id();
 
         // Open two transactions and modify the same vertex
-        TitanTransaction vertexDeleter = graph.newTransaction();
-        TitanTransaction propDeleter = graph.newTransaction();
+        JanusGraphTransaction vertexDeleter = graph.newTransaction();
+        JanusGraphTransaction propDeleter = graph.newTransaction();
 
         getV(vertexDeleter, id).remove();
         if (null == updatedValue)
@@ -1630,7 +1630,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             finishSchema();
             clopen();
 
-            TitanVertex v1 = graph.addVertex();
+            JanusGraphVertex v1 = graph.addVertex();
             v1.property("p1", "test1");
             v1.property("p2", "test2");
 
@@ -1682,7 +1682,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
                 //This should throw an exception
                 mgmt.buildIndex("collectionIndex", Vertex.class).addKey(stringProperty, getStringMapping()).buildMixedIndex(INDEX);
                 Assert.fail("Should have thrown an exception");
-            } catch (TitanException e) {
+            } catch (JanusGraphException e) {
 
             }
         }

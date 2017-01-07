@@ -1,7 +1,7 @@
 package org.janusgraph.blueprints.structure.groovy;
 
 import org.janusgraph.blueprints.BerkeleyGraphProvider;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.groovy.GroovyEnvironmentPerformanceSuite;
 import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
@@ -13,6 +13,6 @@ import org.junit.runner.RunWith;
  */
 @Ignore
 @RunWith(GroovyEnvironmentPerformanceSuite.class)
-@GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = TitanGraph.class)
-public class BerkeleyTitanGroovyEnvironmentPerformanceTest {
+@GraphProviderClass(provider = BerkeleyGraphProvider.class, graph = JanusGraph.class)
+public class BerkeleyJanusGraphGroovyEnvironmentPerformanceTest {
 }

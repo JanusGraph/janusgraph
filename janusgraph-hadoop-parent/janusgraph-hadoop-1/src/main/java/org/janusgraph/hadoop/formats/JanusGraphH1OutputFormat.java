@@ -2,11 +2,11 @@ package org.janusgraph.hadoop.formats;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -26,13 +26,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritable> {
+public class JanusGraphH1OutputFormat extends OutputFormat<NullWritable, VertexWritable> {
 
-    private static final Logger log = LoggerFactory.getLogger(TitanH1OutputFormat.class);
+    private static final Logger log = LoggerFactory.getLogger(JanusGraphH1OutputFormat.class);
 
-    private final ConcurrentMap<TaskAttemptID, StandardTitanTx> transactions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<TaskAttemptID, StandardJanusGraphTx> transactions = new ConcurrentHashMap<>();
 
-    private StandardTitanGraph graph;
+    private StandardJanusGraph graph;
 
     private Set<String> persistableKeys;
 
@@ -43,8 +43,8 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
             if (null == graph) {
                 Configuration hadoopConf = taskAttemptContext.getConfiguration();
                 ModifiableHadoopConfiguration mhc =
-                        ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
-                graph = (StandardTitanGraph) TitanFactory.open(mhc.getTitanGraphConf());
+                        ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, hadoopConf);
+                graph = (StandardJanusGraph) JanusGraphFactory.open(mhc.getJanusGraphConf());
             }
         }
 
@@ -61,9 +61,9 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
             }
         }
 
-        StandardTitanTx tx = transactions.computeIfAbsent(taskAttemptContext.getTaskAttemptID(),
-                id -> (StandardTitanTx)graph.newTransaction());
-        return new TitanH1RecordWriter(taskAttemptContext, tx, persistableKeys);
+        StandardJanusGraphTx tx = transactions.computeIfAbsent(taskAttemptContext.getTaskAttemptID(),
+                id -> (StandardJanusGraphTx)graph.newTransaction());
+        return new JanusGraphH1RecordWriter(taskAttemptContext, tx, persistableKeys);
     }
 
     @Override
@@ -74,11 +74,11 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
     @Override
     public OutputCommitter getOutputCommitter(TaskAttemptContext taskAttemptContext) throws IOException,
             InterruptedException {
-        return new TitanH1OutputCommitter(this);
+        return new JanusGraphH1OutputCommitter(this);
     }
 
     void commit(TaskAttemptID id) {
-        StandardTitanTx tx = transactions.remove(id);
+        StandardJanusGraphTx tx = transactions.remove(id);
         if (null == tx) {
             log.warn("Detected concurrency in task commit");
             return;
@@ -87,7 +87,7 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
     }
 
     void abort(TaskAttemptID id) {
-        StandardTitanTx tx = transactions.remove(id);
+        StandardJanusGraphTx tx = transactions.remove(id);
         if (null == tx) {
             log.warn("Detected concurrency in task abort");
             return;
@@ -96,7 +96,7 @@ public class TitanH1OutputFormat extends OutputFormat<NullWritable, VertexWritab
     }
 
     boolean hasModifications(TaskAttemptID id) {
-        StandardTitanTx tx = transactions.get(id);
+        StandardJanusGraphTx tx = transactions.get(id);
         // if tx is null, something is horribly wrong
         return tx.hasModifications();
     }

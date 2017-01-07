@@ -3,8 +3,8 @@ package org.janusgraph.graphdb.inmemory;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanGraphBaseTest;
-import org.janusgraph.graphdb.TitanIoTest;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphIoTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.util.Map;
@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class InMemoryTitanIoTest extends TitanIoTest {
+public class InMemoryJanusGraphIoTest extends JanusGraphIoTest {
     public WriteConfiguration getConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
@@ -27,10 +27,10 @@ public class InMemoryTitanIoTest extends TitanIoTest {
                         !graph.edges().hasNext(),"Graph cannot be re-initialized for InMemory since that would delete all data");
                 graph.close();
             }
-            Map<TitanGraphBaseTest.TestConfigOption,Object> options = validateConfigOptions(settings);
+            Map<JanusGraphBaseTest.TestConfigOption,Object> options = validateConfigOptions(settings);
             ModifiableConfiguration config = GraphDatabaseConfiguration.buildGraphConfiguration();
             config.set(GraphDatabaseConfiguration.STORAGE_BACKEND,"inmemory");
-            for (Map.Entry<TitanGraphBaseTest.TestConfigOption,Object> option : options.entrySet()) {
+            for (Map.Entry<JanusGraphBaseTest.TestConfigOption,Object> option : options.entrySet()) {
                 config.set(option.getKey().option, option.getValue(), option.getKey().umbrella);
             }
             open(config.getConfiguration());

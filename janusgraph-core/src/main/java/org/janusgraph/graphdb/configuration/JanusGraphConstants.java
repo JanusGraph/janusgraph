@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.JanusGraphFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,21 +10,21 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Collection of constants used throughput the Titan codebase.
+ * Collection of constants used throughput the JanusGraph codebase.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanConstants {
+public class JanusGraphConstants {
 
-    public static final String TITAN_PROPERTIES_FILE = "titan.internal.properties";
+    public static final String JANUSGRAPH_PROPERTIES_FILE = "janusgraph.internal.properties";
 
     /**
-     * Runtime version of Titan, as read from a properties file inside the core jar
+     * Runtime version of JanusGraph, as read from a properties file inside the core jar
      */
     public static final String VERSION;
 
     /**
-     * Past versions of Titan with which the runtime version shares a compatible storage format
+     * Past versions of JanusGraph with which the runtime version shares a compatible storage format
      */
     public static final List<String> COMPATIBLE_VERSIONS;
 
@@ -36,13 +36,13 @@ public class TitanConstants {
          * if something goes horribly wrong, even a cryptic error message is
          * better than a message-less NPE.
          */
-        Package p = TitanConstants.class.getPackage();
-        Preconditions.checkNotNull(p, "Unable to load package containing class " + TitanConstants.class);
+        Package p = JanusGraphConstants.class.getPackage();
+        Preconditions.checkNotNull(p, "Unable to load package containing class " + JanusGraphConstants.class);
         String packageName = p.getName();
-        Preconditions.checkNotNull(packageName, "Unable to get name of package containing " + TitanConstants.class);
-        String resourceName = packageName.replace('.', '/') + "/" + TITAN_PROPERTIES_FILE;
-        InputStream is = TitanFactory.class.getClassLoader().getResourceAsStream(resourceName);
-        Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing Titan version");
+        Preconditions.checkNotNull(packageName, "Unable to get name of package containing " + JanusGraphConstants.class);
+        String resourceName = packageName.replace('.', '/') + "/" + JANUSGRAPH_PROPERTIES_FILE;
+        InputStream is = JanusGraphFactory.class.getClassLoader().getResourceAsStream(resourceName);
+        Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing JanusGraph version");
 
         Properties props = new Properties();
 
@@ -52,9 +52,9 @@ public class TitanConstants {
             throw new RuntimeException("Failed to load properties from " + resourceName, e);
         }
 
-        VERSION = props.getProperty("titan.version");
+        VERSION = props.getProperty("janusgraph.version");
         ImmutableList.Builder<String> b = ImmutableList.builder();
-        for (String v : props.getProperty("titan.compatible-versions", "").split(",")) {
+        for (String v : props.getProperty("janusgraph.compatible-versions", "").split(",")) {
             v = v.trim();
             if (!v.isEmpty()) b.add(v);
         }

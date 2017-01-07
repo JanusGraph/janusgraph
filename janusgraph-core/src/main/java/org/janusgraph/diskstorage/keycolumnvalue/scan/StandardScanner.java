@@ -1,7 +1,7 @@
 package org.janusgraph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.configuration.*;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -67,7 +67,7 @@ public class StandardScanner  {
         Preconditions.checkArgument(runningJobs.get(jobId)==executor,"Another job with the same id is already running: %s",jobId);
     }
 
-    public TitanManagement.IndexJobFuture getRunningJob(Object jobId) {
+    public JanusGraphManagement.IndexJobFuture getRunningJob(Object jobId) {
         return runningJobs.get(jobId);
     }
 
@@ -160,7 +160,7 @@ public class StandardScanner  {
             return this;
         }
 
-        public TitanManagement.IndexJobFuture execute() throws BackendException {
+        public JanusGraphManagement.IndexJobFuture execute() throws BackendException {
             Preconditions.checkArgument(job!=null,"Need to specify a job to execute");
             Preconditions.checkArgument(StringUtils.isNotBlank(dbName),"Need to specify a database to execute against");
             Preconditions.checkArgument(times!=null,"Need to configure the timestamp provider for this job");
