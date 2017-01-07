@@ -1,4 +1,4 @@
-[[titan-hadoop-tp3]]
+[[janusgraph-hadoop-tp3]]
 Titan with TinkerPop's Hadoop-Gremlin
 -------------------------------------
 

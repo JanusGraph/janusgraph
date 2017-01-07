@@ -27,7 +27,7 @@ In addition, a separate process must be setup that reads the log to identify par
 [source, gremlin]
 recovery = TitanFactory.startTransactionRecovery(graph, startTime, TimeUnit.MILLISECONDS);
 
-Enabling the transaction write-ahead log causes an additional write operation for mutating transactions which increases the latency. Also note, that additional space is required to store the log. The transaction write-ahead log has a configurable time-to-live of 2 days which means that log entries expire after that time to keep the storage overhead small. Refer to <<titan-config-ref>> for a complete list of all log related configuration options to fine tune logging behavior.
+Enabling the transaction write-ahead log causes an additional write operation for mutating transactions which increases the latency. Also note, that additional space is required to store the log. The transaction write-ahead log has a configurable time-to-live of 2 days which means that log entries expire after that time to keep the storage overhead small. Refer to <<janusgraph-config-ref>> for a complete list of all log related configuration options to fine tune logging behavior.
 
 Titan Instance Failure
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -88,7 +88,7 @@ Titan 0.5.0 introduces vertex labels as first class schema types. Many applicati
 
 In previous versions of Titan, the entire graph database configuration had to be provided in a configuration file for each started Titan instance. Starting in 0.5.0, Titan has a central configuration system which stores all configuration properties that must be coordinated across instances. These are initialized from the configuration file used to start the first Titan instance in a new cluster. After that, additional Titan instances only need a minimal configuration to connect to the cluster. Note, that changing global configuration options can no longer be accomplished through changes to the local configuration files. Such changes must now be made through Titan's management system.
 
-Some configuration options have been renamed and new options have been added.  See the <<titan-config-ref>> for an up-to-date listing of config options.
+Some configuration options have been renamed and new options have been added.  See the <<janusgraph-config-ref>> for an up-to-date listing of config options.
 
 FullDouble and FullFloat do no longer exist. Use Double and Float instead which are now serialized as 4 and 8 byte floating point numbers. In places where Double or Float
 was used in sort keys (i.e. as the data type of the property in a sort key), use Decimal and Precision instead, respectively, because they have a fixd decimal range.
