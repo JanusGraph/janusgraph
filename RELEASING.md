@@ -25,11 +25,6 @@ tools must be installed.
       <username>...</username>
       <password>...</password>
     </server>
-    <server>
-      <id>aurelius.s3</id>
-      <username>AWS Key ID</username>
-      <password>AWS Secret Key</password>
-    </server>
   </servers>
 </settings>
 ```
@@ -92,9 +87,8 @@ janusgraph-dist/src/release/release.sh
 
 ### Checking Artifacts & Archives
 
-This is a good time to inspect the archives just uploaded to
-http://s3.thinkaurelius.com/downloads/titan/.  Directory listing is
-normally disabled on that directory, so you may need to login to the
+This is a good time to inspect the archives just uploaded to S3. Directory
+listing is normally disabled on that directory, so you may need to login to the
 S3 console to list the contents and check that nothing's out of place.
 
 If S3 looks good, then inspect and close the staging repository that
