@@ -1,6 +1,6 @@
 [[internals]]
-Titan Internals
-===============
+JanusGraph Internals
+====================
 
 include::datamodel.txt[]
 

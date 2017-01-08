@@ -5,17 +5,17 @@ Advanced Tinkerpop
 http://tinkerpop.incubator.apache.org/[Tinkerpop] provides a set of common http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#traversalstrategy[traversal strategies] that add additional functionality to graphs.
 
 Using ElementIdStrategy
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
-It is possible to use http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_elementidstrategy[ElementIdStrategy] with Titan. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of Titan's long identifiers.
+It is possible to use http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_elementidstrategy[ElementIdStrategy] with JanusGraph. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of JanusGraph's long identifiers.
 
 [IMPORTANT]
-The target property key must be created and covered by a unique index in Titan prior to using `ElementIdStrategy` with Titan, otherwise Vertex lookups will result in sequential scans of the graph.
+The target property key must be created and covered by a unique index in JanusGraph prior to using `ElementIdStrategy` with JanusGraph, otherwise Vertex lookups will result in sequential scans of the graph.
 
-To prepare Titan for ElementIdStrategy, first create the property key. Set the `dataType` of the property key to match the custom IDs that you intend to use. Second, build a unique composite index on the property key. The following example shows how to define and index the property key to support IdGraph with string vertex IDs.
+To prepare JanusGraph for ElementIdStrategy, first create the property key. Set the `dataType` of the property key to match the custom IDs that you intend to use. Second, build a unique composite index on the property key. The following example shows how to define and index the property key to support IdGraph with string vertex IDs.
 
 [source, gremlin]
-graph = TitanFactory.open("berkeleyje:/tmp/test")
+graph = JanusGraphFactory.open("berkeleyje:/tmp/test")
 // Define a property key and index for managed vertex IDs
 mgmt = graph.openManagement()
 idKey = mgmt.makePropertyKey("name").dataType(String.class).make()
