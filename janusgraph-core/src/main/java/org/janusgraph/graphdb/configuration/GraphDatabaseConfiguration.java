@@ -118,8 +118,8 @@ public class GraphDatabaseConfiguration {
 //            "CONCURRENT_HASH_MAP.  The CHM implementation releases all references when JanusGraph is shutdown, but it " +
 //            "also subject to some synchronization-related performance overhead that the ThreadLocal-based default " +
 //            "implementation avoids.  Recent versions of Kryo include a class called KryoPool that offers another way " +
-//            "to solve this problem.  However, KryoPool is not supported in JanusGraph 0.5.x because the version of Kryo " +
-//            "used by JanusGraph 0.5.x predates KryoPool's introduction.",
+//            "to solve this problem.  However, KryoPool is not supported in older deployments because the version of Kryo " +
+//            "used by older deployments predates KryoPool's introduction.",
 //            ConfigOption.Type.MASKABLE, KryoInstanceCacheImpl.class, KryoInstanceCacheImpl.THREAD_LOCAL);
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(GRAPH_NS,"unique-instance-id",

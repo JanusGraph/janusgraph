@@ -2,10 +2,10 @@
 # These two macros can be defined in two ways:
 #
 # 1. Defined on rpmbuild commandline, e.g.
-#    $ rpmbuild --define='janusgraph_release 2' --define='janusgraph_version 0.4.0'
+#    $ rpmbuild --define='janusgraph_release 2' --define='janusgraph_version 0.1.0'
 #
 # 2. Prepended to this file, e.g.
-#    $ echo '<percent>define janusgraph_version 0.4.0' >  janusgraph.spec.new
+#    $ echo '<percent>define janusgraph_version 0.1.0' >  janusgraph.spec.new
 #    $ echo '<percent>define janusgraph_release 2'     >> janusgraph.spec.new
 #    $ cat  janusgraph.spec.base                       >> janusgraph.spec.new
 #    $ mv   janusgraph.spec.new janusgraph.spec
