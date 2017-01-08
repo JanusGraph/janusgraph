@@ -42,7 +42,7 @@ public class JanusGraphGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "janusgraph.convenience";
+        return "janusgraph.imports";
     }
 
     @Override
