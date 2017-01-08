@@ -5,8 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class may become obsolete in and is subject for removal in JanusGraph 0.9,
- * since we can assume try-with-resources and transactions implement AutoCloseable.
+ * This class may become obsolete in the future, at which point it will 
+ * be deprecated or removed. This follows from the assumption that 
+ * try-with-resources and transactions implement AutoCloseable.
  */
 public class TXUtils {
 

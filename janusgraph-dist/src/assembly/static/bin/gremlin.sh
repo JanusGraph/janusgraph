@@ -72,10 +72,10 @@ MAIN_CLASS=org.apache.tinkerpop.gremlin.console.Console
 while getopts "elpv" opt; do
     case "$opt" in
     e) MAIN_CLASS=org.apache.tinkerpop.gremlin.groovy.jsr223.ScriptExecutor
-       # For compatibility with behavior pre-JanusGraph-0.5.0, stop
-       # processing gremlin.sh arguments as soon as the -e switch is
-       # seen; everything following -e becomes arguments to the
-       # ScriptExecutor main class
+       # Stop processing gremlin.sh arguments as soon as the -e switch 
+       # is seen; everything following -e becomes arguments to the 
+       # ScriptExecutor main class. This maintains compatibility with
+       # older deployments.
        break;;
     l) eval GREMLIN_LOG_LEVEL=\$$OPTIND
        OPTIND="$(( $OPTIND + 1 ))"

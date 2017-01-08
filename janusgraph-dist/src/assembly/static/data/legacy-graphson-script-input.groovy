@@ -1,7 +1,8 @@
 /* legacy-graphson-script-input.groovy
  *
  * Can be used as a script file for ScriptInputFormat to read/load
- * GraphSON exports from older JanusGraph versions (<= 0.5.x).
+ * GraphSON exports from older deployments that depended on older
+ * versions of TinkerPop.
  */
 def parse(line, factory) {
   def slurper = new JsonSlurper()
