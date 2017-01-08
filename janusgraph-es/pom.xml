@@ -9,7 +9,7 @@
     </parent>
     <artifactId>janusgraph-es</artifactId>
     <name>JanusGraph-ElasticSearch: Distributed Indexing Support</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>

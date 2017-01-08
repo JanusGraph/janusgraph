@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <artifactId>janusgraph-doc</artifactId>
     <name>JanusGraph-Doc: AsciiDoc Manual for JanusGraph</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${project.basedir}/..</top.level.basedir>

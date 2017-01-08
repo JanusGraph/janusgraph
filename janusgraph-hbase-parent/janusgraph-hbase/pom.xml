@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-hbase</artifactId>
     <name>JanusGraph-HBase: Universal binary</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     
     <properties>
         <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>

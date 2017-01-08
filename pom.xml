@@ -13,7 +13,7 @@
         <maven>2.2.1</maven>
     </prerequisites>
     <name>JanusGraph: Distributed Graph Database</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
 
     <description>
         JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine

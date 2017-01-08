@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-hbase-098</artifactId>
     <name>JanusGraph-HBase: 0.98 Compatibility Shim</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     
     <properties>
         <jruby.version>1.6.8</jruby.version>
