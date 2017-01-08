@@ -8,7 +8,7 @@ channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
 graphs: {
   graph: conf/gremlin-server/janusgraph-cassandra-es-server.properties}
 plugins:
-  - janusgraph.convenience
+  - janusgraph.imports
 scriptEngines: {
   gremlin-groovy: {
     imports: [java.lang.Math],
