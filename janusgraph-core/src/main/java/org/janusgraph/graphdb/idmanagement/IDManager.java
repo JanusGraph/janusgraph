@@ -9,7 +9,7 @@ import org.janusgraph.graphdb.database.idhandling.VariableLong;
 
 /**
  * Handles the allocation of ids based on the type of element
- * Responsible for the bit-wise pattern of Titan's internal id scheme.
+ * Responsible for the bit-wise pattern of JanusGraph's internal id scheme.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -358,7 +358,7 @@ public class IDManager {
     public static final int TYPE_LEN_RESERVE = 3;
 
     /**
-     * Total number of bits available to a Titan assigned id
+     * Total number of bits available to a JanusGraph assigned id
      * We use only 63 bits to make sure that all ids are positive
      *
      */
@@ -425,7 +425,7 @@ public class IDManager {
                    User Relations and Vertices
        ########################################################  */
 
-     /*		--- TitanElement id bit format ---
+     /*		--- JanusGraphElement id bit format ---
       *  [ 0 | count | partition | ID padding (if any) ]
      */
 
@@ -594,7 +594,7 @@ public class IDManager {
                Schema Vertices
    ########################################################  */
 
-    /* --- TitanRelation Type id bit format ---
+    /* --- JanusGraphRelation Type id bit format ---
       *  [ 0 | count | ID padding ]
       *  (there is no partition)
      */

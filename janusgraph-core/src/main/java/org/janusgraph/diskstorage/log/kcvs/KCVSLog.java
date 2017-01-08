@@ -2,7 +2,7 @@ package org.janusgraph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.util.time.*;
 
@@ -409,7 +409,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             try {
                 persistor.add(envelope.key,envelope.entry);
                 envelope.message.delivered();
-            } catch (TitanException e) {
+            } catch (JanusGraphException e) {
                 envelope.message.failed(e);
                 throw e;
             }
@@ -420,7 +420,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 outgoingMsg.put(envelope); //Produces back pressure when full
                 log.debug("Enqueued {} for partition {}", envelope, partitionId);
             } catch (InterruptedException e) {
-                throw new TitanException("Got interrupted waiting to send message",e);
+                throw new JanusGraphException("Got interrupted waiting to send message",e);
             }
         }
         return fmsg;
@@ -483,7 +483,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             log.debug("Wrote {} messages to backend",msgEnvelopes.size());
             for (MessageEnvelope msgEnvelope : msgEnvelopes)
                 msgEnvelope.message.delivered();
-        } catch (TitanException e) {
+        } catch (JanusGraphException e) {
             for (MessageEnvelope msgEnvelope : msgEnvelopes)
                 msgEnvelope.message.failed(e);
             throw e;

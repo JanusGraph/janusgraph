@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# This file borrows heavily from from Debian's postgres-common.postinst flie.
+
+set -e
+. /usr/share/debconf/confmodule
+db_stop
+
+if [ "$1" = configure ]; then
+    # Make sure the administrative user exists
+    if ! getent passwd janusgraph > /dev/null; then
+        adduser --system --quiet --home /var/lib/janusgraph --no-create-home \
+            --shell /bin/bash --group --gecos "JanusGraph graph DB user" janusgraph
+    fi
+
+    # check validity of janusgraph user and group
+    if [ "`id -u janusgraph`" -eq 0 ]; then
+        echo "The janusgraph user must not have uid 0 (root).
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+    if [ "`id -g janusgraph`" -eq 0 ]; then
+        echo "The janusgraph user must not have root as primary group.
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+
+    # ensure home directory ownership
+    mkdir -p /var/lib/janusgraph
+    chown janusgraph:janusgraph /var/lib/janusgraph
+    mkdir -p /var/log/janusgraph
+    chown janusgraph:janusgraph /var/log/janusgraph
+    mkdir -p /var/run/janusgraph
+    chown janusgraph:janusgraph /var/run/janusgraph
+
+    # nicer log directory permissions
+    #mkdir -p /var/log/janusgraph
+    #chmod 1775 /var/log/janusgraph
+    #chown root:janusgraph /var/log/janusgraph
+fi

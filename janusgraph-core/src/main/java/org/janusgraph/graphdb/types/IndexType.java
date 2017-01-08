@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.types;
 
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.internal.ElementCategory;
 
 /**
@@ -23,7 +23,7 @@ public interface IndexType {
 
     public boolean hasSchemaTypeConstraint();
 
-    public TitanSchemaType getSchemaTypeConstraint();
+    public JanusGraphSchemaType getSchemaTypeConstraint();
 
     public String getBackingIndexName();
 

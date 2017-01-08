@@ -1,4 +1,4 @@
-Building Titan
+Building JanusGraph
 --------------
 
 Required:

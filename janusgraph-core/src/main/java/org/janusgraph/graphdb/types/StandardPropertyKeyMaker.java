@@ -8,8 +8,8 @@ import org.janusgraph.core.schema.PropertyKeyMaker;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
 import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.lang.reflect.Modifier;
 
@@ -23,7 +23,7 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
 
     private Class<?> dataType;
 
-    public StandardPropertyKeyMaker(StandardTitanTx tx, String name, IndexSerializer indexSerializer,
+    public StandardPropertyKeyMaker(StandardJanusGraphTx tx, String name, IndexSerializer indexSerializer,
                                     final AttributeHandler attributeHandler) {
         super(tx, name, indexSerializer, attributeHandler);
         dataType = null;
@@ -31,8 +31,8 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
     }
 
     @Override
-    TitanSchemaCategory getSchemaCategory() {
-        return TitanSchemaCategory.PROPERTYKEY;
+    JanusGraphSchemaCategory getSchemaCategory() {
+        return JanusGraphSchemaCategory.PROPERTYKEY;
     }
 
     @Override

@@ -2,10 +2,10 @@ package org.janusgraph.pkgtest;
 
 import org.junit.Test;
 
-public class BerkeleyESAssemblyIT extends AbstractTitanAssemblyIT {
+public class BerkeleyESAssemblyIT extends AbstractJanusGraphAssemblyIT {
     
     @Test
     public void testBerkeleyGettingStarted() throws Exception {
-        testGettingStartedGremlinSession("conf/titan-berkeleyje-es.properties", "berkeleyje");
+        testGettingStartedGremlinSession("conf/janusgraph-berkeleyje-es.properties", "berkeleyje");
     }
 }

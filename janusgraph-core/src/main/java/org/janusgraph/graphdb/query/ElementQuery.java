@@ -1,18 +1,18 @@
 package org.janusgraph.graphdb.query;
 
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 
 import java.util.Collection;
 import java.util.Comparator;
 
 /**
- * A query that returns {@link TitanElement}s. This query can consist of multiple sub-queries that together
+ * A query that returns {@link JanusGraphElement}s. This query can consist of multiple sub-queries that together
  * form the desired result set.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface ElementQuery<R extends TitanElement,B extends BackendQuery<B>> extends Query {
+public interface ElementQuery<R extends JanusGraphElement,B extends BackendQuery<B>> extends Query {
 
     /**
      * Whether the combination of the individual sub-queries can result in duplicate

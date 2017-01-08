@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.diskstorage.ResourceUnavailableException;
 
 import org.janusgraph.diskstorage.util.time.Timer;
@@ -11,12 +11,12 @@ import org.janusgraph.diskstorage.ReadBuffer;
 import org.janusgraph.diskstorage.log.Log;
 import org.janusgraph.diskstorage.log.Message;
 import org.janusgraph.diskstorage.log.MessageReader;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
 import org.janusgraph.graphdb.database.idhandling.VariableLong;
 import org.janusgraph.graphdb.database.serialize.DataOutput;
 import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,19 +38,19 @@ public class ManagementLogger implements MessageReader {
     private static final Duration SLEEP_INTERVAL = Duration.ofMillis(100L);
     private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(60L);
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
     private final SchemaCache schemaCache;
     private final Log sysLog;
 
     /**
-     * This belongs in TitanConfig.
+     * This belongs in JanusGraphConfig.
      */
     private final TimestampProvider times;
 
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
     private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<Long,EvictionTrigger>();
 
-    public ManagementLogger(StandardTitanGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
+    public ManagementLogger(StandardJanusGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
         this.graph = graph;
         this.schemaCache = schemaCache;
         this.sysLog = sysLog;
@@ -90,7 +90,7 @@ public class ManagementLogger implements MessageReader {
 
     }
 
-    public void sendCacheEviction(Set<TitanSchemaVertex> updatedTypes,
+    public void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes,
                                              Set<Callable<Boolean>> updatedTypeTriggers,
                                              Set<String> openInstances) {
         Preconditions.checkArgument(!openInstances.isEmpty());
@@ -100,7 +100,7 @@ public class ManagementLogger implements MessageReader {
         out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION);
         VariableLong.writePositive(out,evictionId);
         VariableLong.writePositive(out,updatedTypes.size());
-        for (TitanSchemaVertex type : updatedTypes) {
+        for (JanusGraphSchemaVertex type : updatedTypes) {
             assert type.hasId();
             VariableLong.writePositive(out,type.longId());
         }
@@ -145,10 +145,10 @@ public class ManagementLogger implements MessageReader {
     private class SendAckOnTxClose implements Runnable {
 
         private final long evictionId;
-        private final Set<? extends TitanTransaction> openTx;
+        private final Set<? extends JanusGraphTransaction> openTx;
         private final String originId;
 
-        private SendAckOnTxClose(long evictionId, String originId, Set<? extends TitanTransaction> openTx) {
+        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx) {
             this.evictionId = evictionId;
             this.openTx = openTx;
             this.originId = originId;
@@ -160,7 +160,7 @@ public class ManagementLogger implements MessageReader {
             Timer t = times.getTimer().start();
             while (true) {
                 boolean txStillOpen = false;
-                Iterator<? extends TitanTransaction> iter = openTx.iterator();
+                Iterator<? extends JanusGraphTransaction> iter = openTx.iterator();
                 while (iter.hasNext()) {
                     if (iter.next().isClosed()) {
                         iter.remove();

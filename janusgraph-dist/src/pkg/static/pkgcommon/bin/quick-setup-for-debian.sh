@@ -19,13 +19,13 @@ echo "Adding apt repository files to $SOURCES_D"
   echo 'deb http://debian.datastax.com/community stable main' > "$SOURCES_D"/cassandra.sources.list
   echo 'deb http://packages.elasticsearch.org/elasticsearch/1.0/debian stable main' > "$SOURCES_D"/elasticsearch.sources.list )
 
-echo "Installing Cassandra, ES, and Titan with apt-get"
+echo "Installing Cassandra, ES, and JanusGraph with apt-get"
 apt-get update
-apt-get install cassandra=2.0.7 elasticsearch=1.0.3 titan
+apt-get install cassandra=2.0.7 elasticsearch=1.0.3 janusgraph
 
-# Reduce Cassandra and Gremlin Server/Titan heapsizes
+# Reduce Cassandra and Gremlin Server/JanusGraph heapsizes
 echo 'export MAX_HEAP_SIZE=512M
 export HEAP_NEWSIZE=128M' > /etc/default/cassandra
 
 echo 'export MAX_HEAP_SIZE=512M
-export HEAP_NEWSIZE=128M' > /etc/default/titan
+export HEAP_NEWSIZE=128M' > /etc/default/janusgraph

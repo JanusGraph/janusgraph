@@ -9,7 +9,7 @@ import org.janusgraph.diskstorage.WriteBuffer;
  * Allows custom serializer definitions for attribute values.
  * <p/>
  * For most data types (i.e. classes) used with properties, using the default serializer when registering the type with the
- * Titan will be sufficient and efficient in practice. However, for certain data types, it can be more
+ * JanusGraph will be sufficient and efficient in practice. However, for certain data types, it can be more
  * efficient to provide custom serializers implementing this interface.
  * Such custom serializers are registered in the configuration file by specifying their path and loaded when
  * the database is initialized. Hence, the serializer must be on the classpath.

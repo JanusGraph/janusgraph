@@ -9,11 +9,11 @@ cd "`dirname $0`"/../../
 
 echo 'Running reprepro...'
 reprepro -b "$LOCAL_REPO_DEB_DIR" include $REPREPRO_CODENAME \
-    ../titan_"$DEB_VERSION"-"$DEB_RELEASE"_*.changes
+    ../janusgraph_"$DEB_VERSION"-"$DEB_RELEASE"_*.changes
 echo 'Done running reprepro.'
 
 [ ! -e "$LOCAL_REPO_RPM_DIR"/noarch/ ] && mkdir -p "$LOCAL_REPO_RPM_DIR"/noarch/
-cp "$RPM_TOPDIR"/RPMS/noarch/titan*-$RPM_VERSION-$RPM_RELEASE.noarch.rpm \
+cp "$RPM_TOPDIR"/RPMS/noarch/janusgraph*-$RPM_VERSION-$RPM_RELEASE.noarch.rpm \
     "$LOCAL_REPO_RPM_DIR"/noarch/
 echo 'Running createrepo...'
 createrepo "$LOCAL_REPO_RPM_DIR"

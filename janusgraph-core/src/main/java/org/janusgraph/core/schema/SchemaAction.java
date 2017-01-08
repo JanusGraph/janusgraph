@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
 /**
- * Update actions to be executed through {@link TitanManagement} in {@link TitanManagement#updateIndex(TitanIndex, SchemaAction)}.
+ * Update actions to be executed through {@link JanusGraphManagement} in {@link JanusGraphManagement#updateIndex(Index, SchemaAction)}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

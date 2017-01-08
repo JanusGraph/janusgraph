@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.keycolumnvalue.*;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
@@ -92,9 +92,9 @@ public class ExpirationKCVSCache extends KCVSCache {
                 }
             });
         } catch (Exception e) {
-            if (e instanceof TitanException) throw (TitanException)e;
-            else if (e.getCause() instanceof TitanException) throw (TitanException)e.getCause();
-            else throw new TitanException(e);
+            if (e instanceof JanusGraphException) throw (JanusGraphException)e;
+            else if (e.getCause() instanceof JanusGraphException) throw (JanusGraphException)e.getCause();
+            else throw new JanusGraphException(e);
         }
     }
 

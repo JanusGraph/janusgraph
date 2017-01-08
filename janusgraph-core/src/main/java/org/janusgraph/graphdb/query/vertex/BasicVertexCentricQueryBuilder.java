@@ -13,7 +13,7 @@ import org.janusgraph.graphdb.query.*;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.relations.StandardVertexProperty;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.janusgraph.graphdb.types.system.SystemRelationType;
@@ -40,7 +40,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     /**
      * Transaction in which this query is executed
      */
-    protected final StandardTitanTx tx;
+    protected final StandardJanusGraphTx tx;
 
     /**
      * The query profiler used to observe this query
@@ -70,14 +70,14 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
     private boolean restrict2Partitions = true;
 
 
-    public BasicVertexCentricQueryBuilder(final StandardTitanTx tx) {
+    public BasicVertexCentricQueryBuilder(final StandardJanusGraphTx tx) {
         super(tx);
         Preconditions.checkArgument(tx!=null);
         this.tx = tx;
     }
 
     @Override
-    public TitanVertex getVertex(long vertexid) {
+    public JanusGraphVertex getVertex(long vertexid) {
         return tx.getVertex(vertexid);
     }
 
@@ -158,19 +158,19 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 	 * ---------------------------------------------------------------
 	 */
 
-    protected static Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
-        return Iterables.transform(edges, new Function<TitanEdge, TitanVertex>() {
+    protected static Iterable<JanusGraphVertex> edges2Vertices(final Iterable<JanusGraphEdge> edges, final JanusGraphVertex other) {
+        return Iterables.transform(edges, new Function<JanusGraphEdge, JanusGraphVertex>() {
             @Nullable
             @Override
-            public TitanVertex apply(@Nullable TitanEdge titanEdge) {
-                return titanEdge.otherVertex(other);
+            public JanusGraphVertex apply(@Nullable JanusGraphEdge janusgraphEdge) {
+                return janusgraphEdge.otherVertex(other);
             }
         });
     }
 
-    protected VertexList edges2VertexIds(final Iterable<TitanEdge> edges, final TitanVertex other) {
+    protected VertexList edges2VertexIds(final Iterable<JanusGraphEdge> edges, final JanusGraphVertex other) {
         VertexArrayList vertices = new VertexArrayList(tx);
-        for (TitanEdge edge : edges) vertices.add(edge.otherVertex(other));
+        for (JanusGraphEdge edge : edges) vertices.add(edge.otherVertex(other));
         return vertices;
     }
 
@@ -189,11 +189,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @param v
      * @return
      */
-    protected Iterable<TitanRelation> executeImplicitKeyQuery(InternalVertex v) {
+    protected Iterable<JanusGraphRelation> executeImplicitKeyQuery(InternalVertex v) {
         assert isImplicitKeyQuery(RelationCategory.PROPERTY);
         if (dir==Direction.IN || limit<1) return ImmutableList.of();
         ImplicitKey key = (ImplicitKey)tx.getRelationType(types[0]);
-        return ImmutableList.of((TitanRelation)new StandardVertexProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
+        return ImmutableList.of((JanusGraphRelation)new StandardVertexProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
     }
 
     protected interface ResultConstructor<Q> {
@@ -204,29 +204,29 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     }
 
-    protected class RelationConstructor implements ResultConstructor<Iterable<? extends TitanRelation>> {
+    protected class RelationConstructor implements ResultConstructor<Iterable<? extends JanusGraphRelation>> {
 
         @Override
-        public Iterable<? extends TitanRelation> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
+        public Iterable<? extends JanusGraphRelation> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
             return executeRelations(v,bq);
         }
 
         @Override
-        public Iterable<? extends TitanRelation> emptyResult() {
+        public Iterable<? extends JanusGraphRelation> emptyResult() {
             return Collections.EMPTY_LIST;
         }
 
     }
 
-    protected class VertexConstructor implements ResultConstructor<Iterable<TitanVertex>> {
+    protected class VertexConstructor implements ResultConstructor<Iterable<JanusGraphVertex>> {
 
         @Override
-        public Iterable<TitanVertex> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
+        public Iterable<JanusGraphVertex> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
             return executeVertices(v,bq);
         }
 
         @Override
-        public Iterable<TitanVertex> emptyResult() {
+        public Iterable<JanusGraphVertex> emptyResult() {
             return Collections.EMPTY_LIST;
         }
 
@@ -266,14 +266,14 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return true;
     }
 
-    protected Iterable<TitanRelation> executeRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+    protected Iterable<JanusGraphRelation> executeRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         if (isPartitionedVertex(vertex)) {
             if (!hasAllCanonicalTypes()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
-                Iterable<TitanRelation> merge = null;
+                Iterable<JanusGraphRelation> merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    Iterable<TitanRelation> iter = executeIndividualRelations(rep,baseQuery);
+                    Iterable<JanusGraphRelation> iter = executeIndividualRelations(rep,baseQuery);
                     if (merge==null) merge = iter;
                     else merge = ResultMergeSortIterator.mergeSort(merge,iter,(Comparator)orders,false);
                 }
@@ -283,23 +283,23 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return executeIndividualRelations(vertex,baseQuery);
     }
 
-    private Iterable<TitanRelation> executeIndividualRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+    private Iterable<JanusGraphRelation> executeIndividualRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query,vertex)) return new SimpleVertexQueryProcessor(query,tx).relations();
-        else return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(query, tx.edgeProcessor);
+        else return new QueryProcessor<VertexCentricQuery,JanusGraphRelation,SliceQuery>(query, tx.edgeProcessor);
     }
 
-    public Iterable<TitanVertex> executeVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+    public Iterable<JanusGraphVertex> executeVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         if (isPartitionedVertex(vertex)) {
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 
             if (!hasAllCanonicalTypes()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
-                Iterable<TitanVertex> merge = null;
+                Iterable<JanusGraphVertex> merge = null;
 
                 for (InternalVertex rep : representatives) {
-                    Iterable<TitanVertex> iter = executeIndividualVertices(rep,baseQuery);
+                    Iterable<JanusGraphVertex> iter = executeIndividualVertices(rep,baseQuery);
                     if (merge==null) merge = iter;
                     else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
                 }
@@ -309,7 +309,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return executeIndividualVertices(vertex,baseQuery);
     }
 
-    private Iterable<TitanVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+    private Iterable<JanusGraphVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
         else return edges2Vertices((Iterable) executeIndividualRelations(vertex,baseQuery), query.getVertex());
@@ -361,16 +361,16 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @return
      */
     protected VertexCentricQuery constructQuery(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
-        Condition<TitanRelation> condition = baseQuery.getCondition();
+        Condition<JanusGraphRelation> condition = baseQuery.getCondition();
         if (!baseQuery.isEmpty()) {
             //Add adjacent-vertex and direction related conditions; copy conditions to so that baseQuery does not change
-            And<TitanRelation> newcond = new And<TitanRelation>();
+            And<JanusGraphRelation> newcond = new And<JanusGraphRelation>();
             if (condition instanceof And) newcond.addAll((And) condition);
             else newcond.add(condition);
 
-            newcond.add(new DirectionCondition<TitanRelation>(vertex,dir));
+            newcond.add(new DirectionCondition<JanusGraphRelation>(vertex,dir));
             if (adjacentVertex != null)
-                newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
+                newcond.add(new IncidenceCondition<JanusGraphRelation>(vertex,adjacentVertex));
 
             condition = newcond;
         }
@@ -405,7 +405,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         assert orders.hasCommonOrder();
 
         //Prepare constraints
-        And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
+        And<JanusGraphRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
         if (conditions == null)
             return BaseVertexCentricQuery.emptyQuery();
 
@@ -427,7 +427,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new VisibilityFilterCondition<TitanRelation>(  //Need this to filter out newly created invisible relations in the transaction
+            conditions.add(new VisibilityFilterCondition<JanusGraphRelation>(  //Need this to filter out newly created invisible relations in the transaction
                     querySystem? VisibilityFilterCondition.Visibility.SYSTEM: VisibilityFilterCondition.Visibility.NORMAL));
         } else {
             Set<RelationType> ts = new HashSet<RelationType>(types.length);
@@ -593,7 +593,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @param tx
      * @return
      */
-    private static PropertyKey[] getExtendedSortKey(InternalRelationType type, Direction dir, StandardTitanTx tx) {
+    private static PropertyKey[] getExtendedSortKey(InternalRelationType type, Direction dir, StandardJanusGraphTx tx) {
         int additional = 0;
         if (!type.multiplicity().isUnique(dir)) {
             if (!type.multiplicity().isConstrained()) additional++;
@@ -605,7 +605,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
             entireKey[i]=tx.getExistingPropertyKey(type.getSortKey()[i]);
         }
         if (type.isEdgeLabel() && !type.multiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
-        if (!type.multiplicity().isConstrained()) entireKey[i++]=ImplicitKey.TITANID;
+        if (!type.multiplicity().isConstrained()) entireKey[i++]=ImplicitKey.JANUSGRAPHID;
         return entireKey;
     }
 
@@ -622,9 +622,9 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @param constraintMap
      * @return
      */
-    private boolean compileConstraints(And<TitanRelation> conditions, Map<RelationType,Interval> constraintMap) {
+    private boolean compileConstraints(And<JanusGraphRelation> conditions, Map<RelationType,Interval> constraintMap) {
         boolean isFitted = true;
-        for (Condition<TitanRelation> condition : conditions.getChildren()) {
+        for (Condition<JanusGraphRelation> condition : conditions.getChildren()) {
             RelationType type=null;
             Interval newInterval=null;
             if (condition instanceof Or) {
@@ -634,7 +634,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
                     newInterval = new PointInterval(orEqual.getValue());
                 }
             } else if (condition instanceof PredicateCondition) {
-                PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)condition;
+                PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)condition;
                 type = atom.getKey();
                 Interval interval = constraintMap.get(type);
                 newInterval = intersectConstraints(interval, type, atom.getPredicate(), atom.getValue());
@@ -650,7 +650,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return isFitted;
     }
 
-    private static Interval intersectConstraints(Interval pint, RelationType type, TitanPredicate predicate, Object value) {
+    private static Interval intersectConstraints(Interval pint, RelationType type, JanusGraphPredicate predicate, Object value) {
         Interval newInt;
         if (predicate instanceof Cmp) {
             switch ((Cmp) predicate) {
@@ -685,14 +685,14 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * @param types
      * @return
      */
-    private static Condition<TitanRelation> getTypeCondition(Set<RelationType> types) {
+    private static Condition<JanusGraphRelation> getTypeCondition(Set<RelationType> types) {
         assert !types.isEmpty();
         if (types.size() == 1)
-            return new RelationTypeCondition<TitanRelation>(types.iterator().next());
+            return new RelationTypeCondition<JanusGraphRelation>(types.iterator().next());
 
-        Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
+        Or<JanusGraphRelation> typeCond = new Or<JanusGraphRelation>(types.size());
         for (RelationType type : types)
-            typeCond.add(new RelationTypeCondition<TitanRelation>(type));
+            typeCond.add(new RelationTypeCondition<JanusGraphRelation>(type));
 
         return typeCond;
     }

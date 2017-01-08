@@ -8,7 +8,7 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
- * Internal Type interface adding methods that should only be used by Titan
+ * Internal Type interface adding methods that should only be used by JanusGraph
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

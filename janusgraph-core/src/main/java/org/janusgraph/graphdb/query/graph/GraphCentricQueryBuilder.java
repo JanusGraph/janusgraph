@@ -8,7 +8,7 @@ import com.google.common.collect.Sets;
 import org.janusgraph.core.*;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelationType;
@@ -18,7 +18,7 @@ import org.janusgraph.graphdb.query.*;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.graphdb.query.profile.QueryProfiler;
 import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.*;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
 import org.slf4j.Logger;
@@ -28,19 +28,19 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * Builds a {@link TitanGraphQuery}, optimizes the query and compiles the result into a {@link GraphCentricQuery} which
+ * Builds a {@link JanusGraphQuery}, optimizes the query and compiles the result into a {@link GraphCentricQuery} which
  * is then executed through a {@link QueryProcessor}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQueryBuilder> {
+public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQueryBuilder> {
 
     private static final Logger log = LoggerFactory.getLogger(GraphCentricQueryBuilder.class);
 
     /**
      * Transaction in which this query is executed.
      */
-    private final StandardTitanTx tx;
+    private final StandardJanusGraphTx tx;
     /**
      * Serializer used to serialize the query conditions into backend queries.
      */
@@ -48,7 +48,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     /**
      * The constraints added to this query. None by default.
      */
-    private List<PredicateCondition<String, TitanElement>> constraints;
+    private List<PredicateCondition<String, JanusGraphElement>> constraints;
     /**
      * The order in which the elements should be returned. None by default.
      */
@@ -62,12 +62,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
      */
     private QueryProfiler profiler = QueryProfiler.NO_OP;
 
-    public GraphCentricQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
+    public GraphCentricQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
         this.tx = tx;
         this.serializer = serializer;
-        this.constraints = new ArrayList<PredicateCondition<String, TitanElement>>(5);
+        this.constraints = new ArrayList<PredicateCondition<String, JanusGraphElement>>(5);
     }
 
     /* ---------------------------------------------------------------
@@ -82,15 +82,15 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder has(String key, TitanPredicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(String key, JanusGraphPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
-        constraints.add(new PredicateCondition<String, TitanElement>(key, predicate, condition));
+        constraints.add(new PredicateCondition<String, JanusGraphElement>(key, predicate, condition));
         return this;
     }
 
-    public GraphCentricQueryBuilder has(PropertyKey key, TitanPredicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(PropertyKey key, JanusGraphPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         return has(key.name(),predicate,condition);
     }
@@ -147,21 +147,21 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 	 */
 
     @Override
-    public Iterable<TitanVertex> vertices() {
+    public Iterable<JanusGraphVertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanVertex.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphVertex.class);
     }
 
     @Override
-    public Iterable<TitanEdge> edges() {
+    public Iterable<JanusGraphEdge> edges() {
         GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanEdge.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphEdge.class);
     }
 
     @Override
-    public Iterable<TitanVertexProperty> properties() {
+    public Iterable<JanusGraphVertexProperty> properties() {
         GraphCentricQuery query = constructQuery(ElementCategory.PROPERTY);
-        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanVertexProperty.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, JanusGraphElement, JointIndexQuery>(query, tx.elementProcessor), JanusGraphVertexProperty.class);
     }
 
 
@@ -196,7 +196,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
         //Prepare constraints
-        And<TitanElement> conditions = QueryUtil.constraints2QNF(tx, constraints);
+        And<JanusGraphElement> conditions = QueryUtil.constraints2QNF(tx, constraints);
         if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
 
         //Prepare orders
@@ -205,11 +205,11 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
         //Compile all indexes that cover at least one of the query conditions
         final Set<IndexType> indexCandidates = new HashSet<IndexType>();
-        ConditionUtil.traversal(conditions,new Predicate<Condition<TitanElement>>() {
+        ConditionUtil.traversal(conditions,new Predicate<Condition<JanusGraphElement>>() {
             @Override
-            public boolean apply(@Nullable Condition<TitanElement> condition) {
+            public boolean apply(@Nullable Condition<JanusGraphElement> condition) {
                 if (condition instanceof PredicateCondition) {
-                    RelationType type = ((PredicateCondition<RelationType,TitanElement>)condition).getKey();
+                    RelationType type = ((PredicateCondition<RelationType,JanusGraphElement>)condition).getKey();
                     Preconditions.checkArgument(type!=null && type.isPropertyKey());
                     Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), new Predicate<IndexType>() {
                         @Override
@@ -244,7 +244,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                 boolean supportsSort = orders.isEmpty();
                 //Check that this index actually applies in case of a schema constraint
                 if (index.hasSchemaTypeConstraint()) {
-                    TitanSchemaType type = index.getSchemaTypeConstraint();
+                    JanusGraphSchemaType type = index.getSchemaTypeConstraint();
                     Map.Entry<Condition,Collection<Object>> equalCon = getEqualityConditionValues(conditions,ImplicitKey.LABEL);
                     if (equalCon==null) continue;
                     Collection<Object> labels = equalCon.getValue();
@@ -329,7 +329,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return true;
     }
 
-    public static List<Object[]> indexCover(final CompositeIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
+    public static List<Object[]> indexCover(final CompositeIndexType index, Condition<JanusGraphElement> condition, Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
@@ -346,7 +346,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     private static void constructIndexCover(Object[] indexValues, int position, IndexField[] fields,
-                                            Condition<TitanElement> condition,
+                                            Condition<JanusGraphElement> condition,
                                             List<Object[]> indexCovers, Set<Condition> coveredClauses) {
         if (position>=fields.length) {
             indexCovers.add(indexValues);
@@ -366,7 +366,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
 
     }
 
-    private static final Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<TitanElement> condition, RelationType type) {
+    private static final Map.Entry<Condition,Collection<Object>> getEqualityConditionValues(Condition<JanusGraphElement> condition, RelationType type) {
         for (Condition c : condition.getChildren()) {
             if (c instanceof Or) {
                 Map.Entry<RelationType,Collection> orEqual = QueryUtil.extractOrCondition((Or)c);
@@ -374,7 +374,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                     return new AbstractMap.SimpleImmutableEntry(c,orEqual.getValue());
                 }
             } else if (c instanceof PredicateCondition) {
-                PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)c;
+                PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
                 if (atom.getKey().equals(type) && atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null) {
                     return new AbstractMap.SimpleImmutableEntry(c,ImmutableList.of(atom.getValue()));
                 }
@@ -384,12 +384,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return null;
     }
 
-    public static final Condition<TitanElement> indexCover(final MixedIndexType index, Condition<TitanElement> condition,
+    public static final Condition<JanusGraphElement> indexCover(final MixedIndexType index, Condition<JanusGraphElement> condition,
                                                            final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
-        And<TitanElement> subcondition = new And<TitanElement>(condition.numChildren());
-        for (Condition<TitanElement> subclause : condition.getChildren()) {
+        And<JanusGraphElement> subcondition = new And<JanusGraphElement>(condition.numChildren());
+        for (Condition<JanusGraphElement> subclause : condition.getChildren()) {
             if (coversAll(index,subclause,indexInfo)) {
                 subcondition.add(subclause);
                 covered.add(subclause);
@@ -398,10 +398,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return subcondition.isEmpty()?null:subcondition;
     }
 
-    private static final boolean coversAll(final MixedIndexType index, Condition<TitanElement> condition, IndexSerializer indexInfo) {
+    private static final boolean coversAll(final MixedIndexType index, Condition<JanusGraphElement> condition, IndexSerializer indexInfo) {
         if (condition.getType()==Condition.Type.LITERAL) {
             if (!(condition instanceof  PredicateCondition)) return false;
-            PredicateCondition<RelationType, TitanElement> atom = (PredicateCondition) condition;
+            PredicateCondition<RelationType, JanusGraphElement> atom = (PredicateCondition) condition;
             if (atom.getValue()==null) return false;
 
             Preconditions.checkArgument(atom.getKey().isPropertyKey());
@@ -415,7 +415,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             if (match==null) return false;
             return indexInfo.supports(index,match,atom.getPredicate());
         } else {
-            for (Condition<TitanElement> child : condition.getChildren()) {
+            for (Condition<JanusGraphElement> child : condition.getChildren()) {
                 if (!coversAll(index,child,indexInfo)) return false;
             }
             return true;

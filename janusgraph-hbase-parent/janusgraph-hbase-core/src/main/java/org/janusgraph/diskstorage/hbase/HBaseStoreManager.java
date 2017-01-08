@@ -56,7 +56,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.Entry;
@@ -97,7 +97,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigOption<Boolean> SHORT_CF_NAMES =
             new ConfigOption<Boolean>(HBASE_NS, "short-cf-names",
-            "Whether to shorten the names of Titan's column families to one-character mnemonics " +
+            "Whether to shorten the names of JanusGraph's column families to one-character mnemonics " +
             "to conserve storage space", ConfigOption.Type.FIXED, true);
 
     public static final String COMPRESSION_DEFAULT = "-DEFAULT-";
@@ -105,23 +105,23 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final ConfigOption<String> COMPRESSION =
             new ConfigOption<String>(HBASE_NS, "compression-algorithm",
             "An HBase Compression.Algorithm enum string which will be applied to newly created column families. " +
-            "The compression algorithm must be installed and available on the HBase cluster.  Titan cannot install " +
+            "The compression algorithm must be installed and available on the HBase cluster.  JanusGraph cannot install " +
             "and configure new compression algorithms on the HBase cluster by itself.",
             ConfigOption.Type.MASKABLE, "GZ");
 
     public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =
             new ConfigOption<Boolean>(HBASE_NS, "skip-schema-check",
-            "Assume that Titan's HBase table and column families already exist. " +
-            "When this is true, Titan will not check for the existence of its table/CFs, " +
+            "Assume that JanusGraph's HBase table and column families already exist. " +
+            "When this is true, JanusGraph will not check for the existence of its table/CFs, " +
             "nor will it attempt to create them under any circumstances.  This is useful " +
-            "when running Titan without HBase admin privileges.",
+            "when running JanusGraph without HBase admin privileges.",
             ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigOption<String> HBASE_TABLE =
             new ConfigOption<String>(HBASE_NS, "table",
-            "The name of the table Titan will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
-            " is false, Titan will automatically create this table if it does not already exist.",
-            ConfigOption.Type.LOCAL, "titan");
+            "The name of the table JanusGraph will use.  When " + ConfigElement.getPath(SKIP_SCHEMA_CHECK) +
+            " is false, JanusGraph will automatically create this table if it does not already exist.",
+            ConfigOption.Type.LOCAL, "janusgraph");
 
     /**
      * Related bug fixed in 0.98.0, 0.94.7, 0.95.0:
@@ -131,13 +131,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final int MIN_REGION_COUNT = 3;
 
     /**
-     * The total number of HBase regions to create with Titan's table. This
+     * The total number of HBase regions to create with JanusGraph's table. This
      * setting only effects table creation; this normally happens just once when
-     * Titan connects to an HBase backend for the first time.
+     * JanusGraph connects to an HBase backend for the first time.
      */
     public static final ConfigOption<Integer> REGION_COUNT =
             new ConfigOption<Integer>(HBASE_NS, "region-count",
-            "The number of initial regions set when creating Titan's HBase table",
+            "The number of initial regions set when creating JanusGraph's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class, new Predicate<Integer>() {
                 @Override
                 public boolean apply(Integer input) {
@@ -149,7 +149,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     /**
      * This setting is used only when {@link #REGION_COUNT} is unset.
      * <p/>
-     * If Titan's HBase table does not exist, then it will be created with total
+     * If JanusGraph's HBase table does not exist, then it will be created with total
      * region count = (number of servers reported by ClusterStatus) * (this
      * value).
      * <p/>
@@ -181,7 +181,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     public static final ConfigOption<Integer> REGIONS_PER_SERVER =
             new ConfigOption<Integer>(HBASE_NS, "regions-per-server",
-            "The number of regions per regionserver to set when creating Titan's HBase table",
+            "The number of regions per regionserver to set when creating JanusGraph's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class);
 
     /**
@@ -190,17 +190,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * must be the full package and class name of an implementation of
      * {@link HBaseCompat} that has a no-arg public constructor.
      * <p>
-     * When this <b>is not</b> set, Titan attempts to automatically detect the
-     * HBase runtime version by calling {@link VersionInfo#getVersion()}. Titan
+     * When this <b>is not</b> set, JanusGraph attempts to automatically detect the
+     * HBase runtime version by calling {@link VersionInfo#getVersion()}. JanusGraph
      * then checks the returned version string against a hard-coded list of
      * supported version prefixes and instantiates the associated compat layer
      * if a match is found.
      * <p>
-     * When this <b>is</b> set, Titan will not call
+     * When this <b>is</b> set, JanusGraph will not call
      * {@code VersionInfo.getVersion()} or read its hard-coded list of supported
-     * version prefixes. Titan will instead attempt to instantiate the class
+     * version prefixes. JanusGraph will instead attempt to instantiate the class
      * specified (via the no-arg constructor which must exist) and then attempt
-     * to cast it to HBaseCompat and use it as such. Titan will assume the
+     * to cast it to HBaseCompat and use it as such. JanusGraph will assume the
      * supplied implementation is compatible with the runtime HBase version and
      * make no attempt to verify that assumption.
      * <p>
@@ -209,15 +209,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * running exotic HBase implementations that don't support VersionInfo or
      * implementations which return values from {@code VersionInfo.getVersion()}
      * that are inconsistent with Apache's versioning convention. It may also be
-     * useful to users who want to run against a new release of HBase that Titan
+     * useful to users who want to run against a new release of HBase that JanusGraph
      * doesn't yet officially support.
      *
      */
     public static final ConfigOption<String> COMPAT_CLASS =
             new ConfigOption<String>(HBASE_NS, "compat-class",
             "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
-            "When this option is unset, Titan calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
-            "at runtime.  Setting this option forces Titan to instead reflectively load and instantiate the specified class.",
+            "When this option is unset, JanusGraph calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
+            "at runtime.  Setting this option forces JanusGraph to instead reflectively load and instantiate the specified class.",
             ConfigOption.Type.MASKABLE, String.class);
 
     public static final int PORT_DEFAULT = 9160;
@@ -286,7 +286,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
          * indicative of a misunderstanding, so issue a warning.
          */
         if (config.has(REGIONS_PER_SERVER) && config.has(REGION_COUNT)) {
-            logger.warn("Both {} and {} are set in Titan's configuration, but "
+            logger.warn("Both {} and {} are set in JanusGraph's configuration, but "
                       + "the former takes precedence and the latter will be ignored.",
                         REGION_COUNT, REGIONS_PER_SERVER);
         }
@@ -583,7 +583,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     /**
      * Given a map produced by {@link HTable#getRegionLocations()}, transform
      * each key from an {@link HRegionInfo} to a {@link KeyRange} expressing the
-     * region's start and end key bounds using Titan-partitioning-friendly
+     * region's start and end key bounds using JanusGraph-partitioning-friendly
      * conventions (start inclusive, end exclusive, zero bytes appended where
      * necessary to make all keys at least 4 bytes long).
      * <p/>
@@ -623,7 +623,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *
      * @param raw
      *            A map of HRegionInfo and ServerName from HBase
-     * @return Titan-friendly expression of each region's rowkey boundaries
+     * @return JanusGraph-friendly expression of each region's rowkey boundaries
      */
     private Map<KeyRange, ServerName> normalizeKeyBounds(NavigableMap<HRegionInfo, ServerName> raw) {
 
@@ -670,7 +670,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 Preconditions.checkState(null != startKey);
                 Preconditions.checkState(null != endKey);
 
-                // Convert HBase's inclusive end keys into exclusive Titan end keys
+                // Convert HBase's inclusive end keys into exclusive JanusGraph end keys
                 StaticBuffer startBuf = StaticArrayBuffer.of(zeroExtend(startKey));
                 StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
 
@@ -884,12 +884,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     /**
-     * Convert Titan internal Mutation representation into HBase native commands.
+     * Convert JanusGraph internal Mutation representation into HBase native commands.
      *
      * @param mutations    Mutations to convert into HBase commands.
      * @param putTimestamp The timestamp to use for Put commands.
      * @param delTimestamp The timestamp to use for Delete commands.
-     * @return Commands sorted by key converted from Titan internal representation.
+     * @return Commands sorted by key converted from JanusGraph internal representation.
      * @throws org.janusgraph.diskstorage.PermanentBackendException
      */
     private Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
@@ -950,7 +950,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private void checkConfigDeprecation(org.janusgraph.diskstorage.configuration.Configuration config) {
         if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
-            logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
+            logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in JanusGraph's configuration file.",
                     ConfigElement.getPath(GraphDatabaseConfiguration.STORAGE_PORT), ConfigElement.getPath(HBASE_CONFIGURATION_NAMESPACE));
         }
     }
@@ -959,7 +959,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         try {
             return cnx.getAdmin();
         } catch (IOException e) {
-            throw new TitanException(e);
+            throw new JanusGraphException(e);
         }
     }
 

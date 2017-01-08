@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.util;
 
 import com.google.common.collect.Iterators;
-import org.janusgraph.core.TitanEdge;
+import org.janusgraph.core.JanusGraphEdge;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -11,7 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * Defines an {@link java.util.Iterator} over all {@link org.janusgraph.core.TitanEdge}s connecting a provided set of vertices.
+ * Defines an {@link java.util.Iterator} over all {@link org.janusgraph.core.JanusGraphEdge}s connecting a provided set of vertices.
  * <p/>
  * Given a set of vertices, one may be interested in all edges that are contained in the subgraph spanned
  * by those vertices. This iterator will return these edges.
@@ -55,10 +55,10 @@ public class AllEdgesIterator implements Iterator<Edge> {
     }
 
     private Edge findNext() {
-        TitanEdge rel = null;
+        JanusGraphEdge rel = null;
         while (rel == null) {
             if (currentEdges.hasNext()) {
-                rel = (TitanEdge)currentEdges.next();
+                rel = (JanusGraphEdge)currentEdges.next();
                 if (vertices != null && !vertices.contains(rel.vertex(Direction.IN)))
                     rel = null;
             } else {

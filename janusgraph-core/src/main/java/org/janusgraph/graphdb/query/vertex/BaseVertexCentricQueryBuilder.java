@@ -6,15 +6,15 @@ import org.janusgraph.core.BaseVertexQuery;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanRelation;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphRelation;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.schema.SchemaInspector;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.OrderList;
 import org.janusgraph.graphdb.internal.RelationCategory;
 import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 import org.janusgraph.graphdb.tinkerpop.ElementUtils;
@@ -36,7 +36,7 @@ import java.util.List;
 public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
 
     private static final String[] NO_TYPES = new String[0];
-    private static final List<PredicateCondition<String, TitanRelation>> NO_CONSTRAINTS = ImmutableList.of();
+    private static final List<PredicateCondition<String, JanusGraphRelation>> NO_CONSTRAINTS = ImmutableList.of();
 
     /**
      * The direction of this query. BOTH by default
@@ -49,11 +49,11 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     /**
      * The constraints added to this query. None by default.
      */
-    protected List<PredicateCondition<String, TitanRelation>> constraints = NO_CONSTRAINTS;
+    protected List<PredicateCondition<String, JanusGraphRelation>> constraints = NO_CONSTRAINTS;
     /**
      * The vertex to be used for the adjacent vertex constraint. If null, that means no such constraint. Null by default.
      */
-    protected TitanVertex adjacentVertex = null;
+    protected JanusGraphVertex adjacentVertex = null;
     /**
      * The order in which the relations should be returned. None by default.
      */
@@ -71,7 +71,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     protected abstract Q getThis();
 
-    protected abstract TitanVertex getVertex(long vertexid);
+    protected abstract JanusGraphVertex getVertex(long vertexid);
 
 
     /* ---------------------------------------------------------------
@@ -82,12 +82,12 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     @Override
     public Q adjacent(Vertex vertex) {
-        Preconditions.checkArgument(vertex != null && (vertex instanceof TitanVertex), "Not a valid vertex provided for adjacency constraint");
-        this.adjacentVertex = (TitanVertex) vertex;
+        Preconditions.checkArgument(vertex != null && (vertex instanceof JanusGraphVertex), "Not a valid vertex provided for adjacency constraint");
+        this.adjacentVertex = (JanusGraphVertex) vertex;
         return getThis();
     }
 
-    private Q addConstraint(String type, TitanPredicate rel, Object value) {
+    private Q addConstraint(String type, JanusGraphPredicate rel, Object value) {
         Preconditions.checkArgument(type != null && StringUtils.isNotBlank(type) && rel != null);
         //Treat special cases
         if (type.equals(ImplicitKey.ADJACENT_ID.name())) {
@@ -98,12 +98,12 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
         } else if (type.equals(ImplicitKey.ID.name())) {
             RelationIdentifier rid = ElementUtils.getEdgeId(value);
             Preconditions.checkArgument(rid != null, "Expected valid relation id: %s", value);
-            return addConstraint(ImplicitKey.TITANID.name(), rel, rid.getRelationId());
+            return addConstraint(ImplicitKey.JANUSGRAPHID.name(), rel, rid.getRelationId());
         } else {
             Preconditions.checkArgument(rel.isValidCondition(value), "Invalid condition provided: " + value);
         }
-        if (constraints == NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, TitanRelation>>(5);
-        constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
+        if (constraints == NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, JanusGraphRelation>>(5);
+        constraints.add(new PredicateCondition<String, JanusGraphRelation>(type, rel, value));
         return getThis();
     }
 
@@ -128,7 +128,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     @Override
-    public Q has(String key, TitanPredicate predicate, Object value) {
+    public Q has(String key, JanusGraphPredicate predicate, Object value) {
         return addConstraint(key, predicate, value);
     }
 

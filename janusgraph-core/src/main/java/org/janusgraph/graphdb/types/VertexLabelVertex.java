@@ -1,16 +1,16 @@
 package org.janusgraph.graphdb.types;
 
 import org.janusgraph.graphdb.internal.InternalVertexLabel;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class VertexLabelVertex extends TitanSchemaVertex implements InternalVertexLabel {
+public class VertexLabelVertex extends JanusGraphSchemaVertex implements InternalVertexLabel {
 
 
-    public VertexLabelVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public VertexLabelVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

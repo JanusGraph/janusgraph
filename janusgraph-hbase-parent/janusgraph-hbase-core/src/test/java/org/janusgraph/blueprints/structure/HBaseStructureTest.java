@@ -2,7 +2,7 @@ package org.janusgraph.blueprints.structure;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.blueprints.HBaseGraphProvider;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.GraphProviderClass;
 import org.apache.tinkerpop.gremlin.structure.StructureStandardSuite;
@@ -16,7 +16,7 @@ import java.io.IOException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(StructureStandardSuite.class)
-@GraphProviderClass(provider = HBaseGraphProvider.class, graph = TitanGraph.class)
+@GraphProviderClass(provider = HBaseGraphProvider.class, graph = JanusGraph.class)
 public class HBaseStructureTest {
 
     @BeforeClass

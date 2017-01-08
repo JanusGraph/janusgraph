@@ -5,4 +5,4 @@ org.apache.tinkerpop.gremlin.hadoop.groovy.plugin.HadoopGremlinPlugin
 org.apache.tinkerpop.gremlin.giraph.groovy.plugin.GiraphGremlinPlugin
 org.apache.tinkerpop.gremlin.spark.groovy.plugin.SparkGremlinPlugin
 org.apache.tinkerpop.gremlin.console.groovy.plugin.UtilitiesGremlinPlugin
-org.janusgraph.graphdb.tinkerpop.plugin.TitanGremlinPlugin
+org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin

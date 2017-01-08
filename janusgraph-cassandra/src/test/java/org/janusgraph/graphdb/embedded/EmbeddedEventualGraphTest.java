@@ -4,9 +4,9 @@ import org.junit.BeforeClass;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanEventualGraphTest;
+import org.janusgraph.graphdb.JanusGraphEventualGraphTest;
 
-public class EmbeddedEventualGraphTest extends TitanEventualGraphTest {
+public class EmbeddedEventualGraphTest extends JanusGraphEventualGraphTest {
 
     @BeforeClass
     public static void startEmbeddedCassandra() {

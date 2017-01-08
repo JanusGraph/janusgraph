@@ -8,7 +8,7 @@ import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.query.condition.*;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -22,7 +22,7 @@ import java.util.*;
  */
 public class QueryUtil {
 
-    public static int adjustLimitForTxModifications(StandardTitanTx tx, int uncoveredAndConditions, int limit) {
+    public static int adjustLimitForTxModifications(StandardJanusGraphTx tx, int uncoveredAndConditions, int limit) {
         assert limit > 0 && limit <= 1000000000; //To make sure limit computation does not overflow
         assert uncoveredAndConditions >= 0;
 
@@ -48,7 +48,7 @@ public class QueryUtil {
         return Math.min(limit1,limit2);
     }
 
-    public static InternalRelationType getType(StandardTitanTx tx, String typeName) {
+    public static InternalRelationType getType(StandardJanusGraphTx tx, String typeName) {
         RelationType t = tx.getRelationType(typeName);
         if (t == null && !tx.getConfiguration().getAutoSchemaMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
@@ -56,28 +56,28 @@ public class QueryUtil {
         return (InternalRelationType) t;
     }
 
-    public static Iterable<TitanVertex> getVertices(StandardTitanTx tx,
+    public static Iterable<JanusGraphVertex> getVertices(StandardJanusGraphTx tx,
                                                     PropertyKey key, Object equalityCondition) {
         return tx.query().has(key,Cmp.EQUAL,equalityCondition).vertices();
     }
 
-    public static Iterable<TitanVertex> getVertices(StandardTitanTx tx,
+    public static Iterable<JanusGraphVertex> getVertices(StandardJanusGraphTx tx,
                                                     String key, Object equalityCondition) {
         return tx.query().has(key,Cmp.EQUAL,equalityCondition).vertices();
     }
 
-    public static Iterable<TitanEdge> getEdges(StandardTitanTx tx,
+    public static Iterable<JanusGraphEdge> getEdges(StandardJanusGraphTx tx,
                                                     PropertyKey key, Object equalityCondition) {
         return tx.query().has(key,Cmp.EQUAL,equalityCondition).edges();
     }
 
-    public static Iterable<TitanEdge> getEdges(StandardTitanTx tx,
+    public static Iterable<JanusGraphEdge> getEdges(StandardJanusGraphTx tx,
                                                String key, Object equalityCondition) {
         return tx.query().has(key,Cmp.EQUAL,equalityCondition).edges();
     }
 
     /**
-     * Query-normal-form (QNF) for Titan is a variant of CNF (conjunctive normal form) with negation inlined where possible
+     * Query-normal-form (QNF) for JanusGraph is a variant of CNF (conjunctive normal form) with negation inlined where possible
      *
      * @param condition
      * @return
@@ -114,7 +114,7 @@ public class QueryUtil {
         } else return true;
     }
 
-    private static final <E extends TitanElement> Condition<E> inlineNegation(Condition<E> condition) {
+    private static final <E extends JanusGraphElement> Condition<E> inlineNegation(Condition<E> condition) {
         if (ConditionUtil.containsType(condition, Condition.Type.NOT)) {
             return ConditionUtil.transformation(condition, new Function<Condition<E>, Condition<E>>() {
                 @Nullable
@@ -136,7 +136,7 @@ public class QueryUtil {
         } else return condition;
     }
 
-    public static final <E extends TitanElement> Condition<E> simplifyQNF(Condition<E> condition) {
+    public static final <E extends JanusGraphElement> Condition<E> simplifyQNF(Condition<E> condition) {
         Preconditions.checkArgument(isQueryNormalForm(condition));
         if (condition.numChildren() == 1) {
             Condition<E> child = ((And) condition).get(0);
@@ -159,7 +159,7 @@ public class QueryUtil {
      * @return
      * @see #isQueryNormalForm(org.janusgraph.graphdb.query.condition.Condition)
      */
-    public static <E extends TitanElement> And<E> constraints2QNF(StandardTitanTx tx, List<PredicateCondition<String, E>> constraints) {
+    public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
         And<E> conditions = new And<E>(constraints.size() + 4);
         for (PredicateCondition<String, E> atom : constraints) {
             RelationType type = getType(tx, atom.getKey());
@@ -173,7 +173,7 @@ public class QueryUtil {
             }
 
             Object value = atom.getValue();
-            TitanPredicate predicate = atom.getPredicate();
+            JanusGraphPredicate predicate = atom.getPredicate();
 
 
             if (type.isPropertyKey()) {
@@ -182,7 +182,7 @@ public class QueryUtil {
                 Preconditions.checkArgument(key.dataType()==Object.class || predicate.isValidValueType(key.dataType()), "Data type of key is not compatible with condition");
             } else { //its a label
                 Preconditions.checkArgument(((EdgeLabel) type).isUnidirected());
-                Preconditions.checkArgument(predicate.isValidValueType(TitanVertex.class), "Data type of key is not compatible with condition");
+                Preconditions.checkArgument(predicate.isValidValueType(JanusGraphVertex.class), "Data type of key is not compatible with condition");
             }
 
             if (predicate instanceof Contain) {
@@ -212,25 +212,25 @@ public class QueryUtil {
         return conditions;
     }
 
-    private static <E extends TitanElement> void addConstraint(RelationType type, TitanPredicate predicate,
-                                                               Object value, MultiCondition<E> conditions, StandardTitanTx tx) {
+    private static <E extends JanusGraphElement> void addConstraint(RelationType type, JanusGraphPredicate predicate,
+                                                               Object value, MultiCondition<E> conditions, StandardJanusGraphTx tx) {
         if (type.isPropertyKey()) {
             if (value != null)
                 value = tx.verifyAttribute((PropertyKey) type, value);
         } else { //t.isEdgeLabel()
-            Preconditions.checkArgument(value instanceof TitanVertex);
+            Preconditions.checkArgument(value instanceof JanusGraphVertex);
         }
         PredicateCondition<RelationType, E> pc = new PredicateCondition<RelationType, E>(type, predicate, value);
         if (!conditions.contains(pc)) conditions.add(pc);
     }
 
 
-    public static Map.Entry<RelationType,Collection> extractOrCondition(Or<TitanRelation> condition) {
+    public static Map.Entry<RelationType,Collection> extractOrCondition(Or<JanusGraphRelation> condition) {
         RelationType masterType = null;
         List<Object> values = new ArrayList<Object>();
         for (Condition c : condition.getChildren()) {
             if (!(c instanceof PredicateCondition)) return null;
-            PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)c;
+            PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition)c;
             if (atom.getPredicate()!=Cmp.EQUAL) return null;
             Object value = atom.getValue();
             if (value==null) return null;
@@ -267,7 +267,7 @@ public class QueryUtil {
                 try {
                     subresult = call.call(sublimit);
                 } catch (Exception e) {
-                    throw new TitanException("Could not process individual retrieval call ", e);
+                    throw new JanusGraphException("Could not process individual retrieval call ", e);
                 }
 
                 if (subresult.size() >= sublimit) exhaustedResults = false;

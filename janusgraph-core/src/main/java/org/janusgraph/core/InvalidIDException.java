@@ -1,11 +1,11 @@
 package org.janusgraph.core;
 
 /**
- * Titan represents element identifiers as longs, but not all numbers
+ * JanusGraph represents element identifiers as longs, but not all numbers
  * in the representable space of longs are valid.  This exception can
  * be thrown when an invalid long ID is encountered.
  */
-public class InvalidIDException extends TitanException {
+public class InvalidIDException extends JanusGraphException {
 
     public InvalidIDException(String msg) {
         super(msg);

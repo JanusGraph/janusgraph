@@ -2,7 +2,7 @@ package org.janusgraph.diskstorage.solr;
 
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanIndexTest;
+import org.janusgraph.graphdb.JanusGraphIndexTest;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,7 +14,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BerkeleySolrTest extends SolrTitanIndexTest {
+public class BerkeleySolrTest extends SolrJanusGraphIndexTest {
 
     @Override
     public WriteConfiguration getConfiguration() {

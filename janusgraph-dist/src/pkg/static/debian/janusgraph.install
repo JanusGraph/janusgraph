@@ -1,0 +1,7 @@
+/usr/bin/gremlin.sh
+/usr/sbin/janusgraph
+/usr/share/janusgraph/janusgraph.in.sh
+/etc/janusgraph/janusgraph-env.sh
+/etc/janusgraph/config.properties
+/etc/janusgraph/log4j.properties
+../payload/cassandra.yaml /etc/janusgraph/

@@ -1,21 +1,21 @@
-import org.janusgraph.core.TitanVertexProperty
+import org.janusgraph.core.JanusGraphVertexProperty
 
-def TitanVertex getOrCreateVertex(faunusVertex, graph, context, log) {
+def JanusGraphVertex getOrCreateVertex(faunusVertex, graph, context, log) {
     String uniqueKey = "name";
     Object uniqueValue = faunusVertex.value(uniqueKey);
-    Vertex titanVertex;
+    Vertex janusgraphVertex;
     if (null == uniqueValue)
       throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + faunusVertex);
   
     Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator();
     if (itty.hasNext()) {
-      titanVertex = itty.next();
+      janusgraphVertex = itty.next();
       if (itty.hasNext())
         log.info("The unique key is not unique as more than one vertex with the value {}", uniqueValue);
     } else {
-      titanVertex = graph.addVertex(faunusVertex.longId(),faunusVertex.label());
+      janusgraphVertex = graph.addVertex(faunusVertex.longId(),faunusVertex.label());
     }
-    return titanVertex;
+    return janusgraphVertex;
 }
 
 def void getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) {
@@ -24,7 +24,7 @@ def void getOrCreateVertexProperty(faunusProperty, vertex, graph, context, log) 
     if (pkey.cardinality().equals(org.janusgraph.core.Cardinality.SINGLE)) {
         vertex.property(pkey.name(), faunusProperty.value());
     } else {
-        Iterator<TitanVertexProperty> itty = vertex.getProperties(pkey.name()).iterator();
+        Iterator<JanusGraphVertexProperty> itty = vertex.getProperties(pkey.name()).iterator();
         if (!itty.hasNext()) {
             vertex.property(pkey.name(), faunusProperty.value());
         }

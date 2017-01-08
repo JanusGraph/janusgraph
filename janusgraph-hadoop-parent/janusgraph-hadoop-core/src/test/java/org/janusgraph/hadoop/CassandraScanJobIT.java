@@ -2,7 +2,7 @@ package org.janusgraph.hadoop;
 
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import org.janusgraph.diskstorage.configuration.*;
@@ -12,9 +12,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.janusgraph.graphdb.TitanGraphBaseTest;
+import org.janusgraph.graphdb.JanusGraphBaseTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.formats.cassandra.CassandraInputFormat;
 import org.janusgraph.hadoop.scan.CassandraHadoopScanRunner;
 import org.janusgraph.hadoop.scan.HadoopScanMapper;
@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.*;
 
-public class CassandraScanJobIT extends TitanGraphBaseTest {
+public class CassandraScanJobIT extends JanusGraphBaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraScanJobIT.class);
 
@@ -75,9 +75,9 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         open(partConf);
         mgmt.makeVertexLabel("part").partition().make();
         finishSchema();
-        TitanVertex supernode = graph.addVertex("part");
+        JanusGraphVertex supernode = graph.addVertex("part");
         for (int i = 0; i < 128; i++) {
-            TitanVertex v = graph.addVertex("part");
+            JanusGraphVertex v = graph.addVertex("part");
             v.addEdge("default", supernode);
             if (0 < i && 0 == i % 4)
                 graph.tx().commit();
@@ -85,8 +85,8 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         graph.tx().commit();
 
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);
@@ -103,9 +103,9 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         open(partConf);
         mgmt.makeVertexLabel("part").partition().make();
         finishSchema();
-        TitanVertex supernode = graph.addVertex("part");
+        JanusGraphVertex supernode = graph.addVertex("part");
         for (int i = 0; i < 128; i++) {
-            TitanVertex v = graph.addVertex("part");
+            JanusGraphVertex v = graph.addVertex("part");
             v.addEdge("default", supernode);
             if (0 < i && 0 == i % 4)
                 graph.tx().commit();
@@ -113,9 +113,9 @@ public class CassandraScanJobIT extends TitanGraphBaseTest {
         graph.tx().commit();
 
         org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
-        c.set(ConfigElement.getPath(TitanHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.cassandra.keyspace", getClass().getSimpleName());
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + "." + "storage.backend", "cassandrathrift");
+        c.set(ConfigElement.getPath(JanusGraphHadoopConfiguration.FILTER_PARTITIONED_VERTICES), "true");
         c.set("cassandra.input.partitioner.class", "org.apache.cassandra.dht.Murmur3Partitioner");
 
         Job job = getVertexJobWithDefaultMapper(c);

@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.hadoop.formats.util.input.TitanHadoopSetup;
+import org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetup;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.hadoop.conf.Configurable;
@@ -15,24 +15,24 @@ import org.apache.hadoop.mapreduce.*;
 import java.io.IOException;
 import java.util.List;
 
-import static org.janusgraph.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_CLASS_NAME;
-import static org.janusgraph.hadoop.formats.util.input.TitanHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
+import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_CLASS_NAME;
+import static org.janusgraph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
 
 public abstract class GiraphInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable {
 
     private final InputFormat<StaticBuffer, Iterable<Entry>> inputFormat;
-    private static final RefCountedCloseable<TitanVertexDeserializer> refCounter;
+    private static final RefCountedCloseable<JanusGraphVertexDeserializer> refCounter;
 
     static {
         refCounter = new RefCountedCloseable<>((conf) -> {
-            final String titanVersion = "current";
+            final String janusgraphVersion = "current";
 
-            String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
+            String className = SETUP_PACKAGE_PREFIX + janusgraphVersion + SETUP_CLASS_NAME;
 
-            TitanHadoopSetup ts = ConfigurationUtil.instantiate(
+            JanusGraphHadoopSetup ts = ConfigurationUtil.instantiate(
                     className, new Object[]{ conf }, new Class[]{ Configuration.class });
 
-            return new TitanVertexDeserializer(ts);
+            return new JanusGraphVertexDeserializer(ts);
         });
     }
 

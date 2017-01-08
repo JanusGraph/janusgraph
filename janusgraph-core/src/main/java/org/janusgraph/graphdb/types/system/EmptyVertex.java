@@ -9,7 +9,7 @@ import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.util.datastructures.Retriever;
 import org.apache.tinkerpop.gremlin.structure.*;
 
@@ -21,7 +21,7 @@ public class EmptyVertex implements InternalVertex {
     private static final String errorName = "Empty vertex";
 
 	/* ---------------------------------------------------------------
-     * TitanRelation Iteration/Access
+     * JanusGraphRelation Iteration/Access
 	 * ---------------------------------------------------------------
 	 */
 
@@ -80,18 +80,18 @@ public class EmptyVertex implements InternalVertex {
     }
 
 	/* ---------------------------------------------------------------
-	 * Convenience Methods for TitanElement Creation
+	 * Convenience Methods for JanusGraphElement Creation
 	 * ---------------------------------------------------------------
 	 */
 
     @Override
-    public <V> TitanVertexProperty<V> property(String key, V value, Object...
+    public <V> JanusGraphVertexProperty<V> property(String key, V value, Object...
             keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
 
     @Override
-    public <V> TitanVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object...
+    public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object...
             keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident properties");
     }
@@ -117,12 +117,12 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public TitanEdge addEdge(String s, Vertex vertex, Object... keyValues) {
+    public JanusGraphEdge addEdge(String s, Vertex vertex, Object... keyValues) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
 	/* ---------------------------------------------------------------
-	 * In Memory TitanElement
+	 * In Memory JanusGraphElement
 	 * ---------------------------------------------------------------
 	 */
 
@@ -192,7 +192,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public StandardTitanTx tx() {
+    public StandardJanusGraphTx tx() {
         throw new UnsupportedOperationException(errorName + " don't have an associated transaction");
     }
 

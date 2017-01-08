@@ -31,7 +31,7 @@ public class KCVSConfigTest extends WritableConfigurationTest {
                 public void close() throws BackendException {
                     manager.close();
                 }
-            }, config, manager.openDatabase("titan"),"general");
+            }, config, manager.openDatabase("janusgraph"),"general");
         } catch (BackendException e) {
             throw new RuntimeException(e);
         }

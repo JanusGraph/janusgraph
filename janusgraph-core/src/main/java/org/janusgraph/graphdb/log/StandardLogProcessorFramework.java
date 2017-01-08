@@ -3,23 +3,23 @@ package org.janusgraph.graphdb.log;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 
 import org.janusgraph.core.log.LogProcessorBuilder;
 import org.janusgraph.core.log.LogProcessorFramework;
-import org.janusgraph.core.schema.TitanSchemaElement;
+import org.janusgraph.core.schema.JanusGraphSchemaElement;
 import org.janusgraph.core.log.Change;
 import org.janusgraph.core.log.ChangeProcessor;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.log.*;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.log.LogTxMeta;
 import org.janusgraph.graphdb.database.log.TransactionLogHeader;
 import org.janusgraph.graphdb.database.serialize.Serializer;
 import org.janusgraph.graphdb.internal.ElementLifeCycle;
 import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.BaseKey;
 import org.janusgraph.graphdb.vertices.StandardVertex;
 import org.apache.commons.lang.StringUtils;
@@ -42,14 +42,14 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
     private static final Logger logger =
             LoggerFactory.getLogger(StandardLogProcessorFramework.class);
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
     private final Serializer serializer;
     private final TimestampProvider times;
     private final Map<String,Log> processorLogs;
 
     private boolean isOpen = true;
 
-    public StandardLogProcessorFramework(StandardTitanGraph graph) {
+    public StandardLogProcessorFramework(StandardJanusGraph graph) {
         Preconditions.checkArgument(graph!=null && graph.isOpen());
         this.graph = graph;
         this.serializer = graph.getDataSerializer();
@@ -68,7 +68,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             try {
                 processorLogs.get(logIdentifier).close();
             } catch (BackendException e) {
-                throw new TitanException("Could not close transaction log: "+ logIdentifier,e);
+                throw new JanusGraphException("Could not close transaction log: "+ logIdentifier,e);
             }
             processorLogs.remove(logIdentifier);
             return true;
@@ -76,7 +76,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
     }
 
     @Override
-    public synchronized void shutdown() throws TitanException {
+    public synchronized void shutdown() throws JanusGraphException {
         if (!isOpen) return;
         isOpen = false;
         try {
@@ -88,7 +88,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             } finally {
             }
         } catch (BackendException e) {
-            throw new TitanException(e);
+            throw new JanusGraphException(e);
         }
     }
 
@@ -178,7 +178,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                         }
                     }));
                 } catch (BackendException e) {
-                    throw new TitanException("Could not open user transaction log for name: "+ userLogName,e);
+                    throw new JanusGraphException("Could not open user transaction log for name: "+ userLogName,e);
                 }
             }
         }
@@ -197,13 +197,13 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         }
 
         private void readRelations(TransactionLogHeader.Entry txentry,
-                                   StandardTitanTx tx, StandardChangeState changes) {
+                                   StandardJanusGraphTx tx, StandardChangeState changes) {
             for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
                 InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
 
                 //Special case for vertex addition/removal
                 Change state = modification.state;
-                if (rel.getType().equals(BaseKey.VertexExists) && !(rel.getVertex(0) instanceof TitanSchemaElement)) {
+                if (rel.getType().equals(BaseKey.VertexExists) && !(rel.getVertex(0) instanceof JanusGraphSchemaElement)) {
                     if (state==Change.REMOVED) { //Mark as removed
                         ((StandardVertex)rel.getVertex(0)).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
                     }
@@ -217,7 +217,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         @Override
         public void read(Message message) {
             for (int i=1;i<=retryAttempts;i++) {
-                StandardTitanTx tx = (StandardTitanTx)graph.newTransaction();
+                StandardJanusGraphTx tx = (StandardJanusGraphTx)graph.newTransaction();
                 StandardChangeState changes = new StandardChangeState();
                 StandardTransactionId transactionId = null;
                 try {

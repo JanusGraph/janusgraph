@@ -6,7 +6,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.diskstorage.*;
@@ -22,7 +22,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
 import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 import org.janusgraph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -134,7 +134,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
     public static final ConfigOption<String> HEALTH_REQUEST_TIMEOUT =
             new ConfigOption<String>(ELASTICSEARCH_NS, "health-request-timeout",
-            "When Titan initializes its ES backend, Titan waits up to this duration for the " +
+            "When JanusGraph initializes its ES backend, JanusGraph waits up to this duration for the " +
             "ES cluster health to reach at least yellow status.  " +
             "This string should be formatted as a natural number followed by the lowercase letter " +
             "\"s\", e.g. 3s or 60s.", ConfigOption.Type.MASKABLE, "30s");
@@ -149,7 +149,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigOption<>(ELASTICSEARCH_NS, "use-deprecated-ignore-unmapped-option",
             "Elasticsearch versions before 1.4.0 supported the \"ignore_unmapped\" sort option. " +
             "In 1.4.0, it was deprecated by the new \"unmapped_type\" sort option.  This configuration" +
-            "setting controls which ES option Titan uses: false for the newer \"unmapped_type\"," +
+            "setting controls which ES option JanusGraph uses: false for the newer \"unmapped_type\"," +
             "true for the older \"ignore_unmapped\".", ConfigOption.Type.MASKABLE, false);
 
     public static final ConfigNamespace ES_EXTRAS_NS =
@@ -162,7 +162,7 @@ public class ElasticSearchIndex implements IndexProvider {
             new ConfigOption<Long>(ES_CREATE_NS, "sleep",
             "How long to sleep, in milliseconds, between the successful completion of a (blocking) index " +
             "creation request and the first use of that index.  This only applies when creating an index in ES, " +
-            "which typically only happens the first time Titan is started on top of ES. If the index Titan is " +
+            "which typically only happens the first time JanusGraph is started on top of ES. If the index JanusGraph is " +
             "configured to use already exists, then this setting has no effect.", ConfigOption.Type.MASKABLE, 200L);
 
     public static final ConfigNamespace ES_CREATE_EXTRAS_NS =
@@ -223,7 +223,7 @@ public class ElasticSearchIndex implements IndexProvider {
 
             ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 
-            ElasticSearchSetup.applySettingsFromTitanConf(settings, config, ES_CREATE_EXTRAS_NS);
+            ElasticSearchSetup.applySettingsFromJanusGraphConf(settings, config, ES_CREATE_EXTRAS_NS);
 
             CreateIndexResponse create = client.admin().indices().prepareCreate(indexName)
                     .setSettings(settings.build()).execute().actionGet();
@@ -232,7 +232,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 log.debug("Sleeping {} ms after {} index creation returned from actionGet()", sleep, indexName);
                 Thread.sleep(sleep);
             } catch (InterruptedException e) {
-                throw new TitanException("Interrupted while waiting for index to settle in", e);
+                throw new JanusGraphException("Interrupted while waiting for index to settle in", e);
             }
             if (!create.isAcknowledged()) throw new IllegalArgumentException("Could not create index: " + indexName);
         }
@@ -246,7 +246,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * information.
      * <p>
      * This is activated by setting an explicit value for {@link #INTERFACE} in
-     * the Titan configuration.
+     * the JanusGraph configuration.
      *
      * @see #legacyConfiguration(org.janusgraph.diskstorage.configuration.Configuration)
      * @param config a config passed to ElasticSearchIndex's constructor
@@ -258,7 +258,7 @@ public class ElasticSearchIndex implements IndexProvider {
         try {
             return clientMode.connect(config);
         } catch (IOException e) {
-            throw new TitanException(e);
+            throw new JanusGraphException(e);
         }
     }
 
@@ -272,7 +272,7 @@ public class ElasticSearchIndex implements IndexProvider {
      * does not allow creating a Node that talks over the network.
      * <p>
      * This is activated by <b>not</b> setting an explicit value for {@link #INTERFACE} in the
-     * Titan configuration.
+     * JanusGraph configuration.
      *
      * @see #interfaceConfiguration(org.janusgraph.diskstorage.configuration.Configuration)
      * @param config a config passed to ElasticSearchIndex's constructor
@@ -302,7 +302,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     sb.loadFromStream(configFile, fis);
                     builder.settings(sb.build());
                 } catch (FileNotFoundException e) {
-                    throw new TitanException(e);
+                    throw new JanusGraphException(e);
                 } finally {
                     IOUtils.closeQuietly(fis);
                 }
@@ -734,10 +734,10 @@ public class ElasticSearchIndex implements IndexProvider {
             PredicateCondition<String, ?> atom = (PredicateCondition) condition;
             Object value = atom.getValue();
             String key = atom.getKey();
-            TitanPredicate titanPredicate = atom.getPredicate();
+            JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
             if (value instanceof Number) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on numeric types: " + titanPredicate);
-                Cmp numRel = (Cmp) titanPredicate;
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
+                Cmp numRel = (Cmp) janusgraphPredicate;
                 Preconditions.checkArgument(value instanceof Number);
 
                 switch (numRel) {
@@ -759,38 +759,38 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (value instanceof String) {
                 Mapping map = getStringMapping(informations.get(key));
                 String fieldName = key;
-                if (map==Mapping.TEXT && !titanPredicate.toString().startsWith("CONTAINS"))
-                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + titanPredicate);
-                if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
-                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
-                if (map==Mapping.TEXTSTRING && !titanPredicate.toString().startsWith("CONTAINS"))
+                if (map==Mapping.TEXT && !janusgraphPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
+                if (map==Mapping.STRING && janusgraphPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
+                if (map==Mapping.TEXTSTRING && !janusgraphPredicate.toString().startsWith("CONTAINS"))
                     fieldName = getDualMappingName(key);
 
-                if (titanPredicate == Text.CONTAINS) {
+                if (janusgraphPredicate == Text.CONTAINS) {
                     value = ((String) value).toLowerCase();
                     AndFilterBuilder b = FilterBuilders.andFilter();
                     for (String term : Text.tokenize((String)value)) {
                         b.add(FilterBuilders.termFilter(fieldName, term));
                     }
                     return b;
-                } else if (titanPredicate == Text.CONTAINS_PREFIX) {
+                } else if (janusgraphPredicate == Text.CONTAINS_PREFIX) {
                     value = ((String) value).toLowerCase();
                     return FilterBuilders.prefixFilter(fieldName, (String) value);
-                } else if (titanPredicate == Text.CONTAINS_REGEX) {
+                } else if (janusgraphPredicate == Text.CONTAINS_REGEX) {
                     value = ((String) value).toLowerCase();
                     return FilterBuilders.regexpFilter(fieldName, (String) value);
-                } else if (titanPredicate == Text.PREFIX) {
+                } else if (janusgraphPredicate == Text.PREFIX) {
                     return FilterBuilders.prefixFilter(fieldName, (String) value);
-                } else if (titanPredicate == Text.REGEX) {
+                } else if (janusgraphPredicate == Text.REGEX) {
                     return FilterBuilders.regexpFilter(fieldName, (String) value);
-                } else if (titanPredicate == Cmp.EQUAL) {
+                } else if (janusgraphPredicate == Cmp.EQUAL) {
                     return FilterBuilders.termFilter(fieldName, (String) value);
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     return FilterBuilders.notFilter(FilterBuilders.termFilter(fieldName, (String) value));
                 } else
-                    throw new IllegalArgumentException("Predicate is not supported for string value: " + titanPredicate);
+                    throw new IllegalArgumentException("Predicate is not supported for string value: " + janusgraphPredicate);
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(titanPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + titanPredicate);
+                Preconditions.checkArgument(janusgraphPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + janusgraphPredicate);
                 Geoshape shape = (Geoshape) value;
                 if (shape.getType() == Geoshape.Type.CIRCLE) {
                     Geoshape.Point center = shape.getPoint();
@@ -802,8 +802,8 @@ public class ElasticSearchIndex implements IndexProvider {
                 } else
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
             } else if (value instanceof Date || value instanceof Instant) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
-                Cmp numRel = (Cmp) titanPredicate;
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
+                Cmp numRel = (Cmp) janusgraphPredicate;
 
                 switch (numRel) {
                     case EQUAL:
@@ -822,7 +822,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof Boolean) {
-                Cmp numRel = (Cmp) titanPredicate;
+                Cmp numRel = (Cmp) janusgraphPredicate;
                 switch (numRel) {
                     case EQUAL:
                         return FilterBuilders.inFilter(key, value);
@@ -833,12 +833,12 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
 
             } else if (value instanceof UUID) {
-                if (titanPredicate == Cmp.EQUAL) {
+                if (janusgraphPredicate == Cmp.EQUAL) {
                     return FilterBuilders.termFilter(key, value);
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     return FilterBuilders.notFilter(FilterBuilders.termFilter(key, value));
                 } else {
-                    throw new IllegalArgumentException("Only equal or not equal is supported for UUIDs: " + titanPredicate);
+                    throw new IllegalArgumentException("Only equal or not equal is supported for UUIDs: " + janusgraphPredicate);
                 }
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
@@ -954,31 +954,31 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
+    public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
 
         if (Number.class.isAssignableFrom(dataType)) {
-            if (titanPredicate instanceof Cmp) return true;
+            if (janusgraphPredicate instanceof Cmp) return true;
         } else if (dataType == Geoshape.class) {
-            return titanPredicate == Geo.WITHIN;
+            return janusgraphPredicate == Geo.WITHIN;
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.CONTAINS_PREFIX || titanPredicate == Text.CONTAINS_REGEX;
+                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.REGEX || titanPredicate==Text.PREFIX;
+                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.PREFIX;
                 case TEXTSTRING:
-                    return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
-            if (titanPredicate instanceof Cmp) return true;
+            if (janusgraphPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
+            return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL;
         } else if (dataType == UUID.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+            return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
         }
         return false;
     }
@@ -1057,10 +1057,10 @@ public class ElasticSearchIndex implements IndexProvider {
          */
         try {
             if (!Version.CURRENT.toString().equals(ElasticSearchConstants.ES_VERSION_EXPECTED)) {
-                log.warn("ES client version ({}) does not match the version with which Titan was compiled ({}).  This might cause problems.",
+                log.warn("ES client version ({}) does not match the version with which JanusGraph was compiled ({}).  This might cause problems.",
                         Version.CURRENT, ElasticSearchConstants.ES_VERSION_EXPECTED);
             } else {
-                log.debug("Found ES client version matching Titan's compile-time version: {} (OK)", Version.CURRENT);
+                log.debug("Found ES client version matching JanusGraph's compile-time version: {} (OK)", Version.CURRENT);
             }
         } catch (RuntimeException e) {
             log.warn("Unable to check expected ES client version", e);

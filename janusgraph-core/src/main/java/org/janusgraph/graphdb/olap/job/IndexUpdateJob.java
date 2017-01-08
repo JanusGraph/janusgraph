@@ -2,17 +2,17 @@ package org.janusgraph.graphdb.olap.job;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanGraph;
-import org.janusgraph.core.schema.TitanIndex;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.schema.Index;
 import org.janusgraph.diskstorage.configuration.ConfigNamespace;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -49,10 +49,10 @@ public abstract class IndexUpdateJob {
     protected String indexName = null;
 
 
-    protected StandardTitanGraph graph;
+    protected StandardJanusGraph graph;
     protected ManagementSystem mgmt = null;
-    protected StandardTitanTx writeTx;
-    protected TitanIndex index;
+    protected StandardJanusGraphTx writeTx;
+    protected Index index;
     protected RelationType indexRelationType;
     protected Instant jobStartTime;
 
@@ -76,8 +76,8 @@ public abstract class IndexUpdateJob {
         return !isGlobalGraphIndex();
     }
 
-    public void workerIterationStart(TitanGraph graph, Configuration config, ScanMetrics metrics) {
-        this.graph = (StandardTitanGraph)graph;
+    public void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {
+        this.graph = (StandardJanusGraph)graph;
         Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
         this.jobStartTime = Instant.ofEpochMilli(config.get(GraphDatabaseConfiguration.JOB_START_TIME));
         if (indexName == null) {
@@ -103,14 +103,14 @@ public abstract class IndexUpdateJob {
 
             StandardTransactionBuilder txb = this.graph.buildTransaction();
             txb.commitTime(jobStartTime);
-            writeTx = (StandardTitanTx)txb.start();
+            writeTx = (StandardJanusGraphTx)txb.start();
         } catch (final Exception e) {
             if (null != mgmt && mgmt.isOpen())
                 mgmt.rollback();
             if (writeTx!=null && writeTx.isOpen())
                 writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
-            throw new TitanException(e.getMessage(), e);
+            throw new JanusGraphException(e.getMessage(), e);
         }
     }
 

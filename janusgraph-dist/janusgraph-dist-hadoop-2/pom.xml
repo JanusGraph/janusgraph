@@ -64,7 +64,7 @@
 
     <profiles>
         <profile>
-            <id>aurelius-release</id>
+            <id>janusgraph-release</id>
             <build>
                 <plugins>
                     <plugin>

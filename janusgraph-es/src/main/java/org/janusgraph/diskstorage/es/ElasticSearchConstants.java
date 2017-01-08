@@ -7,11 +7,11 @@ import org.elasticsearch.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.core.TitanFactory;
+import org.janusgraph.core.JanusGraphFactory;
 
 public class ElasticSearchConstants {
 
-    public static final String ES_PROPERTIES_FILE = "titan-es.properties";
+    public static final String ES_PROPERTIES_FILE = "janusgraph-es.properties";
     public static final String ES_VERSION_EXPECTED;
     
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchConstants.class);
@@ -21,7 +21,7 @@ public class ElasticSearchConstants {
 
         try {
             props = new Properties();
-            props.load(TitanFactory.class.getClassLoader().getResourceAsStream(ES_PROPERTIES_FILE));
+            props.load(JanusGraphFactory.class.getClassLoader().getResourceAsStream(ES_PROPERTIES_FILE));
         } catch (IOException e) {
             throw new AssertionError(e);
         }
