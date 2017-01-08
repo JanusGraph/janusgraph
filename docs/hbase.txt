@@ -11,14 +11,14 @@ Apache HBase is an open-source, distributed, versioned, non-relational database 
 HBase Setup
 ~~~~~~~~~~~
 
-The following sections outline the various ways in which Titan can be used in concert with HBase.
+The following sections outline the various ways in which JanusGraph can be used in concert with HBase.
 
 Local Server Mode
 ^^^^^^^^^^^^^^^^^
 
 image:modes-local.png[]
 
-HBase can be run as a standalone database on the same local host as Titan and the end-user application. In this model, Titan and HBase communicate with one another via a `localhost` socket. Running Titan over HBase requires the following setup steps:
+HBase can be run as a standalone database on the same local host as JanusGraph and the end-user application. In this model, JanusGraph and HBase communicate with one another via a `localhost` socket. Running JanusGraph over HBase requires the following setup steps:
 
 * Download and extract a stable HBase from http://www.apache.org/dyn/closer.cgi/hbase/stable/.
 * Start HBase by invoking the `start-hbase.sh` script in the _bin_ directory inside the extracted HBase directory. To stop HBase, use `stop-hbase.sh`.
@@ -27,10 +27,10 @@ HBase can be run as a standalone database on the same local host as Titan and th
 $ ./bin/start-hbase.sh 
 starting master, logging to ../logs/hbase-master-machine-name.local.out
 
-Now, you can create an HBase TitanGraph as follows:
+Now, you can create an HBase JanusGraph as follows:
 
 [source, java]
-TitanGraph graph = TitanFactory.build()
+JanusGraph graph = JanusGraphFactory.build()
 	.set("storage.backend", "hbase")
 	.open();
 
@@ -41,28 +41,28 @@ Remote Server Mode
 
 image:modes-distributed.png[]
 
-When the graph needs to scale beyond the confines of a single machine, then HBase and Titan are logically separated into different machines. In this model, the HBase cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the HBase cluster. The end-user application can directly interact with Titan within the same JVM as Titan.
+When the graph needs to scale beyond the confines of a single machine, then HBase and JanusGraph are logically separated into different machines. In this model, the HBase cluster maintains the graph representation and any number of JanusGraph instances maintain socket-based read/write access to the HBase cluster. The end-user application can directly interact with JanusGraph within the same JVM as JanusGraph.
 
-For example, suppose we have a running HBase cluster with a ZooKeeper quorum composed of three machines at IP address 77.77.77.77, 77.77.77.78, and 77.77.77.79, then connecting Titan with the cluster is accomplished as follows:
+For example, suppose we have a running HBase cluster with a ZooKeeper quorum composed of three machines at IP address 77.77.77.77, 77.77.77.78, and 77.77.77.79, then connecting JanusGraph with the cluster is accomplished as follows:
 
 [source, java]
-TitanGraph g = TitanFactory.build()
+JanusGraph g = JanusGraphFactory.build()
 	.set("storage.backend", "hbase")
 	.set("storage.hostname", "77.77.77.77, 77.77.77.78, 77.77.77.79")
 	.open();
 
-`storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster Titan should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
+`storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster JanusGraph should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode with Gremlin Server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 image:modes-rexster.png[]
 
-Finally, Gremlin server can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
+Finally, Gremlin server can be wrapped around each JanusGraph instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Gremlin server as a client. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
 ----
-http://gremlin-server.titan.machine1/mygraph/vertices/1
-http://gremlin-server.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
+http://gremlin-server.janusgraph.machine1/mygraph/vertices/1
+http://gremlin-server.janusgraph.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
 In this case, each Gremlin server server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Gremlin server configuration. Refer to <<server>> for a complete example and more information on how to configure the server.
@@ -71,27 +71,27 @@ In this case, each Gremlin server server would be configured to connect to the H
 ----
 ...
 graphs: {
-  g: conf/titan-hbase.properties}
+  g: conf/janusgraph-hbase.properties}
 plugins:
-  - aurelius.titan
+  - janusgraph.imports
 ...
 ----
 
 HBase Specific Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Refer to <<janusgraph-config-ref>> for a complete listing of all HBase specific configuration options in addition to the general Titan configuration options.
+Refer to <<janusgraph-config-ref>> for a complete listing of all HBase specific configuration options in addition to the general JanusGraph configuration options.
 
 When configuring HBase it is recommended to consider the following HBase specific configuration options:
 
-* *tablename*: Name of the HBase table in which to store the Titan graph. Allows multiple Titan graphs to co-exist in the same HBase cluster.
+* *tablename*: Name of the HBase table in which to store the JanusGraph graph. Allows multiple JanusGraph graphs to co-exist in the same HBase cluster.
 
-Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase-config` in the Titan configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through Titan.
+Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase-config` in the JanusGraph configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through JanusGraph.
 
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Titan over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<janusgraph-hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
+JanusGraph over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<janusgraph-hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,11 +99,11 @@ Deploying on Amazon EC2
 [quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon EC2 is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
 
-Follow these steps to setup an HBase cluster on EC2 and deploy Titan over HBase. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
+Follow these steps to setup an HBase cluster on EC2 and deploy JanusGraph over HBase. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
 
-The following commands first launch a four-node HBase cluster on EC2 via http://whirr.apache.org/[Whirr], then run a basic Titan test case using the cluster.
+The following commands first launch a four-node HBase cluster on EC2 via http://whirr.apache.org/[Whirr], then run a basic JanusGraph test case using the cluster.
 
-The configuration described below puts one HBase master server in charge of three HBase regionservers.  The master will be the sole member of the Zookeeper quorum by which Titan connects to HBase.
+The configuration described below puts one HBase master server in charge of three HBase regionservers.  The master will be the sole member of the Zookeeper quorum by which JanusGraph connects to HBase.
 
 Whirr 0.7.1 sometimes fails when run on a machine behind a NAT https://issues.apache.org/jira/browse/WHIRR-459[WHIRR-459].  For this reason, it's recommended to use at least Whirr 0.7.2.  Whirr 0.8.0 was used to test the following commands on a t1.micro instance running Amazon Linux 2012.03.  These commands might need tweaking to produce the intended results on environments besides a t1.micro instance running Amazon Linux 2012.03.
 
@@ -119,7 +119,7 @@ tar -xzf whirr-0.8.0.tar.gz && cd whirr-0.8.0
 # Generate an SSH keypair with which Whirr will deploy and manage instances
 ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa_whirr
 # Download a Whirr recipe for deploying HBase 0.94.1 with hadoop-core 1.0.3
-pushd recipes && wget 'https://raw.github.com/thinkaurelius/titan/master/config/whirr-hbase.properties' ; popd
+pushd recipes && wget 'https://raw.github.com/JanusGraph/janusgraph/master/config/whirr-hbase.properties' ; popd
 bin/whirr launch-cluster --config recipes/whirr-hbase.properties --private-key-file ~/.ssh/id_rsa_whirr
 # Run a superficial health check on the hbase-master node (this should print "imok")
 echo "ruok" | nc $(awk '{print $3}' ~/.whirr/hbase-testing/instances | head -1) 2181; echo
@@ -135,9 +135,9 @@ wget 'http://archive.apache.org/dist/maven/maven-3/3.0.4/binaries/apache-maven-3
 tar -xzf apache-maven-3.0.4-bin.tar.gz
 # Install git
 sudo apt-get install -y git-core
-# Clone Titan
-git clone 'git://github.com/thinkaurelius/titan.git' && cd titan
-# Run a HBase-backed test of Titan
+# Clone JanusGraph
+git clone 'git://github.com/JanusGraph/janusgraph.git' && cd janusgraph
+# Run a HBase-backed test of JanusGraph
 #
 # This test should produce pages of output ending in something like this:
 #
@@ -184,7 +184,7 @@ $HBASE_HOME/bin/hbase shell
 From the shell, the following commands are generally useful for understanding the status of the cluster.
 
 [source, ruby]
-status 'titan'
+status 'janusgraph'
 status 'simple'
 status 'detailed'
 
