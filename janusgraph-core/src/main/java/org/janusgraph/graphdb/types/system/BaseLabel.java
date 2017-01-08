@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.types.system;
 
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.Multiplicity;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 public class BaseLabel extends BaseRelationType implements EdgeLabel {
@@ -18,7 +18,7 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
     private final Multiplicity multiplicity;
 
     private BaseLabel(String name, int id, Direction uniDirectionality, Multiplicity multiplicity) {
-        super(name, id, TitanSchemaCategory.EDGELABEL);
+        super(name, id, JanusGraphSchemaCategory.EDGELABEL);
         this.directionality = uniDirectionality;
         this.multiplicity = multiplicity;
     }

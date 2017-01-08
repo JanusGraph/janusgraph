@@ -1,6 +1,6 @@
 package org.janusgraph.graphdb.query.vertex;
 
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.VertexList;
 
 /**
@@ -16,7 +16,7 @@ public interface VertexListInternal extends VertexList {
      *
      * @param n
      */
-    public void add(TitanVertex n);
+    public void add(JanusGraphVertex n);
 
     /**
      * Copies all vertices in the given vertex list into this list.

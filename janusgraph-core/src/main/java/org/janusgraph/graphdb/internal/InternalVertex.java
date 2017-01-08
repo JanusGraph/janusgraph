@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Predicate;
-import org.janusgraph.core.TitanVertex;
+import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
@@ -10,11 +10,11 @@ import org.janusgraph.util.datastructures.Retriever;
 import java.util.List;
 
 /**
- * Internal Vertex interface adding methods that should only be used by Titan
+ * Internal Vertex interface adding methods that should only be used by JanusGraph
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface InternalVertex extends TitanVertex, InternalElement {
+public interface InternalVertex extends JanusGraphVertex, InternalElement {
 
     @Override
     public InternalVertex it();
@@ -27,7 +27,7 @@ public interface InternalVertex extends TitanVertex, InternalElement {
      * relation deletion while iterating over the list of adjacent relations, in which case the relation deletion is taken
      * care of by the iterator and only vertex status update needs to be executed.
      *
-     * @param e TitanRelation to be removed
+     * @param e JanusGraphRelation to be removed
      */
     public void removeRelation(InternalRelation e);
 

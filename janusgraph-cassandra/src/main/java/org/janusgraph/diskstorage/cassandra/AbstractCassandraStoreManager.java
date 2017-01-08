@@ -3,7 +3,7 @@ package org.janusgraph.diskstorage.cassandra;
 import java.util.*;
 
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.common.DistributedStoreManager;
@@ -54,8 +54,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final ConfigOption<String> CASSANDRA_KEYSPACE =
             new ConfigOption<String>(CASSANDRA_NS, "keyspace",
-                    "The name of Titan's keyspace.  It will be created if it does not exist.",
-                    ConfigOption.Type.LOCAL, "titan");
+                    "The name of JanusGraph's keyspace.  It will be created if it does not exist.",
+                    ConfigOption.Type.LOCAL, "janusgraph");
 
     // Consistency Levels and Atomic Batch
     public static final ConfigOption<String> CASSANDRA_READ_CONSISTENCY =
@@ -82,7 +82,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final ConfigOption<String> REPLICATION_STRATEGY =
             new ConfigOption<String>(CASSANDRA_NS, "replication-strategy-class",
-            "The replication strategy to use for Titan keyspace",
+            "The replication strategy to use for JanusGraph keyspace",
             ConfigOption.Type.FIXED, "org.apache.cassandra.locator.SimpleStrategy");
 
     public static final ConfigOption<String[]> REPLICATION_OPTIONS =
@@ -94,7 +94,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final ConfigOption<String> COMPACTION_STRATEGY =
             new ConfigOption<String>(CASSANDRA_NS, "compaction-strategy-class",
-            "The compaction strategy to use for Titan tables",
+            "The compaction strategy to use for JanusGraph tables",
             ConfigOption.Type.FIXED, String.class);
 
     public static final ConfigOption<String[]> COMPACTION_OPTIONS =
@@ -110,9 +110,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final ConfigOption<String> CF_COMPRESSION_TYPE =
             new ConfigOption<String>(CASSANDRA_NS, "compression-type",
-            "The sstable_compression value Titan uses when creating column families. " +
+            "The sstable_compression value JanusGraph uses when creating column families. " +
             "This accepts any value allowed by Cassandra's sstable_compression option. " +
-            "Leave this unset to disable sstable_compression on Titan-created CFs.",
+            "Leave this unset to disable sstable_compression on JanusGraph-created CFs.",
             ConfigOption.Type.MASKABLE, "LZ4Compressor");
 
     public static final ConfigOption<Integer> CF_COMPRESSION_BLOCK_SIZE =
@@ -225,7 +225,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             try {
                 partitioner = Partitioner.getPartitioner(getCassandraPartitioner());
             } catch (BackendException e) {
-                throw new TitanException("Could not connect to Cassandra to read partitioner information. Please check the connection", e);
+                throw new JanusGraphException("Could not connect to Cassandra to read partitioner information. Please check the connection", e);
             }
         }
         assert partitioner != null;

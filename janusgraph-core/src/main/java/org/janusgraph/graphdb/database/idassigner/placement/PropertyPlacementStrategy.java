@@ -2,9 +2,9 @@ package org.janusgraph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.TitanProperty;
-import org.janusgraph.core.TitanVertex;
-import org.janusgraph.core.TitanVertexProperty;
+import org.janusgraph.core.JanusGraphProperty;
+import org.janusgraph.core.JanusGraphVertex;
+import org.janusgraph.core.JanusGraphVertexProperty;
 import org.janusgraph.diskstorage.configuration.ConfigOption;
 import org.janusgraph.diskstorage.configuration.Configuration;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
@@ -59,8 +59,8 @@ public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
 
     @Override
     public int getPartition(InternalElement element) {
-        if (element instanceof TitanVertex) {
-            int pid = getPartitionIDbyKey((TitanVertex)element);
+        if (element instanceof JanusGraphVertex) {
+            int pid = getPartitionIDbyKey((JanusGraphVertex)element);
             if (pid>=0) return pid;
         }
         return super.getPartition(element);
@@ -75,11 +75,11 @@ public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
         }
     }
 
-    private int getPartitionIDbyKey(TitanVertex vertex) {
+    private int getPartitionIDbyKey(JanusGraphVertex vertex) {
         Preconditions.checkState(idManager!=null && key!=null,"PropertyPlacementStrategy has not been initialized correctly");
         assert idManager.getPartitionBound()<=Integer.MAX_VALUE;
         int partitionBound = (int)idManager.getPartitionBound();
-        TitanVertexProperty p = (TitanVertexProperty)Iterables.getFirst(vertex.query().keys(key).properties(),null);
+        JanusGraphVertexProperty p = (JanusGraphVertexProperty)Iterables.getFirst(vertex.query().keys(key).properties(),null);
         if (p==null) return -1;
         int hashPid = Math.abs(p.value().hashCode())%partitionBound;
         assert hashPid>=0 && hashPid<partitionBound;

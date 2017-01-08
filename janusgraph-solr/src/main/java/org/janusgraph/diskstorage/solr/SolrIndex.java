@@ -6,7 +6,7 @@ import com.google.common.collect.Sets;
 
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.attribute.*;
 import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.diskstorage.*;
@@ -18,7 +18,7 @@ import org.janusgraph.diskstorage.solr.transform.GeoToWktConverter;
 import org.janusgraph.diskstorage.util.DefaultTransaction;
 import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
 import org.janusgraph.graphdb.database.serialize.AttributeUtil;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.janusgraph.graphdb.query.condition.*;
 
 import org.janusgraph.graphdb.types.ParameterType;
@@ -497,17 +497,17 @@ public class SolrIndex implements IndexProvider {
         return ClientUtils.escapeQueryChars(value.toString());
     }
 
-    public String buildQueryFilter(Condition<TitanElement> condition, KeyInformation.StoreRetriever informations) {
+    public String buildQueryFilter(Condition<JanusGraphElement> condition, KeyInformation.StoreRetriever informations) {
         if (condition instanceof PredicateCondition) {
-            PredicateCondition<String, TitanElement> atom = (PredicateCondition<String, TitanElement>) condition;
+            PredicateCondition<String, JanusGraphElement> atom = (PredicateCondition<String, JanusGraphElement>) condition;
             Object value = atom.getValue();
             String key = atom.getKey();
-            TitanPredicate titanPredicate = atom.getPredicate();
+            JanusGraphPredicate janusgraphPredicate = atom.getPredicate();
 
             if (value instanceof Number) {
                 String queryValue = escapeValue(value);
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on numeric types: " + titanPredicate);
-                Cmp numRel = (Cmp) titanPredicate;
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on numeric types: " + janusgraphPredicate);
+                Cmp numRel = (Cmp) janusgraphPredicate;
                 switch (numRel) {
                     case EQUAL:
                         return (key + ":" + queryValue);
@@ -528,13 +528,13 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof String) {
                 Mapping map = getStringMapping(informations.get(key));
                 assert map==Mapping.TEXT || map==Mapping.STRING;
-                if (map==Mapping.TEXT && !titanPredicate.toString().startsWith("CONTAINS"))
-                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + titanPredicate);
-                if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
-                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
+                if (map==Mapping.TEXT && !janusgraphPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + janusgraphPredicate);
+                if (map==Mapping.STRING && janusgraphPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + janusgraphPredicate);
 
                 //Special case
-                if (titanPredicate == Text.CONTAINS) {
+                if (janusgraphPredicate == Text.CONTAINS) {
                     //e.g. - if terms tomorrow and world were supplied, and fq=text:(tomorrow  world)
                     //sample data set would return 2 documents: one where text = Tomorrow is the World,
                     //and the second where text = Hello World. Hence, we are decomposing the query string
@@ -547,23 +547,23 @@ public class SolrIndex implements IndexProvider {
                     } else if (terms.size() == 1) {
                         return (key + ":(" + escapeValue(terms.get(0)) + ")");
                     } else {
-                        And<TitanElement> andTerms = new And<TitanElement>();
+                        And<JanusGraphElement> andTerms = new And<JanusGraphElement>();
                         for (String term : terms) {
-                            andTerms.add(new PredicateCondition<String, TitanElement>(key, titanPredicate, term));
+                            andTerms.add(new PredicateCondition<String, JanusGraphElement>(key, janusgraphPredicate, term));
                         }
                         return buildQueryFilter(andTerms, informations);
                     }
                 }
-                if (titanPredicate == Text.PREFIX || titanPredicate == Text.CONTAINS_PREFIX) {
+                if (janusgraphPredicate == Text.PREFIX || janusgraphPredicate == Text.CONTAINS_PREFIX) {
                     return (key + ":" + escapeValue(value) + "*");
-                } else if (titanPredicate == Text.REGEX || titanPredicate == Text.CONTAINS_REGEX) {
+                } else if (janusgraphPredicate == Text.REGEX || janusgraphPredicate == Text.CONTAINS_REGEX) {
                     return (key + ":/" + value + "/");
-                } else if (titanPredicate == Cmp.EQUAL) {
+                } else if (janusgraphPredicate == Cmp.EQUAL) {
                     return (key + ":\"" + escapeValue(value) + "\"");
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else {
-                    throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
+                    throw new IllegalArgumentException("Relation is not supported for string value: " + janusgraphPredicate);
                 }
             } else if (value instanceof Geoshape) {
                 Geoshape geo = (Geoshape)value;
@@ -591,8 +591,8 @@ public class SolrIndex implements IndexProvider {
             } else if (value instanceof Date || value instanceof Instant) {
                 String s = value.toString();
                 String queryValue = escapeValue(value instanceof Date ? toIsoDate((Date) value) : value.toString());
-                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on date types: " + titanPredicate);
-                Cmp numRel = (Cmp) titanPredicate;
+                Preconditions.checkArgument(janusgraphPredicate instanceof Cmp, "Relation not supported on date types: " + janusgraphPredicate);
+                Cmp numRel = (Cmp) janusgraphPredicate;
 
                 switch (numRel) {
                     case EQUAL:
@@ -612,7 +612,7 @@ public class SolrIndex implements IndexProvider {
                     default: throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof Boolean) {
-                Cmp numRel = (Cmp) titanPredicate;
+                Cmp numRel = (Cmp) janusgraphPredicate;
                 String queryValue = escapeValue(value);
                 switch (numRel) {
                     case EQUAL:
@@ -623,12 +623,12 @@ public class SolrIndex implements IndexProvider {
                         throw new IllegalArgumentException("Boolean types only support EQUAL or NOT_EQUAL");
                 }
             } else if (value instanceof UUID) {
-                if (titanPredicate == Cmp.EQUAL) {
+                if (janusgraphPredicate == Cmp.EQUAL) {
                     return (key + ":\"" + escapeValue(value) + "\"");
-                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                } else if (janusgraphPredicate == Cmp.NOT_EQUAL) {
                     return ("-" + key + ":\"" + escapeValue(value) + "\"");
                 } else {
-                    throw new IllegalArgumentException("Relation is not supported for uuid value: " + titanPredicate);
+                    throw new IllegalArgumentException("Relation is not supported for uuid value: " + janusgraphPredicate);
                 }
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
@@ -638,7 +638,7 @@ public class SolrIndex implements IndexProvider {
         } else if (condition instanceof And) {
             int numChildren = ((And) condition).size();
             StringBuilder sb = new StringBuilder();
-            for (Condition<TitanElement> c : condition.getChildren()) {
+            for (Condition<JanusGraphElement> c : condition.getChildren()) {
                 String sub = buildQueryFilter(c, informations);
 
                 if (StringUtils.isBlank(sub))
@@ -656,7 +656,7 @@ public class SolrIndex implements IndexProvider {
         } else if (condition instanceof Or) {
             StringBuilder sb = new StringBuilder();
             int element=0;
-            for (Condition<TitanElement> c : condition.getChildren()) {
+            for (Condition<JanusGraphElement> c : condition.getChildren()) {
                 String sub = buildQueryFilter(c,informations);
                 if (StringUtils.isBlank(sub)) continue;
                 if (element==0) sb.append("(");
@@ -749,7 +749,7 @@ public class SolrIndex implements IndexProvider {
     }
 
     @Override
-    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
+    public boolean supports(KeyInformation information, JanusGraphPredicate janusgraphPredicate) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
@@ -759,25 +759,25 @@ public class SolrIndex implements IndexProvider {
         }
 
         if (Number.class.isAssignableFrom(dataType)) {
-            return titanPredicate instanceof Cmp;
+            return janusgraphPredicate instanceof Cmp;
         } else if (dataType == Geoshape.class) {
-            return titanPredicate == Geo.WITHIN;
+            return janusgraphPredicate == Geo.WITHIN;
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.CONTAINS_PREFIX || titanPredicate == Text.CONTAINS_REGEX;
+                    return janusgraphPredicate == Text.CONTAINS || janusgraphPredicate == Text.CONTAINS_PREFIX || janusgraphPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.REGEX || titanPredicate==Text.PREFIX;
+                    return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL || janusgraphPredicate==Text.REGEX || janusgraphPredicate==Text.PREFIX;
 //                case TEXTSTRING:
-//                    return (titanPredicate instanceof Text) || titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+//                    return (janusgraphPredicate instanceof Text) || janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
             }
         } else if (dataType == Date.class || dataType == Instant.class) {
-            if (titanPredicate instanceof Cmp) return true;
+            if (janusgraphPredicate instanceof Cmp) return true;
         } else if (dataType == Boolean.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate == Cmp.NOT_EQUAL;
+            return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate == Cmp.NOT_EQUAL;
         } else if (dataType == UUID.class) {
-            return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+            return janusgraphPredicate == Cmp.EQUAL || janusgraphPredicate==Cmp.NOT_EQUAL;
         }
         return false;
     }

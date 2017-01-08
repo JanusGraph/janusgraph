@@ -1,14 +1,14 @@
 package org.janusgraph.hadoop.scan;
 
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.olap.VertexJobConverter;
 import org.janusgraph.graphdb.olap.VertexScanJob;
 import org.janusgraph.hadoop.config.ModifiableHadoopConfiguration;
-import org.janusgraph.hadoop.config.TitanHadoopConfiguration;
+import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;
@@ -21,17 +21,17 @@ public class HadoopVertexScanMapper extends HadoopScanMapper {
     protected void setup(Context context) throws IOException, InterruptedException {
         /* Don't call super implementation super.setup(context); */
         org.apache.hadoop.conf.Configuration hadoopConf = DEFAULT_COMPAT.getContextConfiguration(context);
-        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(TitanHadoopConfiguration.MAPRED_NS, hadoopConf);
+        ModifiableHadoopConfiguration scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, hadoopConf);
         VertexScanJob vertexScan = getVertexScanJob(scanConf);
-        ModifiableConfiguration graphConf = getTitanConfiguration(context);
-        TitanGraph graph = TitanFactory.open(graphConf);
+        ModifiableConfiguration graphConf = getJanusGraphConfiguration(context);
+        JanusGraph graph = JanusGraphFactory.open(graphConf);
         job = VertexJobConverter.convert(graph, vertexScan);
         metrics = new HadoopContextScanMetrics(context);
         finishSetup(scanConf, graphConf);
     }
 
     private VertexScanJob getVertexScanJob(ModifiableHadoopConfiguration conf) {
-        String jobClass = conf.get(TitanHadoopConfiguration.SCAN_JOB_CLASS);
+        String jobClass = conf.get(JanusGraphHadoopConfiguration.SCAN_JOB_CLASS);
 
         try {
             return (VertexScanJob)Class.forName(jobClass).newInstance();

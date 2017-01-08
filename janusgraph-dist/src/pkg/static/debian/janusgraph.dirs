@@ -1,0 +1,5 @@
+/etc/default/
+/usr/share/janusgraph/lib/
+/var/lib/janusgraph/
+/var/log/janusgraph/
+/var/run/janusgraph/

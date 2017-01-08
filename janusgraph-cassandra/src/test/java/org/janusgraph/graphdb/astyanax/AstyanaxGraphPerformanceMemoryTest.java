@@ -4,9 +4,9 @@ import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.junit.BeforeClass;
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.graphdb.TitanGraphPerformanceMemoryTest;
+import org.janusgraph.graphdb.JanusGraphPerformanceMemoryTest;
 
-public class AstyanaxGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
+public class AstyanaxGraphPerformanceMemoryTest extends JanusGraphPerformanceMemoryTest {
 
     @BeforeClass
     public static void startCassandra() {

@@ -31,12 +31,12 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 public class PageRankVertexProgram extends StaticVertexProgram<Double> {
 
 
-    public static final String PAGE_RANK = "titan.pageRank.pageRank";
-    public static final String OUTGOING_EDGE_COUNT = "titan.pageRank.edgeCount";
+    public static final String PAGE_RANK = "janusgraph.pageRank.pageRank";
+    public static final String OUTGOING_EDGE_COUNT = "janusgraph.pageRank.edgeCount";
 
-    private static final String DAMPING_FACTOR = "titan.pageRank.dampingFactor";
-    private static final String MAX_ITERATIONS = "titan.pageRank.maxIterations";
-    private static final String VERTEX_COUNT = "titan.pageRank.vertexCount";
+    private static final String DAMPING_FACTOR = "janusgraph.pageRank.dampingFactor";
+    private static final String MAX_ITERATIONS = "janusgraph.pageRank.maxIterations";
+    private static final String VERTEX_COUNT = "janusgraph.pageRank.vertexCount";
 
     private double dampingFactor;
     private int maxIterations;

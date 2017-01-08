@@ -8,16 +8,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.core.TitanFactory;
-import org.janusgraph.graphdb.TitanGraphSpeedTest;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.graphdb.JanusGraphSpeedTest;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.testcategory.PerformanceTests;
 
 @Category({PerformanceTests.class})
-public class ThriftGraphSpeedTest extends TitanGraphSpeedTest {
+public class ThriftGraphSpeedTest extends JanusGraphSpeedTest {
 
-    private static StandardTitanGraph graph;
+    private static StandardJanusGraph graph;
     private static SpeedTestSchema schema;
 
     private static final Logger log =
@@ -33,14 +33,14 @@ public class ThriftGraphSpeedTest extends TitanGraphSpeedTest {
     }
 
     @Override
-    protected StandardTitanGraph getGraph() throws BackendException {
+    protected StandardJanusGraph getGraph() throws BackendException {
 
 
         if (null == graph) {
             GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
             graphconfig.getBackend().clearStorage();
             log.debug("Cleared backend storage");
-            graph = (StandardTitanGraph)TitanFactory.open(conf);
+            graph = (StandardJanusGraph)JanusGraphFactory.open(conf);
             initializeGraph(graph);
         }
         return graph;

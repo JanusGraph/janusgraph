@@ -2,18 +2,18 @@ package org.janusgraph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 
-import org.janusgraph.core.schema.TitanConfiguration;
+import org.janusgraph.core.schema.JanusGraphConfiguration;
 
 import java.lang.reflect.Array;
 import java.time.Duration;
 
 /**
- * Helper class for inspecting and modifying a configuration for Titan.
+ * Helper class for inspecting and modifying a configuration for JanusGraph.
  * It is important to {@link #close()} the configuration when all changes have been made.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class UserModifiableConfiguration implements TitanConfiguration {
+public class UserModifiableConfiguration implements JanusGraphConfiguration {
 
     private final ModifiableConfiguration config;
     private final ConfigVerifier verifier;
@@ -31,7 +31,7 @@ public class UserModifiableConfiguration implements TitanConfiguration {
 
     /**
      * Returns the backing configuration as a {@link ReadConfiguration} that can be used
-     * to create and configure a Titan graph.
+     * to create and configure a JanusGraph graph.
      *
      * @return
      */

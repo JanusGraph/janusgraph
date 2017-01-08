@@ -63,7 +63,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <titan.compatible.versions />
+        <janusgraph.compatible.versions />
         <tinkerpop.version>3.1.1-incubating</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
@@ -105,7 +105,7 @@
         <jasper.version>5.5.23</jasper.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <titan.testdir>${project.build.directory}/janusgraph-test</titan.testdir>
+        <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
         <gpg.skip>false</gpg.skip>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
@@ -203,7 +203,7 @@
                       operation should be encapsulated with the
                       profile id listed below.
                     -->
-                    <releaseProfiles>aurelius-release</releaseProfiles>
+                    <releaseProfiles>janusgraph-release</releaseProfiles>
 
                     <!-- Keep all submodules at same version as parent -->
                     <autoVersionSubmodules>true</autoVersionSubmodules>
@@ -1062,7 +1062,7 @@
         </profile>
 
         <profile>
-            <id>aurelius-release</id>
+            <id>janusgraph-release</id>
             <!--
               Sign artifacts artifacts only during release:perform
               when this profile is automatically activated or whenever

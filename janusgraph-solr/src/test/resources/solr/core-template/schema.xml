@@ -29,7 +29,7 @@
  http://wiki.apache.org/solr/SchemaXml
 -->
 
-<schema name="example-titan" version="1.5">
+<schema name="example-janusgraph" version="1.5">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        version="x.y" is Solr's version number for the schema syntax and 
        semantics.  It should not normally be changed by applications.
@@ -526,7 +526,7 @@
    -->
     <fieldType name="currency" class="solr.CurrencyField" precisionStep="8" defaultCurrency="USD" currencyConfig="currency.xml" />
 
-    <!--Titan specific-->
+    <!--JanusGraph specific-->
     <fieldType name="uuid"
                class="solr.UUIDField"
                indexed="true" />
@@ -555,7 +555,7 @@
     <field name="blah" type="string" indexed="true" stored="true"/>
     <field name="date" type="date" indexed="true" stored="true" />
     <field name="instant" type="date" indexed="true" stored="true" />
-    <!-- TitanIndexTest -->
+    <!-- JanusGraphIndexTest -->
     <field name="xtext" type="text_general" indexed="true" stored="true" multiValued="false" />
     <field name="xstr" type="string" indexed="true" stored="true"/>
 

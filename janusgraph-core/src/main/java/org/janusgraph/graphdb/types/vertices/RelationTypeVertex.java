@@ -7,7 +7,7 @@ import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.Multiplicity;
 import org.janusgraph.graphdb.internal.Order;
 import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.TypeDefinitionCategory;
@@ -20,9 +20,9 @@ import java.util.List;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class RelationTypeVertex extends TitanSchemaVertex implements InternalRelationType {
+public abstract class RelationTypeVertex extends JanusGraphSchemaVertex implements InternalRelationType {
 
-    public RelationTypeVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public RelationTypeVertex(StandardJanusGraphTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

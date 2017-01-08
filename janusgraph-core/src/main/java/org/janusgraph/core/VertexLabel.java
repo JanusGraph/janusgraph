@@ -1,16 +1,16 @@
 package org.janusgraph.core;
 
-import org.janusgraph.core.schema.TitanSchemaType;
+import org.janusgraph.core.schema.JanusGraphSchemaType;
 
 /**
- * A vertex label is a label attached to vertices in a Titan graph. This can be used to define the nature of a
+ * A vertex label is a label attached to vertices in a JanusGraph graph. This can be used to define the nature of a
  * vertex.
  * <p />
  * Internally, a vertex label is also used to specify certain characteristics of vertices that have a given label.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface VertexLabel extends TitanVertex, TitanSchemaType {
+public interface VertexLabel extends JanusGraphVertex, JanusGraphSchemaType {
 
     /**
      * Whether vertices with this label are partitioned.

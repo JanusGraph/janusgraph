@@ -1,7 +1,7 @@
 package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 /**
@@ -10,7 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Geo implements TitanPredicate {
+public enum Geo implements JanusGraphPredicate {
 
     /**
      * Whether the intersection between two geographic regions is non-empty
@@ -35,7 +35,7 @@ public enum Geo implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusGraphPredicate negate() {
             return DISJOINT;
         }
     },
@@ -63,7 +63,7 @@ public enum Geo implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusGraphPredicate negate() {
             return INTERSECT;
         }
     },
@@ -91,7 +91,7 @@ public enum Geo implements TitanPredicate {
         }
 
         @Override
-        public TitanPredicate negate() {
+        public JanusGraphPredicate negate() {
             throw new UnsupportedOperationException();
         }
     };

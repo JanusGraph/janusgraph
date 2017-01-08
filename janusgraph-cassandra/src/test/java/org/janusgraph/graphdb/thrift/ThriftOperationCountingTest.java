@@ -2,10 +2,10 @@ package org.janusgraph.graphdb.thrift;
 
 import org.janusgraph.CassandraStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanOperationCountingTest;
+import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
 import org.junit.BeforeClass;
 
-public class ThriftOperationCountingTest extends TitanOperationCountingTest {
+public class ThriftOperationCountingTest extends JanusGraphOperationCountingTest {
 
     @BeforeClass
     public static void beforeClass() {

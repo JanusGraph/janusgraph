@@ -6,9 +6,9 @@ import com.google.common.base.Predicates;
 import com.google.common.cache.*;
 import com.google.common.collect.*;
 import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TitanElement;
-import org.janusgraph.core.TitanException;
-import org.janusgraph.core.TitanTransaction;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.log.TransactionRecovery;
 import org.janusgraph.diskstorage.*;
 import org.janusgraph.diskstorage.indexing.IndexEntry;
@@ -19,7 +19,7 @@ import org.janusgraph.diskstorage.util.BackendOperation;
 
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardTitanGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.log.LogTxMeta;
 import org.janusgraph.graphdb.database.log.LogTxStatus;
 import org.janusgraph.graphdb.database.log.TransactionLogHeader;
@@ -28,12 +28,12 @@ import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.janusgraph.graphdb.types.SchemaSource;
 import org.janusgraph.graphdb.types.indextype.IndexTypeWrapper;
-import org.janusgraph.graphdb.types.vertices.TitanSchemaVertex;
+import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.janusgraph.util.system.BackgroundThread;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
@@ -63,7 +63,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private static final Duration CLEAN_SLEEP_TIME = Duration.ofSeconds(5);
     private static final Duration MIN_TX_LENGTH = Duration.ofSeconds(5);
 
-    private final StandardTitanGraph graph;
+    private final StandardJanusGraph graph;
     private final Serializer serializer;
     private final TimestampProvider times;
     private final Log txLog;
@@ -79,7 +79,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
     private final Cache<StandardTransactionId,TxEntry> txCache;
 
 
-    public StandardTransactionLogProcessor(StandardTitanGraph graph,
+    public StandardTransactionLogProcessor(StandardJanusGraph graph,
                                            Instant startTime) {
         Preconditions.checkArgument(graph != null && graph.isOpen());
         Preconditions.checkArgument(startTime!=null);
@@ -125,7 +125,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         return new long[]{successTxCounter.get(),failureTxCounter.get()};
     }
 
-    public synchronized void shutdown() throws TitanException {
+    public synchronized void shutdown() throws JanusGraphException {
         cleaner.close(CLEAN_SLEEP_TIME);
     }
 
@@ -169,7 +169,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             BackendOperation.execute(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {
-                    StandardTitanTx tx = (StandardTitanTx) graph.newTransaction();
+                    StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
                     try {
                         for (TransactionLogHeader.Modification modification : commitEntry.getContentAsModifications(serializer)) {
                             InternalRelation rel = ModificationDeserializer.parseRelation(modification,tx);
@@ -202,7 +202,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
             //2) Restore elements per backing index
             for (final String indexName : indexRestores.keySet()) {
-                final StandardTitanTx tx = (StandardTitanTx) graph.newTransaction();
+                final StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
                 try {
                     BackendTransaction btx = tx.getTxHandle();
                     final IndexTransaction indexTx = btx.getIndexTransaction(indexName);
@@ -211,9 +211,9 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
                         public Boolean call() throws Exception {
                             Map<String,Map<String,List<IndexEntry>>> restoredDocs = Maps.newHashMap();
                             for (IndexRestore restore : indexRestores.get(indexName)) {
-                                TitanSchemaVertex indexV = (TitanSchemaVertex)tx.getVertex(restore.indexId);
+                                JanusGraphSchemaVertex indexV = (JanusGraphSchemaVertex)tx.getVertex(restore.indexId);
                                 MixedIndexType index = (MixedIndexType)indexV.asIndexType();
-                                TitanElement element = restore.retrieve(tx);
+                                JanusGraphElement element = restore.retrieve(tx);
                                 if (element!=null) {
                                     graph.getIndexSerializer().reindexElement(element,index,restoredDocs);
                                 } else { //Element is deleted
@@ -271,7 +271,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
             this.elementCategory = category;
         }
 
-        public TitanElement retrieve(TitanTransaction tx) {
+        public JanusGraphElement retrieve(JanusGraphTransaction tx) {
             return elementCategory.retrieve(elementId,tx);
         }
 
@@ -292,7 +292,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
     private static long getIndexId(IndexType index) {
         SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
-        assert base instanceof TitanSchemaVertex;
+        assert base instanceof JanusGraphSchemaVertex;
         return base.longId();
     }
 

@@ -37,13 +37,13 @@ gpgcheck=1
 gpgkey=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
 EOF
 
-echo "Installing Cassandra, ES, and Titan with yum"
+echo "Installing Cassandra, ES, and JanusGraph with yum"
 yum update
-yum install cassandra20-2.0.7 elasticsearch-1.0.3 titan
+yum install cassandra20-2.0.7 elasticsearch-1.0.3 janusgraph
 
-# Reduce Cassandra and Gremlin Server/Titan heapsizes
+# Reduce Cassandra and Gremlin Server/JanusGraph heapsizes
 echo 'export MAX_HEAP_SIZE=512M
 export HEAP_NEWSIZE=128M' > /etc/default/cassandra
 
 echo 'export MAX_HEAP_SIZE=512M
-export HEAP_NEWSIZE=128M' > /etc/sysconfig/titan
+export HEAP_NEWSIZE=128M' > /etc/sysconfig/janusgraph

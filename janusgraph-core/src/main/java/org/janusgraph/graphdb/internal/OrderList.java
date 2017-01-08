@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,7 +13,7 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.OrderEntry> {
+public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderList.OrderEntry> {
 
     public static final OrderList NO_ORDER = new OrderList() {{
         makeImmutable();
@@ -99,7 +99,7 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
     }
 
     @Override
-    public int compare(TitanElement o1, TitanElement o2) {
+    public int compare(JanusGraphElement o1, JanusGraphElement o2) {
         for (int i = 0; i < list.size(); i++) {
             int cmp = list.get(i).compare(o1, o2);
             if (cmp != 0) return cmp;
@@ -112,7 +112,7 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
      * @author Matthias Broecheler (me@matthiasb.com)
      */
 
-    public static class OrderEntry implements Comparator<TitanElement> {
+    public static class OrderEntry implements Comparator<JanusGraphElement> {
 
         private final PropertyKey key;
         private final Order order;
@@ -138,7 +138,7 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
         }
 
         @Override
-        public int compare(TitanElement o1, TitanElement o2) {
+        public int compare(JanusGraphElement o1, JanusGraphElement o2) {
             Object v1 = o1.valueOrNull(key);
             Object v2 = o2.valueOrNull(key);
             if (v1 == null || v2 == null) {

@@ -1,7 +1,7 @@
 package org.janusgraph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanRelation;
+import org.janusgraph.core.JanusGraphRelation;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.internal.OrderList;
@@ -21,11 +21,11 @@ import java.util.List;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class VertexCentricQuery extends BaseVertexCentricQuery implements ElementQuery<TitanRelation, SliceQuery> {
+public class VertexCentricQuery extends BaseVertexCentricQuery implements ElementQuery<JanusGraphRelation, SliceQuery> {
 
     private final InternalVertex vertex;
 
-    public VertexCentricQuery(InternalVertex vertex, Condition<TitanRelation> condition,
+    public VertexCentricQuery(InternalVertex vertex, Condition<JanusGraphRelation> condition,
                               Direction direction,
                               List<BackendQueryHolder<SliceQuery>> queries,
                               OrderList orders,

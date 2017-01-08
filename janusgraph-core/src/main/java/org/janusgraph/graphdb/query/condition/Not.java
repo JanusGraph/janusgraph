@@ -3,7 +3,7 @@ package org.janusgraph.graphdb.query.condition;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.TitanElement;
+import org.janusgraph.core.JanusGraphElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
@@ -11,7 +11,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class Not<E extends TitanElement> implements Condition<E> {
+public class Not<E extends JanusGraphElement> implements Condition<E> {
 
     private final Condition<E> condition;
 
@@ -65,7 +65,7 @@ public class Not<E extends TitanElement> implements Condition<E> {
         return "!("+ condition.toString()+")";
     }
 
-    public static <E extends TitanElement> Not<E> of(Condition<E> element) {
+    public static <E extends JanusGraphElement> Not<E> of(Condition<E> element) {
         return new Not<E>(element);
     }
 

@@ -2,7 +2,7 @@ package org.janusgraph.pkgtest;
 
 import org.junit.Test;
 
-public class GremlinShellArgsIT extends AbstractTitanAssemblyIT {
+public class GremlinShellArgsIT extends AbstractJanusGraphAssemblyIT {
 
     @Test
     public void testScriptFileArgument() throws Exception {

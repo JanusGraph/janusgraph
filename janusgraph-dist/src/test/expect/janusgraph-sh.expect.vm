@@ -1,0 +1,72 @@
+#!/usr/bin/env expect
+spawn bin/janusgraph.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+
+expect "Usage: bin/janusgraph.sh"
+catch wait result
+if { 1 != [lindex $result 3] } { exit 1 }
+
+spawn bin/janusgraph.sh status
+expect -re "Gremlin-Server.*does not appear in the java process table"
+expect -re "Cassandra.*does not appear in the java process table"
+expect -re "Elasticsearch.*does not appear in the java process table"
+catch wait result
+if { 1 != [lindex $result 3] } { exit 1 }
+if { [file isdirectory db/es] } { exit 1 }
+if { [file isdirectory db/cassandra] } { exit 1 }
+
+system bin/janusgraph.sh start
+
+spawn bin/janusgraph.sh status
+expect -re "Gremlin-Server.*is running with pid"
+expect -re "Cassandra.*is running with pid"
+expect -re "Elasticsearch.*is running with pid"
+catch wait result
+if { 0 != [lindex $result 3] } { exit [lindex $result 3] }
+
+spawn bin/janusgraph.sh stop
+expect -re "Killing.*Gremlin-Server"
+expect -re "Killing.*Cassandra"
+expect -re "Killing.*Elasticsearch"
+catch wait result
+if { 0 != [lindex $result 3] } { exit [lindex $result 3] }
+
+spawn bin/janusgraph.sh status
+expect -re "Gremlin-Server.*does not appear in the java process table"
+expect -re "Cassandra.*does not appear in the java process table"
+expect -re "Elasticsearch.*does not appear in the java process table"
+catch wait result
+if { 1 != [lindex $result 3] } { exit 1 }
+if { ![file isdirectory db/es] } { exit 1 }
+if { ![file isdirectory db/cassandra] } { exit 1 }
+
+spawn bin/janusgraph.sh clean
+expect "Are you sure you want to delete all stored data and logs?"
+send "\r"
+catch wait result
+if { 0 != [lindex $result 3] } { exit [lindex $result 3] }
+if { ![file isdirectory db/es] } { exit 1 }
+if { ![file isdirectory db/cassandra] } { exit 1 }
+
+spawn bin/janusgraph.sh clean
+expect "Are you sure you want to delete all stored data and logs?"
+send "foobar\r"
+catch wait result
+if { 0 != [lindex $result 3] } { exit [lindex $result 3] }
+if { ![file isdirectory db/es] } { exit 1 }
+if { ![file isdirectory db/cassandra] } { exit 1 }
+
+spawn bin/janusgraph.sh clean
+expect "Are you sure you want to delete all stored data and logs?"
+send "y\r"
+catch wait result
+if { 0 != [lindex $result 3] } { exit [lindex $result 3] }
+if { [file isdirectory db/es] } { exit 1 }
+if { [file isdirectory db/cassandra] } { exit 1 }
+
+exit 0

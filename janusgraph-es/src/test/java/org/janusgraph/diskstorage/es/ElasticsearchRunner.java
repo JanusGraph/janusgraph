@@ -19,7 +19,7 @@ public class ElasticsearchRunner extends DaemonRunner<ElasticsearchStatus> {
     private static final Logger log =
             LoggerFactory.getLogger(ElasticsearchRunner.class);
 
-    public static final String ES_PID_FILE = "/tmp/titan-test-es.pid";
+    public static final String ES_PID_FILE = "/tmp/janusgraph-test-es.pid";
     private String configFile = "elasticsearch.yml";
 
     public ElasticsearchRunner() {

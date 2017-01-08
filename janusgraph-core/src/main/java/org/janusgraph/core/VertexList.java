@@ -3,17 +3,17 @@ package org.janusgraph.core;
 import com.carrotsearch.hppc.LongArrayList;
 
 /**
- * List of {@link TitanVertex}s.
+ * List of {@link JanusGraphVertex}s.
  * <p/>
  * Basic interface for a list of vertices which supports retrieving individuals vertices or iterating over all of them,
  * but does not support modification.
  * <p/>
- * VertexList is returned by {@link TitanVertexQuery}. Depending on how the query was executed that returned this VertexList,
+ * VertexList is returned by {@link JanusGraphVertexQuery}. Depending on how the query was executed that returned this VertexList,
  * getting vertex ids might be significantly faster than retrieving vertex objects.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface VertexList extends Iterable<TitanVertex> {
+public interface VertexList extends Iterable<JanusGraphVertex> {
 
 
     /**
@@ -27,9 +27,9 @@ public interface VertexList extends Iterable<TitanVertex> {
      * Returns the vertex at a given position in the list.
      *
      * @param pos Position for which to retrieve the vertex.
-     * @return TitanVertex at the given position
+     * @return JanusGraphVertex at the given position
      */
-    public TitanVertex get(int pos);
+    public JanusGraphVertex get(int pos);
 
     /**
      * Sorts this list according to vertex ids in increasing order.

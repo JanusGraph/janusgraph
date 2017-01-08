@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Singleton that contains and configures Titan's {@code MetricRegistry}.
+ * Singleton that contains and configures JanusGraph's {@code MetricRegistry}.
  */
 public enum MetricManager {
     INSTANCE;
@@ -41,9 +41,9 @@ public enum MetricManager {
     private GraphiteReporter graphiteReporter = null;
 
     /**
-     * Return the Titan Metrics registry.
+     * Return the JanusGraph Metrics registry.
      *
-     * @return the single {@code MetricRegistry} used for all of Titan's Metrics
+     * @return the single {@code MetricRegistry} used for all of JanusGraph's Metrics
      *         monitoring
      */
     public MetricRegistry getRegistry() {
@@ -51,7 +51,7 @@ public enum MetricManager {
     }
 
     /**
-     * Create a {@link ConsoleReporter} attached to the Titan Metrics registry.
+     * Create a {@link ConsoleReporter} attached to the JanusGraph Metrics registry.
      *
      * @param reportInterval
      *            time to wait between dumping metrics to the console
@@ -80,7 +80,7 @@ public enum MetricManager {
     }
 
     /**
-     * Create a {@link CsvReporter} attached to the Titan Metrics registry.
+     * Create a {@link CsvReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * The {@code output} argument must be non-null but need not exist. If it
      * doesn't already exist, this method attempts to create it by calling
@@ -127,7 +127,7 @@ public enum MetricManager {
     }
 
     /**
-     * Create a {@link JmxReporter} attached to the Titan Metrics registry.
+     * Create a {@link JmxReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * If {@code domain} or {@code agentId} is null, then Metrics's uses its own
      * internal default value(s).
@@ -183,7 +183,7 @@ public enum MetricManager {
     }
 
     /**
-     * Create a {@link Slf4jReporter} attached to the Titan Metrics registry.
+     * Create a {@link Slf4jReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * If {@code loggerName} is null, or if it is non-null but
      * {@link LoggerFactory#getLogger(loggerName)} returns null, then Metrics's
@@ -230,7 +230,7 @@ public enum MetricManager {
     }
 
     /**
-     * Create a {@link GangliaReporter} attached to the Titan Metrics registry.
+     * Create a {@link GangliaReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * {@code groupOrHost} and {@code addressingMode} must be non-null. The
      * remaining non-primitive arguments may be null. If {@code protocol31} is
@@ -303,7 +303,7 @@ public enum MetricManager {
     }
 
     /**
-     * Create a {@link GraphiteReporter} attached to the Titan Metrics registry.
+     * Create a {@link GraphiteReporter} attached to the JanusGraph Metrics registry.
      * <p>
      * If {@code prefix} is null, then Metrics's internal default prefix is used
      * (empty string at the time this comment was written).
@@ -353,7 +353,7 @@ public enum MetricManager {
     }
 
     /**
-     * Remove all Titan Metrics reporters previously configured through the
+     * Remove all JanusGraph Metrics reporters previously configured through the
      * {@code add*} methods on this class.
      */
     public synchronized void removeAllReporters() {

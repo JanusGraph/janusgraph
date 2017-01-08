@@ -24,9 +24,9 @@ public class SolrRunner {
 
     public static void start() throws Exception {
         String userDir = System.getProperty("user.dir");
-        String solrHome = userDir.contains("titan-solr")
+        String solrHome = userDir.contains("janusgraph-solr")
                 ? Joiner.on(File.separator).join(userDir, "target", "test-classes", "solr")
-                : Joiner.on(File.separator).join(userDir, "titan-solr", "target", "test-classes", "solr");
+                : Joiner.on(File.separator).join(userDir, "janusgraph-solr", "target", "test-classes", "solr");
 
 
         File templateDirectory = new File(solrHome + File.separator + TEMPLATE_DIRECTORY);

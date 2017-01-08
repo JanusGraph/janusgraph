@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * many times as start(). Some of Cassandra's background threads and statics
  * can't be easily reset to allow a restart inside the same JVM, so this was
  * intended as a one-use thing. However, this interacts poorly with the new
- * KCVConfiguration system in titan-core. When KCVConfiguration is in use, core
+ * KCVConfiguration system in janusgraph-core. When KCVConfiguration is in use, core
  * starts and stops each backend at least twice in the course of opening a
  * single database instance. So the old refcounting and killing approach is out.
  *

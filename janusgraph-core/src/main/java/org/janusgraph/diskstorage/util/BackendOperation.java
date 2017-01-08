@@ -1,7 +1,7 @@
 package org.janusgraph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TitanException;
+import org.janusgraph.core.JanusGraphException;
 
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -37,11 +37,11 @@ public class BackendOperation {
         return newDuration;
     }
 
-    public static final<V> V execute(Callable<V> exe, Duration totalWaitTime) throws TitanException {
+    public static final<V> V execute(Callable<V> exe, Duration totalWaitTime) throws JanusGraphException {
         try {
             return executeDirect(exe,totalWaitTime);
         } catch (BackendException e) {
-            throw new TitanException("Could not execute operation due to backend exception",e);
+            throw new JanusGraphException("Could not execute operation due to backend exception",e);
         }
     }
 
@@ -89,7 +89,7 @@ public class BackendOperation {
 //    private static final double WAITTIME_PERTURBATION_PERCENTAGE = 0.5;
 //    private static final double WAITTIME_PERTURBATION_PERCENTAGE_HALF = WAITTIME_PERTURBATION_PERCENTAGE/2;
 //
-//    public static final<V> V execute(Callable<V> exe, int maxRetryAttempts, Duration waitBetweenRetries) throws TitanException {
+//    public static final<V> V execute(Callable<V> exe, int maxRetryAttempts, Duration waitBetweenRetries) throws JanusGraphException {
 //        long retryWaittime = waitBetweenRetries.getLength(TimeUnit.MILLISECONDS);
 //        Preconditions.checkArgument(maxRetryAttempts>0,"Retry attempts must be positive");
 //        Preconditions.checkArgument(retryWaittime>=0,"Retry wait time must be non-negative");
@@ -103,10 +103,10 @@ public class BackendOperation {
 //                    lastException = e;
 //                    log.debug("Temporary exception during backend operation", e);
 //                } else {
-//                    throw new TitanException("Permanent exception during backend operation",e); //Its permanent
+//                    throw new JanusGraphException("Permanent exception during backend operation",e); //Its permanent
 //                }
 //            } catch (Throwable e) {
-//                throw new TitanException("Unexpected exception during backend operation",e);
+//                throw new JanusGraphException("Unexpected exception during backend operation",e);
 //            }
 //            //Wait and retry
 //            retryAttempts++;
@@ -118,11 +118,11 @@ public class BackendOperation {
 //                try {
 //                    Thread.sleep(waitTime);
 //                } catch (InterruptedException r) {
-//                    throw new TitanException("Interrupted while waiting to retry failed backend operation", r);
+//                    throw new JanusGraphException("Interrupted while waiting to retry failed backend operation", r);
 //                }
 //            }
 //        } while (retryAttempts<maxRetryAttempts);
-//        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
+//        throw new JanusGraphException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
 //    }
 
     public static<R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times) throws BackendException {
@@ -140,7 +140,7 @@ public class BackendOperation {
         }
     }
 
-    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, final TimestampProvider times, Duration maxTime) throws TitanException {
+    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, final TimestampProvider times, Duration maxTime) throws JanusGraphException {
         return execute(new Callable<R>() {
             @Override
             public R call() throws Exception {

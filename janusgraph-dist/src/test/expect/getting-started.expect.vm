@@ -10,14 +10,14 @@ expect gremlin>
 send "100-10\r"
 expect "==>90"
 expect gremlin>
-send "g = TitanFactory.open(\"${graphConfig}\")\r"
+send "g = JanusGraphFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
 expect gremlin>
 
 send "g.getBackend().clearStorage()\r"
 expect gremlin>
 
-send "g = TitanFactory.open(\"${graphConfig}\")\r"
+send "g = JanusGraphFactory.open(\"${graphConfig}\")\r"
 expect -re "${graphToString}"
 expect gremlin>
 
@@ -38,7 +38,7 @@ send "g.traversal().V(saturn).valueMap()\r"
 expect gremlin>
 
 send "saturn.label()\r"
-expect ==>titan
+expect ==>janusgraph
 expect gremlin>
 
 send "g.traversal().V(saturn).in('father').in('father').values('name')\r"

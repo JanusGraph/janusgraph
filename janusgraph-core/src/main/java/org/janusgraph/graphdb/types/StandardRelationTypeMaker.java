@@ -9,8 +9,8 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.serialize.AttributeHandler;
 import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.TitanSchemaCategory;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.SystemTypeManager;
 
 import java.util.*;
@@ -19,7 +19,7 @@ import static org.janusgraph.graphdb.types.TypeDefinitionCategory.*;
 
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
-    protected final StandardTitanTx tx;
+    protected final StandardJanusGraphTx tx;
     protected final IndexSerializer indexSerializer;
     protected final AttributeHandler attributeHandler;
 
@@ -31,7 +31,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     private Multiplicity multiplicity;
     private SchemaStatus status = SchemaStatus.ENABLED;
 
-    public StandardRelationTypeMaker(final StandardTitanTx tx, String name,
+    public StandardRelationTypeMaker(final StandardJanusGraphTx tx, String name,
                                      final IndexSerializer indexSerializer,
                                      final AttributeHandler attributeHandler) {
         Preconditions.checkNotNull(tx);
@@ -63,7 +63,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         return multiplicity;
     }
 
-    abstract TitanSchemaCategory getSchemaCategory();
+    abstract JanusGraphSchemaCategory getSchemaCategory();
 
     private void checkGeneralArguments() {
         checkSortKey(sortKey);
@@ -135,7 +135,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <br />
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link org.janusgraph.core.TitanVertexQuery#interval(org.janusgraph.core.PropertyKey, Comparable, Comparable)}.
+     * time interval using {@link org.janusgraph.core.JanusGraphVertexQuery#interval(org.janusgraph.core.PropertyKey, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
@@ -145,7 +145,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
      * <p/>
      * {@link org.janusgraph.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
-     * @param keys TitanTypes composing the sort key. The order is relevant.
+     * @param keys JanusGraphTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
      */
     public StandardRelationTypeMaker sortKey(PropertyKey... keys) {

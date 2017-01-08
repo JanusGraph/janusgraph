@@ -2,7 +2,7 @@ package org.janusgraph.graphdb.hbase;
 
 import org.janusgraph.HBaseStorageSetup;
 import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.TitanOperationCountingTest;
+import org.janusgraph.graphdb.JanusGraphOperationCountingTest;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.junit.AfterClass;
@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class HBaseOperationCountingTest extends TitanOperationCountingTest {
+public class HBaseOperationCountingTest extends JanusGraphOperationCountingTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {

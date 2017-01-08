@@ -11,7 +11,7 @@ import org.janusgraph.graphdb.internal.InternalRelation;
 import org.janusgraph.graphdb.internal.InternalRelationType;
 import org.janusgraph.graphdb.internal.InternalVertex;
 import org.janusgraph.graphdb.relations.*;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -20,7 +20,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 public class ModificationDeserializer {
 
 
-    public static InternalRelation parseRelation(TransactionLogHeader.Modification modification, StandardTitanTx tx) {
+    public static InternalRelation parseRelation(TransactionLogHeader.Modification modification, StandardJanusGraphTx tx) {
         Change state = modification.state;
         assert state.isProper();
         long outVertexId = modification.outVertexId;

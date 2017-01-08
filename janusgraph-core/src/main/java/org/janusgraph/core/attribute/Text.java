@@ -2,7 +2,7 @@ package org.janusgraph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import org.janusgraph.graphdb.query.TitanPredicate;
+import org.janusgraph.graphdb.query.JanusGraphPredicate;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum Text implements TitanPredicate {
+public enum Text implements JanusGraphPredicate {
 
     /**
      * Whether the text contains a given term as a token in the text (case insensitive)
@@ -187,7 +187,7 @@ public enum Text implements TitanPredicate {
     }
 
     @Override
-    public TitanPredicate negate() {
+    public JanusGraphPredicate negate() {
         throw new UnsupportedOperationException();
     }
 

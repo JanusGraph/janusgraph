@@ -1,4 +1,4 @@
-/titan/
+/janusgraph/
 /janusgraph-berkeleyje/
 /janusgraph-cassandra/
 /janusgraph-es/
@@ -12,7 +12,7 @@
 /janusgraph-hbase.substvars
 /janusgraph-lucene.substvars
 /janusgraph-persistit.substvars
-/titan.postinst.debhelper
-/titan.postrm.debhelper
-/titan.prerm.debhelper
-/titan.substvars
+/janusgraph.postinst.debhelper
+/janusgraph.postrm.debhelper
+/janusgraph.prerm.debhelper
+/janusgraph.substvars

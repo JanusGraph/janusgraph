@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.attribute.Cmp;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.CompositeIndexType;
 import org.janusgraph.graphdb.types.IndexField;
 import org.janusgraph.graphdb.types.system.ImplicitKey;
@@ -14,7 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class IndexHelper {
-    public static Iterable<? extends Element> getQueryResults(CompositeIndexType index, Object[] values, StandardTitanTx tx) {
+    public static Iterable<? extends Element> getQueryResults(CompositeIndexType index, Object[] values, StandardJanusGraphTx tx) {
         GraphCentricQueryBuilder gb = getQuery(index,values,tx);
         switch(index.getElement()) {
             case VERTEX:
@@ -27,7 +27,7 @@ public class IndexHelper {
         }
     }
 
-    public static GraphCentricQueryBuilder getQuery(CompositeIndexType index, Object[] values, StandardTitanTx tx) {
+    public static GraphCentricQueryBuilder getQuery(CompositeIndexType index, Object[] values, StandardJanusGraphTx tx) {
         Preconditions.checkArgument(index != null && values != null && values.length > 0 && tx != null);
         Preconditions.checkArgument(values.length==index.getFieldKeys().length);
         GraphCentricQueryBuilder gb = tx.query();

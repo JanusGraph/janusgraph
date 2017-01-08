@@ -3,10 +3,10 @@ package org.janusgraph.graphdb.database.management;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.TitanGraph;
+import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.TitanGraphIndex;
-import org.janusgraph.core.schema.TitanManagement;
+import org.janusgraph.core.schema.JanusGraphIndex;
+import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.util.time.Timer;
 import org.janusgraph.diskstorage.util.time.TimestampProviders;
 import org.slf4j.Logger;
@@ -22,7 +22,7 @@ public class GraphIndexStatusWatcher
 
     private String graphIndexName;
 
-    public GraphIndexStatusWatcher(TitanGraph g, String graphIndexName) {
+    public GraphIndexStatusWatcher(JanusGraph g, String graphIndexName) {
         super(g);
         this.graphIndexName = graphIndexName;
     }
@@ -40,12 +40,12 @@ public class GraphIndexStatusWatcher
 
         Map<String, SchemaStatus> notConverged = new HashMap<>();
         Map<String, SchemaStatus> converged = new HashMap<>();
-        TitanGraphIndex idx;
+        JanusGraphIndex idx;
 
         Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
-            TitanManagement mgmt = null;
+            JanusGraphManagement mgmt = null;
             try {
                 mgmt = g.openManagement();
                 idx = mgmt.getGraphIndex(graphIndexName);

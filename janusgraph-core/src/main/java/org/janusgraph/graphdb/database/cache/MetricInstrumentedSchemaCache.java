@@ -3,7 +3,7 @@ package org.janusgraph.graphdb.database.cache;
 import org.janusgraph.diskstorage.EntryList;
 import org.janusgraph.diskstorage.util.CacheMetricsAction;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.transaction.StandardTitanTx;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.system.BaseRelationType;
 import org.janusgraph.util.stats.MetricManager;
 import org.apache.tinkerpop.gremlin.structure.Direction;

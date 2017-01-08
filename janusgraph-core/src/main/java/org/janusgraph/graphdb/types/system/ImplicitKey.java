@@ -27,7 +27,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
 
     public static final ImplicitKey ID = new ImplicitKey(1001, T.id.getAccessor() ,Object.class);
 
-    public static final ImplicitKey TITANID = new ImplicitKey(1002,Token.makeSystemName("nid"),Long.class);
+    public static final ImplicitKey JANUSGRAPHID = new ImplicitKey(1002,Token.makeSystemName("nid"),Long.class);
 
     public static final ImplicitKey LABEL = new ImplicitKey(11, T.label.getAccessor() ,String.class);
 
@@ -60,22 +60,22 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
         assert Token.isSystemName(name);
         this.datatype=datatype;
         this.name=name;
-        this.id= BaseRelationType.getSystemTypeId(id, TitanSchemaCategory.PROPERTYKEY);
+        this.id= BaseRelationType.getSystemTypeId(id, JanusGraphSchemaCategory.PROPERTYKEY);
     }
 
 
     public<O> O computeProperty(InternalElement e) {
         if (this==ID) {
             return (O)e.id();
-        } else if (this==TITANID) {
+        } else if (this==JANUSGRAPHID) {
             return (O)Long.valueOf(e.longId());
         } else if (this==LABEL) {
             return (O)e.label();
         } else if (this==KEY) {
-            if (e instanceof TitanProperty) return (O)((TitanProperty)e).key();
+            if (e instanceof JanusGraphProperty) return (O)((JanusGraphProperty)e).key();
             else return null;
         } else if (this==VALUE) {
-            if (e instanceof TitanProperty) return (O)((TitanProperty)e).value();
+            if (e instanceof JanusGraphProperty) return (O)((JanusGraphProperty)e).value();
             else return null;
         } else if (this==TIMESTAMP || this==VISIBILITY) {
             if (e instanceof InternalRelation) {

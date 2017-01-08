@@ -23,10 +23,10 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
 
     private RecordReader<StaticBuffer, Iterable<Entry>> reader;
     private GiraphInputFormat.RefCountedCloseable countedDeser;
-    private TitanVertexDeserializer deser;
+    private JanusGraphVertexDeserializer deser;
     private VertexWritable vertex;
 
-    public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<TitanVertexDeserializer> countedDeser,
+    public GiraphRecordReader(final GiraphInputFormat.RefCountedCloseable<JanusGraphVertexDeserializer> countedDeser,
                               final RecordReader<StaticBuffer, Iterable<Entry>> reader) {
         this.countedDeser = countedDeser;
         this.reader = reader;
@@ -41,7 +41,7 @@ public class GiraphRecordReader extends RecordReader<NullWritable, VertexWritabl
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (reader.nextKeyValue()) {
-            // TODO titan05 integration -- the duplicate() call may be unnecessary
+            // TODO janusgraph05 integration -- the duplicate() call may be unnecessary
             final TinkerVertex maybeNullTinkerVertex =
                     deser.readHadoopVertex(reader.getCurrentKey(), reader.getCurrentValue());
             if (null != maybeNullTinkerVertex) {
