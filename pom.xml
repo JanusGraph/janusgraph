@@ -411,7 +411,7 @@
                         -->
                         <server>github</server>
                         <repositoryName>janusgraph</repositoryName>
-                        <repositoryOwner>thinkaurelius</repositoryOwner>
+                        <repositoryOwner>JanusGraph</repositoryOwner>
                     </configuration>
                 </plugin>
                 <plugin>
