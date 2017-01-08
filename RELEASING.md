@@ -1,5 +1,5 @@
 Releasing JanusGraph
-===============
+====================
 
 Prerequisites
 -------------
@@ -55,7 +55,7 @@ Files in the main repo:
 * NOTICE.txt
 * UPGRADE.asc
 * janusgraph-site/src/site-resources/index.html
-  (this template generates a new http://thinkaurelius.github.io/titan/)
+  (this template generates a new root index page)
 
 Some of these updates could potentially be automated, but tweaking
 documentation before a release will always require at least human in
