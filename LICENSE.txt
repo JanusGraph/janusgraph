@@ -17,7 +17,7 @@ The documentation of JanusGraph is under a combination of licenses:
 
 All new contributions to JanusGraph are accepted under the following licenses:
 
-* APACHE-2.0 license for code contributions
+* APACHE-2.0 license for code contributions, including code samples in docs
 * CC-BY-4.0 license for documentation contributions
 
 For convenience, copies of APACHE-2.0 and CC-BY-4.0 are included verbatim below.
