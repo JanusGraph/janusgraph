@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-cassandra</artifactId>
     <name>JanusGraph-Cassandra: Distributed Graph Database</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     <properties>
         <astyanax.version>3.8.0</astyanax.version>
         <jamm.group>com.github.jbellis</jamm.group>

@@ -9,7 +9,7 @@
     <artifactId>janusgraph-hadoop-parent</artifactId>
     <name>JanusGraph-Hadoop: Parent Module</name>
     <packaging>pom</packaging>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
 
     <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>

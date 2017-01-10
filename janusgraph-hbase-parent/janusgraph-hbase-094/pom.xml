@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-hbase-094</artifactId>
     <name>JanusGraph-HBase: 0.94 Compatibility Shim</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     
     <properties>
         <hadoop.version>${hadoop1.version}</hadoop.version>
