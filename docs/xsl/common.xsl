@@ -104,7 +104,7 @@
           <div class="avada-row" style="margin-top:0px;margin-bottom:0px;">
             <div class="logo" style="margin-right:0px;margin-top:31px;margin-left:0px;margin-bottom:31px;">
               <a href="http://janusgraph.org">
-                <img src="avada-stub/images/titandb-logo.png" alt="JanusGraph" class="normal_logo" />
+                <img src="avada-stub/images/janusgraph-logo.png" alt="JanusGraph" class="normal_logo" />
               </a>
             </div>
             <nav id="nav" class="nav-holder">
@@ -125,7 +125,7 @@
         <div class="avada-row">
           <div class="logo">
             <a href="http://janusgraph.org">
-              <img src="avada-stub/images/titandb-logo.png" alt="JanusGraph" data-max-width="" class="normal_logo" />
+              <img src="avada-stub/images/janusgraph-logo.png" alt="JanusGraph" data-max-width="" class="normal_logo" />
             </a>
           </div>
           <nav id="sticky-nav" class="nav-holder">
