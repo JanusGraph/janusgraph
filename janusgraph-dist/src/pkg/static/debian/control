@@ -3,9 +3,9 @@ Section: misc
 Priority: extra
 Maintainer: Dan LaRocque <dalaro@hopcount.org>
 Build-Depends: debhelper (>= 7), openjdk-7-jdk | java7-sdk, maven
-Homepage: http://titan.thinkaurelius.com
-Vcs-Git: https://github.com/thinkaurelius/titan.git
-Vcs-Browser: https://github.com/thinkaurelius/titan
+Homepage: http://janusgraph.org
+Vcs-Git: https://github.com/JanusGraph/janusgraph.git
+Vcs-Browser: https://github.com/JanusGraph/janusgraph
 Standards-Version: 3.9.4
 
 Package: janusgraph

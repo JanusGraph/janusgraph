@@ -13,4 +13,5 @@
 
 DataStax
 Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
+Expero
 Google
