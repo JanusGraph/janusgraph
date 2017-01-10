@@ -9,7 +9,7 @@
     <artifactId>janusgraph-hbase-parent</artifactId>
     <packaging>pom</packaging>
     <name>JanusGraph-HBase: Parent Module</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     
     <modules>
         <module>janusgraph-hbase-core</module>

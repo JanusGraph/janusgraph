@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
     <artifactId>janusgraph-dist-hadoop-1</artifactId>
     <name>JanusGraph-Dist: Archive with Hadoop 1</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
 
     <properties>
         <hadoop.version.tag>hadoop1</hadoop.version.tag>

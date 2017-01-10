@@ -1,4 +1,4 @@
-[[titan-advanced]]
+[[janusgraph-advanced]]
 Advanced Topics
 ===============
 

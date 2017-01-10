@@ -8,7 +8,7 @@
     </parent>
     <artifactId>janusgraph-berkeleyje</artifactId>
     <name>JanusGraph-BerkeleyJE: Distributed Graph Database</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <url>http://janusgraph.org</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>

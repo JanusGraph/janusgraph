@@ -2,7 +2,7 @@
 Search Predicates and Data Types
 --------------------------------
 
-This page lists all of the comparison predicates that Titan supports in global graph search and local traversals.
+This page lists all of the comparison predicates that JanusGraph supports in global graph search and local traversals.
 
 Compare Predicate
 ~~~~~~~~~~~~~~~~~
@@ -69,7 +69,7 @@ g.V().has("age", gt(1000)).has("name", "saturn")
 Data Type Support
 ~~~~~~~~~~~~~~~~~
 
-While Titan's composite indexes support any data type that can be stored in Titan, the mixed indexes are limited to the following data types.
+While JanusGraph's composite indexes support any data type that can be stored in JanusGraph, the mixed indexes are limited to the following data types.
 
  * Byte
  * Short
@@ -125,7 +125,7 @@ In addition when importing a graph via GraphSON Point may be represented by:
 }
 
 link:http://geojson.org/[GeoJSON] may be specified as Point, Circle or Polygon. However polygons must form a box.
-Note that unlike the Titan API GeoJSON specifies coordinates as lng lat.
+Note that unlike the JanusGraph API GeoJSON specifies coordinates as lng lat.
 
 Collections
 ~~~~~~~~~~~

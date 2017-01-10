@@ -15,13 +15,13 @@
 
   <!-- Importing our customization of docbook.xsl in accordance with the
        comment at the top of chunk.xsl -->
-  <xsl:import  href="titansingle.xsl"/>
+  <xsl:import  href="single.xsl"/>
   <xsl:import  href="docbook/html/chunk-common.xsl"/>
   <xsl:include href="docbook/html/chunk-code.xsl"/>
   
   <xsl:param name="base.dir">$MAVEN{htmlchunk.output.dir}</xsl:param>
   
-  <xsl:param name="titan.top.nav.links" select="1" />
+  <xsl:param name="janusgraph.top.nav.links" select="1" />
 
   <xsl:param name="generate.toc">
   book         toc,title
@@ -46,7 +46,7 @@
     </xsl:param>
     <xsl:param name="navheader">  
 <!--
-        <xsl:call-template name="titan.header.navigation">
+        <xsl:call-template name="janusgraph.header.navigation">
           <xsl:with-param name="prev" select="$prev"/>
           <xsl:with-param name="next" select="$next"/>
           <xsl:with-param name="nav.context" select="$nav.context"/>
@@ -58,7 +58,7 @@
           <xsl:with-param name="nav.context" select="$nav.context"/>
         </xsl:call-template>
 -->
-        <xsl:call-template name="titan.header.navigation">
+        <xsl:call-template name="janusgraph.header.navigation">
           <xsl:with-param name="prev" select="$prev"/>
           <xsl:with-param name="next" select="$next"/>
           <xsl:with-param name="nav.context" select="$nav.context"/>
@@ -88,7 +88,7 @@
         <xsl:with-param name="next" select="$next"/>
       </xsl:call-template>
   
-      <xsl:call-template name="titan.body">
+      <xsl:call-template name="janusgraph.body">
         <xsl:with-param name="headercontent" select="$navheader"/>
         <xsl:with-param name="maincontent"   select="$content"/>
         <xsl:with-param name="footercontent" select="$navfooter"/>

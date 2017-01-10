@@ -14,8 +14,8 @@
     extension-element-prefixes="sbhl xslthl">
 
   <xsl:import href="docbook/html/docbook.xsl"/>
-  <xsl:import href="highlight/titanhighlight.xsl"/>
-  <xsl:import href="titancommon.xsl"/>
+  <xsl:import href="highlight/highlight.xsl"/>
+  <xsl:import href="common.xsl"/>
   
   <xsl:output
       method="html"
@@ -31,7 +31,7 @@
   </xsl:param>
   
   <xsl:template name="user.head.content">
-    <xsl:call-template name="titan.head"/>
+    <xsl:call-template name="janusgraph.head"/>
   </xsl:template>
   
   <xsl:template match="*" mode="process.root">
@@ -59,7 +59,7 @@
         </xsl:call-template>
       </head>
   
-      <xsl:call-template name="titan.body">
+      <xsl:call-template name="janusgraph.body">
         <xsl:with-param name="maincontent" select="$content"/>
       </xsl:call-template>
     </html>
