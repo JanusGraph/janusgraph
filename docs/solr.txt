@@ -37,7 +37,7 @@ index.search.solr.mode=cloud
 index.search.solr.zookeeper-url=localhost:2181
 ----
 
-A number of additional configuration options pertaining to the creation of new collections (which is only supported in SolrCloud operation mode) can be configured to control sharding behavior among other things. Refer to the <<janusgraph-config-ref>> for a complete listing of those options.
+A number of additional configuration options pertaining to the creation of new collections (which is only supported in SolrCloud operation mode) can be configured to control sharding behavior among other things. Refer to the <<config-ref>> for a complete listing of those options.
 
 
 Connecting via HTTP
@@ -52,7 +52,7 @@ index.search.solr.mode=http
 index.search.solr.http-urls=http://localhost:8983/solr
 ----
 
-Additional configuration options for controlling the maximum number of connections, connection timeout and transmission compression are available for the HTTP mode. Refer to the <<janusgraph-config-ref>> for a complete listing of those options.
+Additional configuration options for controlling the maximum number of connections, connection timeout and transmission compression are available for the HTTP mode. Refer to the <<config-ref>> for a complete listing of those options.
 
 Solr Collections
 ^^^^^^^^^^^^^^^^

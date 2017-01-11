@@ -80,7 +80,7 @@ plugins:
 HBase Specific Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Refer to <<janusgraph-config-ref>> for a complete listing of all HBase specific configuration options in addition to the general JanusGraph configuration options.
+Refer to <<config-ref>> for a complete listing of all HBase specific configuration options in addition to the general JanusGraph configuration options.
 
 When configuring HBase it is recommended to consider the following HBase specific configuration options:
 
@@ -91,7 +91,7 @@ Please refer to the http://hbase.apache.org/book/config.files.html[HBase configu
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-JanusGraph over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<janusgraph-hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
+JanusGraph over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
 ~~~~~~~~~~~~~~~~~~~~~~~
