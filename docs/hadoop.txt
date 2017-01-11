@@ -1,4 +1,4 @@
-[[janusgraph-hadoop-tp3]]
+[[hadoop-tp3]]
 JanusGraph with TinkerPop's Hadoop-Gremlin
 ------------------------------------------
 

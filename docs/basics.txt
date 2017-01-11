@@ -1,4 +1,4 @@
-[[janusgraph-basics]]
+[[basics]]
 JanusGraph Basics
 =================
 
@@ -16,7 +16,7 @@ If advanced graph query support (e.g full-text search, geo search, or range quer
 Example Configurations
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Below are some example configuration files to demonstrate how to configure the most commonly used storage backends, indexing systems, and performance components. This covers only a tiny portion of the available configuration options. Refer to <<janusgraph-config-ref>> for the complete list of all options.
+Below are some example configuration files to demonstrate how to configure the most commonly used storage backends, indexing systems, and performance components. This covers only a tiny portion of the available configuration options. Refer to <<config-ref>> for the complete list of all options.
 
 Cassandra+Elasticsearch
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -67,7 +67,7 @@ index.search.elasticsearch.client-only=false
 index.search.elasticsearch.local-mode=true
 ----
 
-<<janusgraph-config-ref>>_ describes all of these configuration options in detail. The +conf+ directory of the JanusGraph distribution contains additional configuration examples.
+<<config-ref>>_ describes all of these configuration options in detail. The +conf+ directory of the JanusGraph distribution contains additional configuration examples.
 
 Further Examples
 ^^^^^^^^^^^^^^^^
@@ -198,7 +198,7 @@ To change _GLOBAL_OFFLINE_ options follow these steps:
 * Call commit which will automatically shut down the graph instance
 * Restart all instances
 
-Refer to the full list of configuration options in <<janusgraph-config-ref>> for more information including the configuration scope of each option.
+Refer to the full list of configuration options in <<config-ref>> for more information including the configuration scope of each option.
 
 
 [[schema]]
@@ -480,7 +480,7 @@ JanusGraph uses the http://tinkerpop.incubator.apache.org/docs/{tinkerpop_versio
 
 JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSockets configuration, as well as describe how to configure JanusGraph Server to handle REST-style interactions.
 
-[[janusgraph-server-getting-started]]
+[[server-getting-started]]
 Getting Started
 ~~~~~~~~~~~~~~~
 
@@ -537,7 +537,7 @@ The `:remote` command tells the console to configure a remote connection to Grem
 JanusGraph Server as a WebSocket Endpoint
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default configuration described in <<janusgraph-server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
+The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
 
 .To Configure JanusGraph Server For WebSockets
 . Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
@@ -586,7 +586,7 @@ IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration,
 JanusGraph Server as a REST-style Endpoint
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default configuration described in <<janusgraph-server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a REST endpoint for your JanusGraph database, follow these steps:
+The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a REST endpoint for your JanusGraph database, follow these steps:
 
 .To Configure JanusGraph Server For Rest
 . Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
@@ -1149,7 +1149,7 @@ The example above demonstrates a simplified user signup implementation where `na
 
 If the transaction fails, a `JanusGraphException` is thrown. There are a variety of reasons why a transaction may fail. JanusGraph differentiates between _potentially temporary_ and _permanent_ failures.
 
-Potentially temporary failures are those related to resource unavailability and IO hiccups (e.g. network timeouts). JanusGraph automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<janusgraph-config-ref>>).
+Potentially temporary failures are those related to resource unavailability and IO hiccups (e.g. network timeouts). JanusGraph automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<config-ref>>).
 
 Permanent failures can be caused by complete connection loss, hardware failure or lock contention. To understand the cause of lock contention, consider the signup example above and suppose a user tries to signup with username "juno". That username may still be available at the beginning of the transaction but by the time the transaction is committed, another user might have concurrently registered with "juno" as well and that transaction holds the lock on the username therefore causing the other transaction to fail. Depending on the transaction semantics one can recover from a lock contention failure by re-running the entire transaction.
 
@@ -1309,7 +1309,7 @@ Database Level Caching
 
 The database level cache retains adjacency lists (or subsets thereof) across multiple transactions and beyond the duration of a single transaction. The database level cache is shared by all transactions across a database. It is more space efficient than the transaction level caches but also slightly slower to access. In contrast to the transaction level caches, the database level caches do not expire immediately after closing a transaction. Hence, the database level cache significantly speeds up graph traversals for read heavy workloads across transactions.
 
-<<janusgraph-config-ref>> lists all of the configuration options that pertain to JanusGraph's database level cache. This page attempts to explain their usage.
+<<config-ref>> lists all of the configuration options that pertain to JanusGraph's database level cache. This page attempts to explain their usage.
 
 Most importantly, the database level cache is disabled by default in the current release version of JanusGraph. To enable it, set `cache.db-cache=true`.
 
@@ -1455,7 +1455,7 @@ The user transaction log provides the basic infrastructure to implement triggers
 Log Configuration
 ~~~~~~~~~~~~~~~~~
 
-There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<janusgraph-config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL).
+There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL).
 
 include::configref.txt[]
 
@@ -1598,6 +1598,6 @@ Mixed indexes only support a subset of the data types that JanusGraph supports. 
 Batch Loading Speed
 ^^^^^^^^^^^^^^^^^^^
 
-JanusGraph provides a batch loading mode that can be enabled through the <<janusgraph-config-ref, graph configuration>>. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in JanusGraph is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in JanusGraph.
+JanusGraph provides a batch loading mode that can be enabled through the <<config-ref, graph configuration>>. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in JanusGraph is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in JanusGraph.
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries.

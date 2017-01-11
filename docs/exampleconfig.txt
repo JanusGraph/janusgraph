@@ -2,7 +2,7 @@
 Example Graph Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This page illustrates a number of common graph configurations. Please refer to <<janusgraph-config-ref>> and the pages of the respective <<storage-backends, storage backend>>  <<index-backends, index backend>> for more information.
+This page illustrates a number of common graph configurations. Please refer to <<config-ref>> and the pages of the respective <<storage-backends, storage backend>>  <<index-backends, index backend>> for more information.
 
 Also, note that the JanusGraph distribution includes local configuration files in the `conf/` directory.
 

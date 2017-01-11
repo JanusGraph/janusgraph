@@ -66,7 +66,7 @@ Configuration on the `interface` track proceeds through roughly the following st
 
 . If the JanusGraph config option `index.[X].conf-file` is set, it's interpreted as the name of an Elasticsearch config file and its contents are copied into the ES transport or node configuration
 . Any JanusGraph config options starting with `index.[X].elasticsearch.ext.` are copied verbatim to the ES transport or node configuration
-. Any other ES-related JanusGraph config options listed in JanusGraph's config file are copied into their respective ES transport or node configuration settings (<<janusgraph-config-ref>> lists these options)
+. Any other ES-related JanusGraph config options listed in JanusGraph's config file are copied into their respective ES transport or node configuration settings (<<config-ref>> lists these options)
 . `script.disable_dynamic` is set to false
 
 [[es-cfg-common-opts]]
@@ -112,7 +112,7 @@ The `conf-file` and `ext` mechanisms can be used together.  The `conf-file`, whe
 JanusGraph `index.[X]` and `index.[X].elasticsearch` options
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-After processing `conf-file` and `ext`, JanusGraph checks for the following common options.  On the `interface` config track, JanusGraph's only uses default values for `index-name` and `health-request-timeout`.  If `ignore-cluster-name` or `cluster-name` is unset in JanusGraph's configuration, then Elasticsearch's internal defaults, any setting from `conf-file`, and any setting from `ext` apply, in that order.  See <<janusgraph-config-ref>> for descriptions of these options and their accepted values.
+After processing `conf-file` and `ext`, JanusGraph checks for the following common options.  On the `interface` config track, JanusGraph's only uses default values for `index-name` and `health-request-timeout`.  If `ignore-cluster-name` or `cluster-name` is unset in JanusGraph's configuration, then Elasticsearch's internal defaults, any setting from `conf-file`, and any setting from `ext` apply, in that order.  See <<config-ref>> for descriptions of these options and their accepted values.
 
 * `index.[X].elasticsearch.index-name`
 * `index.[X].elasticsearch.cluster-name`
@@ -136,7 +136,7 @@ Furthermore, the Transport client accepts the `index.[X].client-sniff` option.  
 Node Client Options
 ^^^^^^^^^^^^^^^^^^^
 
-In addition to common options described in <<es-cfg-common-opts>>, the Node client also respects the following JanusGraph config options.  See <<janusgraph-config-ref>> for descriptions of these options and their accepted values.
+In addition to common options described in <<es-cfg-common-opts>>, the Node client also respects the following JanusGraph config options.  See <<config-ref>> for descriptions of these options and their accepted values.
 
 * `index.[X].directory`
 * `index.[X].elasticsearch.ttl-interval`
@@ -320,7 +320,7 @@ In the above configuration, the index backend is named `search`. Replace `search
 Legacy Configuration Options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section lists the subset of ES options that are effective on the legacy configuration track.  See <<janusgraph-config-ref>> for descriptions of these options and their accepted values.
+This section lists the subset of ES options that are effective on the legacy configuration track.  See <<config-ref>> for descriptions of these options and their accepted values.
 
 * `index.[X].elasticsearch.index-name`
 * `index.[X].elasticsearch.cluster-name`
