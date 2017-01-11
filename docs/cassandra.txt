@@ -99,7 +99,7 @@ Note, that running JanusGraph with Cassandra embedded requires GC tuning. While 
 Cassandra Specific Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Refer to <<janusgraph-config-ref>> for a complete listing of all Cassandra specific configuration options in addition to the general JanusGraph configuration options.
+Refer to <<config-ref>> for a complete listing of all Cassandra specific configuration options in addition to the general JanusGraph configuration options.
 
 When configuring Cassandra it is recommended to consider the following Cassandra specific configuration options:
 
@@ -114,7 +114,7 @@ For more information on Cassandra consistency levels and acceptable values, plea
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-JanusGraph over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<janusgraph-hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
+JanusGraph over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
 
 Deploying on Amazon EC2
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,7 +197,7 @@ Example JanusGraph Instance on Amazon Linux AMI
       storage.backend = cassandra
       storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 
-You may add additional configuration options found on this page or in <<janusgraph-config-ref>>.
+You may add additional configuration options found on this page or in <<config-ref>>.
 
 * Start the gremlin shell again and type the following::
 
