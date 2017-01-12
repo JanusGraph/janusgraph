@@ -43,7 +43,7 @@ account.
 
 To fork the repo locally, use one of the following methods:
 
-  * if you have using [SSH keys](https://help.github.com/articles/generating-an-ssh-key/), run:
+  * if you have set up and are using [SSH keys](https://help.github.com/articles/generating-an-ssh-key/), run:
 
     ```bash
     $ git clone git@github.com:$USER/janusgraph
