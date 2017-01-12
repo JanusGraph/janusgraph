@@ -177,7 +177,7 @@ gremlin>
 
 Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/[Tinkerpop documentation] for more information on package handling.
 
-The Gremlin terminal is a http://groovy.codehaus.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
+The Gremlin terminal is a http://www.groovy-lang.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
 
 [source, gremlin]
 gremlin> 100-10
