@@ -5,3 +5,8 @@ JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Gr
 ## Learn More
 
 The [project homepage](http://janusgraph.org) contains more information on JanusGraph and provides links to documentation, getting-started guides and release downloads.
+
+## Contributing
+
+Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
+CLAs and best practices for working with GitHub.
