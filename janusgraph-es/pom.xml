@@ -69,7 +69,7 @@
 
         <!-- Logging backends.
              Enforce a classpath ordering constraint to ensure log4j is used for logging.
-             See comment in titan-cassandra POM for more information. -->
+             See comment in janusgraph-cassandra POM for more information. -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
