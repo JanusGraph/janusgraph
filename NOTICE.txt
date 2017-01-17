@@ -27,7 +27,7 @@ It also includes software from other open source projects including, but not lim
  * Apache Cassandra [http://cassandra.apache.org/]
  * Apache Lucene [http://lucene.apache.org/]
  * Apache MRUnit [http://mrunit.apache.org/]
- * Codehaus Groovy [http://groovy.codehaus.org/]
+ * Apache Groovy [http://www.groovy-lang.org/]
  * OpenRDF [http://www.openrdf.org/]
  * Elastic Search [http://www.elasticsearch.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
