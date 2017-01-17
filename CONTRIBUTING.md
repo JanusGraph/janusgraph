@@ -2,36 +2,8 @@
 
 ## Sign the CLA
 
-Before you can contribute to JanusGraph, please sign the Contributor License
-Agreement (CLA). This is not a copyright *assignment*, it simply gives the
-JanusGraph project the permission and license to use and redistribute your
-contributions as part of the project.
-
-* If you are an individual writing original source code and you're sure you own
-  the intellectual property, then you'll need to sign an
-  [individual CLA](https://github.com/JanusGraph/legal/blob/master/JanusGraph_ICLA_1.0.pdf).
-
-* If you work for a company or another organization that may have claim to
-  intellectual property you may produce, and the organization wants to allow you
-  to contribute your work, then an authoraized representative of the
-  organization will need to sign a
-  [corporate CLA](https://github.com/JanusGraph/legal/blob/master/JanusGraph_CCLA_1.0.pdf).
-
-Whether you sign the CCLA or the ICLA, for each contributor, please include:
-
-* the full name
-* your email address
-* your GitHub user id
-
-Be sure to also configure your local GitHub clone to match the name and email
-address in your CLA. See instructions below for details.
-
-Once you've signed the CLA, please scan it in, and email it to
-janusgraph-cla@googlegroups.com — this is a private list and not open to the
-public.
-
-For now, the process is manual; in the future, we hope to have an electronic
-method for CLA signatures which will be much easier to manage.
+To sign the JanusGraph CLA, please follow [the
+instructions in `janusgraph/legal`](https://github.com/JanusGraph/legal).
 
 ## Fork the repository on GitHub
 
