@@ -6,6 +6,17 @@ JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Gr
 
 The [project homepage](http://janusgraph.org) contains more information on JanusGraph and provides links to documentation, getting-started guides and release downloads.
 
+## Contact
+
+* Email:
+  * janusgraph-users@googlegroups.com
+    ([archives](https://groups.google.com/group/janusgraph-users))
+    for questions about using JanusGraph, installation, configuration, integrations
+  * janusgraph-dev@googlegroups.com
+    ([archives](https://groups.google.com/group/janusgraph-dev))
+    for internal implementation of JanusGraph itself
+* Chat: find us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
+
 ## Contributing
 
 Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information, including
