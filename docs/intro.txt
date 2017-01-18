@@ -19,9 +19,9 @@ General JanusGraph Benefits
 * Support for very many concurrent transactions and operational graph processing. JanusGraph's transactional capacity scales with the number of machines in the cluster and answers complex traversal queries on huge graphs in milliseconds.
 * Support for global graph analytics and batch graph processing through the Hadoop framework.
 * Support for geo, numeric range, and full text search for vertices and edges on very large graphs.
-* Native support for the popular property graph data model exposed by http://tinkerpop.incubator.apache.org/[TinkerPop].
-* Native support for the graph traversal language http://tinkerpop.incubator.apache.org/[Gremlin].
-* Easy integration with the http://tinkerpop.incubator.apache.org/[Gremlin] graph server for programming language agnostic connectivity.
+* Native support for the popular property graph data model exposed by http://tinkerpop.apache.org/[TinkerPop].
+* Native support for the graph traversal language http://tinkerpop.apache.org/[Gremlin].
+* Easy integration with the http://tinkerpop.apache.org/[Gremlin] graph server for programming language agnostic connectivity.
 * Numerous graph-level configurations provide knobs for tuning performance.
 * Vertex-centric indices provide vertex-level querying to alleviate issues with the infamous http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/[super node problem].
 * Provides an optimized disk representation to allow for efficient use of storage and speed of access.
@@ -101,8 +101,8 @@ JanusGraph's modular architecture supports third-party adapters.
 
 Broadly speaking, applications can interact with JanusGraph in two ways:
 
-* Embed JanusGraph inside the application executing http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#graph-traversal-steps[Gremlin] queries directly against the graph within the same JVM. Query execution, JanusGraph's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
-* Interact with a local or remote JanusGraph instance by submitting Gremlin queries to the server. JanusGraph natively supports the Gremlin Server component of the http://tinkerpop.incubator.apache.org/[Tinkerpop] stack.
+* Embed JanusGraph inside the application executing http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#graph-traversal-steps[Gremlin] queries directly against the graph within the same JVM. Query execution, JanusGraph's caches, and transaction handling all happen in the same JVM as the application while data retrieval from the storage backend may be local or remote.
+* Interact with a local or remote JanusGraph instance by submitting Gremlin queries to the server. JanusGraph natively supports the Gremlin Server component of the http://tinkerpop.apache.org/[Tinkerpop] stack.
 
 .High-level JanusGraph Architecture and Context
 image::architecture-layer-diagram.svg[]
@@ -128,7 +128,7 @@ Gods. Ultimately, the Gods won and Jupiter took the throne as leader
 of the Gods.
 _______
 
-The examples in this section make extensive use of a toy graph distributed with JanusGraph called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#intro[Property Graph Model] and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
+The examples in this section make extensive use of a toy graph distributed with JanusGraph called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#intro[Property Graph Model] and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
 
 
 .Graph of the Gods
@@ -175,7 +175,7 @@ plugin activated: janusgraph.imports
 gremlin>
 ----
 
-Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/[Tinkerpop documentation] for more information on package handling.
+Note, that this tutorial assumes the activation of the `tinkerpop.sugar` package for more concise syntax. Please refer to the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference[Tinkerpop documentation] for more information on package handling.
 
 The Gremlin terminal is a http://www.groovy-lang.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
 
@@ -189,7 +189,7 @@ gremlin> [name:'aurelius', vocation:['philosopher', 'emperor']]
 ==>vocation=[philosopher, emperor]
 
 [TIP]
-Refer to http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
+Refer to http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
 
 Loading the Graph of the Gods Into JanusGraph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -291,7 +291,7 @@ gremlin> g.V(hercules).out('father', 'mother').label()
 gremlin> hercules.label()
 ==>demigod
 
-The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#intro[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.
+The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#intro[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.
 
 [source, gremlin]
 gremlin> g.V(hercules).out('battled')
