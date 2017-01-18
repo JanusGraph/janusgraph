@@ -81,7 +81,7 @@ plugins:
   - janusgraph.imports
 ...
 ----
-For more information about gremlin server see the latest http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#gremlin-server[Tinkerpop documentation]
+For more information about gremlin server see the latest http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#gremlin-server[Tinkerpop documentation]
 
 JanusGraph Embedded Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~
