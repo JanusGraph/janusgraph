@@ -250,7 +250,7 @@
                         <systemProperties>
                             <property>
                                 <name>log4j.configuration</name>
-                                <value>file:target/test-classes/log4j.properties</value>
+                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
                             </property>
                         </systemProperties>
                     </configuration>
@@ -279,6 +279,9 @@
                                     <exclude>**/*</exclude>
                                 </excludes> -->
                                 <skipTests>${test.skip.tp}</skipTests>
+                                <systemPropertyVariables>
+                                  <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
+                                </systemPropertyVariables>
                             </configuration>
                        </execution>
                     </executions>
@@ -291,7 +294,7 @@
                         <systemProperties>
                             <property>
                                 <name>log4j.configuration</name>
-                                <value>file:target/test-classes/log4j.properties</value>
+                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
                             </property>
                         </systemProperties>
                     </configuration>
