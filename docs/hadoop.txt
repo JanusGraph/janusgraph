@@ -119,4 +119,4 @@ def defineGratefulDeadSchema(janusGraph) {
 Running PageRank
 ~~~~~~~~~~~~~~~~
 
-A fully functional example of the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#vertexprogram[VertexProgram] section of the TinkerPop3 docs.
+A fully functional example of the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#vertexprogram[VertexProgram] section of the TinkerPop3 docs.

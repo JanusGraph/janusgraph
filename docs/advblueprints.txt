@@ -2,12 +2,12 @@
 Advanced Tinkerpop
 -------------------
 
-http://tinkerpop.incubator.apache.org/[Tinkerpop] provides a set of common http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#traversalstrategy[traversal strategies] that add additional functionality to graphs.
+http://tinkerpop.apache.org/[Tinkerpop] provides a set of common http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#traversalstrategy[traversal strategies] that add additional functionality to graphs.
 
 Using ElementIdStrategy
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-It is possible to use http://tinkerpop.incubator.apache.org/docs/$MAVEN{tinkerpop.version}/#_elementidstrategy[ElementIdStrategy] with JanusGraph. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of JanusGraph's long identifiers.
+It is possible to use http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#_elementidstrategy[ElementIdStrategy] with JanusGraph. ElementIdStrategy allow an arbitrary property to be used as the element ID instead of JanusGraph's long identifiers.
 
 [IMPORTANT]
 The target property key must be created and covered by a unique index in JanusGraph prior to using `ElementIdStrategy` with JanusGraph, otherwise Vertex lookups will result in sequential scans of the graph.
