@@ -74,7 +74,6 @@
         <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
-        <hadoop1.version>1.2.1</hadoop1.version>
         <hadoop2.version>2.7.1</hadoop2.version>
         <hbase094.version>0.94.25</hbase094.version>
         <hbase096.core.version>0.96.2</hbase096.core.version>
@@ -1131,32 +1130,6 @@
                 <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
                 <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
             </properties>
-        </profile>
-
-        <profile>
-            <id>hadoop1</id>
-
-            <activation>
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>1.0</value>
-                </property>
-            </activation>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-core</artifactId>
-                        <version>${hadoop1.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-client</artifactId>
-                        <version>${hadoop1.version}</version>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
         </profile>
 
         <profile>
