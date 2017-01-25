@@ -13,9 +13,8 @@ available on either Sonatype, Maven Central, or your local Maven
 repository (~/.m2/repository/) depending on whether you're building a
 SNAPSHOT or a release tag.
 
-This command writes two archives:
+This command writes one archive:
 
-* janusgraph-dist/janusgraph-dist-hadoop-1/target/janusgraph-$VERSION-hadoop1.zip
 * janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-$VERSION-hadoop2.zip
 
 It's also possible to leave off the `-DskipTests=true`.  However, in

@@ -20,7 +20,6 @@
 
     <modules>
         <module>janusgraph-hadoop-core</module>
-        <module>janusgraph-hadoop-1</module>
         <module>janusgraph-hadoop-2</module>
         <module>janusgraph-hadoop</module>
     </modules>
