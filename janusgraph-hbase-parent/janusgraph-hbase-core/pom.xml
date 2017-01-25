@@ -108,55 +108,6 @@
     
     <profiles>
         <profile>
-            <id>hadoop1</id>
-            
-            <activation>
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>1.0</value>
-                </property>
-            </activation>
-            
-            <properties>
-                <hbase.version>${hbase094.version}</hbase.version>
-            </properties>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <additionalClasspathElements>
-                                <additionalClasspathElement>${project.basedir}/conf</additionalClasspathElement>
-                            </additionalClasspathElements>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-core</artifactId>
-                    <optional>true</optional>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-client</artifactId>
-                    <optional>true</optional>
-                </dependency>
-                <!-- HBase fails to start during testing with a
-                     Netty ClassNotFoundException unless this
-                     dependency is declared -->
-                <dependency>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty</artifactId>
-                    <optional>true</optional>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>hadoop2</id>
 
             <activation>
