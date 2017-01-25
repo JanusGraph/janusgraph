@@ -41,8 +41,6 @@
     </properties>
 
     <modules>
-        <!-- The Hadoop 1 distribution is of limited use now that TP 3.1+ is Hadoop-2-only -->
-        <!-- <module>janusgraph-dist-hadoop-1</module> -->
         <module>janusgraph-dist-hadoop-2</module>
     </modules>
 
@@ -74,7 +72,6 @@
             <artifactId>hadoop-gremlin</artifactId>
             <version>${tinkerpop.version}</version>
             <exclusions>
-                <!-- hadoop 1 is not supported by tp3 -->
                 <exclusion>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-client</artifactId>
