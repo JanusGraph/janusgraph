@@ -57,6 +57,18 @@ $ git config user.name "My Name"
 $ git config user.email "my-email@example.com"
 ```
 
+> Note: if you forget to use the right email address the first time, and
+> @janusgraph-bot adds the `[cla: no]` label to your PR, you can fix it in-place
+> while reusing your existing PR as follows:
+>
+> * set your name and email as per above
+> * run the following commands:
+>
+>   ```bash
+>   $ git commit --amend -s --reset-author
+>   $ git push -f
+>   ```
+
 ## Create a new branch
 
 Do not develop on the `master` branch: feature branches are intended to be
@@ -86,6 +98,14 @@ available in this repo as [`DCO.txt`](DCO.txt). To sign it, just use the `commit
 $ git add [...files...]
 $ git commit -s
 ```
+
+> Note: if you forget to sign your commit, you can amend it and fix the PR
+> in-place as follows:
+>
+> ```bash
+> $ git commit --amend -s
+> $ git push -f
+> ```
 
 You can also create a convenient alias to automatically sign each commit in this
 repository to avoid forgetting it:
