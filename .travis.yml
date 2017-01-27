@@ -5,19 +5,50 @@ cache:
   directories:
     - ${HOME}/.m2
 
+env:
+  global:
+   # This is the encrypted COVERITY_SCAN_TOKEN, created via the
+   # `travis encrypt` command using the project repo's public key.
+   - secure: "v5ixqTeb74y0vRuPcDbe3C28GDDYvqyEXA2dt+9UVU6GG7WpnmpkBf05gI1dIhp51lBhwx9WSlFBtzho+KdCBmNY/CzBRhVHe/lCQYK9Hb6uGPvuwBvC0WjJgJXsVrLFjppeRhcf+OAweVQ3uw2RPMDRvKIVMUcO1BTFjjJl6REJXNUdzGS57MtH2mmRyOEz250EwgqUELZvcOytG7fNrjMJKVK2nSsoxi0BqZIpItTWPWWeQ1wi1FplJ18A2qtD+MPfAGNSB+/a+r0Av+VCT2eGl06ZyZAzP3q/vG5IYjQ3AJsSPqcZUt4ms+2us1+kwuzXIILjzZmcfImu29+y/thndU5E5b2v+nZ4H69CUCc5OmKW2RwozLNmBIUhO0n+35va/J7FiPIqm3pwxCz5vWA3YTHDADxnIYe7+9uY/+dOK/AvP5fyu7u07vuF3liKNBdrX7ylP3kYc7FXGmYl8wCZv31iy1yTtndQ9qKef7bo8lM9Cdh39KyowrygH+Um7pr9gqf2S9jn99nQ3bib32fBWgBkLpJRwhZYHPUupZjZfgu/9woby0DuriuHZKMqZd7QUawYz6wXGlhzu78x5Tohlj1pGBwHYdcJ/Tm3PiEpyH4aYQLffkjGHJAcCW5tO8QbB0qrLYWC8xVMWuFz1TpSBRXOqVYdBfIa2UZDtOU="
+
 addons:
   apt:
     packages:
       - oracle-java8-installer
+  coverity_scan:
+    # Coverity config parameters described in detail:
+    # https://scan.coverity.com/travis_ci
+    project:
+      name: "JanusGraph/janusgraph"
+      version: "0.1.0-SNAPSHOT"
+      description: "Scalable, distributed graph database"
+    notification_email: janusgraph-ci@googlegroups.com
+    build_command: "mvn clean package -B -DskipTests=true"
+    branch_pattern: coverity_scan
+
+branches:
+  only:
+    - master
+    - coverity_scan
 
 matrix:
   include:
     - os: linux
       dist: trusty
-      script: mvn clean package -B -DskipTests=true
+      script:
+        - if [[ "${COVERITY_SCAN_BRANCH}}" == 1 ]]; then
+            echo "Skipping build/test on 'coverity_scan' branch.";
+            exit 0;
+          fi
+        - mvn clean package -B -DskipTests=true
 
     - os: osx
-      script: mvn clean package -B -DskipTests=true
+      script:
+        - if [[ "${COVERITY_SCAN_BRANCH}}" == 1 ]]; then
+            echo "Skipping build/test on 'coverity_scan' branch.";
+            exit 0;
+          fi
+        - mvn clean package -B -DskipTests=true
 
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
