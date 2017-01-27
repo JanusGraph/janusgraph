@@ -23,7 +23,9 @@ addons:
       version: "0.1.0-SNAPSHOT"
       description: "Scalable, distributed graph database"
     notification_email: janusgraph-ci@googlegroups.com
-    build_command: "mvn clean package -B -DskipTests=true"
+    # For more info on `travis_wait`, see the docs:
+    # https://docs.travis-ci.com/user/common-build-problems/#Build-times-out-because-no-output-was-received
+    build_command: "travis_wait mvn clean package -B -DskipTests=true"
     branch_pattern: coverity_scan
 
 branches:
