@@ -73,13 +73,6 @@ script:
   - mvn install -DskipTests=true -B -pl janusgraph-${MODULE} -am
   - mvn verify -pl janusgraph-${MODULE} ${ARGS}
 
-matrix:
-  include:
-    - os: linux
-      dist: trusty
-
-    - os: osx
-
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
   email:
