@@ -45,6 +45,11 @@ env:
 
     - MODULE='test'
 
+matrix:
+  # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
+  allow_failures:
+    - env: MODULE='berkeleyje'
+
 addons:
   apt:
     packages:
