@@ -24,8 +24,10 @@ import org.janusgraph.hadoop.config.JanusGraphHadoopConfiguration;
 import org.janusgraph.hadoop.formats.util.AbstractBinaryInputFormat;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
@@ -46,7 +48,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
     private static final Logger log = LoggerFactory.getLogger(HBaseBinaryInputFormat.class);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
-    private TableRecordReader tableReader;
+    private RecordReader<ImmutableBytesWritable, Result> tableReader;
     private byte[] inputCFBytes;
     private RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
@@ -57,8 +59,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
 
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        tableReader =
-                (TableRecordReader) tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+        tableReader = tableInputFormat.createRecordReader(inputSplit, taskAttemptContext);
         janusgraphRecordReader =
                 new HBaseBinaryRecordReader(tableReader, inputCFBytes);
         return janusgraphRecordReader;
@@ -104,7 +105,7 @@ public class HBaseBinaryInputFormat extends AbstractBinaryInputFormat {
         this.tableInputFormat.setConf(config);
     }
 
-    public TableRecordReader getTableReader() {
+    public RecordReader<ImmutableBytesWritable, Result> getTableReader() {
         return tableReader;
     }
 
