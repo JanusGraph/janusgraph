@@ -3,6 +3,7 @@
 JanusGraph is a highly scalable [graph database](http://en.wikipedia.org/wiki/Graph_database) optimized for storing and querying large graphs with billions of vertices and edges distributed across a multi-machine cluster. JanusGraph is a transactional database that can support thousands of concurrent users, complex traversals, and analytic graph queries.
 
 [![Build Status](https://travis-ci.org/JanusGraph/janusgraph.svg?branch=master)](https://travis-ci.org/JanusGraph/janusgraph)
+[![Gitter](https://img.shields.io/gitter/room/janusgraph/janusgraph.svg)](https://gitter.im/janusgraph/janusgraph)
 
 ## Learn More
 
