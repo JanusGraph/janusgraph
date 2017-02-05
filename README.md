@@ -18,12 +18,12 @@ The [project homepage](http://janusgraph.org) contains more information on Janus
 
     * janusgraph-users (at) googlegroups.com
       ([archives](https://groups.google.com/group/janusgraph-users),
-       [subscribe](https://groups.google.com/group/janusgraph-users/join))
+       [subscribe](https://groups.google.com/forum/#!forum/janusgraph-users/join))
       for questions about using JanusGraph, installation, configuration, integrations
 
     * janusgraph-dev (at) googlegroups.com
       ([archives](https://groups.google.com/group/janusgraph-dev),
-       [subscribe](https://groups.google.com/group/janusgraph-dev/join))
+       [subscribe](https://groups.google.com/forum/#!forum/janusgraph-dev/join))
       for internal implementation of JanusGraph itself
 
 * Chat: find us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
