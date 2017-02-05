@@ -11,12 +11,21 @@ The [project homepage](http://janusgraph.org) contains more information on Janus
 ## Contact
 
 * Email:
-  * janusgraph-users@googlegroups.com
-    ([archives](https://groups.google.com/group/janusgraph-users))
-    for questions about using JanusGraph, installation, configuration, integrations
-  * janusgraph-dev@googlegroups.com
-    ([archives](https://groups.google.com/group/janusgraph-dev))
-    for internal implementation of JanusGraph itself
+
+  * To subscribe to JanusGraph mailing lists, click on the appropriate links
+    below. These mailing lists are moderated; emails with the text "subscribe"
+    and irrelevant content (e.g., spam) will be rejected.
+
+    * janusgraph-users (at) googlegroups.com
+      ([archives](https://groups.google.com/group/janusgraph-users),
+       [subscribe](https://groups.google.com/group/janusgraph-users/join))
+      for questions about using JanusGraph, installation, configuration, integrations
+
+    * janusgraph-dev (at) googlegroups.com
+      ([archives](https://groups.google.com/group/janusgraph-dev),
+       [subscribe](https://groups.google.com/group/janusgraph-dev/join))
+      for internal implementation of JanusGraph itself
+
 * Chat: find us on [Gitter](https://gitter.im/JanusGraph/janusgraph)
 
 ## Contributing
