@@ -16,39 +16,45 @@ env:
 
   matrix:
     - MODULE='berkeleyje'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472452
-    # - MODULE='cassandra'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472453
-    # - MODULE='es' ARGS='-DthreadCount=1'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672947
-    # - MODULE='hadoop-parent/janusgraph-hadoop-2'
-
-    # Currently broken due to timeout (runs longer than 50min)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672951
-    # - MODULE='hbase-parent/janusgraph-hbase-098'
-
-    # Currently broken due to timeout (runs longer than 50min)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672952
-    # - MODULE='hbase-parent/janusgraph-hbase-10'
-
+    - MODULE='cassandra'
+    - MODULE='es' ARGS='-DthreadCount=1'
+    - MODULE='hadoop-parent/janusgraph-hadoop-2'
+    - MODULE='hbase-parent/janusgraph-hbase-098'
+    - MODULE='hbase-parent/janusgraph-hbase-10'
     - MODULE='lucene' ARGS='-DthreadCount=1'
-
-    # Currently broken due to too many log statements (exceeds 4MB)
-    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197427609
-    # - MODULE='solr' ARGS='-DthreadCount=1'
-
+    - MODULE='solr' ARGS='-DthreadCount=1'
     - MODULE='test'
 
 matrix:
   # https://docs.travis-ci.com/user/customizing-the-build#Rows-that-are-Allowed-to-Fail
   allow_failures:
+    # Non-deterministic: can pass or fail, regardless of any relevant changes.
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/198165185
     - env: MODULE='berkeleyje'
+
+    # Currently broken due to too many log statements (exceeds 4MB)
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472452
+    - env: MODULE='cassandra'
+
+    # Currently broken due to too many log statements (exceeds 4MB)
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197472453
+    - env: MODULE='es' ARGS='-DthreadCount=1'
+
+    # Currently broken due to too many log statements (exceeds 4MB)
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672947
+    - env: MODULE='hadoop-parent/janusgraph-hadoop-2'
+
+    # Currently broken due to timeout (runs longer than 50min)
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672951
+    - env: MODULE='hbase-parent/janusgraph-hbase-098'
+
+    # Currently broken due to timeout (runs longer than 50min)
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197672952
+    - env: MODULE='hbase-parent/janusgraph-hbase-10'
+
+    # Currently broken due to too many log statements (exceeds 4MB)
+    # https://travis-ci.org/JanusGraph/janusgraph/jobs/197427609
+    - env: MODULE='solr' ARGS='-DthreadCount=1'
 
 addons:
   apt:
