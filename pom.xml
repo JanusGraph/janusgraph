@@ -246,6 +246,13 @@
                         </excludes>
                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                         <skip>${test.skip.default}</skip>
+                        <!-- Use log4j.properties from module test resources -->
+                        <systemProperties>
+                            <property>
+                                <name>log4j.configuration</name>
+                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
+                            </property>
+                        </systemProperties>
                     </configuration>
                     <executions>
                         <execution>
@@ -272,6 +279,9 @@
                                     <exclude>**/*</exclude>
                                 </excludes> -->
                                 <skipTests>${test.skip.tp}</skipTests>
+                                <systemPropertyVariables>
+                                  <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
+                                </systemPropertyVariables>
                             </configuration>
                        </execution>
                     </executions>
@@ -279,6 +289,15 @@
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>2.15</version>
+                    <configuration>
+                        <!-- Use log4j.properties from module test resources -->
+                        <systemProperties>
+                            <property>
+                                <name>log4j.configuration</name>
+                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
+                            </property>
+                        </systemProperties>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-site-plugin</artifactId>
@@ -597,6 +616,11 @@
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
                 <version>1.2.16</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.1.2</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.jettison</groupId>

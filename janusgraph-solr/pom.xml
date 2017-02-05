@@ -92,6 +92,19 @@
             <artifactId>jts</artifactId>
             <version>1.13</version>
         </dependency>
+        <!-- Logging backends.
+             Enforce a classpath ordering constraint to ensure slf4j-log4j12
+             binding appears on the classpath before logback-classic.
+             See comments in janusgraph-cassandra/pom.xml for more information. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- End logging backends. -->
     </dependencies>
     <build>
         <directory>${basedir}/target</directory>
