@@ -14,23 +14,38 @@
 
 package org.janusgraph.hadoop;
 
+import org.janusgraph.HBaseStorageSetup;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.janusgraph.CassandraStorageSetup;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class CassandraInputFormatIT extends AbstractInputFormatIT {
+public class HBaseInputFormatIT extends AbstractInputFormatIT {
 
-    protected Graph getGraph() throws ConfigurationException, IOException {
-        final PropertiesConfiguration config = new PropertiesConfiguration("target/test-classes/cassandra-read.properties");
+    @BeforeClass
+    public static void startHBase() throws IOException, BackendException {
+        HBaseStorageSetup.startHBase();
+    }
+
+    @AfterClass
+    public static void stopHBase() {
+        // Workaround for https://issues.apache.org/jira/browse/HBASE-10312
+        if (VersionInfo.getVersion().startsWith("0.96"))
+            HBaseStorageSetup.killIfRunning();
+    }
+
+    protected Graph getGraph() throws IOException, ConfigurationException {
+        final PropertiesConfiguration config = new PropertiesConfiguration("target/test-classes/hbase-read.properties");
         Path baseOutDir = Paths.get((String) config.getProperty("gremlin.hadoop.outputLocation"));
         baseOutDir.toFile().mkdirs();
         String outDir = Files.createTempDirectory(baseOutDir, null).toAbsolutePath().toString();
@@ -40,8 +55,6 @@ public class CassandraInputFormatIT extends AbstractInputFormatIT {
 
     @Override
     public WriteConfiguration getConfiguration() {
-        String className = getClass().getSimpleName();
-        ModifiableConfiguration mc = CassandraStorageSetup.getEmbeddedConfiguration(className);
-        return mc.getConfiguration();
+        return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
 }

@@ -14,7 +14,7 @@
     <properties>
         <top.level.basedir>${project.parent.basedir}</top.level.basedir>
         <skipCassandra>${skipTests}</skipCassandra>
-        <skipHBase>true</skipHBase>
+        <skipHBase>${skipTests}</skipHBase>
         <skipPipeline>${skipTests}</skipPipeline>
     </properties>
 

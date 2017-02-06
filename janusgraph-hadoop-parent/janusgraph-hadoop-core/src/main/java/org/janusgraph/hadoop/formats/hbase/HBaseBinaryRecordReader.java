@@ -15,11 +15,12 @@
 package org.janusgraph.hadoop.formats.hbase;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.apache.hadoop.hbase.mapreduce.TableRecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -31,11 +32,11 @@ import java.util.NavigableMap;
 
 public class HBaseBinaryRecordReader  extends RecordReader<StaticBuffer, Iterable<Entry>> {
 
-    private TableRecordReader reader;
+    private RecordReader<ImmutableBytesWritable, Result> reader;
 
     private final byte[] edgestoreFamilyBytes;
 
-    public HBaseBinaryRecordReader(final TableRecordReader reader, final byte[] edgestoreFamilyBytes) {
+    public HBaseBinaryRecordReader(final RecordReader<ImmutableBytesWritable, Result> reader, final byte[] edgestoreFamilyBytes) {
         this.reader = reader;
         this.edgestoreFamilyBytes = edgestoreFamilyBytes;
     }
@@ -66,7 +67,7 @@ public class HBaseBinaryRecordReader  extends RecordReader<StaticBuffer, Iterabl
     }
 
     @Override
-    public float getProgress() {
+    public float getProgress() throws IOException, InterruptedException {
         return this.reader.getProgress();
     }
 
