@@ -48,7 +48,9 @@ public class HBaseStorageSetup {
 
     public static final String HBASE_PARENT_DIR_PROP = "test.hbase.parentdir";
 
-    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^((0\\.9[468])|(1\\.[01]))\\..*");
+    private static final Pattern HBASE_SUPPORTED_VERSION_PATTERN = Pattern.compile("^((0\\.9[8])|(1\\.[012]))\\..*");
+
+    private static final String HBASE_VERSION_1_STRING = "1.";
 
     private static final String HBASE_PARENT_DIR;
 
@@ -79,6 +81,10 @@ public class HBaseStorageSetup {
         Matcher m = HBASE_SUPPORTED_VERSION_PATTERN.matcher(hv);
         if (m.matches()) {
             String majorDotMinor = m.group(1);
+            if (majorDotMinor.startsWith(HBASE_VERSION_1_STRING)) {
+                // All HBase 1.x maps to 10
+                majorDotMinor = "1.0";
+            }
             String result = String.format("%s%sjanusgraph-hbase-%s/%s/", HBASE_PARENT_DIR, File.separator, majorDotMinor.replace(".", ""), lastSubdir);
             log.debug("Built {} path for HBase version {}: {}", lastSubdir, hv, result);
             return result;

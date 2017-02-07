@@ -77,7 +77,7 @@
         <hadoop2.version>2.7.1</hadoop2.version>
         <hbase098.core.version>0.98.2</hbase098.core.version>
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
-        <hbase100.core.version>1.0.2</hbase100.core.version>
+        <hbase100.core.version>1.2.4</hbase100.core.version>
         <hbase100.version>${hbase100.core.version}</hbase100.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.4.4</jackson2.version>

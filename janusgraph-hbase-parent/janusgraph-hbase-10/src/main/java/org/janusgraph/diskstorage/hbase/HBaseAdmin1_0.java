@@ -19,19 +19,12 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.janusgraph.util.system.IOUtils;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.TableNotDisabledException;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
 
 public class HBaseAdmin1_0 implements AdminMask
 {
@@ -40,7 +33,7 @@ public class HBaseAdmin1_0 implements AdminMask
 
     private final Admin adm;
 
-    public HBaseAdmin1_0(HBaseAdmin adm)
+    public HBaseAdmin1_0(Admin adm)
     {
         this.adm = adm;
     }

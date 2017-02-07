@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>janusgraph-hbase-10</artifactId>
-    <name>JanusGraph-HBase: 1.0 Compatibility Shim</name>
+    <name>JanusGraph-HBase: 1.x Compatibility Shim</name>
     <url>http://janusgraph.org</url>
     
     <properties>
@@ -64,6 +64,10 @@
                 <exclusion>
                     <artifactId>asm</artifactId>
                     <groupId>asm</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>com.lmax</artifactId>
+                    <groupId>disruptor</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
