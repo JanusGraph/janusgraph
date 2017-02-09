@@ -1,0 +1,3 @@
+Notes for developers building JanusGraph debian packages
+
+dpkg-buildpackage -k25AC7920 -Itarget -I.git -I.project -I.settings -I.classpath

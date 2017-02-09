@@ -3,35 +3,16 @@
 Version Compatibility
 ---------------------
 
-[.tss-floatright.tss-width-250]
-image:titan-logo.png[]
-
-The Titan project is growing along with the rest of the Aurelius Graph Cluster technology and utilized storage and indexing backends. Below are version compatibilities between the various versions of components. For dependent backend systems, different minor versions are typically supported as well. It is strongly encouraged to verify version compatibility prior to deploying Titan.
-
-[NOTE]
-As of Titan 0.5.0, Faunus has been integrated and shipped with Titan.  Faunus no longer appears in the matrix at version 0.5.0 and beyond because it's part of Titan.
-As of Titan 0.9.0, Hadoop based global graph processing is part of the Tinkerpop 3 stack and no longer a component of Titan.
+The JanusGraph project is growing along with the rest of the graph and big data
+ecosystem and utilized storage and indexing backends. Below are version
+compatibilities between the various versions of components. For dependent
+backend systems, different minor versions are typically supported as well. It is
+strongly encouraged to verify version compatibility prior to deploying
+JanusGraph.
 
 .Version Compabitility Matrix
 [options="header"]
 |==========================
-| Titan | Faunus | Cassandra | HBase | Elasticsearch | Solr | TinkerPop
-| 0.1-alpha | N/A | 1.1.z | 0.92.z | N/A | N/A | N/A
-| 0.1.0| 0.1-alpha | 1.1.z | 0.94.z | N/A | N/A | N/A
-| 0.2.0 | 0.1.0 | 1.1.z | 0.94.z | N/A | N/A | 2.2.z
-| 0.2.1 | 0.1.1 | 1.2.z | 0.94.z | N/A | N/A | 2.2.z
-| 0.3.0 | 0.3.0 | 1.2.z | 0.94.z | 0.20.5 | N/A | 2.3.z
-| 0.3.1 | 0.3.1 | 1.2.z | 0.94.z | 0.90.0 | N/A | 2.3.z
-| 0.3.2 | 0.3.2 | 1.2.z | 0.94.z | 0.90.0 | N/A | 2.3.z
-| 0.4.0 | 0.4.0 | 1.2.z | 0.94.z | 0.90.3 | N/A | 2.4.z
-| 0.4.1 | 0.4.1 | 1.2.z | 0.94.z | 0.90.3 | N/A | 2.4.z
-| 0.4.2 | 0.4.2 | 1.2.z | 0.94.z | 0.90.3 | N/A | 2.4.z
-| 0.4.2 | 0.4.2 | 1.2.z | 0.94.z | 0.90.3 | N/A | 2.4.z
-| 0.4.3 | 0.4.3 | 1.2.z | 0.94.z | 0.90.3 | N/A | 2.4.z
-| 0.4.4 | 0.4.4 | 1.2.z | 0.94.z | 0.90.3 | N/A | 2.4.z
-| 0.5.0 | -     | 1.2.z, 2.0.z | 0.94.z, 0.96.z, 0.98.z | 1.0.z, 1.1.z, 1.2.z |  N/A | 2.5.z
-| 0.5.1 | -     | 1.2.z, 2.0.z | 0.94.z, 0.96.z, 0.98.z | 1.0.z, 1.1.z, 1.2.z |  4.8.1 | 2.5.z
-| 0.5.2 | -     | 1.2.z, 2.0.z | 0.94.z, 0.96.z, 0.98.z | 1.0.z, 1.1.z, 1.2.z |  4.8.1 | 2.5.z
-| 0.5.3 | -     | 1.2.z, 2.0.z | 0.94.z, 0.96.z, 0.98.z | 1.0.z, 1.1.z, 1.2.z |  4.8.1 | 2.5.z
-| 1.0.0 | -     | 1.2.z, 2.0.z, 2.1.z | 0.94.z, 0.96.z, 0.98.z, 1.0.z | 1.5.z |  5.2.z | 3.0.z
+| JanusGraph | Cassandra | HBase | Elasticsearch | Solr | TinkerPop
+| 0.1.0 | 1.2.z, 2.0.z, 2.1.z | 0.94.z, 0.96.z, 0.98.z, 1.0.z | 1.5.z |  5.2.z | 3.0.z
 |==========================

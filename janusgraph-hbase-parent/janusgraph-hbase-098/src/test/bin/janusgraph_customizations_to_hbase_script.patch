@@ -1,0 +1,46 @@
+--- /home/dalaro/hbase-0.96.1.1-hadoop1/bin/hbase	2013-12-17 14:05:37.000000000 -0500
++++ /home/dalaro/tinkerelius/janusgraph/janusgraph-hbase/janusgraph-hbase-096/src/test/bin/hbase	2014-02-12 11:25:18.000000000 -0500
+@@ -143,10 +143,24 @@
+ 
+ add_maven_deps_to_classpath() {
+   f="${HBASE_HOME}/target/cached_classpath.txt"
+-  if [ ! -f "${f}" ]
+-  then
+-      echo "As this is a development environment, we need ${f} to be generated from maven (command: mvn install -DskipTests)"
+-      exit 1
++  if [ ! -f "${f}" ]; then
++    # -------------------
++    # JanusGraph build support
++    # -------------------
++    # Check for Maven command line options file.
++    # If janusgraph-hbase has already been built, then this file will contain options
++    # to target the version of Hadoop used during compilation.  This is
++    # necessary when the user compiles janusgraph-hbase with a non-default Hadoop
++    # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
++    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
++    MVN_OPTS=
++    optf="${HBASE_HOME}/target/test-classes/mvn_opts.txt"
++    unset IFS
++    if [ -f "${optf}" ]; then
++      MVN_OPTS=`cat "${optf}"`
++    fi
++    mvn -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
++    IFS=
+   fi
+   CLASSPATH=${CLASSPATH}:`cat "${f}"`
+ }
+@@ -262,12 +276,8 @@
+     CLASSPATH="$JRUBY_HOME/lib/jruby.jar:$CLASSPATH"
+     HBASE_OPTS="$HBASE_OPTS -Djruby.home=$JRUBY_HOME -Djruby.lib=$JRUBY_HOME/lib"
+   fi
+-	#find the hbase ruby sources
+-  if [ -d "$HBASE_HOME/lib/ruby" ]; then
+-    HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/lib/ruby"
+-  else
+-    HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/hbase-shell/src/main/ruby"
+-  fi
++  # find the hbase ruby sources
++  HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/bin/ruby"
+   CLASS="org.jruby.Main -X+O ${JRUBY_OPTS} ${HBASE_HOME}/bin/hirb.rb"
+ elif [ "$COMMAND" = "hbck" ] ; then
+   CLASS='org.apache.hadoop.hbase.util.HBaseFsck'

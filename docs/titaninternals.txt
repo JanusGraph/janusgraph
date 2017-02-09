@@ -1,7 +1,0 @@
-[[internals]]
-Titan Internals
-===============
-
-include::datamodel.txt[]
-
-include::building.txt[]

@@ -2,9 +2,9 @@
 Example Graph Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This page illustrates a number of common graph configurations. Please refer to <<titan-config-ref>> and the pages of the respective <<storage-backends, storage backend>>  <<index-backends, index backend>> for more information.
+This page illustrates a number of common graph configurations. Please refer to <<config-ref>> and the pages of the respective <<storage-backends, storage backend>>  <<index-backends, index backend>> for more information.
 
-Also, note that the Titan distribution includes local configuration files in the `conf/` directory.
+Also, note that the JanusGraph distribution includes local configuration files in the `conf/` directory.
 
 BerkeleyDB
 ^^^^^^^^^^
@@ -20,9 +20,9 @@ index.search.elasticsearch.client-only=false
 index.search.elasticsearch.local-mode=true
 ----
 
-This configuration file configures Titan to use <<bdb, BerkeleyDB>> as an embedded storage backend, meaning, Titan will start BerkeleyDB internally. The primary data will be stored in the directory `/tmp/graph`.
+This configuration file configures JanusGraph to use <<bdb, BerkeleyDB>> as an embedded storage backend, meaning, JanusGraph will start BerkeleyDB internally. The primary data will be stored in the directory `/tmp/graph`.
 
-In addition, this configures an embedded <<elasticsearch, Elasticsearch>> index backend with the name `search`. Titan will start Elasticsearch internally and it will not be externally accessible since `local-mode` is enabled. Elasticsearch stores all data for the `search` index in `/tmp/searchindex`. Configuring an index backend is optional.
+In addition, this configures an embedded <<elasticsearch, Elasticsearch>> index backend with the name `search`. JanusGraph will start Elasticsearch internally and it will not be externally accessible since `local-mode` is enabled. Elasticsearch stores all data for the `search` index in `/tmp/searchindex`. Configuring an index backend is optional.
 
 Cassandra
 ^^^^^^^^^
@@ -40,7 +40,7 @@ index.search.hostname=100.100.101.1, 100.100.101.2
 index.search.elasticsearch.client-only=true
 ----
 
-This configuration file configures Titan to use <<cassandra, Cassandra>> as a remote storage backend. It assumes that a Cassandra cluster is running and accessible at the given IP addresses. If Cassandra is running locally, use the IP address `127.0.0.1`.
+This configuration file configures JanusGraph to use <<cassandra, Cassandra>> as a remote storage backend. It assumes that a Cassandra cluster is running and accessible at the given IP addresses. If Cassandra is running locally, use the IP address `127.0.0.1`.
 
 In addition, this configures a remote <<elasticsearch, Elasticsearch>> index backend with the name `search`. It assumes that an Elasticsearch cluster is running and accessible at the given IP addresses. Enabling `client-only` ensures that the local instance does not join the existing Elasticsearch cluster as another node but only connects to it. Configuring an index backend is optional.
 
@@ -58,7 +58,7 @@ index.search.elasticsearch.client-only=false
 index.search.elasticsearch.local-mode=true
 ----
 
-This configuration file configures Titan to start <<cassandra, Cassandra>> internally embedded in Titan and specifies the yaml configuration file for Cassandra. Cassandra is still accessible externally and can connect to other available Cassandra nodes to form a cluster as configured in the yaml file.
+This configuration file configures JanusGraph to start <<cassandra, Cassandra>> internally embedded in JanusGraph and specifies the yaml configuration file for Cassandra. Cassandra is still accessible externally and can connect to other available Cassandra nodes to form a cluster as configured in the yaml file.
 
 The optional index backend configuration is identical to embedded index configuration described above.
 
@@ -76,6 +76,6 @@ index.search.hostname=127.0.0.1
 index.search.elasticsearch.client-only=true
 ----
 
-This configuration file configures Titan to use <<hbase, HBase>> as a remote storage backend. It assumes that an HBase cluster is running and accessible at the given IP addresses through the configured port. If HBase is running locally, use the IP address `127.0.0.1`.
+This configuration file configures JanusGraph to use <<hbase, HBase>> as a remote storage backend. It assumes that an HBase cluster is running and accessible at the given IP addresses through the configured port. If HBase is running locally, use the IP address `127.0.0.1`.
 
 The optional index backend configuration is identical to remote index configuration described above.

@@ -20,28 +20,28 @@ target/
 #
 # These files appear alongside pom.xml files.  The files are just lists
 # of test names and don't contain any important information.
-/titan-*/.surefire-*
+/janusgraph-*/.surefire-*
 # Eclipse junk; leading slash makes patterns non-recursive
 # Note that * also can't match slashes
 /.settings/
 /.project
 /.classpath
-/titan-*/.classpath
-/titan-*/.project
-/titan-*/.settings/
-/titan-*/titan-*/.classpath
-/titan-*/titan-*/.project
-/titan-*/titan-*/.settings/
+/janusgraph-*/.classpath
+/janusgraph-*/.project
+/janusgraph-*/.settings/
+/janusgraph-*/janusgraph-*/.classpath
+/janusgraph-*/janusgraph-*/.project
+/janusgraph-*/janusgraph-*/.settings/
 # End of Eclipse junk
 # HBase testing stuff
-titan-hbase/logs
-titan-hbase/src/test/titan-hbase-test-data/*
-titan-hbase/src/test/titan-zookeeper-test/*
+janusgraph-hbase/logs
+janusgraph-hbase/src/test/janusgraph-hbase-test-data/*
+janusgraph-hbase/src/test/janusgraph-zookeeper-test/*
 # Backup files created by `mvn versions:update-child-modules`
 # http://mojo.codehaus.org/versions-maven-plugin/update-child-modules-mojo.html
-titan-*/pom.xml.versionsBackup
+janusgraph-*/pom.xml.versionsBackup
 # JUnitBenchmarks output
-/titan-*/jub.*.xml
+/janusgraph-*/jub.*.xml
 # .deb/.rpm packaging folders
 /debian/
 /redhat/

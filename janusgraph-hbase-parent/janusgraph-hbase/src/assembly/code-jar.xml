@@ -1,0 +1,23 @@
+<assembly>
+    <id>janusgraph-hbase</id>
+    <baseDirectory>/</baseDirectory>
+
+    <formats>
+        <format>jar</format>
+    </formats>
+
+    <dependencySets>
+      <dependencySet>
+	<useProjectArtifact>false</useProjectArtifact>
+	<unpack>true</unpack>
+	<unpackOptions>
+	  <excludes>
+	    <exclude>META-INF/**</exclude>
+	  </excludes>
+	</unpackOptions>
+	<includes>
+	  <include>org.janusgraph:janusgraph-hbase-*</include>
+	</includes>
+      </dependencySet>
+    </dependencySets>
+</assembly>

@@ -1,11 +1,11 @@
 [[monitoring]]
-Monitoring Titan
-----------------
+Monitoring JanusGraph
+---------------------
 
-Metrics in Titan
-~~~~~~~~~~~~~~~~
+Metrics in JanusGraph
+~~~~~~~~~~~~~~~~~~~~~
 
-Starting in version 0.4.0, Titan supports http://metrics.codahale.com/[Metrics].  Titan can measure the following:
+Starting in version 0.4.0, JanusGraph supports http://metrics.codahale.com/[Metrics].  JanusGraph can measure the following:
 
 * The number of transactions begun, comitted, and rolled back
 * The number of attempts and failures of each storage backend operation type
@@ -14,49 +14,49 @@ Starting in version 0.4.0, Titan supports http://metrics.codahale.com/[Metrics].
 Configuring Metrics Collection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To enable Metrics collection, set the following in Titan's properties file:
+To enable Metrics collection, set the following in JanusGraph's properties file:
 
 [source, properties]
 ----
-# Required to enable Metrics in Titan
+# Required to enable Metrics in JanusGraph
 metrics.enabled = true
 ----
 
-This setting makes Titan record measurements at runtime using Metrics classes like Timer, Counter, Histogram, etc.  To access these measurements, one or more Metrics reporters must be configured as described in the section <<metrics-reporters>>.
+This setting makes JanusGraph record measurements at runtime using Metrics classes like Timer, Counter, Histogram, etc.  To access these measurements, one or more Metrics reporters must be configured as described in the section <<metrics-reporters>>.
 
 Customizing the Default Metric Names
 ++++++++++++++++++++++++++++++++++++
 
-Titan prefixes all metric names with "com.thinkaurelius.titan" by default.  This prefix can be set through the `metrics.prefix` configuration property.  For example, to shorten the default "com.thinkaurelius.titan" prefix to just "titan":
+JanusGraph prefixes all metric names with "org.janusgraph" by default.  This prefix can be set through the `metrics.prefix` configuration property.  For example, to shorten the default "org.janusgraph" prefix to just "janusgraph":
 
 [source, properties]
 ----
 # Optional
-metrics.prefix = titan
+metrics.prefix = janusgraph
 ----
 
 Transaction-Specific Metrics Names
 +++++++++++++++++++++++++++++++++
 
-Each Titan transaction may optionally specify its own Metrics name prefix, overridding both the default Metrics name prefix and the `metrics.prefix` configuration property.  For example, the prefix could be changed to the name of the frontend application that opened the Titan transaction.  Note that Metrics maintains a ConcurrentHashMap of metric names and their associated objects in memory, so it's probably a good idea to keep the number of distinct metric prefixes small.
+Each JanusGraph transaction may optionally specify its own Metrics name prefix, overridding both the default Metrics name prefix and the `metrics.prefix` configuration property.  For example, the prefix could be changed to the name of the frontend application that opened the JanusGraph transaction.  Note that Metrics maintains a ConcurrentHashMap of metric names and their associated objects in memory, so it's probably a good idea to keep the number of distinct metric prefixes small.
 
 To do this, call `TransactionBuilder.setMetricsPrefix(String)`:
 
 [source, java]
-TitanGraph graph = ...;
+JanusGraph graph = ...;
 TransactionBuilder tbuilder = graph.buildTransaction();
-TitanTransaction tx = tbuilder.groupName("foobar").start();
+JanusGraphTransaction tx = tbuilder.groupName("foobar").start();
 
 Separating Metrics by Backend Store
 +++++++++++++++++++++++++++++++++++
 
-Titan combines the Metrics for its various internal storage backend handles by default.  All Metrics for storage backend interactions follow the pattern "<prefix>.stores.<opname>", regardless of whether they come from the ID store, edge store, etc.  When `metrics.merge-basic-metrics = false` is set in Titan's properties file, the "stores" string in metric names is replaced by "idStore", "edgeStore", "vertexIndexStore", or "edgeIndexStore".
+JanusGraph combines the Metrics for its various internal storage backend handles by default.  All Metrics for storage backend interactions follow the pattern "<prefix>.stores.<opname>", regardless of whether they come from the ID store, edge store, etc.  When `metrics.merge-basic-metrics = false` is set in JanusGraph's properties file, the "stores" string in metric names is replaced by "idStore", "edgeStore", "vertexIndexStore", or "edgeIndexStore".
 
 [[metrics-reporters]]
 Configuring Metrics Reporting
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Titan supports the following Metrics reporters:
+JanusGraph supports the following Metrics reporters:
 
 // TODO this bulleted list should be replaced by a TOC
 
@@ -68,7 +68,7 @@ Titan supports the following Metrics reporters:
 * <<metrics-slf4j, Slf4j>>
 * <<metrics-custom, User-provided/Custom>>
 
-Each reporter type is independent of and can coexist with the others.  For example, it's possible to configure Ganglia, JMX, and Slf4j Metrics reporters to operate simultaneously.  Just set all their respective configuration keys in titan.properties (and enable metrics as directed above).
+Each reporter type is independent of and can coexist with the others.  For example, it's possible to configure Ganglia, JMX, and Slf4j Metrics reporters to operate simultaneously.  Just set all their respective configuration keys in janusgraph.properties (and enable metrics as directed above).
 
 [[metrics-console]]
 Console Reporter Configuration
@@ -81,7 +81,7 @@ Console Reporter Configuration
 |metrics.console.interval |yes |Milliseconds to wait between dumping metrics to the console |null
 |==========================
 
-Example titan.properties snippet that prints metrics to the console once a minute:
+Example janusgraph.properties snippet that prints metrics to the console once a minute:
 
 [source, properties]
 metrics.enabled = true
@@ -100,7 +100,7 @@ CSV File Reporter Configuration
 |metrics.csv.dir |yes |Directory in which CSV files are written (will be created if it does not exist) |null
 |==========================
 
-Example titan.properties snippet that writes CSV files once a minute to the directory `./foo/bar/` (relative to the process's working directory):
+Example janusgraph.properties snippet that writes CSV files once a minute to the directory `./foo/bar/` (relative to the process's working directory):
 
 [source, properties]
 metrics.enabled = true
@@ -126,7 +126,7 @@ Ganglia Reporter Configuration
 |metrics.ganglia.spoof |no |http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing[Override IP:hostname reported to Ganglia] | null
 |==========================
 
-Example titan.properties snippet that sends unicast UDP datagrams to localhost on the default port once every 30 seconds:
+Example janusgraph.properties snippet that sends unicast UDP datagrams to localhost on the default port once every 30 seconds:
 
 [source, properties]
 metrics.enabled = true
@@ -135,7 +135,7 @@ metrics.ganglia.hostname = 127.0.0.1
 # Required; specify logging interval in milliseconds
 metrics.ganglia.interval = 30000
 
-Example titan.properties snippet that sends unicast UDP datagrams to a non-default destination port and which also spoofs the IP and hostname reported to Ganglia:
+Example janusgraph.properties snippet that sends unicast UDP datagrams to a non-default destination port and which also spoofs the IP and hostname reported to Ganglia:
 
 [source, properties]
 metrics.enabled = true
@@ -161,7 +161,7 @@ Graphite Reporter Configuration
 |metrics.graphite.prefix |no |Arbitrary string prepended to all metric names sent to Graphite |null
 |==========================
 
-Example titan.properties snippet that sends metrics to a Graphite server on 192.168.0.1 every minute:
+Example janusgraph.properties snippet that sends metrics to a Graphite server on 192.168.0.1 every minute:
 
 [source, properties]
 metrics.enabled = true
@@ -183,7 +183,7 @@ JMX Reporter Configuration
 |metrics.jmx.agentid |no |Metrics will be reported with this JMX agent ID |Metrics's own default
 |==========================
 
-Example titan.properties snippet:
+Example janusgraph.properties snippet:
 
 [source, properties]
 metrics.enabled = true
@@ -205,7 +205,7 @@ Slf4j Reporter Configuration
 |metrics.slf4j.logger |no |Slf4j logger name to use |"metrics"
 |==========================
 
-Example titan.properties snippet that logs metrics once a minute to the logger named `foo`:
+Example janusgraph.properties snippet that logs metrics once a minute to the logger named `foo`:
 
 [source, properties]
 metrics.enabled = true
@@ -218,13 +218,13 @@ metrics.slf4j.logger = foo
 User-Provided/Custom Reporter Configuration
 +++++++++++++++++++++++++++++++++++++++++++
 
-In case the Metrics reporter configuration options listed above are insufficient, Titan provides a utility method to access the single `MetricRegistry` instance which holds all of its measurements.
+In case the Metrics reporter configuration options listed above are insufficient, JanusGraph provides a utility method to access the single `MetricRegistry` instance which holds all of its measurements.
 
 [source, java]
 ----
-com.codahale.metrics.MetricRegistry titanRegistry =
-    com.thinkaurelius.titan.util.stats.MetricManager.INSTANCE.getRegistry();
+com.codahale.metrics.MetricRegistry janusgraphRegistry =
+    org.janusgraph.util.stats.MetricManager.INSTANCE.getRegistry();
 ----
 
-Code that accesses `titanRegistry` this way can then attach non-standard reporter types or standard reporter types with exotic configurations to `titanRegistry`.  This approach is also useful if the surrounding application already has a framework for Metrics reporter configuration, or if the application needs multiple differently-configured instances of one of Titan's supported reporter types.  For instance, one could use this approach to setup multiple unicast Graphite reporters whereas Titan's properties configuration is limited to just one Graphite reporter.
+Code that accesses `janusgraphRegistry` this way can then attach non-standard reporter types or standard reporter types with exotic configurations to `janusgraphRegistry`.  This approach is also useful if the surrounding application already has a framework for Metrics reporter configuration, or if the application needs multiple differently-configured instances of one of JanusGraph's supported reporter types.  For instance, one could use this approach to setup multiple unicast Graphite reporters whereas JanusGraph's properties configuration is limited to just one Graphite reporter.
 

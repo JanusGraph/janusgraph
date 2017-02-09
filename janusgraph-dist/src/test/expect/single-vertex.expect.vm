@@ -1,0 +1,28 @@
+#!/usr/bin/env expect
+spawn bin/gremlin.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+expect gremlin>
+send "g = JanusGraphFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+expect gremlin>
+send "v = g.addVertex()\r"
+expect -re {v\[(\d+)\]} { set vertexid $expect_out(1,string) }
+expect gremlin>
+send "v.property('test', 42)\r"
+expect "==>vp\[test->42\]"
+expect gremlin>
+send "g.tx().commit()\r"
+expect ==>null
+expect gremlin>
+send "g.traversal().V(v.longId()).values('test')\r"
+expect ==>42
+expect gremlin>
+send "g.close()\r"
+expect ==>null
+expect gremlin>
+exit 0

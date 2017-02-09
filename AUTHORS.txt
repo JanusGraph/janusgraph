@@ -1,0 +1,17 @@
+# This is the official list of JanusGraph authors for copyright purposes.
+# This file is distinct from the CONTRIBUTORS.txt files.
+# See the latter for an explanation.
+
+# Names should be added to this file as one of
+#     Organization's name
+#     Organization's name <email pattern1> ...
+#     Individual's name <email1>
+#     Individual's name <email1> <email2> <emailN>
+# See CONTRIBUTORS.txt for the meaning of multiple email addresses.
+
+# Please keep the list sorted.
+
+DataStax
+Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
+Expero
+Google

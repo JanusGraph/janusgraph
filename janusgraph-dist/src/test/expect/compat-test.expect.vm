@@ -1,0 +1,154 @@
+#!/usr/bin/env expect
+spawn bin/gremlin.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+
+# This file has three parts.
+#
+# 1. Open a database using ${graphConfig} as the JanusGraph properties file.
+#    The database is assumed to contain Graph of the Gods with ES indices.
+#
+# 2. Run the queries from the Getting Started page in the docs
+#
+# 3. Run some additional queries; these are mostly redundant with
+#    similar queries in #2, but they do a bit different/additional
+#    checking on the output
+
+expect gremlin>
+send "100-10\r"
+expect "==>90"
+expect gremlin>
+send "g = JanusGraphFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+expect gremlin>
+
+# Update the storage directory
+send "m = g.getManagementSystem()\r"
+expect gremlin>
+send "m.set('index.search.directory', '${indexDirectory}')\r"
+expect gremlin>
+send "m.commit()\r"
+expect gremlin>
+send "g.shutdown()\r"
+send "g = JanusGraphFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+expect gremlin>
+
+# Run queries from the Getting Started chapter of the documentation
+
+send "saturn = g.V('name','saturn').next()\r"
+expect -re {v\[(\d+)\]}
+expect gremlin>
+send "saturn.map()\r"
+expect gremlin>
+if { -1 == [string first "==>age=10000"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>name=saturn" $expect_out(buffer)] } { exit 1 }
+
+send "saturn.getLabel()\r"
+expect ==>janusgraph
+expect gremlin>
+
+send "saturn.in('father').in('father').name\r"
+expect ==>hercules
+expect gremlin>
+
+send "g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()\r"
+expect gremlin>
+if { 2  != [regexp -all {\d+-battled->\d+} $expect_out(buffer)] } { exit 1 }
+
+send "g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect { it.bothV.name.next(2) }\r"
+expect gremlin>
+if { -1 == [string first "==>\[hercules, hydra\]"  $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[hercules, nemean\]" $expect_out(buffer)] } { exit 1 }
+send "hercules = saturn.as('x').in('father').loop('x'){it.loops < 3}.next()\r"
+expect -re {==>v\[(\d+)\]}
+expect gremlin>
+send "hercules.out('father','mother')\r"
+expect gremlin>
+if { 2  != [regexp -all {v\[(\d+)\]} $expect_out(buffer)] } { exit 1 }
+send "hercules.out('father','mother').name\r"
+expect gremlin>
+if { -1 == [string first "==>alcmene" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>jupiter" $expect_out(buffer)] } { exit 1 }
+send "hercules.out('father','mother').transform { it.getLabel() }\r"
+expect gremlin>
+if { -1 == [string first "==>god"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>human" $expect_out(buffer)] } { exit 1 }
+send "hercules.getLabel()\r"
+expect ==>demigod
+expect gremlin>
+send "hercules.out('battled')\r"
+expect gremlin>
+if { 3  != [regexp -all {v\[(\d+)\]} $expect_out(buffer)] } { exit 1 }
+
+send "hercules.out('battled').map\r"
+expect gremlin>
+if { -1 == [string first "==>\{name=nemean\}"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=hydra\}"    $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=cerberus\}" $expect_out(buffer)] } { exit 1 }
+send "hercules.out('battled').transform { it.getLabel() }\r"
+expect gremlin>
+if { 3  != [regexp -all {monster} $expect_out(buffer)] } { exit 1 }
+
+send "hercules.outE('battled').has('time',T.gt,1).inV.name\r"
+expect gremlin>
+if { -1 == [string first "==>hydra"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>cerberus" $expect_out(buffer)] } { exit 1 }
+# Not picky about the toString() on this next one, just want it to complete without error
+send "hercules.outE('battled').has('time',T.gt,1).inV.name.toString()\r"
+expect gremlin>
+send "pluto = g.V('name','pluto').next()\r"
+expect -re {==>v\[(\d+)\]}
+expect gremlin>
+send "pluto.out('lives').in('lives').name\r"
+expect gremlin>
+if { -1 == [string first "==>pluto"    $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>cerberus" $expect_out(buffer)] } { exit 1 }
+send "pluto.out('lives').in('lives').except(\[pluto\]).name\r"
+expect ==>cerberus
+expect gremlin>
+send "pluto.as('x').out('lives').in('lives').except('x').name\r"
+expect ==>cerberus
+expect gremlin>
+send "pluto.out('brother').out('lives').name\r"
+expect gremlin>
+if { -1 == [string first "==>sky" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>sea" $expect_out(buffer)] } { exit 1 }
+send "pluto.out('brother').as('god').out('lives').as('place').select\r"
+expect gremlin>
+if { 2  != [regexp -all {==>\[god:v\[\d+\], place:v\[\d+\]\]} $expect_out(buffer)] } { exit 1 }
+send "pluto.out('brother').as('god').out('lives').as('place').select\{it.name\}\r"
+expect gremlin>
+if { -1 == [string first "==>\[god:jupiter, place:sky\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[god:neptune, place:sea\]" $expect_out(buffer)] } { exit 1 }
+send "pluto.outE('lives').reason\r"
+expect "==>no fear of death"
+expect gremlin>
+send "g.query().has('reason',CONTAINS,'loves').edges()\r"
+expect gremlin>
+if { 2  != [regexp -all {\d+-lives->\d+} $expect_out(buffer)] } { exit 1 }
+send "g.query().has('reason',CONTAINS,'loves').edges().collect\{ \[it.outV.name.next(),it.reason,it.inV.name.next()\] \}\r"
+expect gremlin>
+if { -1 == [string first "==>\[jupiter, loves fresh breezes, sky\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[neptune, loves waves, sea\]"         $expect_out(buffer)] } { exit 1 }
+
+# Query that should hit the vertex-centric index named battlesByTime
+send "g.V.outE('battled').interval('time',10,20).inV.name\r"
+expect "==>cerberus"
+expect gremlin>
+
+# Query that should hit the composite index on the name property
+send "g.V.has('name', 'jupiter').name\r"
+expect "==>jupiter"
+expect gremlin>
+if { -1 != [string first "WARN"  $expect_out(buffer)] } { exit 1 }
+if { -1 != [string first "ERROR" $expect_out(buffer)] } { exit 1 }
+
+send "g.shutdown()\r"
+expect ==>null
+expect gremlin>
+exit 0

@@ -1,0 +1,196 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-dist</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <packaging>pom</packaging>
+    <artifactId>janusgraph-dist-hadoop-2</artifactId>
+    <name>JanusGraph-Dist: Archive with Hadoop 2</name>
+    <url>http://janusgraph.org</url>
+
+    <properties>
+        <hadoop.version.tag>hadoop2</hadoop.version.tag>
+        <assembly.descriptor.dir>${project.parent.basedir}/src/assembly/descriptor</assembly.descriptor.dir>
+        <assembly.static.dir>${project.parent.basedir}/src/assembly/static</assembly.static.dir>
+        <assembly.resources.dir>${project.parent.basedir}/src/assembly/resources</assembly.resources.dir>
+        <assembly.cfilter.out.dir>${project.parent.build.directory}/cfilter</assembly.cfilter.out.dir>
+        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>${hbase098.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <!-- Need the -server artifact for hbase.mapreduce.TableInputFormat (Faunus) -->
+            <version>${hbase098.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-janusgraph-gremlin-imports</id>
+                        <phase>generate-resources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>janusgraph-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-murmur-config</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-cassandra-bop-config</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>copy-test-cfiles</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>copy-compat-test-config</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/conf</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/src/assembly/static/conf</directory>
+                                            <includes>
+                                                <include>*.properties</include>
+                                            </includes>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-compat-test-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>java</executable>
+                                    <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath />
+                                        <argument>org.janusgraph.example.GraphOfTheGodsFactory</argument>
+                                        <argument>${project.build.directory}/conf/janusgraph-berkeleyje-es.properties</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>archive-compat-test-files</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>zip</executable>
+                                    <arguments>
+                                        <argument>-r</argument>
+                                        <argument>${project.version}.zip</argument>
+                                        <argument>db</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>dev-install-hadoop2</id>
+
+            <!-- Enable Hadoop 2 by default -->
+            <activation>
+                <property>
+                    <name>!dev.hadoop</name>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>clean-dev-dirs-hadoop</id>
+                                <phase>clean</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-dev-dirs-hadoop</id>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

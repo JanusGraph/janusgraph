@@ -1,0 +1,1603 @@
+[[basics]]
+JanusGraph Basics
+=================
+
+[[configuration]]
+Configuration
+-------------
+
+A JanusGraph graph database cluster consists of one or multiple JanusGraph instances. To open a JanusGraph instance a configuration has to be provided which specifies how JanusGraph should be set up.
+
+A JanusGraph configuration specifies which components JanusGraph should use, controls all operational aspects of a JanusGraph deployment, and provides a number of tuning options to get maximum performance from a JanusGraph cluster.
+
+At a minimum, a JanusGraph configuration must define the persistence engine that JanusGraph should use as a storage backend. <<storage-backends>> lists all supported persistence engines and how to configure them respectively.
+If advanced graph query support (e.g full-text search, geo search, or range queries) is required an additional indexing backend must be configured.  See <<index-backends>> for details. If query performance is a concern, then caching should be enabled.  Cache configuration and tuning is described in <<caching>>.
+
+Example Configurations
+~~~~~~~~~~~~~~~~~~~~~~
+
+Below are some example configuration files to demonstrate how to configure the most commonly used storage backends, indexing systems, and performance components. This covers only a tiny portion of the available configuration options. Refer to <<config-ref>> for the complete list of all options.
+
+Cassandra+Elasticsearch
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Sets up JanusGraph to use the Cassandra persistence engine running locally and a remote Elastic search indexing system:
+
+[source, properties]
+----
+storage.backend=cassandra
+storage.hostname=localhost
+
+index.search.backend=elasticsearch
+index.search.hostname=100.100.101.1, 100.100.101.2
+index.search.elasticsearch.client-only=true
+----
+
+HBase+Caching
+^^^^^^^^^^^^^
+
+Sets up JanusGraph to use the HBase persistence engine running remotely and uses JanusGraph's caching component for better performance.
+
+[source, properties]
+----
+storage.backend=hbase
+storage.hostname=100.100.101.1
+storage.port=2181
+
+cache.db-cache = true
+cache.db-cache-clean-wait = 20
+cache.db-cache-time = 180000
+cache.db-cache-size = 0.5
+----
+
+
+BerkeleyDB
+^^^^^^^^^^
+
+Sets up JanusGraph to use BerkeleyDB as an embedded persistence engine with ElasticSearch as an embedded indexing system.
+
+[source, properties]
+----
+storage.backend=berkeleyje
+storage.directory=/tmp/graph
+
+index.search.backend=elasticsearch
+index.search.directory=/tmp/searchindex
+index.search.elasticsearch.client-only=false
+index.search.elasticsearch.local-mode=true
+----
+
+<<config-ref>>_ describes all of these configuration options in detail. The +conf+ directory of the JanusGraph distribution contains additional configuration examples.
+
+Further Examples
+^^^^^^^^^^^^^^^^
+
+There are several example configuration files in the `conf/` directory that can be used to get started with JanusGraph quickly.  Paths to these files can be passed to `JanusGraphFactory.open(...)` as shown below:
+
+[source, java]
+----
+// Connect to Cassandra on localhost using a default configuration
+graph = JanusGraphFactory.open("conf/janusgraph-cassandra.properties")
+// Connect to HBase on localhost using a default configuration
+graph = JanusGraphFactory.open("conf/janusgraph-hbase.properties")
+----
+
+
+Using Configuration
+~~~~~~~~~~~~~~~~~~~
+
+How the configuration is provided to JanusGraph depends on the instantiation mode.
+
+JanusGraphFactory
+^^^^^^^^^^^^^^^^^
+
+Console
++++++++
+
+The JanusGraph distribution contains a command line Console which makes it easy to get started and interact with JanusGraph. Invoke `bin/gremlin.sh` (Unix/Linux) or `bin/gremlin.bat`
+(Windows) to start the Console and then open a JanusGraph graph using the factory with the configuration stored in an accessible properties configuration file:
+
+[source, gremlin]
+----
+graph = JanusGraphFactory.open('path/to/configuration.properties')
+----
+
+JanusGraph Embedded
++++++++++++++++++++
+
+JanusGraphFactory can also be used to open an embedded JanusGraph graph instance from within a JVM-based user application. In that case, JanusGraph is part of the user application and the application can call upon JanusGraph directly through its public API.
+
+Short Codes
++++++++++++
+
+If the JanusGraph graph cluster has been previously configured and/or only the storage backend needs to be defined, JanusGraphFactory accepts a colon-separated string representation of the storage backend name and hostname or directory.
+
+[source, gremlin]
+----
+graph = JanusGraphFactory.open('cassandra:localhost')
+----
+
+[source, gremlin]
+----
+graph = JanusGraphFactory.open('berkeleyje:/tmp/graph')
+----
+
+
+JanusGraph Server
+^^^^^^^^^^^^^^^^^
+
+JanusGraph, by itself, is simply a set of jar files with no thread of execution.  There are two basic patterns for connecting to, and using a JanusGraph database:
+
+.Patterns
+. JanusGraph can be used by embedding JanusGraph calls in a client program where the program provides the thread of execution.  
+. JanusGraph packages a long running server process that, when started, allows a remote client or logic running in a separate program to make JanusGraph calls.  This long running server process is called *JanusGraph Server*.  
+
+For the JanusGraph Server, JanusGraph uses http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] of the http://tinkerpop.apache.org/[TinkerPop] stack to service client requests.  JanusGraph provides an out-of-the-box configuration for a quick start with JanusGraph Server, but the configuration can be changed to provide a wide range of server capabilities.
+
+Configuring JanusGraph Server is accomplished through a JanusGraph Server yaml configuration file located in the ./conf/gremlin-server directory in the JanusGraph distribution. To configure JanusGraph Server with a graph instance (`JanusGraph`), the JanusGraph Server configuration file requires the following settings:
+
+[source, yaml]
+----
+...
+graphs: {
+  graph: conf/janusgraph-berkeleyje.properties
+}
+plugins:
+  - janusgraph.imports
+...
+----
+
+The entry for `graphs` defines the bindings to specific `JanusGraph` configurations. In the above case it binds `graph` to a JanusGraph configuration at `conf/janusgraph-berkeleyje.properties`.  The `plugins` entry enables the JanusGraph Gremlin Plugin, which enables auto-imports of JanusGraph classes so that they can be referenced in remotely submitted scripts.
+
+Learn more about configuring and using JanusGraph Server in <<server>>.
+
+Server Distribution
++++++++++++++++++++
+
+The JanusGraph zip file contains a quick start server component that helps make it easier to get started with Gremlin Server and JanusGraph. Invoke `bin/janusgraph.sh start` to start Gremlin Server with Cassandra and ElasticSearch.  
+
+[[configuration-global]]
+Global Configuration
+~~~~~~~~~~~~~~~~~~~~
+
+JanusGraph distinguishes between local and global configuration options. Local configuration options apply to an individual JanusGraph instance. Global configuration options apply to all instances in a cluster. More specifically, JanusGraph distinguishes the following five scopes for configuration options:
+
+* *LOCAL*: These options only apply to an individual JanusGraph instance and are specified in the configuration provided when initializing the JanusGraph instance.
+* *MASKABLE*: These configuration options can be overwritten for an individual JanusGraph instance by the local configuration file. If the local configuration file does not specify the option, its value is read from the global JanusGraph cluster configuration.
+* *GLOBAL*: These options are always read from the cluster configuration and cannot be overwritten on an instance basis.
+* *GLOBAL_OFFLINE*: Like _GLOBAL_, but changing these options requires a cluster restart to ensure that the value is the same across the entire cluster.
+* *FIXED*: Like _GLOBAL_, but the value cannot be changed once the JanusGraph cluster is initialized.
+
+When the first JanusGraph instance in a cluster is started, the global configuration options are initialized from the provided local configuration file. Subsequently changing global configuration options is done through JanusGraph's management API. To access the management API, call `g.getManagementSystem()` on an open JanusGraph instance handle `g`. For example, to change the default caching behavior on a JanusGraph cluster:
+
+[source, gremlin]
+----
+mgmt = graph.openManagement()
+mgmt.get('cache.db-cache')
+// Prints the current config setting
+mgmt.set('cache.db-cache', true)
+// Changes option
+mgmt.get('cache.db-cache')
+// Prints 'true'
+mgmt.commit()
+// Changes take effect
+----
+
+Changing Offline Options
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Changing configuration options does not affect running instances and only applies to newly started ones. Changing _GLOBAL_OFFLINE_ configuration options requires restarting the cluster so that the changes take effect immediately for all instances.
+To change _GLOBAL_OFFLINE_ options follow these steps:
+
+* Close all but one JanusGraph instance in the cluster
+* Connect to the single instance
+* Ensure all running transactions are closed
+* Ensure no new transactions are started (i.e. the cluster must be offline)
+* Open the management API
+* Change the configuration option(s)
+* Call commit which will automatically shut down the graph instance
+* Restart all instances
+
+Refer to the full list of configuration options in <<config-ref>> for more information including the configuration scope of each option.
+
+
+[[schema]]
+Schema and Data Modeling
+------------------------
+
+Each JanusGraph graph has a schema comprised of the edge labels, property keys, and vertex labels used therein. A JanusGraph schema can either be explicitly or implicitly defined. Users are encouraged to explicitly define the graph schema during application development. An explicitly defined schema is an important component of a robust graph application and greatly improves collaborative software development. Note, that a JanusGraph schema can be evolved over time without any interruption of normal database operations. Extending the schema does not slow down query answering and does not require database downtime.
+
+The schema type - i.e. edge label, property key, or vertex label - is assigned to elements in the graph - i.e. edge, properties or vertices respectively - when they are first created. The assigned schema type cannot be changed for a particular element. This ensures a stable type system that is easy to reason about.
+
+Beyond the schema definition options explained in this section, schema types provide performance tuning options that are discussed in <<advanced-schema>>.
+
+Defining Edge Labels
+~~~~~~~~~~~~~~~~~~~~
+
+Each edge connecting two vertices has a label which defines the semantics of the relationship. For instance, an edge labeled `friend` between vertices A and B encodes a friendship between the two individuals.
+
+To define an edge label, call `makeEdgeLabel(String)` on an open graph or management transaction and provide the name of the edge label as the argument. Edge label names must be unique in the graph. This method returns a builder for edge labels that allows to define its multiplicity. The *multiplicity* of an edge label defines a multiplicity constraint on all edges of this label, that is, a maximum number of edges between pairs of vertices. JanusGraph recognizes the following multiplicity settings.
+
+Edge Label Multiplicity
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.Multiplicity Settings
+* *MULTI*: Allows multiple edges of the same label between any pair of vertices. In other words, the graph is a _multi graph_ with respect to such edge label. There is no constraint on edge multiplicity.
+* *SIMPLE*: Allows at most one edge of such label between any pair of vertices. In other words, the graph is a _simple graph_ with respect to the label. Ensures that edges are unique for a given label and pairs of vertices.
+* *MANY2ONE*: Allows at most one outgoing edge of such label on any vertex in the graph but places no constraint on incoming edges. The edge label `mother` is an example with MANY2ONE multiplicity since each person has at most one mother but mothers can have multiple children.
+* *ONE2MANY*: Allows at most one incoming edge of such label on any vertex in the graph but places no constraint on outgoing edges. The edge label `winnerOf` is an example with ONE2MANY multiplicity since each contest is won by at most one person but a person can win multiple contests.
+* *ONE2ONE*:  Allows at most one incoming and one outgoing edge of such label on any vertex in the graph. The edge label 'marriedTo' is an example with ONE2ONE multiplicity since a person is married to exactly one other person.
+
+The default multiplicity is MULTI. The definition of an edge label is completed by calling the `make()` method on the builder which returns the defined edge label as shown in the following example.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+follow = mgmt.makeEdgeLabel('follow').multiplicity(MULTI).make()
+mother = mgmt.makeEdgeLabel('mother').multiplicity(MANY2ONE).make()
+mgmt.commit()
+
+Defining Property Keys
+~~~~~~~~~~~~~~~~~~~~~~
+
+Properties on vertices and edges are key-value pairs. For instance, the property `name='Daniel'` has the key `name` and the value `'Daniel'`. Property keys are part of the JanusGraph schema and can constrain the allowed data types and cardinality of values.
+
+To define a property key, call `makePropertyKey(String)` on an open graph or management transaction and provide the name of the property key as the argument. Property key names must be unique in the graph. This method returns a builder for the property keys.
+
+Property Key Data Type
+^^^^^^^^^^^^^^^^^^^^^^
+
+Use `dataType(Class)` to define the data type of a property key. JanusGraph will enforce that all values associated with the key have the configured data type and thereby ensures that data added to the graph is valid. For instance, one can define that the `name` key has a String data type.
+
+Define the data type as `Object.class` in order to allow any (serializable) value to be associated with a key. However, it is encouraged to use concrete data types whenever possible.
+Configured data types must be concrete classes and not interfaces or abstract classes. JanusGraph enforces class equality, so adding a sub-class of a configured data type is not allowed.
+
+JanusGraph natively supports the following data types.
+
+.Native JanusGraph Data Types
+[options="header"]
+|=====
+|Name			|Description
+|String			|Character sequence
+|Character		|Individual character
+|Boolean		|true or false
+|Byte			|byte value
+|Short			|short value
+|Integer		|integer value
+|Long			|long value
+|Float			|4 byte floating point number
+|Double			|8 byte floating point number
+|Decimal		|Number with 3 decimal digits
+|Precision		|Number with 6 decimal digits
+|Date           |Date
+|Geoshape		|Geographic shape like point, circle or box
+|UUID   		|UUID
+|=====
+
+
+[[property-cardinality]]
+Property Key Cardinality
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Use `cardinality(Cardinality)` to define the allowed cardinality of the values associated with the key on any given vertex.
+
+.Cardinality Settings
+* *SINGLE*: Allows at most one value per element for such key. In other words, the key->value mapping is unique for all elements in the graph. The property key `birthDate` is an example with SINGLE cardinality since each person has exactly one birth date.
+* *LIST*: Allows an arbitrary number of values per element for such key. In other words, the key is associated with a list of values allowing duplicate values. Assuming we model sensors as vertices in a graph, the property key `sensorReading` is an example with LIST cardinality to allow lots of (potentially duplicate) sensor readings to be recorded.
+* *SET*: Allows multiple values but no duplicate values per element for such key. In other words, the key is associated with a set of values. The property key `name` has SET cardinality if we want to capture all names of an individual (including nick name, maiden name, etc).
+
+The default cardinality setting is SINGLE.
+Note, that property keys used on edges and properties have cardinality SINGLE. Attaching multiple values for a single key on an edge or property is not supported.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+birthDate = mgmt.makePropertyKey('birthDate').dataType(Long.class).cardinality(Cardinality.SINGLE).make()
+name = mgmt.makePropertyKey('name').dataType(String.class).cardinality(Cardinality.SET).make()
+sensorReading = mgmt.makePropertyKey('sensorReading').dataType(Double.class).cardinality(Cardinality.LIST).make()
+mgmt.commit()
+
+Relation Types
+~~~~~~~~~~~~~~
+
+Edge labels and property keys are jointly referred to as *relation types*. Names of relation types must be unique in the graph which means that property keys and edge labels cannot have the same name. There are methods in the JanusGraph API to query for the existence or retrieve relation types which encompasses both property keys and edge labels.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+if (mgmt.containsRelationType('name'))
+    name = mgmt.getPropertyKey('name')
+mgmt.getRelationTypes(EdgeLabel.class)
+mgmt.commit()
+
+Defining Vertex Labels
+~~~~~~~~~~~~~~~~~~~~~~
+
+Like edges, vertices have labels. Unlike edge labels, vertex labels are optional.  Vertex labels are useful to distinguish different types of vertices, e.g. _user_ vertices and _product_ vertices.
+
+Although labels are optional at the conceptual and data model level, JanusGraph assigns all vertices a label as an internal implementation detail.  Vertices created by the `addVertex` methods use JanusGraph's default label.
+
+To create a label, call `makeVertexLabel(String).make()` on an open graph or management transaction and provide the name of the vertex label as the argument.  Vertex label names must be unique in the graph.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+person = mgmt.makeVertexLabel('person').make()
+mgmt.commit()
+// Create a labeled vertex
+person = graph.addVertex(label, 'person')
+// Create an unlabeled vertex
+v = graph.addVertex()
+graph.tx().commit()
+
+Automatic Schema Maker
+~~~~~~~~~~~~~~~~~~~~~~
+
+If an edge label, property key, or vertex label has not been defined explicitly, it will be defined implicitly when it is first used during the addition of an edge, vertex or the setting of a property. The `DefaultSchemaMaker` configured for the JanusGraph graph defines such types.
+
+By default, implicitly created edge labels have multiplicity MULTI and implicitly created property keys have cardinality SINGLE and data type `Object.class`. Users can control automatic schema element creation by implementing and registering their own `DefaultSchemaMaker`.
+
+It is strongly encouraged to explicitly define all schema elements and to disable automatic schema creation by setting `schema.default=none` in the JanusGraph graph configuration.
+
+Changing Schema Elements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The definition of an edge label, property key, or vertex label cannot be changed once its committed into the graph. However, the names of schema elements can be changed via `JanusGraphManagement.changeName(JanusGraphSchemaElement, String)` as shown in the following example where the property key `place` is renamed to `location`.
+
+[source, gremlin]
+mgmt = graph.openManagement()
+place = mgmt.getPropertyKey('place')
+mgmt.changeName(place, 'location')
+mgmt.commit()
+
+Note, that schema name changes may not be immediately visible in currently running transactions and other JanusGraph graph instances in the cluster. While schema name changes are announced to all JanusGraph instances through the storage backend, it may take a while for the schema changes to take effect and it may require a instance restart in the event of certain failure conditions - like network partitions - if they coincide with the rename. Hence, the user must ensure that either of the following holds:
+
+* The renamed label or key is not currently in active use (i.e. written or read) and will not be in use until all JanusGraph instances are aware of the name change.
+* Running transactions actively accomodate the brief intermediate period where either the old or new name is valid based on the specific JanusGraph instance and status of the name-change announcement. For instance, that could mean transactions query for both names simultaneously.
+
+Should the need arise to re-define an existing schema type, it is recommended to change the name of this type to a name that is not currently (and will never be) in use. After that, a new label or key can be defined with the original name, thereby effectively replacing the old one.
+However, note that this would not affect vertices, edges, or properties previously written with the existing type. Redefining existing graph elements is not supported online and must be accomplished through a batch graph transformation.
+
+
+[[gremlin]]
+Gremlin Query Language
+----------------------
+
+image:http://tinkerpop.apache.org/docs/{tinkerpop_version}/images/gremlin-logo.png[link="http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference"]
+
+http://tinkerpop.apache.org/[Gremlin] is JanusGraph's query language used to retrieve data from and modify data in the graph. Gremlin is a path-oriented language which succinctly expresses complex graph traversals and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name."
+
+Gremlin is developed independently from JanusGraph and supported by most graph databases. By building applications on top of JanusGraph through the Gremlin query language users avoid vendor-lock in because their application can be migrated to other graph databases supporting Gremlin.
+
+This section is a brief overview of the Gremlin query language. For more information on Gremlin, refer to the following resources:
+
+* http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference[Complete Gremlin Manual]
+* http://sql2gremlin.com[Gremlin for SQL developers *Gremlin2 Syntax*]
+
+
+Introductory Traversals
+~~~~~~~~~~~~~~~~~~~~~~~
+
+A Gremlin query is a chain of operations/functions that are evaluated from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset discussed in <<getting-started>>.
+
+[source, gremlin]
+gremlin> g.V().has('name', 'hercules').out('father').out('father').values('name')
+==>saturn
+
+The query above can be read:
+
+. `g`: for the current graph traversal.
+. `V`: for all vertices in the graph
+. `has('name', 'hercules')`: filters the vertices down to those with name property "hercules" (there is only one).
+. `out('father')`: traverse outgoing father edge's from Hercules.
+. `out('father')`: traverse outgoing father edge's from Hercules' father's vertex (i.e. Jupiter).
+. `name`: get the name property of the "hercules" vertex's grandfather.
+
+Taken together, these steps form a path-like traversal query. Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
+
+[source, gremlin]
+gremlin> g
+==>graphtraversalsource[janusgraph[cassandrathrift:127.0.0.1], standard]
+gremlin> g.V().has('name', 'hercules')
+==>v[24]
+gremlin> g.V().has('name', 'hercules').out('father')
+==>v[16]
+gremlin> g.V().has('name', 'hercules').out('father').out('father')
+==>v[20]
+gremlin> g.V().has('name', 'hercules').out('father').out('father').values('name')
+==>saturn
+
+For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.
+
+[source, gremlin]
+gremlin> g.V().has('name', 'hercules').values('name')
+==>hercules
+gremlin> g.V().has('name', 'hercules').out('father').values('name')
+==>jupiter
+gremlin> g.V().has('name', 'hercules').out('father').out('father').values('name')
+==>saturn
+
+Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the JanusGraph user the ability to fluently navigate the underlying graph structure.
+
+[source, gremlin]
+gremlin> g.V().has('name', 'hercules').repeat(out('father')).emit().values('name')
+==>jupiter
+==>saturn
+
+Some more traversal examples are provided below.
+
+[source, gremlin]
+gremlin> hercules = g.V().has('name', 'hercules').next()
+==>v[1536]
+gremlin> g.V(hercules).out('father', 'mother').label()
+==>god
+==>human
+gremlin> g.V(hercules).out('battled').label()
+==>monster
+==>monster
+==>monster
+gremlin> g.V(hercules).out('battled').valueMap()
+==>{name=nemean}
+==>{name=hydra}
+==>{name=cerberus}
+
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#graph-traversal-steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies").
+
+Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin showcasing how vertices and edges are added to the graph.
+
+[source, gremlin]
+gremlin> theseus = graph.addVertex('human')
+==>v[3328]
+gremlin> theseus.property('name', 'theseus')
+==>null
+gremlin> cerberus = g.V().has('name', 'cerberus').next()
+==>v[2816]
+gremlin> battle = theseus.addEdge('battled', cerberus, 'time', 22)
+==>e[7eo-2kg-iz9-268][3328-battled->2816]
+gremlin> battle.values('time')
+==>22
+
+When adding a vertex, an optional vertex label can be provided. An edge label must be specified when adding edges. Properties as key-value pairs can be set on both vertices and edges. When a property key is defined with SET or LIST cardinality, `addProperty` must be used when adding a respective property to a vertex.
+
+[source, gremlin]
+gremlin> g.V(hercules).as('h').out('battled').in('battled').where(neq('h')).values('name')
+==>theseus
+
+The example above has 4 chained functions: `out`, `in`, `except`, and `values` (i.e. `name` is shorthand for `values('name')`). The function signatures of each are itemized below, where `V` is vertex and `U` is any object, where `V` is a subset of `U`.
+
+. `out: V -> V`
+. `in: V -> V`
+. `except: U -> U`
+. `values: V -> U`
+
+When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
+
+[NOTE]
+The Gremlin overview presented in this section focused on the Gremlin-Groovy language implementation. Additional https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations[JVM language implementations] of Gremlin are available.
+
+
+[[server]]
+JanusGraph Server
+-----------------
+
+JanusGraph uses the http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-server[Gremlin Server] engine as the server component to process and answer client queries.  When packaged in JanusGraph, Gremlin Server is called JanusGraph Server.
+
+JanusGraph Server must be started manually in order to use it.  JanusGraph Server provides a way to remotely execute Gremlin scripts against one or more JanusGraph instances hosted within it. This section will describe how to use the WebSockets configuration, as well as describe how to configure JanusGraph Server to handle REST-style interactions.
+
+[[server-getting-started]]
+Getting Started
+~~~~~~~~~~~~~~~
+
+Using the Pre-Packaged Distribution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The JanusGraph https://github.com/JanusGraph/janusgraph/releases[release] comes pre-configured to run JanusGraph Server out of the box leveraging a sample Cassandra and ElasticSearch configuration to allow users to get started quickly with JanusGraph Server.  This configuration defaults to client applications that can connect to JanusGraph Server via WebSockets with a custom subprotocol.  There are a number of clients developed in different languages to help support the subprotocol.  The most familiar client to use the WebSocket interface is the gremlin.sh shell. The quick-start bundle is not intended to be representative of a production installation, but does provide a way to perform development with JanusGraph Server, run tests and see how the components are wired together. To use this default configuration:
+
+* Download a copy of the current `janusgraph-$VERSION.zip` file from the https://github.com/JanusGraph/janusgraph/releases[Releases page]
+* Unzip it and enter the `janusgraph-$VERSION` directory
+* Run `bin/janusgraph.sh start`.  This step will start Gremlin Server with Cassandra/ES forked into a separate process.
+
+[source,bourne]
+----
+$ bin/janusgraph.sh start
+Forking Cassandra...
+Running `nodetool statusthrift`.. OK (returned exit status 0 and printed string "running").
+Forking Elasticsearch...
+Connecting to Elasticsearch (127.0.0.1:9300)... OK (connected to 127.0.0.1:9300).
+Forking Gremlin-Server...
+Connecting to Gremlin-Server (127.0.0.1:8182)... OK (connected to 127.0.0.1:8182).
+Run gremlin.sh to connect.
+----
+
+[[first-example-connecting-gremlin-server]]
+Connecting to Gremlin Server
+++++++++++++++++++++++++++++
+
+After running janusgraph.sh, Gremlin Server will be ready to listen for WebSocket connections.  The easiest way to test the connection is with Gremlin Console.
+
+Start http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-console[Gremlin Console] with `bin/gremlin.sh` and use the `:remote` and `:>` commands to issue Gremlin to Gremlin Server:
+
+[source, text]
+----
+$  bin/gremlin.sh
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+plugin activated: tinkerpop.server
+plugin activated: tinkerpop.hadoop
+plugin activated: tinkerpop.utilities
+plugin activated: janusgraph.imports
+plugin activated: tinkerpop.tinkergraph
+gremlin> :remote connect tinkerpop.server conf/remote.yaml
+==>Connected - localhost/127.0.0.1:8182
+gremlin> :> graph.addVertex("name", "stephen")
+==>v[256]
+gremlin> :> g.V().values('name')
+==>stephen
+----
+
+The `:remote` command tells the console to configure a remote connection to Gremlin Server using the `conf/remote.yaml` file to connect.  That file points to a Gremlin Server instance running on `localhost`.  The `:>` is the "submit" command which sends the Gremlin on that line to the currently active remote.
+
+JanusGraph Server as a WebSocket Endpoint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default configuration described in <<server-getting-started>> is already a WebSocket configuration.  If you want to alter the default configuration to work with your own Cassandra or HBase environment rather than use the quick start environment, follow these steps:
+
+.To Configure JanusGraph Server For WebSockets
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
++
+```
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+```
+
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
++
+```
+cp conf/janusgraph-hbase.properties conf/gremlin-server/socket-janusgraph-hbase-server.properties
+```
++
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called socket-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
++
+```
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/socket-gremlin-server.yaml
+```
++
+. Edit the socket-gremlin-server.yaml file and make the following updates:
+.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host: 
++
+```
+host: 10.10.10.100
+```
++
+.. Update the graphs section to point to your new properties file so the JanusGraph Server can find and connect to your JanusGraph instance:
++
+```
+graphs: {
+  graph: conf/gremlin-server/socket-janusgraph-hbase-server.properties}
+```
++
+. Start the JanusGraph Server, specifying the yaml file you just configured:
++
+```
+bin/gremlin-server.sh ./conf/gremlin-server/socket-gremlin-server.yaml
+```
+IMPORTANT: Do not use bin/janusgraph.sh.  That starts the default configuration, which starts a separate Cassandra/ElasticSearch environment.
++
+. The JanusGraph Server should now be running in WebSocket mode and can be tested by following the instructions in <<first-example-connecting-gremlin-server>>
+
+
+
+JanusGraph Server as a REST-style Endpoint
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default configuration described in <<server-getting-started>> is a WebSocket configuration.  If you want to alter the default configuration in order to use JanusGraph Server as a REST endpoint for your JanusGraph database, follow these steps:
+
+.To Configure JanusGraph Server For Rest
+. Test a local connection to a JanusGraph database first.  This step applies whether using the Gremlin Console to test the connection, or whether connecting from a program.  Make appropriate changes in a properties file in the ./conf directory for your environment.  For example, edit ./conf/janusgraph-hbase.properties and make sure the storage.backend, storage.hostname and storage.hbase.table parameters are specified correctly.  For more information on configuring JanusGraph for various storage backends, see <<storage-backends>>.  Make sure the properties file contains the following line: 
++
+```
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+```
+
+. Once a local configuration is tested and you have a working properties file, copy the properties file from the ./conf directory to the ./conf/gremlin-server directory.
++
+```
+cp conf/janusgraph-hbase.properties conf/gremlin-server/rest-janusgraph-hbase-server.properties
+```
++
+. Copy ./conf/gremlin-server/gremlin-server.yaml to a new file called rest-gremlin-server.yaml.  Do this in case you need to refer to the original version of the file
++
+```
+cp conf/gremlin-server/gremlin-server.yaml conf/gremlin-server/rest-gremlin-server.yaml
+```
++
+. Edit the rest-gremlin-server.yaml file and make the following updates:
+.. If you are planning to connect to JanusGraph Server from something other than localhost, update the ip address for host: 
++
+```
+host: 10.10.10.100
+```
++
+.. Update the channelizer setting to specify the HttpChannelizer:
++
+```
+channelizer: org.apache.tinkerpop.gremlin.server.channel.HttpChannelizer
+```
++
+.. Update the graphs section to point to your new properties file so the JanusGraph Server can find and connect to your JanusGraph instance:
++
+```
+graphs: {
+  graph: conf/gremlin-server/rest-janusgraph-hbase-server.properties}
+```
++
+. Start the JanusGraph Server, specifying the yaml file you just configured:
++
+```
+bin/gremlin-server.sh ./conf/gremlin-server/rest-gremlin-server.yaml
+```
++
+. The JanusGraph Server should now be running in REST mode and available for testing.  *curl* can be used to verify the server is working:
++
+```
+curl -XPOST -Hcontent-type:application/json -d '{"gremlin":"g.V().count()"}' http://[IP for JanusGraph server host]:8182
+```
+
+Advanced JanusGraph Server Configurations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+WebSocket versus REST
+^^^^^^^^^^^^^^^^^^^^^
+
+JanusGraph Server must be run with a configuration for either WebSockets (for gremlin shell or other WebSocket programs) or re-configured for REST to work with REST clients.
+
+There is, currently, no way to configure a single running instance of JanusGraph Server to communicate simultaneously with clients talking WebSockets and REST.  However, it is possible to create configuration files (following the steps in this chapter) for both WebSockets and REST and start two instances of the JanusGraph Server by pointing it to the various configurations when it is started.  In this way, the same JanusGraph database instance can be reached through different JanusGraph Servers through both WebSocket and REST calls. Make sure the port parameter in each yaml configuration is different if starting more than one JanusGraph Server on the same machine:
+
+```
+port: 8182
+```
+ 
+In the future, the option to have one running instance of JanusGraph Server supporting multiple protocols may be possible.
+
+[[gremlin-server-with-janusgraph]]
+Using TinkerPop Gremlin Server with JanusGraph
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since JanusGraph Server is, essentially, TinkerPop Gremlin Server packaged with configuration files for JanusGraph, a version compatible 
+TinkerPop Gremlin Server can be downloaded separately and used with JanusGraph.  Get started by link:http://tinkerpop.apache.org/[downloading] the appropriate version of Gremlin Server, which needs to <<versions.txt#version-compat,match a version>> supported by the JanusGraph version in use.  
+
+IMPORTANT: Any references to file paths in this section refer to paths under a TinkerPop distribution for Gremlin Server and not a JanusGraph distribution with the JanusGraph Server, unless specifically noted.
+
+Configuring a standalone Gremlin Server to work with JanusGraph is similar to configuring the packaged JanusGraph Server. You should be familiar with link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_configuring_2[graph configuration].  Basically, the Gremlin Server yaml file points to graph-specific configuration files that are used to instantiate `JanusGraph` instances that it will then host.  In order to instantiate these `Graph` instances, Gremlin Server requires that the appropriate libraries and dependencies for the `JanusGraph` be available on its classpath.
+
+For purposes of demonstration, these instructions will outline how to configure the BerkeleyDB backend for JanusGraph in Gremlin Server. As stated earlier, Gremlin Server needs JanusGraph dependencies on its classpath.  Invoke the following command replacing `$VERSION` with the version of JanusGraph to use:
+
+[source,bourne]
+----
+bin/gremlin-server.sh -i org.janusgraph janusgraph-all $VERSION
+----
+
+When this process completes, Gremlin Server should now have all the JanusGraph dependencies available to it and will thus be able to instantiate `JanusGraph` objects.
+
+IMPORTANT: The above command uses Groovy Grape and if it is not configured properly download errors may ensue.  Please refer to link:http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#gremlin-applications[this section] of the TinkerPop documentation for more information around setting up `~/.groovy/grapeConfig.xml`.
+
+Create a file called `GREMLIN_SERVER_HOME/conf/janusgraph.properties` with the following contents:  
+
+[source,text]
+----
+gremlin.graph=org.janusgraph.core.JanusGraphFactory
+storage.backend=berkeleyje
+storage.directory=db/berkeley
+----
+
+Configuration of other backends is similar.  See <<storage-backends>>. If using Cassandra, then use Cassandra configuration options in the `janusgraph.properties` file.  The only important piece to leave unchanged is the `gremlin.graph` setting which should always use `JanusGraphFactory`.  This setting tells Gremlin Server how to instantiate a `JanusGraph` instance.
+
+Next create a file called `GREMLIN_SERVER_HOME/conf/gremlin-server-janusgraph.yaml` that has the following contents:
+
+[source,yaml]
+----
+host: localhost
+port: 8182
+graphs: {
+  graph: conf/janusgraph.properties}
+plugins:
+  - janusgraph.imports
+scriptEngines: {
+  gremlin-groovy: {
+    scripts: [scripts/janusgraph.groovy]}}
+serializers:
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { useMapperFromGraph: graph }}
+  - { className: org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0, config: { serializeResultToString: true }}
+metrics: {
+  slf4jReporter: {enabled: true, interval: 180000}}
+----
+
+.There are several important parts to this configuration file as they relate to JanusGraph.  
+. In the `graphs` map, there is a key called `graph` and its value is `conf/janusgraph.properties`.  This tells Gremlin Server to instantiate a `Graph` instance called "graph" and use the `conf/janusgraph.properties` file to configure it.  The "graph" key becomes the unique name for the `Graph` instance in Gremlin Server and it can be referenced as such in the scripts submitted to it. 
+. In the `plugins` list, there is a reference to `janusgraph.imports`, which tells Gremlin Server to initialize the "JanusGraph Plugin".  The "JanusGraph Plugin" will auto-import JanusGraph specific classes for usage in scripts.  
+. Note the `scripts` key and the reference to `scripts/janusgraph.groovy`.  This Groovy file is an initialization script for Gremlin Server and that particular ScriptEngine.  Create `scripts/janusgraph.groovy` with the following contents:
+
+
+[source,groovy]
+----
+def globals = [:]
+globals << [g : graph.traversal()]
+----
+
+The above script creates a `Map` called `globals` and assigns to it a key/value pair.  The key is `g` and its value is a `TraversalSource` generated from `graph`, which was configured for Gremlin Server in its configuration file. At this point, there are now two global variables available to scripts provided to Gremlin Server - `graph` and `g`.
+
+At this point, Gremlin Server is configured and can be used to connect to a new or existing JanusGraph database.  To start the server:
+
+[source,bourne]
+----
+$ bin/gremlin-server.sh conf/gremlin-server-janusgraph.yaml
+[INFO] GremlinServer - 
+         \,,,/
+         (o o)
+-----oOOo-(3)-oOOo-----
+
+[INFO] GremlinServer - Configuring Gremlin Server from conf/gremlin-server-janusgraph.yaml
+[INFO] MetricManager - Configured Metrics Slf4jReporter configured with interval=180000ms and loggerName=org.apache.tinkerpop.gremlin.server.Settings$Slf4jReporterMetrics
+[INFO] GraphDatabaseConfiguration - Set default timestamp provider MICRO
+[INFO] GraphDatabaseConfiguration - Generated unique-instance-id=7f0000016240-ubuntu1
+[INFO] Backend - Initiated backend operations thread pool of size 8
+[INFO] KCVSLog$MessagePuller - Loaded unidentified ReadMarker start time 2015-10-02T12:28:24.411Z into org.janusgraph.diskstorage.log.kcvs.KCVSLog$MessagePuller@35399441
+[INFO] GraphManager - Graph [graph] was successfully configured via [conf/janusgraph.properties].
+[INFO] ServerGremlinExecutor - Initialized Gremlin thread pool.  Threads in pool named with pattern gremlin-*
+[INFO] ScriptEngines - Loaded gremlin-groovy ScriptEngine
+[INFO] GremlinExecutor - Initialized gremlin-groovy ScriptEngine with scripts/janusgraph.groovy
+[INFO] ServerGremlinExecutor - Initialized GremlinExecutor and configured ScriptEngines.
+[INFO] ServerGremlinExecutor - A GraphTraversalSource is now bound to [g] with graphtraversalsource[standardjanusgraph[berkeleyje:db/berkeley], standard]
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] AbstractChannelizer - Configured application/vnd.gremlin-v1.0+gryo-stringd with org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0
+[INFO] GremlinServer$1 - Gremlin Server configured with worker thread pool of 1, gremlin pool of 8 and boss thread pool of 1.
+[INFO] GremlinServer$1 - Channel started at port 8182.
+----
+
+The following section explains how to connect to the running server.
+
+Connecting to JanusGraph via Gremlin Server
++++++++++++++++++++++++++++++++++++++++++++
+
+Gremlin Server will be ready to listen for WebSocket connections when it is started.  The easiest way to test the connection is with Gremlin Console.
+
+Follow the instructions here  <<first-example-connecting-gremlin-server>> to verify the Gremlin Server is working.
+
+IMPORTANT: A difference you should understand is that when working with JanusGraph Server, the Gremlin Console is started from underneath the JanusGraph distribution and when following the test instructions here for a standalone Gremlin Server, the Gremlin Console is started from under the TinkerPop distribution.
+
+
+[source,java]
+----
+GryoMapper mapper = GryoMapper.build().addRegistry(JanusGraphIoRegistry.INSTANCE).create();
+Cluster cluster = Cluster.build().serializer(new GryoMessageSerializerV1d0(mapper)).create();
+Client client = cluster.connect();
+client.submit("g.V()").all().get();
+----
+
+By adding the `JanusGraphIoRegistry` to the `org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0`, the driver will know how to properly deserialize custom data types returned by JanusGraph.
+
+[[indexes]]
+Indexing for better Performance
+-------------------------------
+
+JanusGraph supports two different kinds of indexing to speed up query processing: *graph indexes* and *vertex-centric indexes*. Most graph queries start the traversal from a list of vertices or edges that are identified by their properties. Graph indexes make these global retrieval operations efficient on large graphs. Vertex-centric indexes speed up the actual traversal through the graph, in particular when traversing through vertices with many incident edges.
+
+Extending JanusGraph Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to extend Gremlin Server with other means of communication by implementing the interfaces that it provides and leverage this with JanusGraph.  See more details in the appropriate TinkerPop documentation.
+
+
+
+[[graph-indexes]]
+Graph Index
+~~~~~~~~~~~
+
+Graph indexes are global index structures over the entire graph which allow efficient retrieval of vertices or edges by their properties for sufficiently selective conditions. For instance, consider the following queries
+
+[source, gremlin]
+g.V().has('name', 'hercules')
+g.E().has('reason', textContains('loves'))
+
+The first query asks for all vertices with the name `hercules`. The second asks for all edges where the property reason contains the word `loves`. Without a graph index answering those queries would require a full scan over all vertices or edges in the graph to find those that match the given condition which is very inefficient and infeasible for huge graphs.
+
+JanusGraph distinguishes between two types of graph indexes: *composite* and *mixed* indexes. Composite indexes are very fast and efficient but limited to equality lookups for a particular, previously-defined combination of property keys. Mixed indexes can be used for lookups on any combination of indexed keys and support multiple condition predicates in addition to equality depending on the backing index store.
+
+Both types of indexes are created through the JanusGraph management system and the index builder returned by `JanusGraphManagement.buildIndex(String, Class)` where the first argument defines the name of the index and the second argument specifies the type of element to be indexed (e.g. `Vertex.class`). The name of a graph index must be unique.
+Graph indexes built against newly defined property keys, i.e. property keys that are defined in the same management transaction as the index, are immediately available. Graph indexes built against property keys that are already in use require the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the index will not be available. It is encouraged to define graph indexes in the same transaction as the initial schema.
+
+[NOTE]
+In the absence of an index, JanusGraph will default to a full graph scan in order to retrieve the desired list of vertices. While this produces the correct result set, the graph scan can be very inefficient and lead to poor overall system performance in a production environment. Enable the `force-index` configuration option in production deployments of JanusGraph to prohibit graph scans.
+
+Composite Index
+^^^^^^^^^^^^^^^
+
+Composite indexes retrieve vertices or edges by one or a (fixed) composition of multiple keys.
+Consider the following composite index definitions.
+
+[source, gremlin]
+graph.tx().rollback() //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+name = mgmt.getPropertyKey('name')
+age = mgmt.getPropertyKey('age')
+mgmt.buildIndex('byNameComposite', Vertex.class).addKey(name).buildCompositeIndex()
+mgmt.buildIndex('byNameAndAgeComposite', Vertex.class).addKey(name).addKey(age).buildCompositeIndex()
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitGraphIndexStatus(graph, 'byNameComposite').call()
+mgmt.awaitGraphIndexStatus(graph, 'byNameAndAgeComposite').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("byNameComposite"), SchemaAction.REINDEX).get()
+mgmt.updateIndex(mgmt.getGraphIndex("byNameAndAgeComposite"), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+First, two property keys `name` and `age` are already defined. Next, a simple composite index on just the name property key is built. JanusGraph will use this index to answer the following query.
+
+[source, gremlin]
+g.V().has('name', 'hercules')
+
+The second composite graph index includes both keys. JanusGraph will use this index to answer the following query.
+
+[source, gremlin]
+g.V().has('age', 30).has('name', 'hercules')
+
+Note, that all keys of a composite graph index must be found in the query's equality conditions for this index to be used. For example, the following query cannot be answered with either of the indexes because it only contains a constraint on `age` but not `name`.
+
+[source, gremlin]
+g.V().has('age', 30)
+
+Also note, that composite graph indexes can only be used for equality constraints like those in the queries above. The following query would be answered with just the simple composite index defined on the `name` key because the age constraint is not an equality constraint.
+
+[source, gremlin]
+g.V().has('name', 'hercules').has('age', inside(20, 50))
+
+Composite indexes do not require configuration of an external indexing backend and are supported through the primary storage backend. Hence, composite index modifications are persisted through the same transaction as graph modifications which means that those changes are atomic and/or consistent if the underlying storage backend supports atomicity and/or consistency.
+
+[NOTE]
+A composite index may comprise just one or multiple keys. A composite index with just one key is sometimes referred to as a key-index.
+
+[[index-unique]]
+Index Uniqueness
+++++++++++++++++
+
+Composite indexes can also be used to enforce property uniqueness in the graph. If a composite graph index is defined as `unique()` there can be at most one vertex or edge for any given concatenation of property values associated with the keys of that index.
+For instance, to enforce that names are unique across the entire graph the following composite graph index would be defined.
+
+[source, gremlin]
+graph.tx().rollback()  //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+name = mgmt.getPropertyKey('name')
+mgmt.buildIndex('byNameUnique', Vertex.class).addKey(name).unique().buildCompositeIndex()
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitGraphIndexStatus(graph, 'byNameUnique').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("byNameUnique"), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+[NOTE]
+To enforce uniqueness against an eventually consistent storage backend, the <<eventual-consistency, consistency>> of the index must be explicitly set to enabling locking.
+
+[[index-mixed]]
+Mixed Index
+^^^^^^^^^^^
+
+Mixed indexes retrieve vertices or edges by any combination of previously added property keys.
+Mixed indexes provide more flexibility than composite indexes and support additional condition predicates beyond equality. On the other hand, mixed indexes are slower for most equality queries than composite indexes.
+
+Unlike composite indexes, mixed indexes require the configuration of an <<index-backends, indexing backend>> and use that indexing backend to execute lookup operations. JanusGraph can support multiple indexing backends in a single installation. Each indexing backend must be uniquely identified by name in the JanusGraph configuration which is called the *indexing backend name*.
+
+[source, gremlin]
+graph.tx().rollback()  //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+name = mgmt.getPropertyKey('name')
+age = mgmt.getPropertyKey('age')
+mgmt.buildIndex('nameAndAge', Vertex.class).addKey(name).addKey(age).buildMixedIndex("search")
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+The example above defines a mixed index containing the property keys `name` and `age`. The definition refers to the indexing backend name `search` so that JanusGraph knows which configured indexing backend it should use for this particular index.  The `search` parameter specified in the buildMixedIndex call must match the second clause in the JanusGraph configuration definition like this: index.*search*.backend   If the index was named 'solrsearch' then the configuration definition would appear like this: index.*solrsearch*.backend.
+
+The mgmt.buildIndex example specified above uses text search as its default behavior. An index statement that explicity defines the index as a text index can be written as follows:
+
+[source,gremlin]
+mgmt.buildIndex('nameAndAge',Vertex.class).addKey(name,Mapping.TEXT.getParameter()).addKey(age,Mapping.TEXT.getParameter()).buildMixedIndex("search")
+
+See <<index-parameters>> for more information on text and string search options, and see the documentation section specific to the indexing backend in use for more details on how each backend handles text versus string searches.
+
+While the index definition example looks similar to the composite index above, it provides greater query support and can answer _any_ of the following queries.
+
+[source, gremlin]
+g.V().has('name', textContains('hercules')).has('age', inside(20, 50))
+g.V().has('name', textContains('hercules'))
+g.V().has('age', lt(50))
+
+Mixed indexes support full-text search, range search, geo search and others. Refer to <<search-predicates>> for a list of predicates supported by a particular indexing backend.
+
+[NOTE]
+Unlike composite indexes, mixed indexes do not support uniqueness.
+
+Adding Property Keys
+++++++++++++++++++++
+
+Property keys can be added to an existing mixed index which allows subsequent queries to include this key in the query condition.
+
+[source, gremlin]
+graph.tx().rollback()  //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+location = mgmt.makePropertyKey('location').dataType(Geoshape.class).make()
+nameAndAge = mgmt.getGraphIndex('nameAndAge')
+mgmt.addIndexKey(nameAndAge, location)
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitGraphIndexStatus(graph, 'nameAndAge').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("nameAndAge"), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+
+To add a newly defined key, we first retrieve the existing index from the management transaction by its name and then invoke the `addIndexKey` method to add the key to this index.
+
+If the added key is defined in the same management transaction, it will be immediately available for querying. If the property key has already been in use, adding the key requires the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added elements. Until the reindex procedure has completed, the key will not be available in the mixed index.
+
+Mapping Parameters
+++++++++++++++++++
+
+When adding a property key to a mixed index - either through the index builder or the `addIndexKey` method - a list of parameters can be optionally specified to adjust how the property value is mapped into the indexing backend. Refer to the <<text-search, mapping parameters overview>> for a complete list of parameter types supported by each indexing backend.
+
+Ordering
+^^^^^^^^
+
+The order in which the results of a graph query are returned can be defined using the `order().by()` directive. The `order().by()` method expects two parameters:
+
+* The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key.
+* The sort order: either increasing `incr` or decreasing `decr`
+
+For example, the query `g.V().has('name', textContains('hercules')).order().by('age', decr).limit(10)` retrieves the ten oldest individuals with 'hercules' in their name.
+
+When using `order().by()` it is important to note that:
+
+* Composite graph indexes do not natively support ordering search results. All results will be retrieved and then sorted in-memory. For large result sets, this can be very expensive.
+* Mixed indexes support ordering natively and efficiently. However, the property key used in the order().by() method must have been previously added to the mixed indexed for native result ordering support. This is important in cases where the the order().by() key is different from the query keys. If the property key is not part of the index, then sorting requires loading all results into memory.
+
+Label Constraint
+^^^^^^^^^^^^^^^^
+
+In many cases it is desirable to only index vertices or edges with a particular label. For instance, one may want to index only gods by their name and not every single vertex that has a name property.
+When defining an index it is possible to restrict the index to a particular vertex or edge label using the `indexOnly` method of the index builder. The following creates a composite index for the property key `name` that indexes only vertices labeled `god`.
+
+[source, gremlin]
+graph.tx().rollback()  //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+name = mgmt.getPropertyKey('name')
+god = mgmt.getVertexLabel('god')
+mgmt.buildIndex('byNameAndLabel', Vertex.class).addKey(name).indexOnly(god).buildCompositeIndex()
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitGraphIndexStatus(graph, 'byNameAndLabel').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("byNameAndLabel"), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+
+Label restrictions similarly apply to mixed indexes. When a composite index with label restriction is defined as unique, the uniqueness constraint only applies to properties on vertices or edges for the specified label.
+
+Composite vs Mixed Index
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+. Use a composite index for exact match index retrievals. Composite indexes do not require configuring or operating an external index system and are often significantly faster than mixed indexes.
+.. As an exception, use a mixed index for exact matches when the number of distinct values for query constraint is relatively small or if one value is expected to be associated with many elements in the graph (i.e. in case of low selectivity).
+. Use a mixed indexes for numeric range, full-text or geo-spatial indexing. Also, using a mixed index can speed up the order().by() queries.
+
+
+[[vertex-indexes]]
+Vertex-centric Index
+~~~~~~~~~~~~~~~~~~~~
+
+Vertex-centric indexes are local index structures built individually per vertex. In large graphs vertices can have thousands of incident edges. Traversing through those vertices can be very slow because a large subset of the incident edges has to be retrieved and then filtered in memory to match the conditions of the traversal. Vertex-centric indexes can speed up such traversals by using localized index structures to retrieve only those edges that need to be traversed.
+
+Suppose that Hercules battled hundreds of monsters in addition to the three captured in the introductory <<getting-started, Graph of the Gods>>. Without a vertex-centric index, a query asking for those monsters battled between time point `10` and `20` would require retrieving all `battled` edges even though there are only a handful of matching edges.
+
+[source, gremlin]
+h = g.V().has('name', 'hercules').next()
+g.V(h).outE('battled').has('time', inside(10, 20)).inV()
+
+Building a vertex-centric index by time speeds up such traversal queries.
+
+[source, gremlin]
+graph.tx().rollback()  //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+time = mgmt.getPropertyKey('time')
+battled = mgmt.getEdgeLabel('battled')
+mgmt.buildEdgeIndex(battled, 'battlesByTime', Direction.BOTH, Order.decr, time)
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitGraphIndexStatus(graph, 'battlesByTime').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getGraphIndex("battlesByTime"), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+This example builds a vertex-centric index which indexes `battled` edges in both direction by time in decreasing order.
+A vertex-centric index is built against a particular edge label which is the first argument to the index construction method `JanusGraphManagement.buildEdgeIndex()`. The index only applies to edges of this label - `battled` in the example above. The second argument is a unique name for the index. The third argument is the edge direction in which the index is built. The index will only apply to traversals along edges in this direction. In this example, the vertex-centric index is built in both direction which means that time restricted traversals along `battled` edges can be served by this index in both the `IN` and `OUT` direction. JanusGraph will maintain a vertex-centric index on both the in- and out-vertex of `battled` edges. Alternatively, one could define the index to apply to the `OUT` direction only which would speed up traversals from Hercules to the monsters but not in the reverse direction. This would only require maintaining one index and hence half the index maintenance and storage cost.
+The last two arguments are the sort order of the index and a list of property keys to index by. The sort order is optional and defaults to ascending order (i.e. `Order.ASC`). The list of property keys must be non-empty and defines the keys by which to index the edges of the given label. A vertex-centric index can be defined with multiple keys.
+
+[source, gremlin]
+graph.tx().rollback()  //Never create new indexes while a transaction is active
+mgmt = graph.openManagement()
+time = mgmt.getPropertyKey('time')
+rating = mgmt.makePropertyKey('rating').dataType(Double.class).make()
+battled = mgmt.getEdgeLabel('battled')
+mgmt.buildEdgeIndex(battled, 'battlesByRatingAndTime', Direction.OUT, Order.decr, rating, time)
+mgmt.commit()
+//Wait for the index to become available
+mgmt.awaitRelationIndexStatus(graph, 'battlesByRatingAndTime', 'battled').call()
+//Reindex the existing data
+mgmt = graph.openManagement()
+mgmt.updateIndex(mgmt.getRelationIndex(battled, 'battlesByRatingAndTime'), SchemaAction.REINDEX).get()
+mgmt.commit()
+
+This example extends the schema by a `rating` property on `battled` edges and builds a vertex-centric index which indexes `battled` edges in the out-going direction by rating and time in decreasing order. Note, that the order in which the property keys are specified is important because vertex-centric indexes are prefix indexes. This means, that `battled` edges are indexed by `rating` _first_ and `time` _second_.
+
+[source, gremlin]
+//Add some rating data
+h = g.V().has('name', 'hercules').next()
+g.V(h).outE('battled').property('rating', 5.0) //Add some rating properties
+g.V(h).outE('battled').has('rating', gt(3.0)).inV()
+g.V(h).outE('battled').has('rating', 5.0).has('time', inside(10, 50)).inV()
+g.V(h).outE('battled').has('time', inside(10, 50)).inV()
+
+Hence, the `battlesByLocationAndTime` index can speed up the first two but not the third query.
+
+Multiple vertex-centric indexes can be built for the same edge label in order to support different constraint traversals. JanusGraph's query optimizer attempts to pick the most efficient index for any given traversal. Vertex-centric indexes only support equality and range/interval constraints.
+
+[NOTE]
+The property keys used in a vertex-centric index must have an explicitly defined data type (i.e. _not_ `Object.class`) which supports a native sort order. If the data type are floating point numbers, JanusGraph's custom `Decimal` or `Precision` data types must be used which have a fixed number of decimals.
+
+If the vertex-centric index is built against an edge label that is defined in the same management transaction, the index will be immediately available for querying. If the edge label has already been in use, building a vertex-centric index against it requires the execution of a <<reindex, reindex procedure>> to ensure that the index contains all previously added edges. Until the reindex procedure has completed, the index will not be available.
+
+[NOTE]
+JanusGraph automatically builds vertex-centric indexes per edge label and property key. That means, even with thousands of incident `battled` edges, queries like `g.V(h).out('mother')` or `g.V(h).values('age')` are efficiently answered by the local index.
+
+Vertex-centric indexes cannot speed up unconstrained traversals which require traversing through all incident edges of a particular label. Those traversals will become slower as the number of incident edges increases. Often, such traversals can be rewritten as constrained traversals that can utilize a vertex-centric index to ensure acceptable performance at scale.
+
+Ordered Traversals
+^^^^^^^^^^^^^^^^^^
+
+The following queries specify an order in which the incident edges are to be traversed. Use the `localLimit` command to retrieve a subset of the edges (in a given order) for EACH vertex that is traversed.
+
+[source, gremlin]
+h = g..V().has('name', 'hercules').next()
+g.V(h).local(outE('battled').order().by('time', decr).limit(10)).inV().values('name')
+g.V(h).local(outE('battled').has('rating', 5.0).order().by('time', decr).limit(10)).values('place')
+
+The first query asks for the names of the 10 most recently battled monsters by Hercules. The second query asks for the places of the 10 most recent battles of Hercules that are rated 5 stars. In both cases, the query is constrained by an order on a property key with a limit on the number of elements to be returned.
+
+Such queries can also be efficiently answered by vertex-centric indexes if the order key matches the key of the index and the requested order (i.e. increasing or decreasing) is the same as the one defined for the index. The `battlesByTime` index would be used to answer the first query and `battlesByLocationAndTime` applies to the second. Note, that the `battlesByLocationAndTime` index cannot be used to answer the first query because an equality constraint on `rating` must be present for the second key in the index to be effective.
+
+[NOTE]
+Ordered vertex queries are a JanusGraph extension to Gremlin which causes the verbose syntax and requires the `_()` step to convert the JanusGraph result back into a Gremlin pipeline.
+
+
+[[tx]]
+Transactions
+------------
+
+Almost all interaction with JanusGraph is associated with a transaction.  JanusGraph transactions are safe for concurrent use by multiple threads.  Methods on a JanusGraph instance like `graph.v(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
+
+JanusGraph transactions are not necessarily ACID.  They can be so configured on BerkleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
+
+This section describes JanusGraph's transactional semantics and API.
+
+Transaction Handling
+~~~~~~~~~~~~~~~~~~~~
+
+Every graph operation in JanusGraph occurs within the context of a transaction. According to the TinkerPop's transactional specification, each thread opens its own transaction against the graph database with the first operation (i.e. retrieval or mutation) on the graph:
+
+[source, gremlin]
+----
+graph = JanusGraphFactory.open("berkeleyje:/tmp/janusgraph")
+juno = graph.addVertex() //Automatically opens a new transaction
+juno.property("name", "juno")
+graph.tx().commit() //Commits transaction
+----
+
+In this example, a local JanusGraph graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database is `shutdown()`.  If transactions are still open when `shutdown()` is called, then the behavior of the outstanding transactions is technically undefined.  In practice, any non-thread-bound transactions will usually be effectively rolled back, but the thread-bound transaction belonging to the thread that invoked shutdown will first be committed. Note, that both read and write operations occur within the context of a transaction.
+
+Transactional Scope
+~~~~~~~~~~~~~~~~~~~
+
+All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under TinkerPop's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, JanusGraph will automatically transition vertices and types into the new transactional scope as shown in this example:
+
+[source, gremlin]
+graph = JanusGraphFactory.open("berkeleyje:/tmp/janusgraph")
+juno = graph.addVertex() //Automatically opens a new transaction
+graph.tx().commit() //Ends transaction
+juno.property("name", "juno") //Vertex is automatically transitioned
+
+Edges, on the other hand, are not automatically transitioned and cannot be accessed outside their original transaction. They must be explicitly transitioned:
+
+[source, gremlin]
+e = juno.addEdge("knows", graph.addVertex())
+graph.tx().commit() //Ends transaction
+e = g.E(e).next() //Need to refresh edge
+e.property("time", 99)
+
+Transaction Failures
+~~~~~~~~~~~~~~~~~~~~
+
+When committing a transaction, JanusGraph will attempt to persist all changes to the storage backend. This might not always be successful due to IO exceptions, network errors, machine crashes or resource unavailability. Hence, transactions can fail. In fact, transactions *will eventually fail* in sufficiently large systems. Therefore, we highly recommend that your code expects and accommodates such failures:
+
+[source, gremlin]
+try {
+    if (g.V().has("name", name).iterator().hasNext())
+        throw new IllegalArgumentException("Username already taken: " + name)
+    user = graph.addVertex()
+    user.property("name", name)
+    graph.tx().commit()
+} catch (Exception e) {
+    //Recover, retry, 	or return error message
+    println(e.getMessage())
+}
+
+The example above demonstrates a simplified user signup implementation where `name` is the name of the user who wishes to register. First, it is checked whether a user with that name already exists. If not, a new user vertex is created and the name assigned. Finally, the transaction is committed.
+
+If the transaction fails, a `JanusGraphException` is thrown. There are a variety of reasons why a transaction may fail. JanusGraph differentiates between _potentially temporary_ and _permanent_ failures.
+
+Potentially temporary failures are those related to resource unavailability and IO hiccups (e.g. network timeouts). JanusGraph automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay are configurable (see <<config-ref>>).
+
+Permanent failures can be caused by complete connection loss, hardware failure or lock contention. To understand the cause of lock contention, consider the signup example above and suppose a user tries to signup with username "juno". That username may still be available at the beginning of the transaction but by the time the transaction is committed, another user might have concurrently registered with "juno" as well and that transaction holds the lock on the username therefore causing the other transaction to fail. Depending on the transaction semantics one can recover from a lock contention failure by re-running the entire transaction.
+
+Permanent exceptions that can fail a transaction include:
+
+* PermanentLockingException(*Local lock contention*): Another local thread has already been granted a conflicting lock.
+* PermanentLockingException(*Expected value mismatch for X: expected=Y vs actual=Z*): The verification that the value read in this transaction is the same as the one in the datastore after applying for the lock failed. In other words, another transaction modified the value after it had been read and modified.
+
+[[multi-thread-tx]]
+Multi-Threaded Transactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+JanusGraph supports multi-threaded transactions through TinkerPop's http://tinkerpop.apache.org/docs/{tinkerpop_version}/reference#_threaded_transactions[threaded transactions]. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
+
+With TinkerPop's default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `createThreadedTx()` method.
+
+[source, gremlin]
+threadedGraph = graph.tx().createThreadedTx();
+threads = new Thread[10];
+for (int i=0; i<threads.length; i++) {
+    threads[i]=new Thread({
+        println("Do something with 'threadedGraph''");
+    });
+    threads[i].start();
+}
+for (int i=0; i<threads.length; i++) threads[i].join();
+threadedGraph.tx().commit();
+
+The `createThreadedTx()` method returns a new `Graph` object that represents this newly opened transaction. The graph object `tx` supports all of the methods that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all work concurrently in the same transaction and one of which finally commits the transaction when all threads have completed their work.
+
+JanusGraph relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
+
+Concurrent Algorithms
+~~~~~~~~~~~~~~~~~~~~~
+
+Thread independent transactions started through `createThreadedTx()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `Graph` object returned by `createThreadedTx()` without blocking each other.
+
+Nested Transactions
+~~~~~~~~~~~~~~~~~~~
+
+Another use case for thread independent transactions is nested transactions that ought to be independent from the surrounding transaction.
+
+For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see <<eventual-consistency>> for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
+
+[source, gremlin]
+v1 = graph.addVertex()
+//Do many other things
+v2 = graph.addVertex()
+v2.property("uniqueName", "foo")
+v1.addEdge("related", v2)
+//Do many other things
+graph.tx().commit() // This long-running tx might fail due to contention on its uniqueName lock
+
+One way around this is to create the vertex in a short, nested thread-independent transaction as demonstrated by the following pseudo code::
+
+[source, gremlin]
+v1 = graph.addVertex()
+//Do many other things
+tx = graph.tx().createThreadedTx()
+v2 = tx.addVertex()
+v2.property("uniqueName", "foo")
+tx.commit() // Any lock contention will be detected here
+v1.addEdge("related", g.V(v2).next()) // Need to load v2 into outer transaction
+//Do many other things
+graph.tx().commit() // Can't fail due to uniqueName write lock contention involving v2
+
+
+Common Transaction Handling Problems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Transactions are started automatically with the first operation executed against the graph. One does NOT have to start a transaction manually. The method `newTransaction` is used to start <<multi-thread-tx, multi-threaded transactions>> only.
+
+Transactions are automatically started under the TinkerPop semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary.
+A transaction will attempt to maintain its state from the beginning of the transaction. This might lead to unexpected behavior in multi-threaded applications as illustrated in the following artificial example::
+
+[source, gremlin]
+v = g.V(4).next() // Retrieve vertex, first action automatically starts transaction
+g.V(v).bothE()
+>> returns nothing, v has no edges
+//thread is idle for a few seconds, another thread adds edges to v
+g.V(v).bothE()
+>> still returns nothing because the transactional state from the beginning is maintained
+
+Such unexpected behavior is likely to occur in client-server applications where the server maintains multiple threads to answer client requests. It is therefore important to terminate the transaction after a unit of work (e.g. code snippet, query, etc). So, the example above should be:
+
+[source, gremlin]
+v = g.V(4).next() // Retrieve vertex, first action automatically starts transaction
+g.V(v).bothE()
+graph.tx().commit()
+//thread is idle for a few seconds, another thread adds edges to v
+g.V(v).bothE()
+>> returns the newly added edge
+graph.tx().commit()
+
+When using multi-threaded transactions via `newTransaction` all vertices and edges retrieved or created in the scope of that transaction are *not* available outside the scope of that transaction. Accessing such elements after the transaction has been closed will result in an exception. As demonstrated in the example above, such elements have to be explicitly refreshed in the new transaction using `g.V(existingVertex)` or `g.E(existingEdge)`.
+
+[[tx-config]]
+Transaction Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+JanusGraph's `JanusGraph.buildTransaction()` method gives the user the ability to configure and start a new <<multi-thread-tx, multi-threaded transaction>> against a `JanusGraph`. Hence, it is identical to `JanusGraph.newTransaction()` with additional configuration options.
+
+`buildTransaction()` returns a `TransactionBuilder` which allows the following aspects of a transaction to be configured:
+
+* `readOnly()` - makes the transaction read-only and any attempt to modify the graph will result in an exception.
+* `enableBatchLoading()` - enables batch-loading for an individual transaction. This setting results in similar efficiencies as the graph-wide setting `storage.batch-loading` due to the disabling of consistency checks and other optimizations. Unlike `storage.batch-loading` this option will not change the behavior of the storage backend.
+* `setTimestamp(long)` - Sets the timestamp for this transaction as communicated to the storage backend for persistence. Depending on the storage backend, this setting may be ignored. For eventually consistent backends, this is the timestamp used to resolve write conflicts. If this setting is not explicitly specified, JanusGraph uses the current time.
+* `setVertexCacheSize(long size)` - The number of vertices this transaction caches in memory. The larger this number, the more memory a transaction can potentially consume. If this number is too small, a transaction might have to re-fetch data which causes delays in particular for long running transactions.
+* `checkExternalVertexExistence(boolean)` - Whether this transaction should verify the existence of vertices for user provided vertex ids. Such checks requires access to the database which takes time. The existence check should only be disabled if the user is absolutely sure that the vertex must exist - otherwise data corruption can ensue.
+* `checkInternalVertexExistence(boolean)` - Whether this transaction should double-check the existence of vertices during query execution. This can be useful to avoid *phantom vertices* on eventually consistent storage backends. Disabled by default. Enabling this setting can slow down query processing.
+* `consistencyChecks(boolean)` - Whether JanusGraph should enforce schema level consistency constraints (e.g. multiplicity constraints). Disabling consistency checks leads to better performance but requires that the user ensures consistency confirmation at the application level to avoid inconsistencies. USE WITH GREAT CARE!
+
+Once, the desired configuration options have been specified, the new transaction is started via `start()` which returns a `JanusGraphTransaction`.
+
+[[caching]]
+JanusGraph Cache
+----------------
+
+Caching
+~~~~~~~
+
+JanusGraph employs multiple layers of data caching to facilitate fast graph traversals. The caching layers are listed here in the order they are accessed from within a JanusGraph transaction. The closer the cache is to the transaction, the faster the cache access and the higher the memory footprint and maintenance overhead.
+
+[[tx-cache]]
+Transaction-Level Caching
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Within an open transaction, JanusGraph maintains two caches:
+
+* Vertex Cache: Caches accessed vertices and their adjacency list (or subsets thereof) so that subsequent access is significantly faster within the same transaction. Hence, this cache speeds up iterative traversals.
+* Index Cache: Caches the results for index queries so that subsequent index calls can be served from memory instead of calling the index backend and (usually) waiting for one or more network round trips.
+
+The size of both of those is determined by the _transaction cache size_. The
+transaction cache size can be configured via `cache.tx-cache-size` or on a
+per transaction basis by opening a transaction via the transaction builder
+`graph.buildTransaction()` and using the `setVertexCacheSize(int)` method.
+
+Vertex Cache
+^^^^^^^^^^^^
+
+The vertex cache contains vertices and the subset of their adjacency list that has been retrieved in a particular transaction. The maximum number of vertices maintained in this cache is equal to the transaction cache size. If the transaction workload is an iterative traversal, the vertex cache will significantly speed it up. If the same vertex is not accessed again in the transaction, the transaction level cache will make no difference.
+
+Note, that the size of the vertex cache on heap is not only determined by the number of vertices it may hold but also by the size of their adjacency list. In other words, vertices with large adjacency lists (i.e. many incident edges) will consume more space in this cache than those with smaller lists.
+
+Furthermore note, that modified vertices are _pinned_ in the cache, which means they cannot be evicted since that would entail loosing their changes. Therefore, transaction which contain a lot of modifications may end up with a larger than configured vertex cache.
+
+Index Cache
+^^^^^^^^^^^
+
+The index cache contains the results of index queries executed in the context of this transaction. Subsequent identical index calls will be served from this cache and are therefore significantly cheaper. If the same index call never occurs twice in the same transaction, the index cache makes no difference.
+
+Each entry in the index cache is given a weight equal to `2 + result set size` and the total weight of the cache will not exceed half of the transaction cache size.
+
+[[db-cache]]
+Database Level Caching
+~~~~~~~~~~~~~~~~~~~~~~
+
+The database level cache retains adjacency lists (or subsets thereof) across multiple transactions and beyond the duration of a single transaction. The database level cache is shared by all transactions across a database. It is more space efficient than the transaction level caches but also slightly slower to access. In contrast to the transaction level caches, the database level caches do not expire immediately after closing a transaction. Hence, the database level cache significantly speeds up graph traversals for read heavy workloads across transactions.
+
+<<config-ref>> lists all of the configuration options that pertain to JanusGraph's database level cache. This page attempts to explain their usage.
+
+Most importantly, the database level cache is disabled by default in the current release version of JanusGraph. To enable it, set `cache.db-cache=true`.
+
+Cache Expiration Time
+^^^^^^^^^^^^^^^^^^^^^
+
+The most important setting for performance and query behavior is the cache expiration time which is configured via `cache.db-cache-time`. The cache will hold graph elements for at most that many milliseconds. If an element expires, the data will be re-read from the storage backend on the next access.
+
+If there is only one JanusGraph instance accessing the storage backend or if this instance is the only one modifying the graph, the cache expiration can be set to 0 which disables cache expiration. This allows the cache to hold elements indefinitely (unless they are evicted due to space constraints or on update) which provides the best cache performance. Since no other JanusGraph instance is modifying the graph, there is no danger of holding on to stale data.
+
+If there are multiple JanusGraph instances accessing the storage backend, the time should be set to the maximum time that can be allowed between *another* JanusGraph instance modifying the graph and this JanusGraph instance seeing the data.
+If any change should be immediately visible to all JanusGraph instances, the database level cache should be disabled in a distributed setup. However, for most applications it is acceptable that a particular JanusGraph instance sees remote modifications with some delay. The larger the maximally allowed delay, the better the cache performance.
+Note, that a given JanusGraph instance will always immediately see its own modifications to the graph irrespective of the configured cache expiration time.
+
+Cache Size
+^^^^^^^^^^
+
+The configuration option `cache.db-cache-size` controls how much heap space JanusGraph's database level cache is allowed to consume. The larger the cache, the more effective it will be. However, large cache sizes can lead to excessive GC and poor performance.
+
+The cache size can be configured as a percentage (expressed as a decimal between 0 and 1) of the total heap space available to the JVM running JanusGraph or as an absolute number of bytes.
+
+Note, that the cache size refers to the amount of heap space that is exclusively occupied by the cache. JanusGraph's other data structures and each open transaction will occupy additional heap space. If additional software layers are running in the same JVM, those may occupy a significant amount of heap space as well (e.g. Gremlin Server, embedded Cassandra, etc). Be conservative in your heap memory estimation. Configuring a cache that is too large can lead to out-of-memory exceptions and excessive GC.
+
+Clean Up Wait Time
+^^^^^^^^^^^^^^^^^^
+
+When a vertex is locally modified (e.g. an edge is added) all of the vertex's related database level cache entries are marked as expired and eventually evicted. This will cause JanusGraph to refresh the vertex's data from the storage backend on the next access and re-populate the cache.
+
+However, when the storage backend is eventually consistent, the modifications that triggered the eviction may not yet be visible. By configuring `cache.db-cache-clean-wait`, the cache will wait for at least this many milliseconds before repopulating the cache with the entry retrieved from the storage backend.
+
+If JanusGraph runs locally or against a storage backend that guarantees immediate visibility of modifications, this value can be set to 0.
+
+Storage Backend Caching
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Each storage backend maintains its own data caching layer. These caches benefit from compression, data compactness, coordinated expiration and are often maintained off heap which means that large caches can be used without running into garbage collection issues. While these caches can be significantly larger than the database level cache, they are also slower to access.
+
+The exact type of caching and its properties depends on the particular <<storage-backends, storage backend>>. Please refer to the respective documentation for more information about the caching infrastructure and how to optimize it.
+
+[[log]]
+Transaction Log
+---------------
+
+JanusGraph can automatically log transactional changes for additional processing or as a record of change. To enable logging for a particular transaction, specify the name of the target log during the start of the transaction.
+
+[source, gremlin]
+tx = graph.buildTransaction().logIdentifier('addedPerson').start()
+u = tx.addVertex(label, 'human')
+u.property('name', 'proteros')
+u.property('age', 36)
+tx.commit()
+
+Upon commit, any changes made during the transaction are logged to the user logging system into a log named `addedPerson`. The *user logging system* is a configurable logging backend with a JanusGraph compatible log interface. By default, the log is written to a separate store in the primary storage backend which can be configured as described below. The log identifier specified during the start of the transaction identifies the log in which the changes are recorded thereby allowing different types of changes to be recorded in separate logs for individual processing.
+
+[source, gremlin]
+tx = graph.buildTransaction().logIdentifier('battle').start()
+h = tx.traversal().V().has('name', 'hercules').next()
+m = tx.addVertex(label, 'monster')
+m.property('name', 'phylatax')
+h.addEdge('battled', m, 'time', 22)
+tx.commit()
+
+JanusGraph provides a user transaction log processor framework to process the recorded transactional changes. The transaction log processor is opened via `JanusGraphFactory.openTransactionLog(JanusGraph)` against a previously opened JanusGraph graph instance. One can then add processors for a particular log which holds transactional changes.
+
+[source, gremlin]
+import java.util.concurrent.atomic.*;
+import org.janusgraph.core.log.*;
+import java.util.concurrent.*;
+logProcessor = JanusGraphFactory.openTransactionLog(g);
+totalHumansAdded = new AtomicInteger(0);
+totalGodsAdded = new AtomicInteger(0);
+logProcessor.addLogProcessor("addedPerson").
+        setProcessorIdentifier("addedPersonCounter").
+        setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS).
+        addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {
+                for (v in changeState.getVertices(Change.ADDED)) {
+                    if (v.label().equals("human")) totalHumansAdded.incrementAndGet();
+                }
+            }
+        }).
+        addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {
+                for (v in changeState.getVertices(Change.ADDED)) {
+                    if (v.label().equals("god")) totalGodsAdded.incrementAndGet();
+                }
+            }
+        }).
+        build();
+
+In this example, a *log processor* is built for the user transaction log named `addedPerson` to process the changes made in transactions which used the `addedPerson` log identifier. Two *change processors* are added to this log processor. The first processor counts the number of humans added and the second counts the number of gods added to the graph.
+
+When a log processor is built against a particular log, such as the `addedPerson` log in the example above, it will start reading transactional change records from the log immediately upon successful construction and initialization up to the head of the log. The start time specified in the builder marks the time point in the log where the log processor will start reading records. Optionally, one can specify an identifier for the log processor in the builder. The log processor will use the identifier to regularly persist its state of processing, i.e. it will maintain a marker on the last read log record. If the log processor is later restarted with the same identifier, it will continue reading from the last read record. This is particularly useful when the log processor is supposed to run for long periods of time and is therefore likely to fail. In such failure situations, the log processor can simply be restarted with the same identifier.
+It must be ensured that log processor identifiers are unique in a JanusGraph cluster in order to avoid conflicts on the persisted read markers.
+
+A change processor must implement the `ChangeProcessor` interface. It's `process()` method is invoked for each change record read from the log with a `JanusGraphTransaction` handle, the id of the transaction that caused the change, and a `ChangeState` container which holds the transactional changes. The change state container can be queried to retrieve individual elements that were part of the change state. In the example, all added vertices are retrieved. Refer to the API documentation for a description of all the query methods on `ChangeState`. The provided transaction id can be used to investigate the origin of the transaction which is uniquely identified by the combination of the id of the JanusGraph instance that executed the transaction (`txId.getInstanceId()`) and the instance specific transaction id (`txId.getTransactionId()`). In addition, the time of the transaction is available through `txId.getTransactionTime()`.
+
+Change processors are executed individually and in multiple threads. If a change processor accesses global state it must be ensured that such state allows concurrent access. While the log processor reads log records sequentially, the changes are processed in multiple threads so it cannot be guaranteed that the log order is preserved in the change processors.
+
+Note, that log processors run each registered change processor at least once for each record in the log which means that a single transactional change record may be processed multiple times under certain failure conditions.
+One cannot add or remove change processor from a running log processor. In other words, a log processor is immutable after it is built. To change log processing, start a new log processor and shut down an existing one.
+
+[source, gremlin]
+logProcessor.addLogProcessor("battle").
+        setProcessorIdentifier("battleTimer").
+        setStartTime(System.currentTimeMillis(), TimeUnit.MILLISECONDS).
+        addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState) {
+                h = tx.V().has("name", "hercules").toList().iterator().next();
+                for (edge in changeState.getEdges(h, Change.ADDED, Direction.OUT, "battled")) {
+                    if (edge.<Integer>value("time")>1000)
+                        h.property("oldFighter", true);
+                }
+            }
+        }).
+        build();
+
+The log processor above processes transactions for the `battle` log identifier with a single change processor which evaluates `battled` edges that were added to Hercules. This example demonstrates that the transaction handle passed into the change processor is a normal `JanusGraphTransaction` which query the JanusGraph graph and make changes to it.
+
+Transaction Log Use Cases
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Record of Change
+^^^^^^^^^^^^^^^^
+
+The user transaction log can be used to keep a record of all changes made against the graph. By using separate log identifiers, changes can be recorded in different logs to distinguish separate transaction types.
+
+At any time, a log processor can be built which can processes all recorded changes starting from the desired start time. This can be used for forensic analysis, to replay changes against a different graph, or to compute an aggregate.
+
+Downstream Updates
+^^^^^^^^^^^^^^^^^^
+
+It is often the case that a JanusGraph graph cluster is part of a larger architecture. The user transaction log and the log processor framework provide the tools needed to broadcast changes to other components of the overall system without slowing down the original transactions causing the change. This is particularly useful when transaction latencies need to be low and/or there are a number of other systems that need to be alerted to a change in the graph.
+
+Triggers
+^^^^^^^^
+
+The user transaction log provides the basic infrastructure to implement triggers that can scale to a large number of concurrent transactions and very large graphs. A trigger is registered with a particular change of data and either triggers an event in an external system or additional changes to the graph. At scale, it is not advisable to implement triggers in the original transaction but rather process triggers with a slight delay through the log processor framework. The second example shows how changes to the graph can be evaluated and trigger additional modifications.
+
+Log Configuration
+~~~~~~~~~~~~~~~~~
+
+There are a number of configuration options to fine tune how the log processor reads from the log. Refer to the complete list of configuration options <<config-ref>> for the options under the `log` namespace. To configure the user transaction log, use the `log.user` namespace. The options listed there allow the configuration of the number of threads to be used, the number of log records read in each batch, the read interval, and whether the transaction change records should automatically expire and be removed from the log after a configurable amount of time (TTL).
+
+include::configref.txt[]
+
+[[common-questions]]
+Common Questions
+----------------
+
+Accidental type creation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, JanusGraph will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly schemata as documented in <<schema>> before loading any data and disable automatic type creation by setting the option `schema.default = none`.
+
+Automatic type creation can cause problems in multi-threaded or highly concurrent environments. Since JanusGraph needs to ensure that types are unique, multiple attempts at creating the same type will lead to locking or other exceptions. It is generally recommended to create all needed types up front or in one batch when new property keys and edge labels are needed.
+
+Custom Class Datatype
+~~~~~~~~~~~~~~~~~~~~~
+
+JanusGraph supports arbitrary objects as attribute values on properties. To use a custom class as data type in JanusGraph, either register a custom serializer or ensure that the class has a no-argument constructor and implements the `equals` method because JanusGraph will verify that it can successfully de-/serialize objects of that class. Please see <<serializer>> for more information.
+
+Transactional Scope for Edges
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Edges should not be accessed outside the scope in which they were originally created or retrieved.
+
+Locking Exceptions
+~~~~~~~~~~~~~~~~~~
+
+When defining unique types with <<eventual-consistency, locking enabled>> (i.e. requesting that JanusGraph ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
+
+Such exceptions are to be expected, since JanusGraph cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. In most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
+
+Floating point numbers in Vertex-centric Indices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+JanusGraph does not allow property keys with `Double` or `Float` data type to be part of a vertex centric index because their serialization does not support index creation. Use custom, fixed-digit data types `Decimal` (3 decimal digits) or `Precision (6 decimal digits) instead.
+
+Ghost Vertices
+~~~~~~~~~~~~~~
+
+When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key <<index-unique, uniqueness>> but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals, for instance using https://github.com/StartTheShift/janusgraph-tools[JanusGraph tools].
+
+Another option is to detect them at read-time using the option `checkInternalVertexExistence()` documented in <<tx-config>>.
+
+Debug-level Logging Slows Execution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the log level is set to `DEBUG` JanusGraph produces *a lot* of logging output which is useful to understand how particular queries get compiled, optimized, and executed. However, the output is so large that it will impact the query performance noticeably. Hence, use `INFO` severity or higher for production systems or benchmarking.
+
+JanusGraph OutOfMemoryException or excessive Garbage Collection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you experience memory issues or excessive garbage collection while running JanusGraph it is likely that the caches are configured incorrectly. If the caches are too large, the heap may fill up with cache entries. Try reducing the size of the transaction level cache before tuning the database level cache, in particular if you have many concurrent transactions. See <<caching>> for more information.
+
+JAMM Warning Messages
+~~~~~~~~~~~~~~~~~~~~~
+
+When launching JanusGraph with embedded Cassandra, the following warnings may be displayed:
+
+`958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
+
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`) through either janusgraph.sh, gremlin.sh, or Gremlin Server:
+
+[source, bash]
+export JANUSGRAPH_JAVA_OPTS=-javaagent:$JANUSGRAPH_HOME/lib/jamm-$MAVEN{jamm.version}.jar
+
+Cassandra Connection Problem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, JanusGraph uses the Astyanax library to connect to Cassandra clusters. On EC2 and Rackspace, it has been reported that Astyanax was unable to establish a connection to the cluster. In those cases, changing the backend to `storage.backend=cassandrathrift` solved the problem.
+
+ElasticSearch OutOfMemoryException
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.
+
+[[limitations]]
+Technical Limitations
+---------------------
+
+There are various limitations and "gotchas" that one should be aware
+of when using JanusGraph. Some of these limitations are necessary design
+choices and others are issues that will be rectified as JanusGraph
+development continues. Finally, the last section provides solutions to
+common issues.
+
+Design Limitations
+~~~~~~~~~~~~~~~~~~
+
+These limitations reflect long-term tradeoffs design tradeoffs which
+are either difficult or impractical to change.  These limitations are
+unlikely to be removed in the near future.
+
+Size Limitation
+^^^^^^^^^^^^^^^
+
+JanusGraph can store up to a quintillion edges (2^60) and half as many vertices. That limitation is imposed by JanusGraph's id scheme.
+
+DataType Definitions
+^^^^^^^^^^^^^^^^^^^^
+
+When declaring the data type of a property key using `dataType(Class)` JanusGraph will enforce that all properties for that key have the declared type, unless that type is `Object.class`. This is an equality type check, meaning that sub-classes will not be allowed. For instance, one cannot declare the data type to be `Number.class` and use `Integer` or `Long`. For efficiency reasons, the type needs to match exactly. Hence, use `Object.class` as the data type for type flexibility. In all other cases, declare the actual data type to benefit from increased performance and type safety.
+
+Edge Retrievals are O(log(k))
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Retrieving an edge by id, e.g `tx.getEdge(edge.getId())`, is not a constant time operation because it requires an index call on one of its adjacent vertices. Hence, the cost of retrieving an individual edge by its id is `O(log(k))` where `k` is the number of incident edges on the adjacent vertex. JanusGraph will attempt to pick the adjacent vertex with the smaller degree.
+
+This also applies to index retrievals for edges via a standard or external index.
+
+Type Definitions cannot be changed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The definition of an edge label, property key, or vertex label cannot be changed once it has been committed to the graph. However, a type can be renamed and new types can be created at runtime to accommodate an evolving schema.
+
+Reserved Keywords
+^^^^^^^^^^^^^^^^^
+
+There are certain keywords that JanusGraph uses internally for types that cannot be used otherwise.  These types include vertex labels, edge labels, and property keys. The following are keywords that cannot be used:
+
+* vertex
+* element
+* edge
+* property
+* label
+* key
+
+For example, if you attempt to create a vertex with the label of `property`, you will receive an exception regarding protected system types.
+
+Temporary Limitations
+~~~~~~~~~~~~~~~~~~~~~
+
+These are limitations in JanusGraph's current implementation.  These
+limitations could reasonably be removed in upcoming versions of JanusGraph.
+
+Limited Mixed Index Support
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mixed indexes only support a subset of the data types that JanusGraph supports. See <<mixeddatatypes, Mixed Index Data Types>> for a current listing. Also, mixed indexes do not currently support property keys with SET or LIST cardinality.
+
+Batch Loading Speed
+^^^^^^^^^^^^^^^^^^^
+
+JanusGraph provides a batch loading mode that can be enabled through the <<config-ref, graph configuration>>. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in JanusGraph is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in JanusGraph.
+
+Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries.

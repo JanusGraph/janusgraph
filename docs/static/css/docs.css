@@ -1,0 +1,284 @@
+/* This file collects customizations made to the Avada-based demo theme
+   during the development of the AsciiDoc/DocBook-based manual pages. */
+
+#header-sticky .logo a, #header .logo a { height: auto; }
+
+/* Break very wide default values */
+.font16  + .informaltable td:nth-child(4) {
+    word-break: break-all;
+    min-width: 25%;
+}
+
+/* Static anchor offset to compensate for the height of the floating header */
+a[name] {
+    padding-top: 88px;
+    margin-top: -88px;
+    display: inline-block;
+}
+
+.navheader {
+    background-color: #F0F0F0;
+    padding: 6px 30px;
+    border-top: 1px solid black;
+    border-bottom: 1px dotted #FF8080;
+}
+
+.font16 {
+    font-size: 16px;
+}
+
+div#main {
+   /* padding-left: 30px;
+    padding-right: 30px; */
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 940px;
+}
+
+div#main > div.chapter > div.toc {
+    float: right;
+    margin-left: 25px;
+}
+
+div#main > div.chapter > div.section .title {
+    clear: none !important;
+}
+
+div.note, div.tip, div.important, div.warning, div.caution {
+    margin: 12px 18px;
+    padding: 12px 18px;
+    border: 1px dotted #A4A4A4;
+}
+
+.breadcrumbs {
+    margin-bottom: 5px;
+}
+
+.hl-number {
+    color: #A050A0;
+}
+
+.hl-string {
+    color: #000080;
+}
+
+.hl-keyword {
+    color: #A02050;
+}
+
+.hl-attribute {
+    color: rgb(225,7,7);
+}
+
+.hl-comment {
+    color: #007000;
+}
+
+.hl-repl-prompt {
+    color: #44AA44;
+    font-weight: bold;
+}
+
+.hl-repl-result {
+    color: #AAAAAA;
+    font-weight: bold;
+}
+
+.hl-gremlin-func {
+    color: #B04040;
+}
+
+.figure img,
+.figure > .title {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tss-center {
+    display: block;
+}
+
+.tss-center img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tss-width-125 img {
+    max-width: 125px;
+}
+
+.tss-width-250 img {
+    max-width: 250px;
+}
+
+.tss-floatright {
+    float: right;
+    margin-left: 15px;
+}
+
+.tss-floatleft {
+    float: left;
+    margin-right: 15px;
+}
+
+.figure img {
+    display: block;
+}
+
+div.informaltable > table {
+    margin: 10px auto;
+    display: table;
+}
+
+div.informaltable thead {
+    background-color: #EEEEEE;
+}
+
+.programlisting {
+    padding: 5px 8px;
+    border: 1px dashed #E10707;
+    color: #000000;
+    background-color: #F8F8F8;
+    overflow-x: auto;
+}
+
+div#main {
+   /* padding-left: 30px;
+    padding-right: 30px; */
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 940px;
+}
+
+.titlepage hr, .navheader hr {
+    display: none;
+}
+
+.navfooter {
+    background-color: #F0F0F0;
+    padding: 6px 30px;
+    border-top: 1px dotted #FF8080;
+}
+
+.navfooter table {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 940px;
+}
+
+.navfooter tbody {
+    font-size: 14px;
+}
+
+.navfooter hr {
+    display: none;
+}
+
+.title {
+    overflow: auto;
+}
+
+.line-through {
+    text-decoration: line-through;
+}
+
+.deprecation-warning {
+    color: #E10707;
+}
+
+html {
+    background-color: #000000;
+}
+
+.tss-centered > .inlinemediaobject > * {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+.tss-centered > .mediaobject > * {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+#toTop {
+    font-family: "FontAwesome";
+}
+
+/* Change header font */
+
+#main .reading-box h2,
+#main h2,
+.page-title h1,
+.image .image-extras .image-extras-content h3,.image .image-extras .image-extras-content h3 a,
+#main .post h2,
+#sidebar .widget h3,
+.tab-holder .tabs li a,
+.share-box h4,
+.project-content h3,
+.author .author_title,
+h5.toggle a,
+.full-boxed-pricing ul li.title-row,
+.full-boxed-pricing ul li.pricing-row,
+.sep-boxed-pricing ul li.title-row,
+.sep-boxed-pricing ul li.pricing-row,
+.person-author-wrapper,
+.post-content h1, .post-content h2, .post-content h3, .post-content h4, .post-content h5, .post-content h6,
+.ei-title h2, #header-sticky,#header .tagline,
+table th,.project-content .project-info h4,
+.woocommerce-success-message .msg,.product-title, .cart-empty,
+#wrapper .fusion-megamenu-wrapper .fusion-megamenu-title{
+font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
+}
+
+table.blockquote {
+    width: auto !important;
+}
+
+.footer-area  h3,#slidingbar-area  h3{
+font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
+}
+
+/* Change title size and font */
+
+#main h2 {
+    font-size: 28px/30px;
+    font-weight: bold;
+    font-family:"Open Sans", Arial, Helvetica, sans-serif !important;
+}
+
+/*Make text black */
+body,.post .post-content,.post-content blockquote,.tab-holder .news-list li .post-holder .meta,#sidebar #jtwt,.meta,.review blockquote div,.search input,.project-content .project-info h4,.title-row,.simple-products-slider .price .amount,
+.quantity .qty,.quantity .minus,.quantity .plus,.blog-shortcode h3.timeline-title, #reviews #comments > h2{
+color:#000000 !important;
+}
+
+/* Change text size and line height */
+body, #sidebar .slide-excerpt h2, .footer-area .slide-excerpt h2, #slidingbar-area .slide-excerpt h2 {
+font-size: 15px;
+line-height: 22px;
+}
+
+
+/* Make note font color grey */
+/* .note p, .note th {
+    color: #747474 !important;
+} */
+
+/* Make toc have background color and adjust padding */
+div#main > div.chapter > div.toc {
+margin-left: 15px;
+padding: 10px;
+background-color: #EEE;
+}
+
+/* Change link color */
+a.link,a.xref {
+    color:#e10707 !important;
+}
+a.link:hover {
+    color:#e10707 !important;
+    text-decoration: underline;
+}

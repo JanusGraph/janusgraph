@@ -1,0 +1,50 @@
+--- /home/dalaro/hbase-1.0.2/bin/hbase	2015-08-25 18:34:24.000000000 -0400
++++ hbase	2015-09-02 15:37:46.000000000 -0400
+@@ -168,6 +168,31 @@
+ }
+ 
+ 
++add_maven_deps_to_classpath() {
++  f="${HBASE_HOME}/target/cached_classpath.txt"
++  if [ ! -f "${f}" ]; then
++    # -------------------
++    # JanusGraph build support
++    # -------------------
++    # Check for Maven command line options file.
++    # If janusgraph-hbase has already been built, then this file will contain options
++    # to target the version of Hadoop used during compilation.  This is
++    # necessary when the user compiles janusgraph-hbase with a non-default Hadoop
++    # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
++    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
++    MVN_OPTS=
++    optf="${HBASE_HOME}/target/test-classes/mvn_opts.txt"
++    unset IFS
++    if [ -f "${optf}" ]; then
++      MVN_OPTS=`cat "${optf}"`
++    fi
++    mvn -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
++    IFS=
++  fi
++  CLASSPATH=${CLASSPATH}:`cat "${f}"`
++}
++
++
+ #Add the development env class path stuff
+ if $in_dev_env; then
+   add_maven_deps_to_classpath
+@@ -286,13 +311,8 @@
+     CLASSPATH="$JRUBY_HOME/lib/jruby.jar:$CLASSPATH"
+     HBASE_OPTS="$HBASE_OPTS -Djruby.home=$JRUBY_HOME -Djruby.lib=$JRUBY_HOME/lib"
+   fi
+-	#find the hbase ruby sources
+-  if [ -d "$HBASE_HOME/lib/ruby" ]; then
+-    HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/lib/ruby"
+-  else
+-    HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/hbase-shell/src/main/ruby"
+-  fi
+-  HBASE_OPTS="$HBASE_OPTS $HBASE_SHELL_OPTS"
++  # find the hbase ruby sources
++  HBASE_OPTS="$HBASE_OPTS -Dhbase.ruby.sources=$HBASE_HOME/bin/ruby"
+   CLASS="org.jruby.Main -X+O ${JRUBY_OPTS} ${HBASE_HOME}/bin/hirb.rb"
+ elif [ "$COMMAND" = "hbck" ] ; then
+   CLASS='org.apache.hadoop.hbase.util.HBaseFsck'

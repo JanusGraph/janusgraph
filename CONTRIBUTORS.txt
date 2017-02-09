@@ -1,0 +1,91 @@
+# This is the official list of people who have contributed to JanusGraph,
+# including contributors to Titan.
+#
+# The AUTHORS.txt file lists the copyright holders; this file lists people. For
+# example, employees of an organization who assign copyright to their
+# organization are listed here but not in AUTHORS.txt, because their
+# organization holds the copyright. Similarly, contributors who assigned
+# copyright to a party other than their employer (such as Titan contributors who
+# assigned copyright to DataStax) will appear in this list, but not in
+# AUTHORS.txt file.
+#
+# Note: it's unclear at this time whether contributors to Titan pre-acquisition
+# of Aurelius by DataStax own their contributions, or whether they signed away
+# their copyright as well. This needs further investigation.
+#
+# When adding J Random Contributor's name to this file, either J's name or J's
+# organization's name should be added to the AUTHORS.txt file, depending on
+# whether the individual or corporate CLA was used.
+
+# The original list was generated via:
+#
+#     $ git log --all --format='%aN <%cE>' | sort -u --ignore-case
+#
+# and manual cleanup.
+
+# Names should be added to this file like so:
+#     Individual's name <email1>
+#     Individual's name <email1> <email2> <emailN>
+
+# Please keep the list sorted.
+
+Achintha Gunasekara <achintha@me.com>
+Alexander Patrikalakis <amcp@mit.edu>
+Alexander Vieth <alex@lagoa.com>
+Anderson de Andrade <adeandrade@verticalscope.com>
+Andy Keffalas <akeffala@nearinfinity.com>
+Austin Harris <austin.w.harris@gmail.com>
+Blake Eggleston <bdeggleston@gmail.com>
+Bobby Norton <bobby@thinkaurelius.com>
+Brad Anderson <brad@sankatygroup.com>
+Brennon York <?>
+Bryn Cooke <BrynCooke@gmail.com>
+Christian Bellina <christian.bellina@ef.com>
+Collin Scangarella <spmva@genoprime.com>
+Cris Weber <cris.weber@gmail.com>
+Dan LaRocque <dalaro@hopcount.org>
+Daniel Kuppitz <daniel_kuppitz@hotmail.com>
+Danny Thomas <dmthomas@gmail.com>
+Dave Brosius <dbrosius@mebigfatguy.com>
+David Robinson <drobin1437@gmail.com>
+deiflaender <?>
+Dylan Bethune-Waddell <dylan.bethune.waddell@mail.utoronto.ca>
+Eric Lubow <eric@lubow.org>
+Erick Tryzelaar <erickt@lab41.org>
+Fabrice Bellingard <?>
+Frederick Haebin Na <haebin.na@gmail.com>
+Homer Strong <homer.strong@gmail.com>
+janar <janar@yahoo-inc.com>
+Jason Plurad <pluradj@us.ibm.com>
+Joe Ferner <joe@fernsroth.com>
+Joshua Shinavier <josh@fortytwo.net>
+Justin Corpron <justin.corpron@justinc-677.glassdoor.local>
+Karthik Ramachandran <kramachandran@iqt.com>
+ksenji <ksenji@ebay.com>
+Leifur Halldor Asgeirsson <leifurhauks@gmail.com>
+Mark McCraw <mark.mccraw@sas.com>
+Marko A. Rodriguez <okrammarko@gmail.com>
+Matt Pouttu-Clarke <voidpointer101@gmail.com>
+Matthias Broecheler <me@matthiasb.com>
+Michael Klishin <michael@defprotocol.org>
+Mike Dias <?>
+Mike McMahon <mmcm@comcast.net>
+Misha Brukman <mbrukman@google.com>
+MrKeyholder <fractalf@gmail.com>
+Nik Everett <neverett@wikimedia.org>
+Pavel Yaskevich <pyaskevich@twitter.com> <xedin@apache.org>
+Peter Beaman <pbeaman@akiban.com>
+Petter Aas <aaspet@gmail.com> <petter.aas@fronter.com>
+Pieter <pieter@pieter-HP-EliteBook-8570w.(none)>
+PommeVerte <dylan.millikin@gmail.com>
+Ranger Tsao <cao.zhifu@gmail.com>
+Richard Doll <rdoll@care-view.com>
+Sebastian Good <sebastian@experoinc.com>
+Solon Gordon <solon@knewton.com>
+Stephen Mallette <spmallette@gmail.com> <spmva@genoprime.com>
+Ted Crossman <tedo@rockmelt.com>
+Ted Wilmes <twilmes@gmail.com>
+Tim Wu <tim@urx.com>
+tsecheran <tsecheran@yahoo.com>
+Wytse Visser <wytsevisser@gmail.com>
+Yuhao Bi <byh0831@gmail.com>

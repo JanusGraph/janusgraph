@@ -1,0 +1,399 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>janusgraph-cassandra</artifactId>
+    <name>JanusGraph-Cassandra: Distributed Graph Database</name>
+    <url>http://janusgraph.org</url>
+    <properties>
+        <astyanax.version>3.8.0</astyanax.version>
+        <jamm.group>com.github.jbellis</jamm.group>
+        <dependency.plugin.version>2.8</dependency.plugin.version>
+        <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
+        <default.test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
+    <!-- Libraries -->
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.codahale.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.carrotsearch</groupId>
+            <artifactId>junit-benchmarks</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Logging backends.
+             Cassandra 2.1+ moved to Logback.  JanusGraph is logging-backend-agnostic,
+             but still uses Log4j in testing.  The slf4j binding for logback is,
+             inconveniently, packed into the logback-classic artifact.  This means
+             the binding can't easily be removed from the classpath without losing
+             logback-classic or inserting some hack to mess with the jar contents.
+             We can't lose logback-classic because StorageProxy contains hardcoded
+             references to some of its classes (it contains some methods to change
+             logback loglevels at runtime).  Hence, to stick with Log4j, the
+             least-worst approach is to enforce a classpath ordering constraint: as
+             long as the slf4j-log4j12 binding appears on the classpath before
+             logback-classic, log4j will be used instead of logback.  I don't have
+             any special love for log4j, but JanusGraph should use a single logging
+             backend throughout all its tests.   I don't want to maintain a mixture
+             of logback.xml and log4j.properties files scattered randomly through
+             the janusgraph-* submodules.  Maven populates the classpath elements for
+             tests in pom appearance order.  That's why these dependencies are 
+             explicitly declared below: to make slf4j-log4j12 preced logback-classic
+             on the test classpath. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- End logging backends. -->
+        <dependency>
+            <groupId>com.carrotsearch.randomizedtesting</groupId>
+            <artifactId>randomizedtesting-runner</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!--
+            JNA is not required to run Cassandra, but it improves
+            efficiency of certain of Cassandra's filesystem and memory
+            operations.  DataStax describes JNA as "required for
+            production installations":
+
+            http://www.datastax.com/docs/1.2/install/install_jre
+        -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <!-- The version is controlled in <dependencyManagement> in the parent pom -->
+        </dependency>
+        <dependency>
+            <groupId>commons-pool</groupId>
+            <artifactId>commons-pool</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-core</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-thrift</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.astyanax</groupId>
+            <artifactId>astyanax-cassandra</artifactId>
+            <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+             <groupId>com.netflix.astyanax</groupId>
+             <artifactId>astyanax-recipes</artifactId>
+             <version>${astyanax.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+    
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>${basedir}/src/test/resources</directory>
+            </testResource>
+        </testResources>
+        
+        <plugins>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-cassandra-bop-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
+                            <filters>
+                                <filter>${basedir}/config/cassandra-filters/localhost-bop.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/cassandra</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>filter-cassandra-murmur-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur</outputDirectory>
+                            <filters>
+                                <filter>${basedir}/config/cassandra-filters/localhost-murmur.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/cassandra</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>filter-cassandra-murmur-ssl-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur-ssl</outputDirectory>
+                            <filters>
+                                <filter>${basedir}/config/cassandra-filters/localhost-murmur-ssl.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/cassandra</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Need this to avoid corrupting the test keystore with nonsensical macro replacements -->
+                        <id>filter-cassandra-murmur-ssl-config-static</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-murmur-ssl</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/static</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- Run by "mvn test" -->
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <!-- Run by "mvn org.apache.maven.plugins:maven-surefire-plugin:test"
+                
+                            Sonar does this when running JaCoCo and
+                            provides no configuration option to
+                            change its behavior. Define a safe
+                            configuration for JaCoCo to use when run
+                            by Sonar. This doesn't have to be fast,
+                            since it's only used for dynamic
+                            analysis, but it does have to cover all
+                            the tests.
+                        -->
+                        <id>default-cli</id>
+                        <phase>none</phase>
+                        <configuration>
+                            <includes>
+                                <include>Nope.java</include>
+                            </includes>
+                            <exclude>
+                                <exclude>**/*</exclude>
+                            </exclude>
+                            <parallel />
+                            <reuseForks>false</reuseForks>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
+                            <runOrder>random</runOrder>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>bop-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
+                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.UnorderedKeyStoreTests,org.janusgraph.testcategory.SerialTests,org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <groups />
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <parallel>classes</parallel>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <threadCount>2</threadCount>
+                            <runOrder>random</runOrder>
+                            <reportNameSuffix>bop</reportNameSuffix>
+                            <skip>${test.skip.ordered}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>murmur-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <excludedGroups>${test.excluded.groups},org.janusgraph.testcategory.OrderedKeyStoreTests,org.janusgraph.testcategory.SerialTests,org.janusgraph.testcategory.CassandraSSLTests</excludedGroups>
+                            <groups />
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <parallel>classes</parallel>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <threadCount>2</threadCount>
+                            <runOrder>random</runOrder>
+                            <reportNameSuffix>murmur</reportNameSuffix>
+                            <skip>${test.skip.unordered}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>ssl-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur-ssl -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur-ssl</argLine>
+                            <excludedGroups />
+                            <groups>org.janusgraph.testcategory.CassandraSSLTests</groups>
+                            <!-- The TP3 JUnit Suite/Runner ignores groups/@Category and I'm not sure why.  Redundant excludes to keep TP3 tests from using non-SSL configs on SSL -->
+                            <excludes>
+                                <exclude>**/*ComputerTest.java</exclude>
+                                <exclude>**/*StructureTest.java</exclude>
+                                <exclude>**/*ProcessTest.java</exclude>
+                            </excludes>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <parallel>classes</parallel>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <threadCount>1</threadCount>
+                            <runOrder>random</runOrder>
+                            <reportNameSuffix>ssl</reportNameSuffix>
+                            <skip>${test.skip.ssl}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>serial-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-murmur -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-murmur</argLine>
+                            <excludedGroups />
+                            <groups>org.janusgraph.testcategory.SerialTests</groups>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                            <parallel>none</parallel>
+                            <perCoreThreadCount>false</perCoreThreadCount>
+                            <threadCount>1</threadCount>
+                            <runOrder>alphabetical</runOrder>
+                            <reportNameSuffix>serial</reportNameSuffix>
+                            <skip>${test.skip.serial}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <!-- Provide Java Memory Meter for Cassandra. Cassandra logs warnings if JAMM 
+                      is not available. Also, production Cassandra deployments will probably use JAMM, 
+                      so we might as well include it in our test configuration. -->
+                    <execution>
+                        <id>copy</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${jamm.group}</groupId>
+                                    <artifactId>jamm</artifactId>
+                                    <version>${jamm.version}</version>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>pack-test-jar</id>
+                        <!-- prepare-package instead of package forces it to get signed -->
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+      <profile>
+	<id>coverage</id>
+	<activation>
+	  <activeByDefault>false</activeByDefault>
+	</activation>
+
+	<properties>
+	  <test.extra.jvm.opts>${jacoco.opts} -javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
+	</properties>
+      </profile>
+    </profiles>
+</project>
+

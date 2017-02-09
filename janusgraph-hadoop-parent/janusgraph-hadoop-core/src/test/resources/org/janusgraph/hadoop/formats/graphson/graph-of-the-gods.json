@@ -1,0 +1,12 @@
+{"name":"saturn","type":"janusgraph","_id":0,"_inE":[{"_label":"father","_id":12,"_outV":1}]}
+{"name":"jupiter","type":"god","_id":1,"_outE":[{"_label":"lives","_id":13,"_inV":4},{"_label":"brother","_id":16,"_inV":3},{"_label":"brother","_id":14,"_inV":2},{"_label":"father","_id":12,"_inV":0}],"_inE":[{"_label":"brother","_id":17,"_outV":3},{"_label":"brother","_id":15,"_outV":2},{"_label":"father","_id":24,"_outV":7}]}
+{"name":"neptune","type":"god","_id":2,"_outE":[{"_label":"lives","_id":20,"_inV":5},{"_label":"brother","_id":19,"_inV":3},{"_label":"brother","_id":15,"_inV":1}],"_inE":[{"_label":"brother","_id":18,"_outV":3},{"_label":"brother","_id":14,"_outV":1}]}
+{"name":"pluto","type":"god","_id":3,"_outE":[{"_label":"pet","_id":23,"_inV":11},{"_label":"lives","_id":21,"_inV":6},{"_label":"brother","_id":17,"_inV":1},{"_label":"brother","_id":18,"_inV":2}],"_inE":[{"_label":"brother","_id":19,"_outV":2},{"_label":"brother","_id":16,"_outV":1}]}
+{"name":"sky","type":"location","_id":4,"_inE":[{"_label":"lives","_id":13,"_outV":1}]}
+{"name":"sea","type":"location","_id":5,"_inE":[{"_label":"lives","_id":20,"_outV":2}]}
+{"name":"tartarus","type":"location","_id":6,"_inE":[{"_label":"lives","_id":21,"_outV":3},{"_label":"lives","_id":22,"_outV":11}]}
+{"name":"hercules","type":"demigod","_id":7,"_outE":[{"_label":"mother","_id":25,"_inV":8},{"time":1,"_label":"battled","_id":26,"_inV":9},{"time":2,"_label":"battled","_id":27,"_inV":10},{"time":12,"_label":"battled","_id":28,"_inV":11},{"_label":"father","_id":24,"_inV":1}]}
+{"name":"alcmene","type":"human","_id":8,"_inE":[{"_label":"mother","_id":25,"_outV":7}]}
+{"name":"nemean","type":"monster","_id":9,"_inE":[{"time":1,"_label":"battled","_id":26,"_outV":7}]}
+{"name":"hydra","type":"monster","_id":10,"_inE":[{"time":2,"_label":"battled","_id":27,"_outV":7}]}
+{"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
