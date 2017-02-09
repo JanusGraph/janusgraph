@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.olap.computer;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanTransaction;
@@ -19,11 +19,10 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
-import org.apache.tinkerpop.gremlin.process.computer.traversal.TraversalVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.DefaultComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.util.GraphComputerHelper;
+import org.apache.tinkerpop.gremlin.process.computer.util.VertexProgramHelper;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalSideEffects;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -82,8 +81,6 @@ public class FulgoraGraphComputer implements GraphComputer {
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraGraphComputer.class);
 
-    public static final Set<VertexComputeKey> NON_PERSISTING_KEYS = ImmutableSet.of(VertexComputeKey.of(TraversalVertexProgram.HALTED_TRAVERSERS, false));
-
     private VertexProgram<?> vertexProgram;
     private final Set<MapReduce> mapReduces = new HashSet<>();
 
@@ -115,12 +112,14 @@ public class FulgoraGraphComputer implements GraphComputer {
 
     @Override
     public GraphComputer vertices(final Traversal<Vertex, Vertex> vertexFilter) {
+//        throw GraphComputer.Exceptions.graphFilterNotSupported();
 	this.graphFilter.setVertexFilter(vertexFilter);
 	return this;
     }
 
     @Override
     public GraphComputer edges(final Traversal<Vertex, Edge> edgeFilter) {
+//        throw GraphComputer.Exceptions.graphFilterNotSupported();
 	this.graphFilter.setEdgeFilter(edgeFilter);
 	return this;
     }
@@ -198,44 +197,45 @@ public class FulgoraGraphComputer implements GraphComputer {
 		// DIVERGES: This is inside the while (true) { loop in TinkerGraphComputer... will put inExecute... hmmm...
                 // memory.completeSubRound();
 
-                for (int iteration = 1; ; iteration++) {
-		    // Added here instead?
-		    memory.completeSubRound();
-                    vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
+                try (VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram)) {
+                    for (int iteration = 1; ; iteration++) {
+                        // Added here instead?
+                        memory.completeSubRound();
+                        vertexMemory.nextIteration(vertexProgram.getMessageScopes(memory));
 
-                    jobId = name + "#" + iteration;
-                    VertexProgramScanJob.Executor job = VertexProgramScanJob.getVertexProgramScanJob(graph, memory, vertexMemory, vertexProgram);
-                    StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
-                    scanBuilder.setJobId(jobId);
-                    scanBuilder.setNumProcessingThreads(numThreads);
-                    scanBuilder.setWorkBlockSize(readBatchSize);
-                    scanBuilder.setJob(job);
-                    PartitionedVertexProgramExecutor pvpe = new PartitionedVertexProgramExecutor(graph, memory, vertexMemory, vertexProgram);
-                    try {
-                        //Iterates over all vertices and computes the vertex program on all non-partitioned vertices. For partitioned ones, the data is aggregated
-                        ScanMetrics jobResult = scanBuilder.execute().get();
-                        long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
-                        if (failures > 0) {
-                            throw new TitanException("Failed to process [" + failures + "] vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
+                        jobId = name + "#" + iteration;
+                        StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
+                        scanBuilder.setJobId(jobId);
+                        scanBuilder.setNumProcessingThreads(numThreads);
+                        scanBuilder.setWorkBlockSize(readBatchSize);
+                        scanBuilder.setJob(job);
+                        PartitionedVertexProgramExecutor pvpe = new PartitionedVertexProgramExecutor(graph, memory, vertexMemory, vertexProgram);
+                        try {
+                            //Iterates over all vertices and computes the vertex program on all non-partitioned vertices. For partitioned ones, the data is aggregated
+                            ScanMetrics jobResult = scanBuilder.execute().get();
+                            long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
+                            if (failures > 0) {
+                                throw new TitanException("Failed to process [" + failures + "] vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
+                            }
+                            //Runs the vertex program on all aggregated, partitioned vertices.
+                            pvpe.run(numThreads, jobResult);
+                            failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
+                            if (failures > 0) {
+                                throw new TitanException("Failed to process [" + failures + "] partitioned vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
+                            }
+                        } catch (Exception e) {
+                            throw new TitanException(e);
                         }
-                        //Runs the vertex program on all aggregated, partitioned vertices.
-                        pvpe.run(numThreads, jobResult);
-                        failures = jobResult.getCustom(PartitionedVertexProgramExecutor.PARTITION_VERTEX_POSTFAIL);
-                        if (failures > 0) {
-                            throw new TitanException("Failed to process [" + failures + "] partitioned vertices in vertex program iteration [" + iteration + "]. Computer is aborting.");
-                        }
-                    } catch (Exception e) {
-                        throw new TitanException(e);
-                    }
 
-                    this.vertexMemory.completeIteration();
-                    this.memory.completeSubRound();
-                    try {
-                        if (this.vertexProgram.terminate(this.memory)) {
-                            break;
+                        this.vertexMemory.completeIteration();
+                        this.memory.completeSubRound();
+                        try {
+                            if (this.vertexProgram.terminate(this.memory)) {
+                                break;
+                            }
+                        } finally {
+                            this.memory.incrIteration();
                         }
-                    } finally {
-                        this.memory.incrIteration();
                     }
                 }
             }
@@ -252,51 +252,53 @@ public class FulgoraGraphComputer implements GraphComputer {
             }
             // Execute map jobs
             jobId = name + "#map";
-            VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs);
-            StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
-            scanBuilder.setJobId(jobId);
-            scanBuilder.setNumProcessingThreads(numThreads);
-            scanBuilder.setWorkBlockSize(readBatchSize);
-            scanBuilder.setJob(job);
-            try {
-                ScanMetrics jobResult = scanBuilder.execute().get();
-                long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
-                if (failures > 0) {
-                    throw new TitanException("Failed to process [" + failures + "] vertices in map phase. Computer is aborting.");
-                }
-                failures = jobResult.getCustom(VertexMapJob.MAP_JOB_FAILURE);
-                if (failures > 0) {
-                    throw new TitanException("Failed to process [" + failures + "] individual map jobs. Computer is aborting.");
-                }
-            } catch (Exception e) {
-                throw new TitanException(e);
-            }
-            // Execute reduce phase and add to memory
-            for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
-                FulgoraMapEmitter<?, ?> mapEmitter = mapJob.getValue();
-                MapReduce mapReduce = mapJob.getKey();
-                mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
-                if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
-                    final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
-                    try (WorkerPool workers = new WorkerPool(numThreads)) {
-                        workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
-                        for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
-			    if (null == queueEntry) break;
-                            workers.submit(() -> mapReduce.reduce(queueEntry.getKey(), ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
-                        }
-                        workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
-                    } catch (Exception e) {
-                        throw new TitanException("Exception while executing reduce phase", e);
+            try (VertexMapJob.Executor job = VertexMapJob.getVertexMapJob(graph, vertexMemory, mapJobs)) {
+                StandardScanner.Builder scanBuilder = graph.getBackend().buildEdgeScanJob();
+                scanBuilder.setJobId(jobId);
+                scanBuilder.setNumProcessingThreads(numThreads);
+                scanBuilder.setWorkBlockSize(readBatchSize);
+                scanBuilder.setJob(job);
+                try {
+                    ScanMetrics jobResult = scanBuilder.execute().get();
+                    long failures = jobResult.get(ScanMetrics.Metric.FAILURE);
+                    if (failures > 0) {
+                        throw new TitanException("Failed to process [" + failures + "] vertices in map phase. Computer is aborting.");
                     }
+                    failures = jobResult.getCustom(VertexMapJob.MAP_JOB_FAILURE);
+                    if (failures > 0) {
+                        throw new TitanException("Failed to process [" + failures + "] individual map jobs. Computer is aborting.");
+                    }
+                } catch (Exception e) {
+                    throw new TitanException(e);
+                }
+                // Execute reduce phase and add to memory
+                for (Map.Entry<MapReduce, FulgoraMapEmitter> mapJob : mapJobs.entrySet()) {
+                    FulgoraMapEmitter<?, ?> mapEmitter = mapJob.getValue();
+                    MapReduce mapReduce = mapJob.getKey();
+                    mapEmitter.complete(mapReduce); // sort results if a map output sort is defined
+                    if (mapReduce.doStage(MapReduce.Stage.REDUCE)) {
+                        final FulgoraReduceEmitter<?, ?> reduceEmitter = new FulgoraReduceEmitter<>();
+                        try (WorkerPool workers = new WorkerPool(numThreads)) {
+                            workers.submit(() -> mapReduce.workerStart(MapReduce.Stage.REDUCE));
+                            for (final Map.Entry queueEntry : mapEmitter.reduceMap.entrySet()) {
+                                if (null == queueEntry) break;
+                                workers.submit(() -> mapReduce.reduce(queueEntry.getKey(), ((Iterable) queueEntry.getValue()).iterator(), reduceEmitter));
+                            }
+                            workers.submit(() -> mapReduce.workerEnd(MapReduce.Stage.REDUCE));
+                        } catch (Exception e) {
+                            throw new TitanException("Exception while executing reduce phase", e);
+                        }
 //                    mapEmitter.reduceMap.entrySet().parallelStream().forEach(entry -> mapReduce.reduce(entry.getKey(), entry.getValue().iterator(), reduceEmitter));
 
 
-                    reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
-                    mapReduce.addResultToMemory(this.memory, reduceEmitter.reduceQueue.iterator());
-                } else {
-                    mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
+                        reduceEmitter.complete(mapReduce); // sort results if a reduce output sort is defined
+                        mapReduce.addResultToMemory(this.memory, reduceEmitter.reduceQueue.iterator());
+                    } else {
+                        mapReduce.addResultToMemory(this.memory, mapEmitter.mapQueue.iterator());
+                    }
                 }
             }
+            memory.attachReferenceElements(graph);
 
             // #### Write mutated properties back into graph
             Graph resultgraph = graph;
@@ -322,7 +324,7 @@ public class FulgoraGraphComputer implements GraphComputer {
                             @Nullable
                             @Override
                             public Map<String, Object> apply(@Nullable Map<String, Object> o) {
-                                return Maps.filterKeys(o, s -> !NON_PERSISTING_KEYS.contains(s));
+                                return Maps.filterKeys(o, s -> !VertexProgramHelper.isTransientVertexComputeKey(s, vertexProgram.getVertexComputeKeys()));
                             }
                         });
 
@@ -405,11 +407,6 @@ public class FulgoraGraphComputer implements GraphComputer {
     public Features features() {
         return new Features() {
             @Override
-            public boolean supportsResultGraphPersistCombination(final ResultGraph resultGraph, final Persist persist) {
-                return persist == Persist.NOTHING || persist == Persist.VERTEX_PROPERTIES;
-            }
-
-            @Override
             public boolean supportsVertexAddition() {
                 return false;
             }
@@ -449,6 +446,11 @@ public class FulgoraGraphComputer implements GraphComputer {
                 return false;
             }
 
+            public boolean supportsGraphFilter() {
+                return false;
+            }
+
         };
     }
+
 }

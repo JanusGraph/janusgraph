@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.*;
 
 /**
@@ -180,6 +181,10 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             }
 
             return resultMap;
+        } catch (InterruptedIOException e) {
+            // added to support traversal interruption
+            Thread.currentThread().interrupt();
+            throw new PermanentBackendException(e);
         } catch (IOException e) {
             throw new TemporaryBackendException(e);
         }

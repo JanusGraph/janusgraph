@@ -112,7 +112,7 @@ public class PreloadedVertex extends CacheVertex {
         if (keys != null && keys.length > 0) {
             int count = 0;
             for (int i = 0; i < keys.length; i++) if (mixin.supports(keys[i])) count++;
-            if (count == 0) return super.properties(keys);
+            if (count == 0 || !mixin.properties(keys).hasNext()) return super.properties(keys);
             else if (count == keys.length) return mixin.properties(keys);
         }
         return (Iterator) com.google.common.collect.Iterators.concat(super.properties(keys), mixin.properties(keys));

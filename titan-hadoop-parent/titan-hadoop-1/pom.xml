@@ -12,6 +12,7 @@
 
     <properties>
         <top.level.basedir>${basedir}/../..</top.level.basedir>
+        <maven.test.skip>true</maven.test.skip>
     </properties>
 
     <dependencies>

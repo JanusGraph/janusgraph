@@ -105,7 +105,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
-        return (I) builder.graph(this).registry(TitanIoRegistry.getInstance()).create();
+        return (I) builder.graph(this).onMapper(mapper ->  mapper.addRegistry(TitanIoRegistry.getInstance())).create();
     }
 
     // ########## TRANSACTIONAL FORWARDING ###########################

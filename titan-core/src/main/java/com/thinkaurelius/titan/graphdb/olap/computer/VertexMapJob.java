@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.Map;
 
@@ -128,14 +129,16 @@ public class VertexMapJob implements VertexScanJob {
         return new Executor(graph, job);
     }
 
-    public static class Executor extends VertexJobConverter {
+    public static class Executor extends VertexJobConverter implements Closeable {
 
         private Executor(TitanGraph graph, VertexMapJob job) {
             super(graph, job);
+            open(this.graph.get().getConfiguration().getConfiguration());
         }
 
         private Executor(final Executor copy) {
             super(copy);
+            open(this.graph.get().getConfiguration().getConfiguration());
         }
 
         @Override
@@ -146,13 +149,23 @@ public class VertexMapJob implements VertexScanJob {
         }
 
         @Override
+        public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+            job.workerIterationStart(graph.get(), jobConfig, metrics);
+        }
+
+        @Override
         public void workerIterationEnd(ScanMetrics metrics) {
-            super.workerIterationEnd(metrics);
+            job.workerIterationEnd(metrics);
         }
 
         @Override
         public Executor clone() {
             return new Executor(this);
+        }
+
+        @Override
+        public void close() {
+            super.close();
         }
 
     }
