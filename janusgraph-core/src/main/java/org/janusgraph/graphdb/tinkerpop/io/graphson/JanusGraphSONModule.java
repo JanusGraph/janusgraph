@@ -39,7 +39,7 @@ import java.util.Map;
  */
 public class JanusGraphSONModule extends TinkerPopJacksonModule {
 
-    private static final String TYPE_NAMESPACE = "titan";
+    private static final String TYPE_NAMESPACE = "janusgraph";
 
     private static final Map<Class, String> TYPE_DEFINITIONS = Collections.unmodifiableMap(
             new LinkedHashMap<Class, String>() {{
@@ -48,7 +48,7 @@ public class JanusGraphSONModule extends TinkerPopJacksonModule {
             }});
 
     private JanusGraphSONModule() {
-        super("titan");
+        super("janusgraph");
         addSerializer(RelationIdentifier.class, new RelationIdentifierSerializer());
         addSerializer(Geoshape.class, new Geoshape.GeoshapeGsonSerializer());
 

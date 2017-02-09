@@ -50,8 +50,8 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         Graph graph = traversal.getGraph().get();
 
         //If this is a compute graph then we can't apply local traversal optimisation at this stage.
-        StandardJanusGraph titanGraph = graph instanceof StandardJanusGraphTx ? ((StandardJanusGraphTx) graph).getGraph() : (StandardJanusGraph) graph;
-        final boolean useMultiQuery = !TraversalHelper.onGraphComputer(traversal) && titanGraph.getConfiguration().useMultiQuery();
+        StandardJanusGraph janusGraph = graph instanceof StandardJanusGraphTx ? ((StandardJanusGraphTx) graph).getGraph() : (StandardJanusGraph) graph;
+        final boolean useMultiQuery = !TraversalHelper.onGraphComputer(traversal) && janusGraph.getConfiguration().useMultiQuery();
 
         /*
                 ====== VERTEX STEP ======

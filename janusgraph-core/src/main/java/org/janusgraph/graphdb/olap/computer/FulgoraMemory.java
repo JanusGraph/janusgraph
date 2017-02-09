@@ -51,7 +51,7 @@ public class FulgoraMemory implements Memory.Admin {
     public Map<String, Object> currentMap;
     private final AtomicInteger iteration = new AtomicInteger(0);
     private final AtomicLong runtime = new AtomicLong(0l);
-    private boolean inExecute = false;
+    private volatile boolean inExecute = false;
 
     public FulgoraMemory(final VertexProgram<?> vertexProgram, final Set<MapReduce> mapReducers) {
         this.currentMap = new ConcurrentHashMap<>();
@@ -158,9 +158,7 @@ public class FulgoraMemory implements Memory.Admin {
     }
 
     private static void attachReferenceElements(TraverserSet<Object> toProcessTraversers, Graph graph) {
-        final Iterator<Traverser.Admin<Object>> traversers = toProcessTraversers.iterator();
-        while (traversers.hasNext()) {
-            final Traverser.Admin<Object> traverser = traversers.next();
+        toProcessTraversers.stream().forEach(traverser -> {
             Object value = traverser.get();
             if (value instanceof ReferenceVertex) {
                 Vertex vertex = ((ReferenceVertex) value).attach(Attachable.Method.get(graph));
@@ -169,7 +167,7 @@ public class FulgoraMemory implements Memory.Admin {
                 Edge edge = ((ReferenceEdge) value).attach(Attachable.Method.get(graph));
                 traverser.set(edge);
             }
-        }
+        });
     }
 
 }

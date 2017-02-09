@@ -55,11 +55,13 @@ import org.apache.tinkerpop.gremlin.util.Gremlin;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphMLTest",
         method = "shouldReadGraphMLWithNoEdgeLabels",
-        reason = "Titan does not support default edge label (edge) used when GraphML is missing edge labels.")
+        reason = "JanusGraph does not support default edge label (edge) used when GraphML is missing edge labels.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.computer.GraphComputerTest",
         method = "shouldSupportGraphFilter",
-        reason = "Titan currently does not support graph filters but does not throw proper exception because doing so breaks numerous tests in gremlin-test ProcessComputerSuite.")
+        reason = "JanusGraph test graph computer (FulgoraGraphComputer) " +
+            "currently does not support graph filters but does not throw proper exception because doing so breaks numerous " +
+            "tests in gremlin-test ProcessComputerSuite.")
 public interface JanusGraph extends Transaction {
 
    /* ---------------------------------------------------------------
