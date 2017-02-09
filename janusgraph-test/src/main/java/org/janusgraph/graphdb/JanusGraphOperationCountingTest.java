@@ -121,6 +121,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         testReadOperations(true);
     }
 
+    @SuppressWarnings("unchecked")
     public void testReadOperations(boolean cache) {
         metricsPrefix = "testReadOperations"+cache;
 
@@ -209,10 +210,10 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         for (int i = 1; i <= 30; i++) {
             metricsPrefix = "op"+i+cache;
             tx = graph.buildTransaction().groupName(metricsPrefix).start();
-            v = getOnlyElement(tx.query().has("uid",1).vertices());
+            v = (JanusGraphVertex)getOnlyElement(tx.query().has("uid",1).vertices());
             assertEquals(1,v.<Integer>value("uid").intValue());
-            u = getOnlyElement(v.query().direction(Direction.BOTH).labels("knows").vertices());
-            e = getOnlyElement(u.query().direction(Direction.IN).labels("knows").edges());
+            u = (JanusGraphVertex)getOnlyElement(v.query().direction(Direction.BOTH).labels("knows").vertices());
+            e = (Edge)getOnlyElement(u.query().direction(Direction.IN).labels("knows").edges());
             assertEquals("juju",u.value("name"));
             assertEquals("edge",e.value("name"));
             tx.commit();
@@ -339,7 +340,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         resetMetrics();
 
         tx = graph.buildTransaction().groupName(metricsPrefix).start();
-        v = Iterables.getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices());
+        v = (JanusGraphVertex) Iterables.getOnlyElement(tx.query().has("uid", Cmp.EQUAL, "v1").vertices());
         assertEquals(25,v.property("age").value());
         tx.commit();
         verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE,1l));
@@ -642,7 +643,7 @@ public abstract class JanusGraphOperationCountingTest extends JanusGraphBaseTest
         long start = System.nanoTime();
         JanusGraphVertex v = getV(graph,vid);
         for (int i=1; i<numV; i++) {
-            v = getOnlyElement(v.query().direction(Direction.OUT).labels("knows").vertices());
+            v = Iterables.<JanusGraphVertex>getOnlyElement(v.query().direction(Direction.OUT).labels("knows").vertices());
         }
         return ((System.nanoTime()-start)/1000000.0);
     }
