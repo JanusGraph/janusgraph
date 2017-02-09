@@ -86,6 +86,21 @@ script:
   - mvn install -DskipTests=true -B -pl janusgraph-${MODULE} -am
   - mvn verify -pl janusgraph-${MODULE} ${ARGS}
 
+before_deploy:
+  - mvn package -DskipTests -Dgpg.skip=true -Pjanusgraph-release
+  - export JANUSGRAPH_DIST_ZIP="$(ls janusgraph-dist/janusgraph-dist-hadoop-2/target/janusgraph-*-hadoop2.zip)"
+  - echo "Deploying $JANUSGRAPH_DIST_ZIP to GitHub releases"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: CHANGE_ME
+  file_glob: true
+  skip_cleanup: true
+  file: "$JANUSGRAPH_DIST_ZIP"
+  on:
+    tags: true
+
 # Syntax and more info: https://docs.travis-ci.com/user/notifications
 notifications:
   email:
