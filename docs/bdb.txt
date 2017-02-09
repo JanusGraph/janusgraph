@@ -44,8 +44,6 @@ The BerkeleyDB storage backend is best suited for small to medium size graphs wi
 
 Since BerkeleyDB runs in the same JVM as JanusGraph, this storage backend is ideally suited for unit testing of application code using JanusGraph.
 
-Note, that BerkeleyDB has a more restrictive license than JanusGraph. Please review BerkleyDB's license to determine if it can accommodate your use case.
-
 Global Graph Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
