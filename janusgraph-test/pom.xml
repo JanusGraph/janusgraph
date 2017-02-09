@@ -100,13 +100,13 @@
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
                 <artifactId>gmavenplus-plugin</artifactId>
-                <version>1.2</version>
+                <version>1.5</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>addSources</goal>
                             <goal>addTestSources</goal>
-                            <goal>generateStubs</goal>
+                            <goal>testGenerateStubs</goal>
                             <goal>compile</goal>
                             <goal>testGenerateStubs</goal>
                             <goal>testCompile</goal>
