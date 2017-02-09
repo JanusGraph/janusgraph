@@ -1,11 +1,11 @@
-[[titan-hadoop-tp3]]
-Titan with TinkerPop's Hadoop-Gremlin
--------------------------------------
+[[hadoop-tp3]]
+JanusGraph with TinkerPop's Hadoop-Gremlin
+------------------------------------------
 
-Titan-Hadoop works with TinkerPop 3's new hadoop-gremlin package for
+JanusGraph-Hadoop works with TinkerPop 3's new hadoop-gremlin package for
 general-purpose OLAP.
 
-Here's a three step example showing some basic integrated Titan-TinkerPop functionality.
+Here's a three step example showing some basic integrated JanusGraph-TinkerPop functionality.
 
 1. Manually define schema and then load the Grateful Dead graph from a TP3 Kryo-serialized binary file 
 2. Run a VertexProgram to compute PageRanks, writing the derived graph to `output/~g`
@@ -13,7 +13,7 @@ Here's a three step example showing some basic integrated Titan-TinkerPop functi
 
 
 [WARNING]
-Titan 1.0.0's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as Titan 1.0.0 and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
+JanusGraph's integration with TinkerPop 3.0.0 is still under active development.  The APIs and configuration snippets shown below may change as JanusGraph and TinkerPop 3.0.0 move through milestone releases and eventually their respective final releases.  The content of this chapter should be considered a tech preview rather than stable reference.
 
 Defining defining schema and loading data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,14 +28,14 @@ bin/gremlin.sh
 plugin activated: tinkerpop.server
 plugin activated: tinkerpop.utilities
 plugin activated: tinkerpop.tinkergraph
-INFO  com.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /usr/local/titan/lib
+INFO  com.tinkerpop.gremlin.hadoop.structure.HadoopGraph  - HADOOP_GREMLIN_LIBS is set to: /usr/local/janusgraph/lib
 plugin activated: tinkerpop.hadoop
-plugin activated: aurelius.titan
-gremlin> :load data/grateful-dead-titan-schema.groovy
+plugin activated: janusgraph.imports
+gremlin> :load data/grateful-dead-janusgraph-schema.groovy
 ==>true
 ==>true
-gremlin> graph = TitanFactory.open('conf/titan-cassandra.properties')
-==>standardtitangraph[cassandrathrift:[127.0.0.1]]
+gremlin> graph = JanusGraphFactory.open('conf/janusgraph-cassandra.properties')
+==>standardjanusgraph[cassandrathrift:[127.0.0.1]]
 gremlin> defineGratefulDeadSchema(graph)
 ==>null
 gremlin> graph.close()
@@ -44,7 +44,7 @@ gremlin> hdfs.copyFromLocal('data/grateful-dead.kryo','data/grateful-dead.kryo')
 ==>null
 gremlin> graph = GraphFactory.open('conf/hadoop-graph/hadoop-load.properties')
 ==>hadoopgraph[gryoinputformat->nulloutputformat]
-gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/titan-cassandra.properties').create(graph)
+gremlin> blvp = BulkLoaderVertexProgram.build().writeGraph('conf/janusgraph-cassandra.properties').create(graph)
 ==>BulkLoaderVertexProgram[bulkLoader=IncrementalBulkLoader,vertexIdProperty=bulkLoader.vertex.id,userSuppliedIds=false,keepOriginalIds=true,batchSize=0]
 gremlin> graph.compute(SparkGraphComputer).program(blvp).submit().get()
 ...
@@ -89,10 +89,10 @@ spark.serializer=org.apache.spark.serializer.KryoSerializer
 
 [source, gremlin]
 ----
-// titan-schema-grateful-dead.groovy
+// janusgraph-schema-grateful-dead.groovy
 
-def defineGratefulDeadSchema(titanGraph) {
-    m = titanGraph.openManagement()
+def defineGratefulDeadSchema(janusGraph) {
+    m = janusGraph.openManagement()
     // vertex labels
     artist = m.makeVertexLabel("artist").make()
     song   = m.makeVertexLabel("song").make()
@@ -119,4 +119,4 @@ def defineGratefulDeadSchema(titanGraph) {
 Running PageRank
 ~~~~~~~~~~~~~~~~
 
-A fully functional example of the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.incubator.apache.org/docs/3.0.1-incubating/#vertexprogram[VertexProgram] section of the TinkerPop3 docs.
+A fully functional example of the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#pagerankvertexprogram[PageRankVertexProgram] can be found in the http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference#vertexprogram[VertexProgram] section of the TinkerPop3 docs.

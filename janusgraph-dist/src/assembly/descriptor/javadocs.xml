@@ -1,0 +1,19 @@
+<assembly>
+    <id>janusgraph-core-javadocs</id>
+    <baseDirectory>/</baseDirectory>
+
+    <formats>
+        <format>dir</format>
+    </formats>
+
+    <dependencySets>
+        <dependencySet>
+            <unpack>true</unpack>
+            <outputDirectory>/</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>${project.groupId}:janusgraph-core:jar:javadoc:${project.version}</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+</assembly>

@@ -1,5 +1,5 @@
-Releasing Titan
-===============
+Releasing JanusGraph
+====================
 
 Prerequisites
 -------------
@@ -25,11 +25,6 @@ tools must be installed.
       <username>...</username>
       <password>...</password>
     </server>
-    <server>
-      <id>aurelius.s3</id>
-      <username>AWS Key ID</username>
-      <password>AWS Secret Key</password>
-    </server>
   </servers>
 </settings>
 ```
@@ -54,8 +49,8 @@ Files in the main repo:
 * CHANGELOG.asc
 * NOTICE.txt
 * UPGRADE.asc
-* titan-site/src/site-resources/index.html
-  (this template generates a new http://thinkaurelius.github.io/titan/)
+* janusgraph-site/src/site-resources/index.html
+  (this template generates a new root index page)
 
 Some of these updates could potentially be automated, but tweaking
 documentation before a release will always require at least human in
@@ -75,7 +70,7 @@ Recommended but not required:
 ```bash
 # This script does several things.
 #
-# * Prompts for a ${titan.compatible.versions} update
+# * Prompts for a ${janusgraph.compatible.versions} update
 # * Locally commits the release using the release plugin
 # * Deploys Maven artifacts to Sonatype OSS (staging, not released yet)
 # * Uploads zipfiles to S3
@@ -87,14 +82,13 @@ Recommended but not required:
 # This step is still essentially reversible: just destroy the
 # local commit history, drop the Sonatype OSS Staging repo, and
 # delete the files uploaded to S3.
-titan-dist/src/release/release.sh
+janusgraph-dist/src/release/release.sh
 ```
 
 ### Checking Artifacts & Archives
 
-This is a good time to inspect the archives just uploaded to
-http://s3.thinkaurelius.com/downloads/titan/.  Directory listing is
-normally disabled on that directory, so you may need to login to the
+This is a good time to inspect the archives just uploaded to S3. Directory
+listing is normally disabled on that directory, so you may need to login to the
 S3 console to list the contents and check that nothing's out of place.
 
 If S3 looks good, then inspect and close the staging repository that
@@ -112,7 +106,7 @@ earlier.  It will appear on Maven Central in an hour or two.
 Finally, push your local changes to Github:
 
 ```bash 
-# cd to the titan repository root if not already there
+# cd to the janusgraph repository root if not already there
 git push origin $BRANCH_NAME
 git push origin refs/tags/$RELEASE_VERSION
 git push origin gh-pages

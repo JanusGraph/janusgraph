@@ -1,0 +1,33 @@
+Source: janusgraph
+Section: misc
+Priority: extra
+Maintainer: Dan LaRocque <dalaro@hopcount.org>
+Build-Depends: debhelper (>= 7), openjdk-7-jdk | java7-sdk, maven
+Homepage: http://janusgraph.org
+Vcs-Git: https://github.com/JanusGraph/janusgraph.git
+Vcs-Browser: https://github.com/JanusGraph/janusgraph
+Standards-Version: 3.9.4
+
+Package: janusgraph
+Architecture: all
+Depends: openjdk-7-jre-headless | openjdk-7-jre | java7-runtime, adduser, ${misc:Depends}
+Recommends: ntp
+Description: JanusGraph is a scalable, distributed, concurrent graph database 
+ JanusGraph is a scalable graph database optimized for storing
+ and querying graphs containing hundreds of billions of
+ vertices and edges distributed across a multi-machine
+ cluster.  JanusGraph is open-source and liberally licensed.
+ .
+ JanusGraph supports:
+ * Cassandra
+ * HBase
+ * BerkeleyDB
+ * Lucene
+ * Elasticsearch
+ * TinkerPop/Gremlin/Blueprints
+ .
+ (Cassandra, HBase, and Lucene are trademarks of the Apache
+ Software Foundation. BerkeleyDB is a trademark of Oracle
+ Corporation. Elasticsearch is a trademark of Elasticsearch
+ BV.)
+

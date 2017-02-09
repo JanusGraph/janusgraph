@@ -1,0 +1,111 @@
+#!/bin/sh
+#
+# janusgraph        JanusGraph graph database startup script
+#
+# chkconfig: - 64 36
+# description: JanusGraph graph database.
+# pidfile: /var/run/janusgraph.pid
+### BEGIN INIT INFO
+# Provides:          janusgraph
+# Required-Start:    $network $named $time
+# Required-Stop:     $network $named $time
+# Should-Start:      ntp cassandra
+# Should-Stop:       ntp cassandra
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: distributed graph database
+# Description:       JanusGraph is a highly scalable graph database
+#                    optimized for storing and querying large graphs
+#                    with billions of vertices and edges distributed
+#                    across a multi-machine cluster. JanusGraph is a
+#                    transactional database that can support
+#                    thousands of concurrent users.
+### END INIT INFO
+
+# This script borrows heavily from the PostgreSQL init.d script
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Get local environment overrides
+. /etc/sysconfig/janusgraph
+
+# Find the name of the script
+NAME=janusgraph
+#NAME=`basename $0`
+#if [ ${NAME:0:1} = "S" -o ${NAME:0:1} = "K" ]
+#then
+#	NAME=${NAME:3}
+#fi
+
+# For SELinux we need to use 'runuser' not 'su'
+if [ -x /sbin/runuser ]; then
+    SU=runuser
+else
+    SU=su
+fi
+
+# Set defaults for configuration variables
+#PGENGINE=/usr/bin
+#PGPORT=5432
+#PGDATA=/var/lib/pgsql/data
+#PGLOG=/var/lib/pgsql/pgstartup.log
+# Value to set as postmaster process's oom_adj
+#PG_OOM_ADJ=-17
+
+# Override defaults from /etc/sysconfig/pgsql if file is present
+[ -f /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
+
+#lockfile="/var/lock/subsys/${NAME}"
+pidfile="/var/run/$NAME/$NAME.pid"
+
+do_status() {
+    status -p "$pidfile" $NAME
+    return $?
+}
+
+do_start() {
+    local stat
+    echo -n $"Starting $NAME: "
+    daemon $SU janusgraph -c "/usr/sbin/janusgraph\ -p\ $pidfile\ >/var/log/janusgraph/console.log"
+    stat=$?
+    echo
+    return $stat
+}
+
+do_stop() {
+    local errmsg stat
+    echo -n $"Stopping $NAME: "
+    killproc -p $pidfile
+    stat=$?
+    echo
+    return $stat
+}
+
+do_restart() {
+    do_stop # Try to start even if stop fails
+    do_start
+}
+
+case "$1" in
+    status)
+        do_status
+        exit $?
+        ;;
+    start|stop|restart)
+        do_$1
+        exit $?
+	;;
+    condrestart|try-restart)
+	rh_status_q || exit 0
+	restart
+	;;
+    force-reload)
+        restart
+        exit $?
+	;;
+    *)
+	echo "Usage: $0 {start|stop|restart|force-reload|status|condrestart|try-restart}" >&2
+	exit 3
+	;;
+esac

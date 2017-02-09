@@ -1,0 +1,41 @@
+// Copyright 2017 JanusGraph Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package org.janusgraph.util.encoding;
+
+import com.google.common.base.Preconditions;
+
+
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public class ConversionHelper {
+
+    public static final int getTTLSeconds(Duration duration) {
+        Preconditions.checkArgument(duration!=null && !duration.isZero(),"Must provide non-zero TTL");
+        long ttlSeconds = Math.max(1,duration.getSeconds());
+        assert ttlSeconds>0;
+        Preconditions.checkArgument(ttlSeconds<=Integer.MAX_VALUE, "tll value is too large [%s] - value overflow",duration);
+        return (int)ttlSeconds;
+    }
+
+    public static final int getTTLSeconds(long time, TemporalUnit unit) {
+        return getTTLSeconds(Duration.of(time,unit));
+    }
+
+}

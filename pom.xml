@@ -5,20 +5,20 @@
         <artifactId>oss-parent</artifactId>
         <version>7</version>
     </parent>
-    <groupId>com.thinkaurelius.titan</groupId>
-    <artifactId>titan</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <groupId>org.janusgraph</groupId>
+    <artifactId>janusgraph</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
     </prerequisites>
-    <name>Titan: Distributed Graph Database</name>
-    <url>http://thinkaurelius.github.com/titan/</url>
+    <name>JanusGraph: Distributed Graph Database</name>
+    <url>http://janusgraph.org</url>
 
     <description>
-        Titan is a distributed graph database optimized for processing massive-scale graphs represented over a machine
+        JanusGraph is a distributed graph database optimized for processing massive-scale graphs represented over a machine
         cluster.
-        Titan separates the concerns of graph processing and manipulation from storing the graph on disk,
+        JanusGraph separates the concerns of graph processing and manipulation from storing the graph on disk,
         delegating that concern to an extensible set of persistence solutions.
     </description>
     <developers>
@@ -57,13 +57,13 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:git@github.com:thinkaurelius/titan.git</connection>
-        <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
-        <url>git@github.com:thinkaurelius/titan.git</url>
+        <connection>scm:git:git@github.com:JanusGraph/janusgraph.git</connection>
+        <developerConnection>scm:git:git@github.com:JanusGraph/janusgraph.git</developerConnection>
+        <url>git@github.com:JanusGraph/janusgraph.git</url>
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <titan.compatible.versions />
+        <janusgraph.compatible.versions />
         <tinkerpop.version>3.2.3</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
@@ -74,11 +74,7 @@
         <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.12</slf4j.version>
         <httpcomponents.version>4.4.1</httpcomponents.version>
-        <hadoop1.version>1.2.1</hadoop1.version>
         <hadoop2.version>2.7.2</hadoop2.version>
-        <hbase094.version>0.94.25</hbase094.version>
-        <hbase096.core.version>0.96.2</hbase096.core.version>
-        <hbase096.version>${hbase096.core.version}-hadoop2</hbase096.version>
         <hbase098.core.version>0.98.2</hbase098.core.version>
         <hbase098.version>${hbase098.core.version}-hadoop2</hbase098.version>
         <hbase100.core.version>1.0.2</hbase100.core.version>
@@ -86,12 +82,13 @@
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.4.4</jackson2.version>
         <!-- ES depends on Lucene.  This ES dependency can affect the
-             version used by the titan-lucene module.  When updating
+             version used by the janusgraph-lucene module.  When updating
              the ES version, also consider the version of Lucene, and
              vice-versa. -->
         <lucene.version>4.10.4</lucene.version>
         <elasticsearch.version>1.5.1</elasticsearch.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
+        <commons.collections.version>3.2.2</commons.collections.version>
         <joda.version>1.6.2</joda.version>
         <concurrentlinkedhashmap.version>1.3</concurrentlinkedhashmap.version>
         <antlr2.version>2.7.7</antlr2.version>
@@ -105,7 +102,7 @@
         <jasper.version>5.5.23</jasper.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
+        <janusgraph.testdir>${project.build.directory}/janusgraph-test</janusgraph.testdir>
         <gpg.skip>false</gpg.skip>
         <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
@@ -117,21 +114,21 @@
         <compiler.source>1.8</compiler.source>
         <compiler.target>1.8</compiler.target>
         <compiler.args />
-        <test.excluded.groups>com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests,com.thinkaurelius.titan.testcategory.BrittleTests</test.excluded.groups>
+        <test.excluded.groups>org.janusgraph.testcategory.MemoryTests,org.janusgraph.testcategory.PerformanceTests,org.janusgraph.testcategory.BrittleTests</test.excluded.groups>
     </properties>
     <modules>
-        <module>titan-core</module>
-        <module>titan-test</module>
-        <module>titan-berkeleyje</module>
-        <module>titan-cassandra</module>
-        <module>titan-hadoop-parent</module>
-        <module>titan-hbase-parent</module>
-        <module>titan-es</module>
-        <module>titan-lucene</module>
-        <module>titan-all</module>
-        <module>titan-dist</module>
-        <module>titan-doc</module>
-        <module>titan-solr</module>
+        <module>janusgraph-core</module>
+        <module>janusgraph-test</module>
+        <module>janusgraph-berkeleyje</module>
+        <module>janusgraph-cassandra</module>
+        <module>janusgraph-hadoop-parent</module>
+        <module>janusgraph-hbase-parent</module>
+        <module>janusgraph-es</module>
+        <module>janusgraph-lucene</module>
+        <module>janusgraph-all</module>
+        <module>janusgraph-dist</module>
+        <module>janusgraph-doc</module>
+        <module>janusgraph-solr</module>
     </modules>
     <repositories>
         <repository>
@@ -203,7 +200,7 @@
                       operation should be encapsulated with the
                       profile id listed below.
                     -->
-                    <releaseProfiles>aurelius-release</releaseProfiles>
+                    <releaseProfiles>janusgraph-release</releaseProfiles>
 
                     <!-- Keep all submodules at same version as parent -->
                     <autoVersionSubmodules>true</autoVersionSubmodules>
@@ -249,6 +246,13 @@
                         </excludes>
                         <excludedGroups>${test.excluded.groups}</excludedGroups>
                         <skip>${test.skip.default}</skip>
+                        <!-- Use log4j.properties from module test resources -->
+                        <systemProperties>
+                            <property>
+                                <name>log4j.configuration</name>
+                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
+                            </property>
+                        </systemProperties>
                     </configuration>
                     <executions>
                         <execution>
@@ -276,7 +280,8 @@
                                 </excludes> -->
                                 <skipTests>${test.skip.tp}</skipTests>
                                 <systemPropertyVariables>
-                                    <build.dir>${project.build.directory}</build.dir>
+                                  <build.dir>${project.build.directory}</build.dir>
+                                  <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
                                 </systemPropertyVariables>
                             </configuration>
                        </execution>
@@ -285,6 +290,15 @@
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>2.15</version>
+                    <configuration>
+                        <!-- Use log4j.properties from module test resources -->
+                        <systemProperties>
+                            <property>
+                                <name>log4j.configuration</name>
+                                <value>file:${project.build.directory}/test-classes/log4j.properties</value>
+                            </property>
+                        </systemProperties>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-site-plugin</artifactId>
@@ -413,8 +427,8 @@
                           </settings>
                         -->
                         <server>github</server>
-                        <repositoryName>titan</repositoryName>
-                        <repositoryOwner>thinkaurelius</repositoryOwner>
+                        <repositoryName>janusgraph</repositoryName>
+                        <repositoryOwner>JanusGraph</repositoryOwner>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -527,7 +541,7 @@
             <dependency>
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
-                <version>3.2.1</version>
+                <version>${commons.collections.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-net</groupId>
@@ -603,6 +617,11 @@
                 <groupId>log4j</groupId>
                 <artifactId>log4j</artifactId>
                 <version>1.2.16</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.1.2</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.jettison</groupId>
@@ -778,7 +797,7 @@
             <dependency>
                 <!-- Run the full test suite when changing the Guava version.
                      The Guava team is deadly serious about their 18 month period from deprecation
-                     to feature deletion, and as a result, at least one of Titan's dependencies is
+                     to feature deletion, and as a result, at least one of JanusGraph's dependencies is
                      likely to break whenever the Guava version changes.
 
                      Example where blithely upgrading Guava introduced a linkage error in the past:
@@ -1065,7 +1084,7 @@
         </profile>
 
         <profile>
-            <id>aurelius-release</id>
+            <id>janusgraph-release</id>
             <!--
               Sign artifacts artifacts only during release:perform
               when this profile is automatically activated or whenever
@@ -1133,32 +1152,6 @@
                 <sonar.jacoco.reportPath>../target/jacoco-combined.exec</sonar.jacoco.reportPath>
                 <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
             </properties>
-        </profile>
-
-        <profile>
-            <id>hadoop1</id>
-
-            <activation>
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>1.0</value>
-                </property>
-            </activation>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-core</artifactId>
-                        <version>${hadoop1.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-client</artifactId>
-                        <version>${hadoop1.version}</version>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
         </profile>
 
         <profile>
@@ -1322,7 +1315,7 @@
                                     <classifier>sources</classifier>
                                     <outputDirectory>${project.build.directory}/jacoco-sources</outputDirectory>
                                     <includeGroupIds>${project.groupId}</includeGroupIds>
-                                    <excludeArtifactIds>titan-test</excludeArtifactIds>
+                                    <excludeArtifactIds>janusgraph-test</excludeArtifactIds>
                                 </configuration>
                             </execution>
                             <execution>
@@ -1336,7 +1329,7 @@
                                     <!-- empty classifier requests the artifact containing classes -->
                                     <outputDirectory>${project.build.directory}/jacoco-classes</outputDirectory>
                                     <includeGroupIds>${project.groupId}</includeGroupIds>
-                                    <excludeArtifactIds>titan-test</excludeArtifactIds>
+                                    <excludeArtifactIds>janusgraph-test</excludeArtifactIds>
                                 </configuration>
                             </execution>
                         </executions>
@@ -1434,7 +1427,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>com.thinkaurelius.titan.testcategory.MemoryTests</groups>
+                                    <groups>org.janusgraph.testcategory.MemoryTests</groups>
                                     <excludedGroups />
                                 </configuration>
                             </execution>
@@ -1471,7 +1464,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
+                                    <groups>org.janusgraph.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
                                 </configuration>
                             </execution>
@@ -1595,7 +1588,7 @@
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${xsl.output.dir}/titansingle.xsl</stylesheet>
+                                            <stylesheet>${xsl.output.dir}/single.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>
@@ -1620,7 +1613,7 @@
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${xsl.output.dir}/titanchunk.xsl</stylesheet>
+                                            <stylesheet>${xsl.output.dir}/chunk.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>

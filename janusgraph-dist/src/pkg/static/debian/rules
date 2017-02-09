@@ -1,0 +1,58 @@
+#!/usr/bin/make -f
+
+#export DH_VERBOSE=1
+MVN = /usr/bin/mvn
+#TAR = /bin/tar
+
+changes:
+	debian/generate-changes.sh
+
+test: changes
+	dh_testdir
+	$(MVN) $(MVN_OPTS) test
+
+clean:
+	dh_testdir
+	dh_testroot
+#	$(MVN) $(MVN_OPTS) clean
+	dh_clean
+
+build-arch:
+# No-op
+
+build-indep: changes
+	dh_testdir
+	$(MVN) $(MVN_OPTS) clean install -pl janusgraph-dist -am -Pjanusgraph-release -Dgpg.skip=true -DskipTests=true
+
+build: build-indep build-arch
+# No-op
+
+install: build
+	dh_testdir
+	dh_testroot
+	mkdir debian/tmp 2>/dev/null || true
+	dh_installdirs
+	pkgcommon/bin/install-jars.sh debian/janusgraph/usr/share/janusgraph/lib
+	pkgcommon/bin/install-payload.sh debian/janusgraph
+	cp -a debian/janusgraph.default debian/janusgraph/etc/default/janusgraph
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs
+	dh_installinit -u'start 65 2 3 4 5 . stop 65 0 1 6 .'
+	dh_installdocs README.textile UPGRADE.textile CHANGELOG.textile NOTICE.txt LICENSE.txt
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-arch: build install
+# No-op
+
+binary: binary-indep binary-arch
+
+.PHONY: build build-indep build-arch test clean binary-indep binary-arch binary install changes

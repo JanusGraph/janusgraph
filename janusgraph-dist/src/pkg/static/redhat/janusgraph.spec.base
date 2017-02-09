@@ -1,0 +1,129 @@
+# This specfile needs the janusgraph_version and janusgraph_release macros.
+# These two macros can be defined in two ways:
+#
+# 1. Defined on rpmbuild commandline, e.g.
+#    $ rpmbuild --define='janusgraph_release 2' --define='janusgraph_version 0.1.0'
+#
+# 2. Prepended to this file, e.g.
+#    $ echo '<percent>define janusgraph_version 0.1.0' >  janusgraph.spec.new
+#    $ echo '<percent>define janusgraph_release 2'     >> janusgraph.spec.new
+#    $ cat  janusgraph.spec.base                       >> janusgraph.spec.new
+#    $ mv   janusgraph.spec.new janusgraph.spec
+#
+#    The <percent> strings above should be literal percent symbols, but
+#    rpmbuild appears to parse percents even inside specfile comments like
+#    this one (!), so I can't write a literal percent sign.
+
+%define __jar_repack 0
+%define payload_dir redhat/payload
+
+Name:           janusgraph
+Version:        %{janusgraph_version}
+Release:        %{janusgraph_release}
+Summary:        JanusGraph Distributed Graph Database
+Requires:       java >= 1.7.0
+Requires(pre):  shadow-utils
+Group:          Applications/Databases
+License:        ASL 2.0
+URL:            http://janusgraph.org
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildArch:      noarch
+
+%description
+JanusGraph is a scalable graph database optimized for storing and querying
+graphs containing hundreds of billions of vertices and edges
+distributed across a multi-machine cluster. JanusGraph is a transactional
+database that can support thousands of concurrent users executing
+complex graph traversals.
+
+%prep
+
+%build
+cd %{name}-%{version}
+mvn clean install --batch-mode -Dgpg.skip=true -Pjanusgraph-release -DskipTests=true
+
+
+%check
+
+
+
+# User & group creation based on Fedora guidelines:
+# https://fedoraproject.org/wiki/Packaging:UsersAndGroups?rd=Packaging/UsersAndGroups
+#
+# N.B. This user and group is deliberately left behind by uninstallation.
+# From the guidelines above:
+# "Do not remove users or groups. We never remove users or groups
+#  created by packages. There's no sane way to check if files owned
+#  by those users/groups are left behind..."
+%pre
+getent group janusgraph >/dev/null || groupadd -r janusgraph
+getent passwd janusgraph >/dev/null || \
+    useradd -r -g janusgraph -d /tmp -s /sbin/nologin \
+    -c "JanusGraph graph database" janusgraph
+exit 0
+
+%post
+chown janusgraph:janusgraph /var/lib/janusgraph /var/log/janusgraph /var/run/janusgraph
+
+
+%install
+cd %{name}-%{version}
+
+# create directory structure
+mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
+mkdir -p "$RPM_BUILD_ROOT"/etc/rc.d/init.d
+mkdir -p "$RPM_BUILD_ROOT"/etc/janusgraph
+mkdir -p "$RPM_BUILD_ROOT"/usr/bin
+mkdir -p "$RPM_BUILD_ROOT"/usr/sbin
+mkdir -p "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}
+mkdir -p "$RPM_BUILD_ROOT"/usr/share/janusgraph/lib
+mkdir -p "$RPM_BUILD_ROOT"/var/log/janusgraph
+mkdir -p "$RPM_BUILD_ROOT"/var/lib/janusgraph
+mkdir -p "$RPM_BUILD_ROOT"/var/run/janusgraph
+
+# copy files
+pkgcommon/bin/install-payload.sh "$RPM_BUILD_ROOT"
+pkgcommon/bin/install-jars.sh "$RPM_BUILD_ROOT"/usr/share/janusgraph/lib
+cp %{payload_dir}/janusgraph.init "$RPM_BUILD_ROOT"/etc/rc.d/init.d/janusgraph
+cp %{payload_dir}/janusgraph.sysconfig "$RPM_BUILD_ROOT"/etc/sysconfig/janusgraph
+
+# docs
+#mv doc/ "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/
+#mv CHANGELOG.textile "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/CHANGES.txt
+#mv LICENSE.txt "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/
+## TODO: NEWS.txt ?
+#mv NOTICE.txt "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/
+#mv README.txt "$RPM_BUILD_ROOT"/usr/share/doc/janusgraph-%{version}/README.txt
+for x in CHANGELOG.textile LICENSE.txt NOTICE.txt README.textile UPGRADE.textile; do
+    cp $x  "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}/
+done
+
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root,-)
+#%doc CHANGELOG.textile LICENSE.txt NOTICE.txt README.txt UPGRADE.textile doc/
+%doc /usr/share/doc/%{name}-%{version}/CHANGELOG.textile
+%doc /usr/share/doc/%{name}-%{version}/LICENSE.txt
+%doc /usr/share/doc/%{name}-%{version}/NOTICE.txt
+%doc /usr/share/doc/%{name}-%{version}/README.textile
+%doc /usr/share/doc/%{name}-%{version}/UPGRADE.textile
+%attr(0644, root, root) %config /etc/janusgraph/cassandra.yaml
+%attr(0644, root, root) %config /etc/janusgraph/config.properties
+%attr(0644, root, root) %config /etc/janusgraph/log4j.properties
+%attr(0644, root, root) %config /etc/janusgraph/janusgraph-env.sh
+%attr(0644, root, root) %config /etc/sysconfig/janusgraph
+%attr(0755, root, root) %config /etc/rc.d/init.d/janusgraph
+%attr(0755, janusgraph, janusgraph) %dir /var/log/janusgraph/
+%attr(0755, janusgraph, janusgraph) %dir /var/lib/janusgraph/
+%attr(0755, janusgraph, janusgraph) %dir /var/run/janusgraph/
+%attr(0755, root, root) /usr/bin/gremlin.sh
+%attr(0755, root, root) /usr/sbin/janusgraph
+%attr(0444, root, root) /usr/share/janusgraph/lib/*.jar
+%attr(0644, root, root) /usr/share/janusgraph/janusgraph.in.sh
+
+
+%changelog

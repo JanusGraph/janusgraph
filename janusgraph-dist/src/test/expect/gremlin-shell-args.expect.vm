@@ -1,0 +1,71 @@
+#!/usr/bin/env expect
+# Test that bin/gremlin.sh path/to/gremlin.script evaluates the contents
+# of the gremlin.script file and makes any variables it sets available
+# in the scriptengine binding attached to the prompt eventually
+# presented to the user.
+spawn bin/gremlin.sh ../test-classes/test_gremlin_init.groovy
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+expect gremlin>
+
+send "test_i\r"
+expect "==>4"
+expect gremlin>
+
+send "test_g\r"
+expect "==>tinkergraph"
+expect gremlin>
+
+send "test_graph_factory_class\r"
+expect "==>class"
+expect gremlin>
+
+send "test_janusgraph_factory_class\r"
+expect "==>class"
+expect gremlin>
+
+# Now the control case -- vars must be undefined without the script
+
+# Kill the VM and restart
+send ":quit\r"
+expect eof
+wait
+
+spawn bin/gremlin.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+expect gremlin>
+
+send "test_i\r"
+expect "No such property: test_i"
+expect "Display stack trace?"
+send "n\r"
+expect gremlin>
+
+send "test_g\r"
+expect "No such property: test_g"
+expect "Display stack trace?"
+send "n\r"
+expect gremlin>
+
+send "test_graph_factory_class\r"
+expect "No such property: test_graph_factory_class"
+expect "Display stack trace?"
+send "n\r"
+expect gremlin>
+
+send "test_janusgraph_factory_class\r"
+expect "No such property: test_janusgraph_factory_class"
+expect "Display stack trace?"
+send "n\r"
+expect gremlin>
+
+exit 0

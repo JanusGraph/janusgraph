@@ -1,0 +1,127 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.janusgraph</groupId>
+        <artifactId>janusgraph-hadoop-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>janusgraph-hadoop</artifactId>
+    <packaging>pom</packaging>
+    <name>JanusGraph-Hadoop: Universal binary</name>
+    <url>http://janusgraph.org</url>
+
+    <properties>
+        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>janusgraph-hadoop-core</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>janusgraph-hadoop-2</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>janusgraph-release</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>janusgraph-hadoop-core</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>janusgraph-hadoop-core</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>javadoc</classifier>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>janusgraph-hadoop-2</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>sources</classifier>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>build-hadoop-source-and-javdoc-jars</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                    <appendAssemblyId>true</appendAssemblyId>
+                                    <descriptors>
+                                        <descriptor>${project.basedir}/src/assembly/sources-jar.xml</descriptor>
+                                        <descriptor>${project.basedir}/src/assembly/javadoc-jar.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>build-hadoop-code-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>true</attach>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>${project.basedir}/src/assembly/code-jar.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-job-jar</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Redeclare gpg-plugin's sign-artifacts execution below the
+                 assembly plugin to guarantee that signing happens after assembly
+                 during the package lifecycle phase -->
+            <plugin>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

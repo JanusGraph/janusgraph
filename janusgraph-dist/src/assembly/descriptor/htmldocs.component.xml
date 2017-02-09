@@ -1,0 +1,25 @@
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+
+    <!-- Javadoc HTML -->
+    <dependencySets>
+        <dependencySet>
+            <unpack>true</unpack>
+            <!-- Dump into /javadocs instead of /docs/javadocs for milestone release -->
+            <outputDirectory>/javadocs</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>${project.groupId}:janusgraph-core:jar:javadoc:${project.version}</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+
+    <!-- Manual HTML generated from AsciiDoc -->
+    <fileSets>
+        <fileSet>
+            <directory>target/docs/chunk</directory>
+            <outputDirectory>/docs</outputDirectory>
+            <filtered>false</filtered>
+        </fileSet>
+    </fileSets>
+</component>
