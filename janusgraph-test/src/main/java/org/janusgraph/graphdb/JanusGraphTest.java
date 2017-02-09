@@ -3456,15 +3456,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.between(1, 3)).order().by("weight", decr).limit(10)).profile("~metrics");
         assertCount(superV * 10, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
-        //verifyMetrics(metrics.getMetrics(0), true, false);
-        //verifyMetrics(metrics.getMetrics(1), true, true);
 
         //Verify that properties also use multi query
         t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
-        //verifyMetrics(metrics.getMetrics(0), true, false);
-        //verifyMetrics(metrics.getMetrics(1), true, true);
 
         clopen(option(USE_MULTIQUERY), true);
         gts = graph.traversal();
@@ -3473,17 +3469,11 @@ public abstract class JanusGraphTest extends JanusGraphBaseTest {
         t = gts.V().has("id", sid).local(__.outE("knows").has("weight", P.gte(1)).has("weight", P.lt(3)).order().by("weight", decr).limit(10)).profile("~metrics");
         assertCount(superV * 10, t); 
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
-//        System.out.println(metrics);
-        //verifyMetrics(metrics.getMetrics(0), false, false);
-        //verifyMetrics(metrics.getMetrics(1), false, true);
 
         //Verify that properties also use multi query [same query as above]
         t = gts.V().has("id", sid).values("names").profile("~metrics");
         assertCount(superV * numV, t);
         metrics = (TraversalMetrics) t.asAdmin().getSideEffects().get("~metrics");
-//        System.out.println(metrics);
-        //verifyMetrics(metrics.getMetrics(0), false, false);
-        //verifyMetrics(metrics.getMetrics(1), false, true);
 
     }
 

@@ -100,7 +100,7 @@ public class JanusGraphStep<S, E extends Element> extends GraphStep<S, E> implem
 
     @Override
     public void addHasContainer(final HasContainer hasContainer) {
-	this.addAll(Collections.singleton(hasContainer));
+        this.addAll(Collections.singleton(hasContainer));
     }
 }
 

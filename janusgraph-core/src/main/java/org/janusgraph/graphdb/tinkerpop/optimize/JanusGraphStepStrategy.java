@@ -44,11 +44,11 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
             if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {
                 //Try to optimize for index calls
-                final JanusGraphStep<?, ?> titanGraphStep = new JanusGraphStep<>(originalGraphStep);
-                TraversalHelper.replaceStep(originalGraphStep, (Step) titanGraphStep, traversal);
-                HasStepFolder.foldInHasContainer(titanGraphStep, traversal);
-                HasStepFolder.foldInOrder(titanGraphStep, traversal, traversal, titanGraphStep.returnsVertex());
-                HasStepFolder.foldInRange(titanGraphStep, traversal);
+                final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
+                TraversalHelper.replaceStep(originalGraphStep, (Step) janusGraphStep, traversal);
+                HasStepFolder.foldInHasContainer(janusGraphStep, traversal);
+                HasStepFolder.foldInOrder(janusGraphStep, traversal, traversal, janusGraphStep.returnsVertex());
+                HasStepFolder.foldInRange(janusGraphStep, traversal);
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
                 Object[] ids = originalGraphStep.getIds();
