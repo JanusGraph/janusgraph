@@ -20,6 +20,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.PropertyType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
 
 import java.util.*;
 
@@ -98,7 +99,7 @@ public class TitanPropertiesStep<E> extends PropertiesStep<E> implements HasStep
         if (useMultiQuery) { //it is guaranteed that all elements are vertices
             assert multiQueryResults != null;
             return convertIterator(multiQueryResults.get(traverser.get()));
-        } else if (traverser.get() instanceof Vertex) {
+        } else if (traverser.get() instanceof TitanVertex || traverser.get() instanceof WrappedVertex) {
             TitanVertexQuery query = makeQuery((TitanTraversalUtil.getTitanVertex(traverser)).query());
             return convertIterator(query.properties());
         } else {

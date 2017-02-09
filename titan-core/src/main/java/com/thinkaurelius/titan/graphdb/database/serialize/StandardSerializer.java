@@ -27,6 +27,7 @@ import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
 
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +120,8 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(64,Duration.class, new DurationSerializer());
         registerClassInternal(65,Instant.class, new InstantSerializer());
         registerClassInternal(66,StandardTransactionId.class, new StandardTransactionIdSerializer());
+        registerClassInternal(67,TraverserSet.class, new SerializableSerializer());
+        registerClassInternal(68,HashMap.class, new SerializableSerializer());
 
     }
 

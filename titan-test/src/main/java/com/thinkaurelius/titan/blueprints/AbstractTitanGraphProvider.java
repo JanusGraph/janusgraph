@@ -44,7 +44,10 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.TransactionTest;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -55,6 +58,8 @@ import java.util.stream.Stream;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstractTitanGraphProvider.class);
 
     private static final Set<Class> IMPLEMENTATION = new HashSet<Class>() {{
         add(StandardTitanGraph.class);
@@ -120,7 +125,11 @@ public abstract class AbstractTitanGraphProvider extends AbstractGraphProvider {
             TitanGraph graph = (TitanGraph) g;
             if (graph.isOpen()) {
                 if (g.tx().isOpen()) g.tx().rollback();
-                g.close();
+                try {
+                    g.close();
+                } catch (IOException | IllegalStateException e) {
+                    logger.warn("Titan graph may not have closed cleanly", e);
+                }
             }
         }
 

@@ -24,6 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -72,6 +73,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         PreloadedVertex v = (PreloadedVertex)vertex;
         long vertexId = v.longId();
         VertexMemoryHandler<M> vh = new VertexMemoryHandler(vertexMemory,v);
+        vh.setInExecute(true);
         v.setAccessCheck(PreloadedVertex.OPENSTAR_CHECK);
         if (idManager.isPartitionedVertex(vertexId)) {
             if (idManager.isCanonicalVertexId(vertexId)) {
@@ -94,6 +96,7 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             v.setPropertyMixing(vh);
             vertexProgram.execute(v, vh, memory);
         }
+        vh.setInExecute(false);
     }
 
     @Override
@@ -131,14 +134,16 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
             IDHandler.getBounds(RelationCategory.PROPERTY, true)[0],
             IDHandler.getBounds(RelationCategory.PROPERTY,false)[1]);
 
-    public static class Executor extends VertexJobConverter {
+    public static class Executor extends VertexJobConverter implements Closeable {
 
         private Executor(TitanGraph graph, VertexProgramScanJob job) {
             super(graph, job);
+            open(this.graph.get().getConfiguration().getConfiguration());
         }
 
         private Executor(final Executor copy) {
             super(copy);
+            open(this.graph.get().getConfiguration().getConfiguration());
         }
 
         @Override
@@ -149,13 +154,22 @@ public class VertexProgramScanJob<M> implements VertexScanJob {
         }
 
         @Override
+        public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
+            job.workerIterationStart(graph.get(), jobConfig, metrics);
+        }
+
+        @Override
         public void workerIterationEnd(ScanMetrics metrics) {
-            super.workerIterationEnd(metrics);
+            job.workerIterationEnd(metrics);
         }
 
         @Override
         public Executor clone() { return new Executor(this); }
 
+        @Override
+        public void close() {
+            super.close();
+        }
 
     }
 

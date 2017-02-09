@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.ExternalCachePersistor;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -425,7 +426,14 @@ public class BackendTransaction implements LoggableTransaction {
 
 
     private final <V> V executeRead(Callable<V> exe) throws TitanException {
-        return BackendOperation.execute(exe, maxReadTime);
+        try {
+            return BackendOperation.execute(exe, maxReadTime);
+        } catch (TitanException e) {
+            // support traversal interruption
+            // TODO: Refactor to allow direct propagation of underlying interrupt exception
+            if (Thread.interrupted()) throw new TraversalInterruptedException();
+            throw e;
+        }
     }
 
 

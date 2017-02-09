@@ -76,6 +76,8 @@ public class BackendOperation {
                 try {
                     Thread.sleep(waitTime.toMillis());
                 } catch (InterruptedException r) {
+                    // added thread interrupt signal to support traversal interruption
+                    Thread.currentThread().interrupt();
                     throw new PermanentBackendException("Interrupted while waiting to retry failed backend operation", r);
                 }
             } else {

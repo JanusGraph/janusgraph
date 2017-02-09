@@ -14,7 +14,8 @@ public class InMemoryGraphComputerProvider extends AbstractTitanGraphComputerPro
 
     @Override
     public ModifiableConfiguration getTitanConfiguration(String graphName, Class<?> test, String testMethodName) {
-        ModifiableConfiguration config = StorageSetup.getInMemoryConfiguration();
+        ModifiableConfiguration config = super.getTitanConfiguration(graphName, test, testMethodName);
+        config.setAll(StorageSetup.getInMemoryConfiguration().getAll());
         config.set(GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL,false);
         return config;
     }

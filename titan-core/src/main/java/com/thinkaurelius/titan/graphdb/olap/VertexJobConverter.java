@@ -58,9 +58,10 @@ public class VertexJobConverter implements ScanJob {
     }
 
     protected VertexJobConverter(VertexJobConverter copy) {
-        this.graph = new GraphProvider();
-        if (copy.graph.isProvided()) this.graph.setGraph(copy.graph.get());
+        this.graph = copy.graph;
         this.job = copy.job.clone();
+        this.tx = copy.tx;
+        this.idManager = copy.idManager;
     }
 
     public static ScanJob convert(TitanGraph graph, VertexScanJob vertexJob) {
@@ -82,10 +83,8 @@ public class VertexJobConverter implements ScanJob {
 
     @Override
     public void workerIterationStart(Configuration jobConfig, Configuration graphConfig, ScanMetrics metrics) {
-        graph.initializeGraph(graphConfig);
-        idManager = graph.get().getIDManager();
         try {
-            tx = startTransaction(graph.get());
+            open(graphConfig);
             job.workerIterationStart(graph.get(), jobConfig, metrics);
         } catch (Throwable e) {
             close();
@@ -93,7 +92,13 @@ public class VertexJobConverter implements ScanJob {
         }
     }
 
-    private void close() {
+    protected void open(Configuration graphConfig) {
+        graph.initializeGraph(graphConfig);
+        idManager = graph.get().getIDManager();
+        tx = startTransaction(graph.get());
+    }
+
+    protected void close() {
         if (null != tx && tx.isOpen())
             tx.rollback();
         graph.close();

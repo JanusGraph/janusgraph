@@ -9,10 +9,7 @@ import com.thinkaurelius.titan.core.TitanVertexProperty;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.vertices.PreloadedVertex;
-import org.apache.tinkerpop.gremlin.process.computer.MessageCombiner;
-import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
-import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
@@ -30,10 +27,12 @@ public class FulgoraVertexMemory<M> {
 
     private NonBlockingHashMapLong<VertexState<M>> vertexStates;
     private final IDManager idManager;
-    final Map<String,Integer> elementKeyMap;
+    private final Set<VertexComputeKey> computeKeys;
+    private final Map<String,Integer> elementKeyMap;
     private final MessageCombiner<M> combiner;
     private Map<MessageScope,Integer> previousScopes;
     private Map<MessageScope,Integer> currentScopes;
+    private boolean inExecute;
 
     private NonBlockingHashMapLong<PartitionVertexAggregate<M>> partitionVertices;
 
@@ -43,6 +42,7 @@ public class FulgoraVertexMemory<M> {
         partitionVertices = new NonBlockingHashMapLong<>(64);
         this.idManager = idManager;
         this.combiner = FulgoraUtil.getMessageCombiner(vertexProgram);
+        this.computeKeys = vertexProgram.getVertexComputeKeys();
         this.elementKeyMap = getIdMap(vertexProgram.getVertexComputeKeys().stream().map( k ->
 											 k.getKey() ).collect(Collectors.toCollection(HashSet::new)));
         this.previousScopes = ImmutableMap.of();
@@ -90,11 +90,13 @@ public class FulgoraVertexMemory<M> {
         for (VertexState<M> state : vertexStates.values()) state.completeIteration();
         partitionVertices.clear();
         previousScopes = currentScopes;
+        inExecute = false;
     }
 
     void nextIteration(Set<MessageScope> scopes) {
         currentScopes = getIdMap(normalizeScopes(scopes));
         partitionVertices.clear();
+        inExecute = true;
     }
 
     public Map<Long,Map<String,Object>> getMutableVertexProperties() {
@@ -106,6 +108,10 @@ public class FulgoraVertexMemory<M> {
             }
             return map;
         });
+    }
+
+    public Set<String> getMemoryKeys() {
+        return computeKeys.stream().filter(key -> inExecute || !key.isTransient()).map(key -> key.getKey()).collect(Collectors.toSet());
     }
 
     private static MessageScope normalizeScope(MessageScope scope) {

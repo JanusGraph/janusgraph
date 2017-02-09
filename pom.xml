@@ -64,7 +64,7 @@
     </scm>
     <properties>
         <titan.compatible.versions />
-        <tinkerpop.version>3.2.0-incubating</tinkerpop.version>
+        <tinkerpop.version>3.2.3</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <mrunit.version>1.1.0</mrunit.version>
         <cassandra.version>2.1.9</cassandra.version>
@@ -275,6 +275,9 @@
                                     <exclude>**/*</exclude>
                                 </excludes> -->
                                 <skipTests>${test.skip.tp}</skipTests>
+                                <systemPropertyVariables>
+                                    <build.dir>${project.build.directory}</build.dir>
+                                </systemPropertyVariables>
                             </configuration>
                        </execution>
                     </executions>

@@ -64,12 +64,16 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
-        return getGraph().compute(graphComputerClass);
+        TitanBlueprintsGraph graph = getGraph();
+        if (isOpen()) commit();
+        return graph.compute(graphComputerClass);
     }
 
     @Override
     public FulgoraGraphComputer compute() throws IllegalArgumentException {
-        return getGraph().compute();
+        TitanBlueprintsGraph graph = getGraph();
+        if (isOpen()) commit();
+        return graph.compute();
     }
 
     /**
