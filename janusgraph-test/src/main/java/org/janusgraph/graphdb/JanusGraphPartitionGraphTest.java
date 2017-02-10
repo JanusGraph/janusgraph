@@ -84,7 +84,7 @@ public abstract class JanusGraphPartitionGraphTest extends JanusGraphBaseTest {
     private IDManager idManager;
 
     @Override
-  @Before
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         idManager = graph.getIDManager();
