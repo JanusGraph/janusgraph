@@ -10,7 +10,7 @@ backend systems, different minor versions are typically supported as well. It is
 strongly encouraged to verify version compatibility prior to deploying
 JanusGraph.
 
-.Version Compabitility Matrix
+.Version Compatibility Matrix
 [options="header"]
 |==========================
 | JanusGraph | Cassandra | HBase | Elasticsearch | Solr | TinkerPop
