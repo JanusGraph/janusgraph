@@ -1,19 +1,16 @@
 [[intro]]
-Introduction
-============
+= Introduction
 
 This section gives an overview of JanusGraph's architecture and benefits,
 followed by a quick tour of JanusGraph features using a small tutorial data
 set.
 
 [[benefits]]
-The Benefits of JanusGraph
---------------------------
+== The Benefits of JanusGraph
 
 JanusGraph is designed to support the processing of graphs so large that they require storage and computational capacities beyond what a single machine can provide. Scaling graph data processing for real time traversals and analytical queries is JanusGraph's foundational benefit. This section will discuss the various specific benefits of JanusGraph and its underlying, supported persistence solutions.
 
-General JanusGraph Benefits
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== General JanusGraph Benefits
 
 * Support for very large graphs. JanusGraph graphs scale with the number of machines in the cluster.
 * Support for very many concurrent transactions and operational graph processing. JanusGraph's transactional capacity scales with the number of machines in the cluster and answers complex traversal queries on huge graphs in milliseconds.
@@ -27,8 +24,7 @@ General JanusGraph Benefits
 * Provides an optimized disk representation to allow for efficient use of storage and speed of access.
 * Open source under the liberal http://en.wikipedia.org/wiki/Apache_License[Apache 2 license].
 
-Benefits of JanusGraph with Cassandra
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Benefits of JanusGraph with Cassandra
 
 [.tss-floatright.tss-width-125]
 image:cassandra-small.svg[link="http://cassandra.apache.org/"]
@@ -42,8 +38,7 @@ image:cassandra-small.svg[link="http://cassandra.apache.org/"]
 * Open source under the liberal Apache 2 license.
 
 
-Benefits of JanusGraph with HBase
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Benefits of JanusGraph with HBase
 
 [.tss-floatright.tss-width-125]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org/"]
@@ -56,8 +51,7 @@ image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.or
 * Support for exporting metrics via http://en.wikipedia.org/wiki/Java_Management_Extensions[JMX].
 * Open source under the liberal Apache 2 license.
 
-JanusGraph and the CAP Theorem
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== JanusGraph and the CAP Theorem
 
 // The single quotes enable inline text substitutions (required to generate a hyperlink in the output)
 [quote, 'http://codahale.com/you-cant-sacrifice-partition-tolerance[Coda Hale]']
@@ -75,8 +69,7 @@ When using a database, the http://en.wikipedia.org/wiki/CAP_theorem[CAP theorem]
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
 [[arch-overview]]
-Architectural Overview
-----------------------
+== Architectural Overview
 
 JanusGraph is a graph database engine.  JanusGraph itself is focused on compact
 graph serialization, rich graph data modeling, and efficient query
@@ -108,8 +101,7 @@ Broadly speaking, applications can interact with JanusGraph in two ways:
 image::architecture-layer-diagram.svg[]
 
 [[getting-started]]
-Getting Started
----------------
+== Getting Started
 
 [quote]
 _______
@@ -144,8 +136,7 @@ image::graph-of-the-gods-2.png[]
 |=====
 
 
-Downloading JanusGraph and Running the Gremlin Shell
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Downloading JanusGraph and Running the Gremlin Shell
 
 [quote]
 _______
@@ -191,8 +182,7 @@ gremlin> [name:'aurelius', vocation:['philosopher', 'emperor']]
 [TIP]
 Refer to http://tinkerpop.apache.org/docs/$MAVEN{tinkerpop.version}/reference[Tinkerpop documentation], http://gremlindocs.com/[GremlinDocs] and http://sql2gremlin.com/[SQL2Gremlin] for more information about using Gremlin.
 
-Loading the Graph of the Gods Into JanusGraph
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Loading the Graph of the Gods Into JanusGraph
 
 The example below will open a JanusGraph graph instance and load _The Graph of the Gods_ dataset diagrammed above.  `JanusGraphFactory` provides a set of static `open` methods, each of which takes a configuration as its argument and returns a graph instance.  This tutorial calls one of these `open` methods on a configuration that uses the <<bdb, BerkeleyDB>> storage backend and the <<elasticsearch, Elasticsearch>> index backend, then loads _The Graph of the Gods_ using the helper class `GraphOfTheGodsFactory`.  This section skips over the configuration details, but additional information about storage backends, index backends, and their configuration are available in <<storage-backends>>, <<index-backends>>, and <<config-ref>>.
 
@@ -222,8 +212,7 @@ gremlin> GraphOfTheGodsFactory.load(graph)
 gremlin> g = graph.traversal()
 ==>graphtraversalsource[standardjanusgraph[cassandrathrift:[127.0.0.1]], standard]
 
-Global Graph Indices
-~~~~~~~~~~~~~~~~~~~~
+=== Global Graph Indices
 
 The typical pattern for accessing data in a graph database is to first locate the entry point into the graph using a graph index. That entry point is an element (or set of elements) -- i.e. a vertex or edge. From the entry elements, a Gremlin path description describes how to traverse to other elements in the graph via the explicit graph structure.
 
@@ -249,8 +238,7 @@ gremlin> g.E().has('place', geoWithin(Geoshape.circle(37.97, 23.72, 50))).as('so
 
 Graph indices are one type of index structure in JanusGraph. Graph indices are automatically chosen by JanusGraph to answer which ask for all vertices (`g.V`) or all edges (`g.E`) that satisfy one or multiple constraints (e.g. `has` or `interval`). The second aspect of indexing in JanusGraph is known as vertex-centric indices. Vertex-centric indices are utilized to speed up traversals inside the graph. Vertex-centric indices are described later.
 
-Graph Traversal Examples
-^^^^^^^^^^^^^^^^^^^^^^^^
+==== Graph Traversal Examples
 
 [quote]
 http://en.wikipedia.org/wiki/Hercules[Hercules], son of Jupiter and http://en.wikipedia.org/wiki/Alcmene[Alcmene], bore super human strength. Hercules was a http://en.wikipedia.org/wiki/Demigod[Demigod] because his father was a god and his mother was a human. http://en.wikipedia.org/wiki/Juno_(mythology)[Juno], wife of Jupiter, was furious with Jupiter's infidelity. In revenge, she blinded Hercules with temporary insanity and caused him to kill his wife and children. To atone for the slaying, Hercules was ordered by the http://en.wikipedia.org/wiki/Oracle_at_Delphi[Oracle of Delphi] to serve http://en.wikipedia.org/wiki/Eurystheus[Eurystheus]. Eurystheus appointed Hercules to 12 labors.
@@ -312,16 +300,14 @@ The edge property `time` on `battled` edges is indexed by the vertex-centric ind
 gremlin> g.V(hercules).outE('battled').has('time', gt(1)).inV().values('name').toString()
 ==>[GraphStep([v[24744]],vertex), VertexStep(OUT,[battled],edge), HasStep([time.gt(1)]), EdgeVertexStep(IN), PropertiesStep([name],value)]
 
-More Complex Graph Traversal Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== More Complex Graph Traversal Examples
 
 [quote]
 In the depths of Tartarus lives Pluto. His relationship with Hercules was strained by the fact that Hercules battled his pet, Cerberus. However, Hercules is his nephew -- how should he make Hercules pay for his insolence?
 
 The Gremlin traversals below provide more examples over _The Graph of the Gods_. The explanation of each traversal is provided in the prior line as a `//` comment.
 
-Cohabiters of Tartarus
-++++++++++++++++++++++
+===== Cohabiters of Tartarus
 
 [source, gremlin]
 gremlin> pluto = g.V().has('name', 'pluto').next()
@@ -336,8 +322,7 @@ gremlin> g.V(pluto).out('lives').in('lives').where(is(neq(pluto))).values('name'
 gremlin> g.V(pluto).as('x').out('lives').in('lives').where(neq('x')).values('name')
 ==>cerberus
 
-Pluto's Brothers
-++++++++++++++++
+===== Pluto's Brothers
 
 [source, gremlin]
 gremlin> // where do pluto's brothers live?

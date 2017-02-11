@@ -1,6 +1,5 @@
 [[hbase]]
-HBase
------
+== HBase
 
 [.tss-center.tss-width-250]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
@@ -8,13 +7,11 @@ image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.or
 [quote, 'http://hbase.apache.org/[Apache HBase Homepage]']
 Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
 
-HBase Setup
-~~~~~~~~~~~
+=== HBase Setup
 
 The following sections outline the various ways in which JanusGraph can be used in concert with HBase.
 
-Local Server Mode
-^^^^^^^^^^^^^^^^^
+==== Local Server Mode
 
 image:modes-local.png[]
 
@@ -36,8 +33,7 @@ JanusGraph graph = JanusGraphFactory.build()
 
 Note, that you do not need to specify a hostname since a localhost connection is attempted by default. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Remote Server Mode
-^^^^^^^^^^^^^^^^^^
+==== Remote Server Mode
 
 image:modes-distributed.png[]
 
@@ -53,8 +49,7 @@ JanusGraph g = JanusGraphFactory.build()
 
 `storage.hostname` accepts a comma separated list of IP addresses and hostname for any subset of machines in the HBase cluster JanusGraph should connect to. Also, in the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
-Remote Server Mode with Gremlin Server
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==== Remote Server Mode with Gremlin Server
 
 image:modes-rexster.png[]
 
@@ -77,8 +72,7 @@ plugins:
 ...
 ----
 
-HBase Specific Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== HBase Specific Configuration
 
 Refer to <<config-ref>> for a complete listing of all HBase specific configuration options in addition to the general JanusGraph configuration options.
 
@@ -88,13 +82,11 @@ When configuring HBase it is recommended to consider the following HBase specifi
 
 Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase.ext` in the JanusGraph configuration it will be passed on to HBase at initialization time. For example, to use the znode /hbase-secure for HBase, set the property: `storage.hbase.ext.zookeeper.znode.parent=/hbase-secure`. The prefix allows arbitrary HBase configuration options to be configured through JanusGraph.
 
-Global Graph Operations
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Global Graph Operations
 
 JanusGraph over HBase supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use <<hadoop-tp3>> to iterate over all vertices or edges in large graphs effectively.
 
-Deploying on Amazon EC2
-~~~~~~~~~~~~~~~~~~~~~~~
+=== Deploying on Amazon EC2
 
 [quote, 'http://aws.amazon.com/ec2/[Amazon EC2]']
 Amazon EC2 is a web service that provides resizable compute capacity in the cloud. It is designed to make web-scale computing easier for developers.
@@ -173,8 +165,7 @@ hadoop version # Should print 1.0.3
 hadoop fs -ls /
 ----
 
-Tips and Tricks for Managing an HBase Cluster
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Tips and Tricks for Managing an HBase Cluster
 
 The http://wiki.apache.org/hadoop/Hbase/Shell[HBase shell] on the master server can be used to get an overal status check of the cluster.
 

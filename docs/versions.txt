@@ -1,7 +1,6 @@
 [[version-compat]]
 [appendix]
-Version Compatibility
----------------------
+== Version Compatibility
 
 The JanusGraph project is growing along with the rest of the graph and big data
 ecosystem and utilized storage and indexing backends. Below are version

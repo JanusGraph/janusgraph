@@ -1,6 +1,5 @@
 [[tools-and-utilities]]
-Useful Tools
-============
+= Useful Tools
 
 include::advblueprints.txt[]
 

@@ -1,6 +1,5 @@
 [[building]]
-Building JanusGraph
--------------------
+== Building JanusGraph
 
 To build JanusGraph you need http://git-scm.com/[git] and http://maven.apache.org/[Maven].
 
@@ -8,8 +7,7 @@ To build JanusGraph you need http://git-scm.com/[git] and http://maven.apache.or
 . In that directory, execute `mvn clean install`. This will build JanusGraph and run the internal test suite. The internal test suite has no external dependencies. Note, that running all test cases requires a significant amount of time. To skip the tests when building JanusGraph, execute `mvn clean install -DskipTests`
 . For comprehensive test coverage, execute `mvn clean test -P comprehensive`. This will run additional test covering communication to external storage backends, performance tests and concurrency tests. The comprehensive test suite uses Cassandra and HBase as external databases and requires that Cassandra and HBase are installed. Note, that running the comprehensive test suite requires a significant amount of of time (> 1 hour).
 
-Depending on JanusGraph Snapshots
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Depending on JanusGraph Snapshots
 
 For developing against the most current version of JanusGraph, depend on JanusGraph snapshot releases. Note, that these releases are development releases and therefore unstable and likely to change. Unless one is interested in the most recent development status of JanusGraph, we recommend to use the stable JanusGraph release instead.
 
@@ -38,8 +36,7 @@ When adding this dependency, be sure to add the following repository to the `pom
   </snapshots>
 </repository>
 
-FAQs
-~~~~
+=== FAQs
 
 *Maven build causes dozens of "[WARNING] We have a duplicate..." errors*
 
